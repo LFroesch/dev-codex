@@ -197,13 +197,6 @@ const Layout: React.FC = () => {
           <div className="flex items-center gap-6">
             <h1 className="text-2xl font-bold">Project Manager</h1>
             <div className="flex items-center gap-3">
-              <input
-                type="text"
-                placeholder="Search projects..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="input input-bordered input-sm w-64 shadow-sm"
-              />
               <button
                 onClick={() => navigate('/create-project')}
                 className="btn btn-primary btn-sm shadow-sm"
@@ -277,6 +270,17 @@ const Layout: React.FC = () => {
       <div className="flex flex-1">
         {/* Sidebar */}
         <div className="w-64 bg-base-100 shadow-lg border-r border-base-content/10 p-6">
+          {/* Search Projects */}
+          <div className="mb-6">
+            <input
+              type="text"
+              placeholder="Search projects..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="input input-bordered input-sm w-full shadow-sm"
+            />
+          </div>
+          
           {/* Current Projects */}
           <div className="mb-6">
             <div 

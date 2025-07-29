@@ -1,0 +1,33 @@
+Goal:
+
+    A project management app with the custom backend having the ability to be accessed via web app, mobile & desktop app
+    (Starting with a dual backend + webapp frontend project)
+    The goal is to help guide a user from start to end on their projects, and have relevant organizational areas and
+    framework / plugin suggestions / options in a flow chart sort of way / mixed with something like pcpartpicker where its kinda like "these work together" "these dont" etc
+    The primary use is for people like myself that have so many projects going on they cant keep track of them in a cohesive way, including the ones from the past / their portfolio etc so it will have after completion projects and their respective links / cron job helps / potentially toggling on and / off the service via api calls to sites like render.com that are hosting (thats just a for instance)
+    
+    Prompt Tags:
+    
+    Needs:
+    Auth / DB Integration / Rate Limiting / Email Verification / Password Reset / input validation/sanitization
+    Payments? Free Tier Usage etc.
+
+Pages:
+- Notes / Goals / To Do / Dev Log
+^ Fix markdown
+- Roadmap - Plan from inception to Deployment and beyond / Stack
+- Docs / API planning etc
+- Settings / Info
+- Analytics [?]
+
+Future Features (Claude ignore for now)
+Search bar on side bar for projects / Filter / sorting
+Cronjobs/Analytics
+AI Chatbot for suggestions on filling out each project / etc
+Markdown Text
+Excalibur embed?
+Align Buttons / elements better
+keybindings?
+upload images?
+teams? shared projects
+Timer / focus zone

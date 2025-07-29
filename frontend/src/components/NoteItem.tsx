@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Note, projectAPI } from '../api/client';
 import EnhancedTextEditor from './EnhancedTextEditor';
 
@@ -22,6 +22,11 @@ const NoteItem: React.FC<NoteItemProps> = ({
   const [editDescription, setEditDescription] = useState(note.description || '');
   const [editContent, setEditContent] = useState(note.content);
   const [loading, setLoading] = useState(false);
+  
+  const autoSaveTimeoutRef = useRef<number | null>(null);
+  const editingContainerRef = useRef<HTMLDivElement>(null);
+  const isCancelingRef = useRef(false);
+  const isSavingRef = useRef(false);
 
   // Reset form when note changes or editing is cancelled
   React.useEffect(() => {
@@ -30,9 +35,74 @@ const NoteItem: React.FC<NoteItemProps> = ({
     setEditContent(note.content);
   }, [note.title, note.description, note.content]);
 
+  // Auto-save functionality
+  const scheduleAutoSave = () => {
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+    
+    autoSaveTimeoutRef.current = window.setTimeout(() => {
+      if (isEditing && (editTitle.trim() !== note.title || editDescription.trim() !== (note.description || '') || editContent.trim() !== note.content)) {
+        handleSave();
+      }
+    }, 15000); // 15 seconds
+  };
+
+  // Handle blur events (clicking outside)
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isEditing && editingContainerRef.current && !editingContainerRef.current.contains(event.target as Node)) {
+        // Check if clicked on a save or cancel button
+        const target = event.target as Element;
+        const isClickingButton = target.closest('button');
+        const buttonText = isClickingButton?.textContent?.toLowerCase();
+        
+        if (buttonText?.includes('save') || buttonText?.includes('cancel')) {
+          return; // Let the button handle it
+        }
+        
+        // Check if there are changes before asking to save
+        if (editTitle.trim() !== note.title || editDescription.trim() !== (note.description || '') || editContent.trim() !== note.content) {
+          event.preventDefault();
+          const shouldSave = window.confirm('You have unsaved changes. Do you want to save them?');
+          if (shouldSave) {
+            handleSave();
+          } else {
+            handleCancel();
+          }
+        } else {
+          setIsEditing(false);
+        }
+      }
+    };
+
+    if (isEditing) {
+      document.addEventListener('mousedown', handleClickOutside);
+      scheduleAutoSave(); // Start the timer when entering edit mode
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, [isEditing, editTitle, editDescription, editContent, note.title, note.description, note.content]);
+
+  // Reset auto-save timer on input changes
+  const handleInputChange = (field: 'title' | 'description' | 'content', value: string) => {
+    if (field === 'title') setEditTitle(value);
+    else if (field === 'description') setEditDescription(value);
+    else if (field === 'content') setEditContent(value);
+    
+    // Reset the auto-save timer whenever user types
+    scheduleAutoSave();
+  };
+
   const handleSave = async () => {
     if (!editTitle.trim() || !editContent.trim()) return;
 
+    isSavingRef.current = true;
     setLoading(true);
     try {
       await projectAPI.updateNote(projectId, note.id, {
@@ -46,6 +116,9 @@ const NoteItem: React.FC<NoteItemProps> = ({
       console.error('Failed to update note:', error);
     } finally {
       setLoading(false);
+      setTimeout(() => {
+        isSavingRef.current = false;
+      }, 0);
     }
   };
 
@@ -61,10 +134,14 @@ const NoteItem: React.FC<NoteItemProps> = ({
   };
 
   const handleCancel = () => {
+    isCancelingRef.current = true;
     setEditTitle(note.title);
     setEditDescription(note.description || '');
     setEditContent(note.content);
     setIsEditing(false);
+    setTimeout(() => {
+      isCancelingRef.current = false;
+    }, 0);
   };
 
   const handleEditClick = (e: React.MouseEvent) => {
@@ -235,7 +312,7 @@ const NoteItem: React.FC<NoteItemProps> = ({
         {isExpanded && (
           <div className="mt-4 border-t border-base-300 pt-4">
             {isEditing ? (
-              <div className="space-y-4">
+              <div className="space-y-4" ref={editingContainerRef}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="form-control">
                     <label className="label">
@@ -244,7 +321,7 @@ const NoteItem: React.FC<NoteItemProps> = ({
                     <input
                       type="text"
                       value={editTitle}
-                      onChange={(e) => setEditTitle(e.target.value)}
+                      onChange={(e) => handleInputChange('title', e.target.value)}
                       className="input input-bordered"
                       placeholder="Note title..."
                       required
@@ -257,7 +334,7 @@ const NoteItem: React.FC<NoteItemProps> = ({
                     <input
                       type="text"
                       value={editDescription}
-                      onChange={(e) => setEditDescription(e.target.value)}
+                      onChange={(e) => handleInputChange('description', e.target.value)}
                       className="input input-bordered"
                       placeholder="Brief description (optional)..."
                     />
@@ -270,7 +347,7 @@ const NoteItem: React.FC<NoteItemProps> = ({
                   </label>
                   <EnhancedTextEditor
                     value={editContent}
-                    onChange={setEditContent}
+                    onChange={(value) => handleInputChange('content', value)}
                     placeholder="Enter your note content here... (Markdown supported)"
                   />
                 </div>
@@ -305,6 +382,7 @@ const NoteItem: React.FC<NoteItemProps> = ({
           </div>
         )}
       </div>
+
     </div>
   );
 };

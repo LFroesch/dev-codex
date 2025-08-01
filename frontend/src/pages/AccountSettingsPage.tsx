@@ -16,7 +16,9 @@ const AccountSettingsPage: React.FC = () => {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [unlinkingGoogle, setUnlinkingGoogle] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -39,6 +41,25 @@ const AccountSettingsPage: React.FC = () => {
 
     loadUserData();
   }, [navigate]);
+
+  useEffect(() => {
+    // Handle Google linking URL params
+    const urlParams = new URLSearchParams(window.location.search);
+    const googleLinked = urlParams.get('google_linked');
+    const message = urlParams.get('message');
+
+    if (googleLinked === 'success') {
+      setSuccess('Google account linked successfully!');
+      // Refresh user data to show updated state
+      authAPI.getMe().then(response => setUser(response.user)).catch(() => {});
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (googleLinked === 'error') {
+      setError(message ? decodeURIComponent(message) : 'Failed to link Google account');
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
 
   const handleThemeChange = async (newTheme: string) => {
     setSaving(true);
@@ -65,6 +86,30 @@ const AccountSettingsPage: React.FC = () => {
       document.documentElement.setAttribute('data-theme', previousTheme);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleLinkGoogle = () => {
+    setError('');
+    setSuccess('');
+    authAPI.linkGoogle();
+  };
+
+  const handleUnlinkGoogle = async () => {
+    setUnlinkingGoogle(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      await authAPI.unlinkGoogle();
+      setSuccess('Google account unlinked successfully!');
+      // Refresh user data to show updated state
+      const response = await authAPI.getMe();
+      setUser(response.user);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to unlink Google account');
+    } finally {
+      setUnlinkingGoogle(false);
     }
   };
 
@@ -109,6 +154,17 @@ const AccountSettingsPage: React.FC = () => {
             Back to Projects
           </button>
         </div>
+
+        {/* Success Display */}
+        {success && (
+          <div className="alert alert-success mb-6">
+            <svg className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>{success}</span>
+            <button onClick={() => setSuccess('')} className="btn btn-ghost btn-sm">×</button>
+          </div>
+        )}
 
         {/* Error Display */}
         {error && (
@@ -175,6 +231,76 @@ const AccountSettingsPage: React.FC = () => {
               <h3 className="font-semibold mb-2">Current Theme: {currentTheme}</h3>
               <div className="text-sm text-base-content/60">
                   <p>Theme preference is saved to your account and will be applied across all devices.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="divider"></div>
+
+          {/* Account Connections */}
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-2xl font-bold mb-2">Account Connections</h2>
+              <p className="text-base-content/60">
+                Link your account with external services for easier sign-in.
+              </p>
+            </div>
+
+            {/* Google Account */}
+            <div className="bg-base-200 rounded-lg p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                    <svg className="w-6 h-6" viewBox="0 0 24 24">
+                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-lg">Google</h3>
+                    <p className="text-base-content/60 text-sm">
+                      {user?.hasGoogleAccount 
+                        ? 'Your Google account is connected' 
+                        : 'Connect your Google account for easier sign-in'
+                      }
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  {user?.hasGoogleAccount ? (
+                    <>
+                      <div className="badge badge-success gap-2">
+                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                        Connected
+                      </div>
+                      <button
+                        onClick={handleUnlinkGoogle}
+                        disabled={unlinkingGoogle}
+                        className="btn btn-error btn-sm"
+                      >
+                        {unlinkingGoogle ? (
+                          <>
+                            <span className="loading loading-spinner loading-xs"></span>
+                            Unlinking...
+                          </>
+                        ) : (
+                          'Unlink'
+                        )}
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={handleLinkGoogle}
+                      className="btn btn-primary btn-sm"
+                    >
+                      Link Google Account
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>

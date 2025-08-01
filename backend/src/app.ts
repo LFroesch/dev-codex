@@ -1,12 +1,16 @@
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import passport from 'passport';
 import dotenv from 'dotenv';
 import { connectDatabase } from './config/database';
 import authRoutes from './routes/auth';
 import projectRoutes from './routes/projects';
+import billingRoutes from './routes/billing';
+import adminRoutes from './routes/admin';
 
 dotenv.config();
+
 
 const app = express();
 const PORT = process.env.PORT || 5003;
@@ -17,11 +21,17 @@ app.use(cors({
   credentials: true // Allow cookies to be sent
 }));
 app.use(cookieParser());
+
+// Raw body parser for Stripe webhooks (must be before express.json())
+app.use('/api/billing/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
+app.use(passport.initialize());
 
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
+app.use('/api/billing', billingRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

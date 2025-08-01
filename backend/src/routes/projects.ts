@@ -1,6 +1,7 @@
 import express from 'express';
 import { Project } from '../models/Project';
 import { requireAuth, AuthRequest } from '../middleware/auth';
+import { checkProjectLimit } from '../middleware/planLimits';
 import { v4 as uuidv4 } from 'uuid';
 
 const router = express.Router();
@@ -9,7 +10,7 @@ const router = express.Router();
 router.use(requireAuth);
 
 // Create project
-router.post('/', async (req: AuthRequest, res) => {
+router.post('/', checkProjectLimit, async (req: AuthRequest, res) => {
   try {
     const { name, description, stagingEnvironment, color, category, tags } = req.body;
 

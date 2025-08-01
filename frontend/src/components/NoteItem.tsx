@@ -45,7 +45,7 @@ const NoteItem: React.FC<NoteItemProps> = ({
       if (isEditing && (editTitle.trim() !== note.title || editDescription.trim() !== (note.description || '') || editContent.trim() !== note.content)) {
         handleSave();
       }
-    }, 15000); // 15 seconds
+    }, 30000); // 30 seconds
   };
 
   // Handle blur events (clicking outside)

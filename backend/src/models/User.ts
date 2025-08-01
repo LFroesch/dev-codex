@@ -6,7 +6,16 @@ export interface IUser extends Document {
   password: string;
   firstName: string;
   lastName: string;
-  theme: string; // NEW: Store user's preferred theme
+  theme: string;
+  planTier: 'free' | 'pro' | 'enterprise';
+  projectLimit: number;
+  stripeCustomerId?: string;
+  subscriptionId?: string;
+  subscriptionStatus?: 'active' | 'inactive' | 'cancelled' | 'past_due';
+  isAdmin: boolean;
+  resetPasswordToken?: string;
+  resetPasswordExpires?: Date;
+  googleId?: string;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(password: string): Promise<boolean>;
@@ -45,6 +54,44 @@ const userSchema = new Schema<IUser>({
       "wireframe", "black", "luxury", "dracula", "cmyk", "autumn", 
       "business", "acid", "lemonade", "night", "coffee", "winter", "dim"
     ]
+  },
+  planTier: {
+    type: String,
+    enum: ['free', 'pro', 'enterprise'],
+    default: 'free'
+  },
+  projectLimit: {
+    type: Number,
+    default: 3
+  },
+  stripeCustomerId: {
+    type: String,
+    required: false
+  },
+  subscriptionId: {
+    type: String,
+    required: false
+  },
+  subscriptionStatus: {
+    type: String,
+    enum: ['active', 'inactive', 'cancelled', 'past_due'],
+    default: 'inactive'
+  },
+  isAdmin: {
+    type: Boolean,
+    default: false
+  },
+  resetPasswordToken: {
+    type: String,
+    required: false
+  },
+  resetPasswordExpires: {
+    type: Date,
+    required: false
+  },
+  googleId: {
+    type: String,
+    required: false
   }
 }, {
   timestamps: true

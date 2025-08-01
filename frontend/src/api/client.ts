@@ -14,6 +14,7 @@ export interface User {
   firstName: string;
   lastName: string;
   theme: string; // NEW: User's preferred theme
+  hasGoogleAccount?: boolean;
 }
 
 // NEW: Individual note interface
@@ -238,6 +239,13 @@ export const authAPI = {
   
   updateTheme: (theme: string): Promise<{ message: string; user: User }> =>
     apiClient.patch('/auth/theme', { theme }).then(res => res.data),
+  
+  linkGoogle: (): void => {
+    window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:5003'}/api/auth/google/link`;
+  },
+  
+  unlinkGoogle: (): Promise<{ message: string }> =>
+    apiClient.delete('/auth/google/unlink').then(res => res.data),
 };
 
 export const projectAPI = {

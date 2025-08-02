@@ -225,6 +225,38 @@ export interface CreatePackageData {
   description?: string;
 }
 
+// Analytics API
+export const analyticsAPI = {
+  getUserAnalytics: async (days: number = 30) => {
+    const response = await apiClient.get(`/analytics/me?days=${days}`);
+    return response.data;
+  },
+
+  getAdminAnalytics: async (userId?: string, days: number = 30) => {
+    const endpoint = userId ? `/analytics/user/${userId}?days=${days}` : `/analytics/me?days=${days}`;
+    const response = await apiClient.get(endpoint);
+    return response.data;
+  },
+
+  trackCustomEvent: async (eventType: string, eventData: any) => {
+    const response = await apiClient.post('/analytics/track', {
+      eventType,
+      eventData
+    });
+    return response.data;
+  },
+
+  getActiveSession: async () => {
+    const response = await apiClient.get('/analytics/session/active');
+    return response.data;
+  },
+
+  resetAllAnalytics: async () => {
+    const response = await apiClient.delete('/admin/analytics/reset');
+    return response.data;
+  }
+};
+
 export const authAPI = {
   register: (data: RegisterData): Promise<AuthResponse> =>
     apiClient.post('/auth/register', data).then(res => res.data),

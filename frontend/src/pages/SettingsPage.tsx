@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import { Project, projectAPI } from '../api/client';
+import ExportSection from '../components/ExportSection';
 
 interface ContextType {
   selectedProject: Project | null;
@@ -713,6 +714,17 @@ const SettingsPage: React.FC = () => {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Export Data */}
+      <div className="collapse collapse-arrow bg-base-100 shadow-md">
+        <input type="checkbox" />
+        <div className="collapse-title text-xl font-medium">
+          📤 Export Data
+        </div>
+        <div className="collapse-content">
+          <ExportSection selectedProject={selectedProject} />
         </div>
       </div>
 

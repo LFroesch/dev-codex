@@ -1,0 +1,98 @@
+import express from 'express';
+import { requireAuth, AuthRequest } from '../middleware/auth';
+import RateLimit from '../models/RateLimit';
+
+const router = express.Router();
+
+// Only enable debug routes in development
+if (process.env.NODE_ENV !== 'production') {
+  
+  // Clear rate limits for current user
+  router.delete('/rate-limits/me', requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const deleted = await RateLimit.deleteMany({
+        identifier: req.userId,
+        type: 'user'
+      });
+      
+      res.json({ 
+        message: 'Rate limits cleared',
+        deletedCount: deleted.deletedCount 
+      });
+    } catch (error) {
+      console.error('Error clearing rate limits:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  // Clear rate limits for current IP
+  router.delete('/rate-limits/ip', async (req, res) => {
+    try {
+      const ip = req.ip || req.connection?.remoteAddress || 'unknown';
+      const deleted = await RateLimit.deleteMany({
+        identifier: ip,
+        type: 'ip'
+      });
+      
+      res.json({ 
+        message: 'IP rate limits cleared',
+        deletedCount: deleted.deletedCount 
+      });
+    } catch (error) {
+      console.error('Error clearing IP rate limits:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  // Get current rate limit status
+  router.get('/rate-limits/status', requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const userLimits = await RateLimit.find({
+        identifier: req.userId,
+        type: 'user'
+      });
+
+      const ip = req.ip || req.connection?.remoteAddress || 'unknown';
+      const ipLimits = await RateLimit.find({
+        identifier: ip,
+        type: 'ip'
+      });
+
+      res.json({
+        userLimits: userLimits.map(limit => ({
+          endpoint: limit.endpoint,
+          count: limit.count,
+          windowStart: limit.windowStart,
+          windowDurationMs: limit.windowDurationMs
+        })),
+        ipLimits: ipLimits.map(limit => ({
+          endpoint: limit.endpoint,
+          count: limit.count,
+          windowStart: limit.windowStart,
+          windowDurationMs: limit.windowDurationMs
+        }))
+      });
+    } catch (error) {
+      console.error('Error getting rate limit status:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  // Clear all rate limits (admin only)
+  router.delete('/rate-limits/all', requireAuth, async (req: AuthRequest, res) => {
+    try {
+      // Add admin check here if you have admin users
+      const deleted = await RateLimit.deleteMany({});
+      
+      res.json({ 
+        message: 'All rate limits cleared',
+        deletedCount: deleted.deletedCount 
+      });
+    } catch (error) {
+      console.error('Error clearing all rate limits:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+}
+
+export default router;

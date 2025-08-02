@@ -13,10 +13,18 @@ import CreateProject from './pages/CreateProject';
 import NotesPage from './pages/NotesPage';
 import RoadmapPage from './pages/RoadmapPage';
 import DocsPage from './pages/DocsPage';
+import DeploymentPage from './pages/DeploymentPage';
+import PublicPage from './pages/PublicPage';
 import SettingsPage from './pages/SettingsPage';
+import DiscoverPage from './pages/DiscoverPage';
 import AccountSettingsPage from './pages/AccountSettingsPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import SupportPage from './pages/SupportPage';
+
+// Import debug utils in development
+if (import.meta.env.DEV) {
+  import('./utils/debugUtils');
+}
 
 const queryClient = new QueryClient();
 
@@ -39,6 +47,7 @@ const App: React.FC = () => {
           <Route path="/billing/success" element={<BillingSuccessPage />} />
           <Route path="/billing/cancel" element={<BillingCancelPage />} />
           <Route path="/create-project" element={<CreateProject />} />
+          <Route path="/discover" element={<DiscoverPage />} />
           <Route path="/account-settings" element={<AccountSettingsPage />} />
           <Route path="/admin" element={<AdminDashboardPage />} />
           <Route path="/support" element={<SupportPage />} />
@@ -47,6 +56,8 @@ const App: React.FC = () => {
             <Route path="notes" element={<NotesPage />} />
             <Route path="roadmap" element={<RoadmapPage />} />
             <Route path="docs" element={<DocsPage />} />
+            <Route path="deployment" element={<DeploymentPage />} />
+            <Route path="public" element={<PublicPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/login" />} />

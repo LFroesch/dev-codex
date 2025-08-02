@@ -12,6 +12,11 @@ export const checkProjectLimit = async (req: AuthRequest, res: Response, next: N
       return res.status(404).json({ error: 'User not found' });
     }
 
+    // Bypass limits for admin users
+    if (user.isAdmin) {
+      return next();
+    }
+
     // Unlimited projects for enterprise users
     if (user.projectLimit === -1) {
       return next();

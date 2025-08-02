@@ -455,6 +455,7 @@ const AdminDashboardPage: React.FC = () => {
                     <th>User</th>
                     <th>Email</th>
                     <th>Plan</th>
+                    <th>Projects</th>
                     <th>Status</th>
                     <th>Joined</th>
                     <th>Admin</th>
@@ -484,6 +485,11 @@ const AdminDashboardPage: React.FC = () => {
                             <li><a onClick={() => updateUserPlan(user._id, 'pro')}>Pro</a></li>
                             <li><a onClick={() => updateUserPlan(user._id, 'enterprise')}>Enterprise</a></li>
                           </ul>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="text-center">
+                          <span className="font-semibold">{user.projectCount || 0}</span>
                         </div>
                       </td>
                       <td>

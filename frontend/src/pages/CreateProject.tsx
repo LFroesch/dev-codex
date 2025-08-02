@@ -42,8 +42,10 @@ const CreateProject: React.FC = () => {
         stagingEnvironment: formData.stagingEnvironment,
       });
       navigate('/');
-    } catch (err) {
-      setError('Failed to create project');
+    } catch (err: any) {
+      // Extract the specific error message from the API response
+      const errorMessage = err.response?.data?.message || err.response?.data?.error || 'Failed to create project';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -94,12 +96,12 @@ const CreateProject: React.FC = () => {
               <h2 className="card-title text-xl">Project Details</h2>
               <button
                 onClick={() => navigate('/')}
-                className="btn btn-ghost gap-2"
+                className="btn btn-primary gap-2"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
-                Cancel
+                Back to Projects
               </button>
             </div>
 
@@ -153,7 +155,7 @@ const CreateProject: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => navigate('/')}
-                  className="btn btn-ghost"
+                  className="btn btn-outline"
                 >
                   Cancel
                 </button>

@@ -101,15 +101,28 @@ export class AnalyticsService {
         $inc: { totalEvents: 1 }
       };
 
-      if (eventData.projectId) {
-        updateData.$addToSet = { projectsViewed: eventData.projectId };
-      }
+      // Handle heartbeat updates differently
+      if (eventData.heartbeat) {
+        updateData.lastActivity = eventData.timestamp || new Date();
+        // Don't increment totalEvents for heartbeats
+        delete updateData.$inc;
+        
+        // Track visibility state if provided
+        if (typeof eventData.isVisible === 'boolean') {
+          updateData.isVisible = eventData.isVisible;
+        }
+      } else {
+        // Regular event updates
+        if (eventData.projectId) {
+          updateData.$addToSet = { projectsViewed: eventData.projectId };
+        }
 
-      if (eventData.pageName) {
-        updateData.$addToSet = { 
-          ...updateData.$addToSet,
-          pagesVisited: eventData.pageName 
-        };
+        if (eventData.pageName) {
+          updateData.$addToSet = { 
+            ...updateData.$addToSet,
+            pagesVisited: eventData.pageName 
+          };
+        }
       }
 
       await UserSession.updateOne({ sessionId }, updateData);
@@ -202,11 +215,49 @@ export const trackProjectAccess = (req: AuthenticatedRequest, res: Response, nex
     if (req.userId && res.statusCode < 400) {
       const projectId = req.params.id || req.params.projectId;
       if (projectId) {
-        AnalyticsService.trackEvent(req.userId, 'project_open', {
-          projectId,
-          endpoint: req.path,
-          method: req.method
-        }, req).catch(console.error);
+        // Track project access asynchronously without blocking the response
+        (async () => {
+          try {
+            // Try to get project name from the response data first
+            let projectName = 'Unknown Project';
+            
+            if (data && typeof data === 'string') {
+              try {
+                const parsedData = JSON.parse(data);
+                if (parsedData.name) {
+                  projectName = parsedData.name;
+                }
+              } catch (e) {
+                // Not JSON, continue with fallback
+              }
+            } else if (data && typeof data === 'object' && data.name) {
+              projectName = data.name;
+            }
+            
+            // If we still don't have a name, try to fetch it from the database
+            if (projectName === 'Unknown Project') {
+              const { Project } = await import('../models/Project');
+              const project = await Project.findById(projectId).select('name').lean();
+              if (project) {
+                projectName = project.name;
+              }
+            }
+
+            AnalyticsService.trackEvent(req.userId!, 'project_open', {
+              projectId,
+              projectName,
+              endpoint: req.path,
+              method: req.method
+            }, req).catch(console.error);
+          } catch (error) {
+            // Fallback to tracking without project name if there's an error
+            AnalyticsService.trackEvent(req.userId!, 'project_open', {
+              projectId,
+              endpoint: req.path,
+              method: req.method
+            }, req).catch(console.error);
+          }
+        })();
       }
     }
     return originalSend.call(this, data);

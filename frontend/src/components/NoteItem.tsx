@@ -22,6 +22,7 @@ const NoteItem: React.FC<NoteItemProps> = ({
   const [editDescription, setEditDescription] = useState(note.description || '');
   const [editContent, setEditContent] = useState(note.content);
   const [loading, setLoading] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
   const autoSaveTimeoutRef = useRef<number | null>(null);
   const editingContainerRef = useRef<HTMLDivElement>(null);
@@ -123,13 +124,13 @@ const NoteItem: React.FC<NoteItemProps> = ({
   };
 
   const handleDelete = async () => {
-    if (window.confirm('Are you sure you want to delete this note?')) {
-      try {
-        await projectAPI.deleteNote(projectId, note.id);
-        onUpdate();
-      } catch (error) {
-        console.error('Failed to delete note:', error);
-      }
+    try {
+      await projectAPI.deleteNote(projectId, note.id);
+      onUpdate();
+      setShowDeleteConfirm(false);
+    } catch (error) {
+      console.error('Failed to delete note:', error);
+      setShowDeleteConfirm(false);
     }
   };
 
@@ -154,7 +155,7 @@ const NoteItem: React.FC<NoteItemProps> = ({
 
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent toggling expand when clicking delete
-    handleDelete();
+    setShowDeleteConfirm(true);
   };
 
   // Enhanced markdown to HTML converter
@@ -383,6 +384,42 @@ const NoteItem: React.FC<NoteItemProps> = ({
         )}
       </div>
 
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-base-100 rounded-lg shadow-xl p-6 w-full max-w-md">
+            <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-error/10 rounded-full">
+              <svg className="w-8 h-8 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            
+            <h3 className="text-xl font-bold text-center mb-4">Delete Note</h3>
+            
+            <p className="text-center text-base-content/70 mb-6">
+              Are you sure you want to delete "<strong>{note.title}</strong>"? This action cannot be undone.
+            </p>
+
+            <div className="flex gap-3">
+              <button 
+                className="btn btn-ghost flex-1"
+                onClick={() => setShowDeleteConfirm(false)}
+              >
+                Cancel
+              </button>
+              <button 
+                className="btn btn-error flex-1"
+                onClick={handleDelete}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                Delete Note
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -397,6 +434,7 @@ const NewNoteForm: React.FC<NewNoteFormProps> = ({ projectId, onAdd }) => {
   const [description, setDescription] = useState('');
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -412,6 +450,7 @@ const NewNoteForm: React.FC<NewNoteFormProps> = ({ projectId, onAdd }) => {
       setTitle('');
       setDescription('');
       setContent('');
+      setIsExpanded(false);
       onAdd();
     } catch (error) {
       console.error('Failed to create note:', error);
@@ -422,7 +461,11 @@ const NewNoteForm: React.FC<NewNoteFormProps> = ({ projectId, onAdd }) => {
 
   return (
     <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10 mb-4">
-      <input type="checkbox" />
+      <input 
+        type="checkbox" 
+        checked={isExpanded}
+        onChange={(e) => setIsExpanded(e.target.checked)}
+      />
       <div className="collapse-title text-lg font-semibold bg-base-200 border-b border-base-content/10">
         Create New Note
       </div>

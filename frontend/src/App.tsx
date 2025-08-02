@@ -15,6 +15,8 @@ import RoadmapPage from './pages/RoadmapPage';
 import DocsPage from './pages/DocsPage';
 import SettingsPage from './pages/SettingsPage';
 import AccountSettingsPage from './pages/AccountSettingsPage';
+import AdminDashboardPage from './pages/AdminDashboardPage';
+import SupportPage from './pages/SupportPage';
 
 const queryClient = new QueryClient();
 
@@ -38,6 +40,8 @@ const App: React.FC = () => {
           <Route path="/billing/cancel" element={<BillingCancelPage />} />
           <Route path="/create-project" element={<CreateProject />} />
           <Route path="/account-settings" element={<AccountSettingsPage />} />
+          <Route path="/admin" element={<AdminDashboardPage />} />
+          <Route path="/support" element={<SupportPage />} />
           <Route path="/" element={<Layout />}>
             <Route index element={<Navigate to="/notes" />} />
             <Route path="notes" element={<NotesPage />} />

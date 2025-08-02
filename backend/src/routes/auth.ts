@@ -8,6 +8,7 @@ import crypto from 'crypto';
 import dotenv from 'dotenv';
 import { User } from '../models/User';
 import { requireAuth, AuthRequest } from '../middleware/auth';
+import RateLimit from '../models/RateLimit';
 
 dotenv.config();
 
@@ -449,5 +450,21 @@ router.post('/reset-password', async (req, res) => {
     res.status(500).json({ message: 'Failed to reset password' });
   }
 });
+
+// Emergency clear rate limits endpoint (development only)
+if (process.env.NODE_ENV !== 'production') {
+  router.post('/clear-rate-limits', async (req, res) => {
+    try {
+      const result = await RateLimit.deleteMany({});
+      res.json({ 
+        message: 'All rate limits cleared',
+        deletedCount: result.deletedCount 
+      });
+    } catch (error) {
+      console.error('Error clearing rate limits:', error);
+      res.status(500).json({ error: 'Failed to clear rate limits' });
+    }
+  });
+}
 
 export default router;

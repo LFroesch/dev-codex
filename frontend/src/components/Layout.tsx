@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation, Link } from 'react-router-dom';
 import { authAPI, projectAPI, Project } from '../api/client';
+import SessionTracker from './SessionTracker';
+import { useAnalytics } from '../hooks/useAnalytics';
 
 const Layout: React.FC = () => {
   const navigate = useNavigate();
@@ -11,6 +13,13 @@ const Layout: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  
+  // Initialize analytics
+  useAnalytics({
+    trackPageViews: true,
+    projectId: selectedProject?.id,
+    projectName: selectedProject?.name
+  });
   
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -207,6 +216,8 @@ const Layout: React.FC = () => {
     { id: 'notes', label: 'Notes / To Dos', path: '/notes' },
     { id: 'roadmap', label: 'Stack / Progress', path: '/roadmap' },
     { id: 'docs', label: 'Docs / Features', path: '/docs' },
+    { id: 'deployment', label: 'Deployment', path: '/deployment' },
+    { id: 'public', label: 'Public', path: '/public' },
     { id: 'settings', label: 'Settings /Info', path: '/settings' }
   ];
 
@@ -230,22 +241,29 @@ const Layout: React.FC = () => {
     <div className="min-h-screen bg-base-300 flex flex-col">
       {/* Header */}
       <div className="bg-base-100 shadow-lg border-b border-base-content/10 p-4">
-        <div className="flex justify-between items-center">
-          {/* Left section - Title and Project Controls */}
+        {/* Top Level Navigation */}
+        <div className="flex justify-between items-center mb-4">
           <div className="flex items-center gap-6">
             <h1 className="text-2xl font-bold">Dev Codex</h1>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => navigate('/create-project')}
-                className="btn btn-primary btn-sm shadow-sm"
+            <div className="tabs tabs-boxed">
+              <a 
+                className="tab tab-active cursor-pointer"
+                onClick={() => navigate('/notes')}
               >
-                Create Project
-              </button>
+                My Projects
+              </a>
+              <a 
+                className="tab cursor-pointer" 
+                onClick={() => navigate('/discover')}
+              >
+                Discover
+              </a>
             </div>
           </div>
-
-          {/* Right section - User info and settings */}
           <div className="flex items-center gap-4">
+            <div className="relative">
+              <SessionTracker />
+            </div>
             <span className="text-lg">Hi, {user?.firstName}!</span>
             <div className="relative z-50">
               <button 
@@ -305,6 +323,19 @@ const Layout: React.FC = () => {
                 </ul>
               )}
             </div>
+          </div>
+        </div>
+        
+        {/* Project Controls */}
+        <div className="flex justify-between items-center">
+          {/* Left section - Project Controls */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate('/create-project')}
+              className="btn btn-primary btn-sm shadow-sm"
+            >
+              Create Project
+            </button>
           </div>
         </div>
       </div>

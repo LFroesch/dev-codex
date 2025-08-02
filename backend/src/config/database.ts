@@ -11,7 +11,7 @@ export const connectDatabase = async (): Promise<void> => {
         throw new Error('Production MongoDB URI is required but not provided');
       }
     } else {
-      mongoUri = process.env.MONGODB_URI_DEV || process.env.MONGODB_URI || 'mongodb://localhost:27017/project-manager-dev';
+      mongoUri = process.env.MONGODB_URI_DEV || process.env.MONGODB_URI || 'mongodb://localhost:27017/dev-codex-dev';
     }
     
     console.log(`Attempting to connect to MongoDB (${nodeEnv})...`);

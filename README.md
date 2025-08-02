@@ -1,10 +1,10 @@
-# Project Manager
+# Dev Codex
 
-A comprehensive full-stack project management application designed for developers and teams to organize, track, and document their projects.
+A comprehensive full-stack development platform designed for developers and teams to organize, track, and document their projects with modern tools and workflows.
 
 ## Features
 
-- **Project Management**: Create, organize, and track multiple projects
+- **Project Organization**: Create, organize, and track multiple development projects
 - **Todo Management**: Task tracking with priorities and completion status
 - **Notes System**: Rich text notes with individual entries per project
 - **Development Log**: Track progress and document development milestones

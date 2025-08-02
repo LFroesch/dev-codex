@@ -1,7 +1,7 @@
 {
-  "name": "project-manager-backend",
+  "name": "dev-codex-backend",
   "version": "1.0.0",
-  "description": "Backend for project management app",
+  "description": "Backend for Dev Codex app",
   "main": "dist/app.js",
   "scripts": {
     "start": "node dist/app.js",
@@ -9,7 +9,10 @@
     "build": "tsc",
     "create-admin": "ts-node src/scripts/create-admin.ts",
     "reset-password": "ts-node src/scripts/reset-user-password.ts",
-    "setup-stripe": "ts-node src/scripts/setup-stripe.ts"
+    "setup-stripe": "ts-node src/scripts/setup-stripe.ts",
+    "fix-user-plan": "ts-node src/scripts/fix-user-plan.ts",
+    "debug-billing": "ts-node src/scripts/debug-billing.ts",
+    "nuke-billing": "ts-node src/scripts/nuke-billing.ts"
   },
   "dependencies": {
     "@types/nodemailer": "^6.4.17",

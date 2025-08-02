@@ -33,12 +33,10 @@ const Layout: React.FC = () => {
     return localStorage.getItem('theme') || 'cyberpunk';
   });
   const [collapsedSections, setCollapsedSections] = useState<{
-    current: boolean;
-    archived: boolean;
-    shared: boolean;
+    [key: string]: boolean;
   }>(() => {
     const saved = localStorage.getItem('collapsedSections');
-    return saved ? JSON.parse(saved) : { current: false, archived: false, shared: false };
+    return saved ? JSON.parse(saved) : {};
   });
 
   // Apply theme on mount
@@ -59,17 +57,38 @@ const Layout: React.FC = () => {
   };
 
   // Toggle section collapse
-  const toggleSection = (section: 'current' | 'archived' | 'shared') => {
+  const toggleSection = (section: string) => {
     setCollapsedSections(prev => ({
       ...prev,
       [section]: !prev[section]
     }));
   };
 
+  // Group projects by category
+  const groupProjectsByCategory = (projects: Project[]) => {
+    const grouped: { [category: string]: Project[] } = {};
+    
+    projects.forEach(project => {
+      const category = project.category || 'General';
+      const normalizedCategory = category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
+      
+      if (!grouped[normalizedCategory]) {
+        grouped[normalizedCategory] = [];
+      }
+      grouped[normalizedCategory].push(project);
+    });
+    
+    // Sort projects within each category alphabetically
+    Object.keys(grouped).forEach(category => {
+      grouped[category].sort((a, b) => a.name.localeCompare(b.name));
+    });
+    
+    return grouped;
+  };
+
   const loadProjects = async () => {
     try {
       const projectsResponse = await projectAPI.getAll();
-      console.log('Projects loaded:', projectsResponse.projects);
       setProjects(projectsResponse.projects);
       
       // Try to restore previously selected project
@@ -140,14 +159,11 @@ const Layout: React.FC = () => {
 
   const handleProjectUpdate = async (projectId: string, updatedData: any) => {
     try {
-      console.log('Updating project:', projectId, updatedData);
-      
       if (!projectId || projectId === 'undefined') {
         throw new Error('Invalid project ID');
       }
 
       const response = await projectAPI.update(projectId, updatedData);
-      console.log('Update response:', response);
       await loadProjects();
       return response;
     } catch (error) {
@@ -196,15 +212,19 @@ const Layout: React.FC = () => {
 
   const currentTab = location.pathname.slice(1) || 'notes';
 
-  // Filter and separate projects by archive status and sort alphabetically
+  // Filter projects and group by category
   const filteredProjects = projects.filter(p => 
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (p.category && p.category.toLowerCase().includes(searchTerm.toLowerCase()))
   );
   
-  const currentProjects = filteredProjects.filter(p => !p.isArchived).sort((a, b) => a.name.localeCompare(b.name));
-  const archivedProjects = filteredProjects.filter(p => p.isArchived).sort((a, b) => a.name.localeCompare(b.name));
-  const sharedProjects = filteredProjects.filter(p => p.isShared).sort((a, b) => a.name.localeCompare(b.name));
+  const currentProjects = filteredProjects.filter(p => !p.isArchived && !p.isShared);
+  const archivedProjects = filteredProjects.filter(p => p.isArchived);
+  const sharedProjects = filteredProjects.filter(p => p.isShared);
+  
+  const groupedCurrentProjects = groupProjectsByCategory(currentProjects);
+  const groupedArchivedProjects = groupProjectsByCategory(archivedProjects);
+  const groupedSharedProjects = groupProjectsByCategory(sharedProjects);
 
   return (
     <div className="min-h-screen bg-base-300 flex flex-col">
@@ -213,7 +233,7 @@ const Layout: React.FC = () => {
         <div className="flex justify-between items-center">
           {/* Left section - Title and Project Controls */}
           <div className="flex items-center gap-6">
-            <h1 className="text-2xl font-bold">Project Manager</h1>
+            <h1 className="text-2xl font-bold">Dev Codex</h1>
             <div className="flex items-center gap-3">
               <button
                 onClick={() => navigate('/create-project')}
@@ -223,36 +243,6 @@ const Layout: React.FC = () => {
               </button>
             </div>
           </div>
-          
-          {/* Development-only links */}
-          {import.meta.env.DEV && (
-            <div className="flex items-center w-1/3 gap-3">
-              <a 
-                href="https://excalidraw.com/" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="btn btn-outline btn-sm shadow-sm border-base-content/20"
-              >
-                Excalidraw
-              </a>
-              <a 
-                href="http://localhost:5006" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="btn btn-outline btn-sm shadow-sm border-base-content/20"
-              >
-                FreshNotes
-              </a>
-              <a 
-                href="http://localhost:5004/posts" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="btn btn-outline btn-sm shadow-sm border-base-content/20"
-              >
-                Gator
-              </a>
-            </div>
-          )}
 
           {/* Right section - User info and settings */}
           <div className="flex items-center gap-4">
@@ -295,6 +285,14 @@ const Layout: React.FC = () => {
                     </a>
                   </li>
                 )}
+                <li>
+                  <a onClick={() => { navigate('/support'); setDropdownOpen(false); }}>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Contact Support
+                  </a>
+                </li>
                 <div className="divider my-1"></div>
                 <li>
                   <a onClick={() => { handleLogout(); setDropdownOpen(false); }} className="text-error">
@@ -313,75 +311,122 @@ const Layout: React.FC = () => {
 
       <div className="flex flex-1">
         {/* Sidebar */}
-        <div className="w-64 bg-base-100 shadow-lg border-r border-base-content/10 p-6">
+        <div className="bg-gradient-to-b from-base-100 to-base-200/50 backdrop-blur-sm border-r border-base-content/20 p-6" style={{ width: '320px' }}>
           {/* Search Projects */}
-          <div className="mb-6">
-            <input
-              type="text"
-              placeholder="Search projects..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="input input-bordered input-sm w-full shadow-sm"
-            />
+          <div className="mb-8">
+            <div className="relative">
+              <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-base-content/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="text"
+                placeholder="Search projects..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="input input-bordered w-full pl-10 pr-4 py-3 rounded-xl bg-base-200/50 border-base-content/10 focus:border-primary/50 focus:bg-base-100 transition-all duration-200 placeholder:text-base-content/50"
+              />
+            </div>
           </div>
           
-          {/* Current Projects */}
-          <div className="mb-6">
+          {/* Active Projects */}
+          <div className="mb-4">
             <div 
-              className="flex items-center justify-between cursor-pointer mb-4 p-2 rounded-lg hover:bg-base-200 transition-colors"
-              onClick={() => toggleSection('current')}
+              className="group flex items-center cursor-pointer mb-3 p-3 rounded-xl hover:bg-gradient-to-r hover:from-primary/10 hover:to-primary/5 transition-all duration-300 hover:shadow-md hover:scale-[1.01]"
+              onClick={() => toggleSection('active')}
             >
-              <h3 className="font-bold text-lg text-info flex items-center">
-                Current
-                <span className="ml-2 text-sm bg-primary/20 text-primary px-2 py-1 rounded-full shadow-sm">
-                  {currentProjects.length}
-                </span>
-              </h3>
-              <svg 
-                className={`w-5 h-5 transition-transform ${collapsedSections.current ? 'rotate-180' : ''}`}
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
+              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg mr-4">
+                <svg 
+                  className={`w-5 h-5 text-white transition-transform duration-300 ${collapsedSections.active ? 'rotate-0' : 'rotate-90'}`}
+                  fill="currentColor" 
+                  viewBox="0 0 20 20"
+                >
+                  <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-xl text-base-content group-hover:text-primary transition-colors duration-200">
+                  Active
+                </h3>
+                <p className="text-xs text-base-content/60">{currentProjects.length} projects</p>
+              </div>
+              <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-primary/20 text-primary text-xs font-bold shadow-sm">
+                {currentProjects.length}
+              </div>
             </div>
-            {!collapsedSections.current && (
-              <div className="space-y-1">
-                {currentProjects.length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-base-content/60 mb-4">No projects yet</p>
+            {!collapsedSections.active && (
+              <div className="ml-4 space-y-2">
+                {Object.keys(groupedCurrentProjects).length === 0 ? (
+                  <div className="text-center py-4 bg-gradient-to-br from-base-200/30 to-base-300/20 rounded-xl border-2 border-dashed border-primary/20">
+                    <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center shadow-md">
+                      <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                    </div>
+                    <p className="text-base-content/70 mb-3 text-sm font-medium">No active projects</p>
                     <button
                       onClick={() => navigate('/create-project')}
-                      className="btn btn-primary btn-sm shadow-sm"
+                      className="btn btn-primary btn-sm rounded-lg shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 bg-gradient-to-r from-primary to-primary/80"
                     >
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
                       Create Project
                     </button>
                   </div>
                 ) : (
-                  currentProjects.map((project) => (
-                    <div
-                      key={project.id}
-                      onClick={() => {
-                        console.log('Selecting project:', project);
-                        handleProjectSelect(project);
-                      }}
-                      className={`flex items-center cursor-pointer p-3 rounded-lg border transition-all ${
-                        selectedProject?.id === project.id 
-                          ? 'bg-primary/20 border-primary/30 shadow-sm' 
-                          : 'hover:bg-base-200 border-transparent hover:border-base-content/10 hover:shadow-sm'
-                      }`}
-                    >
+                  Object.entries(groupedCurrentProjects).map(([category, categoryProjects]) => (
+                    <div key={category} className="mb-3">
                       <div 
-                        className="w-4 h-4 rounded-full mr-3 shadow-sm"
-                        style={{ backgroundColor: project.color }}
-                      ></div>
-                      <div className="flex-1">
-                        <span className="font-medium">{project.name}</span>
-                        {project.category && project.category !== 'general' && (
-                          <div className="text-sm text-base-content/60">{project.category}</div>
-                        )}
+                        className="group flex items-center cursor-pointer p-2 rounded-lg hover:bg-gradient-to-r hover:from-amber-500/10 hover:to-amber-400/5 transition-all duration-300 hover:shadow-sm hover:scale-[1.005]"
+                        onClick={() => toggleSection(`active-${category}`)}
+                      >
+                        <div className="flex items-center justify-center w-6 h-6 rounded-lg bg-gradient-to-br from-amber-400 to-amber-500 shadow-md mr-3">
+                          <svg 
+                            className={`w-3 h-3 text-white transition-transform duration-300 ${collapsedSections[`active-${category}`] ? 'rotate-0' : 'rotate-90'}`}
+                            fill="currentColor" 
+                            viewBox="0 0 20 20"
+                          >
+                            <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                        <div className="flex-1">
+                          <span className="text-base font-semibold text-base-content group-hover:text-amber-600 transition-colors duration-200">
+                            {category}
+                          </span>
+                          <p className="text-xs text-base-content/60">{categoryProjects.length} projects</p>
+                        </div>
+                        <div className="flex items-center justify-center w-5 h-5 rounded-lg bg-amber-500/20 text-amber-700 text-xs font-bold shadow-sm">
+                          {categoryProjects.length}
+                        </div>
                       </div>
+                      {!collapsedSections[`active-${category}`] && (
+                        <div className="ml-9 space-y-1 mt-2">
+                          {categoryProjects.map((project) => (
+                            <div
+                              key={project.id}
+                              onClick={() => handleProjectSelect(project)}
+                              className={`group flex items-center cursor-pointer p-3 rounded-xl transition-all duration-300 ${
+                                selectedProject?.id === project.id 
+                                  ? 'bg-gradient-to-r from-primary/20 to-primary/10 border-2 border-primary/30 shadow-lg scale-[1.01] ring-1 ring-primary/20' 
+                                  : 'hover:bg-gradient-to-r hover:from-base-200/50 hover:to-base-300/30 hover:shadow-md hover:scale-[1.005] border-2 border-transparent'
+                              }`}
+                            >
+                              <div 
+                                className="w-4 h-4 rounded-full mr-3 shadow-md ring-2 ring-white/50"
+                                style={{ backgroundColor: project.color }}
+                              ></div>
+                              <span className={`font-medium truncate transition-colors duration-200 ${
+                                selectedProject?.id === project.id ? 'text-primary' : 'text-base-content group-hover:text-base-content/90'
+                              }`}>{project.name}</span>
+                              {selectedProject?.id === project.id && (
+                                <div className="ml-auto">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></div>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))
                 )}
@@ -390,56 +435,95 @@ const Layout: React.FC = () => {
           </div>
 
           {/* Archived Projects */}
-          <div className="mb-6">
+          <div className="mb-4">
             <div 
-              className="flex items-center justify-between cursor-pointer mb-4 p-2 rounded-lg hover:bg-base-200 transition-colors"
+              className="group flex items-center cursor-pointer mb-3 p-3 rounded-xl hover:bg-gradient-to-r hover:from-red-500/10 hover:to-red-400/5 transition-all duration-300 hover:shadow-md hover:scale-[1.01]"
               onClick={() => toggleSection('archived')}
             >
-              <h3 className="font-bold text-lg text-error flex items-center">
-                Archived
-                <span className="ml-2 text-sm bg-primary/20 text-primary px-2 py-1 rounded-full shadow-sm">
-                  {archivedProjects.length}
-                </span>
-              </h3>
-              <svg 
-                className={`w-5 h-5 transition-transform ${collapsedSections.archived ? 'rotate-180' : ''}`}
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
+              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-red-600 shadow-lg mr-4">
+                <svg 
+                  className={`w-5 h-5 text-white transition-transform duration-300 ${collapsedSections.archived ? 'rotate-0' : 'rotate-90'}`}
+                  fill="currentColor" 
+                  viewBox="0 0 20 20"
+                >
+                  <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-xl text-base-content group-hover:text-red-600 transition-colors duration-200">
+                  Archived
+                </h3>
+                <p className="text-xs text-base-content/60">{archivedProjects.length} projects</p>
+              </div>
+              <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-red-500/20 text-red-700 text-xs font-bold shadow-sm">
+                {archivedProjects.length}
+              </div>
             </div>
             {!collapsedSections.archived && (
-              <div className="space-y-1">
-                {archivedProjects.length === 0 ? (
-                  <div className="text-base-content/60 italic p-3">
-                    No archived projects
+              <div className="ml-4 space-y-2">
+                {Object.keys(groupedArchivedProjects).length === 0 ? (
+                  <div className="text-center py-4 bg-gradient-to-br from-base-200/30 to-base-300/20 rounded-xl border-2 border-dashed border-red-500/20">
+                    <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-gradient-to-br from-red-500/20 to-red-400/10 flex items-center justify-center shadow-md">
+                      <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8l4 4 6-6" />
+                      </svg>
+                    </div>
+                    <p className="text-base-content/70 text-sm font-medium">No archived projects</p>
                   </div>
                 ) : (
-                  archivedProjects.map((project) => (
-                    <div
-                      key={project.id}
-                      onClick={() => {
-                        console.log('Selecting archived project:', project);
-                        handleProjectSelect(project);
-                      }}
-                      className={`flex items-center cursor-pointer p-3 rounded-lg border transition-all ${
-                        selectedProject?.id === project.id 
-                          ? 'bg-primary/20 border-primary/30 shadow-sm' 
-                          : 'hover:bg-base-200 border-transparent hover:border-base-content/10 hover:shadow-sm'
-                      }`}
-                    >
+                  Object.entries(groupedArchivedProjects).map(([category, categoryProjects]) => (
+                    <div key={category} className="mb-3">
                       <div 
-                        className="w-4 h-4 rounded-full mr-3 shadow-sm"
-                        style={{ backgroundColor: project.color }}
-                      ></div>
-                      <div className="flex-1">
-                        <span className="font-medium">{project.name}</span>
-                        {project.category && project.category !== 'general' && (
-                          <div className="text-sm text-base-content/60">{project.category}</div>
-                        )}
+                        className="group flex items-center cursor-pointer p-2 rounded-lg hover:bg-gradient-to-r hover:from-red-500/10 hover:to-red-400/5 transition-all duration-300 hover:shadow-sm hover:scale-[1.005]"
+                        onClick={() => toggleSection(`archived-${category}`)}
+                      >
+                        <div className="flex items-center justify-center w-6 h-6 rounded-lg bg-gradient-to-br from-red-400 to-red-500 shadow-md mr-3">
+                          <svg 
+                            className={`w-3 h-3 text-white transition-transform duration-300 ${collapsedSections[`archived-${category}`] ? 'rotate-0' : 'rotate-90'}`}
+                            fill="currentColor" 
+                            viewBox="0 0 20 20"
+                          >
+                            <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                        <div className="flex-1">
+                          <span className="text-base font-semibold text-base-content group-hover:text-red-600 transition-colors duration-200">
+                            {category}
+                          </span>
+                          <p className="text-xs text-base-content/60">{categoryProjects.length} projects</p>
+                        </div>
+                        <div className="flex items-center justify-center w-5 h-5 rounded-lg bg-red-500/20 text-red-700 text-xs font-bold shadow-sm">
+                          {categoryProjects.length}
+                        </div>
                       </div>
+                      {!collapsedSections[`archived-${category}`] && (
+                        <div className="ml-9 space-y-1 mt-2">
+                          {categoryProjects.map((project) => (
+                            <div
+                              key={project.id}
+                              onClick={() => handleProjectSelect(project)}
+                              className={`group flex items-center cursor-pointer p-3 rounded-xl transition-all duration-300 ${
+                                selectedProject?.id === project.id 
+                                  ? 'bg-gradient-to-r from-primary/20 to-primary/10 border-2 border-primary/30 shadow-lg scale-[1.01] ring-1 ring-primary/20' 
+                                  : 'hover:bg-gradient-to-r hover:from-base-200/50 hover:to-base-300/30 hover:shadow-md hover:scale-[1.005] border-2 border-transparent'
+                              }`}
+                            >
+                              <div 
+                                className="w-4 h-4 rounded-full mr-3 shadow-md ring-2 ring-white/50"
+                                style={{ backgroundColor: project.color }}
+                              ></div>
+                              <span className={`font-medium truncate transition-colors duration-200 ${
+                                selectedProject?.id === project.id ? 'text-primary' : 'text-base-content group-hover:text-base-content/90'
+                              }`}>{project.name}</span>
+                              {selectedProject?.id === project.id && (
+                                <div className="ml-auto">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></div>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))
                 )}
@@ -448,62 +532,81 @@ const Layout: React.FC = () => {
           </div>
 
           {/* Shared Projects */}
-          <div className="mb-6">
-            <div 
-              className="flex items-center justify-between cursor-pointer mb-4 p-2 rounded-lg hover:bg-base-200 transition-colors"
-              onClick={() => toggleSection('shared')}
-            >
-              <h3 className="font-bold text-lg text-warning flex items-center">
-                Shared
-                <span className="ml-2 text-sm bg-primary/20 text-primary px-2 py-1 rounded-full shadow-sm">
-                  {sharedProjects.length}
-                </span>
-              </h3>
-              <svg 
-                className={`w-5 h-5 transition-transform ${collapsedSections.shared ? 'rotate-180' : ''}`}
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
+          {sharedProjects.length > 0 && (
+            <div className="mb-6">
+              <div 
+                className="flex items-center cursor-pointer mb-3 p-2 rounded-lg hover:bg-base-200 transition-colors"
+                onClick={() => toggleSection('shared')}
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </div>
-            {!collapsedSections.shared && (
-              <div className="space-y-1">
-                {sharedProjects.length === 0 ? (
-                  <div className="text-base-content/60 italic p-3">
-                    No shared projects
-                  </div>
-                ) : (
-                  sharedProjects.map((project) => (
-                    <div
-                      key={project.id}
-                      onClick={() => {
-                        console.log('Selecting shared project:', project);
-                        handleProjectSelect(project);
-                      }}
-                      className={`flex items-center cursor-pointer p-3 rounded-lg border transition-all ${
-                        selectedProject?.id === project.id 
-                          ? 'bg-primary/20 border-primary/30 shadow-sm' 
-                          : 'hover:bg-base-200 border-transparent hover:border-base-content/10 hover:shadow-sm'
-                      }`}
-                    >
-                      <div 
-                        className="w-4 h-4 rounded-full mr-3 shadow-sm"
-                        style={{ backgroundColor: project.color }}
-                      ></div>
-                      <div className="flex-1">
-                        <span className="font-medium">{project.name}</span>
-                        {project.category && project.category !== 'general' && (
-                          <div className="text-sm text-base-content/60">{project.category}</div>
-                        )}
-                      </div>
-                    </div>
-                  ))
-                )}
+                <svg 
+                  className={`w-4 h-4 mr-2 transition-transform ${collapsedSections.shared ? 'rotate-0' : 'rotate-90'}`}
+                  fill="currentColor" 
+                  viewBox="0 0 20 20"
+                >
+                  <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                </svg>
+                <svg className="w-4 h-4 mr-2 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+                </svg>
+                <h3 className="font-bold text-xl text-warning">
+                  Shared
+                  <span className="ml-2 text-xs bg-primary/20 text-primary px-2 py-1 rounded-full">
+                    {sharedProjects.length}
+                  </span>
+                </h3>
               </div>
-            )}
-          </div>
+              {!collapsedSections.shared && (
+                <div className="ml-6 space-y-1">
+                  {Object.entries(groupedSharedProjects).map(([category, categoryProjects]) => (
+                    <div key={category} className="mb-3">
+                      <div 
+                        className="flex items-center cursor-pointer p-2 rounded hover:bg-base-200 transition-colors"
+                        onClick={() => toggleSection(`shared-${category}`)}
+                      >
+                        <svg 
+                          className={`w-3 h-3 mr-2 transition-transform ${collapsedSections[`shared-${category}`] ? 'rotate-0' : 'rotate-90'}`}
+                          fill="currentColor" 
+                          viewBox="0 0 20 20"
+                        >
+                          <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                        </svg>
+                        <svg className="w-3 h-3 mr-2 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+                        </svg>
+                        <span className="text-lg font-semibold text-base-content/80">
+                          {category}
+                          <span className="ml-2 text-xs bg-base-300 px-1.5 py-0.5 rounded">
+                            {categoryProjects.length}
+                          </span>
+                        </span>
+                      </div>
+                      {!collapsedSections[`shared-${category}`] && (
+                        <div className="ml-5 space-y-1">
+                          {categoryProjects.map((project) => (
+                            <div
+                              key={project.id}
+                              onClick={() => handleProjectSelect(project)}
+                              className={`flex items-center cursor-pointer p-3 rounded-lg border transition-all ${
+                                selectedProject?.id === project.id 
+                                  ? 'bg-primary/20 border-primary/30 shadow-sm' 
+                                  : 'hover:bg-base-200 border-transparent hover:border-base-content/10'
+                              }`}
+                            >
+                              <div 
+                                className="w-3 h-3 rounded-full mr-3"
+                                style={{ backgroundColor: project.color }}
+                              ></div>
+                              <span className="text-sm font-medium truncate">{project.name}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Main Content Area */}
@@ -530,7 +633,7 @@ const Layout: React.FC = () => {
           )}
 
           {/* Page Content */}
-          <div className="flex-1 overflow-auto border-2 border-base-content/10 bg-base-50 m-4 rounded-lg shadow-lg">
+          <div className="flex-1 overflow-auto border border-base-content/10 bg-gradient-to-br from-base-50 to-base-100/50 m-4 rounded-2xl shadow-2xl backdrop-blur-sm">
             {selectedProject ? (
               <div className="p-1">
                 <Outlet context={{ 

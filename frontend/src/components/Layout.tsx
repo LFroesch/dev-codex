@@ -15,7 +15,7 @@ const Layout: React.FC = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   
   // Initialize analytics
-  useAnalytics({
+  const analytics = useAnalytics({
     trackPageViews: true,
     projectId: selectedProject?.id,
     projectName: selectedProject?.name
@@ -131,6 +131,9 @@ const Layout: React.FC = () => {
         setUser(userResponse.user);
         setProjects(projectsResponse.projects);
         
+        // Set current user for analytics
+        analytics.setCurrentUser(userResponse.user?.id || null);
+        
         // Try to restore previously selected project
         const savedProjectId = localStorage.getItem('selectedProjectId');
         if (savedProjectId) {
@@ -159,9 +162,13 @@ const Layout: React.FC = () => {
 
   const handleLogout = async () => {
     try {
+      // Clear user session before logout
+      analytics.clearUserSession();
       await authAPI.logout();
       navigate('/login');
     } catch (err) {
+      // Clear session even if logout fails
+      analytics.clearUserSession();
       navigate('/login');
     }
   };
@@ -243,8 +250,9 @@ const Layout: React.FC = () => {
       <div className="bg-base-100 shadow-lg border-b border-base-content/10 p-4">
         {/* Top Level Navigation */}
         <div className="flex justify-between items-center mb-4">
-          <div className="flex items-center gap-6">
-            <h1 className="text-2xl font-bold">Dev Codex</h1>
+          <h1 className="text-2xl font-bold">Dev Codex</h1>
+          
+          <div className="absolute left-1/2 transform -translate-x-1/2">
             <div className="tabs tabs-boxed">
               <a 
                 className="tab tab-active cursor-pointer"
@@ -327,16 +335,8 @@ const Layout: React.FC = () => {
         </div>
         
         {/* Project Controls */}
-        <div className="flex justify-between items-center">
-          {/* Left section - Project Controls */}
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => navigate('/create-project')}
-              className="btn btn-primary btn-sm shadow-sm"
-            >
-              Create Project
-            </button>
-          </div>
+        <div className="flex justify-center items-center">
+          {/* Center the navigation */}
         </div>
       </div>
 
@@ -345,17 +345,28 @@ const Layout: React.FC = () => {
         <div className="bg-gradient-to-b from-base-100 to-base-200/50 backdrop-blur-sm border-r border-base-content/20 p-6" style={{ width: '320px' }}>
           {/* Search Projects */}
           <div className="mb-8">
-            <div className="relative">
-              <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-base-content/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              <input
-                type="text"
-                placeholder="Search projects..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="input input-bordered w-full pl-10 pr-4 py-3 rounded-xl bg-base-200/50 border-base-content/10 focus:border-primary/50 focus:bg-base-100 transition-all duration-200 placeholder:text-base-content/50"
-              />
+            <div className="relative flex items-center gap-2">
+              <div className="relative flex-1">
+                <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-base-content/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input
+                  type="text"
+                  placeholder="Search projects..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="input input-bordered w-full pl-10 pr-4 py-3 rounded-xl bg-base-200/50 border-base-content/10 focus:border-primary/50 focus:bg-base-100 transition-all duration-200 placeholder:text-base-content/50"
+                />
+              </div>
+              <button
+                onClick={() => navigate('/create-project')}
+                className="btn btn-primary btn-square btn-sm rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
+                title="Create New Project"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+              </button>
             </div>
           </div>
           

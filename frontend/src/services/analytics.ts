@@ -15,6 +15,7 @@ interface AnalyticsEvent {
 
 interface SessionData {
   sessionId: string;
+  userId?: string; // Track which user this session belongs to
   startTime: number;
   lastActivity: number;
   pageViews: string[];
@@ -25,14 +26,17 @@ interface SessionData {
 class AnalyticsService {
   private static instance: AnalyticsService;
   private session: SessionData | null = null;
-  private activityTimer: NodeJS.Timeout | null = null;
-  private saveTimer: NodeJS.Timeout | null = null;
+  private currentUserId: string | null = null;
+  private activityTimer: number | null = null;
+  private heartbeatTimer: number | null = null;
   private isOnline = navigator.onLine;
   private pendingEvents: AnalyticsEvent[] = [];
+  private readonly HEARTBEAT_INTERVAL = 60 * 1000; // 60 seconds
 
   private constructor() {
     this.setupEventListeners();
     this.startInactivityTimer();
+    // Don't start heartbeat here - wait for session to actually start
   }
 
   static getInstance(): AnalyticsService {
@@ -75,13 +79,55 @@ class AnalyticsService {
   }
 
   async startSession(): Promise<string> {
-    try {
+    // If session already exists, return existing session ID
+    if (this.session) {
+      console.log('Session already exists:', this.session.sessionId);
+      return this.session.sessionId;
+    }
+
+    // Check for existing session in localStorage
+    const storedSession = localStorage.getItem('analytics_session');
+    if (storedSession) {
+      try {
+        const { sessionId, startTime, lastActivity } = JSON.parse(storedSession);
+        const now = Date.now();
+        const timeSinceLastActivity = now - (lastActivity || startTime);
+        const fifteenMinutes = 15 * 60 * 1000; // 15 minutes in milliseconds
+        
+        // If they were last active within 15 minutes, restore the session
+        if (timeSinceLastActivity < fifteenMinutes) {
+          this.session = {
+            sessionId,
+            userId: this.currentUserId || undefined,
+            startTime, // Keep the original start time to preserve total session duration
+            lastActivity: now, // Update last activity to now (they're back)
+            pageViews: [],
+            projectsViewed: [],
+            events: []
+          };
+          this.startHeartbeat();
+          console.log(`Restored session: ${sessionId} (was away for ${Math.round(timeSinceLastActivity / 1000)}s)`);
+          return sessionId;
+        } else {
+          // Clear old session (inactive for more than 15 minutes)
+          console.log(`Session expired (inactive for ${Math.round(timeSinceLastActivity / 60000)} minutes), starting new session`);
+          localStorage.removeItem('analytics_session');
+        }
+      } catch (error) {
+        console.error('Failed to restore session:', error);
+        localStorage.removeItem('analytics_session');
+      }
+    }    try {
       const response = await fetch('/api/analytics/session/start', {
         method: 'POST',
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json'
-        }
+        },
+        body: JSON.stringify({
+          // Let backend know if we're trying to restore a recent session
+          restoreSession: false
+        })
       });
 
       if (response.ok) {
@@ -89,6 +135,7 @@ class AnalyticsService {
         
         this.session = {
           sessionId,
+          userId: this.currentUserId || undefined,
           startTime: Date.now(),
           lastActivity: Date.now(),
           pageViews: [],
@@ -99,8 +146,13 @@ class AnalyticsService {
         // Store session in localStorage as backup
         localStorage.setItem('analytics_session', JSON.stringify({
           sessionId,
-          startTime: this.session.startTime
+          startTime: this.session.startTime,
+          lastActivity: this.session.lastActivity
         }));
+
+        // Start heartbeat for this session
+        this.startHeartbeat();
+        console.log('Started new session:', sessionId);
 
         return sessionId;
       }
@@ -109,9 +161,10 @@ class AnalyticsService {
     }
 
     // Fallback: create local session
-    const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
     this.session = {
       sessionId,
+      userId: this.currentUserId || undefined,
       startTime: Date.now(),
       lastActivity: Date.now(),
       pageViews: [],
@@ -119,11 +172,28 @@ class AnalyticsService {
       events: []
     };
 
+    localStorage.setItem('analytics_session', JSON.stringify({
+      sessionId,
+      startTime: this.session.startTime,
+      lastActivity: this.session.lastActivity
+    }));
+
+    this.startHeartbeat();
+    console.log('Started fallback session:', sessionId);
+
     return sessionId;
   }
 
   async endSession() {
-    if (!this.session) return;
+    if (!this.session) {
+      console.log('No active session to end');
+      return;
+    }
+
+    console.log('Ending session:', this.session.sessionId);
+    
+    // Stop heartbeat
+    this.stopHeartbeat();
 
     try {
       await fetch('/api/analytics/session/end', {
@@ -136,24 +206,26 @@ class AnalyticsService {
           sessionId: this.session.sessionId
         })
       });
+      console.log('Session ended successfully on server');
     } catch (error) {
       console.error('Failed to end analytics session:', error);
     }
 
     localStorage.removeItem('analytics_session');
     this.session = null;
+    console.log('Local session cleared');
   }
 
   async trackEvent(event: AnalyticsEvent) {
+    // Only start session if explicitly needed, not on every event
     if (!this.session) {
-      await this.startSession();
+      console.warn('No active session for tracking event:', event.eventType);
+      return;
     }
 
     this.recordActivity();
     
-    if (this.session) {
-      this.session.events.push(event);
-    }
+    this.session.events.push(event);
 
     if (this.isOnline) {
       await this.sendEvent(event);
@@ -242,18 +314,52 @@ class AnalyticsService {
     if (!this.session) return null;
 
     const now = Date.now();
-    const duration = now - this.session.startTime;
-    const activeTime = now - this.session.lastActivity;
+    const duration = now - this.session.startTime; // This will show total time including pre-refresh time
+    const timeSinceLastActivity = now - this.session.lastActivity;
 
     return {
       sessionId: this.session.sessionId,
-      duration: Math.round(duration / 1000), // seconds
-      activeTime: Math.round(activeTime / 1000), // seconds
+      duration: Math.round(duration / 1000), // seconds - total session time
+      timeSinceLastActivity: Math.round(timeSinceLastActivity / 1000), // seconds since last activity
       pageViews: this.session.pageViews.length,
       projectsViewed: this.session.projectsViewed.length,
       events: this.session.events.length,
-      isActive: !document.hidden // Active if page is visible
+      isActive: !document.hidden, // Active if page is visible
+      startTime: new Date(this.session.startTime).toISOString(),
+      lastActivity: new Date(this.session.lastActivity).toISOString()
     };
+  }
+
+  hasActiveSession(): boolean {
+    return this.session !== null;
+  }
+
+  // Debug method to help troubleshoot session issues
+  debugSessionState() {
+    const storedSession = localStorage.getItem('analytics_session');
+    const now = Date.now();
+    console.log('=== Analytics Debug Info ===');
+    console.log('Current session:', this.session);
+    console.log('Stored session:', storedSession ? JSON.parse(storedSession) : null);
+    
+    if (storedSession) {
+      try {
+        const stored = JSON.parse(storedSession);
+        const timeSinceLastActivity = now - (stored.lastActivity || stored.startTime);
+        const sessionAge = now - stored.startTime;
+        console.log(`Time since last activity: ${Math.round(timeSinceLastActivity / 1000)}s`);
+        console.log(`Session age: ${Math.round(sessionAge / 1000)}s`);
+        console.log(`Would restore? ${timeSinceLastActivity < 15 * 60 * 1000 ? 'YES' : 'NO'}`);
+      } catch (e) {
+        console.log('Error parsing stored session:', e);
+      }
+    }
+    
+    console.log('Heartbeat timer active:', this.heartbeatTimer !== null);
+    console.log('Is online:', this.isOnline);
+    console.log('Page visible:', !document.hidden);
+    console.log('Pending events:', this.pendingEvents.length);
+    console.log('============================');
   }
 
   private async sendEvent(event: AnalyticsEvent) {
@@ -288,6 +394,13 @@ class AnalyticsService {
   private recordActivity() {
     if (this.session) {
       this.session.lastActivity = Date.now();
+      
+      // Update localStorage with the new lastActivity time
+      localStorage.setItem('analytics_session', JSON.stringify({
+        sessionId: this.session.sessionId,
+        startTime: this.session.startTime,
+        lastActivity: this.session.lastActivity
+      }));
     }
 
     // Reset inactivity timer
@@ -308,11 +421,108 @@ class AnalyticsService {
     if (this.activityTimer) {
       clearTimeout(this.activityTimer);
     }
+    // Stop heartbeat when page is hidden
+    this.stopHeartbeat();
   }
 
   private onPageShow() {
     // Page is visible again, resume timers
     this.recordActivity();
+    this.startHeartbeat();
+  }
+
+  private startHeartbeat() {
+    // Clear existing heartbeat timer
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+    }
+
+    // Start heartbeat only if we have an active session
+    if (this.session) {
+      this.heartbeatTimer = window.setInterval(() => {
+        this.sendHeartbeat();
+      }, this.HEARTBEAT_INTERVAL);
+    }
+  }
+
+  private stopHeartbeat() {
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = null;
+    }
+  }
+
+  private async sendHeartbeat() {
+    if (!this.session || !this.isOnline) {
+      console.log('Skipping heartbeat: no session or offline');
+      return;
+    }
+
+    try {
+      // Update local session activity
+      this.session.lastActivity = Date.now();
+
+      // Update localStorage with the latest activity time
+      localStorage.setItem('analytics_session', JSON.stringify({
+        sessionId: this.session.sessionId,
+        startTime: this.session.startTime,
+        lastActivity: this.session.lastActivity
+      }));
+
+      // Send heartbeat to server to update session
+      const response = await fetch('/api/analytics/heartbeat', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Session-ID': this.session.sessionId
+        },
+        body: JSON.stringify({
+          sessionId: this.session.sessionId,
+          lastActivity: this.session.lastActivity,
+          isVisible: !document.hidden
+        })
+      });
+
+      if (!response.ok) {
+        console.error('Heartbeat failed with status:', response.status);
+        // If session is invalid (401/403), clear it and let user restart
+        if (response.status === 401 || response.status === 403) {
+          console.log('Session appears invalid, clearing local session');
+          this.session = null;
+          localStorage.removeItem('analytics_session');
+          this.stopHeartbeat();
+        }
+      } else {
+        console.log('Heartbeat sent successfully');
+      }
+    } catch (error) {
+      console.error('Failed to send heartbeat:', error);
+    }
+  }
+
+  // Set current user and handle user switching
+  setCurrentUser(userId: string | null) {
+    // If user is changing, end the current session
+    if (this.currentUserId && this.currentUserId !== userId) {
+      console.log('User changed from', this.currentUserId, 'to', userId, '- ending current session');
+      this.endSession();
+    }
+    
+    this.currentUserId = userId;
+    
+    // If setting a new user, clear any stored session data for the previous user
+    if (userId && this.currentUserId !== userId) {
+      localStorage.removeItem('analytics_session');
+    }
+  }
+
+  // Clear user session data (for logout)
+  clearUserSession() {
+    console.log('Clearing user session for user:', this.currentUserId);
+    this.currentUserId = null;
+    this.endSession();
+    localStorage.removeItem('analytics_session');
   }
 
   private getFieldType(fieldName: string, value: any): string {

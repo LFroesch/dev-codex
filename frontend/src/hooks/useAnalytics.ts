@@ -19,13 +19,17 @@ export const useAnalytics = (options: UseAnalyticsOptions = {}) => {
 
   const location = useLocation();
   const previousValues = useRef<Record<string, any>>({});
-  const sessionStarted = useRef(false);
+  const sessionInitialized = useRef(false);
 
-  // Start session on mount
+  // Start session only once per app lifecycle
   useEffect(() => {
-    if (!sessionStarted.current) {
-      analyticsService.startSession();
-      sessionStarted.current = true;
+    if (!sessionInitialized.current) {
+      analyticsService.startSession().then(() => {
+        console.log('Analytics session initialized');
+      }).catch(error => {
+        console.error('Failed to initialize analytics session:', error);
+      });
+      sessionInitialized.current = true;
     }
   }, []);
 
@@ -93,8 +97,14 @@ export const useAnalytics = (options: UseAnalyticsOptions = {}) => {
     trackAction,
     trackFormField,
     getSessionInfo,
+    debugSession: () => analyticsService.debugSessionState(),
+    hasActiveSession: () => analyticsService.hasActiveSession(),
     trackPageView: (pageName: string) => analyticsService.trackPageView(pageName),
-    trackProjectOpen: (id: string, name: string) => analyticsService.trackProjectOpen(id, name)
+    trackProjectOpen: (id: string, name: string) => analyticsService.trackProjectOpen(id, name),
+    endSession: () => analyticsService.endSession(),
+    startSession: () => analyticsService.startSession(),
+    setCurrentUser: (userId: string | null) => analyticsService.setCurrentUser(userId),
+    clearUserSession: () => analyticsService.clearUserSession()
   };
 };
 

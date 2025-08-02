@@ -3,6 +3,7 @@ import { User } from '../models/User';
 import { Project } from '../models/Project';
 import { Ticket } from '../models/Ticket';
 import { requireAuth, AuthRequest } from '../middleware/auth';
+import { PLAN_LIMITS } from '../config/planLimits';
 import nodemailer from 'nodemailer';
 
 const router = express.Router();
@@ -49,11 +50,22 @@ router.get('/users', async (req, res) => {
       .skip(skip)
       .limit(limit);
 
+    // Get project counts for each user
+    const usersWithProjectCounts = await Promise.all(
+      users.map(async (user) => {
+        const projectCount = await Project.countDocuments({ userId: user._id });
+        return {
+          ...user.toObject(),
+          projectCount
+        };
+      })
+    );
+
     const total = await User.countDocuments();
     const totalPages = Math.ceil(total / limit);
 
     res.json({
-      users,
+      users: usersWithProjectCounts,
       pagination: {
         page,
         limit,
@@ -97,14 +109,12 @@ router.put('/users/:id/plan', async (req, res) => {
     if (!['free', 'pro', 'enterprise'].includes(planTier)) {
       return res.status(400).json({ error: 'Invalid plan tier' });
     }
-
-    const projectLimits = { free: 3, pro: 20, enterprise: -1 };
     
     const user = await User.findByIdAndUpdate(
       req.params.id,
       { 
         planTier,
-        projectLimit: projectLimits[planTier as keyof typeof projectLimits]
+        projectLimit: PLAN_LIMITS[planTier as keyof typeof PLAN_LIMITS]
       },
       { new: true }
     ).select('-password');

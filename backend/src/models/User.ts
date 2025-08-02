@@ -11,7 +11,7 @@ export interface IUser extends Document {
   projectLimit: number;
   stripeCustomerId?: string;
   subscriptionId?: string;
-  subscriptionStatus?: 'active' | 'inactive' | 'cancelled' | 'past_due';
+  subscriptionStatus?: 'active' | 'inactive' | 'canceled' | 'past_due' | 'incomplete_expired';
   isAdmin: boolean;
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
@@ -74,7 +74,7 @@ const userSchema = new Schema<IUser>({
   },
   subscriptionStatus: {
     type: String,
-    enum: ['active', 'inactive', 'cancelled', 'past_due'],
+    enum: ['active', 'inactive', 'canceled', 'past_due', 'incomplete_expired'],
     default: 'inactive'
   },
   isAdmin: {

@@ -1,9 +1,24 @@
 import express from 'express';
 import { User } from '../models/User';
 import { Project } from '../models/Project';
+import { Ticket } from '../models/Ticket';
 import { requireAuth, AuthRequest } from '../middleware/auth';
+import nodemailer from 'nodemailer';
 
 const router = express.Router();
+
+// Email configuration
+const createTransporter = () => {
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    port: parseInt(process.env.SMTP_PORT || '587'),
+    secure: false,
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS
+    }
+  });
+};
 
 // Admin middleware
 const adminMiddleware = async (req: AuthRequest, res: any, next: any) => {
@@ -199,6 +214,275 @@ router.get('/projects', async (req, res) => {
   } catch (error) {
     console.error('Error fetching projects:', error);
     res.status(500).json({ error: 'Failed to fetch projects' });
+  }
+});
+
+// Get all tickets with pagination and filtering
+router.get('/tickets', async (req, res) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
+    const status = req.query.status as string;
+    const priority = req.query.priority as string;
+
+    let filter: any = {};
+    if (status && status !== 'all') {
+      filter.status = status;
+    }
+    if (priority && priority !== 'all') {
+      filter.priority = priority;
+    }
+
+    const tickets = await Ticket.find(filter)
+      .populate('userId', 'firstName lastName email planTier')
+      .populate('adminUserId', 'firstName lastName email')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const total = await Ticket.countDocuments(filter);
+    const totalPages = Math.ceil(total / limit);
+
+    // Get ticket stats
+    const stats = {
+      open: await Ticket.countDocuments({ status: 'open' }),
+      inProgress: await Ticket.countDocuments({ status: 'in_progress' }),
+      resolved: await Ticket.countDocuments({ status: 'resolved' }),
+      closed: await Ticket.countDocuments({ status: 'closed' })
+    };
+
+    res.json({
+      tickets,
+      stats,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNext: page < totalPages,
+        hasPrev: page > 1
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching tickets:', error);
+    res.status(500).json({ error: 'Failed to fetch tickets' });
+  }
+});
+
+// Get single ticket by ID
+router.get('/tickets/:ticketId', async (req, res) => {
+  try {
+    const { ticketId } = req.params;
+
+    const ticket = await Ticket.findOne({ ticketId })
+      .populate('userId', 'firstName lastName email planTier')
+      .populate('adminUserId', 'firstName lastName email');
+
+    if (!ticket) {
+      return res.status(404).json({ error: 'Ticket not found' });
+    }
+
+    res.json(ticket);
+  } catch (error) {
+    console.error('Error fetching ticket:', error);
+    res.status(500).json({ error: 'Failed to fetch ticket' });
+  }
+});
+
+// Update ticket status and add admin response
+router.put('/tickets/:ticketId', async (req: AuthRequest, res) => {
+  try {
+    const { ticketId } = req.params;
+    const { status, adminResponse, priority } = req.body;
+    const adminUserId = req.userId;
+
+    const updateData: any = {
+      adminUserId
+    };
+
+    if (status) {
+      updateData.status = status;
+      if (status === 'resolved' || status === 'closed') {
+        updateData.resolvedAt = new Date();
+      }
+    }
+
+    if (adminResponse) {
+      updateData.adminResponse = adminResponse;
+    }
+
+    if (priority) {
+      updateData.priority = priority;
+    }
+
+    const ticket = await Ticket.findOneAndUpdate(
+      { ticketId },
+      updateData,
+      { new: true }
+    ).populate('userId', 'firstName lastName email');
+
+    if (!ticket) {
+      return res.status(404).json({ error: 'Ticket not found' });
+    }
+
+    // Send email notifications for ticket updates
+    if (ticket.userId) {
+      try {
+        const user = ticket.userId as any;
+        const admin = await User.findById(adminUserId);
+        const transporter = createTransporter();
+        
+        // Email to user (if there's an admin response)
+        if (adminResponse) {
+          const userMailOptions = {
+            from: process.env.SMTP_FROM || process.env.SMTP_USER,
+            to: user.email,
+            subject: `Support Ticket Update - ${ticketId}`,
+            html: `
+              <h2>Support Ticket Update</h2>
+              <p>Hi ${user.firstName},</p>
+              <p>Your support ticket has been updated by our team.</p>
+              
+              <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                <strong>Ticket ID:</strong> ${ticketId}<br>
+                <strong>Status:</strong> ${status || ticket.status}<br>
+                <strong>Priority:</strong> ${priority || ticket.priority}
+              </div>
+              
+              <p><strong>Admin Response:</strong></p>
+              <div style="background: #f9f9f9; padding: 10px; border-left: 3px solid #28a745;">
+                ${adminResponse}
+              </div>
+              
+              <p>Thank you for your patience!</p>
+              <p>Best regards,<br>Support Team</p>
+            `
+          };
+          await transporter.sendMail(userMailOptions);
+        }
+
+        // Email to support team (for all updates)
+        const supportMailOptions = {
+          from: process.env.SMTP_FROM || process.env.SMTP_USER,
+          to: 'dev.codex.contact@gmail.com',
+          subject: `🔄 Ticket Updated - ${ticketId}`,
+          html: `
+            <h2>🔄 Support Ticket Updated</h2>
+            <p>A support ticket has been updated by ${admin?.firstName || 'Admin'}.</p>
+            
+            <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+              <strong>Ticket ID:</strong> ${ticketId}<br>
+              <strong>User:</strong> ${user.firstName} ${user.lastName} (${user.email})<br>
+              <strong>Plan:</strong> ${user.planTier}<br>
+              <strong>Subject:</strong> ${ticket.subject}<br>
+              <strong>Previous Status:</strong> ${ticket.status}<br>
+              <strong>New Status:</strong> ${status || ticket.status}<br>
+              ${priority ? `<strong>New Priority:</strong> ${priority}<br>` : ''}
+              <strong>Updated by:</strong> ${admin?.firstName || 'Admin'} ${admin?.lastName || ''}
+            </div>
+            
+            ${adminResponse ? `
+              <p><strong>Admin Response:</strong></p>
+              <div style="background: #f9f9f9; padding: 10px; border-left: 3px solid #28a745;">
+                ${adminResponse}
+              </div>
+            ` : ''}
+            
+            <p><strong>Original Message:</strong></p>
+            <div style="background: #f9f9f9; padding: 10px; border-left: 3px solid #6c757d;">
+              ${ticket.message}
+            </div>
+            
+            <p><a href="${process.env.FRONTEND_URL || 'http://localhost:5002'}/admin" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">View in Admin Dashboard</a></p>
+          `
+        };
+
+        await transporter.sendMail(supportMailOptions);
+      } catch (emailError) {
+        console.error('Failed to send update email:', emailError);
+      }
+    }
+
+    res.json(ticket);
+  } catch (error) {
+    console.error('Error updating ticket:', error);
+    res.status(500).json({ error: 'Failed to update ticket' });
+  }
+});
+
+// Delete ticket
+router.delete('/tickets/:ticketId', async (req, res) => {
+  try {
+    const { ticketId } = req.params;
+
+    const ticket = await Ticket.findOneAndDelete({ ticketId });
+    if (!ticket) {
+      return res.status(404).json({ error: 'Ticket not found' });
+    }
+
+    res.json({ message: 'Ticket deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting ticket:', error);
+    res.status(500).json({ error: 'Failed to delete ticket' });
+  }
+});
+
+// Send password reset email for user
+router.post('/users/:id/password-reset', async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Generate a temporary password reset token (you might want to add this to your User model)
+    const resetToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    const resetExpires = new Date(Date.now() + 3600000); // 1 hour from now
+
+    // Update user with reset token (assuming you add these fields to User model)
+    await User.findByIdAndUpdate(req.params.id, {
+      passwordResetToken: resetToken,
+      passwordResetExpires: resetExpires
+    });
+
+    try {
+      const transporter = createTransporter();
+      const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5002'}/reset-password?token=${resetToken}`;
+      
+      const mailOptions = {
+        from: process.env.SMTP_FROM || process.env.SMTP_USER,
+        to: user.email,
+        subject: 'Password Reset Request - Dev Codex',
+        html: `
+          <h2>Password Reset Request</h2>
+          <p>Hi ${user.firstName},</p>
+          <p>An administrator has initiated a password reset for your account.</p>
+          
+          <p>Click the link below to reset your password (this link expires in 1 hour):</p>
+          <a href="${resetUrl}" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 20px 0;">Reset Password</a>
+          
+          <p>If you didn't request this password reset, please contact support immediately.</p>
+          <p>Best regards,<br>Dev Codex Team</p>
+          
+          <hr>
+          <p style="font-size: 12px; color: #666;">
+            If the button doesn't work, copy and paste this link into your browser:<br>
+            ${resetUrl}
+          </p>
+        `
+      };
+
+      await transporter.sendMail(mailOptions);
+      
+      res.json({ message: 'Password reset email sent successfully' });
+    } catch (emailError) {
+      console.error('Failed to send password reset email:', emailError);
+      res.status(500).json({ error: 'Failed to send password reset email' });
+    }
+  } catch (error) {
+    console.error('Error initiating password reset:', error);
+    res.status(500).json({ error: 'Failed to initiate password reset' });
   }
 });
 

@@ -1,4 +1,5 @@
 import express from 'express';
+import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
@@ -90,12 +91,6 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 
 // Email transporter configuration (optional)
 let transporter: any = null;
-console.log('SMTP Config:', {
-  host: process.env.SMTP_HOST,
-  user: process.env.SMTP_USER,
-  pass: process.env.SMTP_PASS,
-  port: process.env.SMTP_PORT
-});
 
 if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
   transporter = nodemailer.createTransport({
@@ -107,9 +102,6 @@ if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
       pass: process.env.SMTP_PASS
     }
   });
-  console.log('✅ Email transporter created successfully');
-} else {
-  console.log('❌ Email transporter NOT created - missing config');
 }
 
 // Register route
@@ -203,7 +195,8 @@ router.post('/login', async (req, res) => {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
-        theme: user.theme
+        theme: user.theme,
+        isAdmin: user.isAdmin
       }
     });
   } catch (error) {
@@ -241,7 +234,8 @@ router.get('/me', async (req, res) => {
         firstName: user.firstName,
         lastName: user.lastName,
         theme: user.theme,
-        hasGoogleAccount: !!user.googleId
+        hasGoogleAccount: !!user.googleId,
+        isAdmin: user.isAdmin
       }
     });
   } catch (error) {

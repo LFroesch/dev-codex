@@ -15,6 +15,7 @@ export interface User {
   lastName: string;
   theme: string; // NEW: User's preferred theme
   hasGoogleAccount?: boolean;
+  isAdmin?: boolean;
 }
 
 // NEW: Individual note interface

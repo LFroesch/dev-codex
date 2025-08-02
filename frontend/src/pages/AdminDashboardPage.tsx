@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { analyticsAPI } from '../api/client';
+import AnalyticsDashboard from '../components/AnalyticsDashboard';
 
 interface User {
   _id: string;
@@ -55,7 +57,7 @@ interface TicketStats {
 
 const AdminDashboardPage: React.FC = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'users' | 'tickets'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'tickets' | 'analytics'>('users');
   const [ticketStatusTab, setTicketStatusTab] = useState<'open' | 'in_progress' | 'resolved' | 'closed'>('open');
   const [users, setUsers] = useState<User[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -71,6 +73,8 @@ const AdminDashboardPage: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showAnalyticsResetConfirm, setShowAnalyticsResetConfirm] = useState(false);
+  const [resettingAnalytics, setResettingAnalytics] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
   const fetchUsers = async (pageNum: number = 1) => {
@@ -247,6 +251,19 @@ const AdminDashboardPage: React.FC = () => {
     }
   };
 
+  const resetAnalytics = async () => {
+    try {
+      setResettingAnalytics(true);
+      const result = await analyticsAPI.resetAllAnalytics();
+      alert(`Analytics reset successful! Deleted ${result.deletedAnalytics} analytics events and ${result.deletedSessions} sessions.`);
+      setShowAnalyticsResetConfirm(false);
+    } catch (err: any) {
+      alert('Failed to reset analytics: ' + (err.response?.data?.error || err.message));
+    } finally {
+      setResettingAnalytics(false);
+    }
+  };
+
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
@@ -377,6 +394,15 @@ const AdminDashboardPage: React.FC = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             Support Tickets ({ticketStats ? ticketStats.open + ticketStats.inProgress + ticketStats.resolved : 0})
+          </button>
+          <button 
+            className={`tab ${activeTab === 'analytics' ? 'tab-active' : ''}`}
+            onClick={() => setActiveTab('analytics')}
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            Platform Analytics
           </button>
         </div>
 
@@ -984,6 +1010,27 @@ const AdminDashboardPage: React.FC = () => {
           </div>
         )}
 
+        {/* Analytics Tab */}
+        {activeTab === 'analytics' && (
+          <div className="space-y-6">
+            {/* Reset Button */}
+            <div className="flex justify-end">
+              <button 
+                className="btn btn-error btn-sm gap-2"
+                onClick={() => setShowAnalyticsResetConfirm(true)}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.001 8.001 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Reset All Data
+              </button>
+            </div>
+            
+            {/* Analytics Dashboard */}
+            <AnalyticsDashboard />
+          </div>
+        )}
+
         {/* User Details Modal */}
         {selectedUser && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -1126,6 +1173,64 @@ const AdminDashboardPage: React.FC = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                   </svg>
                   Delete User
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Analytics Reset Confirmation Modal */}
+        {showAnalyticsResetConfirm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-base-100 rounded-lg shadow-xl p-6 w-full max-w-md">
+              <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-error/10 rounded-full">
+                <svg className="w-8 h-8 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              
+              <h3 className="text-xl font-bold text-center mb-4">Reset Analytics Data</h3>
+              
+              <p className="text-center text-base-content/70 mb-6">
+                Are you sure you want to reset all analytics data? This will clear all session tracking and user activity data.
+              </p>
+              
+              <div className="bg-error/10 p-4 rounded-lg mb-6">
+                <p className="text-sm text-error font-semibold mb-2">⚠️ This action cannot be undone!</p>
+                <ul className="text-sm text-base-content/70 space-y-1">
+                  <li>• All analytics events will be deleted</li>
+                  <li>• All user session data will be cleared</li>
+                  <li>• Historical usage data will be lost</li>
+                  <li>• This is useful for dev/testing environments</li>
+                </ul>
+              </div>
+
+              <div className="flex gap-3">
+                <button 
+                  className="btn btn-ghost flex-1"
+                  onClick={() => setShowAnalyticsResetConfirm(false)}
+                  disabled={resettingAnalytics}
+                >
+                  Cancel
+                </button>
+                <button 
+                  className="btn btn-error flex-1"
+                  onClick={resetAnalytics}
+                  disabled={resettingAnalytics}
+                >
+                  {resettingAnalytics ? (
+                    <>
+                      <span className="loading loading-spinner loading-sm"></span>
+                      Resetting...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.001 8.001 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      Reset Analytics
+                    </>
+                  )}
                 </button>
               </div>
             </div>

@@ -2,12 +2,16 @@ import express from 'express';
 import { Project } from '../models/Project';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { checkProjectLimit } from '../middleware/planLimits';
+import { trackProjectAccess } from '../middleware/analytics';
+import { AnalyticsService } from '../middleware/analytics';
+import { trackFieldChanges, trackArrayChanges } from '../utils/trackFieldChanges';
 import { v4 as uuidv4 } from 'uuid';
 
 const router = express.Router();
 
 // All routes require authentication
 router.use(requireAuth);
+router.use(trackProjectAccess); // Track project access
 
 // Create project
 router.post('/', checkProjectLimit, async (req: AuthRequest, res) => {
@@ -91,6 +95,12 @@ router.put('/:id', async (req: AuthRequest, res) => {
       return res.status(400).json({ message: 'Invalid staging environment' });
     }
 
+    // Get the old project data for change tracking
+    const oldProject = await Project.findOne({ _id: req.params.id, userId: req.userId });
+    if (!oldProject) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
     const project = await Project.findOneAndUpdate(
       { _id: req.params.id, userId: req.userId },
       updateData,
@@ -100,6 +110,15 @@ router.put('/:id', async (req: AuthRequest, res) => {
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
     }
+
+    // Track field changes
+    await trackFieldChanges(
+      req,
+      project._id.toString(),
+      project.name,
+      oldProject.toObject(),
+      updateData
+    );
 
     res.json({
       message: 'Project updated successfully',

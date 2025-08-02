@@ -2,6 +2,8 @@ import express from 'express';
 import { User } from '../models/User';
 import { Project } from '../models/Project';
 import { Ticket } from '../models/Ticket';
+import Analytics from '../models/Analytics';
+import UserSession from '../models/UserSession';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { PLAN_LIMITS } from '../config/planLimits';
 import nodemailer from 'nodemailer';
@@ -493,6 +495,26 @@ router.post('/users/:id/password-reset', async (req, res) => {
   } catch (error) {
     console.error('Error initiating password reset:', error);
     res.status(500).json({ error: 'Failed to initiate password reset' });
+  }
+});
+
+// Reset all analytics data
+router.delete('/analytics/reset', async (_req, res) => {
+  try {
+    // Clear all analytics events
+    const analyticsResult = await Analytics.deleteMany({});
+    
+    // Clear all user sessions
+    const sessionsResult = await UserSession.deleteMany({});
+    
+    res.json({ 
+      message: 'Analytics data reset successfully',
+      deletedAnalytics: analyticsResult.deletedCount,
+      deletedSessions: sessionsResult.deletedCount
+    });
+  } catch (error) {
+    console.error('Error resetting analytics:', error);
+    res.status(500).json({ error: 'Failed to reset analytics data' });
   }
 });
 

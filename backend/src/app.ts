@@ -9,6 +9,10 @@ import projectRoutes from './routes/projects';
 import billingRoutes from './routes/billing';
 import adminRoutes from './routes/admin';
 import ticketRoutes from './routes/tickets';
+import analyticsRoutes from './routes/analytics';
+import debugRoutes from './routes/debug';
+import { normalRateLimit, authRateLimit, devRateLimit } from './middleware/rateLimit';
+import { trackPageView, sessionMiddleware } from './middleware/analytics';
 
 dotenv.config();
 
@@ -28,12 +32,22 @@ app.use('/api/billing/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
 app.use(passport.initialize());
 
-// Routes
+// Auth routes FIRST - NO rate limiting on authentication
 app.use('/api/auth', authRoutes);
-app.use('/api/projects', projectRoutes);
-app.use('/api/billing', billingRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/tickets', ticketRoutes);
+
+// Apply rate limiting to all OTHER routes
+const isDevelopment = process.env.NODE_ENV !== 'production';
+const rateLimitMiddleware = isDevelopment ? devRateLimit : normalRateLimit;
+app.use('/api/projects', rateLimitMiddleware, sessionMiddleware, trackPageView, projectRoutes);
+app.use('/api/billing', rateLimitMiddleware, billingRoutes);
+app.use('/api/admin', rateLimitMiddleware, adminRoutes);
+app.use('/api/tickets', rateLimitMiddleware, ticketRoutes);
+app.use('/api/analytics', rateLimitMiddleware, sessionMiddleware, trackPageView, analyticsRoutes);
+
+// Debug routes (only in development)
+if (process.env.NODE_ENV !== 'production') {
+  app.use('/api/debug', debugRoutes);
+}
 
 // Health check
 app.get('/health', (req, res) => {

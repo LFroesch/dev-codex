@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authAPI } from '../api/client';
+import AnalyticsDashboard from '../components/AnalyticsDashboard';
 
 const THEMES = [
   "light", "dark", "cupcake", "bumblebee", "emerald", "corporate", 
@@ -12,7 +13,7 @@ const THEMES = [
 
 const AccountSettingsPage: React.FC = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'theme' | 'connections' | 'profile'>('theme');
+  const [activeTab, setActiveTab] = useState<'theme' | 'connections' | 'profile' | 'analytics'>('theme');
   const [currentTheme, setCurrentTheme] = useState('cyberpunk');
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -182,6 +183,15 @@ const AccountSettingsPage: React.FC = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
             Profile Info N/A
+          </button>
+          <button 
+            className={`tab ${activeTab === 'analytics' ? 'tab-active' : ''}`}
+            onClick={() => setActiveTab('analytics')}
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            Usage Analytics
           </button>
         </div>
 
@@ -399,6 +409,12 @@ const AccountSettingsPage: React.FC = () => {
                     </div>
                   </div>
                 )}
+              </div>
+            )}
+
+            {activeTab === 'analytics' && (
+              <div className="space-y-6">
+                <AnalyticsDashboard />
               </div>
             )}
           </div>

@@ -71,8 +71,26 @@ router.post('/track', requireAuth, async (req: AuthRequest, res) => {
 // Start session endpoint
 router.post('/session/start', requireAuth, async (req: AuthRequest, res) => {
   try {
-    const sessionId = await AnalyticsService.startSession(req.userId!, req);
-    res.json({ sessionId });
+    const { restoreSession } = req.body;
+    
+    // Check for existing active session within last 15 minutes
+    const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
+    const existingSession = await AnalyticsService.getActiveSession(req.userId!);
+    
+    if (existingSession && existingSession.lastActivity > fifteenMinutesAgo) {
+      // Update the existing session's last activity
+      await AnalyticsService.updateSession(existingSession.sessionId, {
+        resumed: true,
+        timestamp: new Date()
+      });
+      
+      console.log(`Restored existing session for user ${req.userId}: ${existingSession.sessionId}`);
+      res.json({ sessionId: existingSession.sessionId });
+    } else {
+      // Create new session
+      const sessionId = await AnalyticsService.startSession(req.userId!, req);
+      res.json({ sessionId });
+    }
   } catch (error) {
     console.error('Error starting session:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -103,6 +121,29 @@ router.get('/session/active', requireAuth, async (req: AuthRequest, res) => {
     res.json(session);
   } catch (error) {
     console.error('Error getting active session:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Heartbeat endpoint to update session activity
+router.post('/heartbeat', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const { sessionId, lastActivity, isVisible } = req.body;
+    
+    if (!sessionId) {
+      return res.status(400).json({ error: 'sessionId is required' });
+    }
+
+    // Update session activity
+    await AnalyticsService.updateSession(sessionId, {
+      heartbeat: true,
+      isVisible,
+      timestamp: new Date(lastActivity)
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error processing heartbeat:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

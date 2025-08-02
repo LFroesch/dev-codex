@@ -32,8 +32,8 @@ const SessionTracker: React.FC<SessionTrackerProps> = ({
     // Initial update
     updateSessionInfo();
 
-    // Update every 30 seconds
-    const interval = setInterval(updateSessionInfo, 30000);
+    // Update every second for live timer display
+    const interval = setInterval(updateSessionInfo, 1000);
 
     return () => clearInterval(interval);
   }, []);

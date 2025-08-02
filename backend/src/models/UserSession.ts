@@ -13,6 +13,7 @@ export interface IUserSession extends Document {
   userAgent?: string;
   ipAddress?: string;
   isActive: boolean;
+  isVisible?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -61,6 +62,10 @@ const userSessionSchema: Schema = new Schema({
     type: Boolean,
     default: true,
     index: true
+  },
+  isVisible: {
+    type: Boolean,
+    default: true
   }
 }, {
   timestamps: true

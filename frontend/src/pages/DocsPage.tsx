@@ -31,9 +31,6 @@ const DocsPage: React.FC = () => {
     { value: 'Framework', label: 'Framework', emoji: '🏗️', description: 'Framework setup and structure' }
   ];
 
-  const getTypeInfo = (type: Doc['type']) => {
-    return docTypes.find(t => t.value === type) || docTypes[0];
-  };
 
   const handleAddDoc = async () => {
     if (!selectedProject || !newDoc.title.trim() || !newDoc.content.trim()) return;

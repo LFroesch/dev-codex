@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { apiClient } from '../api/client';
 
 const BillingSuccessPage: React.FC = () => {
   const navigate = useNavigate();

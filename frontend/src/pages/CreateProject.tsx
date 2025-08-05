@@ -12,7 +12,6 @@ const CreateProject: React.FC = () => {
     tags: [] as string[],
     stagingEnvironment: 'development' as 'development' | 'staging' | 'production'
   });
-  const [newTag, setNewTag] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -22,10 +21,6 @@ const CreateProject: React.FC = () => {
     document.documentElement.setAttribute('data-theme', savedTheme);
   }, []);
 
-  const predefinedColors = [
-    '#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', 
-    '#EC4899', '#14B8A6', '#F97316', '#6366F1', '#84CC16'
-  ];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,22 +53,6 @@ const CreateProject: React.FC = () => {
     }));
   };
 
-  const handleAddTag = () => {
-    if (newTag.trim() && !formData.tags.includes(newTag.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        tags: [...prev.tags, newTag.trim()]
-      }));
-      setNewTag('');
-    }
-  };
-
-  const handleRemoveTag = (tagToRemove: string) => {
-    setFormData(prev => ({
-      ...prev,
-      tags: prev.tags.filter(tag => tag !== tagToRemove)
-    }));
-  };
 
   return (
     <div className="min-h-screen bg-base-200 py-8">

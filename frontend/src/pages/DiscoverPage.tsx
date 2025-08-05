@@ -59,7 +59,6 @@ const DiscoverPage: React.FC = () => {
     },
   ];
 
-  const categories = ['all', 'web-app', 'mobile', 'ai-ml', 'tool', 'game', 'other'];
 
   const filteredProjects = mockProjects.filter(project => {
     const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

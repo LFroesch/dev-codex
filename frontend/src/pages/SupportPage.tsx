@@ -64,7 +64,7 @@ const SupportPage: React.FC = () => {
         throw new Error(errorData.error || 'Failed to create ticket');
       }
 
-      const result = await response.json();
+      await response.json();
       setSubmitSuccess(true);
       setFormData({
         category: '',

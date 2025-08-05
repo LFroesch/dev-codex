@@ -1,11 +1,10 @@
 import axios from 'axios';
 
-// Use relative URL since we're using Vite proxy
 const API_BASE_URL = '/api';
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  withCredentials: true, // Include cookies in requests
+  withCredentials: true, 
 });
 
 export interface User {
@@ -13,12 +12,11 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
-  theme: string; // NEW: User's preferred theme
+  theme: string;
   hasGoogleAccount?: boolean;
   isAdmin?: boolean;
 }
 
-// NEW: Individual note interface
 export interface Note {
   id: string;
   title: string;
@@ -98,6 +96,11 @@ export interface Project {
   color: string;
   category: string;
   tags: string[];
+  
+  // Additional features
+  roadmapItems?: any[];
+  deploymentData?: any;
+  publicPageData?: any;
   
   // Existing fields
   isArchived: boolean;

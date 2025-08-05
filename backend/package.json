@@ -5,6 +5,7 @@
   "main": "dist/app.js",
   "scripts": {
     "start": "node dist/app.js",
+    "start:prod": "NODE_ENV=production node dist/app.js",
     "dev": "nodemon src/app.ts",
     "build": "tsc",
     "create-admin": "ts-node src/scripts/create-admin.ts",

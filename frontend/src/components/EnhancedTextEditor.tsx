@@ -41,7 +41,7 @@ const EnhancedTextEditor: React.FC<EnhancedTextEditorProps> = ({
       .replace(/`([^`]+)`/gim, '<code class="bg-base-200 px-2 py-1 rounded text-sm font-mono">$1</code>');
     
     // 3. Markdown-style links [text](url) - process before auto-linking
-    processedText = processedText.replace(/\[([^\]]+)\]\(([^)]+)\)/gim, (match, text, url) => {
+    processedText = processedText.replace(/\[([^\]]+)\]\(([^)]+)\)/gim, (_, text, url) => {
       const fullUrl = ensureProtocol(url);
       return `<a href="${fullUrl}" class="link link-primary" target="_blank" rel="noopener noreferrer">${text}</a>`;
     });

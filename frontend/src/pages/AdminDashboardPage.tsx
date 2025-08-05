@@ -75,7 +75,6 @@ const AdminDashboardPage: React.FC = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showAnalyticsResetConfirm, setShowAnalyticsResetConfirm] = useState(false);
   const [resettingAnalytics, setResettingAnalytics] = useState(false);
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
   const fetchUsers = async (pageNum: number = 1) => {
     try {
@@ -964,10 +963,14 @@ const AdminDashboardPage: React.FC = () => {
                       className="join-item btn"
                       disabled={page <= 1}
                       onClick={() => {
-                        if (activeTab === 'users') {
-                          fetchUsers(page - 1);
-                        } else if (activeTab === 'tickets') {
-                          fetchTickets(page - 1);
+                        const currentTab = activeTab as 'users' | 'tickets' | 'analytics';
+                        switch (currentTab) {
+                          case 'users':
+                            fetchUsers(page - 1);
+                            break;
+                          case 'tickets':
+                            fetchTickets(page - 1);
+                            break;
                         }
                       }}
                     >
@@ -979,10 +982,14 @@ const AdminDashboardPage: React.FC = () => {
                         key={pageNum}
                         className={`join-item btn ${pageNum === page ? 'btn-active' : ''}`}
                         onClick={() => {
-                          if (activeTab === 'users') {
-                            fetchUsers(pageNum);
-                          } else if (activeTab === 'tickets') {
-                            fetchTickets(pageNum);
+                          const currentTab = activeTab as 'users' | 'tickets' | 'analytics';
+                          switch (currentTab) {
+                            case 'users':
+                              fetchUsers(pageNum);
+                              break;
+                            case 'tickets':
+                              fetchTickets(pageNum);
+                              break;
                           }
                         }}
                       >
@@ -994,10 +1001,14 @@ const AdminDashboardPage: React.FC = () => {
                       className="join-item btn"
                       disabled={page >= totalPages}
                       onClick={() => {
-                        if (activeTab === 'users') {
-                          fetchUsers(page + 1);
-                        } else if (activeTab === 'tickets') {
-                          fetchTickets(page + 1);
+                        const currentTab = activeTab as 'users' | 'tickets' | 'analytics';
+                        switch (currentTab) {
+                          case 'users':
+                            fetchUsers(page + 1);
+                            break;
+                          case 'tickets':
+                            fetchTickets(page + 1);
+                            break;
                         }
                       }}
                     >

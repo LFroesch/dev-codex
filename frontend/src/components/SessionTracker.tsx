@@ -4,11 +4,13 @@ import analyticsService from '../services/analytics';
 interface SessionInfo {
   sessionId: string;
   duration: number;
-  activeTime: number;
+  timeSinceLastActivity: number;
   pageViews: number;
   projectsViewed: number;
   events: number;
   isActive: boolean;
+  startTime: string;
+  lastActivity: string;
 }
 
 interface SessionTrackerProps {

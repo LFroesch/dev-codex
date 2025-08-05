@@ -3,6 +3,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import passport from 'passport';
 import dotenv from 'dotenv';
+import path from 'path';
 import { connectDatabase } from './config/database';
 import authRoutes from './routes/auth';
 import projectRoutes from './routes/projects';
@@ -21,13 +22,21 @@ const app = express();
 const PORT = process.env.PORT || 5003;
 
 // Middleware
-app.use(cors({
-  origin: 'http://localhost:5002', // Your frontend URL
-  credentials: true // Allow cookies to be sent
-}));
+const isDevelopment = process.env.NODE_ENV !== 'production';
+if (isDevelopment) {
+  app.use(cors({
+    origin: 'http://localhost:5002',
+    credentials: true
+  }));
+} else {
+  // In production, allow same-origin requests
+  app.use(cors({
+    origin: true,
+    credentials: true
+  }));
+}
 app.use(cookieParser());
 
-// Raw body parser for Stripe webhooks (must be before express.json())
 app.use('/api/billing/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
 app.use(passport.initialize());
@@ -36,7 +45,6 @@ app.use(passport.initialize());
 app.use('/api/auth', authRoutes);
 
 // Apply rate limiting to all OTHER routes
-const isDevelopment = process.env.NODE_ENV !== 'production';
 const rateLimitMiddleware = isDevelopment ? devRateLimit : normalRateLimit;
 app.use('/api/projects', rateLimitMiddleware, sessionMiddleware, trackPageView, projectRoutes);
 app.use('/api/billing', rateLimitMiddleware, billingRoutes);
@@ -45,12 +53,27 @@ app.use('/api/tickets', rateLimitMiddleware, ticketRoutes);
 app.use('/api/analytics', rateLimitMiddleware, sessionMiddleware, trackPageView, analyticsRoutes);
 
 // Debug routes (only in development)
-if (process.env.NODE_ENV !== 'production') {
+if (isDevelopment) {
   app.use('/api/debug', debugRoutes);
 }
 
+// Serve static files in production
+if (!isDevelopment) {
+  const frontendDistPath = path.join(__dirname, '../../frontend/dist');
+  app.use(express.static(frontendDistPath));
+  
+  // Handle client-side routing - serve index.html for all non-API routes
+  app.get('*', (req, res) => {
+    if (!req.path.startsWith('/api/')) {
+      res.sendFile(path.join(frontendDistPath, 'index.html'));
+    } else {
+      res.status(404).json({ error: 'API endpoint not found' });
+    }
+  });
+}
+
 // Health check
-app.get('/health', (req, res) => {
+app.get('/health', (_, res) => {
   res.json({ status: 'OK' });
 });
 

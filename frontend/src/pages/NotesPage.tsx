@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { Project, projectAPI, Todo, DevLogEntry } from '../api/client';
+import { Project, projectAPI, Todo } from '../api/client';
 import {TodoItem, NewTodoForm} from '../components/TodoItem';
 import { DevLogItem, NewDevLogForm } from '../components/DevLogItem';
 import { NoteItem, NewNoteForm } from '../components/NoteItem';

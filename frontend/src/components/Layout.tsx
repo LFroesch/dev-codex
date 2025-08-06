@@ -274,7 +274,7 @@ const Layout: React.FC = () => {
     { id: 'docs', label: 'Docs / Features', path: '/docs' },
     { id: 'deployment', label: 'Deployment', path: '/deployment' },
     { id: 'public', label: 'Public', path: '/public' },
-    { id: 'settings', label: 'Settings /Info', path: '/settings' }
+    { id: 'settings', label:'Settings /Info', path: '/settings' }
   ];
 
   const currentTab = location.pathname.slice(1) || 'notes';
@@ -369,6 +369,15 @@ const Layout: React.FC = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
                 Project Details
+              </button>
+              <button 
+                className={`btn ${location.pathname === '/ideas' ? 'btn-primary' : 'btn-ghost'} gap-2 font-bold`}
+                onClick={() => handleNavigateWithCheck('/ideas')}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+                Ideas
               </button>
               <button 
                 className={`btn ${location.pathname === '/discover' ? 'btn-primary' : 'btn-ghost'} gap-2 font-bold`}
@@ -493,8 +502,8 @@ const Layout: React.FC = () => {
             </div>
 
             {/* Tab Content */}
-            <div className="flex-1 overflow-auto p-4">
-              <div className="max-w-6xl mx-auto space-y-6">
+            <div className="flex-1 overflow-auto">
+              <div className="max-w-6xl mx-auto space-y-4">
                 {activeProjectTab === 'active' && (
                   <div className="space-y-4">
                     {Object.keys(groupedCurrentProjects).length === 0 ? (
@@ -517,7 +526,7 @@ const Layout: React.FC = () => {
                       </div>
                     ) : (
                       Object.entries(groupedCurrentProjects).map(([category, categoryProjects]) => (
-                        <div key={category} className="space-y-3 border border-base-content/10 rounded-xl bg-base-100">
+                        <div key={category} className="border border-base-content/10 rounded-xl bg-base-100">
                           <div className="tabs tabs-boxed tabs-lg">
                             <div 
                               className="tab tab-lg cursor-pointer hover:tab-active transition-all flex items-center gap-3 w-full font-bold text-base"
@@ -577,7 +586,7 @@ const Layout: React.FC = () => {
                 {activeProjectTab === 'archived' && (
                   <div className="space-y-4">
                     {Object.entries(groupedArchivedProjects).map(([category, categoryProjects]) => (
-                      <div key={category} className="space-y-3 border border-base-content/10 rounded-xl bg-base-100">
+                      <div key={category} className="border border-base-content/10 rounded-xl bg-base-100">
                         <div className="tabs tabs-boxed tabs-lg">
                           <div 
                             className="tab tab-lg cursor-pointer hover:tab-active transition-all flex items-center gap-3 w-full font-bold text-base"
@@ -683,6 +692,24 @@ const Layout: React.FC = () => {
               <Outlet />
             </div>
           </div>
+        ) : location.pathname === '/ideas' ? (
+          /* Ideas Tab - Standalone user notes */
+          <>
+            {/* Tab-style header for Ideas */}
+            <div className="flex justify-center px-4 py-6">
+              <div className="tabs tabs-boxed tabs-lg">
+                <div className="tab tab-lg tab-active font-bold text-base">
+                  Ideas
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex-1 overflow-auto border border-base-content/10 bg-gradient-to-br from-base-50 to-base-100/50 m-4 rounded-2xl shadow-2xl backdrop-blur-sm">
+              <div className="p-1">
+                <Outlet />
+              </div>
+            </div>
+          </>
         ) : (
           /* Project Details Tab - Show project content with tabs */
           <>
@@ -704,7 +731,7 @@ const Layout: React.FC = () => {
             )}
 
             {/* Page Content */}
-            <div className="flex-1 overflow-auto border border-base-content/10 bg-gradient-to-br from-base-50 to-base-100/50 m-4 rounded-2xl shadow-2xl backdrop-blur-sm">
+            <div className="flex-1 overflow-auto border border-base-content/10 bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-sm">
               {selectedProject ? (
                 <div className="p-1">
                   <Outlet context={{ 

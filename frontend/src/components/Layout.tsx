@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet, useNavigate, useLocation, Link, useSearchParams } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { authAPI, projectAPI, Project } from '../api/client';
 import SessionTracker from './SessionTracker';
 import { useAnalytics } from '../hooks/useAnalytics';
@@ -40,7 +40,7 @@ const Layout: React.FC = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [dropdownOpen]);
-  const [currentTheme, setCurrentTheme] = useState(() => {
+  const [currentTheme] = useState(() => {
     return localStorage.getItem('theme') || 'cyberpunk';
   });
   const [collapsedSections, setCollapsedSections] = useState<{
@@ -254,10 +254,11 @@ const Layout: React.FC = () => {
   return (
     <div className="min-h-screen bg-base-100 flex flex-col">
       {/* Header */}
-      <div className="bg-base-100 px-6 py-4">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+      <header className="bg-base-100 border-b border-base-content/10 shadow-sm sticky top-0 z-40">
+        <div className="px-6 py-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
               <svg className="w-5 h-5 text-primary-content" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
               </svg>
@@ -395,7 +396,8 @@ const Layout: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
+        </div>
+      </header>
 
       <div className="flex-1 w-4/5 mx-auto bg-base-100 flex flex-col">
         {/* Render content based on current route */}

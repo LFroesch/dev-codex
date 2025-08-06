@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Project, projectAPI } from '../api/client';
 import { TECH_CATEGORIES, PACKAGE_CATEGORIES, TechCategory, TechOption } from '../data/techStackData';
@@ -13,9 +13,14 @@ const RoadmapPage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedPackageCategory, setSelectedPackageCategory] = useState<string>('');
   const [error, setError] = useState('');
+  const [loadingStates, setLoadingStates] = useState<{ [key: string]: boolean }>({});
 
-  const handleAddTechnology = async (category: string, tech: TechOption) => {
+  const handleAddTechnology = useCallback(async (category: string, tech: TechOption) => {
     if (!selectedProject) return;
+
+    const loadingKey = `tech-${category}-${tech.name}`;
+    setLoadingStates(prev => ({ ...prev, [loadingKey]: true }));
+    setError('');
 
     try {
       await projectAPI.addTechnology(selectedProject.id, {
@@ -26,22 +31,34 @@ const RoadmapPage: React.FC = () => {
       await onProjectRefresh();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to add technology');
+    } finally {
+      setLoadingStates(prev => ({ ...prev, [loadingKey]: false }));
     }
-  };
+  }, [selectedProject, onProjectRefresh]);
 
-  const handleRemoveTechnology = async (category: string, name: string) => {
+  const handleRemoveTechnology = useCallback(async (category: string, name: string) => {
     if (!selectedProject) return;
+
+    const loadingKey = `tech-remove-${category}-${name}`;
+    setLoadingStates(prev => ({ ...prev, [loadingKey]: true }));
+    setError('');
 
     try {
       await projectAPI.removeTechnology(selectedProject.id, category, name);
       await onProjectRefresh();
     } catch (err) {
       setError('Failed to remove technology');
+    } finally {
+      setLoadingStates(prev => ({ ...prev, [loadingKey]: false }));
     }
-  };
+  }, [selectedProject, onProjectRefresh]);
 
-  const handleAddPackage = async (category: string, pkg: TechOption) => {
+  const handleAddPackage = useCallback(async (category: string, pkg: TechOption) => {
     if (!selectedProject) return;
+
+    const loadingKey = `pkg-${category}-${pkg.name}`;
+    setLoadingStates(prev => ({ ...prev, [loadingKey]: true }));
+    setError('');
 
     try {
       await projectAPI.addPackage(selectedProject.id, {
@@ -53,40 +70,82 @@ const RoadmapPage: React.FC = () => {
       await onProjectRefresh();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to add package');
+    } finally {
+      setLoadingStates(prev => ({ ...prev, [loadingKey]: false }));
     }
-  };
+  }, [selectedProject, onProjectRefresh]);
 
-  const handleRemovePackage = async (category: string, name: string) => {
+  const handleRemovePackage = useCallback(async (category: string, name: string) => {
     if (!selectedProject) return;
+
+    const loadingKey = `pkg-remove-${category}-${name}`;
+    setLoadingStates(prev => ({ ...prev, [loadingKey]: true }));
+    setError('');
 
     try {
       await projectAPI.removePackage(selectedProject.id, category, name);
       await onProjectRefresh();
     } catch (err) {
       setError('Failed to remove package');
+    } finally {
+      setLoadingStates(prev => ({ ...prev, [loadingKey]: false }));
     }
-  };
+  }, [selectedProject, onProjectRefresh]);
 
-  const isSelected = (category: string, name: string, type: 'tech' | 'package') => {
+  // Memoize the selected technologies and packages lookups
+  const selectedTechLookup = useMemo(() => {
+    if (!selectedProject?.selectedTechnologies) return new Set();
+    return new Set(
+      selectedProject.selectedTechnologies.map(tech => `${tech.category}-${tech.name}`)
+    );
+  }, [selectedProject?.selectedTechnologies]);
+
+  const selectedPackageLookup = useMemo(() => {
+    if (!selectedProject?.selectedPackages) return new Set();
+    return new Set(
+      selectedProject.selectedPackages.map(pkg => `${pkg.category}-${pkg.name}`)
+    );
+  }, [selectedProject?.selectedPackages]);
+
+  const isSelected = useCallback((category: string, name: string, type: 'tech' | 'package') => {
     if (!selectedProject) return false;
     
-    if (type === 'tech') {
-      return selectedProject.selectedTechnologies.some(
-        tech => tech.category === category && tech.name === name
-      );
-    } else {
-      return selectedProject.selectedPackages.some(
-        pkg => pkg.category === category && pkg.name === name
-      );
-    }
-  };
+    const key = `${category}-${name}`;
+    return type === 'tech' ? selectedTechLookup.has(key) : selectedPackageLookup.has(key);
+  }, [selectedProject, selectedTechLookup, selectedPackageLookup]);
+
+  // Memoize filtered categories for selected stack display
+  const selectedTechsByCategory = useMemo(() => {
+    if (!selectedProject?.selectedTechnologies) return {};
+    return selectedProject.selectedTechnologies.reduce((acc, tech) => {
+      if (!acc[tech.category]) acc[tech.category] = [];
+      acc[tech.category].push(tech);
+      return acc;
+    }, {} as { [key: string]: any[] });
+  }, [selectedProject?.selectedTechnologies]);
+
+  const selectedPackagesByCategory = useMemo(() => {
+    if (!selectedProject?.selectedPackages) return {};
+    return selectedProject.selectedPackages.reduce((acc, pkg) => {
+      if (!acc[pkg.category]) acc[pkg.category] = [];
+      acc[pkg.category].push(pkg);
+      return acc;
+    }, {} as { [key: string]: any[] });
+  }, [selectedProject?.selectedPackages]);
+
+  // Memoize total count
+  const totalSelectedCount = useMemo(() => {
+    const techCount = selectedProject?.selectedTechnologies?.length || 0;
+    const packageCount = selectedProject?.selectedPackages?.length || 0;
+    return techCount + packageCount;
+  }, [selectedProject?.selectedTechnologies?.length, selectedProject?.selectedPackages?.length]);
 
   const TechSelector: React.FC<{
     categories: TechCategory[];
     type: 'tech' | 'package';
     selectedCategory: string;
     onCategoryChange: (category: string) => void;
-  }> = ({ categories, type, selectedCategory, onCategoryChange }) => (
+  }> = React.memo(({ categories, type, selectedCategory, onCategoryChange }) => (
     <div className="space-y-4">
       {/* Category Tabs */}
       <div className="flex flex-wrap gap-2">
@@ -131,6 +190,11 @@ const RoadmapPage: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                     {category.options.map((option) => {
                       const selected = isSelected(category.id, option.name, type);
+                      const loadingKey = selected 
+                        ? `${type}-remove-${category.id}-${option.name}`
+                        : `${type}-${category.id}-${option.name}`;
+                      const isLoading = loadingStates[loadingKey];
+
                       return (
                         <div
                           key={option.name}
@@ -138,8 +202,9 @@ const RoadmapPage: React.FC = () => {
                             selected 
                               ? 'border-primary bg-primary/10' 
                               : 'border-base-300 hover:border-primary/50'
-                          }`}
+                          } ${isLoading ? 'opacity-60 pointer-events-none' : ''}`}
                           onClick={() => {
+                            if (isLoading) return;
                             if (selected) {
                               type === 'tech' 
                                 ? handleRemoveTechnology(category.id, option.name)
@@ -165,7 +230,9 @@ const RoadmapPage: React.FC = () => {
                                 )}
                               </div>
                               <div className="ml-2">
-                                {selected ? (
+                                {isLoading ? (
+                                  <div className="loading loading-spinner loading-sm"></div>
+                                ) : selected ? (
                                   <svg className="w-5 h-5 text-primary" fill="currentColor" viewBox="0 0 20 20">
                                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                                   </svg>
@@ -188,7 +255,7 @@ const RoadmapPage: React.FC = () => {
         </div>
       )}
     </div>
-  );
+  ));
 
   if (!selectedProject) {
     return (
@@ -215,26 +282,20 @@ const RoadmapPage: React.FC = () => {
         </div>
       )}
 
-      {/* Selected Technologies Display */}
-      <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10">
-        <input type="checkbox" defaultChecked />
-        <div className="collapse-title text-lg font-semibold bg-base-200 border-b border-base-content/10">
-          Selected Stack ({selectedProject.selectedTechnologies?.length || 0})
-        </div>
-        <div className="collapse-content">
-          <div className="pt-4">
-            {selectedProject.selectedTechnologies?.length === 0 ? (
-              <div className="text-center py-8">
-                <div className="text-4xl mb-4">🔧</div>
-                <p className="text-base-content/60">No technologies selected yet. Choose from the categories below!</p>
-              </div>
-            ) : (
+      {/* Selected Stack Display - Only show if there are technologies or packages */}
+      {totalSelectedCount > 0 && (
+        <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10">
+          <input type="checkbox" defaultChecked />
+          <div className="collapse-title text-lg font-semibold bg-base-200 border-b border-base-content/10">
+            Selected Stack ({totalSelectedCount})
+          </div>
+          <div className="collapse-content">
+            <div className="pt-4">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* Technologies */}
                 {TECH_CATEGORIES.map((category) => {
-                  const selectedInCategory = selectedProject.selectedTechnologies.filter(
-                    tech => tech.category === category.id
-                  );
-                  if (selectedInCategory.length === 0) return null;
+                  const selectedInCategory = selectedTechsByCategory[category.id];
+                  if (!selectedInCategory?.length) return null;
 
                   return (
                     <div key={category.id} className="card bg-base-200 shadow-sm">
@@ -242,34 +303,86 @@ const RoadmapPage: React.FC = () => {
                         <div className="flex items-center gap-2 mb-3">
                           <span className="text-xl">{category.emoji}</span>
                           <h3 className="font-semibold">{category.name}</h3>
+                          <span className="badge badge-sm badge-primary">Tech</span>
                         </div>
                         <div className="space-y-2">
-                          {selectedInCategory.map((tech) => (
-                            <div key={tech.name} className="flex items-center justify-between p-2 bg-base-100 rounded border">
-                              <div>
-                                <span className="font-medium">{tech.name}</span>
-                                {tech.version && (
-                                  <span className="text-xs text-base-content/60 ml-2">v{tech.version}</span>
-                                )}
+                          {selectedInCategory.map((tech) => {
+                            const loadingKey = `tech-remove-${tech.category}-${tech.name}`;
+                            const isLoading = loadingStates[loadingKey];
+                            
+                            return (
+                              <div key={tech.name} className="flex items-center justify-between p-2 bg-base-100 rounded border">
+                                <div>
+                                  <span className="font-medium">{tech.name}</span>
+                                  {tech.version && (
+                                    <span className="text-xs text-base-content/60 ml-2">v{tech.version}</span>
+                                  )}
+                                </div>
+                                <button
+                                  onClick={() => handleRemoveTechnology(tech.category, tech.name)}
+                                  className={`btn btn-ghost btn-xs text-error ${isLoading ? 'loading' : ''}`}
+                                  disabled={isLoading}
+                                >
+                                  {isLoading ? '' : '×'}
+                                </button>
                               </div>
-                              <button
-                                onClick={() => handleRemoveTechnology(tech.category, tech.name)}
-                                className="btn btn-ghost btn-xs text-error"
-                              >
-                                ×
-                              </button>
-                            </div>
-                          ))}
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Packages */}
+                {PACKAGE_CATEGORIES.map((category) => {
+                  const selectedInCategory = selectedPackagesByCategory[category.id];
+                  if (!selectedInCategory?.length) return null;
+
+                  return (
+                    <div key={`pkg-${category.id}`} className="card bg-base-200 shadow-sm">
+                      <div className="card-body p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-xl">{category.emoji}</span>
+                          <h3 className="font-semibold">{category.name}</h3>
+                          <span className="badge badge-sm badge-secondary">Package</span>
+                        </div>
+                        <div className="space-y-2">
+                          {selectedInCategory.map((pkg) => {
+                            const loadingKey = `pkg-remove-${pkg.category}-${pkg.name}`;
+                            const isLoading = loadingStates[loadingKey];
+                            
+                            return (
+                              <div key={pkg.name} className="flex items-center justify-between p-2 bg-base-100 rounded border">
+                                <div>
+                                  <span className="font-medium">{pkg.name}</span>
+                                  {pkg.version && (
+                                    <span className="text-xs text-base-content/60 ml-2">v{pkg.version}</span>
+                                  )}
+                                  {pkg.description && (
+                                    <p className="text-xs text-base-content/50 mt-1">{pkg.description}</p>
+                                  )}
+                                </div>
+                                <button
+                                  onClick={() => handleRemovePackage(pkg.category, pkg.name)}
+                                  className={`btn btn-ghost btn-xs text-error ${isLoading ? 'loading' : ''}`}
+                                  disabled={isLoading}
+                                >
+                                  {isLoading ? '' : '×'}
+                                </button>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     </div>
                   );
                 })}
               </div>
-            )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Technology Selection */}
       <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10">
@@ -293,7 +406,7 @@ const RoadmapPage: React.FC = () => {
       <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10">
         <input type="checkbox" />
         <div className="collapse-title text-lg font-semibold bg-base-200 border-b border-base-content/10">
-          Add Packages ({selectedProject.selectedPackages?.length || 0} selected)
+          Add Packages
         </div>
         <div className="collapse-content">
           <div className="pt-4">

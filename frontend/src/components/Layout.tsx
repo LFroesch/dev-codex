@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { authAPI, projectAPI, Project } from '../api/client';
 import SessionTracker from './SessionTracker';
+import NotificationBell from './NotificationBell';
 import { useAnalytics } from '../hooks/useAnalytics';
 import { unsavedChangesManager } from '../utils/unsavedChanges';
 
@@ -270,11 +271,11 @@ const Layout: React.FC = () => {
 
   const tabs = [
     { id: 'notes', label: 'Notes / To Dos', path: '/notes' },
-    { id: 'roadmap', label: 'Stack / Progress', path: '/roadmap' },
-    { id: 'docs', label: 'Docs / Features', path: '/docs' },
+    { id: 'roadmap', label: 'Stack', path: '/roadmap' },
+    { id: 'docs', label: 'Docs', path: '/docs' },
     { id: 'deployment', label: 'Deployment', path: '/deployment' },
     { id: 'public', label: 'Public', path: '/public' },
-    { id: 'settings', label:'Settings /Info', path: '/settings' }
+    { id: 'settings', label:'Settings', path: '/settings' }
   ];
 
   const currentTab = location.pathname.slice(1) || 'notes';
@@ -285,8 +286,17 @@ const Layout: React.FC = () => {
     (p.category && p.category.toLowerCase().includes(searchTerm.toLowerCase()))
   );
   
+  // Debug: log project data
+  console.log('All projects:', filteredProjects.map(p => ({ 
+    name: p.name, 
+    isShared: p.isShared, 
+    isOwner: p.isOwner, 
+    userRole: p.userRole,
+    isArchived: p.isArchived 
+  })));
+
   const currentProjects = filteredProjects.filter(p => !p.isArchived && !p.isShared);
-  const archivedProjects = filteredProjects.filter(p => p.isArchived);
+  const archivedProjects = filteredProjects.filter(p => p.isArchived && !p.isShared);  
   const sharedProjects = filteredProjects.filter(p => p.isShared);
   
   const groupedCurrentProjects = groupProjectsByCategory(currentProjects);
@@ -317,6 +327,15 @@ const Layout: React.FC = () => {
                       style={{ backgroundColor: selectedProject.color }}
                     ></div>
                     <span className="text-sm font-medium">{selectedProject.name}</span>
+                    {selectedProject.isShared && (
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                        selectedProject.isOwner ? 'bg-primary text-primary-content' :
+                        selectedProject.userRole === 'editor' ? 'bg-secondary text-secondary-content' :
+                        'bg-base-300 text-base-content'
+                      }`}>
+                        {selectedProject.isOwner ? 'owner' : selectedProject.userRole || 'member'}
+                      </span>
+                    )}
                   </div>
                 )}
                 <div className="relative">
@@ -402,6 +421,7 @@ const Layout: React.FC = () => {
             
             <div className="flex items-center gap-4 bg-base-200/50 backdrop-blur-sm border border-base-content/10 rounded-xl px-4 py-2.5 shadow-sm">
               <SessionTracker />
+              <NotificationBell />
               
               <span className="text-sm font-medium text-base-content/80">Hi, {user?.firstName}!</span>
               
@@ -475,7 +495,7 @@ const Layout: React.FC = () => {
           <>
             {/* Tab Navigation */}
             <div className="flex justify-center px-4 py-6">
-              <div className="tabs tabs-boxed tabs-lg">
+              <div className="tabs tabs-boxed tabs-lg border border-base-content/10 ">
                 <button
                   onClick={() => setActiveProjectTab('active')}
                   className={`tab tab-lg font-bold text-base ${activeProjectTab === 'active' ? 'tab-active' : ''}`}
@@ -707,14 +727,14 @@ const Layout: React.FC = () => {
           <>
             {/* Tab-style header for Ideas */}
             <div className="flex justify-center px-4 py-6">
-              <div className="tabs tabs-boxed tabs-lg">
+              <div className="tabs tabs-boxed tabs-lg border border-base-content/10">
                 <div className="tab tab-lg tab-active font-bold text-base">
                   Ideas
                 </div>
               </div>
             </div>
             
-            <div className="flex-1 overflow-auto border border-base-content/10 bg-gradient-to-br from-base-50 to-base-100/50 m-4 rounded-2xl shadow-2xl backdrop-blur-sm">
+            <div className="flex-1 overflow-auto border border-base-content/10 bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-sm">
               <div className="p-1">
                 <Outlet />
               </div>
@@ -726,7 +746,7 @@ const Layout: React.FC = () => {
             {/* Tab Navigation */}
             {selectedProject && (
               <div className="flex justify-center px-4 py-6">
-                <div className="tabs tabs-boxed tabs-lg">
+                <div className="tabs tabs-boxed tabs-lg border border-base-content/10">
                   {tabs.map((tab) => (
                     <button
                       key={tab.id}

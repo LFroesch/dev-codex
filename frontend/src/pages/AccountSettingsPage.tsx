@@ -21,6 +21,9 @@ const AccountSettingsPage: React.FC = () => {
   const [unlinkingGoogle, setUnlinkingGoogle] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [bio, setBio] = useState('');
+  const [savingProfile, setSavingProfile] = useState(false);
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -28,6 +31,7 @@ const AccountSettingsPage: React.FC = () => {
         const response = await authAPI.getMe();
         setUser(response.user);
         setCurrentTheme(response.user.theme || 'cyberpunk');
+        setBio(response.user.bio || '');
         // Apply theme from database
         document.documentElement.setAttribute('data-theme', response.user.theme || 'cyberpunk');
       } catch (err) {
@@ -115,6 +119,29 @@ const AccountSettingsPage: React.FC = () => {
     }
   };
 
+  const handleSaveProfile = async () => {
+    setSavingProfile(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const response = await authAPI.updateProfile({ bio });
+      setUser(response.user);
+      setIsEditingProfile(false);
+      setSuccess('Profile updated successfully!');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to update profile');
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const handleCancelProfileEdit = () => {
+    setBio(user?.bio || '');
+    setIsEditingProfile(false);
+    setError('');
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-base-200 flex items-center justify-center">
@@ -182,7 +209,7 @@ const AccountSettingsPage: React.FC = () => {
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
-            Profile Info N/A
+            Profile Info
           </button>
           <button 
             className={`tab ${activeTab === 'analytics' ? 'tab-active' : ''}`}
@@ -354,56 +381,144 @@ const AccountSettingsPage: React.FC = () => {
                 <div>
                   <h2 className="text-2xl font-bold mb-2">Profile Information</h2>
                   <p className="text-base-content/60">
-                    View and manage your account information.
+                    View and manage your account information and public profile.
                   </p>
                 </div>
 
                 {user && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-base-200 rounded-lg p-6">
-                      <h3 className="font-semibold text-lg mb-4">Personal Information</h3>
-                      <div className="space-y-3">
-                        <div>
-                          <label className="text-sm font-medium text-base-content/70">First Name</label>
-                          <p className="text-base-content font-medium">{user.firstName}</p>
+                  <div className="space-y-6">
+                    {/* Personal Information */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="bg-base-200 rounded-lg p-6">
+                        <h3 className="font-semibold text-lg mb-4">Personal Information</h3>
+                        <div className="space-y-3">
+                          <div>
+                            <label className="text-sm font-medium text-base-content/70">First Name</label>
+                            <p className="text-base-content font-medium">{user.firstName}</p>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-base-content/70">Last Name</label>
+                            <p className="text-base-content font-medium">{user.lastName}</p>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-base-content/70">Email</label>
+                            <p className="text-base-content font-medium">{user.email}</p>
+                          </div>
                         </div>
-                        <div>
-                          <label className="text-sm font-medium text-base-content/70">Last Name</label>
-                          <p className="text-base-content font-medium">{user.lastName}</p>
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium text-base-content/70">Email</label>
-                          <p className="text-base-content font-medium">{user.email}</p>
+                      </div>
+
+                      <div className="bg-base-200 rounded-lg p-6">
+                        <h3 className="font-semibold text-lg mb-4">Account Details</h3>
+                        <div className="space-y-3">
+                          <div>
+                            <label className="text-sm font-medium text-base-content/70">Plan</label>
+                            <div className="flex items-center gap-2">
+                              <span className={`badge ${user.planTier === 'free' ? 'badge-ghost' : user.planTier === 'pro' ? 'badge-primary' : 'badge-secondary'}`}>
+                                {user.planTier.toUpperCase()}
+                              </span>
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-base-content/70">Project Limit</label>
+                            <p className="text-base-content font-medium">
+                              {user.projectLimit === -1 ? 'Unlimited' : user.projectLimit} projects
+                            </p>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-base-content/70">Member Since</label>
+                            <p className="text-base-content font-medium">
+                              {new Date(user.createdAt).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                              })}
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </div>
 
+                    {/* Profile Bio Section */}
                     <div className="bg-base-200 rounded-lg p-6">
-                      <h3 className="font-semibold text-lg mb-4">Account Details</h3>
-                      <div className="space-y-3">
-                        <div>
-                          <label className="text-sm font-medium text-base-content/70">Plan</label>
-                          <div className="flex items-center gap-2">
-                            <span className={`badge ${user.planTier === 'free' ? 'badge-ghost' : user.planTier === 'pro' ? 'badge-primary' : 'badge-secondary'}`}>
-                              {user.planTier.toUpperCase()}
-                            </span>
-                          </div>
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="font-semibold text-lg">Bio</h3>
+                        <div className="flex space-x-2">
+                          {isEditingProfile ? (
+                            <>
+                              <button
+                                onClick={handleCancelProfileEdit}
+                                className="btn btn-ghost btn-sm"
+                                disabled={savingProfile}
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                onClick={handleSaveProfile}
+                                className="btn btn-primary btn-sm"
+                                disabled={savingProfile}
+                              >
+                                {savingProfile ? 'Saving...' : 'Save'}
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              onClick={() => setIsEditingProfile(true)}
+                              className="btn btn-outline btn-sm"
+                            >
+                              Edit
+                            </button>
+                          )}
                         </div>
-                        <div>
-                          <label className="text-sm font-medium text-base-content/70">Project Limit</label>
-                          <p className="text-base-content font-medium">
-                            {user.projectLimit === -1 ? 'Unlimited' : user.projectLimit} projects
-                          </p>
+                      </div>
+
+                      {isEditingProfile ? (
+                        <textarea
+                          value={bio}
+                          onChange={(e) => setBio(e.target.value)}
+                          className="textarea textarea-bordered w-full h-32 resize-none"
+                          placeholder="Tell others about yourself, your interests, and what you're working on..."
+                          maxLength={500}
+                        />
+                      ) : (
+                        <div className="min-h-[6rem] p-3 bg-base-100 rounded-lg border border-base-300">
+                          {bio ? (
+                            <p className="text-base-content whitespace-pre-wrap">{bio}</p>
+                          ) : (
+                            <p className="text-base-content/60 italic">No bio added yet. Click edit to add one.</p>
+                          )}
                         </div>
-                        <div>
-                          <label className="text-sm font-medium text-base-content/70">Member Since</label>
-                          <p className="text-base-content font-medium">
-                            {new Date(user.createdAt).toLocaleDateString('en-US', {
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric'
-                            })}
-                          </p>
+                      )}
+                      
+                      {isEditingProfile && (
+                        <div className="mt-2 text-right">
+                          <span className="text-xs text-base-content/60">
+                            {bio.length}/500 characters
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Public Projects Section */}
+                    <div className="bg-base-200 rounded-lg p-6">
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="font-semibold text-lg">Public Projects</h3>
+                        <span className="badge badge-ghost">Coming Soon</span>
+                      </div>
+                      
+                      <div className="text-center py-8">
+                        <div className="w-16 h-16 mx-auto mb-4 bg-base-content/10 rounded-full flex items-center justify-center">
+                          <svg className="w-8 h-8 text-base-content/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                          </svg>
+                        </div>
+                        <h4 className="font-medium text-lg mb-2">Showcase Your Work</h4>
+                        <p className="text-base-content/60 mb-4 max-w-md mx-auto">
+                          Soon you'll be able to showcase your favorite projects publicly for others to discover and explore.
+                        </p>
+                        <div className="space-y-2 text-sm text-base-content/70">
+                          <p>• Share your best projects with the community</p>
+                          <p>• Get feedback and collaborate with other developers</p>
+                          <p>• Build your professional portfolio</p>
                         </div>
                       </div>
                     </div>

@@ -12,6 +12,8 @@ import adminRoutes from './routes/admin';
 import ticketRoutes from './routes/tickets';
 import analyticsRoutes from './routes/analytics';
 import debugRoutes from './routes/debug';
+import invitationRoutes from './routes/invitations';
+import notificationRoutes from './routes/notifications';
 import { normalRateLimit, authRateLimit, devRateLimit } from './middleware/rateLimit';
 import { trackPageView, sessionMiddleware } from './middleware/analytics';
 
@@ -47,6 +49,8 @@ app.use('/api/auth', authRoutes);
 // Apply rate limiting to all OTHER routes
 const rateLimitMiddleware = isDevelopment ? devRateLimit : normalRateLimit;
 app.use('/api/projects', rateLimitMiddleware, sessionMiddleware, trackPageView, projectRoutes);
+app.use('/api/invitations', rateLimitMiddleware, invitationRoutes);
+app.use('/api/notifications', rateLimitMiddleware, notificationRoutes);
 app.use('/api/billing', rateLimitMiddleware, billingRoutes);
 app.use('/api/admin', rateLimitMiddleware, adminRoutes);
 app.use('/api/tickets', rateLimitMiddleware, ticketRoutes);

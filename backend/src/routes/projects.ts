@@ -1,6 +1,12 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import { Project } from '../models/Project';
-import { requireAuth, AuthRequest } from '../middleware/auth';
+import { requireAuth, requireProjectAccess, AuthRequest } from '../middleware/auth';
+import TeamMember from '../models/TeamMember';
+import ProjectInvitation from '../models/ProjectInvitation';
+import Notification from '../models/Notification';
+import { User } from '../models/User';
+import { sendProjectInvitationEmail } from '../services/emailService';
 import { checkProjectLimit } from '../middleware/planLimits';
 import { trackProjectAccess } from '../middleware/analytics';
 import { AnalyticsService } from '../middleware/analytics';
@@ -36,7 +42,8 @@ router.post('/', checkProjectLimit, async (req: AuthRequest, res) => {
       color: color || '#3B82F6',
       category: category || 'general',
       tags: tags || [],
-      userId: req.userId
+      userId: req.userId, // Legacy field for compatibility
+      ownerId: req.userId // New owner field
     });
 
     await project.save();
@@ -50,12 +57,41 @@ router.post('/', checkProjectLimit, async (req: AuthRequest, res) => {
   }
 });
 
-// Get user's projects
+// Get user's projects (owned + team projects)
 router.get('/', async (req: AuthRequest, res) => {
   try {
-    const projects = await Project.find({ userId: req.userId }).sort({ createdAt: -1 });
-    const formattedProjects = projects.map(formatProjectResponse);
-    res.json({ projects: formattedProjects });
+    const userId = req.userId!;
+    
+    // Get projects owned by user
+    const ownedProjects = await Project.find({ 
+      $or: [
+        { userId: userId },
+        { ownerId: userId }
+      ]
+    }).sort({ createdAt: -1 });
+
+    // Get projects where user is a team member
+    const teamMemberships = await TeamMember.find({ userId }).select('projectId');
+    const teamProjectIds = teamMemberships.map(tm => tm.projectId);
+    
+    const teamProjects = teamProjectIds.length > 0 
+      ? await Project.find({ 
+          _id: { $in: teamProjectIds },
+          // Exclude projects user already owns
+          $nor: [
+            { userId: userId },
+            { ownerId: userId }
+          ]
+        }).sort({ createdAt: -1 })
+      : [];
+
+    // Combine and format projects, marking ownership status
+    const allProjects = [
+      ...ownedProjects.map(p => ({ ...formatProjectResponse(p), isOwner: true })),
+      ...teamProjects.map(p => ({ ...formatProjectResponse(p), isOwner: false }))
+    ];
+
+    res.json({ projects: allProjects });
   } catch (error) {
     console.error('Get projects error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -63,15 +99,23 @@ router.get('/', async (req: AuthRequest, res) => {
 });
 
 // Get single project
-router.get('/:id', async (req: AuthRequest, res) => {
+router.get('/:id', requireProjectAccess('view'), async (req: AuthRequest, res) => {
   try {
-    const project = await Project.findOne({ _id: req.params.id, userId: req.userId });
+    const project = await Project.findById(req.params.id);
     
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
     }
 
-    res.json({ project: formatProjectResponse(project) });
+    res.json({ 
+      project: {
+        ...formatProjectResponse(project),
+        userRole: req.projectAccess?.role,
+        canEdit: req.projectAccess?.canEdit,
+        canManageTeam: req.projectAccess?.canManageTeam,
+        isOwner: req.projectAccess?.isOwner
+      }
+    });
   } catch (error) {
     console.error('Get single project error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -79,7 +123,7 @@ router.get('/:id', async (req: AuthRequest, res) => {
 });
 
 // Update project
-router.put('/:id', async (req: AuthRequest, res) => {
+router.put('/:id', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
     const updateData = { ...req.body };
     
@@ -96,13 +140,13 @@ router.put('/:id', async (req: AuthRequest, res) => {
     }
 
     // Get the old project data for change tracking
-    const oldProject = await Project.findOne({ _id: req.params.id, userId: req.userId });
+    const oldProject = await Project.findById(req.params.id);
     if (!oldProject) {
       return res.status(404).json({ message: 'Project not found' });
     }
 
-    const project = await Project.findOneAndUpdate(
-      { _id: req.params.id, userId: req.userId },
+    const project = await Project.findByIdAndUpdate(
+      req.params.id,
       updateData,
       { new: true, runValidators: true }
     );
@@ -131,7 +175,7 @@ router.put('/:id', async (req: AuthRequest, res) => {
 });
 
 // Archive/Unarchive project
-router.patch('/:id/archive', async (req: AuthRequest, res) => {
+router.patch('/:id/archive', requireProjectAccess('manage'), async (req: AuthRequest, res) => {
   try {
     const { isArchived } = req.body;
     
@@ -159,14 +203,23 @@ router.patch('/:id/archive', async (req: AuthRequest, res) => {
   }
 });
 
-// Delete project
-router.delete('/:id', async (req: AuthRequest, res) => {
+// Delete project (owner only)
+router.delete('/:id', requireProjectAccess('manage'), async (req: AuthRequest, res) => {
   try {
-    const project = await Project.findOneAndDelete({ _id: req.params.id, userId: req.userId });
+    // Only project owner can delete the project
+    if (!req.projectAccess?.isOwner) {
+      return res.status(403).json({ message: 'Only project owner can delete the project' });
+    }
+
+    const project = await Project.findByIdAndDelete(req.params.id);
 
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
     }
+
+    // Clean up team members and invitations
+    await TeamMember.deleteMany({ projectId: req.params.id });
+    // Note: We might want to keep invitations for audit purposes
 
     res.json({ message: 'Project deleted successfully' });
   } catch (error) {
@@ -176,7 +229,7 @@ router.delete('/:id', async (req: AuthRequest, res) => {
 });
 
 // NOTES MANAGEMENT - NEW ROUTES
-router.post('/:id/notes', async (req: AuthRequest, res) => {
+router.post('/:id/notes', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
     const { title, description, content } = req.body;
     
@@ -184,7 +237,7 @@ router.post('/:id/notes', async (req: AuthRequest, res) => {
       return res.status(400).json({ message: 'Title and content are required' });
     }
 
-    const project = await Project.findOne({ _id: req.params.id, userId: req.userId });
+    const project = await Project.findById(req.params.id);
 
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
@@ -212,7 +265,7 @@ router.post('/:id/notes', async (req: AuthRequest, res) => {
   }
 });
 
-router.put('/:id/notes/:noteId', async (req: AuthRequest, res) => {
+router.put('/:id/notes/:noteId', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
     const { title, description, content } = req.body;
 
@@ -220,7 +273,7 @@ router.put('/:id/notes/:noteId', async (req: AuthRequest, res) => {
       return res.status(400).json({ message: 'Title and content are required' });
     }
 
-    const project = await Project.findOne({ _id: req.params.id, userId: req.userId });
+    const project = await Project.findById(req.params.id);
 
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
@@ -248,9 +301,9 @@ router.put('/:id/notes/:noteId', async (req: AuthRequest, res) => {
   }
 });
 
-router.delete('/:id/notes/:noteId', async (req: AuthRequest, res) => {
+router.delete('/:id/notes/:noteId', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
-    const project = await Project.findOne({ _id: req.params.id, userId: req.userId });
+    const project = await Project.findById(req.params.id);
 
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
@@ -267,7 +320,7 @@ router.delete('/:id/notes/:noteId', async (req: AuthRequest, res) => {
 });
 
 // TECH STACK MANAGEMENT
-router.post('/:id/technologies', async (req: AuthRequest, res) => {
+router.post('/:id/technologies', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
     const { category, name, version } = req.body;
     
@@ -280,7 +333,7 @@ router.post('/:id/technologies', async (req: AuthRequest, res) => {
       return res.status(400).json({ message: 'Invalid technology category' });
     }
 
-    const project = await Project.findOne({ _id: req.params.id, userId: req.userId });
+    const project = await Project.findById(req.params.id);
 
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
@@ -313,11 +366,11 @@ router.post('/:id/technologies', async (req: AuthRequest, res) => {
   }
 });
 
-router.delete('/:id/technologies/:category/:name', async (req: AuthRequest, res) => {
+router.delete('/:id/technologies/:category/:name', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
     const { category, name } = req.params;
 
-    const project = await Project.findOne({ _id: req.params.id, userId: req.userId });
+    const project = await Project.findById(req.params.id);
 
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
@@ -336,7 +389,7 @@ router.delete('/:id/technologies/:category/:name', async (req: AuthRequest, res)
 });
 
 // PACKAGES MANAGEMENT
-router.post('/:id/packages', async (req: AuthRequest, res) => {
+router.post('/:id/packages', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
     const { category, name, version, description } = req.body;
     
@@ -349,7 +402,7 @@ router.post('/:id/packages', async (req: AuthRequest, res) => {
       return res.status(400).json({ message: 'Invalid package category' });
     }
 
-    const project = await Project.findOne({ _id: req.params.id, userId: req.userId });
+    const project = await Project.findById(req.params.id);
 
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
@@ -383,11 +436,11 @@ router.post('/:id/packages', async (req: AuthRequest, res) => {
   }
 });
 
-router.delete('/:id/packages/:category/:name', async (req: AuthRequest, res) => {
+router.delete('/:id/packages/:category/:name', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
     const { category, name } = req.params;
 
-    const project = await Project.findOne({ _id: req.params.id, userId: req.userId });
+    const project = await Project.findById(req.params.id);
 
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
@@ -406,7 +459,7 @@ router.delete('/:id/packages/:category/:name', async (req: AuthRequest, res) => 
 });
 
 // TODO MANAGEMENT
-router.post('/:id/todos', async (req: AuthRequest, res) => {
+router.post('/:id/todos', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
     const { text, description, priority } = req.body;
     
@@ -414,7 +467,7 @@ router.post('/:id/todos', async (req: AuthRequest, res) => {
       return res.status(400).json({ message: 'Todo text is required' });
     }
 
-    const project = await Project.findOne({ _id: req.params.id, userId: req.userId });
+    const project = await Project.findById(req.params.id);
 
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
@@ -442,11 +495,11 @@ router.post('/:id/todos', async (req: AuthRequest, res) => {
   }
 });
 
-router.put('/:id/todos/:todoId', async (req: AuthRequest, res) => {
+router.put('/:id/todos/:todoId', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
     const { text, description, priority, completed } = req.body;
 
-    const project = await Project.findOne({ _id: req.params.id, userId: req.userId });
+    const project = await Project.findById(req.params.id);
 
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
@@ -474,9 +527,9 @@ router.put('/:id/todos/:todoId', async (req: AuthRequest, res) => {
   }
 });
 
-router.delete('/:id/todos/:todoId', async (req: AuthRequest, res) => {
+router.delete('/:id/todos/:todoId', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
-    const project = await Project.findOne({ _id: req.params.id, userId: req.userId });
+    const project = await Project.findById(req.params.id);
 
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
@@ -493,7 +546,7 @@ router.delete('/:id/todos/:todoId', async (req: AuthRequest, res) => {
 });
 
 // DEV LOG MANAGEMENT
-router.post('/:id/devlog', async (req: AuthRequest, res) => {
+router.post('/:id/devlog', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
     const { title, description, entry } = req.body;
     
@@ -501,7 +554,7 @@ router.post('/:id/devlog', async (req: AuthRequest, res) => {
       return res.status(400).json({ message: 'Dev log entry is required' });
     }
 
-    const project = await Project.findOne({ _id: req.params.id, userId: req.userId });
+    const project = await Project.findById(req.params.id);
 
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
@@ -528,7 +581,7 @@ router.post('/:id/devlog', async (req: AuthRequest, res) => {
   }
 });
 
-router.put('/:id/devlog/:entryId', async (req: AuthRequest, res) => {
+router.put('/:id/devlog/:entryId', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
     const { title, description, entry } = req.body;
     
@@ -536,7 +589,7 @@ router.put('/:id/devlog/:entryId', async (req: AuthRequest, res) => {
       return res.status(400).json({ message: 'Dev log entry is required' });
     }
 
-    const project = await Project.findOne({ _id: req.params.id, userId: req.userId });
+    const project = await Project.findById(req.params.id);
 
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
@@ -563,9 +616,9 @@ router.put('/:id/devlog/:entryId', async (req: AuthRequest, res) => {
   }
 });
 
-router.delete('/:id/devlog/:entryId', async (req: AuthRequest, res) => {
+router.delete('/:id/devlog/:entryId', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
-    const project = await Project.findOne({ _id: req.params.id, userId: req.userId });
+    const project = await Project.findById(req.params.id);
 
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
@@ -582,7 +635,7 @@ router.delete('/:id/devlog/:entryId', async (req: AuthRequest, res) => {
 });
 
 // DOCS MANAGEMENT
-router.post('/:id/docs', async (req: AuthRequest, res) => {
+router.post('/:id/docs', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
     const { type, title, content } = req.body;
     
@@ -595,7 +648,7 @@ router.post('/:id/docs', async (req: AuthRequest, res) => {
       return res.status(400).json({ message: 'Invalid doc type' });
     }
 
-    const project = await Project.findOne({ _id: req.params.id, userId: req.userId });
+    const project = await Project.findById(req.params.id);
 
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
@@ -623,11 +676,11 @@ router.post('/:id/docs', async (req: AuthRequest, res) => {
   }
 });
 
-router.put('/:id/docs/:docId', async (req: AuthRequest, res) => {
+router.put('/:id/docs/:docId', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
     const { type, title, content } = req.body;
 
-    const project = await Project.findOne({ _id: req.params.id, userId: req.userId });
+    const project = await Project.findById(req.params.id);
 
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
@@ -661,9 +714,9 @@ router.put('/:id/docs/:docId', async (req: AuthRequest, res) => {
   }
 });
 
-router.delete('/:id/docs/:docId', async (req: AuthRequest, res) => {
+router.delete('/:id/docs/:docId', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
-    const project = await Project.findOne({ _id: req.params.id, userId: req.userId });
+    const project = await Project.findById(req.params.id);
 
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
@@ -680,7 +733,7 @@ router.delete('/:id/docs/:docId', async (req: AuthRequest, res) => {
 });
 
 // LINKS MANAGEMENT
-router.post('/:id/links', async (req: AuthRequest, res) => {
+router.post('/:id/links', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
     const { title, url, type } = req.body;
     
@@ -688,7 +741,7 @@ router.post('/:id/links', async (req: AuthRequest, res) => {
       return res.status(400).json({ message: 'Title and URL are required' });
     }
 
-    const project = await Project.findOne({ _id: req.params.id, userId: req.userId });
+    const project = await Project.findById(req.params.id);
 
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
@@ -714,11 +767,11 @@ router.post('/:id/links', async (req: AuthRequest, res) => {
   }
 });
 
-router.put('/:id/links/:linkId', async (req: AuthRequest, res) => {
+router.put('/:id/links/:linkId', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
     const { title, url, type } = req.body;
 
-    const project = await Project.findOne({ _id: req.params.id, userId: req.userId });
+    const project = await Project.findById(req.params.id);
 
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
@@ -745,9 +798,9 @@ router.put('/:id/links/:linkId', async (req: AuthRequest, res) => {
   }
 });
 
-router.delete('/:id/links/:linkId', async (req: AuthRequest, res) => {
+router.delete('/:id/links/:linkId', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
-    const project = await Project.findOne({ _id: req.params.id, userId: req.userId });
+    const project = await Project.findById(req.params.id);
 
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
@@ -786,5 +839,239 @@ function formatProjectResponse(project: any) {
     updatedAt: project.updatedAt
   };
 }
+
+// TEAM MANAGEMENT ROUTES
+
+// GET /api/projects/:id/members - Get team members for a project
+router.get('/:id/members', requireAuth, requireProjectAccess('view'), async (req: AuthRequest, res) => {
+  try {
+    const { id: projectId } = req.params;
+
+    const members = await TeamMember.find({ projectId })
+      .populate('userId', 'firstName lastName email')
+      .populate('invitedBy', 'firstName lastName email')
+      .sort({ joinedAt: -1 });
+
+    // Also include the project owner
+    const project = await Project.findById(projectId)
+      .populate('ownerId', 'firstName lastName email');
+
+    const owner = project?.ownerId ? {
+      _id: project.ownerId._id,
+      userId: project.ownerId,
+      role: 'owner' as const,
+      invitedBy: null,
+      joinedAt: project.createdAt,
+      isOwner: true,
+    } : null;
+
+    const allMembers = owner ? [owner, ...members] : members;
+
+    res.json({
+      success: true,
+      members: allMembers,
+    });
+  } catch (error) {
+    console.error('Get team members error:', error);
+    res.status(500).json({ message: 'Server error fetching team members' });
+  }
+});
+
+// POST /api/projects/:id/invite - Invite user to project
+router.post('/:id/invite', requireAuth, requireProjectAccess('manage'), async (req: AuthRequest, res) => {
+  try {
+    const { id: projectId } = req.params;
+    const { email, role = 'viewer' } = req.body;
+    const inviterUserId = req.userId!;
+
+    if (!email || !email.includes('@')) {
+      return res.status(400).json({ message: 'Valid email is required' });
+    }
+
+    if (!['editor', 'viewer'].includes(role)) {
+      return res.status(400).json({ message: 'Role must be editor or viewer' });
+    }
+
+    // Check if project exists and get project details
+    const project = await Project.findById(projectId).populate('ownerId', 'firstName lastName');
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    // Check if user is trying to invite themselves
+    const inviter = await User.findById(inviterUserId);
+    if (inviter?.email.toLowerCase() === email.toLowerCase()) {
+      return res.status(400).json({ message: 'Cannot invite yourself to the project' });
+    }
+
+    // Check if user is already a member
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (existingUser) {
+      const existingMember = await TeamMember.findOne({
+        projectId,
+        userId: existingUser._id,
+      });
+
+      if (existingMember) {
+        return res.status(400).json({ message: 'User is already a team member' });
+      }
+
+      // Check if user is the owner
+      if (project.ownerId?.toString() === existingUser._id.toString()) {
+        return res.status(400).json({ message: 'User is already the project owner' });
+      }
+    }
+
+    // Check if there's already a pending invitation
+    const existingInvitation = await ProjectInvitation.findOne({
+      projectId,
+      inviteeEmail: email.toLowerCase(),
+      status: 'pending',
+    });
+
+    if (existingInvitation) {
+      return res.status(400).json({ message: 'Invitation already sent to this email' });
+    }
+
+    // Create invitation
+    const invitation = new ProjectInvitation({
+      projectId,
+      inviterUserId,
+      inviteeEmail: email.toLowerCase(),
+      inviteeUserId: existingUser?._id,
+      role,
+      token: require('crypto').randomBytes(32).toString('hex'), // Generate token explicitly
+    });
+
+    await invitation.save();
+
+    // Create notification if user exists
+    if (existingUser) {
+      await Notification.create({
+        userId: existingUser._id,
+        type: 'project_invitation',
+        title: 'Project Invitation',
+        message: `${inviter?.firstName} ${inviter?.lastName} invited you to collaborate on "${project.name}"`,
+        actionUrl: `/notifications/invitation/${invitation._id}`,
+        relatedProjectId: project._id,
+        relatedInvitationId: invitation._id,
+      });
+    }
+
+    // Send invitation email
+    try {
+      const inviterName = `${inviter?.firstName || ''} ${inviter?.lastName || ''}`.trim() || 'Someone';
+      await sendProjectInvitationEmail(
+        email,
+        inviterName,
+        project.name,
+        invitation.token,
+        role
+      );
+    } catch (emailError) {
+      console.error('Failed to send invitation email:', emailError);
+      // Continue without failing the invitation creation
+    }
+
+    // Mark project as shared
+    if (!project.isShared) {
+      project.isShared = true;
+      await project.save();
+    }
+
+    res.json({
+      success: true,
+      message: 'Invitation sent successfully',
+      invitation: {
+        id: invitation._id,
+        email: invitation.inviteeEmail,
+        role: invitation.role,
+        status: invitation.status,
+        expiresAt: invitation.expiresAt,
+      },
+    });
+  } catch (error) {
+    console.error('Invite user error:', error);
+    res.status(500).json({ message: 'Server error sending invitation' });
+  }
+});
+
+// DELETE /api/projects/:id/members/:userId - Remove team member
+router.delete('/:id/members/:userId', requireAuth, requireProjectAccess('manage'), async (req: AuthRequest, res) => {
+  try {
+    const { id: projectId, userId: memberUserId } = req.params;
+
+    // Check if trying to remove the owner
+    const project = await Project.findById(projectId);
+    if (project?.ownerId?.toString() === memberUserId) {
+      return res.status(400).json({ message: 'Cannot remove the project owner' });
+    }
+
+    // Remove team member
+    const deletedMember = await TeamMember.findOneAndDelete({
+      projectId,
+      userId: memberUserId,
+    });
+
+    if (!deletedMember) {
+      return res.status(404).json({ message: 'Team member not found' });
+    }
+
+    // Create notification for removed user
+    await Notification.create({
+      userId: memberUserId,
+      type: 'team_member_removed',
+      title: 'Removed from Project',
+      message: `You have been removed from "${project?.name}"`,
+      relatedProjectId: projectId,
+    });
+
+    res.json({
+      success: true,
+      message: 'Team member removed successfully',
+    });
+  } catch (error) {
+    console.error('Remove team member error:', error);
+    res.status(500).json({ message: 'Server error removing team member' });
+  }
+});
+
+// PATCH /api/projects/:id/members/:userId - Update team member role
+router.patch('/:id/members/:userId', requireAuth, requireProjectAccess('manage'), async (req: AuthRequest, res) => {
+  try {
+    const { id: projectId, userId: memberUserId } = req.params;
+    const { role } = req.body;
+
+    if (!['editor', 'viewer'].includes(role)) {
+      return res.status(400).json({ message: 'Role must be editor or viewer' });
+    }
+
+    // Check if trying to change the owner's role
+    const project = await Project.findById(projectId);
+    if (project?.ownerId?.toString() === memberUserId) {
+      return res.status(400).json({ message: 'Cannot change the owner role' });
+    }
+
+    // Update team member role
+    const updatedMember = await TeamMember.findOneAndUpdate(
+      { projectId, userId: memberUserId },
+      { role },
+      { new: true }
+    ).populate('userId', 'firstName lastName email');
+
+    if (!updatedMember) {
+      return res.status(404).json({ message: 'Team member not found' });
+    }
+
+    res.json({
+      success: true,
+      message: 'Team member role updated successfully',
+      member: updatedMember,
+    });
+  } catch (error) {
+    console.error('Update team member role error:', error);
+    res.status(500).json({ message: 'Server error updating team member role' });
+  }
+});
 
 export default router;

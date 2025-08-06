@@ -14,6 +14,7 @@ const Layout: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [activeProjectTab, setActiveProjectTab] = useState('active');
   
   // Initialize analytics
   const analytics = useAnalytics({
@@ -64,6 +65,8 @@ const Layout: React.FC = () => {
     setSelectedProject(project);
     localStorage.setItem('selectedProjectId', project.id);
     setSearchTerm(''); // Clear search when selecting a project
+    // Scroll to top when selecting a project
+    window.scrollTo(0, 0);
   };
 
   // Toggle section collapse
@@ -249,7 +252,7 @@ const Layout: React.FC = () => {
   const groupedSharedProjects = groupProjectsByCategory(sharedProjects);
 
   return (
-    <div className="min-h-screen bg-base-300 flex flex-col">
+    <div className="min-h-screen bg-base-100 flex flex-col">
       {/* Header */}
       <div className="bg-base-100 px-6 py-4">
         <div className="flex justify-between items-center">
@@ -260,6 +263,33 @@ const Layout: React.FC = () => {
               </svg>
             </div>
             <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">Dev Codex</h1>
+            
+            {/* Search bar - only show on projects view */}
+            {searchParams.get('view') === 'projects' && (
+              <div className="relative ml-6 flex items-center gap-2">
+                <div className="relative">
+                  <svg className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-base-content/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  <input
+                    type="text"
+                    placeholder="Search projects..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="input input-sm input-bordered pl-9 pr-3 w-64"
+                  />
+                </div>
+                <button
+                  onClick={() => navigate('/create-project')}
+                  className="btn btn-primary btn-sm btn-circle"
+                  title="New Project"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                </button>
+              </div>
+            )}
           </div>
           
           <div className="absolute left-1/2 transform -translate-x-1/2 flex gap-2">
@@ -294,6 +324,7 @@ const Layout: React.FC = () => {
           
           <div className="flex items-center gap-4">
             <SessionTracker />
+            
             {selectedProject && (
               <div className="flex items-center gap-2 px-3 py-1.5 bg-base-200 rounded-lg border border-base-content/10">
                 <div 
@@ -366,127 +397,113 @@ const Layout: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex-1 bg-base-100 flex flex-col">
+      <div className="flex-1 w-4/5 mx-auto bg-base-100 flex flex-col">
         {/* Render content based on current route */}
         {searchParams.get('view') === 'projects' ? (
-          /* My Projects Tab - File Manager Style */
+          /* My Projects Tab - Modern Style */
           <div className="h-full flex flex-col">
-            {/* Toolbar */}
-            <div className="flex items-center justify-between p-4 border-b border-base-content/10 bg-base-50">
-              <div className="flex items-center gap-4">
-                <h2 className="text-lg font-semibold flex items-center gap-2">
-                  <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                  </svg>
-                  My Projects
-                </h2>
-                <span className="text-sm text-base-content/60">{projects.length} projects</span>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <div className="relative">
-                  <svg className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-base-content/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                  <input
-                    type="text"
-                    placeholder="Search..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="input input-sm input-bordered pl-9 pr-3 w-64"
-                  />
-                </div>
+            {/* Tab Navigation */}
+            <div className="flex justify-center px-4 py-6">
+              <div className="tabs tabs-boxed tabs-lg">
                 <button
-                  onClick={() => navigate('/create-project')}
-                  className="btn btn-primary btn-sm gap-2"
+                  onClick={() => setActiveProjectTab('active')}
+                  className={`tab tab-lg font-bold text-base ${activeProjectTab === 'active' ? 'tab-active' : ''}`}
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
-                  New
+                  Active ({currentProjects.length})
                 </button>
+                {archivedProjects.length > 0 && (
+                  <button
+                    onClick={() => setActiveProjectTab('archived')}
+                    className={`tab tab-lg font-bold text-base ${activeProjectTab === 'archived' ? 'tab-active' : ''}`}
+                  >
+                    Archived ({archivedProjects.length})
+                  </button>
+                )}
+                {sharedProjects.length > 0 && (
+                  <button
+                    onClick={() => setActiveProjectTab('shared')}
+                    className={`tab tab-lg font-bold text-base ${activeProjectTab === 'shared' ? 'tab-active' : ''}`}
+                  >
+                    Shared ({sharedProjects.length})
+                  </button>
+                )}
               </div>
             </div>
-            
-            {/* File Manager Content */}
+
+            {/* Tab Content */}
             <div className="flex-1 overflow-auto p-4">
-              <div className="max-w-3xl mx-auto space-y-1 text-sm">
-                {/* Active Projects Section */}
-                <div
-                  className="flex items-center py-2 px-3 hover:bg-base-200 rounded cursor-pointer"
-                  onClick={() => toggleSection('active')}
-                >
-                  <svg 
-                    className={`w-4 h-4 mr-2 transition-transform ${collapsedSections.active ? '' : 'rotate-90'}`}
-                    fill="currentColor" 
-                    viewBox="0 0 20 20"
-                  >
-                    <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                  </svg>
-                  <svg className="w-4 h-4 mr-2 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
-                  </svg>
-                  <span className="font-medium text-blue-500">Active</span>
-                  <span className="ml-auto text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">{currentProjects.length}</span>
-                </div>
-                
-                {/* Active Projects Contents */}
-                {!collapsedSections.active && (
-                  <div className="ml-6 space-y-0.5">
+              <div className="max-w-6xl mx-auto space-y-6">
+                {activeProjectTab === 'active' && (
+                  <div className="space-y-4">
                     {Object.keys(groupedCurrentProjects).length === 0 ? (
-                      <div className="flex items-center py-6 text-base-content/60">
-                        <span className="text-sm">No active projects</span>
+                      <div className="flex items-center justify-center py-16">
+                        <div className="text-center bg-base-100 rounded-xl p-12 border border-base-content/10 shadow-lg">
+                          <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-full flex items-center justify-center">
+                            <svg className="w-10 h-10 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                            </svg>
+                          </div>
+                          <h3 className="text-2xl font-bold mb-3 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">No active projects</h3>
+                          <p className="text-base-content/60 mb-6">Create your first project to get started</p>
+                          <button onClick={() => navigate('/create-project')} className="btn btn-primary btn-lg gap-2">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            </svg>
+                            Create Project
+                          </button>
+                        </div>
                       </div>
                     ) : (
                       Object.entries(groupedCurrentProjects).map(([category, categoryProjects]) => (
-                        <div key={category}>
-                          {/* Category */}
-                          <div
-                            className="flex items-center py-1.5 px-2 hover:bg-base-200 rounded cursor-pointer"
-                            onClick={() => toggleSection(`active-${category}`)}
-                          >
-                            <svg 
-                              className={`w-3 h-3 mr-2 transition-transform ${collapsedSections[`active-${category}`] ? '' : 'rotate-90'}`}
-                              fill="currentColor" 
-                              viewBox="0 0 20 20"
+                        <div key={category} className="space-y-3 border border-base-content/10 rounded-xl bg-base-100">
+                          <div className="tabs tabs-boxed tabs-lg">
+                            <div 
+                              className="tab tab-lg cursor-pointer hover:tab-active transition-all flex items-center gap-3 w-full font-bold text-base"
+                              onClick={() => toggleSection(`active-${category}`)}
                             >
-                              <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                            </svg>
-                            <svg className="w-4 h-4 mr-2 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
-                              <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
-                            </svg>
-                            <span className="font-medium text-orange-600">{category}</span>
-                            <span className="ml-auto text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-full">{categoryProjects.length}</span>
+                              <svg 
+                                className={`w-5 h-5 transition-transform ${collapsedSections[`active-${category}`] ? '' : 'rotate-90'}`}
+                                fill="currentColor" 
+                                viewBox="0 0 20 20"
+                              >
+                                <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                              </svg>
+                              <svg className="w-6 h-6 text-primary" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+                              </svg>
+                              <span className="text-xl font-semibold text-base-content flex-1">{category}</span>
+                              <span className="bg-primary/10 text-base-content px-3 py-1 rounded-full text-sm font-medium">{categoryProjects.length}</span>
+                            </div>
                           </div>
-                          
-                          {/* Category Projects */}
                           {!collapsedSections[`active-${category}`] && (
-                            <div className="ml-5 space-y-0.5">
-                              {categoryProjects.map((project) => (
-                                <div
-                                  key={project.id}
-                                  onClick={() => {
-                                    handleProjectSelect(project);
-                                    navigate('/notes');
-                                  }}
-                                  className={`flex items-center py-1.5 px-2 rounded cursor-pointer transition-all ${
-                                    selectedProject?.id === project.id 
-                                      ? 'bg-blue-100 text-blue-800' 
-                                      : 'hover:bg-base-200'
-                                  }`}
-                                >
-                                  <div 
-                                    className="w-4 h-4 mr-2 rounded-sm"
-                                    style={{ backgroundColor: project.color }}
-                                  ></div>
-                                  <span className="font-medium flex-1">{project.name}</span>
-                                  {selectedProject?.id === project.id && (
-                                    <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                    </svg>
-                                  )}
-                                </div>
-                              ))}
+                            <div className="p-4">
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                {categoryProjects.map((project) => (
+                                  <button
+                                    key={project.id}
+                                    onClick={() => {
+                                      handleProjectSelect(project);
+                                      navigate('/notes');
+                                    }}
+                                    className={`btn btn-lg w-full justify-start gap-3 h-auto py-6 min-h-[4rem] ${
+                                      selectedProject?.id === project.id 
+                                        ? 'btn-primary' 
+                                        : 'btn-ghost bg-base-100 hover:bg-base-200'
+                                    }`}
+                                  >
+                                    <div 
+                                      className="w-4 h-4 rounded-md shadow-sm flex-shrink-0"
+                                      style={{ backgroundColor: project.color }}
+                                    ></div>
+                                    <span className="flex-1 text-left truncate leading-relaxed">{project.name}</span>
+                                    {selectedProject?.id === project.id && (
+                                      <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                      </svg>
+                                    )}
+                                  </button>
+                                ))}
+                              </div>
                             </div>
                           )}
                         </div>
@@ -494,145 +511,105 @@ const Layout: React.FC = () => {
                     )}
                   </div>
                 )}
-
-                {/* Archived Projects Section */}
-                {archivedProjects.length > 0 && (
-                  <>
-                    <div
-                      className="flex items-center py-2 px-3 hover:bg-base-200 rounded cursor-pointer"
-                      onClick={() => toggleSection('archived')}
-                    >
-                      <svg 
-                        className={`w-4 h-4 mr-2 transition-transform ${collapsedSections.archived ? '' : 'rotate-90'}`}
-                        fill="currentColor" 
-                        viewBox="0 0 20 20"
-                      >
-                        <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                      </svg>
-                      <svg className="w-4 h-4 mr-2 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
-                      </svg>
-                      <span className="font-medium text-red-500">Archived Projects</span>
-                      <span className="ml-auto text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">{archivedProjects.length}</span>
-                    </div>
-                    
-                    {!collapsedSections.archived && (
-                      <div className="ml-6 space-y-0.5">
-                        {Object.entries(groupedArchivedProjects).map(([category, categoryProjects]) => (
-                          <div key={category}>
-                            <div
-                              className="flex items-center py-1.5 px-2 hover:bg-base-200 rounded cursor-pointer"
-                              onClick={() => toggleSection(`archived-${category}`)}
+                
+                {activeProjectTab === 'archived' && (
+                  <div className="space-y-4">
+                    {Object.entries(groupedArchivedProjects).map(([category, categoryProjects]) => (
+                      <div key={category} className="space-y-3 border border-base-content/10 rounded-xl bg-base-100">
+                        <div className="tabs tabs-boxed tabs-lg">
+                          <div 
+                            className="tab tab-lg cursor-pointer hover:tab-active transition-all flex items-center gap-3 w-full font-bold text-base"
+                            onClick={() => toggleSection(`archived-${category}`)}
+                          >
+                            <svg 
+                              className={`w-5 h-5 transition-transform ${collapsedSections[`archived-${category}`] ? '' : 'rotate-90'}`}
+                              fill="currentColor" 
+                              viewBox="0 0 20 20"
                             >
-                              <svg 
-                                className={`w-3 h-3 mr-2 transition-transform ${collapsedSections[`archived-${category}`] ? '' : 'rotate-90'}`}
-                                fill="currentColor" 
-                                viewBox="0 0 20 20"
-                              >
-                                <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                              </svg>
-                              <svg className="w-4 h-4 mr-2 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
-                              </svg>
-                              <span className="font-medium text-orange-600">{category}</span>
-                              <span className="ml-auto text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-full">{categoryProjects.length}</span>
-                            </div>
-                            
-                            {!collapsedSections[`archived-${category}`] && (
-                              <div className="ml-5 space-y-0.5">
-                                {categoryProjects.map((project) => (
-                                  <div
-                                    key={project.id}
-                                    onClick={() => {
-                                      handleProjectSelect(project);
-                                      navigate('/notes');
-                                    }}
-                                    className="flex items-center py-1.5 px-2 hover:bg-base-200 rounded cursor-pointer transition-all opacity-75 hover:opacity-100"
-                                  >
-                                    <div 
-                                      className="w-4 h-4 mr-2 rounded-sm"
-                                      style={{ backgroundColor: project.color }}
-                                    ></div>
-                                    <span className="font-medium">{project.name}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
+                              <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                            </svg>
+                            <svg className="w-6 h-6 text-primary" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+                            </svg>
+                            <span className="text-xl font-semibold text-base-content flex-1">{category}</span>
+                            <span className="bg-primary/10 text-base-content px-3 py-1 rounded-full text-sm font-medium">{categoryProjects.length}</span>
                           </div>
-                        ))}
+                        </div>
+                        {!collapsedSections[`archived-${category}`] && (
+                          <div className="p-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                              {categoryProjects.map((project) => (
+                                <button
+                                  key={project.id}
+                                  onClick={() => {
+                                    handleProjectSelect(project);
+                                    navigate('/notes');
+                                  }}
+                                  className="btn btn-lg btn-ghost bg-base-100 hover:bg-base-200 w-full justify-start gap-3 h-auto py-6 min-h-[4rem] opacity-75 hover:opacity-100"
+                                >
+                                  <div 
+                                    className="w-4 h-4 rounded-md shadow-sm flex-shrink-0"
+                                    style={{ backgroundColor: project.color }}
+                                  ></div>
+                                  <span className="flex-1 text-left truncate leading-relaxed">{project.name}</span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </>
+                    ))}
+                  </div>
                 )}
-
-                {/* Shared Projects Section */}
-                {sharedProjects.length > 0 && (
-                  <>
-                    <div
-                      className="flex items-center py-2 px-3 hover:bg-base-200 rounded cursor-pointer"
-                      onClick={() => toggleSection('shared')}
-                    >
-                      <svg 
-                        className={`w-4 h-4 mr-2 transition-transform ${collapsedSections.shared ? '' : 'rotate-90'}`}
-                        fill="currentColor" 
-                        viewBox="0 0 20 20"
-                      >
-                        <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                      </svg>
-                      <svg className="w-4 h-4 mr-2 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
-                      </svg>
-                      <span className="font-medium text-purple-500">Shared</span>
-                      <span className="ml-auto text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">{sharedProjects.length}</span>
-                    </div>
-                    
-                    {!collapsedSections.shared && (
-                      <div className="ml-6 space-y-0.5">
-                        {Object.entries(groupedSharedProjects).map(([category, categoryProjects]) => (
-                          <div key={category}>
-                            <div
-                              className="flex items-center py-1.5 px-2 hover:bg-base-200 rounded cursor-pointer"
-                              onClick={() => toggleSection(`shared-${category}`)}
+                
+                {activeProjectTab === 'shared' && (
+                  <div className="space-y-4">
+                    {Object.entries(groupedSharedProjects).map(([category, categoryProjects]) => (
+                      <div key={category} className="space-y-3 border border-base-content/10 rounded-xl bg-base-100">
+                        <div className="tabs tabs-boxed tabs-lg">
+                          <div 
+                            className="tab tab-lg cursor-pointer hover:tab-active transition-all flex items-center gap-3 w-full font-bold text-base"
+                            onClick={() => toggleSection(`shared-${category}`)}
+                          >
+                            <svg 
+                              className={`w-5 h-5 transition-transform ${collapsedSections[`shared-${category}`] ? '' : 'rotate-90'}`}
+                              fill="currentColor" 
+                              viewBox="0 0 20 20"
                             >
-                              <svg 
-                                className={`w-3 h-3 mr-2 transition-transform ${collapsedSections[`shared-${category}`] ? '' : 'rotate-90'}`}
-                                fill="currentColor" 
-                                viewBox="0 0 20 20"
-                              >
-                                <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                              </svg>
-                              <svg className="w-4 h-4 mr-2 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
-                              </svg>
-                              <span className="font-medium text-orange-600">{category}</span>
-                              <span className="ml-auto text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-full">{categoryProjects.length}</span>
-                            </div>
-                            
-                            {!collapsedSections[`shared-${category}`] && (
-                              <div className="ml-5 space-y-0.5">
-                                {categoryProjects.map((project) => (
-                                  <div
-                                    key={project.id}
-                                    onClick={() => {
-                                      handleProjectSelect(project);
-                                      navigate('/notes');
-                                    }}
-                                    className="flex items-center py-1.5 px-2 hover:bg-base-200 rounded cursor-pointer transition-all"
-                                  >
-                                    <div 
-                                      className="w-4 h-4 mr-2 rounded-sm"
-                                      style={{ backgroundColor: project.color }}
-                                    ></div>
-                                    <span className="font-medium">{project.name}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
+                              <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                            </svg>
+                            <svg className="w-6 h-6 text-primary" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+                            </svg>
+                            <span className="text-xl font-semibold text-base-content flex-1">{category}</span>
+                            <span className="bg-primary/10 text-base-content px-3 py-1 rounded-full text-sm font-medium">{categoryProjects.length}</span>
                           </div>
-                        ))}
+                        </div>
+                        {!collapsedSections[`shared-${category}`] && (
+                          <div className="p-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                              {categoryProjects.map((project) => (
+                                <button
+                                  key={project.id}
+                                  onClick={() => {
+                                    handleProjectSelect(project);
+                                    navigate('/notes');
+                                  }}
+                                  className="btn btn-lg btn-ghost bg-base-100 hover:bg-base-200 w-full justify-start gap-3 h-auto py-5"
+                                >
+                                  <div 
+                                    className="w-4 h-4 rounded-md shadow-sm flex-shrink-0"
+                                    style={{ backgroundColor: project.color }}
+                                  ></div>
+                                  <span className="flex-1 text-left truncate">{project.name}</span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </>
+                    ))}
+                  </div>
                 )}
               </div>
             </div>

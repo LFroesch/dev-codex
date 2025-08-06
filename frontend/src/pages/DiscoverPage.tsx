@@ -84,7 +84,7 @@ const DiscoverPage: React.FC = () => {
   });
 
   return (
-    <div className="min-h-screen bg-base-200">
+    <div className="h-full flex flex-col">
       {/* Header */}
       <div className="bg-base-100 shadow-lg border-b border-base-content/10 p-6">
         <div className="max-w-6xl mx-auto">
@@ -152,7 +152,8 @@ const DiscoverPage: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-6xl mx-auto p-6">
+      <div className="flex-1 overflow-auto">
+        <div className="max-w-6xl mx-auto p-6">
         {/* Coming Soon Notice */}
         <div className="card bg-gradient-to-r from-warning/10 to-info/10 border border-warning/20 mb-8">
           <div className="card-body text-center">
@@ -303,6 +304,7 @@ const DiscoverPage: React.FC = () => {
               </div>
             </div>
           </div>
+        </div>
         </div>
       </div>
     </div>

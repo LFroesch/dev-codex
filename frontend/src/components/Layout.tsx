@@ -3,6 +3,7 @@ import { Outlet, useNavigate, useLocation, useSearchParams } from 'react-router-
 import { authAPI, projectAPI, Project } from '../api/client';
 import SessionTracker from './SessionTracker';
 import { useAnalytics } from '../hooks/useAnalytics';
+import { unsavedChangesManager } from '../utils/unsavedChanges';
 
 const Layout: React.FC = () => {
   const navigate = useNavigate();
@@ -15,6 +16,10 @@ const Layout: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [activeProjectTab, setActiveProjectTab] = useState('active');
+  
+  // Unsaved changes modal state
+  const [showUnsavedChangesModal, setShowUnsavedChangesModal] = useState(false);
+  const [unsavedChangesResolve, setUnsavedChangesResolve] = useState<((value: boolean) => void) | null>(null);
   
   // Initialize analytics
   const analytics = useAnalytics({
@@ -59,6 +64,43 @@ const Layout: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('collapsedSections', JSON.stringify(collapsedSections));
   }, [collapsedSections]);
+
+  // Set up unsaved changes confirmation handler
+  useEffect(() => {
+    const confirmationHandler = (_message: string): Promise<boolean> => {
+      return new Promise((resolve) => {
+        setUnsavedChangesResolve(() => resolve);
+        setShowUnsavedChangesModal(true);
+      });
+    };
+
+    unsavedChangesManager.setConfirmationHandler(confirmationHandler);
+  }, []);
+
+  // Handle unsaved changes modal actions
+  const handleUnsavedChangesLeave = () => {
+    setShowUnsavedChangesModal(false);
+    if (unsavedChangesResolve) {
+      unsavedChangesResolve(true);
+      setUnsavedChangesResolve(null);
+    }
+  };
+
+  const handleUnsavedChangesStay = () => {
+    setShowUnsavedChangesModal(false);
+    if (unsavedChangesResolve) {
+      unsavedChangesResolve(false);
+      setUnsavedChangesResolve(null);
+    }
+  };
+
+  // Helper function to handle navigation with unsaved changes check
+  const handleNavigateWithCheck = async (path: string) => {
+    const canNavigate = await unsavedChangesManager.checkNavigationAllowed();
+    if (canNavigate) {
+      navigate(path);
+    }
+  };
 
   // Helper function to select and persist project
   const handleProjectSelect = (project: Project) => {
@@ -263,67 +305,81 @@ const Layout: React.FC = () => {
                   <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
                 </svg>
               </div>
-                <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">Dev Codex</h1>
+              <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">Dev Codex</h1>
               
-              {/* Search bar - only show on projects view */}
-              {searchParams.get('view') === 'projects' && (
-                <div className="relative ml-4 flex items-center gap-2">
-                  <div className="relative">
-                    <svg className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-base-content/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    <input
-                      type="text"
-                      placeholder="Search projects..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="input input-sm input-bordered pl-9 pr-3 w-48 bg-base-100/80 backdrop-blur-sm"
-                    />
-                  </div>
-                  <button
-                    onClick={() => navigate('/create-project')}
-                    className="btn btn-primary btn-sm btn-circle shadow-sm"
-                    title="New Project"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                  </button>
-                </div>
-              )}
-            </div>
-            
-            <div className="absolute left-1/2 transform -translate-x-1/2 bg-base-200/60 backdrop-blur-sm border border-base-content/10 rounded-xl shadow-sm">
-              <div className="flex gap-1 p-1">
-                <button 
-                  className={`btn btn-sm ${searchParams.get('view') === 'projects' ? 'btn-primary' : 'btn-ghost'} gap-2 rounded-lg`}
-                  onClick={() => navigate('/notes?view=projects')}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                  </svg>
-                  My Projects
-                </button>
-                <button 
-                  className={`btn btn-sm ${(location.pathname === '/notes' || location.pathname === '/roadmap' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/settings') && searchParams.get('view') !== 'projects' ? 'btn-primary' : 'btn-ghost'} gap-2 rounded-lg`}
-                  onClick={() => navigate('/notes')}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  Project Details
-                </button>
-                <button 
-                  className={`btn btn-sm ${location.pathname === '/discover' ? 'btn-primary' : 'btn-ghost'} gap-2 rounded-lg`}
-                  onClick={() => navigate('/discover')}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {/* Search bar - always show */}
+              <div className="relative ml-4 flex items-center gap-2">
+                <div className="relative">
+                  <svg className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-base-content/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
-                  Discover
+                  <input
+                    type="text"
+                    placeholder="Search projects..."
+                    value={searchTerm}
+                    onChange={(e) => {
+                      setSearchTerm(e.target.value);
+                      // Auto-navigate to My Projects when user starts typing
+                      if (e.target.value.trim() && searchParams.get('view') !== 'projects') {
+                        navigate('/notes?view=projects');
+                      }
+                    }}
+                    className="input input-sm input-bordered pl-9 pr-8 w-48 bg-base-100/80 backdrop-blur-sm"
+                  />
+                  {/* Clear button */}
+                  {searchTerm && (
+                    <button
+                      onClick={() => setSearchTerm('')}
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-base-content/50 hover:text-base-content/80 transition-colors"
+                      title="Clear search"
+                    >
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+                <button
+                  onClick={() => navigate('/create-project')}
+                  className="btn btn-primary btn-sm btn-circle shadow-sm"
+                  title="New Project"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
                 </button>
               </div>
-              </div>
+            </div>
+            
+            <div className="absolute left-1/2 transform -translate-x-1/2 flex gap-2">
+              <button 
+                className={`btn ${searchParams.get('view') === 'projects' ? 'btn-primary' : 'btn-ghost'} gap-2 font-bold`}
+                onClick={() => handleNavigateWithCheck('/notes?view=projects')}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                </svg>
+                My Projects
+              </button>
+              <button 
+                className={`btn ${(location.pathname === '/notes' || location.pathname === '/roadmap' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/settings') && searchParams.get('view') !== 'projects' ? 'btn-primary' : 'btn-ghost'} gap-2 font-bold`}
+                onClick={() => handleNavigateWithCheck('/notes')}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Project Details
+              </button>
+              <button 
+                className={`btn ${location.pathname === '/discover' ? 'btn-primary' : 'btn-ghost'} gap-2 font-bold`}
+                onClick={() => handleNavigateWithCheck('/discover')}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                Discover
+              </button>
+            </div>
             
             <div className="flex items-center gap-4 bg-base-200/50 backdrop-blur-sm border border-base-content/10 rounded-xl px-4 py-2.5 shadow-sm">
               <SessionTracker />
@@ -637,7 +693,7 @@ const Layout: React.FC = () => {
                   {tabs.map((tab) => (
                     <button
                       key={tab.id}
-                      onClick={() => navigate(tab.path)}
+                      onClick={() => handleNavigateWithCheck(tab.path)}
                       className={`tab tab-lg font-bold text-base ${currentTab === tab.id ? 'tab-active' : ''}`}
                     >
                       {tab.label}
@@ -677,6 +733,40 @@ const Layout: React.FC = () => {
           </>
         )}
       </div>
+
+      {/* Unsaved Changes Confirmation Modal */}
+      {showUnsavedChangesModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-base-100 rounded-lg shadow-xl p-6 w-full max-w-md">
+            <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-warning/10 rounded-full">
+              <svg className="w-8 h-8 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            
+            <h3 className="text-xl font-bold text-center mb-4">Unsaved Changes</h3>
+            
+            <p className="text-center text-base-content/70 mb-6">
+              You have unsaved changes. Are you sure you want to leave this page?
+            </p>
+
+            <div className="flex gap-3">
+              <button 
+                className="btn btn-ghost flex-1"
+                onClick={handleUnsavedChangesStay}
+              >
+                Stay Here
+              </button>
+              <button 
+                className="btn btn-warning flex-1"
+                onClick={handleUnsavedChangesLeave}
+              >
+                Leave Page
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

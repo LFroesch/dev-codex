@@ -309,6 +309,16 @@ const Layout: React.FC = () => {
               
               {/* Search bar - always show */}
               <div className="relative ml-4 flex items-center gap-2">
+                {/* Current project indicator */}
+                {selectedProject && (
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-base-100/80 rounded-lg border border-base-content/10 shadow-sm">
+                    <div 
+                      className="w-2 h-2 rounded-full shadow-sm"
+                      style={{ backgroundColor: selectedProject.color }}
+                    ></div>
+                    <span className="text-sm font-medium">{selectedProject.name}</span>
+                  </div>
+                )}
                 <div className="relative">
                   <svg className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-base-content/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -393,16 +403,6 @@ const Layout: React.FC = () => {
             <div className="flex items-center gap-4 bg-base-200/50 backdrop-blur-sm border border-base-content/10 rounded-xl px-4 py-2.5 shadow-sm">
               <SessionTracker />
               
-              {selectedProject && (
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-base-100/80 rounded-lg border border-base-content/10 shadow-sm">
-                  <div 
-                    className="w-2 h-2 rounded-full shadow-sm"
-                    style={{ backgroundColor: selectedProject.color }}
-                  ></div>
-                  <span className="text-sm font-medium">{selectedProject.name}</span>
-                </div>
-              )}
-              
               <span className="text-sm font-medium text-base-content/80">Hi, {user?.firstName}!</span>
               
               <div className="dropdown dropdown-end">
@@ -468,11 +468,11 @@ const Layout: React.FC = () => {
         </div>
       </header>
 
-      <div className="flex-1 w-4/5 mx-auto bg-base-100 flex flex-col">
+      <div className="flex-1 w-4/5 mx-auto bg-base-100 flex flex-col mb-4 ">
         {/* Render content based on current route */}
         {searchParams.get('view') === 'projects' ? (
           /* My Projects Tab - Modern Style */
-          <div className="h-full flex flex-col">
+          <>
             {/* Tab Navigation */}
             <div className="flex justify-center px-4 py-6">
               <div className="tabs tabs-boxed tabs-lg">
@@ -502,8 +502,9 @@ const Layout: React.FC = () => {
             </div>
 
             {/* Tab Content */}
-            <div className="flex-1 overflow-auto">
-              <div className="max-w-6xl mx-auto space-y-4">
+            <div className="flex-1 overflow-auto border border-base-content/10 bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-sm">
+              <div className="p-6">
+                <div className="space-y-4">
                 {activeProjectTab === 'active' && (
                   <div className="space-y-4">
                     {Object.keys(groupedCurrentProjects).length === 0 ? (
@@ -558,7 +559,7 @@ const Layout: React.FC = () => {
                                     }}
                                     className={`btn btn-lg w-full justify-start gap-3 h-auto py-6 min-h-[4rem] ${
                                       selectedProject?.id === project.id 
-                                        ? 'btn-primary' 
+                                        ? 'btn-primary border-2 border-primary ring-2 ring-primary/20 shadow-lg' 
                                         : 'btn-ghost bg-base-100 hover:bg-base-200'
                                     }`}
                                   >
@@ -616,7 +617,11 @@ const Layout: React.FC = () => {
                                     handleProjectSelect(project);
                                     navigate('/notes');
                                   }}
-                                  className="btn btn-lg btn-ghost bg-base-100 hover:bg-base-200 w-full justify-start gap-3 h-auto py-6 min-h-[4rem] opacity-75 hover:opacity-100"
+                                  className={`btn btn-lg w-full justify-start gap-3 h-auto py-6 min-h-[4rem] ${
+                                    selectedProject?.id === project.id 
+                                      ? 'btn-primary border-2 border-primary ring-2 ring-primary/20 shadow-lg' 
+                                      : 'btn-ghost bg-base-100 hover:bg-base-200'
+                                  }`}
                                 >
                                   <div 
                                     className="w-4 h-4 rounded-md shadow-sm flex-shrink-0"
@@ -666,7 +671,11 @@ const Layout: React.FC = () => {
                                     handleProjectSelect(project);
                                     navigate('/notes');
                                   }}
-                                  className="btn btn-lg btn-ghost bg-base-100 hover:bg-base-200 w-full justify-start gap-3 h-auto py-5"
+                                  className={`btn btn-lg w-full justify-start gap-3 h-auto py-5 ${
+                                    selectedProject?.id === project.id 
+                                      ? 'btn-primary border-2 border-primary ring-2 ring-primary/20 shadow-lg' 
+                                      : 'btn-ghost bg-base-100 hover:bg-base-200'
+                                  }`}
                                 >
                                   <div 
                                     className="w-4 h-4 rounded-md shadow-sm flex-shrink-0"
@@ -682,9 +691,10 @@ const Layout: React.FC = () => {
                     ))}
                   </div>
                 )}
+                </div>
               </div>
             </div>
-          </div>
+          </>
         ) : location.pathname === '/discover' ? (
           /* Discover Tab - Keep as is */
           <div className="flex-1 overflow-auto border border-base-content/10 bg-gradient-to-br from-base-50 to-base-100/50 m-4 rounded-2xl shadow-2xl backdrop-blur-sm">

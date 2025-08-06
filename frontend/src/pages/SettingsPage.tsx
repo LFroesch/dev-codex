@@ -738,9 +738,9 @@ const SettingsPage: React.FC = () => {
         </div>
         <div className="collapse-content">
           <div className="space-y-4">
-            <div className="p-4 bg-warning/10 rounded-lg border border-warning/20">
-              <h4 className="font-semibold text-warning mb-2">{selectedProject.isArchived ? 'Unarchive Project' : 'Archive Project'}</h4>
-              <p className="text-warning/80 text-sm mb-4">
+            <div className={`p-4 ${!selectedProject.isArchived ? 'bg-warning/10 border-warning/20' : 'bg-info/10 border-info/20'} rounded-lg border`}>
+              <h4 className={`font-semibold ${!selectedProject.isArchived ? 'text-warning' : 'text-info'} mb-2`}>{selectedProject.isArchived ? 'Unarchive Project' : 'Archive Project'}</h4>
+              <p className={`${!selectedProject.isArchived ? 'text-warning/80' : 'text-info/80'} text-sm mb-4`}>
                 {selectedProject.isArchived ? 'Make this project active again' : 'Move this project to archived section'}
               </p>
               <button

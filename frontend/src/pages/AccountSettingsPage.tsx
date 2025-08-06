@@ -270,7 +270,7 @@ const AccountSettingsPage: React.FC = () => {
 
                 {/* Theme Info */}
                 <div className="bg-base-200 rounded-lg p-4 mt-6">
-                  <h3 className="font-semibold mb-2">Current Theme: {currentTheme}</h3>
+                    <h3 className="font-semibold mb-2">Current Theme: {currentTheme.charAt(0).toUpperCase() + currentTheme.slice(1)}</h3>
                   <div className="text-sm text-base-content/60">
                     <p>Theme preference is saved to your account and will be applied across all devices.</p>
                   </div>

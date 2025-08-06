@@ -82,7 +82,8 @@ export interface IProject extends Document {
   // Basic fields
   name: string;
   description: string;
-  userId: mongoose.Types.ObjectId;
+  userId: mongoose.Types.ObjectId; // Legacy field, now acts as ownerId
+  ownerId: mongoose.Types.ObjectId; // New owner field for clarity
   isArchived: boolean;
   isShared: boolean;
   createdAt: Date;
@@ -195,6 +196,12 @@ const projectSchema = new Schema<IProject>({
   
   // Existing fields
   userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  // New team-related fields
+  ownerId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true

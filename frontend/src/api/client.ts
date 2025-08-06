@@ -107,6 +107,12 @@ export interface Project {
   isShared: boolean;
   createdAt: string;
   updatedAt: string;
+  
+  // NEW: Team-related fields
+  isOwner?: boolean;
+  userRole?: 'owner' | 'editor' | 'viewer';
+  canEdit?: boolean;
+  canManageTeam?: boolean;
 }
 
 export interface AuthResponse {
@@ -226,6 +232,77 @@ export interface CreatePackageData {
   name: string;
   version?: string;
   description?: string;
+}
+
+// NEW: Team and notification interfaces
+export interface TeamMember {
+  _id: string;
+  userId: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  role: 'owner' | 'editor' | 'viewer';
+  invitedBy: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  } | null;
+  joinedAt: string;
+  isOwner?: boolean;
+}
+
+export interface ProjectInvitation {
+  _id: string;
+  projectId: {
+    _id: string;
+    name: string;
+    description: string;
+    color: string;
+  };
+  inviterUserId: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  inviteeEmail: string;
+  role: 'editor' | 'viewer';
+  token: string;
+  status: 'pending' | 'accepted' | 'expired' | 'cancelled';
+  expiresAt: string;
+  createdAt: string;
+}
+
+export interface Notification {
+  _id: string;
+  userId: string;
+  type: 'project_invitation' | 'project_shared' | 'team_member_added' | 'team_member_removed';
+  title: string;
+  message: string;
+  isRead: boolean;
+  actionUrl?: string;
+  relatedProjectId?: {
+    _id: string;
+    name: string;
+    color: string;
+  };
+  relatedInvitationId?: string;
+  relatedUserId?: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+  };
+  metadata?: Record<string, any>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface InviteUserData {
+  email: string;
+  role: 'editor' | 'viewer';
 }
 
 // Analytics API
@@ -366,4 +443,75 @@ export const projectAPI = {
   
   removePackage: (projectId: string, category: string, name: string): Promise<{ message: string }> =>
     apiClient.delete(`/projects/${projectId}/packages/${category}/${encodeURIComponent(name)}`).then(res => res.data),
+};
+
+// NEW: Team management API
+export const teamAPI = {
+  // Get team members for a project
+  getMembers: (projectId: string): Promise<{ success: boolean; members: TeamMember[] }> =>
+    apiClient.get(`/projects/${projectId}/members`).then(res => res.data),
+
+  // Invite user to project
+  inviteUser: (projectId: string, data: InviteUserData): Promise<{ success: boolean; message: string; invitation: any }> =>
+    apiClient.post(`/projects/${projectId}/invite`, data).then(res => res.data),
+
+  // Remove team member
+  removeMember: (projectId: string, userId: string): Promise<{ success: boolean; message: string }> =>
+    apiClient.delete(`/projects/${projectId}/members/${userId}`).then(res => res.data),
+
+  // Update member role
+  updateMemberRole: (projectId: string, userId: string, role: 'editor' | 'viewer'): Promise<{ success: boolean; message: string; member: TeamMember }> =>
+    apiClient.patch(`/projects/${projectId}/members/${userId}`, { role }).then(res => res.data),
+};
+
+// NEW: Invitations API
+export const invitationAPI = {
+  // Get pending invitations for current user
+  getPending: (): Promise<{ success: boolean; invitations: ProjectInvitation[] }> =>
+    apiClient.get('/invitations/pending').then(res => res.data),
+
+  // Accept invitation
+  acceptInvitation: (token: string): Promise<{ success: boolean; message: string; project: any; role: string }> =>
+    apiClient.post(`/invitations/${token}/accept`).then(res => res.data),
+
+  // Decline invitation
+  declineInvitation: (token: string): Promise<{ success: boolean; message: string }> =>
+    apiClient.post(`/invitations/${token}/decline`).then(res => res.data),
+
+  // Get invitation details (public, no auth required)
+  getDetails: (token: string): Promise<{ success: boolean; invitation: any }> =>
+    apiClient.get(`/invitations/${token}`).then(res => res.data),
+};
+
+// NEW: Notifications API
+export const notificationAPI = {
+  // Get user notifications
+  getNotifications: (params?: { limit?: number; skip?: number; unread_only?: boolean }): Promise<{ 
+    success: boolean; 
+    notifications: Notification[]; 
+    unreadCount: number; 
+    total: number; 
+  }> =>
+    apiClient.get('/notifications', { params }).then(res => res.data),
+
+  // Mark notification as read
+  markAsRead: (notificationId: string): Promise<{ success: boolean; notification: Notification }> =>
+    apiClient.patch(`/notifications/${notificationId}/read`).then(res => res.data),
+
+  // Mark all notifications as read
+  markAllAsRead: (): Promise<{ success: boolean; message: string; modifiedCount: number }> =>
+    apiClient.patch('/notifications/read-all').then(res => res.data),
+
+  // Delete notification
+  deleteNotification: (notificationId: string): Promise<{ success: boolean; message: string }> =>
+    apiClient.delete(`/notifications/${notificationId}`).then(res => res.data),
+
+  // Get invitation notification details
+  getInvitationNotification: (invitationId: string): Promise<{ 
+    success: boolean; 
+    notification: Notification; 
+    invitation: any; 
+    project: any; 
+  }> =>
+    apiClient.get(`/notifications/invitation/${invitationId}`).then(res => res.data),
 };

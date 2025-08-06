@@ -69,7 +69,7 @@ const SessionTracker: React.FC<SessionTrackerProps> = ({
   return (
     <div className={`session-tracker ${className}`}>
       {/* Compact view with backdrop */}
-      <div className="flex items-center gap-2 bg-base-200/50 backdrop-blur-sm rounded-full px-3 py-1.5 border border-base-content/10 shadow-sm hover:bg-base-200/70 transition-all duration-200">
+      <div className="flex items-center gap-2 bg-base-100/80 backdrop-blur-sm rounded-full px-3 py-1.5 border border-base-content/10 shadow-sm hover:bg-base-200/70 transition-all duration-200">
         <div 
           className="tooltip tooltip-left"
           data-tip={`Session: ${formatDuration(sessionInfo.duration)} | Status: ${getActivityStatus(sessionInfo.isActive)}`}

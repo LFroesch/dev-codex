@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Note, projectAPI } from '../api/client';
 import EnhancedTextEditor from './EnhancedTextEditor';
+import { unsavedChangesManager } from '../utils/unsavedChanges';
 
 interface NoteItemProps {
   note: Note;
@@ -24,6 +25,9 @@ const NoteItem: React.FC<NoteItemProps> = ({
   const [loading, setLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
+  // Create unique component ID for unsaved changes tracking
+  const componentId = `note-${note.id}`;
+  
   const autoSaveTimeoutRef = useRef<number | null>(null);
   const editingContainerRef = useRef<HTMLDivElement>(null);
   const isCancelingRef = useRef(false);
@@ -35,6 +39,27 @@ const NoteItem: React.FC<NoteItemProps> = ({
     setEditDescription(note.description || '');
     setEditContent(note.content);
   }, [note.title, note.description, note.content]);
+
+  // Track unsaved changes and register with the manager
+  React.useEffect(() => {
+    if (isEditing) {
+      const hasChanges = editTitle.trim() !== note.title || 
+                        editDescription.trim() !== (note.description || '') || 
+                        editContent.trim() !== note.content;
+      
+      unsavedChangesManager.setUnsavedChanges(componentId, hasChanges);
+    } else {
+      // Clear unsaved changes when not editing
+      unsavedChangesManager.setUnsavedChanges(componentId, false);
+    }
+  }, [isEditing, editTitle, editDescription, editContent, note.title, note.description, note.content, componentId]);
+
+  // Cleanup: remove from unsaved changes when component unmounts
+  React.useEffect(() => {
+    return () => {
+      unsavedChangesManager.setUnsavedChanges(componentId, false);
+    };
+  }, [componentId]);
 
   // Auto-save functionality
   const scheduleAutoSave = () => {
@@ -65,12 +90,8 @@ const NoteItem: React.FC<NoteItemProps> = ({
         // Check if there are changes before asking to save
         if (editTitle.trim() !== note.title || editDescription.trim() !== (note.description || '') || editContent.trim() !== note.content) {
           event.preventDefault();
-          const shouldSave = window.confirm('You have unsaved changes. Do you want to save them?');
-          if (shouldSave) {
-            handleSave();
-          } else {
-            handleCancel();
-          }
+          // Changes will now be handled by the global unsaved changes manager
+          // Just prevent the click from proceeding - navigation blocking will handle the rest
         } else {
           setIsEditing(false);
         }
@@ -133,6 +154,8 @@ const NoteItem: React.FC<NoteItemProps> = ({
       setShowDeleteConfirm(false);
     }
   };
+
+
 
   const handleCancel = () => {
     isCancelingRef.current = true;

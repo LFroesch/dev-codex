@@ -4,6 +4,7 @@ import React from 'react';
 class UnsavedChangesManager {
   private components = new Set<string>();
   private listeners = new Set<() => void>();
+  private confirmationHandler: ((message: string) => Promise<boolean>) | null = null;
 
   setUnsavedChanges(componentId: string, hasChanges: boolean) {
     if (hasChanges) {
@@ -32,7 +33,28 @@ class UnsavedChangesManager {
     this.listeners.forEach(callback => callback());
   }
 
-  checkNavigationAllowed(): boolean {
+  // Set a custom confirmation handler (will be called from Layout)
+  setConfirmationHandler(handler: (message: string) => Promise<boolean>) {
+    this.confirmationHandler = handler;
+  }
+
+  async checkNavigationAllowed(): Promise<boolean> {
+    if (!this.hasUnsavedChanges()) {
+      return true;
+    }
+    
+    const message = 'You have unsaved changes. Are you sure you want to leave this page?';
+    
+    if (this.confirmationHandler) {
+      return await this.confirmationHandler(message);
+    }
+    
+    // Fallback to window.confirm if no custom handler is set
+    return window.confirm(message);
+  }
+
+  // Synchronous version for compatibility with existing code
+  checkNavigationAllowedSync(): boolean {
     if (!this.hasUnsavedChanges()) {
       return true;
     }

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { authAPI } from '../api/client';
+import { authAPI } from '../api';
+import { useLoadingState } from '../hooks/useLoadingState';
+import { useApiCall } from '../hooks/useApiCall';
 import AnalyticsDashboard from '../components/AnalyticsDashboard';
 
 const THEMES = [
@@ -16,14 +18,16 @@ const AccountSettingsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'theme' | 'connections' | 'profile' | 'public' | 'analytics'>('theme');
   const [currentTheme, setCurrentTheme] = useState('cyberpunk');
   const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [unlinkingGoogle, setUnlinkingGoogle] = useState(false);
+  
+  const { loading } = useLoadingState(true);
+  const { loading: saving, withLoading: withSaving } = useLoadingState();
+  const { loading: unlinkingGoogle, withLoading: withUnlinking } = useLoadingState();
+  const { loading: savingProfile, withLoading: withSavingProfile } = useLoadingState();
+  
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [bio, setBio] = useState('');
-  const [savingProfile, setSavingProfile] = useState(false);
   
   // Public profile settings
   const [isPublicProfile, setIsPublicProfile] = useState(false);

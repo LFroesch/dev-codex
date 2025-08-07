@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { analyticsAPI } from '../api/client';
+import { analyticsAPI } from '../api';
 import OptimizedAnalytics from '../components/OptimizedAnalytics';
 
 interface User {

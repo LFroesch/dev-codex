@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { analyticsAPI } from '../api/client';
+import { analyticsAPI } from '../api';
 
 interface AnalyticsData {
   eventCounts: Array<{

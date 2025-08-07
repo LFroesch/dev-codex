@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { notificationAPI, invitationAPI, Notification } from '../api/client';
+import { notificationAPI, invitationAPI, Notification } from '../api';
 
 const NotificationBell: React.FC = () => {
   const [unreadCount, setUnreadCount] = useState(0);

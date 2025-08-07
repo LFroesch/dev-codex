@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import { authAPI, projectAPI, Project } from '../api/client';
+import { authAPI, projectAPI } from '../api';
+import type { BaseProject } from '../../../shared/types';
 import SessionTracker from './SessionTracker';
 import NotificationBell from './NotificationBell';
 import { useAnalytics } from '../hooks/useAnalytics';
@@ -11,8 +12,8 @@ const Layout: React.FC = () => {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const [user, setUser] = useState<any>(null);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [projects, setProjects] = useState<BaseProject[]>([]);
+  const [selectedProject, setSelectedProject] = useState<BaseProject | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -104,7 +105,7 @@ const Layout: React.FC = () => {
   };
 
   // Helper function to select and persist project
-  const handleProjectSelect = (project: Project) => {
+  const handleProjectSelect = (project: BaseProject) => {
     setSelectedProject(project);
     localStorage.setItem('selectedProjectId', project.id);
     setSearchTerm(''); // Clear search when selecting a project
@@ -259,7 +260,7 @@ const Layout: React.FC = () => {
 
   const handleProjectDelete = async (projectId: string) => {
     try {
-      await projectAPI.delete(projectId);
+      await projectAPI.deleteProject(projectId);
       await loadProjects();
       if (selectedProject?.id === projectId) {
         setSelectedProject(null);

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Project } from '../api/client';
+import type { BaseProject } from '../../../shared/types';
 
 interface ExportSectionProps {
-  selectedProject: Project;
+  selectedProject: BaseProject;
 }
 
 interface ExportOptions {

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Note, projectAPI } from '../api/client';
+import { Note, projectAPI } from '../api';
 import EnhancedTextEditor from './EnhancedTextEditor';
 import { unsavedChangesManager } from '../utils/unsavedChanges';
 

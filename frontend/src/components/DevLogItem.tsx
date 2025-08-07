@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { DevLogEntry, projectAPI } from '../api/client';
+import { DevLogEntry, projectAPI } from '../api';
 
 interface DevLogItemProps {
   entry: DevLogEntry;

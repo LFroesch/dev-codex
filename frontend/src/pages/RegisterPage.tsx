@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { authAPI } from '../api/client';
+import { authAPI } from '../api';
+import { useLoadingState } from '../hooks/useLoadingState';
+import { useErrorHandler } from '../hooks/useErrorHandler';
 
 const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
@@ -11,8 +13,8 @@ const RegisterPage: React.FC = () => {
     password: '',
     confirmPassword: ''
   });
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const { loading, withLoading } = useLoadingState();
+  const { error, handleError, clearError } = useErrorHandler();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({

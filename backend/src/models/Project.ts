@@ -86,6 +86,17 @@ export interface IProject extends Document {
   ownerId: mongoose.Types.ObjectId; // New owner field for clarity
   isArchived: boolean;
   isShared: boolean;
+  isPublic: boolean;
+  publicSlug?: string;
+  publicDescription?: string;
+  publicVisibility?: {
+    description: boolean;
+    tags: boolean;
+    links: boolean;
+    docs: boolean;
+    techStack: boolean;
+    timestamps: boolean;
+  };
   createdAt: Date;
   updatedAt: Date;
   
@@ -213,6 +224,32 @@ const projectSchema = new Schema<IProject>({
   isShared: {
     type: Boolean,
     default: false
+  },
+  isPublic: {
+    type: Boolean,
+    default: false
+  },
+  publicSlug: {
+    type: String,
+    required: false,
+    unique: true,
+    sparse: true,
+    lowercase: true,
+    trim: true,
+    match: /^[a-z0-9-]+$/
+  },
+  publicDescription: {
+    type: String,
+    required: false,
+    maxlength: 300
+  },
+  publicVisibility: {
+    description: { type: Boolean, default: true },
+    tags: { type: Boolean, default: true },
+    links: { type: Boolean, default: true },
+    docs: { type: Boolean, default: true },
+    techStack: { type: Boolean, default: true },
+    timestamps: { type: Boolean, default: true }
   },
 }, {
   timestamps: true

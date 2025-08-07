@@ -21,6 +21,8 @@ import IdeasPage from './pages/IdeasPage';
 import AccountSettingsPage from './pages/AccountSettingsPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import SupportPage from './pages/SupportPage';
+import PublicProjectPage from './pages/PublicProjectPage';
+import PublicProfilePage from './pages/PublicProfilePage';
 
 // Import debug utils in development
 if (import.meta.env.DEV) {
@@ -44,12 +46,9 @@ const App: React.FC = () => {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
-          <Route path="/billing" element={<BillingPage />} />
           <Route path="/billing/success" element={<BillingSuccessPage />} />
           <Route path="/billing/cancel" element={<BillingCancelPage />} />
           <Route path="/create-project" element={<CreateProject />} />
-          <Route path="/discover" element={<DiscoverPage />} />
-          <Route path="/account-settings" element={<AccountSettingsPage />} />
           <Route path="/admin" element={<AdminDashboardPage />} />
           <Route path="/support" element={<SupportPage />} />
           <Route path="/" element={<Layout />}>
@@ -61,6 +60,13 @@ const App: React.FC = () => {
             <Route path="public" element={<PublicPage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="ideas" element={<IdeasPage />} />
+            <Route path="discover" element={<DiscoverPage />} />
+            <Route path="discover/project/:identifier" element={<PublicProjectPage />} />
+            <Route path="discover/user/:identifier" element={<PublicProfilePage />} />
+            <Route path="project/:identifier" element={<PublicProjectPage />} />
+            <Route path="user/:identifier" element={<PublicProfilePage />} />
+            <Route path="billing" element={<BillingPage />} />
+            <Route path="account-settings" element={<AccountSettingsPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/login" />} />
         </Routes>

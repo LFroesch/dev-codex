@@ -835,6 +835,9 @@ function formatProjectResponse(project: any) {
     tags: project.tags,
     isArchived: project.isArchived,
     isShared: project.isShared,
+    isPublic: project.isPublic,
+    publicSlug: project.publicSlug,
+    publicDescription: project.publicDescription,
     createdAt: project.createdAt,
     updatedAt: project.updatedAt
   };

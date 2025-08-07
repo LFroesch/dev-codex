@@ -92,8 +92,14 @@ const SettingsPage: React.FC = () => {
     }
   };
 
-  const handleAddTag = () => {
-    if (newTag.trim() && !tags.includes(newTag.trim())) {
+  const handleAddTag = (e?: React.KeyboardEvent | React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    const trimmedTag = newTag.trim().toLowerCase();
+    if (trimmedTag && !tags.map(t => t.toLowerCase()).includes(trimmedTag)) {
       setTags([...tags, newTag.trim()]);
       setNewTag('');
     }
@@ -240,265 +246,337 @@ const SettingsPage: React.FC = () => {
       <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10">
         <input type="checkbox" defaultChecked />
         <div className="collapse-title text-lg font-semibold bg-base-200 border-b border-base-content/10">
-          Project Information
+        ⚙️ Project Information
         </div>
         <div className="collapse-content">
-          <div className="flex justify-between items-center mb-4 pt-4">
-            <h3 className="text-lg font-semibold">Basic Info</h3>
-            <div className="flex space-x-2">
-              {isEditingBasic ? (
-                <>
+          {/* Basic Info Section */}
+          <div className="pt-4">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-base font-semibold">Basic Info</h3>
+              <div className="flex space-x-2">
+                {isEditingBasic ? (
+                  <>
+                    <button
+                      onClick={() => handleCancel('basic')}
+                      className="btn btn-ghost btn-xs"
+                      disabled={savingBasic}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSaveBasic}
+                      className="btn btn-primary btn-xs"
+                      disabled={savingBasic}
+                    >
+                      {savingBasic ? 'Saving...' : 'Save'}
+                    </button>
+                  </>
+                ) : (
                   <button
-                    onClick={() => handleCancel('basic')}
-                    className="btn btn-ghost btn-sm"
-                    disabled={savingBasic}
+                    onClick={() => setIsEditingBasic(true)}
+                    className="btn btn-outline btn-xs"
                   >
-                    Cancel
+                    Edit
                   </button>
-                  <button
-                    onClick={handleSaveBasic}
-                    className="btn btn-primary btn-sm"
-                    disabled={savingBasic}
-                  >
-                    {savingBasic ? 'Saving...' : 'Save'}
-                  </button>
-                </>
-              ) : (
-                <button
-                  onClick={() => setIsEditingBasic(true)}
-                  className="btn btn-outline btn-sm"
-                >
-                  Edit
-                </button>
-              )}
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+              <div>
+                <label className="label py-1">
+                  <span className="label-text font-medium text-sm">Project Name</span>
+                </label>
+                {isEditingBasic ? (
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="input input-bordered input-sm w-full"
+                    placeholder="Enter project name..."
+                    required
+                  />
+                ) : (
+                  <div className="p-2 bg-base-200 rounded border border-base-300">
+                    <p className="font-medium text-sm">{name}</p>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="label py-1">
+                  <span className="label-text font-medium text-sm">Description</span>
+                </label>
+                {isEditingBasic ? (
+                  <input
+                    type="text"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    className="input input-bordered input-sm w-full"
+                    placeholder="Enter project description..."
+                    required
+                  />
+                ) : (
+                  <div className="p-2 bg-base-200 rounded border border-base-300">
+                    <p className="text-sm">{description}</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
-          <div className="space-y-4">
-            <div>
-              <label className="label">
-                <span className="label-text font-medium">Project Name</span>
-              </label>
-              {isEditingBasic ? (
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="input input-bordered w-full"
-                  placeholder="Enter project name..."
-                  required
-                />
-              ) : (
-                <div className="p-3 bg-base-200 rounded-lg border border-base-300">
-                  <p className="font-medium">{name}</p>
-                </div>
-              )}
-            </div>
+          <div className="divider my-4">Metadata</div>
 
-            <div>
-              <label className="label">
-                <span className="label-text font-medium">Description</span>
-              </label>
-              {isEditingBasic ? (
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="textarea textarea-bordered w-full h-24 resize-none"
-                  placeholder="Enter project description..."
-                  required
-                />
-              ) : (
-                <div className="p-3 bg-base-200 rounded-lg border border-base-300">
-                  <p>{description}</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="divider">Metadata</div>
-
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold">Metadata</h3>
-            <div className="flex space-x-2">
-              {isEditingMetadata ? (
-                <>
+          {/* Metadata Section */}
+          <div>
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-base font-semibold">Metadata</h3>
+              <div className="flex space-x-2">
+                {isEditingMetadata ? (
+                  <>
+                    <button
+                      onClick={() => handleCancel('metadata')}
+                      className="btn btn-ghost btn-xs"
+                      disabled={savingMetadata}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSaveMetadata}
+                      className="btn btn-primary btn-xs"
+                      disabled={savingMetadata}
+                    >
+                      {savingMetadata ? 'Saving...' : 'Save'}
+                    </button>
+                  </>
+                ) : (
                   <button
-                    onClick={() => handleCancel('metadata')}
-                    className="btn btn-ghost btn-sm"
-                    disabled={savingMetadata}
+                    onClick={() => setIsEditingMetadata(true)}
+                    className="btn btn-outline btn-xs"
                   >
-                    Cancel
+                    Edit
                   </button>
-                  <button
-                    onClick={handleSaveMetadata}
-                    className="btn btn-primary btn-sm"
-                    disabled={savingMetadata}
-                  >
-                    {savingMetadata ? 'Saving...' : 'Save'}
-                  </button>
-                </>
-              ) : (
-                <button
-                  onClick={() => setIsEditingMetadata(true)}
-                  className="btn btn-outline btn-sm"
-                >
-                  Edit
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="label">
-                <span className="label-text font-medium">Staging Environment</span>
-              </label>
-              {isEditingMetadata ? (
-                <select
-                  value={stagingEnvironment}
-                  onChange={(e) => setStagingEnvironment(e.target.value as 'development' | 'staging' | 'production')}
-                  className="select select-bordered w-full"
-                >
-                  <option value="development">Development</option>
-                  <option value="staging">Staging</option>
-                  <option value="production">Production</option>
-                </select>
-              ) : (
-                <div className="p-3 bg-base-200 rounded-lg border border-base-300">
-                  <span className={`badge ${
-                    stagingEnvironment === 'production' ? 'badge-error' :
-                    stagingEnvironment === 'staging' ? 'badge-warning' :
-                    'badge-success'
-                  }`}>
-                    {stagingEnvironment.charAt(0).toUpperCase() + stagingEnvironment.slice(1)}
-                  </span>
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
-            <div>
-              <label className="label">
-                <span className="label-text font-medium">Category</span>
-              </label>
-              {isEditingMetadata ? (
-                <input
-                  type="text"
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="input input-bordered w-full"
-                  placeholder="Enter category..."
-                />
-              ) : (
-                <div className="p-3 bg-base-200 rounded-lg border border-base-300">
-                  <p>{category}</p>
-                </div>
-              )}
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="label">
-                <span className="label-text font-medium">Project Color</span>
-              </label>
-              {isEditingMetadata ? (
-                <div className="space-y-2">
-                  <div className="flex items-center space-x-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div>
+                <label className="label py-1">
+                  <span className="label-text font-medium text-sm">Project Color</span>
+                </label>
+                {isEditingMetadata ? (
+                  <div className="flex items-center gap-2">
                     <input
                       type="color"
                       value={color}
                       onChange={(e) => setColor(e.target.value)}
-                      className="w-12 h-12 border border-base-300 rounded-lg cursor-pointer"
+                      className="w-8 h-8 border border-base-300 rounded cursor-pointer flex-shrink-0"
                     />
                     <input
                       type="text"
                       value={color}
                       onChange={(e) => setColor(e.target.value)}
-                      className="input input-bordered flex-1"
+                      className="input input-bordered input-sm flex-1 font-mono text-xs"
                       placeholder="#3B82F6"
                     />
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {predefinedColors.map((presetColor) => (
-                      <button
-                        key={presetColor}
-                        onClick={() => setColor(presetColor)}
-                        className={`w-8 h-8 rounded-md border-2 ${
-                          color === presetColor ? 'border-base-content' : 'border-base-300'
-                        }`}
-                        style={{ backgroundColor: presetColor }}
-                      />
-                    ))}
+                ) : (
+                  <div className="p-2 bg-base-200 rounded border border-base-300">
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="w-6 h-6 rounded border border-base-300 flex-shrink-0"
+                        style={{ backgroundColor: color }}
+                      ></div>
+                      <span className="font-mono text-xs">{color}</span>
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div className="p-3 bg-base-200 rounded-lg border border-base-300">
-                  <div className="flex items-center space-x-3">
-                    <div 
-                      className="w-8 h-8 rounded-md border border-base-300"
-                      style={{ backgroundColor: color }}
-                    ></div>
-                    <span className="font-mono">{color}</span>
-                  </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
 
-            <div className="md:col-span-2">
-              <label className="label">
-                <span className="label-text font-medium">Tags</span>
-              </label>
-              {isEditingMetadata ? (
-                <div className="space-y-2">
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={newTag}
-                      onChange={(e) => setNewTag(e.target.value)}
-                      className="input input-bordered flex-1"
-                      placeholder="Add a tag..."
-                      onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
-                    />
-                    <button
-                      onClick={handleAddTag}
-                      className="btn btn-primary"
-                    >
-                      Add
-                    </button>
+              <div>
+                <label className="label py-1">
+                  <span className="label-text font-medium text-sm">Category</span>
+                </label>
+                {isEditingMetadata ? (
+                  <input
+                    type="text"
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="input input-bordered input-sm w-full"
+                    placeholder="Enter category..."
+                  />
+                ) : (
+                  <div className="p-2 bg-base-200 rounded border border-base-300">
+                    <p className="text-sm">{category}</p>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="badge badge-info gap-2"
+                )}
+              </div>
+
+              <div>
+                <label className="label py-1">
+                  <span className="label-text font-medium text-sm">Environment</span>
+                </label>
+                {isEditingMetadata ? (
+                  <select
+                    value={stagingEnvironment}
+                    onChange={(e) => setStagingEnvironment(e.target.value as 'development' | 'staging' | 'production')}
+                    className="select select-bordered select-sm w-full"
+                  >
+                    <option value="development">Development</option>
+                    <option value="staging">Staging</option>
+                    <option value="production">Production</option>
+                  </select>
+                ) : (
+                  <div className="p-2 bg-base-200 rounded border border-base-300">
+                    <span className={`badge badge-sm ${
+                      stagingEnvironment === 'production' ? 'badge-error' :
+                      stagingEnvironment === 'staging' ? 'badge-warning' :
+                      'badge-success'
+                    }`}>
+                      {stagingEnvironment.charAt(0).toUpperCase() + stagingEnvironment.slice(1)}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="label py-1">
+                  <span className="label-text font-medium text-sm">Tags ({tags.length})</span>
+                </label>
+                {isEditingMetadata ? (
+                  <div className="space-y-1">
+                    <div className="flex gap-1">
+                      <input
+                        type="text"
+                        value={newTag}
+                        onChange={(e) => setNewTag(e.target.value)}
+                        className="input input-bordered input-sm flex-1"
+                        placeholder="Add tag..."
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            handleAddTag(e);
+                          }
+                        }}
+                      />
+                      <button
+                        onClick={handleAddTag}
+                        className="btn btn-primary btn-sm btn-square"
                       >
-                        {tag}
-                        <button
-                          onClick={() => handleRemoveTag(tag)}
-                          className="text-info-content hover:text-error"
-                        >
-                          ×
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="p-3 bg-base-200 rounded-lg border border-base-300">
-                  <div className="flex flex-wrap gap-2">
-                    {tags.length === 0 ? (
-                      <span className="text-base-content/60 italic">No tags</span>
-                    ) : (
-                      tags.map((tag) => (
+                        +
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {tags.map((tag, index) => (
                         <span
-                          key={tag}
-                          className="badge badge-info"
+                          key={`tag-${index}-${tag}`}
+                          className="badge badge-info badge-sm gap-1"
                         >
                           {tag}
+                          <button
+                            onClick={() => handleRemoveTag(tag)}
+                            className="text-info-content hover:text-error"
+                          >
+                            ×
+                          </button>
                         </span>
-                      ))
-                    )}
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-2 bg-base-200 rounded border border-base-300 min-h-[2rem]">
+                    <div className="flex flex-wrap gap-1">
+                      {tags.length === 0 ? (
+                        <span className="text-base-content/60 italic text-xs">No tags</span>
+                      ) : (
+                        tags.map((tag, index) => (
+                          <span
+                            key={`display-tag-${index}-${tag}`}
+                            className="badge badge-info badge-sm"
+                          >
+                            {tag}
+                          </span>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Color preset buttons - only show when editing */}
+            {isEditingMetadata && (
+              <div className="mt-2">
+                <div className="flex flex-wrap gap-1">
+                  {predefinedColors.map((presetColor) => (
+                    <button
+                      key={presetColor}
+                      onClick={() => setColor(presetColor)}
+                      className={`w-6 h-6 rounded border-2 ${
+                        color === presetColor ? 'border-base-content' : 'border-base-300'
+                      } hover:scale-110 transition-transform`}
+                      style={{ backgroundColor: presetColor }}
+                      title={presetColor}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="divider my-4">Status</div>
+
+          {/* Project Status Section */}
+          <div>
+            <h3 className="text-base font-semibold mb-3">Project Status</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <h4 className="font-medium text-sm mb-2">Current Status</h4>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Archive Status:</span>
+                    <span className={`badge badge-sm ${
+                      selectedProject.isArchived 
+                        ? 'badge-ghost' 
+                        : 'badge-success'
+                    }`}>
+                      {selectedProject.isArchived ? 'Archived' : 'Active'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Sharing Status:</span>
+                    <span className={`badge badge-sm ${
+                      selectedProject.isShared
+                        ? 'badge-info'
+                        : 'badge-ghost'
+                    }`}>
+                      {selectedProject.isShared ? 'Shared' : 'Private'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Deployment Status:</span>
+                    <span className="badge badge-ghost badge-sm">
+                      Coming Soon
+                    </span>
                   </div>
                 </div>
-              )}
+              </div>
+
+              <div>
+                <h4 className="font-medium text-sm mb-2">Timestamps</h4>
+                <div className="space-y-2 text-sm">
+                  <div>
+                    <span className="font-medium">Created:</span> {new Date(selectedProject.createdAt).toLocaleDateString()}
+                  </div>
+                  <div>
+                    <span className="font-medium">Updated:</span> {new Date(selectedProject.updatedAt).toLocaleDateString()}
+                  </div>
+                  <div>
+                    <span className="font-medium">Project ID:</span> 
+                    <span className="font-mono text-xs ml-2">{selectedProject.id}</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -749,65 +827,6 @@ const SettingsPage: React.FC = () => {
                 </div>
               ))
             )}
-          </div>
-        </div>
-      </div>
-
-      {/* Project Status */}
-      <div className="collapse collapse-arrow bg-base-200 shadow-lg border border-base-content/10">
-        <input type="checkbox" />
-        <div className="collapse-title text-xl font-medium">
-          📊 Project Status
-        </div>
-        <div className="collapse-content">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <h4 className="font-medium mb-2">Current Status</h4>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span>Archive Status:</span>
-                  <span className={`badge ${
-                    selectedProject.isArchived 
-                      ? 'badge-ghost' 
-                      : 'badge-success'
-                  }`}>
-                    {selectedProject.isArchived ? 'Archived' : 'Active'}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Sharing Status:</span>
-                  <span className={`badge ${
-                    selectedProject.isShared
-                      ? 'badge-info'
-                      : 'badge-ghost'
-                  }`}>
-                    {selectedProject.isShared ? 'Shared' : 'Private'}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Deployment Status:</span>
-                  <span className="badge badge-ghost">
-                    Coming Soon
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <h4 className="font-medium mb-2">Timestamps</h4>
-              <div className="space-y-2 text-sm">
-                <div>
-                  <span className="font-medium">Created:</span> {new Date(selectedProject.createdAt).toLocaleDateString()}
-                </div>
-                <div>
-                  <span className="font-medium">Updated:</span> {new Date(selectedProject.updatedAt).toLocaleDateString()}
-                </div>
-                <div>
-                  <span className="font-medium">Project ID:</span> 
-                  <span className="font-mono text-xs ml-2">{selectedProject.id}</span>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>

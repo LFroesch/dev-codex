@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { publicAPI } from '../api/client';
+import { publicAPI } from '../api';
 
 const DiscoverPage: React.FC = () => {
   const navigate = useNavigate();

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
-import { Project, projectAPI } from '../api/client';
+import { projectAPI } from '../api';
+import type { BaseProject } from '../../../shared/types';
 import ExportSection from '../components/ExportSection';
 import TeamManagement from '../components/TeamManagement';
 
 interface ContextType {
-  selectedProject: Project | null;
+  selectedProject: BaseProject | null;
   onProjectUpdate: (projectId: string, updatedData: any) => Promise<any>;
   onProjectArchive: (projectId: string, isArchived: boolean) => Promise<void>;
   onProjectDelete: (projectId: string) => Promise<void>;

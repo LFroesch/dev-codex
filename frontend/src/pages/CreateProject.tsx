@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { projectAPI } from '../api/client';
+import { projectAPI } from '../api';
+import { useLoadingState } from '../hooks/useLoadingState';
+import { useErrorHandler } from '../hooks/useErrorHandler';
 
 const CreateProject: React.FC = () => {
   const navigate = useNavigate();
@@ -12,8 +14,8 @@ const CreateProject: React.FC = () => {
     tags: [] as string[],
     stagingEnvironment: 'development' as 'development' | 'staging' | 'production'
   });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const { loading, withLoading } = useLoadingState();
+  const { error, handleError, clearError } = useErrorHandler();
 
   // Apply theme on mount
   useEffect(() => {

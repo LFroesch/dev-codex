@@ -1,12 +1,13 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import bcrypt from 'bcryptjs';
+import type { UserTheme } from '../../../shared/types';
 
 export interface IUser extends Document {
   email: string;
   password: string;
   firstName: string;
   lastName: string;
-  theme: string;
+  theme: UserTheme;
   planTier: 'free' | 'pro' | 'enterprise';
   projectLimit: number;
   stripeCustomerId?: string;

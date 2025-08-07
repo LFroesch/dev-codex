@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Todo, projectAPI } from '../api/client';
+import { Todo, projectAPI } from '../api';
 
 interface TodoItemProps {
   todo: Todo;

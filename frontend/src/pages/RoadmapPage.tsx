@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { Project, projectAPI } from '../api/client';
+import { Project, projectAPI } from '../api';
 import { TECH_CATEGORIES, PACKAGE_CATEGORIES, TechCategory, TechOption } from '../data/techStackData';
 
 interface ContextType {

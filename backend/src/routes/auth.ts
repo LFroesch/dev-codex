@@ -236,7 +236,11 @@ router.get('/me', async (req, res) => {
         lastName: user.lastName,
         theme: user.theme,
         hasGoogleAccount: !!user.googleId,
-        isAdmin: user.isAdmin
+        isAdmin: user.isAdmin,
+        bio: user.bio || '',
+        planTier: user.planTier || 'free',
+        projectLimit: user.projectLimit || 3,
+        createdAt: user.createdAt
       }
     });
   } catch (error) {
@@ -283,6 +287,43 @@ router.patch('/theme', requireAuth, async (req: AuthRequest, res) => {
     });
   } catch (error) {
     console.error('Update theme error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// NEW: Update user profile
+router.patch('/profile', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const { bio } = req.body;
+    
+    const user = await User.findByIdAndUpdate(
+      req.userId,
+      { bio },
+      { new: true, runValidators: true }
+    ).select('-password');
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json({
+      message: 'Profile updated successfully',
+      user: {
+        id: user._id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        theme: user.theme,
+        hasGoogleAccount: !!user.googleId,
+        isAdmin: user.isAdmin,
+        bio: user.bio || '',
+        planTier: user.planTier || 'free',
+        projectLimit: user.projectLimit || 3,
+        createdAt: user.createdAt
+      }
+    });
+  } catch (error) {
+    console.error('Update profile error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

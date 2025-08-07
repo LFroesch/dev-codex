@@ -15,6 +15,10 @@ export interface User {
   theme: string;
   hasGoogleAccount?: boolean;
   isAdmin?: boolean;
+  bio?: string;
+  planTier?: 'free' | 'pro' | 'enterprise';
+  projectLimit?: number;
+  createdAt?: string;
 }
 
 export interface Note {
@@ -359,6 +363,9 @@ export const authAPI = {
   
   unlinkGoogle: (): Promise<{ message: string }> =>
     apiClient.delete('/auth/google/unlink').then(res => res.data),
+  
+  updateProfile: (data: { bio?: string; [key: string]: any }): Promise<{ message: string; user: User }> =>
+    apiClient.patch('/auth/profile', data).then(res => res.data),
 };
 
 export const projectAPI = {

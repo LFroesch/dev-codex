@@ -11,8 +11,10 @@ interface ExportOptions {
   tags: boolean;
   links: boolean;
   notes: boolean;
-  roadmap: boolean;
+  todos: boolean;
+  devLog: boolean;
   docs: boolean;
+  techStack: boolean;
   deploymentData: boolean;
   publicPageData: boolean;
   timestamps: boolean;
@@ -25,8 +27,10 @@ const ExportSection: React.FC<ExportSectionProps> = ({ selectedProject }) => {
     tags: true,
     links: true,
     notes: false,
-    roadmap: false,
+    todos: false,
+    devLog: false,
     docs: false,
+    techStack: false,
     deploymentData: false,
     publicPageData: false,
     timestamps: false,
@@ -68,7 +72,7 @@ const ExportSection: React.FC<ExportSectionProps> = ({ selectedProject }) => {
       data.description = selectedProject.description;
     }
 
-    if (exportOptions.tags && selectedProject.tags?.length) {
+    if (exportOptions.tags && selectedProject.tags) {
       data.tags = selectedProject.tags;
     }
 
@@ -80,12 +84,23 @@ const ExportSection: React.FC<ExportSectionProps> = ({ selectedProject }) => {
       data.notes = selectedProject.notes;
     }
 
-    if (exportOptions.roadmap && selectedProject.roadmapItems?.length) {
-      data.roadmap = selectedProject.roadmapItems;
+    if (exportOptions.todos && selectedProject.todos?.length) {
+      data.todos = selectedProject.todos;
+    }
+
+    if (exportOptions.devLog && selectedProject.devLog?.length) {
+      data.devLog = selectedProject.devLog;
     }
 
     if (exportOptions.docs && selectedProject.docs?.length) {
       data.docs = selectedProject.docs;
+    }
+
+    if (exportOptions.techStack && (selectedProject.selectedTechnologies?.length || selectedProject.selectedPackages?.length)) {
+      data.techStack = {
+        technologies: selectedProject.selectedTechnologies || [],
+        packages: selectedProject.selectedPackages || []
+      };
     }
 
     if (exportOptions.deploymentData && selectedProject.deploymentData) {
@@ -107,15 +122,33 @@ const ExportSection: React.FC<ExportSectionProps> = ({ selectedProject }) => {
 
     switch (exportFormat) {
       case 'json':
-        output = JSON.stringify(data, null, 2);
+        try {
+          output = JSON.stringify(data, (_, value) => {
+            // Handle potential circular references and limit string length
+            if (typeof value === 'string' && value.length > 10000) {
+              return value.substring(0, 10000) + '... [truncated]';
+            }
+            return value;
+          }, 2);
+        } catch (error) {
+          output = `Error generating JSON: ${error}`;
+        }
         break;
       
       case 'prompt':
-        output = generatePromptFormat(data);
+        try {
+          output = generatePromptFormat(data);
+        } catch (error) {
+          output = `Error generating prompt: ${error}`;
+        }
         break;
       
       case 'markdown':
-        output = generateMarkdownFormat(data);
+        try {
+          output = generateMarkdownFormat(data);
+        } catch (error) {
+          output = `Error generating markdown: ${error}`;
+        }
         break;
     }
 
@@ -124,73 +157,214 @@ const ExportSection: React.FC<ExportSectionProps> = ({ selectedProject }) => {
   };
 
   const generatePromptFormat = (data: any): string => {
-    let prompt = `Here's information about my project "${selectedProject.name}":\n\n`;
+    let prompt = `# Project Context for AI Assistant
+
+I'm working on a project called "${selectedProject.name}" and need your help. Here's the complete context:
+
+## 📋 PROJECT OVERVIEW`;
 
     if (data.basicInfo) {
-      prompt += `Basic Information:\n`;
-      prompt += `- Name: ${data.basicInfo.name}\n`;
-      if (data.basicInfo.category) prompt += `- Category: ${data.basicInfo.category}\n`;
-      if (data.basicInfo.stagingEnvironment) prompt += `- Environment: ${data.basicInfo.stagingEnvironment}\n`;
-      prompt += `\n`;
+      prompt += `
+**Project Name:** ${data.basicInfo.name}`;
+      if (data.basicInfo.category) prompt += `
+**Category:** ${data.basicInfo.category}`;
+      if (data.basicInfo.stagingEnvironment) prompt += `
+**Current Environment:** ${data.basicInfo.stagingEnvironment}`;
+      if (data.basicInfo.color) prompt += `
+**Theme Color:** ${data.basicInfo.color}`;
     }
 
     if (data.description) {
-      prompt += `Description:\n${data.description}\n\n`;
+      prompt += `
+
+**Project Description:**
+${data.description}`;
     }
 
-    if (data.tags?.length) {
-      prompt += `Tags: ${data.tags.join(', ')}\n\n`;
+    if (data.tags) {
+      prompt += `
+
+**Tags/Keywords:** ${data.tags.length ? data.tags.join(' • ') : 'None'}`;
     }
 
     if (data.links?.length) {
-      prompt += `Project Links:\n`;
+      prompt += `
+
+## 🔗 PROJECT RESOURCES`;
       data.links.forEach((link: any) => {
-        prompt += `- ${link.title}: ${link.url} (${link.type})\n`;
+        const emoji = link.type === 'github' ? '💻' : 
+                     link.type === 'demo' ? '🌐' : 
+                     link.type === 'docs' ? '📚' : '🔗';
+        prompt += `
+${emoji} **${link.title}:** ${link.url} (${link.type})`;
       });
-      prompt += `\n`;
+    }
+
+    if (data.techStack) {
+      prompt += `
+
+## ⚡ TECH STACK`;
+      if (data.techStack.technologies?.length) {
+        prompt += `
+**Technologies:** ${data.techStack.technologies.map((tech: any) => tech.name).join(' • ')}`;
+      }
+      if (data.techStack.packages?.length) {
+        prompt += `
+**Packages/Dependencies:** ${data.techStack.packages.map((pkg: any) => pkg.name).join(' • ')}`;
+      }
+    }
+
+    if (data.todos?.length) {
+      const completedTodos = data.todos.filter((todo: any) => todo?.completed);
+      const pendingTodos = data.todos.filter((todo: any) => todo && !todo.completed);
+      
+      prompt += `
+
+## ✅ CURRENT TASKS (${completedTodos.length} completed, ${pendingTodos.length} pending)`;
+      
+      if (pendingTodos.length > 0) {
+        prompt += `
+
+**🚧 Pending Tasks:**`;
+        pendingTodos.forEach((todo: any) => {
+          if (todo?.text) {
+            prompt += `
+• ${todo.text}${todo.description ? ` - ${todo.description}` : ''}`;
+            if (todo.priority) prompt += ` [${todo.priority.toUpperCase()} PRIORITY]`;
+          }
+        });
+      }
+
+      if (completedTodos.length > 0) {
+        prompt += `
+
+**✅ Completed Tasks:**`;
+        completedTodos.forEach((todo: any) => {
+          if (todo?.text) {
+            prompt += `
+• ${todo.text}${todo.description ? ` - ${todo.description}` : ''}`;
+          }
+        });
+      }
+    }
+
+    if (data.devLog?.length) {
+      const recentEntries = data.devLog.slice(-5); // Show last 5 entries
+      prompt += `
+
+## 📝 RECENT DEVELOPMENT LOG`;
+      recentEntries.forEach((entry: any) => {
+        const entryContent = entry.entry?.length > 500 ? 
+          entry.entry.substring(0, 500) + '...' : 
+          entry.entry || '';
+        prompt += `
+
+**${entry.date}${entry.title ? ' - ' + entry.title : ''}**
+${entryContent}`;
+      });
+      if (data.devLog.length > 5) {
+        prompt += `
+
+*(Showing ${recentEntries.length} most recent entries out of ${data.devLog.length} total)*`;
+      }
     }
 
     if (data.notes?.length) {
-      prompt += `Notes:\n`;
-      data.notes.forEach((note: any) => {
-        prompt += `- ${note.title}: ${note.content}\n`;
-      });
-      prompt += `\n`;
-    }
+      prompt += `
 
-    if (data.roadmap?.length) {
-      prompt += `Roadmap/Progress:\n`;
-      data.roadmap.forEach((item: any) => {
-        prompt += `- [${item.status}] ${item.title}: ${item.description}\n`;
+## 📋 PROJECT NOTES`;
+      data.notes.forEach((note: any) => {
+        const noteContent = note.content?.length > 1000 ? 
+          note.content.substring(0, 1000) + '...' : 
+          note.content || '';
+        prompt += `
+
+**${note.title || 'Untitled Note'}**
+${noteContent}`;
       });
-      prompt += `\n`;
     }
 
     if (data.docs?.length) {
-      prompt += `Documentation:\n`;
-      data.docs.forEach((doc: any) => {
-        prompt += `- ${doc.title}: ${doc.content}\n`;
+      prompt += `
+
+## 📚 DOCUMENTATION`;
+      const docsByType = data.docs.reduce((acc: any, doc: any) => {
+        if (!acc[doc.type]) acc[doc.type] = [];
+        acc[doc.type].push(doc);
+        return acc;
+      }, {});
+
+      Object.entries(docsByType).forEach(([type, docs]: [string, any]) => {
+        prompt += `
+
+**${type} Documentation:**`;
+        docs.forEach((doc: any) => {
+          const docContent = doc.content?.length > 800 ? 
+            doc.content.substring(0, 800) + '...' : 
+            doc.content || '';
+          prompt += `
+• **${doc.title || 'Untitled'}:** ${docContent}`;
+        });
       });
-      prompt += `\n`;
     }
 
     if (data.deploymentData) {
-      prompt += `Deployment Information:\n`;
-      if (data.deploymentData.liveUrl) prompt += `- Live URL: ${data.deploymentData.liveUrl}\n`;
-      if (data.deploymentData.githubUrl) prompt += `- GitHub: ${data.deploymentData.githubUrl}\n`;
-      if (data.deploymentData.deploymentPlatform) prompt += `- Platform: ${data.deploymentData.deploymentPlatform}\n`;
-      prompt += `\n`;
+      prompt += `
+
+## 🚀 DEPLOYMENT INFO`;
+      if (data.deploymentData.liveUrl) prompt += `
+**Live URL:** ${data.deploymentData.liveUrl}`;
+      if (data.deploymentData.githubUrl) prompt += `
+**GitHub Repository:** ${data.deploymentData.githubUrl}`;
+      if (data.deploymentData.deploymentPlatform) prompt += `
+**Hosting Platform:** ${data.deploymentData.deploymentPlatform}`;
+      if (data.deploymentData.environment) prompt += `
+**Environment:** ${data.deploymentData.environment}`;
     }
 
-    if (data.publicPageData && data.publicPageData.isPublic) {
-      prompt += `Public Page Info:\n`;
-      if (data.publicPageData.publicTitle) prompt += `- Public Title: ${data.publicPageData.publicTitle}\n`;
-      if (data.publicPageData.publicDescription) prompt += `- Public Description: ${data.publicPageData.publicDescription}\n`;
-      if (data.publicPageData.publicTags?.length) prompt += `- Public Tags: ${data.publicPageData.publicTags.join(', ')}\n`;
-      prompt += `\n`;
+    if (data.publicPageData?.isPublic) {
+      prompt += `
+
+## 🌐 PUBLIC PAGE INFO`;
+      if (data.publicPageData.publicTitle) prompt += `
+**Public Title:** ${data.publicPageData.publicTitle}`;
+      if (data.publicPageData.publicDescription) prompt += `
+**Public Description:** ${data.publicPageData.publicDescription}`;
+      if (data.publicPageData.publicTags?.length) prompt += `
+**Public Tags:** ${data.publicPageData.publicTags.join(' • ')}`;
     }
 
-    prompt += `Please help me with: [ADD YOUR REQUEST HERE]`;
+    if (data.timestamps) {
+      const created = new Date(data.timestamps.createdAt);
+      const updated = new Date(data.timestamps.updatedAt);
+      const daysSinceCreated = Math.floor((Date.now() - created.getTime()) / (1000 * 60 * 60 * 24));
+      const daysSinceUpdated = Math.floor((Date.now() - updated.getTime()) / (1000 * 60 * 60 * 24));
+      
+      prompt += `
+
+## ⏱️ PROJECT TIMELINE
+**Created:** ${created.toLocaleDateString()} (${daysSinceCreated} days ago)
+**Last Updated:** ${updated.toLocaleDateString()} (${daysSinceUpdated} days ago)`;
+    }
+
+    prompt += `
+
+---
+
+## 🤖 MY REQUEST:
+[Please describe what you need help with regarding this project. For example:
+- Code review or optimization suggestions
+- Architecture advice
+- Debugging assistance
+- Feature implementation guidance
+- Testing strategies
+- Performance improvements
+- Security considerations
+- Deployment help
+- Documentation improvements]
+
+## 💡 ADDITIONAL CONTEXT:
+[Add any specific details about your current challenge, error messages, or particular aspects you want to focus on]`;
 
     return prompt;
   };
@@ -210,8 +384,8 @@ const ExportSection: React.FC<ExportSectionProps> = ({ selectedProject }) => {
       markdown += `## Description\n\n${data.description}\n\n`;
     }
 
-    if (data.tags?.length) {
-      markdown += `## Tags\n\n${data.tags.map((tag: string) => `\`${tag}\``).join(', ')}\n\n`;
+    if (data.tags) {
+      markdown += `## Tags\n\n${data.tags.length ? data.tags.map((tag: string) => `\`${tag}\``).join(', ') : 'None'}\n\n`;
     }
 
     if (data.links?.length) {
@@ -225,24 +399,52 @@ const ExportSection: React.FC<ExportSectionProps> = ({ selectedProject }) => {
     if (data.notes?.length) {
       markdown += `## Notes\n\n`;
       data.notes.forEach((note: any) => {
-        markdown += `### ${note.title}\n${note.content}\n\n`;
+        const noteContent = note.content?.length > 2000 ? 
+          note.content.substring(0, 2000) + '...' : 
+          note.content || '';
+        markdown += `### ${note.title || 'Untitled Note'}\n${noteContent}\n\n`;
       });
     }
 
-    if (data.roadmap?.length) {
-      markdown += `## Roadmap\n\n`;
-      data.roadmap.forEach((item: any) => {
-        const statusEmoji = item.status === 'completed' ? '✅' : item.status === 'in-progress' ? '🚧' : '📝';
-        markdown += `- ${statusEmoji} **${item.title}:** ${item.description}\n`;
+    if (data.todos?.length) {
+      markdown += `## Todo Items\n\n`;
+      data.todos.forEach((todo: any) => {
+        const todoDesc = todo.description?.length > 200 ? 
+          todo.description.substring(0, 200) + '...' : 
+          todo.description;
+        markdown += `- [${todo.completed ? 'x' : ' '}] **${todo.text || 'Untitled Task'}**${todoDesc ? `: ${todoDesc}` : ''}\n`;
       });
       markdown += `\n`;
+    }
+
+    if (data.devLog?.length) {
+      markdown += `## Development Log\n\n`;
+      data.devLog.forEach((entry: any) => {
+        const entryContent = entry.entry?.length > 1500 ? 
+          entry.entry.substring(0, 1500) + '...' : 
+          entry.entry || '';
+        markdown += `### ${entry.date} - ${entry.title || 'Development Entry'}\n${entryContent}\n\n`;
+      });
     }
 
     if (data.docs?.length) {
       markdown += `## Documentation\n\n`;
       data.docs.forEach((doc: any) => {
-        markdown += `### ${doc.title}\n${doc.content}\n\n`;
+        const docContent = doc.content?.length > 2000 ? 
+          doc.content.substring(0, 2000) + '...' : 
+          doc.content || '';
+        markdown += `### ${doc.title || 'Untitled'} (${doc.type})\n${docContent}\n\n`;
       });
+    }
+
+    if (data.techStack) {
+      markdown += `## Tech Stack\n\n`;
+      if (data.techStack.technologies?.length) {
+        markdown += `### Technologies\n${data.techStack.technologies.map((tech: any) => `- ${tech.name}`).join('\n')}\n\n`;
+      }
+      if (data.techStack.packages?.length) {
+        markdown += `### Packages\n${data.techStack.packages.map((pkg: any) => `- ${pkg.name}`).join('\n')}\n\n`;
+      }
     }
 
     if (data.deploymentData) {
@@ -288,193 +490,107 @@ const ExportSection: React.FC<ExportSectionProps> = ({ selectedProject }) => {
   const selectedCount = Object.values(exportOptions).filter(Boolean).length;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-semibold mb-4">Export Project Data</h3>
-        <p className="text-base-content/70 mb-4">
-          Select the data sections you want to export and choose your preferred format.
-        </p>
-      </div>
-
-      {/* Export Format Selection */}
-      <div>
-        <label className="label">
-          <span className="label-text font-medium">Export Format</span>
-        </label>
+    <div className="pt-4 space-y-4">
+      {/* Header with description */}
+      <div className="flex justify-between items-start mb-3">
+        <div>
+          <p className="text-sm text-base-content/70">
+            Export project data in various formats for backup or sharing with AI assistants.
+          </p>
+        </div>
         <select
           value={exportFormat}
           onChange={(e) => setExportFormat(e.target.value as any)}
-          className="select select-bordered w-full max-w-xs"
+          className="select select-bordered select-sm"
         >
-          <option value="json">JSON (structured data)</option>
-          <option value="prompt">Prompt (for AI assistants)</option>
-          <option value="markdown">Markdown (readable format)</option>
+          <option value="json">JSON</option>
+          <option value="prompt">AI Prompt</option>
+          <option value="markdown">Markdown</option>
         </select>
       </div>
 
-      {/* Data Selection */}
+      {/* Data Selection - Compact Grid */}
       <div>
-        <div className="flex justify-between items-center mb-3">
-          <label className="label">
-            <span className="label-text font-medium">Select Data to Export ({selectedCount} selected)</span>
-          </label>
-          <div className="flex gap-2">
-            <button onClick={() => toggleAll(true)} className="btn btn-ghost btn-sm">
-              Select All
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-sm font-medium">Select Data ({selectedCount})</span>
+          <div className="flex gap-1">
+            <button onClick={() => toggleAll(true)} className="btn btn-ghost btn-xs">
+              All
             </button>
-            <button onClick={() => toggleAll(false)} className="btn btn-ghost btn-sm">
-              Clear All
+            <button onClick={() => toggleAll(false)} className="btn btn-ghost btn-xs">
+              None
             </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          <label className="label cursor-pointer justify-start">
-            <input
-              type="checkbox"
-              className="checkbox checkbox-primary mr-2"
-              checked={exportOptions.basicInfo}
-              onChange={() => toggleOption('basicInfo')}
-            />
-            <span className="label-text">Basic Info</span>
-          </label>
-
-          <label className="label cursor-pointer justify-start">
-            <input
-              type="checkbox"
-              className="checkbox checkbox-primary mr-2"
-              checked={exportOptions.description}
-              onChange={() => toggleOption('description')}
-            />
-            <span className="label-text">Description</span>
-          </label>
-
-          <label className="label cursor-pointer justify-start">
-            <input
-              type="checkbox"
-              className="checkbox checkbox-primary mr-2"
-              checked={exportOptions.tags}
-              onChange={() => toggleOption('tags')}
-            />
-            <span className="label-text">Tags</span>
-          </label>
-
-          <label className="label cursor-pointer justify-start">
-            <input
-              type="checkbox"
-              className="checkbox checkbox-primary mr-2"
-              checked={exportOptions.links}
-              onChange={() => toggleOption('links')}
-            />
-            <span className="label-text">Links</span>
-          </label>
-
-          <label className="label cursor-pointer justify-start">
-            <input
-              type="checkbox"
-              className="checkbox checkbox-primary mr-2"
-              checked={exportOptions.notes}
-              onChange={() => toggleOption('notes')}
-            />
-            <span className="label-text">Notes</span>
-          </label>
-
-          <label className="label cursor-pointer justify-start">
-            <input
-              type="checkbox"
-              className="checkbox checkbox-primary mr-2"
-              checked={exportOptions.roadmap}
-              onChange={() => toggleOption('roadmap')}
-            />
-            <span className="label-text">Roadmap</span>
-          </label>
-
-          <label className="label cursor-pointer justify-start">
-            <input
-              type="checkbox"
-              className="checkbox checkbox-primary mr-2"
-              checked={exportOptions.docs}
-              onChange={() => toggleOption('docs')}
-            />
-            <span className="label-text">Documentation</span>
-          </label>
-
-          <label className="label cursor-pointer justify-start">
-            <input
-              type="checkbox"
-              className="checkbox checkbox-primary mr-2"
-              checked={exportOptions.deploymentData}
-              onChange={() => toggleOption('deploymentData')}
-            />
-            <span className="label-text">Deployment</span>
-          </label>
-
-          <label className="label cursor-pointer justify-start">
-            <input
-              type="checkbox"
-              className="checkbox checkbox-primary mr-2"
-              checked={exportOptions.publicPageData}
-              onChange={() => toggleOption('publicPageData')}
-            />
-            <span className="label-text">Public Page</span>
-          </label>
-
-          <label className="label cursor-pointer justify-start">
-            <input
-              type="checkbox"
-              className="checkbox checkbox-primary mr-2"
-              checked={exportOptions.timestamps}
-              onChange={() => toggleOption('timestamps')}
-            />
-            <span className="label-text">Timestamps</span>
-          </label>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+          {Object.entries(exportOptions).map(([key, checked]) => (
+            <label key={key} className="label cursor-pointer justify-start py-1">
+              <input
+                type="checkbox"
+                className="checkbox checkbox-primary checkbox-sm mr-2"
+                checked={checked}
+                onChange={() => toggleOption(key as keyof ExportOptions)}
+              />
+              <span className="label-text text-sm capitalize">
+                {key === 'basicInfo' ? 'Basic Info' :
+                 key === 'publicPageData' ? 'Public Page' :
+                 key === 'deploymentData' ? 'Deployment' :
+                 key === 'devLog' ? 'Dev Log' :
+                 key === 'techStack' ? 'Tech Stack' :
+                 key}
+              </span>
+            </label>
+          ))}
         </div>
       </div>
 
-      {/* Generate Export Button */}
-      <div>
+      {/* Action Buttons */}
+      <div className="flex gap-2">
         <button
           onClick={generateExport}
           disabled={selectedCount === 0}
-          className="btn btn-primary"
+          className="btn btn-primary btn-sm"
         >
-          Generate Export
+          {showExportResult ? 'Regenerate' : 'Generate Export'}
         </button>
+        
+        {showExportResult && (
+          <>
+            <button onClick={copyToClipboard} className="btn btn-outline btn-sm">
+              📋 Copy
+            </button>
+            <button onClick={downloadFile} className="btn btn-outline btn-sm">
+              💾 Download
+            </button>
+            <button onClick={() => setShowExportResult(false)} className="btn btn-ghost btn-sm">
+              ✕
+            </button>
+          </>
+        )}
       </div>
 
-      {/* Export Result */}
+      {/* Export Result - Compact */}
       {showExportResult && (
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h4 className="font-medium">Export Result</h4>
-            <div className="flex gap-2">
-              <button onClick={copyToClipboard} className="btn btn-outline btn-sm">
-                Copy to Clipboard
-              </button>
-              <button onClick={downloadFile} className="btn btn-outline btn-sm">
-                Download File
-              </button>
-              <button onClick={() => setShowExportResult(false)} className="btn btn-ghost btn-sm">
-                Close
-              </button>
-            </div>
+        <div className="space-y-2">
+          <div className="text-xs text-base-content/60 flex justify-between items-center">
+            <span>Export Result ({exportFormat.toUpperCase()})</span>
+            <span>{exportedData.length} characters</span>
           </div>
           
-          <div className="mockup-code max-h-96 overflow-auto">
-            <pre><code>{exportedData}</code></pre>
+          <div className="mockup-code max-h-96 overflow-auto text-xs">
+            <pre className="whitespace-pre-wrap break-words"><code>{exportedData}</code></pre>
           </div>
         </div>
       )}
 
-      {/* Export Tips */}
-      <div className="card bg-base-200 shadow">
-        <div className="card-body">
-          <h4 className="card-title text-base">💡 Export Tips</h4>
-          <ul className="list-disc list-inside space-y-1 text-sm text-base-content/70">
-            <li><strong>JSON:</strong> Best for backup, data migration, or programmatic use</li>
-            <li><strong>Prompt:</strong> Optimized for sharing context with AI assistants like Claude or ChatGPT</li>
-            <li><strong>Markdown:</strong> Human-readable format perfect for documentation or sharing</li>
-          </ul>
+      {/* Compact Tips */}
+      <div className="alert alert-info">
+        <svg className="stroke-current shrink-0 h-4 w-4" fill="none" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <div className="text-sm">
+          <p><strong>JSON:</strong> Structured data • <strong>AI Prompt:</strong> For Claude/ChatGPT • <strong>Markdown:</strong> Human-readable</p>
         </div>
       </div>
     </div>

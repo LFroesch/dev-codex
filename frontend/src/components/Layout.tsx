@@ -285,15 +285,6 @@ const Layout: React.FC = () => {
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (p.category && p.category.toLowerCase().includes(searchTerm.toLowerCase()))
   );
-  
-  // Debug: log project data
-  console.log('All projects:', filteredProjects.map(p => ({ 
-    name: p.name, 
-    isShared: p.isShared, 
-    isOwner: p.isOwner, 
-    userRole: p.userRole,
-    isArchived: p.isArchived 
-  })));
 
   const currentProjects = filteredProjects.filter(p => !p.isArchived && !p.isShared);
   const archivedProjects = filteredProjects.filter(p => p.isArchived && !p.isShared);  

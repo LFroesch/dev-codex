@@ -17,6 +17,9 @@ export interface IUser extends Document {
   resetPasswordExpires?: Date;
   googleId?: string;
   bio?: string;
+  isPublic: boolean;
+  publicSlug?: string;
+  publicDescription?: string;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(password: string): Promise<boolean>;
@@ -98,6 +101,24 @@ const userSchema = new Schema<IUser>({
     type: String,
     required: false,
     maxlength: 500
+  },
+  isPublic: {
+    type: Boolean,
+    default: false
+  },
+  publicSlug: {
+    type: String,
+    required: false,
+    unique: true,
+    sparse: true,
+    lowercase: true,
+    trim: true,
+    match: /^[a-z0-9-]+$/
+  },
+  publicDescription: {
+    type: String,
+    required: false,
+    maxlength: 200
   }
 }, {
   timestamps: true

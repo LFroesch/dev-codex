@@ -18,6 +18,9 @@ export interface User {
   bio?: string;
   planTier?: 'free' | 'pro' | 'enterprise';
   projectLimit?: number;
+  isPublic?: boolean;
+  publicSlug?: string;
+  publicDescription?: string;
   createdAt?: string;
 }
 
@@ -109,6 +112,9 @@ export interface Project {
   // Existing fields
   isArchived: boolean;
   isShared: boolean;
+  isPublic: boolean;
+  publicSlug?: string;
+  publicDescription?: string;
   createdAt: string;
   updatedAt: string;
   
@@ -521,4 +527,37 @@ export const notificationAPI = {
     project: any; 
   }> =>
     apiClient.get(`/notifications/invitation/${invitationId}`).then(res => res.data),
+};
+
+// NEW: Public API (no authentication required)
+export const publicAPI = {
+  // Get public project by ID or slug
+  getProject: (identifier: string): Promise<{ success: boolean; project: any }> =>
+    apiClient.get(`/public/project/${identifier}`).then(res => res.data),
+
+  // Get public user profile by ID or slug
+  getUserProfile: (identifier: string): Promise<{ success: boolean; user: any }> =>
+    apiClient.get(`/public/user/${identifier}`).then(res => res.data),
+
+  // Get public projects for discovery
+  getProjects: (params?: {
+    page?: number;
+    limit?: number;
+    category?: string;
+    tag?: string;
+    search?: string;
+  }): Promise<{ 
+    success: boolean; 
+    projects: any[]; 
+    pagination: any;
+  }> =>
+    apiClient.get('/public/projects', { params }).then(res => res.data),
+
+  // Get available filters
+  getFilters: (): Promise<{ 
+    success: boolean; 
+    categories: string[]; 
+    tags: string[];
+  }> =>
+    apiClient.get('/public/filters').then(res => res.data),
 };

@@ -173,6 +173,15 @@ const Layout: React.FC = () => {
 
   useEffect(() => {
     const loadData = async () => {
+      // Check if this is a public page that doesn't require authentication
+      const isPublicPage = location.pathname.startsWith('/project/') || location.pathname.startsWith('/user/');
+      
+      if (isPublicPage) {
+        // For public pages, just set loading to false without auth
+        setLoading(false);
+        return;
+      }
+      
       try {
         const [userResponse, projectsResponse] = await Promise.all([
           authAPI.getMe(),
@@ -208,7 +217,7 @@ const Layout: React.FC = () => {
     };
 
     loadData();
-  }, [navigate]);
+  }, [navigate, location.pathname]);
 
   const handleLogout = async () => {
     try {
@@ -298,9 +307,9 @@ const Layout: React.FC = () => {
     <div className="min-h-screen bg-base-100 flex flex-col">
       {/* Header */}
       <header className="bg-base-100 border-b border-base-content/10 shadow-sm sticky top-0 z-40">
-        <div className="px-6 py-4">
+        <div className="px-6 py-2">
           <div className="flex justify-between items-center">
-            <div className="flex items-center gap-3 bg-base-200/50 backdrop-blur-sm border border-base-content/10 rounded-xl px-4 py-2.5 shadow-sm hover:shadow-md transition-all cursor-pointer" onClick={() => navigate('/notes?view=projects')}>
+            <div className="flex items-center gap-3 bg-base-200/50 backdrop-blur-sm border border-base-content/10 rounded-xl px-4 py-2 h-12 shadow-sm hover:shadow-md transition-all cursor-pointer" onClick={() => navigate('/notes?view=projects')}>
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-sm">
                 <svg className="w-5 h-5 text-primary-content" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
@@ -400,7 +409,7 @@ const Layout: React.FC = () => {
                 Ideas
               </button>
               <button 
-                className={`btn ${location.pathname === '/discover' ? 'btn-primary' : 'btn-ghost'} gap-2 font-bold`}
+                className={`btn ${location.pathname === '/discover' || location.pathname.startsWith('/discover/') ? 'btn-primary' : 'btn-ghost'} gap-2 font-bold`}
                 onClick={() => handleNavigateWithCheck('/discover')}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -410,21 +419,22 @@ const Layout: React.FC = () => {
               </button>
             </div>
             
-            <div className="flex items-center gap-4 bg-base-200/50 backdrop-blur-sm border border-base-content/10 rounded-xl px-4 py-2.5 shadow-sm">
-              <SessionTracker />
-              <NotificationBell />
-              
-              <span className="text-sm font-medium text-base-content/80">Hi, {user?.firstName}!</span>
-              
-              <div className="dropdown dropdown-end">
-                <button 
-                  className="btn btn-circle btn-sm bg-base-100/80 hover:bg-base-300 border border-base-content/10 shadow-sm"
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                  </button>
+            {user ? (
+              <div className="flex items-center gap-3 bg-base-200/50 backdrop-blur-sm border border-base-content/10 rounded-xl px-4 py-2 h-12 shadow-sm">
+                <SessionTracker />
+                <NotificationBell />
+                
+                <span className="text-sm font-medium text-base-content/80">Hi, {user?.firstName}!</span>
+                
+                <div className="dropdown dropdown-end">
+                  <button 
+                    className="btn btn-circle btn-sm bg-base-100/80 hover:bg-base-300 border border-base-content/10 shadow-sm"
+                    onClick={() => setDropdownOpen(!dropdownOpen)}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    </button>
                 {dropdownOpen && (
                   <ul className="dropdown-content menu p-2 shadow-lg bg-base-100 rounded-xl border border-base-content/10 w-52 z-50">
                     <li>
@@ -474,7 +484,17 @@ const Layout: React.FC = () => {
                   </ul>
                 )}
               </div>
-            </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3 bg-base-200/50 backdrop-blur-sm border border-base-content/10 rounded-xl px-4 py-2 h-12 shadow-sm">
+                <button 
+                  onClick={() => navigate('/login')}
+                  className="btn btn-primary btn-sm"
+                >
+                  Sign In
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </header>
@@ -706,8 +726,36 @@ const Layout: React.FC = () => {
               </div>
             </div>
           </>
-        ) : location.pathname === '/discover' ? (
-          /* Discover Tab - Keep as is */
+        ) : location.pathname === '/discover' || location.pathname.startsWith('/discover/') ? (
+          /* Discover Tab - With sub-tabs */
+          <>
+            {/* Tab Navigation for Discover */}
+            <div className="flex justify-center px-4 py-6">
+              <div className="tabs tabs-boxed tabs-lg border border-base-content/10">
+                <button
+                  onClick={() => handleNavigateWithCheck('/discover')}
+                  className={`tab tab-lg font-bold text-base ${location.pathname === '/discover' ? 'tab-active' : ''}`}
+                >
+                  Discover
+                </button>
+                <button
+                  onClick={() => handleNavigateWithCheck('/discover')}
+                  className={`tab tab-lg font-bold text-base ${(location.pathname.startsWith('/discover/project/') || location.pathname.startsWith('/discover/user/')) ? 'tab-active' : ''}`}
+                  disabled={!(location.pathname.startsWith('/discover/project/') || location.pathname.startsWith('/discover/user/'))}
+                >
+                  Details
+                </button>
+              </div>
+            </div>
+            
+            <div className="flex-1 overflow-auto border border-base-content/10 bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-sm">
+              <div className="p-1">
+                <Outlet />
+              </div>
+            </div>
+          </>
+        ) : location.pathname.startsWith('/project/') || location.pathname.startsWith('/user/') ? (
+          /* Public Pages - Same styling as discover */
           <div className="flex-1 overflow-auto border border-base-content/10 bg-gradient-to-br from-base-50 to-base-100/50 m-4 rounded-2xl shadow-2xl backdrop-blur-sm">
             <div className="p-1">
               <Outlet />
@@ -731,6 +779,13 @@ const Layout: React.FC = () => {
               </div>
             </div>
           </>
+        ) : location.pathname === '/billing' || location.pathname === '/account-settings' ? (
+          /* Billing and Account Settings - No sub-menu */
+          <div className="flex-1 overflow-auto border border-base-content/10 bg-gradient-to-br from-base-50 to-base-100/50 m-4 rounded-2xl shadow-2xl backdrop-blur-sm">
+            <div className="p-1">
+              <Outlet />
+            </div>
+          </div>
         ) : (
           /* Project Details Tab - Show project content with tabs */
           <>

@@ -240,6 +240,9 @@ router.get('/me', async (req, res) => {
         bio: user.bio || '',
         planTier: user.planTier || 'free',
         projectLimit: user.projectLimit || 3,
+        isPublic: user.isPublic || false,
+        publicSlug: user.publicSlug,
+        publicDescription: user.publicDescription,
         createdAt: user.createdAt
       }
     });
@@ -294,11 +297,17 @@ router.patch('/theme', requireAuth, async (req: AuthRequest, res) => {
 // NEW: Update user profile
 router.patch('/profile', requireAuth, async (req: AuthRequest, res) => {
   try {
-    const { bio } = req.body;
+    const { bio, isPublic, publicSlug, publicDescription } = req.body;
+    
+    const updateData: any = {};
+    if (bio !== undefined) updateData.bio = bio;
+    if (isPublic !== undefined) updateData.isPublic = isPublic;
+    if (publicSlug !== undefined) updateData.publicSlug = publicSlug;
+    if (publicDescription !== undefined) updateData.publicDescription = publicDescription;
     
     const user = await User.findByIdAndUpdate(
       req.userId,
-      { bio },
+      updateData,
       { new: true, runValidators: true }
     ).select('-password');
 
@@ -319,6 +328,9 @@ router.patch('/profile', requireAuth, async (req: AuthRequest, res) => {
         bio: user.bio || '',
         planTier: user.planTier || 'free',
         projectLimit: user.projectLimit || 3,
+        isPublic: user.isPublic || false,
+        publicSlug: user.publicSlug,
+        publicDescription: user.publicDescription,
         createdAt: user.createdAt
       }
     });

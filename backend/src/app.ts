@@ -14,6 +14,7 @@ import analyticsRoutes from './routes/analytics';
 import debugRoutes from './routes/debug';
 import invitationRoutes from './routes/invitations';
 import notificationRoutes from './routes/notifications';
+import publicRoutes from './routes/public';
 import { normalRateLimit, authRateLimit, devRateLimit } from './middleware/rateLimit';
 import { trackPageView, sessionMiddleware } from './middleware/analytics';
 
@@ -45,6 +46,9 @@ app.use(passport.initialize());
 
 // Auth routes FIRST - NO rate limiting on authentication
 app.use('/api/auth', authRoutes);
+
+// Public routes - NO authentication required, light rate limiting
+app.use('/api/public', normalRateLimit, publicRoutes);
 
 // Apply rate limiting to all OTHER routes
 const rateLimitMiddleware = isDevelopment ? devRateLimit : normalRateLimit;

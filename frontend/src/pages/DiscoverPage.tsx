@@ -1,312 +1,407 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-
-interface PublicProject {
-  id: string;
-  name: string;
-  description: string;
-  tags: string[];
-  author: string;
-  createdAt: string;
-  liveUrl?: string;
-  githubUrl?: string;
-  banner?: string;
-  likes: number;
-  views: number;
-}
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { publicAPI } from '../api/client';
 
 const DiscoverPage: React.FC = () => {
   const navigate = useNavigate();
+  const [projects, setProjects] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedTag, setSelectedTag] = useState('');
   const [sortBy, setSortBy] = useState<'recent' | 'popular' | 'trending'>('recent');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState<any>(null);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [tags, setTags] = useState<string[]>([]);
 
-  // Mock data for demonstration - this would come from an API
-  const mockProjects: PublicProject[] = [
-    {
-      id: '1',
-      name: 'TaskFlow - Project Management Tool',
-      description: 'A modern project management application built with React and Node.js. Features include real-time collaboration, task tracking, and team management.',
-      tags: ['React', 'Node.js', 'MongoDB', 'WebSocket'],
-      author: 'John Developer',
-      createdAt: '2024-01-15',
-      liveUrl: 'https://taskflow-demo.com',
-      githubUrl: 'https://github.com/johndeveloper/taskflow',
-      likes: 245,
-      views: 1832,
-    },
-    {
-      id: '2',
-      name: 'E-Commerce Dashboard',
-      description: 'Full-stack e-commerce analytics dashboard with real-time sales tracking, inventory management, and customer insights.',
-      tags: ['Next.js', 'TypeScript', 'PostgreSQL', 'Tailwind'],
-      author: 'Sarah Chen',
-      createdAt: '2024-01-10',
-      liveUrl: 'https://ecommerce-dash.com',
-      likes: 189,
-      views: 1456,
-    },
-    {
-      id: '3',
-      name: 'AI Content Generator',
-      description: 'AI-powered content generation tool using OpenAI API. Generate blog posts, social media content, and marketing copy.',
-      tags: ['Python', 'FastAPI', 'OpenAI', 'Vue.js'],
-      author: 'Mike Johnson',
-      createdAt: '2024-01-05',
-      githubUrl: 'https://github.com/mikej/ai-content-gen',
-      likes: 312,
-      views: 2143,
-    },
-  ];
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 1500);
 
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
-  const filteredProjects = mockProjects.filter(project => {
-    const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         project.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         project.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    // Category filtering would be implemented based on project categories
-    const matchesCategory = selectedCategory === 'all'; // Simplified for demo
-    
-    return matchesSearch && matchesCategory;
-  });
+  useEffect(() => {
+    loadFilters();
+    loadProjects();
+  }, []);
 
-  const sortedProjects = [...filteredProjects].sort((a, b) => {
-    switch (sortBy) {
-      case 'popular':
-        return b.likes - a.likes;
-      case 'trending':
-        return b.views - a.views;
-      case 'recent':
-      default:
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  useEffect(() => {
+    setCurrentPage(1);
+    loadProjects();
+  }, [debouncedSearchTerm, selectedCategory, selectedTag, sortBy]);
+
+  useEffect(() => {
+    if (currentPage > 1) {
+      loadProjects();
     }
-  });
+  }, [currentPage]);
+
+  const loadFilters = async () => {
+    try {
+      const response = await publicAPI.getFilters();
+      setCategories(response.categories || []);
+      setTags(response.tags || []);
+    } catch (err) {
+      console.error('Failed to load filters:', err);
+    }
+  };
+
+  const loadProjects = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const response = await publicAPI.getProjects({
+        page: currentPage,
+        limit: 12,
+        category: selectedCategory !== 'all' ? selectedCategory : undefined,
+        tag: selectedTag || undefined,
+        search: debouncedSearchTerm || undefined
+      });
+      setProjects(response.projects || []);
+      setPagination(response.pagination);
+    } catch (err: any) {
+      setError('Failed to load projects');
+      console.error('Load projects error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setCurrentPage(1);
+    loadProjects();
+  };
+
+  const clearFilters = () => {
+    setSearchTerm('');
+    setSelectedCategory('all');
+    setSelectedTag('');
+    setCurrentPage(1);
+  };
+
+  if (loading && currentPage === 1) {
+    return (
+      <div className="p-6 flex items-center justify-center min-h-[400px]">
+        <div className="loading loading-spinner loading-lg"></div>
+      </div>
+    );
+  }
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="bg-base-100 shadow-lg border-b border-base-content/10 p-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex justify-between items-center mb-6">
-            <div>
-              <h1 className="text-3xl font-bold">Discover Projects</h1>
-              <p className="text-base-content/60 mt-1">Explore public projects from the community</p>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="badge badge-warning">Coming Soon</div>
-              <button
-                onClick={() => navigate('/notes')}
-                className="btn btn-primary gap-2"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                Back to Projects
-              </button>
-            </div>
-          </div>
+      <div className="flex justify-between items-start mb-6">
+        <div>
+          <h1 className="text-3xl font-bold">🔍 Discover Projects</h1>
+          <p className="text-base-content/60 mt-1">
+            Explore amazing public projects from the community
+          </p>
+        </div>
+      </div>
 
-          {/* Search and Filters */}
-          <div className="flex flex-col lg:flex-row gap-4">
-            <div className="flex-1">
+      {/* Search and Filters */}
+      <div className="card bg-base-100 shadow-lg">
+        <div className="card-body">
+          <form onSubmit={handleSearch} className="space-y-4">
+            {/* Search Bar */}
+            <div className="form-control">
               <div className="relative">
                 <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-base-content/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
                 <input
                   type="text"
-                  placeholder="Search projects, technologies, or creators..."
-                  className="input input-bordered w-full pl-10 pr-4"
+                  placeholder="Search projects, technologies, or descriptions..."
+                  className="input input-bordered w-full pl-10"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
+                {searchTerm && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchTerm('')}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-base-content/50 hover:text-base-content"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
               </div>
             </div>
-            
-            <select
-              className="select select-bordered"
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-            >
-              <option value="all">All Categories</option>
-              <option value="web-app">Web Apps</option>
-              <option value="mobile">Mobile Apps</option>
-              <option value="ai-ml">AI/ML</option>
-              <option value="tool">Tools</option>
-              <option value="game">Games</option>
-              <option value="other">Other</option>
-            </select>
 
-            <select
-              className="select select-bordered"
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as any)}
-            >
-              <option value="recent">Recently Added</option>
-              <option value="popular">Most Liked</option>
-              <option value="trending">Most Viewed</option>
-            </select>
-          </div>
+            {/* Filters Row */}
+            <div className="flex flex-wrap gap-3">
+              {/* Category Filter */}
+              <select
+                className="select select-bordered select-sm"
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+              >
+                <option value="all">All Categories</option>
+                {categories.map((category) => (
+                  <option key={category} value={category}>
+                    {category.charAt(0).toUpperCase() + category.slice(1)}
+                  </option>
+                ))}
+              </select>
+
+              {/* Tag Filter */}
+              <select
+                className="select select-bordered select-sm"
+                value={selectedTag}
+                onChange={(e) => setSelectedTag(e.target.value)}
+              >
+                <option value="">All Tags</option>
+                {tags.slice(0, 20).map((tag) => (
+                  <option key={tag} value={tag}>
+                    {tag}
+                  </option>
+                ))}
+              </select>
+
+              {/* Sort */}
+              <select
+                className="select select-bordered select-sm"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+              >
+                <option value="recent">Recently Updated</option>
+                <option value="popular">Most Popular</option>
+                <option value="trending">Trending</option>
+              </select>
+
+              {/* Clear Filters */}
+              {(searchTerm || selectedCategory !== 'all' || selectedTag) && (
+                <button
+                  type="button"
+                  onClick={clearFilters}
+                  className="btn btn-ghost btn-sm"
+                >
+                  Clear Filters
+                </button>
+              )}
+            </div>
+          </form>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 overflow-auto">
-        <div className="max-w-6xl mx-auto p-6">
-        {/* Coming Soon Notice */}
-        <div className="card bg-gradient-to-r from-warning/10 to-info/10 border border-warning/20 mb-8">
-          <div className="card-body text-center">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-warning/20 flex items-center justify-center">
-              <svg className="w-8 h-8 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <h2 className="text-2xl font-bold mb-2">Community Discovery Coming Soon!</h2>
-            <p className="text-base-content/70 mb-4">
-              We're building an amazing way for you to discover and share projects with the community. 
-              Features will include project browsing, favoriting, following creators, and more!
-            </p>
-            <div className="flex flex-wrap justify-center gap-2">
-              <div className="badge badge-outline">🔍 Project Search</div>
-              <div className="badge badge-outline">❤️ Like & Favorite</div>
-              <div className="badge badge-outline">👥 Follow Creators</div>
-              <div className="badge badge-outline">🏷️ Tag Filtering</div>
-              <div className="badge badge-outline">📊 Trending Projects</div>
-            </div>
-          </div>
+      {/* Error State */}
+      {error && (
+        <div className="alert alert-error">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+          </svg>
+          <span>{error}</span>
+          <button onClick={loadProjects} className="btn btn-sm">
+            Retry
+          </button>
         </div>
+      )}
 
-        {/* Mock Project Grid (for demonstration) */}
-        <div className="mb-6">
-          <h3 className="text-xl font-semibold mb-4">Preview: What You'll See</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {sortedProjects.map((project) => (
-              <div key={project.id} className="card bg-base-100 shadow-lg hover:shadow-xl transition-shadow opacity-60">
-                <div className="card-body">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="card-title text-lg">{project.name}</h3>
-                    <div className="badge badge-ghost">Preview</div>
+      {/* Results Info */}
+      {pagination && (
+        <div className="flex justify-between items-center text-sm text-base-content/60">
+          <div>
+            Showing {((currentPage - 1) * 12) + 1}-{Math.min(currentPage * 12, pagination.total)} of {pagination.total} projects
+          </div>
+          {(debouncedSearchTerm || selectedCategory !== 'all' || selectedTag) && (
+            <div>
+              Filtered results
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Projects Grid */}
+      {projects.length === 0 && debouncedSearchTerm && !loading ? (
+        <div className="text-center py-12">
+          <div className="text-6xl mb-4">🔍</div>
+          <h3 className="text-xl font-semibold mb-2">No projects found</h3>
+          <p className="text-base-content/60 mb-4">
+            {debouncedSearchTerm || selectedCategory !== 'all' || selectedTag
+              ? 'Try adjusting your search criteria'
+              : 'No public projects available yet'}
+          </p>
+          {(debouncedSearchTerm || selectedCategory !== 'all' || selectedTag) && (
+            <button onClick={clearFilters} className="btn btn-primary">
+              Clear Filters
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {projects.map((project) => (
+            <Link
+              key={project.id}
+              to={`/discover/project/${project.publicSlug || project.id}`}
+              className="card bg-base-100 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-[1.02]"
+            >
+              <div className="card-body">
+                {/* Project Header */}
+                <div className="flex items-start gap-3 mb-3">
+                  <div 
+                    className="w-12 h-12 rounded-lg flex items-center justify-center text-lg font-bold text-white flex-shrink-0"
+                    style={{ backgroundColor: project.color }}
+                  >
+                    {project.name.charAt(0).toUpperCase()}
                   </div>
-                  
-                  <p className="text-base-content/70 text-sm mb-4 line-clamp-3">
-                    {project.description}
-                  </p>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="card-title text-lg truncate">{project.name}</h3>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="badge badge-outline badge-sm">
+                        {project.category}
+                      </span>
+                      <span className="text-xs text-base-content/60">
+                        {new Date(project.updatedAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
 
-                  <div className="flex flex-wrap gap-1 mb-4">
-                    {project.tags.slice(0, 3).map((tag) => (
-                      <span key={tag} className="badge badge-primary badge-sm">
+                {/* Description */}
+                <p className="text-sm text-base-content/70 line-clamp-3 mb-3">
+                  {project.publicDescription || project.description}
+                </p>
+
+                {/* Tags */}
+                {project.tags && project.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mb-3">
+                    {project.tags.slice(0, 3).map((tag: string, index: number) => (
+                      <span key={index} className="badge badge-ghost badge-xs">
                         {tag}
                       </span>
                     ))}
                     {project.tags.length > 3 && (
-                      <span className="badge badge-ghost badge-sm">
+                      <span className="badge badge-ghost badge-xs">
                         +{project.tags.length - 3}
                       </span>
                     )}
                   </div>
+                )}
 
-                  <div className="flex justify-between items-center text-sm text-base-content/60 mb-4">
-                    <span>by {project.author}</span>
-                    <span>{new Date(project.createdAt).toLocaleDateString()}</span>
+                {/* Technologies */}
+                {project.technologies && project.technologies.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mb-3">
+                    {project.technologies.map((tech: any, index: number) => (
+                      <span key={index} className="badge badge-primary badge-xs">
+                        {tech.name}
+                      </span>
+                    ))}
                   </div>
+                )}
 
-                  <div className="flex justify-between items-center">
-                    <div className="flex gap-4 text-sm text-base-content/60">
-                      <span className="flex items-center gap-1">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                        </svg>
-                        {project.likes}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                        {project.views}
-                      </span>
-                    </div>
-                    
-                    <div className="flex gap-1">
-                      {project.liveUrl && (
-                        <button className="btn btn-primary btn-xs" disabled>
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                          </svg>
-                        </button>
-                      )}
-                      {project.githubUrl && (
-                        <button className="btn btn-ghost btn-xs" disabled>
-                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-                          </svg>
-                        </button>
+                {/* Footer */}
+                <div className="flex justify-between items-center mt-auto pt-2">
+                  {project.owner ? (
+                    <div className="text-sm text-base-content/60">
+                      by{' '}
+                      {project.owner.isPublic || project.owner.publicSlug ? (
+                        <Link 
+                          to={`/discover/user/${project.owner.publicSlug || project.owner.id}`}
+                          className="font-medium text-primary hover:text-primary-focus transition-colors"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {project.owner.firstName} {project.owner.lastName}
+                          {project.owner.publicSlug && (
+                            <span className="ml-1">
+                              @{project.owner.publicSlug}
+                            </span>
+                          )}
+                        </Link>
+                      ) : (
+                        <span className="font-medium">
+                          {project.owner.firstName} {project.owner.lastName}
+                        </span>
                       )}
                     </div>
+                  ) : (
+                    <div className="text-sm text-base-content/60">
+                      Anonymous
+                    </div>
+                  )}
+                  
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
+            </Link>
+          ))}
         </div>
+      )}
 
-        {/* Features Preview */}
-        <div className="card bg-base-100 shadow-lg">
-          <div className="card-body">
-            <h3 className="card-title mb-4">🚀 Planned Features</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <div className="w-2 h-2 rounded-full bg-primary mt-2"></div>
-                  <div>
-                    <h4 className="font-medium">Advanced Search & Filtering</h4>
-                    <p className="text-sm text-base-content/60">Filter by technology stack, project type, and complexity level</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-2 h-2 rounded-full bg-primary mt-2"></div>
-                  <div>
-                    <h4 className="font-medium">Community Features</h4>
-                    <p className="text-sm text-base-content/60">Like, comment, and follow your favorite creators</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-2 h-2 rounded-full bg-primary mt-2"></div>
-                  <div>
-                    <h4 className="font-medium">Trending & Featured</h4>
-                    <p className="text-sm text-base-content/60">Discover what's popular and featured projects</p>
-                  </div>
-                </div>
-              </div>
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <div className="w-2 h-2 rounded-full bg-primary mt-2"></div>
-                  <div>
-                    <h4 className="font-medium">Collections & Lists</h4>
-                    <p className="text-sm text-base-content/60">Curate your own project collections and discover others</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-2 h-2 rounded-full bg-primary mt-2"></div>
-                  <div>
-                    <h4 className="font-medium">Project Analytics</h4>
-                    <p className="text-sm text-base-content/60">See views, likes, and engagement for your public projects</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-2 h-2 rounded-full bg-primary mt-2"></div>
-                  <div>
-                    <h4 className="font-medium">Collaboration Tools</h4>
-                    <p className="text-sm text-base-content/60">Connect with other developers and collaborate on projects</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+      {/* Loading More */}
+      {loading && currentPage > 1 && (
+        <div className="text-center py-4">
+          <div className="loading loading-spinner loading-md"></div>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {pagination && pagination.pages > 1 && (
+        <div className="flex justify-center">
+          <div className="join">
+            <button 
+              className="join-item btn btn-sm"
+              disabled={!pagination.hasPrev}
+              onClick={() => setCurrentPage(currentPage - 1)}
+            >
+              Previous
+            </button>
+            
+            {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
+              const startPage = Math.max(1, currentPage - 2);
+              const pageNum = startPage + i;
+              if (pageNum > pagination.pages) return null;
+              
+              return (
+                <button
+                  key={pageNum}
+                  className={`join-item btn btn-sm ${currentPage === pageNum ? 'btn-active' : ''}`}
+                  onClick={() => setCurrentPage(pageNum)}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+            
+            <button 
+              className="join-item btn btn-sm"
+              disabled={!pagination.hasNext}
+              onClick={() => setCurrentPage(currentPage + 1)}
+            >
+              Next
+            </button>
           </div>
         </div>
+      )}
+
+      {/* Empty State for New Users */}
+      {projects.length === 0 && !loading && !error && !debouncedSearchTerm && selectedCategory === 'all' && !selectedTag && (
+        <div className="text-center py-12">
+          <div className="text-6xl mb-4">🚀</div>
+          <h3 className="text-xl font-semibold mb-2">Be the first to share!</h3>
+          <p className="text-base-content/60 mb-4">
+            No public projects yet. Make your projects public to share them with the community.
+          </p>
+          <button 
+            onClick={() => navigate('/public')}
+            className="btn btn-primary"
+          >
+            Go to Project Public Settings
+          </button>
         </div>
-      </div>
+      )}
     </div>
   );
 };

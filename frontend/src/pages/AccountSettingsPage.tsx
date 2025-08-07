@@ -414,7 +414,7 @@ const AccountSettingsPage: React.FC = () => {
                             <label className="text-sm font-medium text-base-content/70">Plan</label>
                             <div className="flex items-center gap-2">
                               <span className={`badge ${user.planTier === 'free' ? 'badge-ghost' : user.planTier === 'pro' ? 'badge-primary' : 'badge-secondary'}`}>
-                                {user.planTier.toUpperCase()}
+                                {(user.planTier || 'free').toUpperCase()}
                               </span>
                             </div>
                           </div>
@@ -427,11 +427,11 @@ const AccountSettingsPage: React.FC = () => {
                           <div>
                             <label className="text-sm font-medium text-base-content/70">Member Since</label>
                             <p className="text-base-content font-medium">
-                              {new Date(user.createdAt).toLocaleDateString('en-US', {
+                              {user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', {
                                 year: 'numeric',
                                 month: 'long',
                                 day: 'numeric'
-                              })}
+                              }) : 'Unknown'}
                             </p>
                           </div>
                         </div>

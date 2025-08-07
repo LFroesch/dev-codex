@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { apiClient } from '../api/client';
+import { apiClient } from '../api';
 
 interface BillingInfo {
   planTier: 'free' | 'pro' | 'enterprise';

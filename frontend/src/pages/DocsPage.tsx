@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { Project, Doc, projectAPI } from '../api/client';
+import { Project, Doc, projectAPI } from '../api';
 
 interface ContextType {
   selectedProject: Project | null;

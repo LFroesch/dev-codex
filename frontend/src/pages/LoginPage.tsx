@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { authAPI } from '../api/client';
+import { authAPI } from '../api';
+import { useApiCall } from '../hooks/useApiCall';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const { loading, error, call } = useApiCall();
 
   useEffect(() => {
     // Apply saved theme on login page
@@ -17,16 +17,10 @@ const LoginPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError('');
-
-    try {
-      await authAPI.login({ email, password });
+    
+    const result = await call(() => authAPI.login({ email, password }));
+    if (result) {
       navigate('/');
-    } catch (err) {
-      setError('Login failed');
-    } finally {
-      setLoading(false);
     }
   };
 

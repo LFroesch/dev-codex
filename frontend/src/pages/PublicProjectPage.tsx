@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { publicAPI } from '../api/client';
+import { publicAPI } from '../api';
 
 const PublicProjectPage: React.FC = () => {
   const { identifier } = useParams<{ identifier: string }>();

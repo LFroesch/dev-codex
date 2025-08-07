@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { teamAPI, TeamMember, InviteUserData } from '../api/client';
+import { teamAPI, TeamMember, InviteUserData } from '../api';
 
 interface TeamManagementProps {
   projectId: string;

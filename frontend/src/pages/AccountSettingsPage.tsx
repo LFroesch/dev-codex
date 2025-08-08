@@ -34,6 +34,8 @@ const AccountSettingsPage: React.FC = () => {
   const [publicSlug, setPublicSlug] = useState('');
   const [publicDescription, setPublicDescription] = useState('');
   const [savingPublicSettings, setSavingPublicSettings] = useState(false);
+  const [isPublicProfileExpanded, setIsPublicProfileExpanded] = useState(false);
+  const [isBioExpanded, setIsBioExpanded] = useState(false);
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -234,9 +236,10 @@ const AccountSettingsPage: React.FC = () => {
         </div>
 
         {/* Tabs */}
-        <div className="tabs tabs-boxed mb-8 bg-base-100 shadow-lg justify-center">
+        <div className="flex justify-center mb-8">
+          <div className="tabs tabs-boxed tabs-lg bg-base-200 shadow-lg border border-base-content/10">
           <button 
-            className={`tab ${activeTab === 'theme' ? 'tab-active' : ''}`}
+            className={`tab tab-lg font-bold text-base ${activeTab === 'theme' ? 'tab-active' : ''}`}
             onClick={() => setActiveTab('theme')}
           >
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -245,7 +248,7 @@ const AccountSettingsPage: React.FC = () => {
             Theme Preferences
           </button>
           <button 
-            className={`tab ${activeTab === 'connections' ? 'tab-active' : ''}`}
+            className={`tab tab-lg font-bold text-base ${activeTab === 'connections' ? 'tab-active' : ''}`}
             onClick={() => setActiveTab('connections')}
           >
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -254,7 +257,7 @@ const AccountSettingsPage: React.FC = () => {
             Account Connections
           </button>
           <button 
-            className={`tab ${activeTab === 'profile' ? 'tab-active' : ''}`}
+            className={`tab tab-lg font-bold text-base ${activeTab === 'profile' ? 'tab-active' : ''}`}
             onClick={() => setActiveTab('profile')}
           >
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -263,7 +266,7 @@ const AccountSettingsPage: React.FC = () => {
             Profile & Public Settings
           </button>
           <button 
-            className={`tab ${activeTab === 'analytics' ? 'tab-active' : ''}`}
+            className={`tab tab-lg font-bold text-base ${activeTab === 'analytics' ? 'tab-active' : ''}`}
             onClick={() => setActiveTab('analytics')}
           >
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -271,6 +274,7 @@ const AccountSettingsPage: React.FC = () => {
             </svg>
             Usage Analytics
           </button>
+          </div>
         </div>
 
         {/* Success Display */}
@@ -370,7 +374,7 @@ const AccountSettingsPage: React.FC = () => {
                 <div className="bg-base-200 rounded-lg p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                      <div className="w-12 h-12 bg-base-100 rounded-lg flex items-center justify-center shadow-sm">
                         <svg className="w-6 h-6" viewBox="0 0 24 24">
                           <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                           <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -493,259 +497,312 @@ const AccountSettingsPage: React.FC = () => {
                     </div>
 
                     {/* Bio Section */}
-                    <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10">
-                      <input type="checkbox" defaultChecked />
-                      <div className="collapse-title text-lg font-semibold bg-base-200 border-b border-base-content/10 flex items-center justify-between">
-                        <span>📝 Profile Bio</span>
-                        <div className="flex space-x-2" onClick={(e) => e.stopPropagation()}>
-                          {isEditingProfile ? (
-                            <>
+                    <div className="bg-base-200 shadow-lg border border-base-content/10 rounded-lg mb-4">
+                      <div className="p-4">
+                        {/* Header with title and controls */}
+                        <div className="flex items-center justify-between">
+                          <button
+                            onClick={() => setIsBioExpanded(!isBioExpanded)}
+                            className="flex items-center gap-3 flex-1 text-left hover:bg-base-200 p-2 -m-2 rounded-lg transition-colors"
+                          >
+                            <div className={`transform transition-transform duration-200 ${isBioExpanded ? 'rotate-90' : ''}`}>
+                              <svg className="w-5 h-5 text-base-content/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                              </svg>
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="font-semibold text-lg">📝 Profile Bio</h3>
+                              <p className="text-sm text-base-content/70">
+                                {bio ? 'Bio added' : 'No bio added yet'}
+                              </p>
+                            </div>
+                          </button>
+                          
+                          <div className="flex gap-2 ml-4">
+                            {isEditingProfile ? (
+                              <>
+                                <button
+                                  onClick={handleSaveProfile}
+                                  className="btn btn-sm btn-primary"
+                                  disabled={savingProfile}
+                                >
+                                  {savingProfile ? 'Saving...' : 'Save'}
+                                </button>
+                                <button
+                                  onClick={handleCancelProfileEdit}
+                                  className="btn btn-sm btn-ghost"
+                                  disabled={savingProfile}
+                                >
+                                  Cancel
+                                </button>
+                              </>
+                            ) : (
                               <button
-                                onClick={handleCancelProfileEdit}
-                                className="btn btn-ghost btn-sm"
-                                disabled={savingProfile}
+                                onClick={() => setIsEditingProfile(true)}
+                                className="btn btn-sm btn-ghost"
                               >
-                                Cancel
+                                Edit Bio
                               </button>
-                              <button
-                                onClick={handleSaveProfile}
-                                className="btn btn-primary btn-sm"
-                                disabled={savingProfile}
-                              >
-                                {savingProfile ? 'Saving...' : 'Save'}
-                              </button>
-                            </>
-                          ) : (
-                            <button
-                              onClick={() => setIsEditingProfile(true)}
-                              className="btn btn-outline btn-sm"
-                            >
-                              Edit Bio
-                            </button>
-                          )}
+                            )}
+                          </div>
                         </div>
-                      </div>
-                      <div className="collapse-content">
-                        <div className="pt-4">
-                          {isEditingProfile ? (
-                            <div className="space-y-4">
-                              <textarea
-                                value={bio}
-                                onChange={(e) => setBio(e.target.value)}
-                                className="textarea textarea-bordered w-full h-32 resize-none"
-                                placeholder="Tell others about yourself, your interests, and what you're working on..."
-                                maxLength={500}
-                              />
-                              <div className="text-right">
-                                <span className="text-xs text-base-content/60">
-                                  {bio.length}/500 characters
-                                </span>
+
+                        {/* Collapsible content */}
+                        {isBioExpanded && (
+                          <div className="mt-4 border-t border-base-300 pt-4 bg-base-100 rounded-b-lg p-4 -mx-4 -mb-4">
+                            {isEditingProfile ? (
+                              <div className="space-y-4">
+                                <textarea
+                                  value={bio}
+                                  onChange={(e) => setBio(e.target.value)}
+                                  className="textarea textarea-bordered w-full h-32 resize-none"
+                                  placeholder="Tell others about yourself, your interests, and what you're working on..."
+                                  maxLength={500}
+                                />
+                                <div className="text-right">
+                                  <span className="text-xs text-base-content/60">
+                                    {bio.length}/500 characters
+                                  </span>
+                                </div>
                               </div>
-                            </div>
-                          ) : (
-                            <div className="bg-base-200 rounded-lg p-4 border border-base-300">
-                              {bio ? (
-                                <p className="text-base-content whitespace-pre-wrap">{bio}</p>
-                              ) : (
-                                <p className="text-base-content/60 italic">No bio added yet. Click edit to add one.</p>
-                              )}
-                            </div>
-                          )}
-                        </div>
+                            ) : (
+                              <div className="bg-base-200 rounded-lg p-4 border border-base-300">
+                                {bio ? (
+                                  <p className="text-base-content whitespace-pre-wrap">{bio}</p>
+                                ) : (
+                                  <p className="text-base-content/60 italic">No bio added yet. Click edit to add one.</p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
 
                     {/* Public Profile Settings */}
-                    <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10">
-                      <input type="checkbox" defaultChecked />
-                      <div className="collapse-title text-lg font-semibold bg-base-200 border-b border-base-content/10 flex items-center justify-between">
-                        <span>🌐 Public Profile Settings</span>
-                        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                          {isPublicProfile && (
-                            <button
-                              onClick={copyPublicProfileUrl}
-                              className="btn btn-outline btn-sm gap-2"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                              </svg>
-                              Copy URL
-                            </button>
-                          )}
+                    <div className="bg-base-200 shadow-lg border border-base-content/10 rounded-lg mb-4">
+                      <div className="p-4">
+                        {/* Header with title and controls */}
+                        <div className="flex items-center justify-between">
                           <button
-                            onClick={handleSavePublicSettings}
-                            disabled={savingPublicSettings || !hasPublicChanges()}
-                            className={`btn btn-sm ${hasPublicChanges() ? 'btn-primary' : 'btn-ghost'}`}
+                            onClick={() => setIsPublicProfileExpanded(!isPublicProfileExpanded)}
+                            className="flex items-center gap-3 flex-1 text-left hover:bg-base-200 p-2 -m-2 rounded-lg transition-colors"
                           >
-                            {savingPublicSettings ? (
-                              <>
-                                <span className="loading loading-spinner loading-sm"></span>
-                                Saving...
-                              </>
-                            ) : hasPublicChanges() ? (
-                              'Save Changes'
-                            ) : (
-                              'Saved'
-                            )}
-                          </button>
-                        </div>
-                      </div>
-                      <div className="collapse-content">
-                        <div className="pt-4 space-y-4">
-                          {/* Public Profile Toggle */}
-                          <div className="form-control">
-                            <label className="label cursor-pointer">
-                              <div className="flex-1">
-                                <span className="label-text text-lg font-semibold">🔓 Make Profile Public</span>
-                                <p className="text-sm text-base-content/60 mt-1">
-                                  Enable this to create a public portfolio page showcasing your projects and skills.
-                                  Others will be able to discover your profile and view your public projects.
-                                </p>
-                                {isPublicProfile && (
-                                  <p className="text-sm text-success font-medium mt-2">
-                                    ✅ Your profile is publicly accessible
-                                  </p>
-                                )}
-                              </div>
-                              <input
-                                type="checkbox"
-                                className="toggle toggle-primary toggle-lg"
-                                checked={isPublicProfile}
-                                onChange={(e) => setIsPublicProfile(e.target.checked)}
-                              />
-                            </label>
-                          </div>
-
-                          {/* Public Settings - Only show when public is enabled */}
-                          {isPublicProfile && (
-                            <div className="space-y-4 border-t border-base-300 pt-4">
-                              {/* Custom Slug */}
-                              <div className="form-control">
-                                <label className="label">
-                                  <span className="label-text font-medium">Custom URL Slug (Optional)</span>
-                                  <span className="label-text-alt">
-                                    <button
-                                      type="button"
-                                      onClick={generateSlugFromName}
-                                      className="btn btn-ghost btn-xs"
-                                    >
-                                      Generate from name
-                                    </button>
-                                  </span>
-                                </label>
-                                <div className="join">
-                                  <span className="join-item bg-base-200 px-3 py-2 text-sm text-base-content/70">
-                                    {window.location.origin}/user/
-                                  </span>
-                                  <input
-                                    type="text"
-                                    className="input input-bordered join-item flex-1"
-                                    placeholder={user?.id}
-                                    value={publicSlug}
-                                    onChange={(e) => setPublicSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
-                                    pattern="^[a-z0-9-]+$"
-                                  />
-                                </div>
-                                <div className="label">
-                                  <span className="label-text-alt">
-                                    {publicSlug ? (
-                                      <>Your profile will be accessible at: <a 
-                                        href={`${window.location.origin}/user/${publicSlug}`} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer" 
-                                        className="link link-primary font-bold"
-                                      >
-                                        /user/{publicSlug}
-                                      </a></>
-                                    ) : (
-                                      <>Your profile will be accessible at: <a 
-                                        href={`${window.location.origin}/user/${user?.id}`} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer" 
-                                        className="link link-primary font-bold"
-                                      >
-                                        /user/{user?.id}
-                                      </a></>
-                                    )}
-                                  </span>
-                                </div>
-                              </div>
-
-                              {/* Public Description */}
-                              <div className="form-control">
-                                <label className="label">
-                                  <span className="label-text font-medium">Public Profile Description (Optional)</span>
-                                  <span className="label-text-alt">
-                                    {publicDescription.length}/200 characters
-                                  </span>
-                                </label>
-                                <textarea
-                                  className="textarea textarea-bordered h-24 resize-none"
-                                  placeholder="Describe yourself professionally for public viewers (will show at the top of your profile)"
-                                  value={publicDescription}
-                                  onChange={(e) => setPublicDescription(e.target.value.slice(0, 200))}
-                                />
-                              </div>
-
-                              {/* Profile Preview */}
-                              <div className="divider">Preview</div>
-                              <div className="mockup-browser border bg-base-300">
-                                <div className="mockup-browser-toolbar">
-                                  <div className="input">
-                                    {window.location.origin}/user/{publicSlug || user?.id}
-                                  </div>
-                                </div>
-                                <div className="bg-base-100 p-4">
-                                  <div className="flex items-start gap-4 mb-4">
-                                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-2xl font-bold text-white">
-                                      {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
-                                    </div>
-                                    <div>
-                                      <h3 className="text-xl font-bold">
-                                        {user?.firstName} {user?.lastName}
-                                      </h3>
-                                      {publicSlug && (
-                                        <span className="text-base-content/60">
-                                          @{publicSlug}
-                                        </span>
-                                      )}
-                                      {publicDescription && (
-                                        <p className="text-sm text-base-content/70 mt-1">
-                                          {publicDescription}
-                                        </p>
-                                      )}
-                                    </div>
-                                  </div>
-                                  <div className="text-sm text-base-content/60">
-                                    📂 Your public projects will be listed below
-                                  </div>
-                                </div>
-                              </div>
+                            <div className={`transform transition-transform duration-200 ${isPublicProfileExpanded ? 'rotate-90' : ''}`}>
+                              <svg className="w-5 h-5 text-base-content/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                              </svg>
                             </div>
-                          )}
-
-                          {/* Call to action when public is disabled */}
-                          {!isPublicProfile && (
-                            <div className="text-center py-8 border-t border-base-300">
-                              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/20 flex items-center justify-center">
-                                <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                </svg>
-                              </div>
-                              <h3 className="text-xl font-bold mb-2">Create Your Public Portfolio</h3>
-                              <p className="text-base-content/70 mb-4 max-w-md mx-auto">
-                                Showcase your work to the world! Enable your public profile to share your projects, 
-                                skills, and experience with the developer community.
+                            <div className="flex-1">
+                              <h3 className="font-semibold text-lg">🌐 Public Profile Settings</h3>
+                              <p className="text-sm text-base-content/70">
+                                {isPublicProfile ? 'Profile is public' : 'Profile is private'}
                               </p>
-                              <button 
-                                onClick={() => setIsPublicProfile(true)}
-                                className="btn btn-primary"
-                              >
-                                Enable Public Profile
-                              </button>
                             </div>
-                          )}
+                          </button>
+                          
+                          <div className="flex gap-2 ml-4">
+                            {isPublicProfile && (
+                              <button
+                                onClick={copyPublicProfileUrl}
+                                className="btn btn-outline btn-sm gap-2"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                </svg>
+                                Copy URL
+                              </button>
+                            )}
+                            <button
+                              onClick={handleSavePublicSettings}
+                              disabled={savingPublicSettings || !hasPublicChanges()}
+                              className={`btn btn-sm ${hasPublicChanges() ? 'btn-primary' : 'btn-ghost'}`}
+                            >
+                              {savingPublicSettings ? (
+                                <>
+                                  <span className="loading loading-spinner loading-sm"></span>
+                                  Saving...
+                                </>
+                              ) : hasPublicChanges() ? (
+                                'Save Changes'
+                              ) : (
+                                'Saved'
+                              )}
+                            </button>
+                          </div>
                         </div>
+
+                        {/* Collapsible content */}
+                        {isPublicProfileExpanded && (
+                          <div className="mt-4 border-t border-base-300 pt-4 bg-base-100 rounded-b-lg p-4 -mx-4 -mb-4">
+                            <div className="space-y-4">
+                              {/* Public Profile Toggle */}
+                              <div className="form-control">
+                                <label className="label cursor-pointer">
+                                  <div className="flex-1">
+                                    <span className="label-text text-lg font-semibold">🔓 Make Profile Public</span>
+                                    <p className="text-sm text-base-content/60 mt-1">
+                                      Enable this to create a public portfolio page showcasing your projects and skills.
+                                      Others will be able to discover your profile and view your public projects.
+                                    </p>
+                                    {isPublicProfile && (
+                                      <p className="text-sm text-success font-medium mt-2">
+                                        ✅ Your profile is publicly accessible
+                                      </p>
+                                    )}
+                                  </div>
+                                  <input
+                                    type="checkbox"
+                                    className="toggle toggle-primary toggle-lg"
+                                    checked={isPublicProfile}
+                                    onChange={(e) => setIsPublicProfile(e.target.checked)}
+                                  />
+                                </label>
+                              </div>
+
+                              {/* Public Settings - Only show when public is enabled */}
+                              {isPublicProfile && (
+                                <div className="space-y-4 border-t border-base-300 pt-4">
+                                  {/* Custom Slug */}
+                                  <div className="form-control">
+                                    <label className="label">
+                                      <span className="label-text font-medium">Custom URL Slug (Optional)</span>
+                                      <span className="label-text-alt">
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            e.preventDefault();
+                                            generateSlugFromName();
+                                          }}
+                                          className="btn btn-primary btn-xs gap-1"
+                                        >
+                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                          </svg>
+                                          Generate from name
+                                        </button>
+                                      </span>
+                                    </label>
+                                    <div className="join">
+                                      <span className="join-item bg-base-200 px-3 py-2 text-lg text-base-content/70 h-12">
+                                        {window.location.origin}/user/
+                                      </span>
+                                      <input
+                                        type="text"
+                                        className="input input-bordered join-item text-lg flex-1 h-12"
+                                        placeholder={user?.id}
+                                        value={publicSlug}
+                                        onChange={(e) => setPublicSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                                        pattern="^[a-z0-9-]+$"
+                                      />
+                                    </div>
+                                    <div className="label">
+                                      <span className="label-text-alt">
+                                        {publicSlug ? (
+                                          <>Your profile will be accessible at: <a 
+                                            href={`${window.location.origin}/user/${publicSlug}`} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer" 
+                                            className="link link-primary font-bold"
+                                          >
+                                            /user/{publicSlug}
+                                          </a></>
+                                        ) : (
+                                          <>Your profile will be accessible at: <a 
+                                            href={`${window.location.origin}/user/${user?.id}`} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer" 
+                                            className="link link-primary font-bold"
+                                          >
+                                            /user/{user?.id}
+                                          </a></>
+                                        )}
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  {/* Public Description */}
+                                  <div className="form-control">
+                                    <label className="label">
+                                      <span className="label-text font-medium">Public Profile Description (Optional)</span>
+                                      <span className="label-text-alt">
+                                        {publicDescription.length}/200 characters
+                                      </span>
+                                    </label>
+                                    <textarea
+                                      className="textarea textarea-bordered h-24 resize-none"
+                                      placeholder="Describe yourself professionally for public viewers (will show at the top of your profile)"
+                                      value={publicDescription}
+                                      onChange={(e) => setPublicDescription(e.target.value.slice(0, 200))}
+                                    />
+                                  </div>
+
+                                  {/* Profile Preview */}
+                                  <div className="divider">Preview</div>
+                                  <div className="mockup-browser border bg-base-300">
+                                    <div className="mockup-browser-toolbar">
+                                      <div className="input">
+                                        {window.location.origin}/user/{publicSlug || user?.id}
+                                      </div>
+                                    </div>
+                                    <div className="bg-base-100 p-4">
+                                      <div className="flex items-start gap-4 mb-4">
+                                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-2xl font-bold text-white">
+                                          {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
+                                        </div>
+                                        <div>
+                                          <h3 className="text-xl font-bold">
+                                            {user?.firstName} {user?.lastName}
+                                          </h3>
+                                          {publicSlug && (
+                                            <span className="text-base-content/60">
+                                              @{publicSlug}
+                                            </span>
+                                          )}
+                                          {publicDescription && (
+                                            <p className="text-sm text-base-content/70 mt-1">
+                                              {publicDescription}
+                                            </p>
+                                          )}
+                                        </div>
+                                      </div>
+                                      <div className="text-sm text-base-content/60">
+                                        📂 Your public projects will be listed below
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Call to action when public is disabled */}
+                              {!isPublicProfile && (
+                                <div className="text-center py-8 border-t border-base-300">
+                                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/20 flex items-center justify-center">
+                                    <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    </svg>
+                                  </div>
+                                  <h3 className="text-xl font-bold mb-2">Create Your Public Portfolio</h3>
+                                  <p className="text-base-content/70 mb-4 max-w-md mx-auto">
+                                    Showcase your work to the world! Enable your public profile to share your projects, 
+                                    skills, and experience with the developer community.
+                                  </p>
+                                  <button 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      e.preventDefault();
+                                      setIsPublicProfile(true);
+                                    }}
+                                    className="btn btn-primary"
+                                  >
+                                    Enable Public Profile
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
 

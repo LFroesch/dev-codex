@@ -301,16 +301,21 @@ const DeploymentPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Notes */}
-        <div className="card bg-base-200 shadow-lg lg:col-span-2">
-          <div className="card-body">
-            <h2 className="card-title text-xl mb-4">Deployment Notes</h2>
+      {/* Notes */}
+      <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10">
+        <input type="checkbox" defaultChecked />
+        <div className="collapse-title text-lg font-semibold bg-base-200 border-b border-base-content/10">
+          📝 Deployment Notes
+        </div>
+        <div className="collapse-content">
+          <div className="pt-4">
             <textarea
               className="textarea textarea-bordered w-full h-32"
               placeholder="Add notes about deployment process, issues, or configurations..."
               value={deploymentData.notes || ''}
               onChange={(e) => updateField('notes', e.target.value)}
             />
+            </div>
           </div>
         </div>
       </div>

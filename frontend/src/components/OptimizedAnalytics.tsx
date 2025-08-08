@@ -333,25 +333,27 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
           </div>
 
           {/* Compact Tabs */}
-          <div className="tabs tabs-boxed tabs-sm mb-4">
+          <div className="flex justify-center mb-4">
+            <div className="tabs tabs-boxed tabs-lg bg-base-200 shadow-lg border border-base-content/10">
             <button 
-              className={`tab tab-sm ${activeTab === 'overview' ? 'tab-active' : ''}`}
+              className={`tab tab-lg font-bold text-base ${activeTab === 'overview' ? 'tab-active' : ''}`}
               onClick={() => setActiveTab('overview')}
             >
               📈 Overview
             </button>
             <button 
-              className={`tab tab-sm ${activeTab === 'users' ? 'tab-active' : ''}`}
+              className={`tab tab-lg font-bold text-base ${activeTab === 'users' ? 'tab-active' : ''}`}
               onClick={() => setActiveTab('users')}
             >
               👥 Top Users
             </button>
             <button 
-              className={`tab tab-sm ${activeTab === 'projects' ? 'tab-active' : ''}`}
+              className={`tab tab-lg font-bold text-base ${activeTab === 'projects' ? 'tab-active' : ''}`}
               onClick={() => setActiveTab('projects')}
             >
               🚀 Top Projects
             </button>
+            </div>
           </div>
 
           {/* Content */}

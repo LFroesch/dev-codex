@@ -31,6 +31,13 @@ const PublicPage: React.FC = () => {
     timestamps: true,
   });
 
+  // Collapsible states
+  const [isPublicSharingExpanded, setIsPublicSharingExpanded] = useState(false);
+  const [isPublicUrlExpanded, setIsPublicUrlExpanded] = useState(false);
+  const [isVisibilityControlsExpanded, setIsVisibilityControlsExpanded] = useState(false);
+  const [isPrivacyInfoExpanded, setIsPrivacyInfoExpanded] = useState(false);
+  const [isShareWorkExpanded, setIsShareWorkExpanded] = useState(false);
+
   useEffect(() => {
     if (selectedProject) {
       setIsPublic(selectedProject.isPublic || false);
@@ -160,78 +167,135 @@ const PublicPage: React.FC = () => {
       )}
 
       {/* Public Sharing Settings */}
-      <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10">
-        <input type="checkbox" defaultChecked />
-        <div className="collapse-title text-lg font-semibold bg-base-200 border-b border-base-content/10 flex items-center justify-between">
-          <span>🌐 Public Sharing Settings</span>
-          <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-            {isPublic && (
-              <button
-                onClick={copyPublicUrl}
-                className="btn btn-outline btn-sm gap-2"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-                Copy URL
-              </button>
-            )}
+      <div className="bg-base-200 shadow-lg border border-base-content/10 rounded-lg mb-4">
+        <div className="p-4">
+          {/* Header with title and controls */}
+          <div className="flex items-center justify-between">
             <button
-              onClick={handleSave}
-              disabled={loading || !hasChanges()}
-              className={`btn btn-sm ${hasChanges() ? 'btn-primary' : 'btn-ghost'}`}
+              onClick={() => setIsPublicSharingExpanded(!isPublicSharingExpanded)}
+              className="flex items-center gap-3 flex-1 text-left hover:bg-base-200 p-2 -m-2 rounded-lg transition-colors"
             >
-              {loading ? (
-                <>
-                  <span className="loading loading-spinner loading-sm"></span>
-                  Saving...
-                </>
-              ) : hasChanges() ? (
-                'Save Changes'
-              ) : (
-                'Saved'
-              )}
+              <div className={`transform transition-transform duration-200 ${isPublicSharingExpanded ? 'rotate-90' : ''}`}>
+                <svg className="w-5 h-5 text-base-content/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-lg">🌐 Public Sharing Settings</h3>
+                <p className="text-sm text-base-content/70">
+                  {isPublic ? 'Project is public' : 'Project is private'}
+                </p>
+              </div>
             </button>
-          </div>
-        </div>
-        <div className="collapse-content">
-          <div className="pt-4 space-y-4">
-            {/* Public Status Toggle */}
-            <div className="form-control">
-              <label className="label cursor-pointer">
-                <div className="flex-1">
-                  <span className="label-text text-lg font-semibold">🔓 Make Project Public</span>
-                  <p className="text-sm text-base-content/60 mt-1">
-                    Enable this to make your project discoverable in the community discover page. 
-                    Others will be able to view your project details, tech stack, and documentation.
-                  </p>
-                  {isPublic && (
-                    <p className="text-sm text-success font-medium mt-2">
-                      ✅ Your project is publicly accessible
-                    </p>
-                  )}
-                </div>
-                <input
-                  type="checkbox"
-                  className="toggle toggle-primary toggle-lg"
-                  checked={isPublic}
-                  onChange={(e) => setIsPublic(e.target.checked)}
-                />
-              </label>
+            
+            <div className="flex gap-2 ml-4">
+              {isPublic && (
+                <button
+                  onClick={copyPublicUrl}
+                  className="btn btn-outline btn-sm gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  Copy URL
+                </button>
+              )}
+              <button
+                onClick={handleSave}
+                disabled={loading || !hasChanges()}
+                className={`btn btn-sm ${hasChanges() ? 'btn-primary' : 'btn-ghost'}`}
+              >
+                {loading ? (
+                  <>
+                    <span className="loading loading-spinner loading-sm"></span>
+                    Saving...
+                  </>
+                ) : hasChanges() ? (
+                  'Save Changes'
+                ) : (
+                  'Saved'
+                )}
+              </button>
             </div>
           </div>
+
+          {/* Collapsible content */}
+          {isPublicSharingExpanded && (
+            <div className="mt-4 border-t border-base-300 pt-4 bg-base-100 rounded-b-lg p-4 -mx-4 -mb-4">
+              {/* Public Status Toggle */}
+              <div className="form-control">
+                <label className="label cursor-pointer">
+                  <div className="flex-1">
+                    <span className="label-text text-lg font-semibold">🔓 Make Project Public</span>
+                    <p className="text-sm text-base-content/60 mt-1">
+                      Enable this to make your project discoverable in the community discover page. 
+                      Others will be able to view your project details, tech stack, and documentation.
+                    </p>
+                    {isPublic && (
+                      <p className="text-sm text-success font-medium mt-2">
+                        ✅ Your project is publicly accessible
+                      </p>
+                    )}
+                  </div>
+                  <input
+                    type="checkbox"
+                    className="toggle toggle-primary toggle-lg"
+                    checked={isPublic}
+                    onChange={(e) => setIsPublic(e.target.checked)}
+                  />
+                </label>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Public URL Configuration */}
       {isPublic && (
-        <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10">
-          <input type="checkbox" defaultChecked />
-          <div className="collapse-title text-lg font-semibold bg-base-200 border-b border-base-content/10">
-            🔗 Public URL Settings
-          </div>
-          <div className="collapse-content">
-            <div className="pt-4 space-y-4">
+        <div className="bg-base-200 shadow-lg border border-base-content/10 rounded-lg mb-4">
+          <div className="p-4">
+            {/* Header with title and controls */}
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => setIsPublicUrlExpanded(!isPublicUrlExpanded)}
+                className="flex items-center gap-3 flex-1 text-left hover:bg-base-200 p-2 -m-2 rounded-lg transition-colors"
+              >
+                <div className={`transform transition-transform duration-200 ${isPublicUrlExpanded ? 'rotate-90' : ''}`}>
+                  <svg className="w-5 h-5 text-base-content/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-lg">🔗 Public URL Settings</h3>
+                  <p className="text-sm text-base-content/70">
+                    Customize your project's public URL
+                  </p>
+                </div>
+              </button>
+              
+              <div className="flex gap-2 ml-4">
+                <button
+                  onClick={handleSave}
+                  disabled={loading || !hasChanges()}
+                  className={`btn btn-sm ${hasChanges() ? 'btn-primary' : 'btn-ghost'}`}
+                >
+                  {loading ? (
+                    <>
+                      <span className="loading loading-spinner loading-sm"></span>
+                      Saving...
+                    </>
+                  ) : hasChanges() ? (
+                    'Save Changes'
+                  ) : (
+                    'Saved'
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Collapsible content */}
+            {isPublicUrlExpanded && (
+              <div className="mt-4 border-t border-base-300 pt-4 space-y-4 bg-base-100 rounded-b-lg p-4 -mx-4 -mb-4">
             
             {/* Custom Slug */}
             <div className="form-control">
@@ -337,20 +401,58 @@ const PublicPage: React.FC = () => {
                 </div>
               </div>
             </div>
-            </div>
+              </div>
+            )}
           </div>
         </div>
       )}
 
       {/* Visibility Controls */}
       {isPublic && (
-        <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10">
-          <input type="checkbox" defaultChecked />
-          <div className="collapse-title text-lg font-semibold bg-base-200 border-b border-base-content/10">
-            🔧 Visibility Controls
-          </div>
-          <div className="collapse-content">
-            <div className="pt-4 space-y-4">
+        <div className="bg-base-200 shadow-lg border border-base-content/10 rounded-lg mb-4">
+          <div className="p-4">
+            {/* Header with title and controls */}
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => setIsVisibilityControlsExpanded(!isVisibilityControlsExpanded)}
+                className="flex items-center gap-3 flex-1 text-left hover:bg-base-200 p-2 -m-2 rounded-lg transition-colors"
+              >
+                <div className={`transform transition-transform duration-200 ${isVisibilityControlsExpanded ? 'rotate-90' : ''}`}>
+                  <svg className="w-5 h-5 text-base-content/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-lg">🔧 Visibility Controls</h3>
+                  <p className="text-sm text-base-content/70">
+                    Choose what information to include
+                  </p>
+                </div>
+              </button>
+              
+              <div className="flex gap-2 ml-4">
+                <button
+                  onClick={handleSave}
+                  disabled={loading || !hasChanges()}
+                  className={`btn btn-sm ${hasChanges() ? 'btn-primary' : 'btn-ghost'}`}
+                >
+                  {loading ? (
+                    <>
+                      <span className="loading loading-spinner loading-sm"></span>
+                      Saving...
+                    </>
+                  ) : hasChanges() ? (
+                    'Save Changes'
+                  ) : (
+                    'Saved'
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Collapsible content */}
+            {isVisibilityControlsExpanded && (
+              <div className="mt-4 border-t border-base-300 pt-4 space-y-4 bg-base-100 rounded-b-lg p-4 -mx-4 -mb-4">
             <p className="text-sm text-base-content/60 mb-4">
               Choose what information to include on your public project page.
             </p>
@@ -383,21 +485,40 @@ const PublicPage: React.FC = () => {
                   </span>
                 </label>
               ))}
-            </div>
-            </div>
+              </div>
+              </div>
+            )}
           </div>
         </div>
       )}
 
       {/* What Gets Shared */}
       {isPublic && (
-        <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10">
-          <input type="checkbox" defaultChecked />
-          <div className="collapse-title text-lg font-semibold bg-base-200 border-b border-base-content/10">
-            📋 Privacy Information
-          </div>
-          <div className="collapse-content">
-            <div className="pt-4 space-y-4">
+        <div className="bg-base-200 shadow-lg border border-base-content/10 rounded-lg mb-4">
+          <div className="p-4">
+            {/* Header with title and controls */}
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => setIsPrivacyInfoExpanded(!isPrivacyInfoExpanded)}
+                className="flex items-center gap-3 flex-1 text-left hover:bg-base-200 p-2 -m-2 rounded-lg transition-colors"
+              >
+                <div className={`transform transition-transform duration-200 ${isPrivacyInfoExpanded ? 'rotate-90' : ''}`}>
+                  <svg className="w-5 h-5 text-base-content/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-lg">📋 Privacy Information</h3>
+                  <p className="text-sm text-base-content/70">
+                    What information is shared publicly
+                  </p>
+                </div>
+              </button>
+            </div>
+
+            {/* Collapsible content */}
+            {isPrivacyInfoExpanded && (
+              <div className="mt-4 border-t border-base-300 pt-4 space-y-4 bg-base-100 rounded-b-lg p-4 -mx-4 -mb-4">
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-3">
@@ -455,20 +576,48 @@ const PublicPage: React.FC = () => {
                 </div>
               </div>
             </div>
-            </div>
+              </div>
+            )}
           </div>
         </div>
       )}
 
       {/* Call to Action */}
       {!isPublic && (
-        <div className="collapse collapse-arrow bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/20">
-          <input type="checkbox" defaultChecked />
-          <div className="collapse-title text-lg font-semibold bg-base-200/50 border-b border-primary/20">
-            🌐 Share Your Work with the World
-          </div>
-          <div className="collapse-content">
-            <div className="pt-4 text-center">
+        <div className="bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/20 rounded-lg mb-4">
+          <div className="p-4">
+            {/* Header with title and controls */}
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => setIsShareWorkExpanded(!isShareWorkExpanded)}
+                className="flex items-center gap-3 flex-1 text-left hover:bg-base-200/30 p-2 -m-2 rounded-lg transition-colors"
+              >
+                <div className={`transform transition-transform duration-200 ${isShareWorkExpanded ? 'rotate-90' : ''}`}>
+                  <svg className="w-5 h-5 text-base-content/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-lg">🌐 Share Your Work with the World</h3>
+                  <p className="text-sm text-base-content/70">
+                    Make your project discoverable by the community
+                  </p>
+                </div>
+              </button>
+              
+              <div className="flex gap-2 ml-4">
+                <button 
+                  onClick={() => setIsPublic(true)}
+                  className="btn btn-primary btn-sm"
+                >
+                  Enable Public Sharing
+                </button>
+              </div>
+            </div>
+
+            {/* Collapsible content */}
+            {isShareWorkExpanded && (
+              <div className="mt-4 border-t border-primary/20 pt-4 text-center bg-base-100 rounded-b-lg p-4 -mx-4 -mb-4">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/20 flex items-center justify-center">
               <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0 9c-1.657 0-3-4.03-3-9s1.343-9 3-9m0 18c1.657 0 3-4.03 3-9s-1.343-9-3-9m-9 9a9 9 0 019-9" />
@@ -484,7 +633,8 @@ const PublicPage: React.FC = () => {
             >
               Enable Public Sharing
             </button>
-            </div>
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Note, projectAPI } from '../api';
 import EnhancedTextEditor from './EnhancedTextEditor';
 import { unsavedChangesManager } from '../utils/unsavedChanges';
+import activityTracker from '../services/activityTracker';
 
 interface NoteItemProps {
   note: Note;
@@ -132,6 +133,44 @@ const NoteItem: React.FC<NoteItemProps> = ({
         description: editDescription.trim(),
         content: editContent.trim()
       });
+      
+      // Track the activity for different field changes
+      if (editTitle.trim() !== note.title) {
+        await activityTracker.trackUpdate(
+          'note',
+          note.id,
+          'title',
+          note.title,
+          editTitle.trim(),
+          note.title, // resourceName is the old title
+          undefined // no fileName for notes
+        );
+      }
+      
+      if (editDescription.trim() !== (note.description || '')) {
+        await activityTracker.trackUpdate(
+          'note',
+          note.id,
+          'description',
+          note.description || '',
+          editDescription.trim(),
+          note.title, // resourceName
+          undefined
+        );
+      }
+      
+      if (editContent.trim() !== note.content) {
+        await activityTracker.trackUpdate(
+          'note',
+          note.id,
+          'content',
+          note.content,
+          editContent.trim(),
+          note.title, // resourceName
+          undefined
+        );
+      }
+      
       setIsEditing(false);
       onUpdate();
     } catch (error) {
@@ -147,6 +186,16 @@ const NoteItem: React.FC<NoteItemProps> = ({
   const handleDelete = async () => {
     try {
       await projectAPI.deleteNote(projectId, note.id);
+      
+      // Track note deletion
+      await activityTracker.trackDelete(
+        'note',
+        note.id,
+        note.title, // resourceName
+        undefined, // no fileName for notes
+        { originalTitle: note.title } // metadata
+      );
+      
       onUpdate();
       setShowDeleteConfirm(false);
     } catch (error) {
@@ -273,10 +322,10 @@ const NoteItem: React.FC<NoteItemProps> = ({
               )}
               <div className="text-xs text-base-content/50 mt-1">
                 {note.updatedAt !== note.createdAt && (
-                  <>Updated: {new Date(note.updatedAt).toLocaleDateString()} • </>
+                  <>Updated: {new Date(note.updatedAt).toLocaleDateString()}{note.updatedBy && ` by ${note.updatedBy}`} • </>
                 )}
                 {note.createdAt && (
-                  <>Created: {new Date(note.createdAt).toLocaleDateString()}</>
+                  <>Created: {new Date(note.createdAt).toLocaleDateString()}{note.createdBy && ` by ${note.createdBy}`}</>
                 )}
               </div>
             </div>
@@ -465,11 +514,24 @@ const NewNoteForm: React.FC<NewNoteFormProps> = ({ projectId, onAdd }) => {
 
     setLoading(true);
     try {
-      await projectAPI.createNote(projectId, {
+      const newNote = await projectAPI.createNote(projectId, {
         title: title.trim(),
         description: description.trim(),
         content: content.trim()
       });
+      
+      // Track note creation
+      await activityTracker.trackCreate(
+        'note',
+        newNote.data?.id || 'unknown', // use the returned note ID if available
+        title.trim(), // resourceName
+        undefined, // no fileName for notes
+        { 
+          hasDescription: !!description.trim(),
+          contentLength: content.trim().length
+        }
+      );
+      
       setTitle('');
       setDescription('');
       setContent('');

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import analyticsService from '../services/analytics';
+import CollaborationIndicator from './CollaborationIndicator';
 
 interface SessionInfo {
   sessionId: string;
@@ -16,11 +17,15 @@ interface SessionInfo {
 interface SessionTrackerProps {
   showDetails?: boolean;
   className?: string;
+  currentUserId?: string;
+  projectId?: string;
 }
 
 const SessionTracker: React.FC<SessionTrackerProps> = ({ 
   showDetails = false, 
-  className = '' 
+  className = '',
+  currentUserId,
+  projectId
 }) => {
   const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
   const [isVisible, setIsVisible] = useState(false);
@@ -79,10 +84,20 @@ const SessionTracker: React.FC<SessionTrackerProps> = ({
         
         <button
           onClick={() => setIsVisible(!isVisible)}
-          className="text-xs text-base-content/70 hover:text-base-content/90 font-mono font-medium transition-colors duration-200"
+          className="text-xs text-base-content/70 hover:text-base-content/90 font-mono font-medium transition-colors duration-200 w-14 text-center"
         >
           {formatDuration(sessionInfo.duration)}
         </button>
+
+        {/* Show active collaborators if we have a project */}
+        {projectId && (
+          <CollaborationIndicator
+            projectId={projectId}
+            currentUserId={currentUserId}
+            showInSessionTracker={true}
+            className="ml-1"
+          />
+        )}
       </div>
 
       {/* Detailed view */}

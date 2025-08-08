@@ -21,6 +21,8 @@ interface SessionData {
   pageViews: string[];
   projectsViewed: string[];
   events: AnalyticsEvent[];
+  currentProjectId?: string; // Currently active project
+  currentPage?: string; // Currently active page
 }
 
 class AnalyticsService {
@@ -31,7 +33,7 @@ class AnalyticsService {
   private heartbeatTimer: number | null = null;
   private isOnline = navigator.onLine;
   private pendingEvents: AnalyticsEvent[] = [];
-  private readonly HEARTBEAT_INTERVAL = 60 * 1000; // 60 seconds
+  private readonly HEARTBEAT_INTERVAL = 30 * 1000; // 30 seconds for more responsive collaboration
 
   private constructor() {
     this.setupEventListeners();
@@ -96,6 +98,7 @@ class AnalyticsService {
         
         // If they were last active within 15 minutes, restore the session
         if (timeSinceLastActivity < fifteenMinutes) {
+          const storedData = JSON.parse(storedSession);
           this.session = {
             sessionId,
             userId: this.currentUserId || undefined,
@@ -103,10 +106,26 @@ class AnalyticsService {
             lastActivity: now, // Update last activity to now (they're back)
             pageViews: [],
             projectsViewed: [],
-            events: []
+            events: [],
+            currentProjectId: storedData.currentProjectId,
+            currentPage: storedData.currentPage
           };
+          
+          // Update the stored session with restored context
+          localStorage.setItem('analytics_session', JSON.stringify({
+            sessionId,
+            startTime: this.session.startTime,
+            lastActivity: this.session.lastActivity,
+            currentProjectId: this.session.currentProjectId,
+            currentPage: this.session.currentPage
+          }));
+          
           this.startHeartbeat();
           console.log(`Restored session: ${sessionId} (was away for ${Math.round(timeSinceLastActivity / 1000)}s)`);
+          
+          // Send immediate heartbeat to signal we're back
+          await this.sendHeartbeatNow();
+          
           return sessionId;
         } else {
           // Clear old session (inactive for more than 15 minutes)
@@ -147,12 +166,17 @@ class AnalyticsService {
         localStorage.setItem('analytics_session', JSON.stringify({
           sessionId,
           startTime: this.session.startTime,
-          lastActivity: this.session.lastActivity
+          lastActivity: this.session.lastActivity,
+          currentProjectId: this.session.currentProjectId,
+          currentPage: this.session.currentPage
         }));
 
-        // Start heartbeat for this session
+        // Start heartbeat for this session and send immediately
         this.startHeartbeat();
         console.log('Started new session:', sessionId);
+        
+        // Send immediate heartbeat to register the session quickly
+        await this.sendHeartbeatNow();
 
         return sessionId;
       }
@@ -175,11 +199,16 @@ class AnalyticsService {
     localStorage.setItem('analytics_session', JSON.stringify({
       sessionId,
       startTime: this.session.startTime,
-      lastActivity: this.session.lastActivity
+      lastActivity: this.session.lastActivity,
+      currentProjectId: this.session.currentProjectId,
+      currentPage: this.session.currentPage
     }));
 
     this.startHeartbeat();
     console.log('Started fallback session:', sessionId);
+    
+    // Send immediate heartbeat for fallback session too
+    await this.sendHeartbeatNow();
 
     return sessionId;
   }
@@ -239,8 +268,11 @@ class AnalyticsService {
     oldValue: any,
     newValue: any,
     projectId?: string,
-    projectName?: string
+    projectName?: string,
+    resourceName?: string,
+    fileName?: string
   ) {
+    // Track the event
     await this.trackEvent({
       eventType: 'field_edit',
       eventData: {
@@ -256,12 +288,45 @@ class AnalyticsService {
         }
       }
     });
+
+    // Note: Activity logging is now handled by activityTracker.trackUpdate() 
+    // to avoid duplication. The analytics service focuses on analytics events only.
   }
 
   async trackProjectOpen(projectId: string, projectName: string) {
     if (this.session) {
       if (!this.session.projectsViewed.includes(projectId)) {
         this.session.projectsViewed.push(projectId);
+      }
+      // Set as current project
+      await this.setCurrentProject(projectId);
+
+      // Use the smart project join logging to prevent spam
+      try {
+        const response = await fetch('/api/activity-logs/smart-join', {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            projectId,
+            sessionId: this.session.sessionId
+          })
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          if (result.logged) {
+            console.log('Project join logged successfully');
+            // Send instant heartbeat to update active users immediately
+            await this.sendHeartbeatNow();
+          } else {
+            console.log('Project join skipped (user recently joined)');
+          }
+        }
+      } catch (error) {
+        console.error('Failed to log smart project join:', error);
       }
     }
 
@@ -282,6 +347,8 @@ class AnalyticsService {
       if (!this.session.pageViews.includes(pageName)) {
         this.session.pageViews.push(pageName);
       }
+      // Set as current page
+      this.setCurrentPage(pageName);
     }
 
     await this.trackEvent({
@@ -396,11 +463,7 @@ class AnalyticsService {
       this.session.lastActivity = Date.now();
       
       // Update localStorage with the new lastActivity time
-      localStorage.setItem('analytics_session', JSON.stringify({
-        sessionId: this.session.sessionId,
-        startTime: this.session.startTime,
-        lastActivity: this.session.lastActivity
-      }));
+      this.updateLocalSession();
     }
 
     // Reset inactivity timer
@@ -429,6 +492,8 @@ class AnalyticsService {
     // Page is visible again, resume timers
     this.recordActivity();
     this.startHeartbeat();
+    // Send instant heartbeat to immediately update active status
+    this.sendHeartbeatNow();
   }
 
   private startHeartbeat() {
@@ -463,11 +528,7 @@ class AnalyticsService {
       this.session.lastActivity = Date.now();
 
       // Update localStorage with the latest activity time
-      localStorage.setItem('analytics_session', JSON.stringify({
-        sessionId: this.session.sessionId,
-        startTime: this.session.startTime,
-        lastActivity: this.session.lastActivity
-      }));
+      this.updateLocalSession();
 
       // Send heartbeat to server to update session
       const response = await fetch('/api/analytics/heartbeat', {
@@ -480,7 +541,9 @@ class AnalyticsService {
         body: JSON.stringify({
           sessionId: this.session.sessionId,
           lastActivity: this.session.lastActivity,
-          isVisible: !document.hidden
+          isVisible: !document.hidden,
+          currentProjectId: this.session.currentProjectId,
+          currentPage: this.session.currentPage
         })
       });
 
@@ -499,6 +562,12 @@ class AnalyticsService {
     } catch (error) {
       console.error('Failed to send heartbeat:', error);
     }
+  }
+
+  // Send heartbeat immediately (for instant updates on critical events)
+  async sendHeartbeatNow(): Promise<void> {
+    console.log('Sending instant heartbeat...');
+    await this.sendHeartbeat();
   }
 
   // Set current user and handle user switching
@@ -540,6 +609,84 @@ class AnalyticsService {
       return 'text_short';
     }
     return 'unknown';
+  }
+
+  // Set current project (for tracking active collaborators)
+  async setCurrentProject(projectId: string | null) {
+    if (this.session) {
+      this.session.currentProjectId = projectId || undefined;
+      this.updateLocalSession();
+      
+      // Send immediate heartbeat to update active project status
+      if (projectId && this.isOnline) {
+        await this.sendHeartbeatNow();
+      }
+    }
+  }
+
+  // Set current page (for tracking user location)
+  setCurrentPage(pageName: string | null) {
+    if (this.session) {
+      this.session.currentPage = pageName || undefined;
+      this.updateLocalSession();
+    }
+  }
+
+  // Get current project ID
+  getCurrentProject(): string | null {
+    return this.session?.currentProjectId || null;
+  }
+
+  // Get current page
+  getCurrentPage(): string | null {
+    return this.session?.currentPage || null;
+  }
+
+  private updateLocalSession() {
+    if (this.session) {
+      localStorage.setItem('analytics_session', JSON.stringify({
+        sessionId: this.session.sessionId,
+        startTime: this.session.startTime,
+        lastActivity: this.session.lastActivity,
+        currentProjectId: this.session.currentProjectId,
+        currentPage: this.session.currentPage
+      }));
+    }
+  }
+
+  private getResourceTypeFromField(fieldName: string): 'project' | 'note' | 'todo' | 'doc' | 'devlog' | 'link' | 'tech' | 'package' | 'team' | 'settings' {
+    const field = fieldName.toLowerCase();
+    
+    if (field.includes('note') || field.includes('content') && field.includes('note')) {
+      return 'note';
+    }
+    if (field.includes('todo') || field.includes('task')) {
+      return 'todo';
+    }
+    if (field.includes('doc') || field.includes('documentation')) {
+      return 'doc';
+    }
+    if (field.includes('devlog') || field.includes('log')) {
+      return 'devlog';
+    }
+    if (field.includes('link') || field.includes('url')) {
+      return 'link';
+    }
+    if (field.includes('tech') || field.includes('technology')) {
+      return 'tech';
+    }
+    if (field.includes('package') || field.includes('dependency')) {
+      return 'package';
+    }
+    if (field.includes('team') || field.includes('member') || field.includes('role')) {
+      return 'team';
+    }
+    if (field.includes('setting') || field.includes('config')) {
+      return 'settings';
+    }
+    
+    // Default to project for basic fields like name, description, etc.
+    return 'project';
   }
 }
 

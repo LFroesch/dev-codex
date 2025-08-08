@@ -15,6 +15,13 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<'editor' | 'viewer'>('viewer');
   const [inviting, setInviting] = useState(false);
+  
+  // Modal states
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [showRemoveModal, setShowRemoveModal] = useState(false);
+  const [modalMessage, setModalMessage] = useState('');
+  const [memberToRemove, setMemberToRemove] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
     fetchMembers();
@@ -38,27 +45,45 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
     setInviting(true);
     try {
       const response = await teamAPI.inviteUser(projectId, { email: inviteEmail, role: inviteRole });
+      setModalMessage(`Invitation sent successfully to ${inviteEmail}!`);
+      setShowSuccessModal(true);
       setInviteEmail('');
-      alert(`Invitation sent successfully to ${inviteEmail}!`);
       console.log('Invite response:', response);
     } catch (error: any) {
       console.error('Failed to invite user:', error);
       const errorMessage = error.response?.data?.message || error.message || 'Failed to send invitation';
-      alert(`Error: ${errorMessage}`);
+      setModalMessage(errorMessage);
+      setShowErrorModal(true);
     } finally {
       setInviting(false);
     }
   };
 
   const handleRemoveMember = async (userId: string) => {
-    if (!confirm('Are you sure you want to remove this team member?')) return;
+    const member = members.find(m => m.userId._id === userId);
+    if (member) {
+      setMemberToRemove({ 
+        id: userId, 
+        name: `${member.userId.firstName} ${member.userId.lastName}` 
+      });
+      setShowRemoveModal(true);
+    }
+  };
+
+  const confirmRemoveMember = async () => {
+    if (!memberToRemove) return;
 
     try {
-      await teamAPI.removeMember(projectId, userId);
-      setMembers(prev => prev.filter(m => m.userId._id !== userId));
+      await teamAPI.removeMember(projectId, memberToRemove.id);
+      setMembers(prev => prev.filter(m => m.userId._id !== memberToRemove.id));
+      setShowRemoveModal(false);
+      setMemberToRemove(null);
     } catch (error) {
       console.error('Failed to remove member:', error);
-      alert('Failed to remove team member');
+      setModalMessage('Failed to remove team member');
+      setShowErrorModal(true);
+      setShowRemoveModal(false);
+      setMemberToRemove(null);
     }
   };
 
@@ -70,7 +95,8 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
       ));
     } catch (error) {
       console.error('Failed to update role:', error);
-      alert('Failed to update role');
+      setModalMessage('Failed to update role');
+      setShowErrorModal(true);
     }
   };
 
@@ -178,6 +204,99 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
           refreshInterval={30000}
         />
       </div>
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-base-100 rounded-lg shadow-xl p-6 w-full max-w-md">
+            <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-success/10 rounded-full">
+              <svg className="w-8 h-8 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            
+            <h3 className="text-xl font-bold text-center mb-4">Success</h3>
+            
+            <p className="text-center text-base-content/70 mb-6">
+              {modalMessage}
+            </p>
+
+            <div className="flex justify-center">
+              <button 
+                className="btn btn-primary"
+                onClick={() => setShowSuccessModal(false)}
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Error Modal */}
+      {showErrorModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-base-100 rounded-lg shadow-xl p-6 w-full max-w-md">
+            <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-error/10 rounded-full">
+              <svg className="w-8 h-8 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </div>
+            
+            <h3 className="text-xl font-bold text-center mb-4">Error</h3>
+            
+            <p className="text-center text-base-content/70 mb-6">
+              {modalMessage}
+            </p>
+
+            <div className="flex justify-center">
+              <button 
+                className="btn btn-primary"
+                onClick={() => setShowErrorModal(false)}
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Remove Member Confirmation Modal */}
+      {showRemoveModal && memberToRemove && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-base-100 rounded-lg shadow-xl p-6 w-full max-w-md">
+            <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-warning/10 rounded-full">
+              <svg className="w-8 h-8 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            
+            <h3 className="text-xl font-bold text-center mb-4">Remove Team Member</h3>
+            
+            <p className="text-center text-base-content/70 mb-6">
+              Are you sure you want to remove {memberToRemove.name} from this project?
+            </p>
+
+            <div className="flex gap-3">
+              <button 
+                className="btn btn-ghost flex-1"
+                onClick={() => {
+                  setShowRemoveModal(false);
+                  setMemberToRemove(null);
+                }}
+              >
+                Cancel
+              </button>
+              <button 
+                className="btn btn-error flex-1"
+                onClick={confirmRemoveMember}
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

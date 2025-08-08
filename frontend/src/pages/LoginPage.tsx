@@ -20,7 +20,7 @@ const LoginPage: React.FC = () => {
     
     const result = await call(() => authAPI.login({ email, password }));
     if (result) {
-      navigate('/');
+      navigate('/notes?view=projects');
     }
   };
 

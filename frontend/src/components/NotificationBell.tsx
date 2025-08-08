@@ -6,6 +6,13 @@ const NotificationBell: React.FC = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
+  const [showInvitationModal, setShowInvitationModal] = useState(false);
+  const [selectedInvitation, setSelectedInvitation] = useState<Notification | null>(null);
+  const [showClearAllModal, setShowClearAllModal] = useState(false);
+  const [showInviteSuccessModal, setShowInviteSuccessModal] = useState(false);
+  const [showInviteErrorModal, setShowInviteErrorModal] = useState(false);
+  const [inviteMessage, setInviteMessage] = useState('');
+  const [isProcessingInvite, setIsProcessingInvite] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
@@ -62,27 +69,93 @@ const NotificationBell: React.FC = () => {
 
     // Handle different notification types
     if (notification.type === 'project_invitation' && notification.relatedInvitationId) {
-      // Show invitation modal or accept directly
-      const confirmAccept = confirm(`Accept invitation to join "${notification.relatedProjectId?.name}"?`);
-      if (confirmAccept) {
-        try {
-          // We need the invitation token, but we only have ID. Let's get pending invitations
-          const pendingInvitations = await invitationAPI.getPending();
-          const invitation = pendingInvitations.invitations.find(inv => inv._id === notification.relatedInvitationId);
-          
-          if (invitation) {
-            await invitationAPI.acceptInvitation(invitation.token);
-            alert('Invitation accepted! Redirecting to project...');
-            navigate('/');
-          } else {
-            alert('Invitation not found or already processed');
+      // Check if invitation is still pending before showing modal
+      try {
+        const pendingInvitations = await invitationAPI.getPending();
+        const invitation = pendingInvitations.invitations.find(inv => inv._id === notification.relatedInvitationId);
+        
+        if (invitation) {
+          // Show invitation modal for pending invitations
+          setSelectedInvitation(notification);
+          setShowInvitationModal(true);
+        } else {
+          // Invitation already processed, redirect to project
+          if (notification.relatedProjectId) {
+            const projectId = typeof notification.relatedProjectId === 'string' ? notification.relatedProjectId : notification.relatedProjectId._id;
+            localStorage.setItem('selectedProjectId', projectId);
+            window.dispatchEvent(new CustomEvent('selectProject', { detail: { projectId } }));
+            navigate('/notes');
           }
-        } catch (error) {
-          console.error('Failed to accept invitation:', error);
-          alert('Failed to accept invitation');
         }
+      } catch (error) {
+        console.error('Failed to check invitation status:', error);
+        // Fallback: show modal anyway
+        setSelectedInvitation(notification);
+        setShowInvitationModal(true);
       }
+    } else if (notification.relatedProjectId) {
+      // For other notification types, redirect to the associated project
+      // Store the project ID and trigger a custom event
+      const projectId = typeof notification.relatedProjectId === 'string' ? notification.relatedProjectId : notification.relatedProjectId._id;
+      localStorage.setItem('selectedProjectId', projectId);
+      
+      // Dispatch custom event to notify Layout component
+      window.dispatchEvent(new CustomEvent('selectProject', { detail: { projectId } }));
+      navigate('/notes');
     }
+  };
+
+  const handleAcceptInvitation = async () => {
+    if (!selectedInvitation || isProcessingInvite) return;
+    
+    setIsProcessingInvite(true);
+    
+    try {
+      // Get pending invitations to find the token
+      const pendingInvitations = await invitationAPI.getPending();
+      const invitation = pendingInvitations.invitations.find(inv => inv._id === selectedInvitation.relatedInvitationId);
+      
+      if (invitation) {
+        await invitationAPI.acceptInvitation(invitation.token);
+        setShowInvitationModal(false);
+        setSelectedInvitation(null);
+        setInviteMessage(`Successfully joined ${selectedInvitation.relatedProjectId?.name || 'the project'}!`);
+        setShowInviteSuccessModal(true);
+        
+        // Navigate to the project after a short delay
+        setTimeout(() => {
+          if (selectedInvitation.relatedProjectId) {
+            const projectId = typeof selectedInvitation.relatedProjectId === 'string' ? selectedInvitation.relatedProjectId : selectedInvitation.relatedProjectId._id;
+            localStorage.setItem('selectedProjectId', projectId);
+            
+            // Dispatch custom event to notify Layout component
+            window.dispatchEvent(new CustomEvent('selectProject', { detail: { projectId } }));
+          }
+          navigate('/notes');
+        }, 1500);
+      } else {
+        setInviteMessage('Invitation not found or already processed');
+        setShowInvitationModal(false);
+        setSelectedInvitation(null);
+        setShowInviteErrorModal(true);
+      }
+    } catch (error: any) {
+      console.error('Failed to accept invitation:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to accept invitation';
+      setInviteMessage(errorMessage);
+      setShowInvitationModal(false);
+      setSelectedInvitation(null);
+      setShowInviteErrorModal(true);
+    } finally {
+      setIsProcessingInvite(false);
+    }
+  };
+
+  const handleDeclineInvitation = () => {
+    setShowInvitationModal(false);
+    setSelectedInvitation(null);
+    setInviteMessage('Invitation declined');
+    setShowInviteSuccessModal(true);
   };
 
   return (
@@ -108,19 +181,7 @@ const NotificationBell: React.FC = () => {
           {notifications.length > 0 && (
             <button 
               className="btn btn-xs btn-ghost"
-              onClick={async () => {
-                if (!confirm('Clear all notifications?')) return;
-                try {
-                  // Delete all notifications
-                  for (const notification of notifications) {
-                    await notificationAPI.deleteNotification(notification._id);
-                  }
-                  setNotifications([]);
-                  setUnreadCount(0);
-                } catch (error) {
-                  console.error('Failed to clear notifications:', error);
-                }
-              }}
+              onClick={() => setShowClearAllModal(true)}
             >
               Clear all
             </button>
@@ -142,6 +203,152 @@ const NotificationBell: React.FC = () => {
             ))
           )}
         </div>
+        </div>
+      )}
+
+      {/* Project Invitation Modal */}
+      {showInvitationModal && selectedInvitation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 translate-y-48 ">
+          <div className="bg-base-100 rounded-lg shadow-xl p-6 w-full max-w-md">
+            <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-primary/10 rounded-full">
+              <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+              </svg>
+            </div>
+            
+            <h3 className="text-xl font-bold text-center mb-4">Project Invitation</h3>
+            
+            <p className="text-center text-base-content/70 mb-6">
+              Accept invitation to join "{selectedInvitation.relatedProjectId?.name || 'this project'}"?
+            </p>
+
+            <div className="flex gap-3">
+              <button 
+                className="btn btn-ghost flex-1"
+                onClick={handleDeclineInvitation}
+                disabled={isProcessingInvite}
+              >
+                Decline
+              </button>
+              <button 
+                className="btn btn-primary flex-1"
+                onClick={handleAcceptInvitation}
+                disabled={isProcessingInvite}
+              >
+                {isProcessingInvite ? (
+                  <>
+                    <span className="loading loading-spinner loading-sm"></span>
+                    Accepting...
+                  </>
+                ) : (
+                  'Accept'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Clear All Notifications Modal */}
+      {showClearAllModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-base-100 rounded-lg shadow-xl p-6 w-full max-w-md">
+            <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-warning/10 rounded-full">
+              <svg className="w-8 h-8 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            
+            <h3 className="text-xl font-bold text-center mb-4">Clear All Notifications</h3>
+            
+            <p className="text-center text-base-content/70 mb-6">
+              Are you sure you want to clear all notifications? This action cannot be undone.
+            </p>
+
+            <div className="flex gap-3">
+              <button 
+                className="btn btn-ghost flex-1"
+                onClick={() => setShowClearAllModal(false)}
+              >
+                Cancel
+              </button>
+              <button 
+                className="btn btn-warning flex-1"
+                onClick={async () => {
+                  try {
+                    // Delete all notifications
+                    for (const notification of notifications) {
+                      await notificationAPI.deleteNotification(notification._id);
+                    }
+                    setNotifications([]);
+                    setUnreadCount(0);
+                    setShowClearAllModal(false);
+                  } catch (error) {
+                    console.error('Failed to clear notifications:', error);
+                    setShowClearAllModal(false);
+                  }
+                }}
+              >
+                Clear All
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Invitation Success Modal */}
+      {showInviteSuccessModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 translate-y-48">
+          <div className="bg-base-100 rounded-lg shadow-xl p-6 w-full max-w-md">
+            <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-success/10 rounded-full">
+              <svg className="w-8 h-8 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            
+            <h3 className="text-xl font-bold text-center mb-4">Success</h3>
+            
+            <p className="text-center text-base-content/70 mb-6">
+              {inviteMessage}
+            </p>
+
+            <div className="flex justify-center">
+              <button 
+                className="btn btn-primary"
+                onClick={() => setShowInviteSuccessModal(false)}
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Invitation Error Modal */}
+      {showInviteErrorModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 translate-y-48">
+          <div className="bg-base-100 rounded-lg shadow-xl p-6 w-full max-w-md">
+            <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-error/10 rounded-full">
+              <svg className="w-8 h-8 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </div>
+            
+            <h3 className="text-xl font-bold text-center mb-4">Error</h3>
+            
+            <p className="text-center text-base-content/70 mb-6">
+              {inviteMessage}
+            </p>
+
+            <div className="flex justify-center">
+              <button 
+                className="btn btn-primary"
+                onClick={() => setShowInviteErrorModal(false)}
+              >
+                OK
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -583,16 +583,6 @@ ${noteContent}`;
           </div>
         </div>
       )}
-
-      {/* Compact Tips */}
-      <div className="alert alert-info">
-        <svg className="stroke-current shrink-0 h-4 w-4" fill="none" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <div className="text-sm">
-          <p><strong>JSON:</strong> Structured data • <strong>AI Prompt:</strong> For Claude/ChatGPT • <strong>Markdown:</strong> Human-readable</p>
-        </div>
-      </div>
     </div>
   );
 };

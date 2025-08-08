@@ -91,4 +91,15 @@ ProjectInvitationSchema.index(
   }
 );
 
+// TTL index to automatically clean up expired invitations after 30 days
+ProjectInvitationSchema.index(
+  { expiresAt: 1 }, 
+  { 
+    expireAfterSeconds: 30 * 24 * 60 * 60,
+    partialFilterExpression: { 
+      status: { $in: ['expired', 'cancelled'] }
+    }
+  }
+);
+
 export default mongoose.model<IProjectInvitation>('ProjectInvitation', ProjectInvitationSchema);

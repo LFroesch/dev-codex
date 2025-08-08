@@ -9,6 +9,8 @@ export interface IUserSession extends Document {
   totalEvents: number;
   projectsViewed: string[];
   pagesVisited: string[];
+  currentProjectId?: string; // Currently active project
+  currentPage?: string; // Currently active page
   lastActivity: Date;
   userAgent?: string;
   ipAddress?: string;
@@ -51,6 +53,13 @@ const userSessionSchema: Schema = new Schema({
   pagesVisited: [{
     type: String
   }],
+  currentProjectId: {
+    type: String,
+    index: true
+  },
+  currentPage: {
+    type: String
+  },
   lastActivity: {
     type: Date,
     default: Date.now,
@@ -74,6 +83,7 @@ const userSessionSchema: Schema = new Schema({
 // Compound indexes
 userSessionSchema.index({ userId: 1, startTime: -1 });
 userSessionSchema.index({ userId: 1, isActive: 1 });
+userSessionSchema.index({ currentProjectId: 1, isActive: 1 }); // For finding active users on a project
 
 // TTL index to clean up inactive sessions after 24 hours
 userSessionSchema.index({ 

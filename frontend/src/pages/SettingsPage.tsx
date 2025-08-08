@@ -634,6 +634,7 @@ const SettingsPage: React.FC = () => {
                   <TeamManagement 
                     projectId={selectedProject.id} 
                     canManageTeam={selectedProject.canManageTeam ?? selectedProject.isOwner ?? false}
+                    currentUserId={undefined} // TODO: Get current user ID from auth context
                   />
                 </div>
               ) : (

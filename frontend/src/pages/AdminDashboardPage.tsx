@@ -559,9 +559,10 @@ const AdminDashboardPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 py-8">
 
         {/* Tabs */}
-        <div className="tabs tabs-boxed mb-8 bg-base-100 shadow-lg">
+        <div className="flex justify-center mb-8">
+          <div className="tabs tabs-boxed tabs-lg bg-base-200 shadow-lg border border-base-content/10">
           <button 
-            className={`tab ${activeTab === 'users' ? 'tab-active' : ''}`}
+            className={`tab tab-lg font-bold text-base ${activeTab === 'users' ? 'tab-active' : ''}`}
             onClick={() => setActiveTab('users')}
           >
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -570,7 +571,7 @@ const AdminDashboardPage: React.FC = () => {
             Users ({stats?.totalUsers || 0})
           </button>
           <button 
-            className={`tab ${activeTab === 'tickets' ? 'tab-active' : ''}`}
+            className={`tab tab-lg font-bold text-base ${activeTab === 'tickets' ? 'tab-active' : ''}`}
             onClick={() => setActiveTab('tickets')}
           >
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -579,7 +580,7 @@ const AdminDashboardPage: React.FC = () => {
             Support Tickets ({ticketStats ? ticketStats.open + ticketStats.inProgress + ticketStats.resolved : 0})
           </button>
           <button 
-            className={`tab ${activeTab === 'analytics' ? 'tab-active' : ''}`}
+            className={`tab tab-lg font-bold text-base ${activeTab === 'analytics' ? 'tab-active' : ''}`}
             onClick={() => setActiveTab('analytics')}
           >
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -587,6 +588,7 @@ const AdminDashboardPage: React.FC = () => {
             </svg>
             Platform Analytics
           </button>
+          </div>
         </div>
 
         {/* Stats Cards */}
@@ -806,9 +808,10 @@ const AdminDashboardPage: React.FC = () => {
               </div>
 
               {/* Ticket Status Tabs */}
-              <div className="tabs tabs-boxed mb-6 bg-base-200">
+              <div className="flex justify-center mb-6">
+                <div className="tabs tabs-boxed tabs-lg bg-base-200 shadow-lg border border-base-content/10">
                 <button 
-                  className={`tab ${ticketStatusTab === 'open' ? 'tab-active' : ''}`}
+                  className={`tab tab-lg font-bold text-base ${ticketStatusTab === 'open' ? 'tab-active' : ''}`}
                   onClick={() => {
                     setTicketStatusTab('open');
                     setPage(1);
@@ -820,7 +823,7 @@ const AdminDashboardPage: React.FC = () => {
                   Open ({ticketStats?.open || 0})
                 </button>
                 <button 
-                  className={`tab ${ticketStatusTab === 'in_progress' ? 'tab-active' : ''}`}
+                  className={`tab tab-lg font-bold text-base ${ticketStatusTab === 'in_progress' ? 'tab-active' : ''}`}
                   onClick={() => {
                     setTicketStatusTab('in_progress');
                     setPage(1);
@@ -832,7 +835,7 @@ const AdminDashboardPage: React.FC = () => {
                   In Progress ({ticketStats?.inProgress || 0})
                 </button>
                 <button 
-                  className={`tab ${ticketStatusTab === 'resolved' ? 'tab-active' : ''}`}
+                  className={`tab tab-lg font-bold text-base ${ticketStatusTab === 'resolved' ? 'tab-active' : ''}`}
                   onClick={() => {
                     setTicketStatusTab('resolved');
                     setPage(1);
@@ -844,7 +847,7 @@ const AdminDashboardPage: React.FC = () => {
                   Resolved ({ticketStats?.resolved || 0})
                 </button>
                 <button 
-                  className={`tab ${ticketStatusTab === 'closed' ? 'tab-active' : ''}`}
+                  className={`tab tab-lg font-bold text-base ${ticketStatusTab === 'closed' ? 'tab-active' : ''}`}
                   onClick={() => {
                     setTicketStatusTab('closed');
                     setPage(1);
@@ -855,6 +858,7 @@ const AdminDashboardPage: React.FC = () => {
                   </svg>
                   Closed ({ticketStats?.closed || 0})
                 </button>
+                </div>
               </div>
 
               <div style={{ overflowX: 'auto', overflowY: 'visible', paddingBottom: '200px' }}>

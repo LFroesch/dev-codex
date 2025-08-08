@@ -1,22 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Project, projectAPI, Todo } from '../api';
 import {TodoItem, NewTodoForm} from '../components/TodoItem';
 import { DevLogItem, NewDevLogForm } from '../components/DevLogItem';
 import { NoteItem, NewNoteForm } from '../components/NoteItem';
+import activityTracker from '../services/activityTracker';
 
 interface ContextType {
   selectedProject: Project | null;
+  user: any;
   onProjectUpdate: (projectId: string, updatedData: any) => Promise<any>;
   onProjectRefresh: () => Promise<void>;
 }
 
 const NotesPage: React.FC = () => {
-  const { selectedProject, onProjectRefresh } = useOutletContext<ContextType>();
+  const { selectedProject, user, onProjectRefresh } = useOutletContext<ContextType>();
   
   // State for expanded notes
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set());
   const [error, setError] = useState('');
+
+  // Set activity tracker context when project changes
+  useEffect(() => {
+    if (selectedProject && user) {
+      activityTracker.setContext(selectedProject.id, user.id);
+    }
+  }, [selectedProject, user]);
 
   const toggleNoteExpanded = (noteId: string) => {
     const newExpanded = new Set(expandedNotes);

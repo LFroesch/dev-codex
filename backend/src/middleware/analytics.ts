@@ -111,6 +111,14 @@ export class AnalyticsService {
         if (typeof eventData.isVisible === 'boolean') {
           updateData.isVisible = eventData.isVisible;
         }
+
+        // Track current project and page
+        if (eventData.currentProjectId) {
+          updateData.currentProjectId = eventData.currentProjectId;
+        }
+        if (eventData.currentPage) {
+          updateData.currentPage = eventData.currentPage;
+        }
       } else {
         // Regular event updates
         if (eventData.projectId) {

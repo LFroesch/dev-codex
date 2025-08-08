@@ -19,11 +19,18 @@ A modern, clean full-stack development platform designed for developers and team
 - **Public Discovery**: Discover public projects from other developers
 
 ### Advanced Features
-- **Analytics Dashboard**: Track user engagement and project activity
+- **Analytics Dashboard**: Track user engagement and project activity with leaderboards
+- **Activity Tracking**: Real-time collaboration indicators and user session tracking
 - **Billing Integration**: Stripe-powered subscription management with plan tiers
 - **Admin Panel**: User management and system analytics for administrators
 - **Public Pages**: Public profile and project pages with customizable visibility
-- **Export System**: Export project data in multiple formats
+- **Export System**: Export project data in multiple formats (JSON, Markdown, PDF)
+
+### Real-time Features
+- **Live Collaboration**: See active users and real-time activity indicators
+- **Session Tracking**: Track user sessions and project engagement
+- **Activity Logs**: Comprehensive logging of user actions and project changes
+- **Notifications**: Real-time notifications for team activities and updates
 
 ### Security & Performance
 - **Authentication**: JWT-based auth with Google OAuth integration
@@ -35,10 +42,11 @@ A modern, clean full-stack development platform designed for developers and team
 
 ### Frontend (`frontend/`)
 - **Framework**: React 18 + TypeScript + Vite
-- **Styling**: Tailwind CSS + DaisyUI components
+- **Styling**: Tailwind CSS + DaisyUI components (Cyberpunk theme)
 - **API Layer**: Modular services with BaseApiService pattern
 - **State Management**: Custom hooks for loading, errors, and resources
-- **Routing**: React Router v6
+- **Routing**: React Router v6 with nested layouts
+- **Real-time**: Activity tracking and collaboration indicators
 
 ### Backend (`backend/`)
 - **Runtime**: Node.js + TypeScript + Express
@@ -46,7 +54,8 @@ A modern, clean full-stack development platform designed for developers and team
 - **Authentication**: Passport.js with JWT and Google OAuth
 - **Payment**: Stripe integration for subscriptions
 - **Email**: Nodemailer for notifications
-- **Analytics**: Custom analytics tracking system
+- **Analytics**: Custom analytics tracking with activity logging
+- **Real-time**: Session tracking and user activity monitoring
 
 ### Shared Type System (`shared/types/`)
 - **Type Safety**: Complete type sharing between frontend/backend

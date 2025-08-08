@@ -11,6 +11,7 @@ import billingRoutes from './routes/billing';
 import adminRoutes from './routes/admin';
 import ticketRoutes from './routes/tickets';
 import analyticsRoutes from './routes/analytics';
+import activityLogRoutes from './routes/activityLogs';
 import debugRoutes from './routes/debug';
 import invitationRoutes from './routes/invitations';
 import notificationRoutes from './routes/notifications';
@@ -59,6 +60,7 @@ app.use('/api/billing', rateLimitMiddleware, billingRoutes);
 app.use('/api/admin', rateLimitMiddleware, adminRoutes);
 app.use('/api/tickets', rateLimitMiddleware, ticketRoutes);
 app.use('/api/analytics', rateLimitMiddleware, sessionMiddleware, trackPageView, analyticsRoutes);
+app.use('/api/activity-logs', rateLimitMiddleware, activityLogRoutes);
 
 // Debug routes (only in development)
 if (isDevelopment) {

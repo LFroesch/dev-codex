@@ -5,6 +5,8 @@ export interface BaseNote {
   content: string;
   createdAt: string;
   updatedAt: string;
+  createdBy?: string;
+  updatedBy?: string;
 }
 
 export interface BaseTodo {
@@ -14,6 +16,8 @@ export interface BaseTodo {
   priority: 'low' | 'medium' | 'high';
   completed: boolean;
   createdAt: string;
+  createdBy?: string;
+  updatedBy?: string;
 }
 
 export interface BaseDevLogEntry {
@@ -22,6 +26,8 @@ export interface BaseDevLogEntry {
   description?: string;
   entry: string;
   date: string;
+  createdBy?: string;
+  updatedBy?: string;
 }
 
 export interface BaseDoc {
@@ -31,6 +37,8 @@ export interface BaseDoc {
   content: string;
   createdAt: string;
   updatedAt: string;
+  createdBy?: string;
+  updatedBy?: string;
 }
 
 export interface BaseLink {

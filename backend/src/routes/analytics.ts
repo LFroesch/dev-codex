@@ -128,7 +128,7 @@ router.get('/session/active', requireAuth, async (req: AuthRequest, res) => {
 // Heartbeat endpoint to update session activity
 router.post('/heartbeat', requireAuth, async (req: AuthRequest, res) => {
   try {
-    const { sessionId, lastActivity, isVisible } = req.body;
+    const { sessionId, lastActivity, isVisible, currentProjectId, currentPage } = req.body;
     
     if (!sessionId) {
       return res.status(400).json({ error: 'sessionId is required' });
@@ -138,6 +138,8 @@ router.post('/heartbeat', requireAuth, async (req: AuthRequest, res) => {
     await AnalyticsService.updateSession(sessionId, {
       heartbeat: true,
       isVisible,
+      currentProjectId,
+      currentPage,
       timestamp: new Date(lastActivity)
     });
 

@@ -11,7 +11,9 @@ const todoSchema = new Schema({
     default: 'medium'
   },
   completed: { type: Boolean, default: false },
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 });
 
 const devLogSchema = new Schema({
@@ -19,7 +21,9 @@ const devLogSchema = new Schema({
   title: { type: String, default: '' },
   description: { type: String, default: '' },
   entry: { type: String, required: true },
-  date: { type: Date, default: Date.now }
+  date: { type: Date, default: Date.now },
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 });
 
 // NEW: Individual note schema
@@ -29,7 +33,9 @@ const noteSchema = new Schema({
   description: { type: String, default: '' },
   content: { type: String, required: true },
   createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now }
+  updatedAt: { type: Date, default: Date.now },
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 });
 
 const docSchema = new Schema({
@@ -42,7 +48,9 @@ const docSchema = new Schema({
   title: { type: String, required: true },
   content: { type: String, required: true },
   createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now }
+  updatedAt: { type: Date, default: Date.now },
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 });
 
 const linkSchema = new Schema({

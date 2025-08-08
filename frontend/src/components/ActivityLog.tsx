@@ -1,0 +1,297 @@
+import React, { useState, useEffect } from 'react';
+import { activityLogsAPI, ActivityLogEntry, formatActivityMessage, getRelativeTime } from '../api/activityLogs';
+
+interface ActivityLogProps {
+  projectId: string;
+  userId?: string;
+  resourceType?: string;
+  showTitle?: boolean;
+  limit?: number;
+  autoRefresh?: boolean;
+  refreshInterval?: number;
+  showClearButton?: boolean;
+}
+
+const ActivityLog: React.FC<ActivityLogProps> = ({
+  projectId,
+  userId,
+  resourceType,
+  showTitle = true,
+  limit = 20,
+  autoRefresh = false,
+  refreshInterval = 30000, // 30 seconds
+  showClearButton = true
+}) => {
+  const [activities, setActivities] = useState<ActivityLogEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [total, setTotal] = useState(0);
+  const [clearing, setClearing] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+
+  const loadActivities = async () => {
+    try {
+      setError(null);
+      const response = await activityLogsAPI.getProjectActivities(projectId, {
+        limit,
+        userId,
+        resourceType
+      });
+      
+      setActivities(response.activities);
+      setTotal(response.total);
+    } catch (err) {
+      console.error('Failed to load activities:', err);
+      setError('Failed to load activity logs');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClearActivities = async () => {
+    if (!showClearConfirm) {
+      setShowClearConfirm(true);
+      return;
+    }
+
+    setClearing(true);
+    try {
+      const response = await fetch(`/api/activity-logs/project/${projectId}/clear`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        setActivities([]);
+        setTotal(0);
+        setShowClearConfirm(false);
+      } else {
+        throw new Error('Failed to clear activities');
+      }
+    } catch (err) {
+      console.error('Failed to clear activities:', err);
+      setError('Failed to clear activity logs');
+    } finally {
+      setClearing(false);
+    }
+  };
+
+  useEffect(() => {
+    loadActivities();
+  }, [projectId, userId, resourceType, limit]);
+
+  useEffect(() => {
+    if (autoRefresh && !loading) {
+      const interval = setInterval(loadActivities, refreshInterval);
+      return () => clearInterval(interval);
+    }
+  }, [autoRefresh, refreshInterval, loading]);
+
+  const getActionIcon = (action: string) => {
+    switch (action) {
+      case 'created':
+        return <span className="text-success">+</span>;
+      case 'updated':
+        return <span className="text-warning">✎</span>;
+      case 'deleted':
+        return <span className="text-error">✕</span>;
+      case 'viewed':
+        return <span className="text-info">👁</span>;
+      case 'invited_member':
+      case 'removed_member':
+      case 'updated_role':
+        return <span className="text-primary">👥</span>;
+      case 'added_tech':
+      case 'removed_tech':
+      case 'added_package':
+      case 'removed_package':
+        return <span className="text-secondary">⚡</span>;
+      case 'shared_project':
+      case 'unshared_project':
+        return <span className="text-accent">🔗</span>;
+      case 'archived_project':
+      case 'unarchived_project':
+        return <span className="text-base-content/60">📦</span>;
+      case 'joined_project':
+        return <span className="text-success">→</span>;
+      case 'left_project':
+        return <span className="text-base-content/60">←</span>;
+      default:
+        return <span className="text-base-content/40">•</span>;
+    }
+  };
+
+  const getResourceTypeIcon = (resourceType: string) => {
+    switch (resourceType) {
+      case 'project':
+        return '📁';
+      case 'note':
+        return '📝';
+      case 'todo':
+        return '✓';
+      case 'doc':
+        return '📚';
+      case 'devlog':
+        return '🐛';
+      case 'link':
+        return '🔗';
+      case 'tech':
+        return '⚡';
+      case 'package':
+        return '📦';
+      case 'team':
+        return '👥';
+      case 'settings':
+        return '⚙️';
+      default:
+        return '•';
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-4">
+        <div className="loading loading-spinner loading-sm"></div>
+        <span className="ml-2 text-sm text-base-content/60">Loading activities...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="alert alert-error">
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+        </svg>
+        <span>{error}</span>
+        <button onClick={loadActivities} className="btn btn-ghost btn-sm">
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  if (activities.length === 0) {
+    return (
+      <div className="text-center p-6">
+        <div className="text-4xl mb-2">📜</div>
+        <p className="text-base-content/60">No activity yet</p>
+        <p className="text-sm text-base-content/40">Activity will appear here as team members work on the project</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {showTitle && (
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold">Recent Activity</h3>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-base-content/60">{total} total</span>
+            {autoRefresh && (
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 bg-success rounded-full animate-pulse"></div>
+                <span className="text-xs text-base-content/60">Live</span>
+              </div>
+            )}
+            <button
+              onClick={loadActivities}
+              className="btn btn-ghost btn-xs"
+              disabled={loading}
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
+            {showClearButton && activities.length > 0 && (
+              <>
+                <button
+                  onClick={handleClearActivities}
+                  className={`btn btn-xs ${showClearConfirm ? 'btn-error' : 'btn-ghost'}`}
+                  disabled={clearing}
+                >
+                  {clearing ? (
+                    <div className="loading loading-spinner loading-xs"></div>
+                  ) : showClearConfirm ? (
+                    'Confirm Clear'
+                  ) : (
+                    <>
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      Clear
+                    </>
+                  )}
+                </button>
+                {showClearConfirm && (
+                  <button
+                    onClick={() => setShowClearConfirm(false)}
+                    className="btn btn-ghost btn-xs"
+                    disabled={clearing}
+                  >
+                    Cancel
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className="space-y-1">
+        {activities.map((activity) => (
+          <div
+            key={activity._id}
+            className="flex items-start gap-3 p-3 bg-base-100 rounded-lg border border-base-content/5 hover:bg-base-200/50 transition-colors"
+          >
+            <div className="flex-shrink-0 flex items-center gap-1">
+              {getActionIcon(activity.action)}
+              <span className="text-xs">{getResourceTypeIcon(activity.resourceType)}</span>
+            </div>
+            
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1">
+                  <p className="text-sm text-base-content">
+                    {formatActivityMessage(activity)}
+                  </p>
+                  
+                  {activity.details?.field && (
+                    <div className="mt-1 text-xs text-base-content/60">
+                      <span className="font-medium">{activity.details?.field}:</span>
+                      {activity.details?.oldValue && activity.details?.newValue && (
+                        <span className="ml-1">
+                          "<span className="line-through">{String(activity.details?.oldValue).slice(0, 30)}</span>" 
+                          → "<span className="text-success">{String(activity.details?.newValue).slice(0, 30)}</span>"
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+                
+                <div className="flex items-center gap-2 text-xs text-base-content/50">
+                  <span title={new Date(activity.timestamp).toLocaleString()}>
+                    {getRelativeTime(activity.timestamp)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {activities.length >= limit && total > limit && (
+        <div className="text-center pt-2">
+          <p className="text-xs text-base-content/60">
+            Showing {activities.length} of {total} activities
+          </p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default ActivityLog;

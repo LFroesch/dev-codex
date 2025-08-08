@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { teamAPI, TeamMember, InviteUserData } from '../api';
+import ActivityLog from './ActivityLog';
+import ActiveUsers from './ActiveUsers';
 
 interface TeamManagementProps {
   projectId: string;
   canManageTeam: boolean;
+  currentUserId?: string;
 }
 
-const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTeam }) => {
+const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTeam, currentUserId }) => {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [inviteEmail, setInviteEmail] = useState('');
@@ -153,6 +156,27 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
           </div>
         ))}
         </div>
+      </div>
+
+      {/* Active Users Section */}
+      <div className="mt-6">
+        <ActiveUsers 
+          projectId={projectId} 
+          currentUserId={currentUserId}
+          showTitle={true}
+          showDetails={true}
+        />
+      </div>
+
+      {/* Activity Log Section */}
+      <div className="mt-6">
+        <ActivityLog 
+          projectId={projectId}
+          showTitle={true}
+          limit={10}
+          autoRefresh={true}
+          refreshInterval={30000}
+        />
       </div>
     </div>
   );

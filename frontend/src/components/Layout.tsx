@@ -29,7 +29,7 @@ const Layout: React.FC = () => {
     projectName: selectedProject?.name
   });
   
-  const [currentTheme] = useState(() => {
+  const [currentTheme, setCurrentTheme] = useState(() => {
     return localStorage.getItem('theme') || 'cyberpunk';
   });
   const [collapsedSections, setCollapsedSections] = useState<{
@@ -173,6 +173,15 @@ const Layout: React.FC = () => {
         setUser(userResponse.user);
         setProjects(projectsResponse.projects);
         
+        // Update theme from user preference (always sync on login)
+        if (userResponse.user?.theme) {
+          const userTheme = userResponse.user.theme;
+          setCurrentTheme(userTheme);
+          localStorage.setItem('theme', userTheme);
+          document.documentElement.setAttribute('data-theme', userTheme);
+          console.log(`Applied user theme: ${userTheme}`);
+        }
+        
         // Set current user for analytics
         analytics.setCurrentUser(userResponse.user?.id || null);
         
@@ -184,6 +193,12 @@ const Layout: React.FC = () => {
             setSelectedProject(savedProject);
             return;
           }
+        }
+        
+        // Navigate to My Projects view as default and ensure Active tab is selected
+        if (location.pathname === '/' || location.pathname === '/notes') {
+          setActiveProjectTab('active'); // Ensure Active tab is selected
+          navigate('/notes?view=projects');
         }
         
         // Fallback to first project if no saved project found
@@ -306,7 +321,10 @@ const Layout: React.FC = () => {
               
               {user ? (
                 <div className="flex items-center gap-2">
-                  <SessionTracker />
+                  <SessionTracker 
+                    projectId={selectedProject?.id}
+                    currentUserId={user?.id}
+                  />
                   <NotificationBell />
                   <div className="dropdown dropdown-end">
                     <div tabIndex={0} role="button" className="btn btn-circle btn-sm bg-base-100/80 hover:bg-base-300 border border-base-content/10 shadow-sm">
@@ -579,7 +597,10 @@ const Layout: React.FC = () => {
             
             {user ? (
               <div className="flex items-center gap-3 bg-base-200/50 backdrop-blur-sm border border-base-content/10 rounded-xl px-4 py-2 h-12 shadow-sm">
-                <SessionTracker />
+                <SessionTracker 
+                  projectId={selectedProject?.id}
+                  currentUserId={user?.id}
+                />
                 <NotificationBell />
                 
                 <span className="text-sm font-medium text-base-content/80">Hi, {user?.firstName}!</span>
@@ -741,17 +762,27 @@ const Layout: React.FC = () => {
                                       handleProjectSelect(project);
                                       navigate('/notes');
                                     }}
-                                    className={`btn btn-lg w-full justify-start gap-3 h-auto py-6 min-h-[4rem] ${
+                                    className={`btn btn-lg w-full justify-start gap-3 h-auto py-4 min-h-[6rem] ${
                                       selectedProject?.id === project.id 
                                         ? 'btn-primary border-2 border-primary ring-2 ring-primary/20 shadow-lg' 
                                         : 'btn-ghost bg-base-100 hover:bg-base-200'
                                     }`}
                                   >
                                     <div 
-                                      className="w-4 h-4 rounded-md shadow-sm flex-shrink-0"
+                                      className="w-5 h-5 rounded-md shadow-sm flex-shrink-0"
                                       style={{ backgroundColor: project.color }}
                                     ></div>
-                                    <span className="flex-1 text-left truncate leading-relaxed">{project.name}</span>
+                                    <div className="flex-1 text-left">
+                                      <div className="font-semibold leading-tight truncate">{project.name}</div>
+                                      {project.description && (
+                                        <div className="text-xs mt-1 line-clamp-2">{project.description}</div>
+                                      )}
+                                      <div className="flex items-center gap-3 mt-2 text-xs">
+                                        <span>Created: {new Date(project.createdAt).toLocaleDateString()}</span>
+                                        <span>•</span>
+                                        <span>Updated: {new Date(project.updatedAt).toLocaleDateString()}</span>
+                                      </div>
+                                    </div>
                                     {selectedProject?.id === project.id && (
                                       <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -965,6 +996,7 @@ const Layout: React.FC = () => {
                 <div className="p-1">
                   <Outlet context={{ 
                     selectedProject, 
+                    user,
                     onProjectUpdate: handleProjectUpdate,
                     onProjectArchive: handleProjectArchive,
                     onProjectDelete: handleProjectDelete,

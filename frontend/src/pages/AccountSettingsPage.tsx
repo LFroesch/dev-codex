@@ -6,20 +6,20 @@ import { useApiCall } from '../hooks/useApiCall';
 import AnalyticsDashboard from '../components/AnalyticsDashboard';
 
 const THEMES = [
-  "light", "dark", "cupcake", "bumblebee", "emerald", "corporate", 
-  "synthwave", "retro", "cyberpunk", "valentine", "halloween", 
-  "garden", "forest", "aqua", "lofi", "pastel", "fantasy", 
-  "wireframe", "black", "luxury", "dracula", "cmyk", "autumn", 
-  "business", "acid", "lemonade", "night", "coffee", "winter", "dim"
+  "dim", "light", "dark", "cupcake", "bumblebee", "emerald", "corporate",
+      "synthwave", "retro", "cyberpunk", "valentine", "halloween", "garden",
+      "forest", "aqua", "sunset", "lofi", "pastel", "fantasy", "wireframe",
+      "black", "luxury", "dracula", "cmyk", "autumn", "business", "acid",
+      "lemonade", "night", "coffee", "winter", "nord"
 ];
 
 const AccountSettingsPage: React.FC = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'theme' | 'connections' | 'profile' | 'public' | 'analytics'>('theme');
+  const [activeTab, setActiveTab] = useState<'theme' | 'connections' | 'profile' | 'analytics'>('theme');
   const [currentTheme, setCurrentTheme] = useState('cyberpunk');
   const [user, setUser] = useState<any>(null);
   
-  const { loading } = useLoadingState(true);
+  const { loading, setLoading } = useLoadingState(true);
   const { loading: saving, withLoading: withSaving } = useLoadingState();
   const { loading: unlinkingGoogle, withLoading: withUnlinking } = useLoadingState();
   const { loading: savingProfile, withLoading: withSavingProfile } = useLoadingState();
@@ -81,10 +81,9 @@ const AccountSettingsPage: React.FC = () => {
   }, []);
 
   const handleThemeChange = async (newTheme: string) => {
-    setSaving(true);
-    setError('');
-
-    try {
+    await withSaving(async () => {
+      setError('');
+      
       // Update theme in database if user is authenticated
       if (user) {
         const response = await authAPI.updateTheme(newTheme);
@@ -97,15 +96,13 @@ const AccountSettingsPage: React.FC = () => {
       
       // Keep localStorage as fallback
       localStorage.setItem('theme', newTheme);
-    } catch (err: any) {
+    }).catch((err: any) => {
       setError(err.response?.data?.message || 'Failed to update theme');
       // Revert theme on error
       const previousTheme = user?.theme || localStorage.getItem('theme') || 'cyberpunk';
       setCurrentTheme(previousTheme);
       document.documentElement.setAttribute('data-theme', previousTheme);
-    } finally {
-      setSaving(false);
-    }
+    });
   };
 
   const handleLinkGoogle = () => {
@@ -115,38 +112,32 @@ const AccountSettingsPage: React.FC = () => {
   };
 
   const handleUnlinkGoogle = async () => {
-    setUnlinkingGoogle(true);
-    setError('');
-    setSuccess('');
+    await withUnlinking(async () => {
+      setError('');
+      setSuccess('');
 
-    try {
       await authAPI.unlinkGoogle();
       setSuccess('Google account unlinked successfully!');
       // Refresh user data to show updated state
       const response = await authAPI.getMe();
       setUser(response.user);
-    } catch (err: any) {
+    }).catch((err: any) => {
       setError(err.response?.data?.message || 'Failed to unlink Google account');
-    } finally {
-      setUnlinkingGoogle(false);
-    }
+    });
   };
 
   const handleSaveProfile = async () => {
-    setSavingProfile(true);
-    setError('');
-    setSuccess('');
+    await withSavingProfile(async () => {
+      setError('');
+      setSuccess('');
 
-    try {
       const response = await authAPI.updateProfile({ bio });
       setUser(response.user);
       setIsEditingProfile(false);
       setSuccess('Profile updated successfully!');
-    } catch (err: any) {
+    }).catch((err: any) => {
       setError(err.response?.data?.message || 'Failed to update profile');
-    } finally {
-      setSavingProfile(false);
-    }
+    });
   };
 
   const handleCancelProfileEdit = () => {
@@ -269,16 +260,7 @@ const AccountSettingsPage: React.FC = () => {
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
-            Profile Info
-          </button>
-          <button 
-            className={`tab ${activeTab === 'public' ? 'tab-active' : ''}`}
-            onClick={() => setActiveTab('public')}
-          >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0 9c-1.657 0-3-4.03-3-9s1.343-9 3-9m0 18c1.657 0 3-4.03 3-9s-1.343-9-3-9m-9 9a9 9 0 019-9" />
-            </svg>
-            Public Profile
+            Profile & Public Settings
           </button>
           <button 
             className={`tab ${activeTab === 'analytics' ? 'tab-active' : ''}`}
@@ -447,71 +429,75 @@ const AccountSettingsPage: React.FC = () => {
             {/* Profile Tab */}
             {activeTab === 'profile' && (
               <div className="space-y-6">
-                <div>
-                  <h2 className="text-2xl font-bold mb-2">Profile Information</h2>
-                  <p className="text-base-content/60">
-                    View and manage your account information and public profile.
-                  </p>
-                </div>
-
                 {user && (
-                  <div className="space-y-6">
+                  <>
                     {/* Personal Information */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="bg-base-200 rounded-lg p-6">
-                        <h3 className="font-semibold text-lg mb-4">Personal Information</h3>
-                        <div className="space-y-3">
-                          <div>
-                            <label className="text-sm font-medium text-base-content/70">First Name</label>
-                            <p className="text-base-content font-medium">{user.firstName}</p>
-                          </div>
-                          <div>
-                            <label className="text-sm font-medium text-base-content/70">Last Name</label>
-                            <p className="text-base-content font-medium">{user.lastName}</p>
-                          </div>
-                          <div>
-                            <label className="text-sm font-medium text-base-content/70">Email</label>
-                            <p className="text-base-content font-medium">{user.email}</p>
-                          </div>
-                        </div>
+                    <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10">
+                      <input type="checkbox" defaultChecked />
+                      <div className="collapse-title text-lg font-semibold bg-base-200 border-b border-base-content/10">
+                        👤 Personal Information
                       </div>
-
-                      <div className="bg-base-200 rounded-lg p-6">
-                        <h3 className="font-semibold text-lg mb-4">Account Details</h3>
-                        <div className="space-y-3">
-                          <div>
-                            <label className="text-sm font-medium text-base-content/70">Plan</label>
-                            <div className="flex items-center gap-2">
-                              <span className={`badge ${user.planTier === 'free' ? 'badge-ghost' : user.planTier === 'pro' ? 'badge-primary' : 'badge-secondary'}`}>
-                                {(user.planTier || 'free').toUpperCase()}
-                              </span>
+                      <div className="collapse-content">
+                        <div className="pt-4 space-y-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                              <h3 className="font-semibold text-base mb-3">Account Details</h3>
+                              <div className="space-y-3">
+                                <div>
+                                  <label className="text-sm font-medium text-base-content/70">First Name</label>
+                                  <p className="text-base-content font-medium">{user.firstName}</p>
+                                </div>
+                                <div>
+                                  <label className="text-sm font-medium text-base-content/70">Last Name</label>
+                                  <p className="text-base-content font-medium">{user.lastName}</p>
+                                </div>
+                                <div>
+                                  <label className="text-sm font-medium text-base-content/70">Email</label>
+                                  <p className="text-base-content font-medium">{user.email}</p>
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                          <div>
-                            <label className="text-sm font-medium text-base-content/70">Project Limit</label>
-                            <p className="text-base-content font-medium">
-                              {user.projectLimit === -1 ? 'Unlimited' : user.projectLimit} projects
-                            </p>
-                          </div>
-                          <div>
-                            <label className="text-sm font-medium text-base-content/70">Member Since</label>
-                            <p className="text-base-content font-medium">
-                              {user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', {
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric'
-                              }) : 'Unknown'}
-                            </p>
+
+                            <div>
+                              <h3 className="font-semibold text-base mb-3">Plan & Limits</h3>
+                              <div className="space-y-3">
+                                <div>
+                                  <label className="text-sm font-medium text-base-content/70">Plan</label>
+                                  <div className="flex items-center gap-2">
+                                    <span className={`badge ${user.planTier === 'free' ? 'badge-ghost' : user.planTier === 'pro' ? 'badge-primary' : 'badge-secondary'}`}>
+                                      {(user.planTier || 'free').toUpperCase()}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div>
+                                  <label className="text-sm font-medium text-base-content/70">Project Limit</label>
+                                  <p className="text-base-content font-medium">
+                                    {user.projectLimit === -1 ? 'Unlimited' : user.projectLimit} projects
+                                  </p>
+                                </div>
+                                <div>
+                                  <label className="text-sm font-medium text-base-content/70">Member Since</label>
+                                  <p className="text-base-content font-medium">
+                                    {user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', {
+                                      year: 'numeric',
+                                      month: 'long',
+                                      day: 'numeric'
+                                    }) : 'Unknown'}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
 
-                    {/* Profile Bio Section */}
-                    <div className="bg-base-200 rounded-lg p-6">
-                      <div className="flex justify-between items-center mb-4">
-                        <h3 className="font-semibold text-lg">Bio</h3>
-                        <div className="flex space-x-2">
+                    {/* Bio Section */}
+                    <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10">
+                      <input type="checkbox" defaultChecked />
+                      <div className="collapse-title text-lg font-semibold bg-base-200 border-b border-base-content/10 flex items-center justify-between">
+                        <span>📝 Profile Bio</span>
+                        <div className="flex space-x-2" onClick={(e) => e.stopPropagation()}>
                           {isEditingProfile ? (
                             <>
                               <button
@@ -534,115 +520,48 @@ const AccountSettingsPage: React.FC = () => {
                               onClick={() => setIsEditingProfile(true)}
                               className="btn btn-outline btn-sm"
                             >
-                              Edit
+                              Edit Bio
                             </button>
                           )}
                         </div>
                       </div>
-
-                      {isEditingProfile ? (
-                        <textarea
-                          value={bio}
-                          onChange={(e) => setBio(e.target.value)}
-                          className="textarea textarea-bordered w-full h-32 resize-none"
-                          placeholder="Tell others about yourself, your interests, and what you're working on..."
-                          maxLength={500}
-                        />
-                      ) : (
-                        <div className="min-h-[6rem] p-3 bg-base-100 rounded-lg border border-base-300">
-                          {bio ? (
-                            <p className="text-base-content whitespace-pre-wrap">{bio}</p>
+                      <div className="collapse-content">
+                        <div className="pt-4">
+                          {isEditingProfile ? (
+                            <div className="space-y-4">
+                              <textarea
+                                value={bio}
+                                onChange={(e) => setBio(e.target.value)}
+                                className="textarea textarea-bordered w-full h-32 resize-none"
+                                placeholder="Tell others about yourself, your interests, and what you're working on..."
+                                maxLength={500}
+                              />
+                              <div className="text-right">
+                                <span className="text-xs text-base-content/60">
+                                  {bio.length}/500 characters
+                                </span>
+                              </div>
+                            </div>
                           ) : (
-                            <p className="text-base-content/60 italic">No bio added yet. Click edit to add one.</p>
+                            <div className="bg-base-200 rounded-lg p-4 border border-base-300">
+                              {bio ? (
+                                <p className="text-base-content whitespace-pre-wrap">{bio}</p>
+                              ) : (
+                                <p className="text-base-content/60 italic">No bio added yet. Click edit to add one.</p>
+                              )}
+                            </div>
                           )}
                         </div>
-                      )}
-                      
-                      {isEditingProfile && (
-                        <div className="mt-2 text-right">
-                          <span className="text-xs text-base-content/60">
-                            {bio.length}/500 characters
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Public Projects Section */}
-                    <div className="bg-base-200 rounded-lg p-6">
-                      <div className="flex justify-between items-center mb-4">
-                        <h3 className="font-semibold text-lg">Public Projects</h3>
-                        <span className="badge badge-ghost">Coming Soon</span>
-                      </div>
-                      
-                      <div className="text-center py-8">
-                        <div className="w-16 h-16 mx-auto mb-4 bg-base-content/10 rounded-full flex items-center justify-center">
-                          <svg className="w-8 h-8 text-base-content/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                          </svg>
-                        </div>
-                        <h4 className="font-medium text-lg mb-2">Showcase Your Work</h4>
-                        <p className="text-base-content/60 mb-4 max-w-md mx-auto">
-                          Soon you'll be able to showcase your favorite projects publicly for others to discover and explore.
-                        </p>
-                        <div className="space-y-2 text-sm text-base-content/70">
-                          <p>• Share your best projects with the community</p>
-                          <p>• Get feedback and collaborate with other developers</p>
-                          <p>• Build your professional portfolio</p>
-                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            )}
 
-            {/* Public Profile Tab */}
-            {activeTab === 'public' && (
-              <div className="space-y-6">
-                <div>
-                  <h2 className="text-2xl font-bold mb-2">Public Profile</h2>
-                  <p className="text-base-content/60">
-                    Control your public profile visibility and create your public portfolio.
-                  </p>
-                </div>
-
-                {/* Public Profile Toggle */}
-                <div className="card bg-base-100 shadow-lg">
-                  <div className="card-body">
-                    <div className="form-control">
-                      <label className="label cursor-pointer">
-                        <div className="flex-1">
-                          <span className="label-text text-xl font-semibold">🌐 Make Profile Public</span>
-                          <p className="text-sm text-base-content/60 mt-1">
-                            Enable this to create a public portfolio page showcasing your projects and skills.
-                            Others will be able to discover your profile and view your public projects.
-                          </p>
+                    {/* Public Profile Settings */}
+                    <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10">
+                      <input type="checkbox" defaultChecked />
+                      <div className="collapse-title text-lg font-semibold bg-base-200 border-b border-base-content/10 flex items-center justify-between">
+                        <span>🌐 Public Profile Settings</span>
+                        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                           {isPublicProfile && (
-                            <p className="text-sm text-success font-medium mt-2">
-                              ✅ Your profile is publicly accessible
-                            </p>
-                          )}
-                        </div>
-                        <input
-                          type="checkbox"
-                          className="toggle toggle-primary toggle-lg"
-                          checked={isPublicProfile}
-                          onChange={(e) => setIsPublicProfile(e.target.checked)}
-                        />
-                      </label>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Public Profile Settings */}
-                {isPublicProfile && (
-                  <div className="space-y-6">
-                    {/* URL and Description Settings */}
-                    <div className="card bg-base-100 shadow-lg">
-                      <div className="card-body space-y-4">
-                        <div className="flex justify-between items-center">
-                          <h3 className="text-lg font-semibold">🔗 Public Profile Settings</h3>
-                          <div className="flex gap-2">
                             <button
                               onClick={copyPublicProfileUrl}
                               className="btn btn-outline btn-sm gap-2"
@@ -652,237 +571,272 @@ const AccountSettingsPage: React.FC = () => {
                               </svg>
                               Copy URL
                             </button>
-                            <button
-                              onClick={handleSavePublicSettings}
-                              disabled={savingPublicSettings || !hasPublicChanges()}
-                              className={`btn ${hasPublicChanges() ? 'btn-primary' : 'btn-ghost'}`}
-                            >
-                              {savingPublicSettings ? (
-                                <>
-                                  <span className="loading loading-spinner loading-sm"></span>
-                                  Saving...
-                                </>
-                              ) : hasPublicChanges() ? (
-                                'Save Changes'
-                              ) : (
-                                'Saved'
-                              )}
-                            </button>
-                          </div>
+                          )}
+                          <button
+                            onClick={handleSavePublicSettings}
+                            disabled={savingPublicSettings || !hasPublicChanges()}
+                            className={`btn btn-sm ${hasPublicChanges() ? 'btn-primary' : 'btn-ghost'}`}
+                          >
+                            {savingPublicSettings ? (
+                              <>
+                                <span className="loading loading-spinner loading-sm"></span>
+                                Saving...
+                              </>
+                            ) : hasPublicChanges() ? (
+                              'Save Changes'
+                            ) : (
+                              'Saved'
+                            )}
+                          </button>
                         </div>
-                        
-                        {/* Custom Slug */}
-                        <div className="form-control">
-                          <label className="label">
-                            <span className="label-text font-medium">Custom URL Slug (Optional)</span>
-                            <span className="label-text-alt">
-                              <button
-                                type="button"
-                                onClick={generateSlugFromName}
-                                className="btn btn-ghost btn-xs"
-                              >
-                                Generate from name
-                              </button>
-                            </span>
-                          </label>
-                          <div className="join">
-                            <span className="join-item bg-base-200 px-3 py-2 text-sm text-base-content/70">
-                              {window.location.origin}/user/
-                            </span>
-                            <input
-                              type="text"
-                              className="input input-bordered join-item flex-1"
-                              placeholder={user?.id}
-                              value={publicSlug}
-                              onChange={(e) => setPublicSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
-                              pattern="^[a-z0-9-]+$"
-                            />
-                          </div>
-                          <div className="label">
-                            <span className="label-text-alt">
-                              {publicSlug ? (
-                                <>Your profile will be accessible at: <a 
-                                  href={`${window.location.origin}/user/${publicSlug}`} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer" 
-                                  className="link link-primary font-bold"
-                                >
-                                  /user/{publicSlug}
-                                </a></>
-                              ) : (
-                                <>Your profile will be accessible at: <a 
-                                  href={`${window.location.origin}/user/${user?.id}`} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer" 
-                                  className="link link-primary font-bold"
-                                >
-                                  /user/{user?.id}
-                                </a></>
-                              )}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Public Description */}
-                        <div className="form-control">
-                          <label className="label">
-                            <span className="label-text font-medium">Public Profile Description (Optional)</span>
-                            <span className="label-text-alt">
-                              {publicDescription.length}/200 characters
-                            </span>
-                          </label>
-                          <textarea
-                            className="textarea textarea-bordered h-24 resize-none"
-                            placeholder="Describe yourself professionally for public viewers (will show at the top of your profile)"
-                            value={publicDescription}
-                            onChange={(e) => setPublicDescription(e.target.value.slice(0, 200))}
-                          />
-                        </div>
-
-                        {/* Profile Preview */}
-                        <div className="divider">Preview</div>
-                        <div className="mockup-browser border bg-base-300">
-                          <div className="mockup-browser-toolbar">
-                            <div className="input">
-                              {window.location.origin}/user/{publicSlug || user?.id}
-                            </div>
-                          </div>
-                          <div className="bg-base-100 p-4">
-                            <div className="flex items-start gap-4 mb-4">
-                              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-2xl font-bold text-white">
-                                {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
-                              </div>
-                              <div>
-                                <h3 className="text-xl font-bold">
-                                  {user?.firstName} {user?.lastName}
-                                </h3>
-                                {publicSlug && (
-                                  <span className="text-base-content/60">
-                                    @{publicSlug}
-                                  </span>
-                                )}
-                                {publicDescription && (
-                                  <p className="text-sm text-base-content/70 mt-1">
-                                    {publicDescription}
+                      </div>
+                      <div className="collapse-content">
+                        <div className="pt-4 space-y-4">
+                          {/* Public Profile Toggle */}
+                          <div className="form-control">
+                            <label className="label cursor-pointer">
+                              <div className="flex-1">
+                                <span className="label-text text-lg font-semibold">🔓 Make Profile Public</span>
+                                <p className="text-sm text-base-content/60 mt-1">
+                                  Enable this to create a public portfolio page showcasing your projects and skills.
+                                  Others will be able to discover your profile and view your public projects.
+                                </p>
+                                {isPublicProfile && (
+                                  <p className="text-sm text-success font-medium mt-2">
+                                    ✅ Your profile is publicly accessible
                                   </p>
                                 )}
                               </div>
-                            </div>
-                            <div className="text-sm text-base-content/60">
-                              📂 Your public projects will be listed below
-                            </div>
+                              <input
+                                type="checkbox"
+                                className="toggle toggle-primary toggle-lg"
+                                checked={isPublicProfile}
+                                onChange={(e) => setIsPublicProfile(e.target.checked)}
+                              />
+                            </label>
                           </div>
-                        </div>
-                      </div>
-                    </div>
 
-                    {/* What Gets Shared */}
-                    <div className="card bg-base-100 shadow-lg">
-                      <div className="card-body">
-                        <h3 className="text-lg font-semibold mb-4">📋 What Gets Shared on Your Public Profile</h3>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="space-y-3">
-                            <h4 className="font-medium text-success">✅ Included</h4>
-                            <ul className="space-y-2 text-sm">
-                              <li className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-success"></div>
-                                Your name and profile description
-                              </li>
-                              <li className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-success"></div>
-                                Your bio (from Profile Info tab)
-                              </li>
-                              <li className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-success"></div>
-                                All your public projects
-                              </li>
-                              <li className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-success"></div>
-                                Tech stack summary from projects
-                              </li>
-                              <li className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-success"></div>
-                                Project categories and count
-                              </li>
-                              <li className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-success"></div>
-                                Member since date
-                              </li>
-                            </ul>
-                          </div>
-                          
-                          <div className="space-y-3">
-                            <h4 className="font-medium text-error">❌ Not Included</h4>
-                            <ul className="space-y-2 text-sm">
-                              <li className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-error"></div>
-                                Email address
-                              </li>
-                              <li className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-error"></div>
-                                Private/team projects
-                              </li>
-                              <li className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-error"></div>
-                                Account settings or preferences
-                              </li>
-                              <li className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-error"></div>
-                                Billing or plan information
-                              </li>
-                              <li className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-error"></div>
-                                Private project details
-                              </li>
-                            </ul>
-                          </div>
-                        </div>
+                          {/* Public Settings - Only show when public is enabled */}
+                          {isPublicProfile && (
+                            <div className="space-y-4 border-t border-base-300 pt-4">
+                              {/* Custom Slug */}
+                              <div className="form-control">
+                                <label className="label">
+                                  <span className="label-text font-medium">Custom URL Slug (Optional)</span>
+                                  <span className="label-text-alt">
+                                    <button
+                                      type="button"
+                                      onClick={generateSlugFromName}
+                                      className="btn btn-ghost btn-xs"
+                                    >
+                                      Generate from name
+                                    </button>
+                                  </span>
+                                </label>
+                                <div className="join">
+                                  <span className="join-item bg-base-200 px-3 py-2 text-sm text-base-content/70">
+                                    {window.location.origin}/user/
+                                  </span>
+                                  <input
+                                    type="text"
+                                    className="input input-bordered join-item flex-1"
+                                    placeholder={user?.id}
+                                    value={publicSlug}
+                                    onChange={(e) => setPublicSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                                    pattern="^[a-z0-9-]+$"
+                                  />
+                                </div>
+                                <div className="label">
+                                  <span className="label-text-alt">
+                                    {publicSlug ? (
+                                      <>Your profile will be accessible at: <a 
+                                        href={`${window.location.origin}/user/${publicSlug}`} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer" 
+                                        className="link link-primary font-bold"
+                                      >
+                                        /user/{publicSlug}
+                                      </a></>
+                                    ) : (
+                                      <>Your profile will be accessible at: <a 
+                                        href={`${window.location.origin}/user/${user?.id}`} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer" 
+                                        className="link link-primary font-bold"
+                                      >
+                                        /user/{user?.id}
+                                      </a></>
+                                    )}
+                                  </span>
+                                </div>
+                              </div>
 
-                        <div className="mt-4 p-4 bg-info/10 rounded-lg border border-info/20">
-                          <div className="flex items-start gap-3">
-                            <svg className="w-5 h-5 text-info mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <div>
-                              <h5 className="font-medium text-info mb-1">Privacy & Control</h5>
-                              <p className="text-sm text-base-content/70">
-                                Your public profile only shows information from projects you've explicitly made public. 
-                                You can disable your public profile at any time, and no private information is ever exposed.
+                              {/* Public Description */}
+                              <div className="form-control">
+                                <label className="label">
+                                  <span className="label-text font-medium">Public Profile Description (Optional)</span>
+                                  <span className="label-text-alt">
+                                    {publicDescription.length}/200 characters
+                                  </span>
+                                </label>
+                                <textarea
+                                  className="textarea textarea-bordered h-24 resize-none"
+                                  placeholder="Describe yourself professionally for public viewers (will show at the top of your profile)"
+                                  value={publicDescription}
+                                  onChange={(e) => setPublicDescription(e.target.value.slice(0, 200))}
+                                />
+                              </div>
+
+                              {/* Profile Preview */}
+                              <div className="divider">Preview</div>
+                              <div className="mockup-browser border bg-base-300">
+                                <div className="mockup-browser-toolbar">
+                                  <div className="input">
+                                    {window.location.origin}/user/{publicSlug || user?.id}
+                                  </div>
+                                </div>
+                                <div className="bg-base-100 p-4">
+                                  <div className="flex items-start gap-4 mb-4">
+                                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-2xl font-bold text-white">
+                                      {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
+                                    </div>
+                                    <div>
+                                      <h3 className="text-xl font-bold">
+                                        {user?.firstName} {user?.lastName}
+                                      </h3>
+                                      {publicSlug && (
+                                        <span className="text-base-content/60">
+                                          @{publicSlug}
+                                        </span>
+                                      )}
+                                      {publicDescription && (
+                                        <p className="text-sm text-base-content/70 mt-1">
+                                          {publicDescription}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="text-sm text-base-content/60">
+                                    📂 Your public projects will be listed below
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Call to action when public is disabled */}
+                          {!isPublicProfile && (
+                            <div className="text-center py-8 border-t border-base-300">
+                              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/20 flex items-center justify-center">
+                                <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                              </div>
+                              <h3 className="text-xl font-bold mb-2">Create Your Public Portfolio</h3>
+                              <p className="text-base-content/70 mb-4 max-w-md mx-auto">
+                                Showcase your work to the world! Enable your public profile to share your projects, 
+                                skills, and experience with the developer community.
                               </p>
+                              <button 
+                                onClick={() => setIsPublicProfile(true)}
+                                className="btn btn-primary"
+                              >
+                                Enable Public Profile
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Privacy Information */}
+                    <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10">
+                      <input type="checkbox" />
+                      <div className="collapse-title text-lg font-semibold bg-base-200 border-b border-base-content/10">
+                        📋 Privacy Information
+                      </div>
+                      <div className="collapse-content">
+                        <div className="pt-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-3">
+                              <h4 className="font-medium text-success">✅ Included</h4>
+                              <ul className="space-y-2 text-sm">
+                                <li className="flex items-center gap-2">
+                                  <div className="w-2 h-2 rounded-full bg-success"></div>
+                                  Your name and profile description
+                                </li>
+                                <li className="flex items-center gap-2">
+                                  <div className="w-2 h-2 rounded-full bg-success"></div>
+                                  Your bio (from above section)
+                                </li>
+                                <li className="flex items-center gap-2">
+                                  <div className="w-2 h-2 rounded-full bg-success"></div>
+                                  All your public projects
+                                </li>
+                                <li className="flex items-center gap-2">
+                                  <div className="w-2 h-2 rounded-full bg-success"></div>
+                                  Tech stack summary from projects
+                                </li>
+                                <li className="flex items-center gap-2">
+                                  <div className="w-2 h-2 rounded-full bg-success"></div>
+                                  Project categories and count
+                                </li>
+                                <li className="flex items-center gap-2">
+                                  <div className="w-2 h-2 rounded-full bg-success"></div>
+                                  Member since date
+                                </li>
+                              </ul>
+                            </div>
+                            
+                            <div className="space-y-3">
+                              <h4 className="font-medium text-error">❌ Not Included</h4>
+                              <ul className="space-y-2 text-sm">
+                                <li className="flex items-center gap-2">
+                                  <div className="w-2 h-2 rounded-full bg-error"></div>
+                                  Email address
+                                </li>
+                                <li className="flex items-center gap-2">
+                                  <div className="w-2 h-2 rounded-full bg-error"></div>
+                                  Private/team projects
+                                </li>
+                                <li className="flex items-center gap-2">
+                                  <div className="w-2 h-2 rounded-full bg-error"></div>
+                                  Account settings or preferences
+                                </li>
+                                <li className="flex items-center gap-2">
+                                  <div className="w-2 h-2 rounded-full bg-error"></div>
+                                  Billing or plan information
+                                </li>
+                                <li className="flex items-center gap-2">
+                                  <div className="w-2 h-2 rounded-full bg-error"></div>
+                                  Private project details
+                                </li>
+                              </ul>
+                            </div>
+                          </div>
+
+                          <div className="mt-4 p-4 bg-info/10 rounded-lg border border-info/20">
+                            <div className="flex items-start gap-3">
+                              <svg className="w-5 h-5 text-info mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              <div>
+                                <h5 className="font-medium text-info mb-1">Privacy & Control</h5>
+                                <p className="text-sm text-base-content/70">
+                                  Your public profile only shows information from projects you've explicitly made public. 
+                                  You can disable your public profile at any time, and no private information is ever exposed.
+                                </p>
+                              </div>
                             </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                )}
-
-                {/* Call to Action */}
-                {!isPublicProfile && (
-                  <div className="card bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/20">
-                    <div className="card-body text-center">
-                      <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/20 flex items-center justify-center">
-                        <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                      </div>
-                      <h3 className="text-xl font-bold mb-2">Create Your Public Portfolio</h3>
-                      <p className="text-base-content/70 mb-4 max-w-md mx-auto">
-                        Showcase your work to the world! Enable your public profile to share your projects, 
-                        skills, and experience with the developer community.
-                      </p>
-                      <button 
-                        onClick={() => setIsPublicProfile(true)}
-                        className="btn btn-primary"
-                      >
-                        Enable Public Profile
-                      </button>
-                    </div>
-                  </div>
+                  </>
                 )}
               </div>
             )}
+
 
             {activeTab === 'analytics' && (
               <div className="space-y-6">

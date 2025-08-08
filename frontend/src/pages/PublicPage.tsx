@@ -140,48 +140,9 @@ const PublicPage: React.FC = () => {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-start">
-        <div>
-          <h1 className="text-3xl font-bold">🌐 Public Sharing</h1>
-          <p className="text-base-content/60 mt-1">
-            Make your project discoverable by the community
-          </p>
-        </div>
-        <div className="flex gap-2">
-          {isPublic && (
-            <button
-              onClick={copyPublicUrl}
-              className="btn btn-outline gap-2"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-              </svg>
-              Copy Public URL
-            </button>
-          )}
-          <button
-            onClick={handleSave}
-            disabled={loading || !hasChanges()}
-            className={`btn ${hasChanges() ? 'btn-primary' : 'btn-ghost'}`}
-          >
-            {loading ? (
-              <>
-                <span className="loading loading-spinner loading-sm"></span>
-                Saving...
-              </>
-            ) : hasChanges() ? (
-              'Save Changes'
-            ) : (
-              'Saved'
-            )}
-          </button>
-        </div>
-      </div>
-
       {/* Success/Error Messages */}
       {success && (
-        <div className="alert alert-success">
+        <div className="alert alert-success shadow-md">
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
@@ -190,7 +151,7 @@ const PublicPage: React.FC = () => {
       )}
 
       {error && (
-        <div className="alert alert-error">
+        <div className="alert alert-error shadow-md">
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
           </svg>
@@ -198,39 +159,79 @@ const PublicPage: React.FC = () => {
         </div>
       )}
 
-      {/* Public Status Toggle */}
-      <div className="card bg-base-100 shadow-lg">
-        <div className="card-body">
-          <div className="form-control">
-            <label className="label cursor-pointer">
-              <div className="flex-1">
-                <span className="label-text text-xl font-semibold">🔓 Make Project Public</span>
-                <p className="text-sm text-base-content/60 mt-1">
-                  Enable this to make your project discoverable in the community discover page. 
-                  Others will be able to view your project details, tech stack, and documentation.
-                </p>
-                {isPublic && (
-                  <p className="text-sm text-success font-medium mt-2">
-                    ✅ Your project is publicly accessible
+      {/* Public Sharing Settings */}
+      <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10">
+        <input type="checkbox" defaultChecked />
+        <div className="collapse-title text-lg font-semibold bg-base-200 border-b border-base-content/10 flex items-center justify-between">
+          <span>🌐 Public Sharing Settings</span>
+          <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+            {isPublic && (
+              <button
+                onClick={copyPublicUrl}
+                className="btn btn-outline btn-sm gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                Copy URL
+              </button>
+            )}
+            <button
+              onClick={handleSave}
+              disabled={loading || !hasChanges()}
+              className={`btn btn-sm ${hasChanges() ? 'btn-primary' : 'btn-ghost'}`}
+            >
+              {loading ? (
+                <>
+                  <span className="loading loading-spinner loading-sm"></span>
+                  Saving...
+                </>
+              ) : hasChanges() ? (
+                'Save Changes'
+              ) : (
+                'Saved'
+              )}
+            </button>
+          </div>
+        </div>
+        <div className="collapse-content">
+          <div className="pt-4 space-y-4">
+            {/* Public Status Toggle */}
+            <div className="form-control">
+              <label className="label cursor-pointer">
+                <div className="flex-1">
+                  <span className="label-text text-lg font-semibold">🔓 Make Project Public</span>
+                  <p className="text-sm text-base-content/60 mt-1">
+                    Enable this to make your project discoverable in the community discover page. 
+                    Others will be able to view your project details, tech stack, and documentation.
                   </p>
-                )}
-              </div>
-              <input
-                type="checkbox"
-                className="toggle toggle-primary toggle-lg"
-                checked={isPublic}
-                onChange={(e) => setIsPublic(e.target.checked)}
-              />
-            </label>
+                  {isPublic && (
+                    <p className="text-sm text-success font-medium mt-2">
+                      ✅ Your project is publicly accessible
+                    </p>
+                  )}
+                </div>
+                <input
+                  type="checkbox"
+                  className="toggle toggle-primary toggle-lg"
+                  checked={isPublic}
+                  onChange={(e) => setIsPublic(e.target.checked)}
+                />
+              </label>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Public URL Configuration */}
       {isPublic && (
-        <div className="card bg-base-100 shadow-lg">
-          <div className="card-body space-y-4">
-            <h3 className="text-lg font-semibold">🔗 Public URL Settings</h3>
+        <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10">
+          <input type="checkbox" defaultChecked />
+          <div className="collapse-title text-lg font-semibold bg-base-200 border-b border-base-content/10">
+            🔗 Public URL Settings
+          </div>
+          <div className="collapse-content">
+            <div className="pt-4 space-y-4">
             
             {/* Custom Slug */}
             <div className="form-control">
@@ -336,15 +337,20 @@ const PublicPage: React.FC = () => {
                 </div>
               </div>
             </div>
+            </div>
           </div>
         </div>
       )}
 
       {/* Visibility Controls */}
       {isPublic && (
-        <div className="card bg-base-100 shadow-lg">
-          <div className="card-body">
-            <h3 className="text-lg font-semibold mb-4">🔧 Visibility Controls</h3>
+        <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10">
+          <input type="checkbox" defaultChecked />
+          <div className="collapse-title text-lg font-semibold bg-base-200 border-b border-base-content/10">
+            🔧 Visibility Controls
+          </div>
+          <div className="collapse-content">
+            <div className="pt-4 space-y-4">
             <p className="text-sm text-base-content/60 mb-4">
               Choose what information to include on your public project page.
             </p>
@@ -378,15 +384,20 @@ const PublicPage: React.FC = () => {
                 </label>
               ))}
             </div>
+            </div>
           </div>
         </div>
       )}
 
       {/* What Gets Shared */}
       {isPublic && (
-        <div className="card bg-base-100 shadow-lg">
-          <div className="card-body">
-            <h3 className="text-lg font-semibold mb-4">📋 Privacy Information</h3>
+        <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10">
+          <input type="checkbox" defaultChecked />
+          <div className="collapse-title text-lg font-semibold bg-base-200 border-b border-base-content/10">
+            📋 Privacy Information
+          </div>
+          <div className="collapse-content">
+            <div className="pt-4 space-y-4">
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-3">
@@ -444,14 +455,20 @@ const PublicPage: React.FC = () => {
                 </div>
               </div>
             </div>
+            </div>
           </div>
         </div>
       )}
 
       {/* Call to Action */}
       {!isPublic && (
-        <div className="card bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/20">
-          <div className="card-body text-center">
+        <div className="collapse collapse-arrow bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/20">
+          <input type="checkbox" defaultChecked />
+          <div className="collapse-title text-lg font-semibold bg-base-200/50 border-b border-primary/20">
+            🌐 Share Your Work with the World
+          </div>
+          <div className="collapse-content">
+            <div className="pt-4 text-center">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/20 flex items-center justify-center">
               <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0 9c-1.657 0-3-4.03-3-9s1.343-9 3-9m0 18c1.657 0 3-4.03 3-9s-1.343-9-3-9m-9 9a9 9 0 019-9" />
@@ -467,6 +484,7 @@ const PublicPage: React.FC = () => {
             >
               Enable Public Sharing
             </button>
+            </div>
           </div>
         </div>
       )}

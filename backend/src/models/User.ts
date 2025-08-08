@@ -53,11 +53,11 @@ const userSchema = new Schema<IUser>({
     type: String,
     default: 'cyberpunk',
     enum: [
-      "light", "dark", "cupcake", "bumblebee", "emerald", "corporate", 
-      "synthwave", "retro", "cyberpunk", "valentine", "halloween", 
-      "garden", "forest", "aqua", "lofi", "pastel", "fantasy", 
-      "wireframe", "black", "luxury", "dracula", "cmyk", "autumn", 
-      "business", "acid", "lemonade", "night", "coffee", "winter", "dim"
+      "dim", "light", "dark", "cupcake", "bumblebee", "emerald", "corporate",
+      "synthwave", "retro", "cyberpunk", "valentine", "halloween", "garden",
+      "forest", "aqua", "sunset", "lofi", "pastel", "fantasy", "wireframe",
+      "black", "luxury", "dracula", "cmyk", "autumn", "business", "acid",
+      "lemonade", "night", "coffee", "winter", "nord"
     ]
   },
   planTier: {

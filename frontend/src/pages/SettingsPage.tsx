@@ -246,7 +246,7 @@ const SettingsPage: React.FC = () => {
       {/* Project Information */}
       <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10">
         <input type="checkbox" defaultChecked />
-        <div className="collapse-title text-lg font-semibold bg-base-200 border-b border-base-content/10">
+        <div className="collapse-title text-xl font-semibold bg-base-200 border-b border-base-content/10">
         ⚙️ Project Information
         </div>
         <div className="collapse-content">
@@ -404,12 +404,12 @@ const SettingsPage: React.FC = () => {
                     type="text"
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
-                    className="input input-bordered input-sm w-full"
+                    className="input input-bordered input-sm w-full h-8"
                     placeholder="Enter category..."
                   />
                 ) : (
                   <div className="p-2 bg-base-200 rounded border border-base-300">
-                    <p className="text-sm">{category}</p>
+                    <p className="text-sm translate-y-0.5 h-6">{category}</p>
                   </div>
                 )}
               </div>
@@ -430,7 +430,7 @@ const SettingsPage: React.FC = () => {
                   </select>
                 ) : (
                   <div className="p-2 bg-base-200 rounded border border-base-300">
-                    <span className={`badge badge-sm ${
+                    <span className={`badge badge-sm h-6 ${
                       stagingEnvironment === 'production' ? 'badge-error' :
                       stagingEnvironment === 'staging' ? 'badge-warning' :
                       'badge-success'
@@ -488,12 +488,12 @@ const SettingsPage: React.FC = () => {
                   <div className="p-2 bg-base-200 rounded border border-base-300 min-h-[2rem]">
                     <div className="flex flex-wrap gap-1">
                       {tags.length === 0 ? (
-                        <span className="text-base-content/60 italic text-xs">No tags</span>
+                        <span className="text-base-content/60 italic text-xs translate-y-1 h-6">No tags</span>
                       ) : (
                         tags.map((tag, index) => (
                           <span
                             key={`display-tag-${index}-${tag}`}
-                            className="badge badge-info badge-sm"
+                            className="badge badge-info badge-sm h-6"
                           >
                             {tag}
                           </span>
@@ -587,7 +587,7 @@ const SettingsPage: React.FC = () => {
       {selectedProject && (
         <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10">
           <input type="checkbox" />
-          <div className="collapse-title text-lg font-semibold bg-base-200 border-b border-base-content/10">
+          <div className="collapse-title text-xl font-semibold bg-base-200 border-b border-base-content/10">
             👥 Project Sharing & Team Management
           </div>
           <div className="collapse-content">

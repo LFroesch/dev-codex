@@ -72,5 +72,8 @@ NotificationSchema.index({ userId: 1, createdAt: -1 });
 NotificationSchema.index({ userId: 1, isRead: 1 });
 NotificationSchema.index({ relatedInvitationId: 1 });
 
+// TTL index to automatically clean up old notifications after 90 days
+NotificationSchema.index({ createdAt: 1 }, { expireAfterSeconds: 90 * 24 * 60 * 60 });
+
 
 export default mongoose.model<INotification>('Notification', NotificationSchema);

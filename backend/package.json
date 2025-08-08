@@ -13,7 +13,8 @@
     "setup-stripe": "ts-node src/scripts/setup-stripe.ts",
     "fix-user-plan": "ts-node src/scripts/fix-user-plan.ts",
     "debug-billing": "ts-node src/scripts/debug-billing.ts",
-    "nuke-billing": "ts-node src/scripts/nuke-billing.ts"
+    "nuke-billing": "ts-node src/scripts/nuke-billing.ts",
+    "cleanup": "ts-node src/scripts/cleanup-database.ts"
   },
   "dependencies": {
     "@types/nodemailer": "^6.4.17",

@@ -6,6 +6,7 @@ import Analytics from '../models/Analytics';
 import UserSession from '../models/UserSession';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { PLAN_LIMITS } from '../config/planLimits';
+import { CleanupService } from '../services/cleanupService';
 import nodemailer from 'nodemailer';
 
 const router = express.Router();
@@ -929,6 +930,40 @@ router.get('/analytics/combined', async (req, res) => {
   } catch (error) {
     console.error('Error fetching combined analytics:', error);
     res.status(500).json({ error: 'Failed to fetch analytics data' });
+  }
+});
+
+// Database cleanup endpoints
+router.get('/cleanup/stats', async (req, res) => {
+  try {
+    const stats = await CleanupService.getDatabaseStats();
+    res.json(stats);
+  } catch (error) {
+    console.error('Error fetching cleanup stats:', error);
+    res.status(500).json({ error: 'Failed to fetch cleanup stats' });
+  }
+});
+
+router.get('/cleanup/recommendations', async (req, res) => {
+  try {
+    const recommendations = await CleanupService.getCleanupRecommendations();
+    res.json(recommendations);
+  } catch (error) {
+    console.error('Error fetching cleanup recommendations:', error);
+    res.status(500).json({ error: 'Failed to fetch cleanup recommendations' });
+  }
+});
+
+router.post('/cleanup/run', async (req, res) => {
+  try {
+    const results = await CleanupService.runCompleteCleanup();
+    res.json({
+      message: 'Cleanup completed successfully',
+      results
+    });
+  } catch (error) {
+    console.error('Error running cleanup:', error);
+    res.status(500).json({ error: 'Failed to run cleanup' });
   }
 });
 

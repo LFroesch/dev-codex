@@ -18,7 +18,18 @@ const DocsPage: React.FC = () => {
   const [addingDoc, setAddingDoc] = useState(false);
   const [editingDoc, setEditingDoc] = useState<string | null>(null);
   const [editData, setEditData] = useState({ type: 'Model' as Doc['type'], title: '', content: '' });
+  const [expandedDocs, setExpandedDocs] = useState<Set<string>>(new Set());
   const [error, setError] = useState('');
+
+  const toggleDocExpanded = (docId: string) => {
+    const newExpanded = new Set(expandedDocs);
+    if (newExpanded.has(docId)) {
+      newExpanded.delete(docId);
+    } else {
+      newExpanded.add(docId);
+    }
+    setExpandedDocs(newExpanded);
+  };
 
   const docTypes: Array<{ value: Doc['type']; label: string; emoji: string; description: string }> = [
     { value: 'Model', label: 'Model', emoji: '🗃️', description: 'Database models and schemas' },
@@ -52,6 +63,9 @@ const DocsPage: React.FC = () => {
   const handleEditDoc = (doc: Doc) => {
     setEditingDoc(doc.id);
     setEditData({ type: doc.type, title: doc.title, content: doc.content });
+    if (!expandedDocs.has(doc.id)) {
+      toggleDocExpanded(doc.id); // Expand if not already expanded
+    }
   };
 
   const handleSaveEdit = async () => {
@@ -246,13 +260,13 @@ React App:
       )}
 
       {/* Create New Template */}
-      <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10">
+      <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10 mb-4">
         <input type="checkbox" defaultChecked={!hasAnyDocs} />
         <div className="collapse-title text-lg font-semibold bg-base-200 border-b border-base-content/10">
           Create New Documentation Template
         </div>
         <div className="collapse-content">
-          <div className="pt-4 space-y-4">
+          <div className="space-y-4 pt-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="form-control">
                 <label className="label">
@@ -334,109 +348,159 @@ React App:
             <input type="checkbox" defaultChecked={true} />
             <div className="collapse-title text-lg font-semibold bg-base-200 border-b border-base-content/10">
               {typeInfo.label} Templates ({docs.length})
-              <div className="text-sm text-base-content/60 font-normal mt-1">
-                {typeInfo.description}
-              </div>
             </div>
             <div className="collapse-content">
               <div className="pt-4">
                 <div className="space-y-4">
-                  {docs.map(doc => (
-                    <div key={doc.id} className="card bg-base-200 shadow-sm border border-base-content/10">
-                      <div className="card-body p-4">
-                        {editingDoc === doc.id ? (
-                          <div className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                              <div className="form-control">
-                                <label className="label">
-                                  <span className="label-text font-medium">Type</span>
-                                </label>
-                                <select
-                                  value={editData.type}
-                                  onChange={(e) => setEditData({...editData, type: e.target.value as Doc['type']})}
-                                  className="select select-bordered select-sm"
-                                >
-                                  {docTypes.map(type => (
-                                    <option key={type.value} value={type.value}>
-                                      {type.emoji} {type.label}
-                                    </option>
-                                  ))}
-                                </select>
+                  {docs.map(doc => {
+                    const isExpanded = expandedDocs.has(doc.id);
+                    const isEditing = editingDoc === doc.id;
+                    return (
+                      <div key={doc.id} className="bg-base-100 shadow-lg border border-base-content/10 rounded-lg mb-4">
+                        <div className="p-4">
+                          {/* Header with title and controls */}
+                          <div className="flex items-center justify-between">
+                            <button
+                              onClick={() => toggleDocExpanded(doc.id)}
+                              className="flex items-center gap-3 flex-1 text-left hover:bg-base-200 p-2 -m-2 rounded-lg transition-colors"
+                              disabled={isEditing}
+                            >
+                              <div className={`transform transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}>
+                                <svg className="w-5 h-5 text-base-content/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
                               </div>
-                              <div className="form-control md:col-span-2">
-                                <label className="label">
-                                  <span className="label-text font-medium">Title</span>
-                                </label>
-                                <input
-                                  type="text"
-                                  value={editData.title}
-                                  onChange={(e) => setEditData({...editData, title: e.target.value})}
-                                  className="input input-bordered input-sm"
-                                />
-                              </div>
-                            </div>
-                            <div className="form-control">
-                              <label className="label">
-                                <span className="label-text font-medium">Content</span>
-                              </label>
-                              <textarea
-                                value={editData.content}
-                                onChange={(e) => setEditData({...editData, content: e.target.value})}
-                                className="textarea textarea-bordered h-[500px]"
-                              />
-                            </div>
-                            <div className="flex justify-end gap-2">
-                              <button onClick={handleCancelEdit} className="btn btn-ghost btn-sm">
-                                Cancel
-                              </button>
-                              <button onClick={handleSaveEdit} className="btn btn-primary btn-sm">
-                                Save
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          <>
-                            <div className="flex items-start justify-between mb-3">
-                              <div>
+                              <div className="flex-1">
                                 <h3 className="font-semibold text-lg">{doc.title}</h3>
-                                <div className="text-xs text-base-content/50">
+                                <div className="text-xs text-base-content/50 mt-1">
                                   Created: {new Date(doc.createdAt).toLocaleDateString()}
                                   {doc.updatedAt !== doc.createdAt && (
                                     <> • Updated: {new Date(doc.updatedAt).toLocaleDateString()}</>
                                   )}
                                 </div>
                               </div>
-                              <div className="flex gap-2">
-                                <button
-                                  onClick={() => handleEditDoc(doc)}
-                                  className="btn btn-sm btn-ghost"
-                                >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                  </svg>
-                                  Edit
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteDoc(doc.id)}
-                                  className="btn btn-sm btn-error btn-outline"
-                                >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                  </svg>
-                                  Delete
-                                </button>
-                              </div>
+                            </button>
+                            
+                            <div className="flex gap-2 ml-4">
+                              {isEditing ? (
+                                <>
+                                  <button
+                                    onClick={handleSaveEdit}
+                                    className="btn btn-sm btn-primary"
+                                    disabled={!editData.title.trim() || !editData.content.trim()}
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    Save
+                                  </button>
+                                  <button
+                                    onClick={handleCancelEdit}
+                                    className="btn btn-sm btn-ghost"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                    Cancel
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleEditDoc(doc);
+                                    }}
+                                    className="btn btn-sm btn-ghost"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                    Edit
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeleteDoc(doc.id);
+                                    }}
+                                    className="btn btn-sm btn-error btn-outline"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                    Delete
+                                  </button>
+                                </>
+                              )}
                             </div>
-                            <div className="bg-base-100 rounded p-4 border border-base-300">
-                              <pre className="whitespace-pre-wrap text-sm font-mono leading-relaxed">
-                                {doc.content}
-                              </pre>
+                          </div>
+
+                          {/* Collapsible content */}
+                          {isExpanded && (
+                            <div className="mt-4 border-t border-base-300 pt-4">
+                              {isEditing ? (
+                                <div className="space-y-4">
+                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="form-control">
+                                      <label className="label">
+                                        <span className="label-text font-medium">Type</span>
+                                      </label>
+                                      <select
+                                        value={editData.type}
+                                        onChange={(e) => setEditData({...editData, type: e.target.value as Doc['type']})}
+                                        className="select select-bordered select-sm"
+                                      >
+                                        {docTypes.map(type => (
+                                          <option key={type.value} value={type.value}>
+                                            {type.emoji} {type.label}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                    <div className="form-control md:col-span-2">
+                                      <label className="label">
+                                        <span className="label-text font-medium">Title</span>
+                                      </label>
+                                      <input
+                                        type="text"
+                                        value={editData.title}
+                                        onChange={(e) => setEditData({...editData, title: e.target.value})}
+                                        className="input input-bordered input-sm"
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className="form-control">
+                                    <label className="label">
+                                      <span className="label-text font-medium">Content</span>
+                                    </label>
+                                    <textarea
+                                      value={editData.content}
+                                      onChange={(e) => setEditData({...editData, content: e.target.value})}
+                                      className="textarea textarea-bordered h-[500px]"
+                                    />
+                                  </div>
+                                  <div className="flex justify-end gap-2">
+                                    <button onClick={handleCancelEdit} className="btn btn-ghost btn-sm">
+                                      Cancel
+                                    </button>
+                                    <button onClick={handleSaveEdit} className="btn btn-primary btn-sm">
+                                      Save
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="bg-base-200 rounded-lg p-4 border border-base-300">
+                                  <pre className="whitespace-pre-wrap text-sm font-mono leading-relaxed">
+                                    {doc.content}
+                                  </pre>
+                                </div>
+                              )}
                             </div>
-                          </>
-                        )}
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>

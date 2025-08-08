@@ -16,7 +16,6 @@ const Layout: React.FC = () => {
   const [selectedProject, setSelectedProject] = useState<BaseProject | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [activeProjectTab, setActiveProjectTab] = useState('active');
   
   // Unsaved changes modal state
@@ -30,23 +29,6 @@ const Layout: React.FC = () => {
     projectName: selectedProject?.name
   });
   
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const dropdown = document.querySelector('.dropdown');
-      if (dropdown && !dropdown.contains(event.target as Node)) {
-        setDropdownOpen(false);
-      }
-    };
-
-    if (dropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [dropdownOpen]);
   const [currentTheme] = useState(() => {
     return localStorage.getItem('theme') || 'cyberpunk';
   });
@@ -122,13 +104,13 @@ const Layout: React.FC = () => {
   };
 
   // Group projects by category
-  const groupProjectsByCategory = (projects: Project[]) => {
-    const grouped: { [category: string]: Project[] } = {};
+  const groupProjectsByCategory = (projects: BaseProject[]) => {
+    const grouped: { [category: string]: BaseProject[] } = {};
     
     projects.forEach(project => {
       const category = project.category || 'General';
       // Capitalize first letter of each word
-      const normalizedCategory = category.split(' ').map(word => 
+      const normalizedCategory = category.split(' ').map((word: string) => 
         word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
       ).join(' ');
       
@@ -308,7 +290,186 @@ const Layout: React.FC = () => {
     <div className="min-h-screen bg-base-100 flex flex-col">
       {/* Header */}
       <header className="bg-base-100 border-b border-base-content/10 shadow-sm sticky top-0 z-40">
-        <div className="px-6 py-2">
+        {/* Mobile and Tablet Layout */}
+        <div className="block lg:hidden px-4 py-2">
+          <div className="flex flex-col gap-2">
+            {/* Top row: Logo and User Menu */}
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/notes?view=projects')}>
+                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-sm">
+                  <svg className="w-5 h-5 text-primary-content" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
+                  </svg>
+                </div>
+                <h1 className="text-lg font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">Dev Codex</h1>
+              </div>
+              
+              {user ? (
+                <div className="flex items-center gap-2">
+                  <SessionTracker />
+                  <NotificationBell />
+                  <div className="dropdown dropdown-end">
+                    <div tabIndex={0} role="button" className="btn btn-circle btn-sm bg-base-100/80 hover:bg-base-300 border border-base-content/10 shadow-sm">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    </div>
+                    <ul tabIndex={0} className="dropdown-content menu p-2 shadow-lg bg-base-100 rounded-xl border border-base-content/10 w-52 z-50">
+                        <li>
+                          <a onClick={() => navigate('/billing')} className="flex items-center gap-3 w-full cursor-pointer">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                            </svg>
+                            Billing & Plans
+                          </a>
+                        </li>
+                        <li>
+                          <a onClick={() => navigate('/account-settings')} className="flex items-center gap-3 w-full cursor-pointer">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            Account Settings
+                          </a>
+                        </li>
+                        {user?.isAdmin && (
+                          <li>
+                            <a onClick={() => navigate('/admin')} className="flex items-center gap-3 w-full cursor-pointer">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                              </svg>
+                              Admin Dashboard
+                            </a>
+                          </li>
+                        )}
+                        <li>
+                          <a onClick={() => navigate('/support')} className="flex items-center gap-3 w-full cursor-pointer">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Contact Support
+                          </a>
+                        </li>
+                        <div className="divider my-1"></div>
+                        <li>
+                          <a onClick={() => handleLogout()} className="text-error flex items-center gap-3 w-full cursor-pointer">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                            </svg>
+                            Logout
+                          </a>
+                        </li>
+                      </ul>
+                  </div>
+                </div>
+              ) : (
+                <button 
+                  onClick={() => navigate('/login')}
+                  className="btn btn-primary btn-sm"
+                >
+                  Sign In
+                </button>
+              )}
+            </div>
+            
+            {/* Second row: Search and Navigation */}
+            <div className="flex flex-col sm:flex-row gap-2">
+              {/* Search bar and project info */}
+              <div className="flex items-center gap-2 flex-1">
+                {selectedProject && (
+                  <div className="flex items-center gap-1 px-2 py-1 bg-base-100/80 rounded-lg border border-base-content/10 shadow-sm">
+                    <div 
+                      className="w-2 h-2 rounded-full shadow-sm"
+                      style={{ backgroundColor: selectedProject.color }}
+                    ></div>
+                    <span className="text-xs font-medium truncate max-w-20">{selectedProject.name}</span>
+                  </div>
+                )}
+                <div className="relative flex-1">
+                  <svg className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-base-content/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  <input
+                    type="text"
+                    placeholder="Search..."
+                    value={searchTerm}
+                    onChange={(e) => {
+                      setSearchTerm(e.target.value);
+                      if (e.target.value.trim() && searchParams.get('view') !== 'projects') {
+                        navigate('/notes?view=projects');
+                      }
+                    }}
+                    className="input input-sm input-bordered pl-9 pr-8 w-full bg-base-100/80 backdrop-blur-sm"
+                  />
+                  {searchTerm && (
+                    <button
+                      onClick={() => setSearchTerm('')}
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-base-content/50 hover:text-base-content/80 transition-colors"
+                    >
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+                <button
+                  onClick={() => navigate('/create-project')}
+                  className="btn btn-primary btn-sm btn-circle shadow-sm"
+                  title="New Project"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            
+            {/* Third row: Navigation buttons */}
+            <div className="flex gap-1 overflow-x-auto scrollbar-hide">
+              <button 
+                className={`btn btn-sm ${searchParams.get('view') === 'projects' ? 'btn-primary' : 'btn-ghost'} gap-1 font-bold whitespace-nowrap`}
+                onClick={() => handleNavigateWithCheck('/notes?view=projects')}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                </svg>
+                <span className="hidden sm:inline">My Projects</span>
+                <span className="sm:hidden">Projects</span>
+              </button>
+              <button 
+                className={`btn btn-sm ${(location.pathname === '/notes' || location.pathname === '/roadmap' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/settings') && searchParams.get('view') !== 'projects' ? 'btn-primary' : 'btn-ghost'} gap-1 font-bold whitespace-nowrap`}
+                onClick={() => handleNavigateWithCheck('/notes')}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span className="hidden sm:inline">Project Details</span>
+                <span className="sm:hidden">Details</span>
+              </button>
+              <button 
+                className={`btn btn-sm ${location.pathname === '/ideas' ? 'btn-primary' : 'btn-ghost'} gap-1 font-bold whitespace-nowrap`}
+                onClick={() => handleNavigateWithCheck('/ideas')}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+                Ideas
+              </button>
+              <button 
+                className={`btn btn-sm ${location.pathname === '/discover' || location.pathname.startsWith('/discover/') ? 'btn-primary' : 'btn-ghost'} gap-1 font-bold whitespace-nowrap`}
+                onClick={() => handleNavigateWithCheck('/discover')}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                Discover
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop Layout */}
+        <div className="hidden lg:block px-6 py-2">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3 bg-base-200/50 backdrop-blur-sm border border-base-content/10 rounded-xl px-4 py-2 h-12 shadow-sm hover:shadow-md transition-all cursor-pointer" onClick={() => navigate('/notes?view=projects')}>
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-sm">
@@ -318,9 +479,8 @@ const Layout: React.FC = () => {
               </div>
               <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">Dev Codex</h1>
               
-              {/* Search bar - always show */}
+              {/* Search bar */}
               <div className="relative ml-4 flex items-center gap-2">
-                {/* Current project indicator */}
                 {selectedProject && (
                   <div className="flex items-center gap-2 px-3 py-1.5 bg-base-100/80 rounded-lg border border-base-content/10 shadow-sm">
                     <div 
@@ -349,19 +509,16 @@ const Layout: React.FC = () => {
                     value={searchTerm}
                     onChange={(e) => {
                       setSearchTerm(e.target.value);
-                      // Auto-navigate to My Projects when user starts typing
                       if (e.target.value.trim() && searchParams.get('view') !== 'projects') {
                         navigate('/notes?view=projects');
                       }
                     }}
                     className="input input-sm input-bordered pl-9 pr-8 w-48 bg-base-100/80 backdrop-blur-sm"
                   />
-                  {/* Clear button */}
                   {searchTerm && (
                     <button
                       onClick={() => setSearchTerm('')}
                       className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-base-content/50 hover:text-base-content/80 transition-colors"
-                      title="Clear search"
                     >
                       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -381,7 +538,7 @@ const Layout: React.FC = () => {
               </div>
             </div>
             
-            <div className="absolute left-1/2 transform -translate-x-1/2 flex gap-2">
+            <div className="flex gap-2">
               <button 
                 className={`btn ${searchParams.get('view') === 'projects' ? 'btn-primary' : 'btn-ghost'} gap-2 font-bold`}
                 onClick={() => handleNavigateWithCheck('/notes?view=projects')}
@@ -428,63 +585,58 @@ const Layout: React.FC = () => {
                 <span className="text-sm font-medium text-base-content/80">Hi, {user?.firstName}!</span>
                 
                 <div className="dropdown dropdown-end">
-                  <button 
-                    className="btn btn-circle btn-sm bg-base-100/80 hover:bg-base-300 border border-base-content/10 shadow-sm"
-                    onClick={() => setDropdownOpen(!dropdownOpen)}
-                  >
+                  <div tabIndex={0} role="button" className="btn btn-circle btn-sm bg-base-100/80 hover:bg-base-300 border border-base-content/10 shadow-sm">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
-                    </button>
-                {dropdownOpen && (
-                  <ul className="dropdown-content menu p-2 shadow-lg bg-base-100 rounded-xl border border-base-content/10 w-52 z-50">
+                  </div>
+                  <ul tabIndex={0} className="dropdown-content menu p-2 shadow-lg bg-base-100 rounded-xl border border-base-content/10 w-52 z-50">
                     <li>
-                      <button onClick={() => { navigate('/billing'); setDropdownOpen(false); }} className="flex items-center gap-3 w-full text-left">
+                      <a onClick={() => navigate('/billing')} className="flex items-center gap-3 w-full cursor-pointer">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                         </svg>
                         Billing & Plans
-                      </button>
+                      </a>
                     </li>
                     <li>
-                      <button onClick={() => { navigate('/account-settings'); setDropdownOpen(false); }} className="flex items-center gap-3 w-full text-left">
+                      <a onClick={() => navigate('/account-settings')} className="flex items-center gap-3 w-full cursor-pointer">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
                         Account Settings
-                      </button>
+                      </a>
                     </li>
                     {user?.isAdmin && (
                       <li>
-                        <button onClick={() => { navigate('/admin'); setDropdownOpen(false); }} className="flex items-center gap-3 w-full text-left">
+                        <a onClick={() => navigate('/admin')} className="flex items-center gap-3 w-full cursor-pointer">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                           </svg>
                           Admin Dashboard
-                        </button>
+                        </a>
                       </li>
                     )}
                     <li>
-                      <button onClick={() => { navigate('/support'); setDropdownOpen(false); }} className="flex items-center gap-3 w-full text-left">
+                      <a onClick={() => navigate('/support')} className="flex items-center gap-3 w-full cursor-pointer">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         Contact Support
-                      </button>
+                      </a>
                     </li>
                     <div className="divider my-1"></div>
                     <li>
-                      <button onClick={() => { handleLogout(); setDropdownOpen(false); }} className="text-error flex items-center gap-3 w-full text-left">
+                      <a onClick={() => handleLogout()} className="text-error flex items-center gap-3 w-full cursor-pointer">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                         </svg>
                         Logout
-                      </button>
+                      </a>
                     </li>
                   </ul>
-                )}
-              </div>
+                </div>
               </div>
             ) : (
               <div className="flex items-center gap-3 bg-base-200/50 backdrop-blur-sm border border-base-content/10 rounded-xl px-4 py-2 h-12 shadow-sm">
@@ -500,7 +652,7 @@ const Layout: React.FC = () => {
         </div>
       </header>
 
-      <div className="flex-1 w-4/5 mx-auto bg-base-100 flex flex-col mb-4 ">
+      <div className="flex-1 w-full max-w-7xl mx-auto px-4 bg-base-100 flex flex-col mb-4">
         {/* Render content based on current route */}
         {searchParams.get('view') === 'projects' ? (
           /* My Projects Tab - Modern Style */
@@ -540,8 +692,8 @@ const Layout: React.FC = () => {
                 {activeProjectTab === 'active' && (
                   <div className="space-y-4">
                     {Object.keys(groupedCurrentProjects).length === 0 ? (
-                      <div className="flex items-center justify-center py-16">
-                        <div className="text-center bg-base-100 rounded-xl p-12 border border-base-content/10 shadow-lg">
+                      <div className="flex items-center justify-center min-h-[50vh] py-16">
+                        <div className="text-center bg-base-100 rounded-xl p-12 border border-base-content/10 shadow-lg max-w-md mx-auto">
                           <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-full flex items-center justify-center">
                             <svg className="w-10 h-10 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
@@ -757,7 +909,7 @@ const Layout: React.FC = () => {
           </>
         ) : location.pathname.startsWith('/project/') || location.pathname.startsWith('/user/') ? (
           /* Public Pages - Same styling as discover */
-          <div className="flex-1 overflow-auto border border-base-content/10 bg-gradient-to-br from-base-50 to-base-100/50 m-4 rounded-2xl shadow-2xl backdrop-blur-sm">
+          <div className="flex-1 overflow-auto border border-base-content/10 bg-gradient-to-br from-base-50 to-base-100/50 mx-4 my-4 rounded-2xl shadow-2xl backdrop-blur-sm">
             <div className="p-1">
               <Outlet />
             </div>
@@ -782,7 +934,7 @@ const Layout: React.FC = () => {
           </>
         ) : location.pathname === '/billing' || location.pathname === '/account-settings' ? (
           /* Billing and Account Settings - No sub-menu */
-          <div className="flex-1 overflow-auto border border-base-content/10 bg-gradient-to-br from-base-50 to-base-100/50 m-4 rounded-2xl shadow-2xl backdrop-blur-sm">
+          <div className="flex-1 overflow-auto border border-base-content/10 bg-gradient-to-br from-base-50 to-base-100/50 mx-4 my-4 rounded-2xl shadow-2xl backdrop-blur-sm">
             <div className="p-1">
               <Outlet />
             </div>
@@ -820,14 +972,22 @@ const Layout: React.FC = () => {
                   }} />
                 </div>
               ) : (
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-center">
-                    <h2 className="text-2xl font-semibold mb-4">Select a project to get started</h2>
+                <div className="flex items-center justify-center min-h-[50vh] h-full">
+                  <div className="text-center bg-base-100 rounded-xl p-12 border border-base-content/10 shadow-lg max-w-md mx-auto">
+                    <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-full flex items-center justify-center">
+                      <svg className="w-10 h-10 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                      </svg>
+                    </div>
+                    <h2 className="text-2xl font-semibold mb-4 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">Select a project to get started</h2>
                     <p className="text-base-content/60 mb-6">Go to My Projects to choose a project</p>
                     <button
-                      onClick={() => navigate('/projects')}
-                      className="btn btn-primary"
+                      onClick={() => navigate('/notes?view=projects')}
+                      className="btn btn-primary btn-lg gap-2"
                     >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                      </svg>
                       View My Projects
                     </button>
                   </div>

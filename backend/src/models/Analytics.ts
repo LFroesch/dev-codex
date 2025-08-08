@@ -66,8 +66,7 @@ analyticsSchema.index({ userId: 1, timestamp: -1 });
 analyticsSchema.index({ userId: 1, eventType: 1, timestamp: -1 });
 analyticsSchema.index({ 'eventData.projectId': 1, timestamp: -1 });
 
-// TTL index to automatically clean up old analytics data (optional)
-// Uncomment if you want to auto-delete old data after 1 year
-// analyticsSchema.index({ timestamp: 1 }, { expireAfterSeconds: 365 * 24 * 60 * 60 });
+// TTL index to automatically clean up old analytics data after 6 months
+analyticsSchema.index({ timestamp: 1 }, { expireAfterSeconds: 6 * 30 * 24 * 60 * 60 });
 
 export default mongoose.model<IAnalytics>('Analytics', analyticsSchema);

@@ -122,7 +122,7 @@ router.post('/register', async (req, res) => {
       password,
       firstName,
       lastName,
-      theme: theme || 'cyberpunk'
+      theme: theme || 'retro'
     });
 
     await user.save();

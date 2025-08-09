@@ -19,32 +19,29 @@ const CreateProject: React.FC = () => {
 
   // Apply theme on mount
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') || 'cyberpunk';
+    const savedTheme = localStorage.getItem('theme') || 'retro';
     document.documentElement.setAttribute('data-theme', savedTheme);
   }, []);
 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError('');
+    clearError();
 
     try {
-      await projectAPI.create({
-        name: formData.name,
-        description: formData.description,
-        category: formData.category,
-        color: formData.color,
-        tags: formData.tags,
-        stagingEnvironment: formData.stagingEnvironment,
+      await withLoading(async () => {
+        await projectAPI.create({
+          name: formData.name,
+          description: formData.description,
+          category: formData.category,
+          color: formData.color,
+          tags: formData.tags,
+          stagingEnvironment: formData.stagingEnvironment,
+        });
       });
       navigate('/');
     } catch (err: any) {
-      // Extract the specific error message from the API response
-      const errorMessage = err.response?.data?.message || err.response?.data?.error || 'Failed to create project';
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
+      handleError(err);
     }
   };
 

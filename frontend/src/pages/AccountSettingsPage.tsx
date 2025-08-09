@@ -16,7 +16,7 @@ const THEMES = [
 const AccountSettingsPage: React.FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'theme' | 'connections' | 'profile' | 'analytics'>('theme');
-  const [currentTheme, setCurrentTheme] = useState('cyberpunk');
+  const [currentTheme, setCurrentTheme] = useState('retro');
   const [user, setUser] = useState<any>(null);
   
   const { loading, setLoading } = useLoadingState(true);
@@ -42,16 +42,16 @@ const AccountSettingsPage: React.FC = () => {
       try {
         const response = await authAPI.getMe();
         setUser(response.user);
-        setCurrentTheme(response.user.theme || 'cyberpunk');
+        setCurrentTheme(response.user.theme || 'retro');
         setBio(response.user.bio || '');
         setIsPublicProfile(response.user.isPublic || false);
         setPublicSlug(response.user.publicSlug || '');
         setPublicDescription(response.user.publicDescription || '');
         // Apply theme from database
-        document.documentElement.setAttribute('data-theme', response.user.theme || 'cyberpunk');
+        document.documentElement.setAttribute('data-theme', response.user.theme || 'retro');
       } catch (err) {
         // Fallback to localStorage if not authenticated
-        const savedTheme = localStorage.getItem('theme') || 'cyberpunk';
+        const savedTheme = localStorage.getItem('theme') || 'retro';
         setCurrentTheme(savedTheme);
         document.documentElement.setAttribute('data-theme', savedTheme);
         navigate('/login');
@@ -101,7 +101,7 @@ const AccountSettingsPage: React.FC = () => {
     }).catch((err: any) => {
       setError(err.response?.data?.message || 'Failed to update theme');
       // Revert theme on error
-      const previousTheme = user?.theme || localStorage.getItem('theme') || 'cyberpunk';
+      const previousTheme = user?.theme || localStorage.getItem('theme') || 'retro';
       setCurrentTheme(previousTheme);
       document.documentElement.setAttribute('data-theme', previousTheme);
     });

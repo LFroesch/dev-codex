@@ -73,18 +73,18 @@ const SessionTracker: React.FC<SessionTrackerProps> = ({
 
   return (
     <div className={`session-tracker ${className}`}>
-      {/* Compact view with backdrop */}
-      <div className="flex items-center gap-2 bg-base-100/80 backdrop-blur-sm rounded-full px-3 py-1.5 border border-base-content/10 shadow-sm hover:bg-base-200/70 transition-all duration-200">
+      {/* Compact view with backdrop - matching project indicator style */}
+      <div className="flex items-center gap-2 px-3 py-1.5 bg-base-100/80 rounded-lg border border-base-content/10 shadow-sm hover:bg-base-200/70 transition-all duration-200 w-28 h-8">
         <div 
           className="tooltip tooltip-left"
           data-tip={`Session: ${formatDuration(sessionInfo.duration)} | Status: ${getActivityStatus(sessionInfo.isActive)}`}
         >
-          <div className={`w-2 h-2 rounded-full ${sessionInfo.isActive ? 'bg-success animate-pulse' : 'bg-info'}`}></div>
+          <div className={`w-2 h-2 rounded-full shadow-sm ${sessionInfo.isActive ? 'bg-success animate-pulse' : 'bg-info'}`}></div>
         </div>
         
         <button
           onClick={() => setIsVisible(!isVisible)}
-          className="text-xs text-base-content/70 hover:text-base-content/90 font-mono font-medium transition-colors duration-200 w-14 text-center"
+          className="text-xs text-base-content/70 hover:text-base-content/90 font-mono font-medium transition-colors duration-200 flex-1 text-center"
         >
           {formatDuration(sessionInfo.duration)}
         </button>

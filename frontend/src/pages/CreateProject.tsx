@@ -52,6 +52,25 @@ const CreateProject: React.FC = () => {
     }));
   };
 
+  const handleAddTag = () => {
+    const input = document.getElementById('new-tag') as HTMLInputElement;
+    const newTag = input?.value.trim();
+    if (newTag && !formData.tags.includes(newTag)) {
+      setFormData(prev => ({
+        ...prev,
+        tags: [...prev.tags, newTag]
+      }));
+      input.value = '';
+    }
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    setFormData(prev => ({
+      ...prev,
+      tags: prev.tags.filter(tag => tag !== tagToRemove)
+    }));
+  };
+
 
   return (
     <div className="min-h-screen bg-base-200 py-8">
@@ -125,8 +144,119 @@ const CreateProject: React.FC = () => {
                     placeholder="Describe your project..."
                     required
                   />
+                </div>
+              </div>
+
+              {/* Optional Metadata */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-base-content/80">Optional Settings</h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {/* Category */}
+                  <div className="form-control">
+                    <label className="label">
+                      <span className="label-text font-medium">Category</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="category"
+                      value={formData.category}
+                      onChange={handleChange}
+                      className="input input-bordered w-full"
+                      placeholder="e.g. Web App, Mobile, API..."
+                    />
+                  </div>
+
+                  {/* Color Picker */}
+                  <div className="form-control">
+                    <label className="label">
+                      <span className="label-text font-medium">Project Color</span>
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        name="color"
+                        value={formData.color}
+                        onChange={handleChange}
+                        className="w-10 h-10 border border-base-300 rounded cursor-pointer flex-shrink-0"
+                      />
+                      <input
+                        type="text"
+                        value={formData.color}
+                        onChange={(e) => setFormData(prev => ({...prev, color: e.target.value}))}
+                        className="input input-bordered flex-1 font-mono text-sm w-5"
+                        placeholder="#3B82F6"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Environment */}
+                  <div className="form-control">
+                    <label className="label">
+                      <span className="label-text font-medium">Environment</span>
+                    </label>
+                    <select
+                      name="stagingEnvironment"
+                      value={formData.stagingEnvironment}
+                      onChange={handleChange}
+                      className="select select-bordered w-full"
+                    >
+                      <option value="development">Development</option>
+                      <option value="staging">Staging</option>
+                      <option value="production">Production</option>
+                    </select>
                   </div>
                 </div>
+
+                {/* Tags */}
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-medium">Tags ({formData.tags.length})</span>
+                  </label>
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <input
+                        id="new-tag"
+                        type="text"
+                        className="input input-bordered flex-1"
+                        placeholder="Add a tag..."
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddTag();
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddTag}
+                        className="btn btn-primary btn-square"
+                      >
+                        +
+                      </button>
+                    </div>
+                    {formData.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {formData.tags.map((tag, index) => (
+                          <span
+                            key={`tag-${index}-${tag}`}
+                            className="badge badge-info gap-2"
+                          >
+                            {tag}
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveTag(tag)}
+                              className="text-info-content hover:text-error text-lg font-bold leading-none"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
 
               {/* Actions */}
               <div className="flex justify-end space-x-4 pt-4">

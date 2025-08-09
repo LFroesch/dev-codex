@@ -81,27 +81,64 @@ const Layout: React.FC = () => {
 
   // Helper function to handle navigation with unsaved changes check
   const handleNavigateWithCheck = async (path: string) => {
+    const currentPath = location.pathname + location.search;
     const canNavigate = await unsavedChangesManager.checkNavigationAllowed();
     if (canNavigate) {
+      // Track navigation
+      analytics.trackNavigation(currentPath, path, {
+        navigationMethod: 'internal_link',
+        hasUnsavedChanges: false
+      });
       navigate(path);
+    } else {
+      // Track blocked navigation due to unsaved changes
+      analytics.trackFeatureUsage('unsaved_changes_protection', 'Layout', {
+        fromPath: currentPath,
+        toPath: path,
+        blocked: true
+      });
     }
   };
 
   // Helper function to select and persist project
   const handleProjectSelect = (project: BaseProject) => {
+    const previousProject = selectedProject;
     setSelectedProject(project);
     localStorage.setItem('selectedProjectId', project.id);
     setSearchTerm(''); // Clear search when selecting a project
+    
+    // Track project selection
+    analytics.trackFeatureUsage('project_selection', 'Layout', {
+      projectId: project.id,
+      projectName: project.name,
+      previousProjectId: previousProject?.id,
+      selectionMethod: 'direct_click',
+      projectCategory: project.category
+    });
+    
     // Scroll to top when selecting a project
     window.scrollTo(0, 0);
   };
 
   // Toggle section collapse
   const toggleSection = (section: string) => {
+    const wasCollapsed = collapsedSections[section];
     setCollapsedSections(prev => ({
       ...prev,
       [section]: !prev[section]
     }));
+    
+    // Track section collapse/expand
+    analytics.trackUIInteraction(
+      'click',
+      `section-${section}`,
+      section,
+      'Layout',
+      {
+        action: wasCollapsed ? 'expand' : 'collapse',
+        sectionName: section
+      }
+    );
   };
 
   // Group projects by category
@@ -434,9 +471,24 @@ const Layout: React.FC = () => {
                     placeholder="Search..."
                     value={searchTerm}
                     onChange={(e) => {
-                      setSearchTerm(e.target.value);
-                      if (e.target.value.trim() && searchParams.get('view') !== 'projects') {
-                        navigate('/notes?view=projects');
+                      const newSearchTerm = e.target.value;
+                      setSearchTerm(newSearchTerm);
+                      
+                      // Track search
+                      if (newSearchTerm.trim()) {
+                        const filteredCount = projects.filter(p => 
+                          p.name.toLowerCase().includes(newSearchTerm.toLowerCase()) ||
+                          (p.category && p.category.toLowerCase().includes(newSearchTerm.toLowerCase()))
+                        ).length;
+                        
+                        analytics.trackSearch(newSearchTerm, filteredCount, 'MobileSearch');
+                        
+                        if (searchParams.get('view') !== 'projects') {
+                          navigate('/notes?view=projects');
+                        }
+                      } else if (searchTerm.trim()) {
+                        // Track search clear
+                        analytics.trackFeatureUsage('search_clear', 'MobileSearch');
                       }
                     }}
                     className="input input-sm input-bordered pl-9 pr-8 w-full bg-base-100/80 backdrop-blur-sm"
@@ -457,7 +509,10 @@ const Layout: React.FC = () => {
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('Create project button clicked');
+                    analytics.trackButtonClick('Create Project', 'MobileHeader', {
+                      location: 'mobile_header',
+                      hasSelectedProject: !!selectedProject
+                    });
                     navigate('/create-project');
                   }}
                   className="btn btn-primary btn-sm btn-circle shadow-sm relative z-50"
@@ -505,7 +560,10 @@ const Layout: React.FC = () => {
               </button>
               <button 
                 className={`btn btn-sm ${location.pathname === '/discover' || location.pathname.startsWith('/discover/') ? 'btn-primary' : 'btn-ghost'} gap-1 font-bold whitespace-nowrap`}
-                onClick={() => handleNavigateWithCheck('/discover')}
+                onClick={() => {
+                  analytics.trackFeatureUsage('discover_button_click', 'Layout');
+                  handleNavigateWithCheck('/discover');
+                }}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -722,7 +780,10 @@ const Layout: React.FC = () => {
             <div className="flex justify-center px-4 py-6">
               <div className="tabs tabs-boxed tabs-lg border border-base-content/10 shadow-sm">
                 <button
-                  onClick={() => setActiveProjectTab('active')}
+                  onClick={() => {
+                    analytics.trackTabSwitch(activeProjectTab, 'active', 'ProjectTabs');
+                    setActiveProjectTab('active');
+                  }}
                   className={`tab tab-lg font-bold text-base ${activeProjectTab === 'active' ? 'tab-active' : ''}`}
                 >
                   Active ({currentProjects.length})

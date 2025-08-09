@@ -26,7 +26,15 @@ class AnalyticsService extends BaseApiService {
   }
 
   async resetAllAnalytics() {
-    return this.delete('/admin/analytics/reset');
+    const response = await fetch('/api/admin/analytics/reset', {
+      method: 'DELETE',
+      credentials: 'include'
+    });
+    return response.json();
+  }
+
+  async getComprehensive(days = 30) {
+    return this.get(`/comprehensive?days=${days}`);
   }
 }
 

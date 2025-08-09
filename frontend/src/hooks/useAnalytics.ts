@@ -95,18 +95,51 @@ export const useAnalytics = (options: UseAnalyticsOptions = {}) => {
   }, []);
 
   return {
+    // Existing methods
     trackFieldEdit,
     trackAction,
     trackFormField,
     getSessionInfo,
-    debugSession: () => analyticsService.debugSessionState(),
     hasActiveSession: () => analyticsService.hasActiveSession(),
     trackPageView: (pageName: string) => analyticsService.trackPageView(pageName),
     trackProjectOpen: (id: string, name: string) => analyticsService.trackProjectOpen(id, name),
     endSession: () => analyticsService.endSession(),
     startSession: () => analyticsService.startSession(),
     setCurrentUser: (userId: string | null) => analyticsService.setCurrentUser(userId),
-    clearUserSession: () => analyticsService.clearUserSession()
+    clearUserSession: () => analyticsService.clearUserSession(),
+    
+    // New comprehensive analytics methods
+    trackFeatureUsage: (featureName: string, componentName?: string, metadata?: Record<string, any>) => 
+      analyticsService.trackFeatureUsage(featureName, componentName, metadata),
+    trackNavigation: (source: string, target: string, metadata?: Record<string, any>) => 
+      analyticsService.trackNavigation(source, target, metadata),
+    trackSearch: (searchTerm: string, resultsCount: number, componentName?: string) => 
+      analyticsService.trackSearch(searchTerm, resultsCount, componentName),
+    trackError: (errorType: string, errorMessage: string, componentName?: string, metadata?: Record<string, any>) => 
+      analyticsService.trackError(errorType, errorMessage, componentName, metadata),
+    trackPerformance: (actionName: string, loadTime: number, componentName?: string, metadata?: Record<string, any>) => 
+      analyticsService.trackPerformance(actionName, loadTime, componentName, metadata),
+    trackUIInteraction: (
+      interactionType: 'click' | 'hover' | 'scroll' | 'keyboard' | 'drag' | 'resize',
+      elementId?: string,
+      elementText?: string,
+      componentName?: string,
+      metadata?: Record<string, any>
+    ) => analyticsService.trackUIInteraction(interactionType, elementId, elementText, componentName, metadata),
+    trackButtonClick: (buttonName: string, componentName?: string, metadata?: Record<string, any>) => 
+      analyticsService.trackButtonClick(buttonName, componentName, metadata),
+    trackTabSwitch: (fromTab: string, toTab: string, componentName?: string) => 
+      analyticsService.trackTabSwitch(fromTab, toTab, componentName),
+    trackFormSubmission: (formName: string, success: boolean, errorMessage?: string, metadata?: Record<string, any>) => 
+      analyticsService.trackFormSubmission(formName, success, errorMessage, metadata),
+    trackModalInteraction: (modalName: string, action: 'open' | 'close' | 'submit' | 'cancel', metadata?: Record<string, any>) => 
+      analyticsService.trackModalInteraction(modalName, action, metadata),
+    trackFileOperation: (operation: 'upload' | 'download' | 'delete' | 'share', fileName?: string, fileSize?: number, success?: boolean) => 
+      analyticsService.trackFileOperation(operation, fileName, fileSize, success),
+    
+    // Debug methods
+    getAnalyticsStats: () => analyticsService.getAnalyticsStats(),
+    flushEvents: () => analyticsService.flushEvents()
   };
 };
 

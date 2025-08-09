@@ -31,7 +31,7 @@ const Layout: React.FC = () => {
   });
   
   const [currentTheme, setCurrentTheme] = useState(() => {
-    return localStorage.getItem('theme') || 'cyberpunk';
+    return localStorage.getItem('theme') || 'retro';
   });
   const [collapsedSections, setCollapsedSections] = useState<{
     [key: string]: boolean;
@@ -415,7 +415,10 @@ const Layout: React.FC = () => {
               {/* Search bar and project info */}
               <div className="flex items-center gap-2 flex-1">
                 {selectedProject && (
-                  <div className="flex items-center gap-1 px-2 py-1 bg-base-100/80 rounded-lg border border-base-content/10 shadow-sm">
+                  <div 
+                    className="flex items-center gap-1 px-2 py-1 bg-base-100/80 rounded-lg border border-base-content/10 shadow-sm cursor-pointer hover:bg-base-200/70 transition-all duration-200"
+                    onClick={() => handleNavigateWithCheck('/notes')}
+                  >
                     <div 
                       className="w-2 h-2 rounded-full shadow-sm"
                       style={{ backgroundColor: selectedProject.color }}
@@ -450,20 +453,28 @@ const Layout: React.FC = () => {
                     </button>
                   )}
                 </div>
+                <div>
                 <button
-                  onClick={() => navigate('/create-project')}
-                  className="btn btn-primary btn-sm btn-circle shadow-sm"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Create project button clicked');
+                    navigate('/create-project');
+                  }}
+                  className="btn btn-primary btn-sm btn-circle shadow-sm relative z-50"
                   title="New Project"
+                  style={{ pointerEvents: 'auto' }}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                   </svg>
                 </button>
+                </div>
               </div>
             </div>
             
             {/* Third row: Navigation buttons */}
-            <div className="flex gap-1 overflow-x-auto scrollbar-hide">
+            <div className="flex my-2 gap-1 overflow-x-auto scrollbar-hide self-center">
               <button 
                 className={`btn btn-sm ${searchParams.get('view') === 'projects' ? 'btn-primary' : 'btn-ghost'} gap-1 font-bold whitespace-nowrap`}
                 onClick={() => handleNavigateWithCheck('/notes?view=projects')}
@@ -519,24 +530,7 @@ const Layout: React.FC = () => {
               
               {/* Search bar */}
               <div className="relative ml-4 flex items-center gap-2">
-                {selectedProject && (
-                  <div className="flex items-center gap-2 px-3 py-1.5 bg-base-100/80 rounded-lg border border-base-content/10 shadow-sm">
-                    <div 
-                      className="w-2 h-2 rounded-full shadow-sm"
-                      style={{ backgroundColor: selectedProject.color }}
-                    ></div>
-                    <span className="text-sm font-medium">{selectedProject.name}</span>
-                    {selectedProject.isShared && (
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                        selectedProject.isOwner ? 'bg-primary text-primary-content' :
-                        selectedProject.userRole === 'editor' ? 'bg-secondary text-secondary-content' :
-                        'bg-base-300 text-base-content'
-                      }`}>
-                        {selectedProject.isOwner ? 'owner' : selectedProject.userRole || 'member'}
-                      </span>
-                    )}
-                  </div>
-                )}
+                
                 <div className="relative">
                   <svg className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-base-content/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -565,9 +559,15 @@ const Layout: React.FC = () => {
                   )}
                 </div>
                 <button
-                  onClick={() => navigate('/create-project')}
-                  className="btn btn-primary btn-sm btn-circle shadow-sm"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Create project button clicked (desktop)');
+                    navigate('/create-project');
+                  }}
+                  className="btn btn-primary btn-sm btn-circle shadow-sm relative z-50"
                   title="New Project"
+                  style={{ pointerEvents: 'auto' }}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -617,6 +617,27 @@ const Layout: React.FC = () => {
             
             {user ? (
               <div className="flex items-center gap-0 bg-base-200/50 backdrop-blur-sm border border-base-content/10 rounded-xl px-2 py-2 h-12 shadow-sm">
+                {selectedProject && (
+                  <div 
+                    className="flex items-center gap-2 px-3 py-1.5 bg-base-100/80 rounded-lg border border-base-content/10 shadow-sm mr-2 cursor-pointer hover:bg-base-200/70 transition-all duration-200 h-8"
+                    onClick={() => handleNavigateWithCheck('/notes')}
+                  >
+                    <div 
+                      className="w-2 h-2 rounded-full shadow-sm"
+                      style={{ backgroundColor: selectedProject.color }}
+                    ></div>
+                    <span className="text-sm font-medium">{selectedProject.name}</span>
+                    {selectedProject.isShared && (
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                        selectedProject.isOwner ? 'bg-primary text-primary-content' :
+                        selectedProject.userRole === 'editor' ? 'bg-secondary text-secondary-content' :
+                        'bg-base-300 text-base-content'
+                      }`}>
+                        {selectedProject.isOwner ? 'owner' : selectedProject.userRole || 'member'}
+                      </span>
+                    )}
+                  </div>
+                )}
                 <SessionTracker 
                   projectId={selectedProject?.id}
                   currentUserId={user?.id}
@@ -742,7 +763,16 @@ const Layout: React.FC = () => {
                           </div>
                           <h3 className="text-2xl font-bold mb-3 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">No active projects</h3>
                           <p className="text-base-content/60 mb-6">Create your first project to get started</p>
-                          <button onClick={() => navigate('/create-project')} className="btn btn-primary btn-lg gap-2">
+                          <button 
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              console.log('Create project button clicked (no projects)');
+                              navigate('/create-project');
+                            }} 
+                            className="btn btn-primary btn-lg gap-2 relative z-50"
+                            style={{ pointerEvents: 'auto' }}
+                          >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                             </svg>
@@ -784,7 +814,7 @@ const Layout: React.FC = () => {
                                     }}
                                     className={`btn btn-lg w-full justify-start gap-3 h-auto py-4 min-h-[6rem] ${
                                       selectedProject?.id === project.id 
-                                        ? 'btn-primary border-2 border-primary ring-2 ring-primary/20 shadow-lg' 
+                                        ? 'btn-primary border-2 border-primary ring-4 ring-primary/20 shadow-lg' 
                                         : 'btn-ghost bg-base-100 hover:bg-base-200 border border-base-content/10 shadow-md'
                                     }`}
                                   >
@@ -854,7 +884,7 @@ const Layout: React.FC = () => {
                                   }}
                                   className={`btn btn-lg w-full justify-start gap-3 h-auto py-4 min-h-[6rem] ${
                                     selectedProject?.id === project.id 
-                                      ? 'btn-primary border-2 border-primary ring-2 ring-primary/20 shadow-lg' 
+                                      ? 'btn-primary border-2 border-primary ring-4 ring-primary/20 shadow-lg' 
                                       : 'btn-ghost bg-base-100 hover:bg-base-200 border border-base-content/10 shadow-md'
                                   }`}
                                 >
@@ -923,7 +953,7 @@ const Layout: React.FC = () => {
                                   }}
                                   className={`btn btn-lg w-full justify-start gap-3 h-auto py-4 min-h-[6rem] ${
                                     selectedProject?.id === project.id 
-                                      ? 'btn-primary border-2 border-primary ring-2 ring-primary/20 shadow-lg' 
+                                      ? 'btn-primary border-2 border-primary ring-4 ring-primary/20 shadow-lg' 
                                       : 'btn-ghost bg-base-100 hover:bg-base-200 border border-base-content/10 shadow-md'
                                   }`}
                                 >

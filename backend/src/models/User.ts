@@ -51,7 +51,7 @@ const userSchema = new Schema<IUser>({
   },
   theme: {
     type: String,
-    default: 'cyberpunk',
+    default: 'retro',
     enum: [
       "dim", "light", "dark", "cupcake", "bumblebee", "emerald", "corporate",
       "synthwave", "retro", "cyberpunk", "valentine", "halloween", "garden",

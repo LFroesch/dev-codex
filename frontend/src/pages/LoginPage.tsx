@@ -11,7 +11,7 @@ const LoginPage: React.FC = () => {
 
   useEffect(() => {
     // Apply saved theme on login page
-    const savedTheme = localStorage.getItem('theme') || 'cyberpunk';
+    const savedTheme = localStorage.getItem('theme') || 'retro';
     document.documentElement.setAttribute('data-theme', savedTheme);
   }, []);
 

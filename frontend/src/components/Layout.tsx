@@ -180,7 +180,6 @@ const Layout: React.FC = () => {
           setCurrentTheme(userTheme);
           localStorage.setItem('theme', userTheme);
           document.documentElement.setAttribute('data-theme', userTheme);
-          console.log(`Applied user theme: ${userTheme}`);
         }
         
         // Set current user for analytics

@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import Analytics from '../models/Analytics';
 import UserSession from '../models/UserSession';
 import { v4 as uuidv4 } from 'uuid';
+import mongoose from 'mongoose';
 
 interface AuthenticatedRequest extends Request {
   userId?: string;
@@ -12,7 +13,7 @@ interface AuthenticatedRequest extends Request {
 export class AnalyticsService {
   static async trackEvent(
     userId: string,
-    eventType: 'project_open' | 'field_edit' | 'session_start' | 'session_end' | 'page_view' | 'action',
+    eventType: 'project_open' | 'field_edit' | 'session_start' | 'session_end' | 'page_view' | 'action' | 'feature_usage' | 'navigation' | 'search' | 'error' | 'performance' | 'ui_interaction',
     eventData: any,
     req?: Request
   ) {
@@ -198,6 +199,216 @@ export class AnalyticsService {
     } catch (error) {
       console.error('Error getting user analytics:', error);
       return null;
+    }
+  }
+
+  // Add a method to run raw queries for comprehensive analytics
+  static async runQuery(query: string, params: any[] = []) {
+    try {
+      // For MongoDB, we'll need to adapt SQL-like queries to MongoDB aggregation
+      // This is a simplified implementation - in production you'd want proper query building
+      if (query.includes('feature_usage')) {
+        const days = params[0] || 30;
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - days);
+        
+        const result = await Analytics.aggregate([
+          {
+            $match: {
+              eventType: 'feature_usage',
+              timestamp: { $gte: startDate }
+            }
+          },
+          {
+            $group: {
+              _id: {
+                feature_name: '$eventData.featureName',
+                component_name: '$eventData.componentName'
+              },
+              usage_count: { $sum: 1 },
+              last_used: { $max: '$timestamp' }
+            }
+          },
+          {
+            $project: {
+              feature_name: '$_id.feature_name',
+              component_name: '$_id.component_name',
+              usage_count: 1,
+              last_used: 1,
+              _id: 0
+            }
+          },
+          { $sort: { usage_count: -1 } }
+        ]);
+        
+        return result;
+      }
+      
+      if (query.includes('navigation')) {
+        const days = params[0] || 30;
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - days);
+        
+        return await Analytics.aggregate([
+          {
+            $match: {
+              eventType: 'navigation',
+              timestamp: { $gte: startDate }
+            }
+          },
+          {
+            $group: {
+              _id: {
+                from_page: '$eventData.navigationSource',
+                to_page: '$eventData.navigationTarget'
+              },
+              count: { $sum: 1 }
+            }
+          },
+          {
+            $project: {
+              from_page: '$_id.from_page',
+              to_page: '$_id.to_page',
+              count: 1,
+              _id: 0
+            }
+          },
+          { $sort: { count: -1 } },
+          { $limit: 10 }
+        ]);
+      }
+      
+      if (query.includes('search')) {
+        const days = params[0] || 30;
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - days);
+        
+        return await Analytics.aggregate([
+          {
+            $match: {
+              eventType: 'search',
+              timestamp: { $gte: startDate }
+            }
+          },
+          {
+            $group: {
+              _id: '$eventData.searchTerm',
+              search_count: { $sum: 1 },
+              avg_results: { $avg: '$eventData.searchResultsCount' }
+            }
+          },
+          {
+            $project: {
+              search_term: '$_id',
+              search_count: 1,
+              avg_results: { $round: ['$avg_results', 1] },
+              _id: 0
+            }
+          },
+          { $sort: { search_count: -1 } },
+          { $limit: 10 }
+        ]);
+      }
+      
+      if (query.includes('error')) {
+        const days = params[0] || 30;
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - days);
+        
+        return await Analytics.aggregate([
+          {
+            $match: {
+              eventType: 'error',
+              timestamp: { $gte: startDate }
+            }
+          },
+          {
+            $group: {
+              _id: '$eventData.errorType',
+              error_count: { $sum: 1 },
+              last_occurrence: { $max: '$timestamp' }
+            }
+          },
+          {
+            $project: {
+              error_type: '$_id',
+              error_count: 1,
+              last_occurrence: 1,
+              _id: 0
+            }
+          },
+          { $sort: { error_count: -1 } }
+        ]);
+      }
+      
+      if (query.includes('performance')) {
+        const days = params[0] || 30;
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - days);
+        
+        return await Analytics.aggregate([
+          {
+            $match: {
+              eventType: 'performance',
+              timestamp: { $gte: startDate }
+            }
+          },
+          {
+            $group: {
+              _id: '$eventData.actionType',
+              avg_duration: { $avg: '$eventData.duration' },
+              max_duration: { $max: '$eventData.duration' },
+              count: { $sum: 1 }
+            }
+          },
+          {
+            $project: {
+              action_type: '$_id',
+              avg_duration: { $round: ['$avg_duration', 0] },
+              max_duration: { $round: ['$max_duration', 0] },
+              count: 1,
+              _id: 0
+            }
+          },
+          { $sort: { avg_duration: -1 } }
+        ]);
+      }
+      
+      if (query.includes('ui_interaction')) {
+        const days = params[0] || 30;
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - days);
+        
+        const result = await Analytics.aggregate([
+          {
+            $match: {
+              eventType: 'ui_interaction',
+              timestamp: { $gte: startDate }
+            }
+          },
+          {
+            $group: {
+              _id: '$eventData.interactionType',
+              interaction_count: { $sum: 1 }
+            }
+          },
+          {
+            $project: {
+              interaction_type: '$_id',
+              interaction_count: 1,
+              _id: 0
+            }
+          },
+          { $sort: { interaction_count: -1 } }
+        ]);
+        
+        return result;
+      }
+      
+      return [];
+    } catch (error) {
+      console.error('Error running analytics query:', error);
+      return [];
     }
   }
 }

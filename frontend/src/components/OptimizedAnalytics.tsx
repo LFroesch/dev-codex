@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { analyticsAPI } from '../api/analytics';
 
 // Add CSS animations
 const styles = `
@@ -50,14 +51,15 @@ interface OptimizedAnalyticsProps {
 
 // Simple cache with 5-minute expiry
 const cache = new Map<string, { data: any; timestamp: number }>();
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL = 1 * 60 * 1000; // 1 minute
 
 const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytics }) => {
   const [data, setData] = useState<CombinedAnalyticsData | null>(null);
+  const [comprehensiveData, setComprehensiveData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState(30);
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'projects'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'projects' | 'features'>('overview');
   const [lastFetch, setLastFetch] = useState<number>(0);
 
   // Cache-aware fetch function
@@ -77,18 +79,22 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
       setLoading(true);
       setError(null);
 
-      // Single API call for all analytics data
-      const response = await fetch(`/api/admin/analytics/combined?days=${days}&limit=10`, {
-        credentials: 'include'
-      });
+      // Fetch both regular analytics and comprehensive data
+      const [analyticsResponse, comprehensiveResponse] = await Promise.all([
+        fetch(`/api/admin/analytics/combined?days=${days}&limit=10`, {
+          credentials: 'include'
+        }),
+        analyticsAPI.getComprehensive(days).catch(() => ({ featureUsage: [], navigation: [], searches: [], errors: [], summary: {} }))
+      ]);
 
-      if (!response.ok) throw new Error('Failed to load analytics');
+      if (!analyticsResponse.ok) throw new Error('Failed to load analytics');
       
-      const analyticsData = await response.json();
+      const analyticsData = await analyticsResponse.json();
       
       // Cache the data
       cache.set(cacheKey, { data: analyticsData, timestamp: now });
       setData(analyticsData);
+      setComprehensiveData(comprehensiveResponse);
       setLastFetch(now);
     } catch (err) {
       setError('Failed to load analytics data');
@@ -106,6 +112,13 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
 
     return () => clearTimeout(timer);
   }, [selectedPeriod, fetchAnalytics]);
+
+  // Force refresh when switching to features tab
+  useEffect(() => {
+    if (activeTab === 'features') {
+      fetchAnalytics(selectedPeriod, true);
+    }
+  }, [activeTab, selectedPeriod, fetchAnalytics]);
 
   // Auto-refresh every 2 minutes
   useEffect(() => {
@@ -239,11 +252,195 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
             </table>
           </div>
         );
+
+      case 'features':
+        return (
+          <div className="space-y-6">
+            
+            {/* Quick Stats Overview */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              <div className="stat bg-primary/10 rounded-lg p-4">
+                <div className="stat-title text-xs">Feature Usage</div>
+                <div className="stat-value text-lg">{comprehensiveData?.summary?.totalFeatureUsage || 0}</div>
+                <div className="stat-desc">Total interactions</div>
+              </div>
+              <div className="stat bg-secondary/10 rounded-lg p-4">
+                <div className="stat-title text-xs">Navigation Events</div>
+                <div className="stat-value text-lg">{comprehensiveData?.summary?.totalNavigationEvents || 0}</div>
+                <div className="stat-desc">User flows tracked</div>
+              </div>
+              <div className="stat bg-accent/10 rounded-lg p-4">
+                <div className="stat-title text-xs">Search Queries</div>
+                <div className="stat-value text-lg">{comprehensiveData?.summary?.totalSearches || 0}</div>
+                <div className="stat-desc">Search interactions</div>
+              </div>
+              <div className="stat bg-warning/10 rounded-lg p-4">
+                <div className="stat-title text-xs">Errors Tracked</div>
+                <div className="stat-value text-lg">{comprehensiveData?.summary?.totalErrors || 0}</div>
+                <div className="stat-desc">Issues logged</div>
+              </div>
+              <div className="stat bg-info/10 rounded-lg p-4">
+                <div className="stat-title text-xs">Performance</div>
+                <div className="stat-value text-lg">{comprehensiveData?.summary?.totalPerformanceEvents || 0}</div>
+                <div className="stat-desc">Metrics tracked</div>
+              </div>
+              <div className="stat bg-success/10 rounded-lg p-4">
+                <div className="stat-title text-xs">UI Interactions</div>
+                <div className="stat-value text-lg">{comprehensiveData?.summary?.totalUIInteractions || 0}</div>
+                <div className="stat-desc">User actions</div>
+              </div>
+            </div>
+
+            {/* Tracking Categories */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              
+              {/* Feature Usage Tracking */}
+              <div className="card bg-base-100 shadow-sm border-l-4 border-l-primary">
+                <div className="card-body">
+                  <h3 className="card-title text-sm">🎯 Feature Usage</h3>
+                  <div className="space-y-2 text-xs">
+                    {comprehensiveData?.featureUsage?.length > 0 ? (
+                      comprehensiveData.featureUsage.slice(0, 5).map((item: any, index: number) => (
+                        <div key={index} className="flex justify-between">
+                          <span>{item.feature_name || 'Unknown Feature'}</span>
+                          <span className="badge badge-primary badge-xs">{item.usage_count}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-xs opacity-70">
+                        No feature usage data recorded in the selected time period.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Navigation Tracking */}
+              <div className="card bg-base-100 shadow-sm border-l-4 border-l-secondary">
+                <div className="card-body">
+                  <h3 className="card-title text-sm">🧭 Navigation Flow</h3>
+                  <div className="space-y-2 text-xs">
+                    {comprehensiveData?.navigation?.length > 0 ? (
+                      <>
+                        <div>Top Paths:</div>
+                        {comprehensiveData.navigation.slice(0, 3).map((item: any, index: number) => (
+                          <div key={index} className="bg-base-200 p-2 rounded font-mono">
+                            {item.from_page || 'Unknown'} → {item.to_page || 'Unknown'} ({item.count})
+                          </div>
+                        ))}
+                      </>
+                    ) : (
+                      <div className="text-xs opacity-70">
+                        No navigation data recorded in the selected time period.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Performance Tracking */}
+              <div className="card bg-base-100 shadow-sm border-l-4 border-l-accent">
+                <div className="card-body">
+                  <h3 className="card-title text-sm">⚡ Performance</h3>
+                  <div className="space-y-2 text-xs">
+                    {comprehensiveData?.performance?.length > 0 ? (
+                      comprehensiveData.performance.slice(0, 3).map((item: any, index: number) => (
+                        <div key={index} className="flex justify-between">
+                          <span>{item.action_type || 'Unknown Action'}</span>
+                          <span className={`badge badge-xs ${item.avg_duration > 2000 ? 'badge-error' : item.avg_duration > 1000 ? 'badge-warning' : 'badge-success'}`}>
+                            {item.avg_duration}ms
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-xs opacity-70">
+                        No performance data recorded in the selected time period.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Error Tracking */}
+              <div className="card bg-base-100 shadow-sm border-l-4 border-l-error">
+                <div className="card-body">
+                  <h3 className="card-title text-sm">🚨 Error Monitoring</h3>
+                  <div className="space-y-2 text-xs">
+                    {comprehensiveData?.errors?.length > 0 ? (
+                      comprehensiveData.errors.slice(0, 3).map((item: any, index: number) => (
+                        <div key={index} className="flex justify-between">
+                          <span>{item.error_type || 'Unknown Error'}</span>
+                          <span className={`badge badge-xs ${item.error_count > 10 ? 'badge-error' : 'badge-warning'}`}>
+                            {item.error_count}
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-xs opacity-70">
+                        No errors recorded in the selected time period.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* UI Interaction Tracking */}
+              <div className="card bg-base-100 shadow-sm border-l-4 border-l-info">
+                <div className="card-body">
+                  <h3 className="card-title text-sm">👆 UI Interactions</h3>
+                  <div className="space-y-2 text-xs">
+                    {comprehensiveData?.uiInteractions?.length > 0 ? (
+                      comprehensiveData.uiInteractions.slice(0, 3).map((item: any, index: number) => (
+                        <div key={index} className="flex justify-between">
+                          <span>{item.interaction_type || 'Unknown Interaction'}</span>
+                          <span className="badge badge-info badge-xs">{item.interaction_count}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-xs opacity-70">
+                        No UI interactions recorded in the selected time period.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Search Analytics */}
+              <div className="card bg-base-100 shadow-sm border-l-4 border-l-warning">
+                <div className="card-body">
+                  <h3 className="card-title text-sm">🔍 Search Analytics</h3>
+                  <div className="space-y-2 text-xs">
+                    {comprehensiveData?.searches?.length > 0 ? (
+                      <>
+                        <div>Top Searches:</div>
+                        <div className="space-y-1">
+                          {comprehensiveData.searches.slice(0, 3).map((item: any, index: number) => (
+                            <div key={index} className="flex justify-between">
+                              <span>"{item.search_term || 'Empty Query'}"</span>
+                              <span className="badge badge-warning badge-xs">{item.search_count}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="text-xs opacity-70">
+                          {comprehensiveData.searches.filter((item: any) => item.avg_results === 0).length} searches with 0 results
+                        </div>
+                      </>
+                    ) : (
+                      <div className="text-xs opacity-70">
+                        No search data recorded in the selected time period.
+                      </div>
+                    )}
+                </div>
+              </div>
+            </div>     
+          </div>
+        </div>
+        );
       
       default:
         return null;
     }
-  }, [data, activeTab, formatTime, formatDate]);
+  }, [data, comprehensiveData, activeTab, formatTime, formatDate]);
 
   if (loading && !data) {
     return (
@@ -293,7 +490,7 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
   return (
     <>
       <style>{styles}</style>
-      <div className="card bg-base-100 shadow-lg">
+      <div className="card bg-base-100 border border-base-content/10 shadow-lg">
         <div className="card-body p-4">
           {/* Compact Header */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
@@ -335,24 +532,30 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
           {/* Compact Tabs */}
           <div className="flex justify-center mb-4">
             <div className="tabs tabs-boxed tabs-lg bg-base-200 shadow-lg border border-base-content/10">
-            <button 
-              className={`tab tab-lg font-bold text-base ${activeTab === 'overview' ? 'tab-active' : ''}`}
-              onClick={() => setActiveTab('overview')}
-            >
-              📈 Overview
-            </button>
-            <button 
-              className={`tab tab-lg font-bold text-base ${activeTab === 'users' ? 'tab-active' : ''}`}
-              onClick={() => setActiveTab('users')}
-            >
-              👥 Top Users
-            </button>
-            <button 
-              className={`tab tab-lg font-bold text-base ${activeTab === 'projects' ? 'tab-active' : ''}`}
-              onClick={() => setActiveTab('projects')}
-            >
-              🚀 Top Projects
-            </button>
+              <button 
+                className={`tab tab-lg font-bold text-base ${activeTab === 'overview' ? 'tab-active' : ''}`}
+                onClick={() => setActiveTab('overview')}
+              >
+                📈 Overview
+              </button>
+              <button 
+                className={`tab tab-lg font-bold text-base ${activeTab === 'users' ? 'tab-active' : ''}`}
+                onClick={() => setActiveTab('users')}
+              >
+                👥 Top Users
+              </button>
+              <button 
+                className={`tab tab-lg font-bold text-base ${activeTab === 'projects' ? 'tab-active' : ''}`}
+                onClick={() => setActiveTab('projects')}
+              >
+                🚀 Top Projects
+              </button>
+              <button 
+                className={`tab tab-lg font-bold text-base ${activeTab === 'features' ? 'tab-active' : ''}`}
+                onClick={() => setActiveTab('features')}
+              >
+                📊 All Tracking
+              </button>
             </div>
           </div>
 

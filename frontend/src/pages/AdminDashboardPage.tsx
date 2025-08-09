@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { analyticsAPI } from '../api';
 import OptimizedAnalytics from '../components/OptimizedAnalytics';
+import analyticsService from '../services/analytics';
 
 interface User {
   _id: string;
@@ -266,9 +267,10 @@ const AdminDashboardPage: React.FC = () => {
 
   useEffect(() => {
     const loadData = async () => {
+      const startTime = performance.now();
       setLoading(true);
+      
       try {
-        // Load admin data
         if (activeTab === 'users') {
           await Promise.all([fetchUsers(1), fetchStats()]);
         } else {
@@ -278,6 +280,13 @@ const AdminDashboardPage: React.FC = () => {
         console.error('Failed to load data:', err);
       } finally {
         setLoading(false);
+        
+        // Track performance
+        const loadTime = performance.now() - startTime;
+        analyticsService.trackPerformance(`admin_dashboard_${activeTab}_load`, loadTime, 'AdminDashboardPage', {
+          tab: activeTab,
+          ticketStatus: ticketStatusTab
+        });
       }
     };
     

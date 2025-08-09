@@ -3,7 +3,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 export interface IAnalytics extends Document {
   userId: string;
   sessionId?: string;
-  eventType: 'project_open' | 'field_edit' | 'session_start' | 'session_end' | 'page_view' | 'action';
+  eventType: 'project_open' | 'field_edit' | 'session_start' | 'session_end' | 'page_view' | 'action' | 'feature_usage' | 'navigation' | 'search' | 'error' | 'performance' | 'ui_interaction';
   eventData: {
     projectId?: string;
     projectName?: string;
@@ -15,6 +15,18 @@ export interface IAnalytics extends Document {
     actionName?: string;
     duration?: number; // For session events
     metadata?: Record<string, any>;
+    // New event data fields
+    featureName?: string;
+    componentName?: string;
+    navigationSource?: string;
+    navigationTarget?: string;
+    searchTerm?: string;
+    searchResultsCount?: number;
+    errorType?: string;
+    errorMessage?: string;
+    actionType?: string;
+    interactionType?: string;
+    elementId?: string;
   };
   timestamp: Date;
   userAgent?: string;
@@ -35,7 +47,7 @@ const analyticsSchema: Schema = new Schema({
   eventType: {
     type: String,
     required: true,
-    enum: ['project_open', 'field_edit', 'session_start', 'session_end', 'page_view', 'action'],
+    enum: ['project_open', 'field_edit', 'session_start', 'session_end', 'page_view', 'action', 'feature_usage', 'navigation', 'search', 'error', 'performance', 'ui_interaction'],
     index: true
   },
   eventData: {
@@ -48,7 +60,19 @@ const analyticsSchema: Schema = new Schema({
     pageName: String,
     actionName: String,
     duration: Number,
-    metadata: Schema.Types.Mixed
+    metadata: Schema.Types.Mixed,
+    // New event data fields
+    featureName: String,
+    componentName: String,
+    navigationSource: String,
+    navigationTarget: String,
+    searchTerm: String,
+    searchResultsCount: Number,
+    errorType: String,
+    errorMessage: String,
+    actionType: String,
+    interactionType: String,
+    elementId: String
   },
   timestamp: {
     type: Date,

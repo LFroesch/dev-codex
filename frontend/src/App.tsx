@@ -34,7 +34,7 @@ const queryClient = new QueryClient();
 const App: React.FC = () => {
   useEffect(() => {
     // Apply saved theme on app load
-    const savedTheme = localStorage.getItem('theme') || 'cyberpunk';
+    const savedTheme = localStorage.getItem('theme') || 'retro';
     document.documentElement.setAttribute('data-theme', savedTheme);
   }, []);
 

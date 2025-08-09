@@ -42,7 +42,7 @@ A modern, clean full-stack development platform designed for developers and team
 
 ### Frontend (`frontend/`)
 - **Framework**: React 18 + TypeScript + Vite
-- **Styling**: Tailwind CSS + DaisyUI components (Cyberpunk theme)
+- **Styling**: Tailwind CSS + DaisyUI components (Retro theme)
 - **API Layer**: Modular services with BaseApiService pattern
 - **State Management**: Custom hooks for loading, errors, and resources
 - **Routing**: React Router v6 with nested layouts

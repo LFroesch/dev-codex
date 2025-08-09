@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import analyticsService from '../services/analytics';
 
@@ -20,25 +20,27 @@ export const useAnalytics = (options: UseAnalyticsOptions = {}) => {
   const location = useLocation();
   const previousValues = useRef<Record<string, any>>({});
   const sessionInitialized = useRef(false);
+  const [sessionReady, setSessionReady] = useState(false);
 
   // Start session only once per app lifecycle
   useEffect(() => {
     if (!sessionInitialized.current) {
       analyticsService.startSession().then(() => {
-        console.log('Analytics session initialized');
+        setSessionReady(true);
       }).catch(error => {
         console.error('Failed to initialize analytics session:', error);
+        setSessionReady(true); // Set to true anyway to avoid blocking
       });
       sessionInitialized.current = true;
     }
   }, []);
 
-  // Track page views
+  // Track page views - only after session is ready
   useEffect(() => {
-    if (trackPageViews) {
+    if (trackPageViews && sessionReady) {
       analyticsService.trackPageView(location.pathname);
     }
-  }, [location.pathname, trackPageViews]);
+  }, [location.pathname, trackPageViews, sessionReady]);
 
   // Track project opens
   useEffect(() => {

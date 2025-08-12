@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { analyticsAPI } from '../api';
 import OptimizedAnalytics from '../components/OptimizedAnalytics';
+import ConfirmationModal from '../components/ConfirmationModal';
 import analyticsService from '../services/analytics';
 
 interface User {
@@ -1094,112 +1095,45 @@ const AdminDashboardPage: React.FC = () => {
           </div>
         )}
 
-        {/* Delete User Confirmation Modal */}
-        {showDeleteConfirm && userToDelete && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-base-100 rounded-lg shadow-xl p-6 w-full max-w-md">
-              <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-error/10 rounded-full">
-                <svg className="w-8 h-8 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                </svg>
-              </div>
-              
-              <h3 className="text-xl font-bold text-center mb-4">Delete User Account</h3>
-              
-              <p className="text-center text-base-content/70 mb-6">
-                Are you sure you want to delete <strong>{userToDelete.firstName} {userToDelete.lastName}</strong>?
-              </p>
-              
-              <div className="bg-error/10 p-4 rounded-lg mb-6">
-                <p className="text-sm text-error font-semibold mb-2">⚠️ This action cannot be undone!</p>
-                <ul className="text-sm text-base-content/70 space-y-1">
-                  <li>• User account will be permanently deleted</li>
-                  <li>• All user projects will be deleted</li>
-                  <li>• User data cannot be recovered</li>
-                </ul>
-              </div>
+        <ConfirmationModal
+          isOpen={showDeleteConfirm && !!userToDelete}
+          onConfirm={() => deleteUser(userToDelete?._id!)}
+          onCancel={() => {
+            setShowDeleteConfirm(false);
+            setUserToDelete(null);
+          }}
+          title="Delete User Account"
+          message={`Are you sure you want to delete <strong>${userToDelete?.firstName} ${userToDelete?.lastName}</strong>?<br/><br/>
+            <div style="background: rgb(248 113 113 / 0.1); padding: 1rem; border-radius: 0.5rem; margin: 1rem 0;">
+              <p style="color: rgb(248 113 113); font-weight: 600; margin-bottom: 0.5rem;">⚠️ This action cannot be undone!</p>
+              <ul style="color: rgb(138 138 138); font-size: 0.875rem; margin: 0; padding-left: 1rem;">
+                <li>• User account will be permanently deleted</li>
+                <li>• All user projects will be deleted</li>
+                <li>• User data cannot be recovered</li>
+              </ul>
+            </div>`}
+          confirmText="Delete User"
+          variant="error"
+        />
 
-              <div className="flex gap-3">
-                <button 
-                  className="btn btn-ghost flex-1"
-                  onClick={() => {
-                    setShowDeleteConfirm(false);
-                    setUserToDelete(null);
-                  }}
-                >
-                  Cancel
-                </button>
-                <button 
-                  className="btn btn-error flex-1"
-                  onClick={() => deleteUser(userToDelete._id)}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                  Delete User
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Analytics Reset Confirmation Modal */}
-        {showAnalyticsResetConfirm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-base-100 rounded-lg shadow-xl p-6 w-full max-w-md">
-              <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-error/10 rounded-full">
-                <svg className="w-8 h-8 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                </svg>
-              </div>
-              
-              <h3 className="text-xl font-bold text-center mb-4">Reset Analytics Data</h3>
-              
-              <p className="text-center text-base-content/70 mb-6">
-                Are you sure you want to reset all analytics data? This will clear all session tracking and user activity data.
-              </p>
-              
-              <div className="bg-error/10 p-4 rounded-lg mb-6">
-                <p className="text-sm text-error font-semibold mb-2">⚠️ This action cannot be undone!</p>
-                <ul className="text-sm text-base-content/70 space-y-1">
-                  <li>• All analytics events will be deleted</li>
-                  <li>• All user session data will be cleared</li>
-                  <li>• Historical usage data will be lost</li>
-                  <li>• This is useful for dev/testing environments</li>
-                </ul>
-              </div>
-
-              <div className="flex gap-3">
-                <button 
-                  className="btn btn-ghost flex-1"
-                  onClick={() => setShowAnalyticsResetConfirm(false)}
-                  disabled={resettingAnalytics}
-                >
-                  Cancel
-                </button>
-                <button 
-                  className="btn btn-error flex-1"
-                  onClick={resetAnalytics}
-                  disabled={resettingAnalytics}
-                >
-                  {resettingAnalytics ? (
-                    <>
-                      <span className="loading loading-spinner loading-sm"></span>
-                      Resetting...
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.001 8.001 0 01-15.357-2m15.357 2H15" />
-                      </svg>
-                      Reset Analytics
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        <ConfirmationModal
+          isOpen={showAnalyticsResetConfirm}
+          onConfirm={resetAnalytics}
+          onCancel={() => setShowAnalyticsResetConfirm(false)}
+          title="Reset Analytics Data"
+          message={`Are you sure you want to reset all analytics data? This will clear all session tracking and user activity data.<br/><br/>
+            <div style="background: rgb(248 113 113 / 0.1); padding: 1rem; border-radius: 0.5rem; margin: 1rem 0;">
+              <p style="color: rgb(248 113 113); font-weight: 600; margin-bottom: 0.5rem;">⚠️ This action cannot be undone!</p>
+              <ul style="color: rgb(138 138 138); font-size: 0.875rem; margin: 0; padding-left: 1rem;">
+                <li>• All analytics events will be deleted</li>
+                <li>• All user session data will be cleared</li>
+                <li>• Historical usage data will be lost</li>
+                <li>• This is useful for dev/testing environments</li>
+              </ul>
+            </div>`}
+          confirmText={resettingAnalytics ? "Resetting..." : "Reset Analytics"}
+          variant="error"
+        />
     </div>
   );
 };

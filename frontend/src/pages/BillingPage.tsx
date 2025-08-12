@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../api';
+import ConfirmationModal from '../components/ConfirmationModal';
 
 interface BillingInfo {
   planTier: 'free' | 'pro' | 'enterprise';
@@ -521,52 +522,16 @@ const BillingPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Cancel Subscription Confirmation Modal */}
-      {showCancelConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-base-100 rounded-lg shadow-xl p-6 w-full max-w-md">
-            <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-warning/10 rounded-full">
-              <svg className="w-8 h-8 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-              </svg>
-            </div>
-            
-            <h3 className="text-xl font-bold text-center mb-4">Cancel Subscription</h3>
-            
-            <p className="text-center text-base-content/70 mb-6">
-              Are you sure you want to cancel your subscription? You'll retain access until the end of your billing period, but you won't be charged again.
-            </p>
-
-            <div className="flex gap-3">
-              <button 
-                className="btn btn-ghost flex-1"
-                onClick={() => setShowCancelConfirm(false)}
-              >
-                Keep Subscription
-              </button>
-              <button 
-                className="btn btn-error flex-1"
-                onClick={handleCancelSubscription}
-                disabled={cancelLoading}
-              >
-                {cancelLoading ? (
-                  <>
-                    <span className="loading loading-spinner loading-sm"></span>
-                    Canceling...
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                    Cancel Subscription
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmationModal
+        isOpen={showCancelConfirm}
+        onConfirm={handleCancelSubscription}
+        onCancel={() => setShowCancelConfirm(false)}
+        title="Cancel Subscription"
+        message="Are you sure you want to cancel your subscription? You'll retain access until the end of your billing period, but you won't be charged again."
+        confirmText={cancelLoading ? "Canceling..." : "Cancel Subscription"}
+        cancelText="Keep Subscription"
+        variant="warning"
+      />
     </div>
   );
 };

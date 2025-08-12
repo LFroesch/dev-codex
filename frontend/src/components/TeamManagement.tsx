@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { teamAPI, TeamMember, InviteUserData } from '../api';
 import ActivityLog from './ActivityLog';
 import ActiveUsers from './ActiveUsers';
+import ConfirmationModal from './ConfirmationModal';
+import InfoModal from './InfoModal';
 
 interface TeamManagementProps {
   projectId: string;
@@ -220,98 +222,34 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
         />
       </div>
 
-      {/* Success Modal */}
-      {showSuccessModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-base-100 rounded-lg shadow-xl p-6 w-full max-w-md">
-            <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-success/10 rounded-full">
-              <svg className="w-8 h-8 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            
-            <h3 className="text-xl font-bold text-center mb-4">Success</h3>
-            
-            <p className="text-center text-base-content/70 mb-6">
-              {modalMessage}
-            </p>
+      <InfoModal
+        isOpen={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        title="Success"
+        message={modalMessage}
+        variant="success"
+      />
 
-            <div className="flex justify-center">
-              <button 
-                className="btn btn-primary"
-                onClick={() => setShowSuccessModal(false)}
-              >
-                OK
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <InfoModal
+        isOpen={showErrorModal}
+        onClose={() => setShowErrorModal(false)}
+        title="Error"
+        message={modalMessage}
+        variant="error"
+      />
 
-      {/* Error Modal */}
-      {showErrorModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-base-100 rounded-lg shadow-xl p-6 w-full max-w-md">
-            <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-error/10 rounded-full">
-              <svg className="w-8 h-8 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </div>
-            
-            <h3 className="text-xl font-bold text-center mb-4">Error</h3>
-            
-            <p className="text-center text-base-content/70 mb-6">
-              {modalMessage}
-            </p>
-
-            <div className="flex justify-center">
-              <button 
-                className="btn btn-primary"
-                onClick={() => setShowErrorModal(false)}
-              >
-                OK
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Remove Member Confirmation Modal */}
-      {showRemoveModal && memberToRemove && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-base-100 rounded-lg shadow-xl p-6 w-full max-w-md">
-            <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-warning/10 rounded-full">
-              <svg className="w-8 h-8 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-              </svg>
-            </div>
-            
-            <h3 className="text-xl font-bold text-center mb-4">Remove Team Member</h3>
-            
-            <p className="text-center text-base-content/70 mb-6">
-              Are you sure you want to remove {memberToRemove.name} from this project?
-            </p>
-
-            <div className="flex gap-3">
-              <button 
-                className="btn btn-ghost flex-1"
-                onClick={() => {
-                  setShowRemoveModal(false);
-                  setMemberToRemove(null);
-                }}
-              >
-                Cancel
-              </button>
-              <button 
-                className="btn btn-error flex-1"
-                onClick={confirmRemoveMember}
-              >
-                Remove
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmationModal
+        isOpen={showRemoveModal && !!memberToRemove}
+        onConfirm={confirmRemoveMember}
+        onCancel={() => {
+          setShowRemoveModal(false);
+          setMemberToRemove(null);
+        }}
+        title="Remove Team Member"
+        message={`Are you sure you want to remove ${memberToRemove?.name} from this project?`}
+        confirmText="Remove"
+        variant="warning"
+      />
     </div>
   );
 };

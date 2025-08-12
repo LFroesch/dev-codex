@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { authAPI, projectAPI } from '../api';
 import type { BaseProject } from '../../../shared/types';
 import SessionTracker from './SessionTracker';
 import NotificationBell from './NotificationBell';
 import UserMenu from './UserMenu';
+import ConfirmationModal from './ConfirmationModal';
 import { useAnalytics } from '../hooks/useAnalytics';
 import { unsavedChangesManager } from '../utils/unsavedChanges';
 
@@ -1120,39 +1121,16 @@ const Layout: React.FC = () => {
         )}
       </div>
 
-      {/* Unsaved Changes Confirmation Modal */}
-      {showUnsavedChangesModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-base-100 rounded-lg shadow-xl p-6 w-full max-w-md">
-            <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-warning/10 rounded-full">
-              <svg className="w-8 h-8 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-              </svg>
-            </div>
-            
-            <h3 className="text-xl font-bold text-center mb-4">Unsaved Changes</h3>
-            
-            <p className="text-center text-base-content/70 mb-6">
-              You have unsaved changes. Are you sure you want to leave this page?
-            </p>
-
-            <div className="flex gap-3">
-              <button 
-                className="btn btn-ghost flex-1"
-                onClick={handleUnsavedChangesStay}
-              >
-                Stay Here
-              </button>
-              <button 
-                className="btn btn-warning flex-1"
-                onClick={handleUnsavedChangesLeave}
-              >
-                Leave Page
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmationModal
+        isOpen={showUnsavedChangesModal}
+        onConfirm={handleUnsavedChangesLeave}
+        onCancel={handleUnsavedChangesStay}
+        title="Unsaved Changes"
+        message="You have unsaved changes. Are you sure you want to leave this page?"
+        confirmText="Leave Page"
+        cancelText="Stay Here"
+        variant="warning"
+      />
     </div>
   );
 };

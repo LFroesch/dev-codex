@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { unsavedChangesManager } from '../utils/unsavedChanges';
 
 interface UserMenuProps {
   user: any;
@@ -10,6 +11,14 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+
+  const handleNavigation = async (path: string) => {
+    const allowed = await unsavedChangesManager.checkNavigationAllowed();
+    if (allowed) {
+      navigate(path);
+      setIsOpen(false);
+    }
+  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -47,38 +56,26 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout }) => {
         <div className="max-h-64 overflow-y-auto">
           <div 
             className="p-2 rounded cursor-pointer hover:bg-base-200"
-            onClick={() => {
-              navigate('/billing');
-              setIsOpen(false);
-            }}
+            onClick={() => handleNavigation('/billing')}
           >
             Billing & Plans
           </div>
           <div 
             className="p-2 rounded cursor-pointer hover:bg-base-200"
-            onClick={() => {
-              navigate('/account-settings');
-              setIsOpen(false);
-            }}
+            onClick={() => handleNavigation('/account-settings')}
           >
             Account Settings
           </div>
           <div 
             className="p-2 rounded cursor-pointer hover:bg-base-200"
-            onClick={() => {
-              navigate('/support');
-              setIsOpen(false);
-            }}
+            onClick={() => handleNavigation('/support')}
           >
             Contact Support
           </div>
           {user?.isAdmin && (
             <div 
               className="p-2 rounded cursor-pointer hover:bg-base-200"
-              onClick={() => {
-                navigate('/admin');
-                setIsOpen(false);
-              }}
+              onClick={() => handleNavigation('/admin')}
             >
               Admin Dashboard
             </div>

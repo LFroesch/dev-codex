@@ -123,13 +123,14 @@ const NotesPage: React.FC = () => {
       <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10">
         <input type="checkbox" defaultChecked />
         <div className="collapse-title text-lg font-semibold bg-base-200 border-b border-base-content/10">
-          To Do ({selectedProject.todos?.length || 0})
+          To Do ({selectedProject.todos?.filter(todo => !todo.parentTodoId).length || 0})
         </div>
         <div className="collapse-content">
           <div className="pt-4">
             <NewTodoForm 
               projectId={selectedProject.id} 
               onAdd={onProjectRefresh}
+              isSharedProject={selectedProject.isShared || false}
             />
             
             <div className="space-y-3">
@@ -139,15 +140,20 @@ const NotesPage: React.FC = () => {
                   <p className="text-base-content/60">No todos yet. Create one above!</p>
                 </div>
               ) : (
-                selectedProject.todos?.map((todo) => (
-                  <TodoItem
-                    key={todo.id}
-                    todo={todo}
-                    projectId={selectedProject.id}
-                    onUpdate={onProjectRefresh}
-                    onArchiveToDevLog={handleArchiveTodoToDevLog}
-                  />
-                ))
+                selectedProject.todos
+                  ?.filter(todo => !todo.parentTodoId) // Only show parent todos, subtasks are shown within their parents
+                  ?.map((todo) => (
+                    <TodoItem
+                      key={todo.id}
+                      todo={todo}
+                      projectId={selectedProject.id}
+                      onUpdate={onProjectRefresh}
+                      onArchiveToDevLog={handleArchiveTodoToDevLog}
+                      isSharedProject={selectedProject.isShared || false}
+                      canEdit={selectedProject.canEdit !== false}
+                      allTodos={selectedProject.todos || []}
+                    />
+                  ))
               )}
             </div>
           </div>

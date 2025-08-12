@@ -28,23 +28,87 @@ const ActivityLog: React.FC<ActivityLogProps> = ({
   const [total, setTotal] = useState(0);
   const [clearing, setClearing] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [loadingMore, setLoadingMore] = useState(false);
 
-  const loadActivities = async () => {
+  const loadActivities = async (page: number = 1, append: boolean = false) => {
     try {
       setError(null);
+      if (append) {
+        setLoadingMore(true);
+      }
+      
+      const offset = (page - 1) * limit;
       const response = await activityLogsAPI.getProjectActivities(projectId, {
         limit,
+        offset,
         userId,
         resourceType
       });
       
-      setActivities(response.activities);
+      if (append) {
+        setActivities(prev => [...prev, ...response.activities]);
+      } else {
+        setActivities(response.activities);
+        setCurrentPage(page);
+      }
       setTotal(response.total);
     } catch (err) {
       console.error('Failed to load activities:', err);
       setError('Failed to load activity logs');
     } finally {
       setLoading(false);
+      setLoadingMore(false);
+    }
+  };
+
+  const loadMoreActivities = () => {
+    const nextPage = currentPage + 1;
+    setCurrentPage(nextPage);
+    loadActivities(nextPage, true);
+  };
+
+  // Helper function to format field values for display
+  const formatFieldValue = (field: string, value: any): string => {
+    if (value === null || value === undefined || value === '') {
+      return 'empty';
+    }
+
+    // Handle different field types
+    switch (field) {
+      case 'dueDate':
+      case 'reminderDate':
+        try {
+          return new Date(value).toLocaleDateString() + ' ' + new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        } catch {
+          return String(value);
+        }
+      
+      case 'assignedTo':
+        // If it's an ObjectId string, we might not have the user details, just show the ID
+        if (typeof value === 'string' && value.length === 24) {
+          return `User (${value.slice(-6)})`;
+        }
+        // Otherwise it should be a user name from the backend
+        return String(value);
+      
+      case 'completed':
+        return value ? 'completed' : 'not completed';
+      
+      case 'status':
+        return String(value).replace('_', ' ');
+      
+      case 'priority':
+        return String(value);
+      
+      case 'tags':
+        if (Array.isArray(value)) {
+          return value.join(', ') || 'none';
+        }
+        return String(value);
+      
+      default:
+        return String(value);
     }
   };
 
@@ -67,6 +131,7 @@ const ActivityLog: React.FC<ActivityLogProps> = ({
       if (response.ok) {
         setActivities([]);
         setTotal(0);
+        setCurrentPage(1);
         setShowClearConfirm(false);
       } else {
         throw new Error('Failed to clear activities');
@@ -80,12 +145,13 @@ const ActivityLog: React.FC<ActivityLogProps> = ({
   };
 
   useEffect(() => {
-    loadActivities();
+    setCurrentPage(1);
+    loadActivities(1, false);
   }, [projectId, userId, resourceType, limit]);
 
   useEffect(() => {
     if (autoRefresh && !loading) {
-      const interval = setInterval(loadActivities, refreshInterval);
+      const interval = setInterval(() => loadActivities(1, false), refreshInterval);
       return () => clearInterval(interval);
     }
   }, [autoRefresh, refreshInterval, loading]);
@@ -167,7 +233,7 @@ const ActivityLog: React.FC<ActivityLogProps> = ({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
         </svg>
         <span>{error}</span>
-        <button onClick={loadActivities} className="btn btn-ghost btn-sm">
+        <button onClick={() => loadActivities(1, false)} className="btn btn-ghost btn-sm">
           Retry
         </button>
       </div>
@@ -198,7 +264,7 @@ const ActivityLog: React.FC<ActivityLogProps> = ({
               </div>
             )}
             <button
-              onClick={loadActivities}
+              onClick={() => loadActivities(1, false)}
               className="btn btn-ghost btn-xs"
               disabled={loading}
             >
@@ -262,10 +328,21 @@ const ActivityLog: React.FC<ActivityLogProps> = ({
                   {activity.details?.field && (
                     <div className="mt-1 text-xs text-base-content/60">
                       <span className="font-medium">{activity.details?.field}:</span>
-                      {activity.details?.oldValue && activity.details?.newValue && (
+                      {(activity.details?.oldValue !== undefined || activity.details?.newValue !== undefined) && (
                         <span className="ml-1">
-                          "<span className="line-through">{String(activity.details?.oldValue).slice(0, 30)}</span>" 
-                          → "<span className="text-success">{String(activity.details?.newValue).slice(0, 30)}</span>"
+                          {activity.details?.oldValue !== undefined && (
+                            <span className="line-through">
+                              "{formatFieldValue(activity.details?.field, activity.details?.oldValue).slice(0, 40)}"
+                            </span>
+                          )}
+                          {activity.details?.oldValue !== undefined && activity.details?.newValue !== undefined && (
+                            <span> → </span>
+                          )}
+                          {activity.details?.newValue !== undefined && (
+                            <span className="text-success">
+                              "{formatFieldValue(activity.details?.field, activity.details?.newValue).slice(0, 40)}"
+                            </span>
+                          )}
                         </span>
                       )}
                     </div>
@@ -283,11 +360,39 @@ const ActivityLog: React.FC<ActivityLogProps> = ({
         ))}
       </div>
 
-      {activities.length >= limit && total > limit && (
-        <div className="text-center pt-2">
-          <p className="text-xs text-base-content/60">
+      {/* Load More / Pagination */}
+      {activities.length < total && (
+        <div className="text-center pt-4">
+          <button
+            onClick={loadMoreActivities}
+            className="btn btn-ghost btn-sm"
+            disabled={loadingMore}
+          >
+            {loadingMore ? (
+              <>
+                <div className="loading loading-spinner loading-xs mr-2"></div>
+                Loading...
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+                Load More ({total - activities.length} remaining)
+              </>
+            )}
+          </button>
+          <div className="text-xs text-base-content/60 mt-2">
             Showing {activities.length} of {total} activities
-          </p>
+          </div>
+        </div>
+      )}
+
+      {activities.length === total && total > limit && (
+        <div className="text-center pt-2">
+          <div className="text-xs text-base-content/60">
+            All {total} activities loaded
+          </div>
         </div>
       )}
     </div>

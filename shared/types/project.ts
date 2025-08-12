@@ -15,6 +15,12 @@ export interface BaseTodo {
   description?: string;
   priority: 'low' | 'medium' | 'high';
   completed: boolean;
+  status: 'not_started' | 'in_progress' | 'blocked' | 'completed';
+  dueDate?: string;
+  reminderDate?: string;
+  assignedTo?: string | { _id: string; firstName: string; lastName: string; email: string }; // userId or populated user object
+  parentTodoId?: string; // for subtasks
+  tags?: string[];
   createdAt: string;
   createdBy?: string;
   updatedBy?: string;
@@ -129,6 +135,12 @@ export interface CreateTodoData {
   text: string;
   description?: string;
   priority?: 'low' | 'medium' | 'high';
+  status?: 'not_started' | 'in_progress' | 'blocked' | 'completed';
+  dueDate?: string;
+  reminderDate?: string;
+  assignedTo?: string;
+  parentTodoId?: string;
+  tags?: string[];
 }
 
 export interface UpdateTodoData {
@@ -136,6 +148,12 @@ export interface UpdateTodoData {
   description?: string;
   priority?: 'low' | 'medium' | 'high';
   completed?: boolean;
+  status?: 'not_started' | 'in_progress' | 'blocked' | 'completed';
+  dueDate?: string;
+  reminderDate?: string;
+  assignedTo?: string;
+  parentTodoId?: string;
+  tags?: string[];
 }
 
 export interface CreateDevLogData {

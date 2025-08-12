@@ -315,7 +315,7 @@ router.get('/info', requireAuth, async (req: AuthRequest, res) => {
     }
 
     console.log('User plan:', user.planTier);
-    console.log('User subscription ID:', user.subscriptionId);
+    console.log('User subscription ID:', user.subscriptionId ? '[REDACTED]' : 'None');
     console.log('User subscription status:', user.subscriptionStatus);
 
     let billingInfo: any = {
@@ -330,7 +330,7 @@ router.get('/info', requireAuth, async (req: AuthRequest, res) => {
 
     // If user has a subscription, get additional details from Stripe
     if (user.subscriptionId && stripe) {
-      console.log('Fetching subscription details from Stripe for:', user.subscriptionId);
+      console.log('Fetching subscription details from Stripe: [REDACTED]');
       try {
         const subscription = await stripe.subscriptions.retrieve(user.subscriptionId, {
           expand: ['default_payment_method', 'items.data.price']
@@ -401,7 +401,7 @@ router.post('/cancel-subscription', requireAuth, async (req: AuthRequest, res) =
     if (user) {
       console.log('User email:', user.email);
       console.log('User plan:', user.planTier);
-      console.log('User subscription ID:', user.subscriptionId);
+      console.log('User subscription ID:', user.subscriptionId ? '[REDACTED]' : 'None');
       console.log('User subscription status:', user.subscriptionStatus);
     }
     
@@ -431,7 +431,7 @@ router.post('/cancel-subscription', requireAuth, async (req: AuthRequest, res) =
       return res.status(501).json({ error: 'Payment processing not configured' });
     }
 
-    console.log('Attempting to cancel subscription:', user.subscriptionId);
+    console.log('Attempting to cancel subscription: [REDACTED]');
     const updatedSubscription = await stripe.subscriptions.update(user.subscriptionId, {
       cancel_at_period_end: true
     });
@@ -459,7 +459,7 @@ router.post('/resume-subscription', requireAuth, async (req: AuthRequest, res) =
       return res.status(501).json({ error: 'Payment processing not configured' });
     }
 
-    console.log('Attempting to resume subscription:', user.subscriptionId);
+    console.log('Attempting to resume subscription: [REDACTED]');
     const updatedSubscription = await stripe.subscriptions.update(user.subscriptionId, {
       cancel_at_period_end: false
     });

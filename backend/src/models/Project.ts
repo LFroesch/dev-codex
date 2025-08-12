@@ -11,6 +11,16 @@ const todoSchema = new Schema({
     default: 'medium'
   },
   completed: { type: Boolean, default: false },
+  status: { 
+    type: String, 
+    enum: ['not_started', 'in_progress', 'blocked', 'completed'],
+    default: 'not_started'
+  },
+  dueDate: { type: Date },
+  reminderDate: { type: Date },
+  assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  parentTodoId: { type: String },
+  tags: [{ type: String, trim: true }],
   createdAt: { type: Date, default: Date.now },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
@@ -123,7 +133,15 @@ export interface IProject extends Document {
     description: string;
     priority: 'low' | 'medium' | 'high';
     completed: boolean;
+    status: 'not_started' | 'in_progress' | 'blocked' | 'completed';
+    dueDate?: Date;
+    reminderDate?: Date;
+    assignedTo?: mongoose.Types.ObjectId;
+    parentTodoId?: string;
+    tags?: string[];
     createdAt: Date;
+    createdBy?: mongoose.Types.ObjectId;
+    updatedBy?: mongoose.Types.ObjectId;
   }>;
   devLog: Array<{
     id: string;

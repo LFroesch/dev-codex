@@ -181,7 +181,10 @@ const NotificationBell: React.FC = () => {
           {notifications.length > 0 && (
             <button 
               className="btn btn-xs btn-ghost"
-              onClick={() => setShowClearAllModal(true)}
+              onClick={() => {
+                setShowClearAllModal(true);
+                setIsOpen(false);
+              }}
             >
               Clear all
             </button>
@@ -251,7 +254,7 @@ const NotificationBell: React.FC = () => {
 
       {/* Clear All Notifications Modal */}
       {showClearAllModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 translate-y-48 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-base-100 rounded-lg shadow-xl p-6 w-full max-w-md">
             <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-warning/10 rounded-full">
               <svg className="w-8 h-8 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">

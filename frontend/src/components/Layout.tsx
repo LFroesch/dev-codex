@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { authAPI, projectAPI } from '../api';
 import type { BaseProject } from '../../../shared/types';
 import SessionTracker from './SessionTracker';
 import NotificationBell from './NotificationBell';
+import UserMenu from './UserMenu';
 import { useAnalytics } from '../hooks/useAnalytics';
 import { unsavedChangesManager } from '../utils/unsavedChanges';
 
@@ -49,6 +50,7 @@ const Layout: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('collapsedSections', JSON.stringify(collapsedSections));
   }, [collapsedSections]);
+
 
   // Set up unsaved changes confirmation handler
   useEffect(() => {
@@ -382,59 +384,7 @@ const Layout: React.FC = () => {
                     currentUserId={user?.id}
                   />
                   <NotificationBell />
-                  <div className="dropdown dropdown-end">
-                    <div tabIndex={0} role="button" className="btn btn-circle btn-sm bg-base-100/80 hover:bg-base-300 border border-base-content/10 shadow-sm">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
-                    </div>
-                    <ul tabIndex={0} className="dropdown-content menu p-2 shadow-lg bg-base-100 rounded-xl border border-base-content/10 w-52 z-50">
-                        <li>
-                          <a onClick={() => navigate('/billing')} className="flex items-center gap-3 w-full cursor-pointer">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                            </svg>
-                            Billing & Plans
-                          </a>
-                        </li>
-                        <li>
-                          <a onClick={() => navigate('/account-settings')} className="flex items-center gap-3 w-full cursor-pointer">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                            Account Settings
-                          </a>
-                        </li>
-                        <li>
-                          <a onClick={() => navigate('/support')} className="flex items-center gap-3 w-full cursor-pointer">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            Contact Support
-                          </a>
-                        </li>
-                        {user?.isAdmin && (
-                          <li>
-                            <a onClick={() => navigate('/admin')} className="flex items-center gap-3 w-full cursor-pointer">
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                              </svg>
-                              Admin Dashboard
-                            </a>
-                          </li>
-                        )}
-                        <div className="divider my-1"></div>
-                        <li>
-                          <a onClick={() => handleLogout()} className="text-error flex items-center gap-3 w-full cursor-pointer">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                            </svg>
-                            Logout
-                          </a>
-                        </li>
-                      </ul>
-                  </div>
+                  <UserMenu user={user} onLogout={handleLogout} />
                 </div>
               ) : (
                 <button 
@@ -528,6 +478,7 @@ const Layout: React.FC = () => {
             </div>
             
             {/* Third row: Navigation buttons */}
+            {location.pathname !== '/support' && (
             <div className="flex my-2 gap-1 overflow-x-auto scrollbar-hide self-center">
               <button 
                 className={`btn btn-sm ${searchParams.get('view') === 'projects' ? 'btn-primary' : 'btn-ghost'} gap-1 font-bold whitespace-nowrap`}
@@ -571,6 +522,7 @@ const Layout: React.FC = () => {
                 Discover
               </button>
             </div>
+            )}
           </div>
         </div>
 
@@ -703,59 +655,7 @@ const Layout: React.FC = () => {
                 <span className="text-sm font-medium text-base-content/80 ml-2">Hi, {user?.firstName}!</span>
 
                 <NotificationBell />
-                <div className="dropdown dropdown-end">
-                  <div tabIndex={0} role="button" className="btn btn-circle btn-sm bg-base-100/80 hover:bg-base-300 border border-base-content/10 shadow-sm">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                  </div>
-                  <ul tabIndex={0} className="dropdown-content menu p-2 shadow-md bg-base-100 rounded-xl border border-base-content/10 w-52 z-50">
-                    <li>
-                      <a onClick={() => navigate('/billing')} className="flex items-center gap-3 w-full cursor-pointer">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                        </svg>
-                        Billing & Plans
-                      </a>
-                    </li>
-                    <li>
-                      <a onClick={() => navigate('/account-settings')} className="flex items-center gap-3 w-full cursor-pointer">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                        Account Settings
-                      </a>
-                    </li>
-                    <li>
-                      <a onClick={() => navigate('/support')} className="flex items-center gap-3 w-full cursor-pointer">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        Contact Support
-                      </a>
-                    </li>
-                    {user?.isAdmin && (
-                      <li>
-                        <a onClick={() => navigate('/admin')} className="flex items-center gap-3 w-full cursor-pointer">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                          </svg>
-                          Admin Dashboard
-                        </a>
-                      </li>
-                    )}
-                    <div className="divider my-1"></div>
-                    <li>
-                      <a onClick={() => handleLogout()} className="text-error flex items-center gap-3 w-full cursor-pointer">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                        </svg>
-                        Logout
-                      </a>
-                    </li>
-                  </ul>
-                </div>
+                <UserMenu user={user} onLogout={handleLogout} />
               </div>
             ) : (
               <div className="flex items-center gap-3 bg-base-200/50 backdrop-blur-sm border border-base-content/10 rounded-xl px-4 py-2 h-12 shadow-sm">
@@ -1164,7 +1064,7 @@ const Layout: React.FC = () => {
           /* Project Details Tab - Show project content with tabs */
           <>
             {/* Tab Navigation */}
-            {selectedProject && (
+            {selectedProject && location.pathname !== '/support' && (
               <div className="flex justify-center px-4 py-6">
                 <div className="tabs tabs-boxed tabs-lg border border-base-content/10 shadow-sm">
                   {tabs.map((tab) => (
@@ -1181,7 +1081,7 @@ const Layout: React.FC = () => {
             )}
 
             {/* Page Content */}
-            <div className="flex-1 overflow-auto border border-base-content/10 bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-sm">
+            <div className={`flex-1 overflow-auto border border-base-content/10 bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-sm ${location.pathname === '/support' ? 'mt-4' : ''}`}>
               {selectedProject ? (
                 <div className="p-1">
                   <Outlet context={{ 

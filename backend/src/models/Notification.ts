@@ -2,7 +2,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 export interface INotification extends Document {
   userId: mongoose.Types.ObjectId;
-  type: 'project_invitation' | 'project_shared' | 'team_member_added' | 'team_member_removed';
+  type: 'project_invitation' | 'project_shared' | 'team_member_added' | 'team_member_removed' | 'todo_assigned' | 'todo_due_soon' | 'todo_overdue' | 'subtask_completed';
   title: string;
   message: string;
   isRead: boolean;
@@ -10,6 +10,7 @@ export interface INotification extends Document {
   relatedProjectId?: mongoose.Types.ObjectId;
   relatedInvitationId?: mongoose.Types.ObjectId;
   relatedUserId?: mongoose.Types.ObjectId;
+  relatedTodoId?: string;
   metadata?: Record<string, any>;
   createdAt: Date;
   updatedAt: Date;
@@ -24,7 +25,7 @@ const NotificationSchema = new Schema<INotification>(
     },
     type: {
       type: String,
-      enum: ['project_invitation', 'project_shared', 'team_member_added', 'team_member_removed'],
+      enum: ['project_invitation', 'project_shared', 'team_member_added', 'team_member_removed', 'todo_assigned', 'todo_due_soon', 'todo_overdue', 'subtask_completed'],
       required: true,
     },
     title: {
@@ -56,6 +57,9 @@ const NotificationSchema = new Schema<INotification>(
     relatedUserId: {
       type: Schema.Types.ObjectId,
       ref: 'User',
+    },
+    relatedTodoId: {
+      type: String,
     },
     metadata: {
       type: Schema.Types.Mixed,

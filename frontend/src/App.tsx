@@ -49,7 +49,6 @@ const App: React.FC = () => {
           <Route path="/billing/success" element={<BillingSuccessPage />} />
           <Route path="/billing/cancel" element={<BillingCancelPage />} />
           <Route path="/create-project" element={<CreateProject />} />
-          <Route path="/support" element={<SupportPage />} />
           <Route path="/" element={<Layout />}>
             <Route index element={<Navigate to="/notes?view=projects" />} />
             <Route path="notes" element={<NotesPage />} />
@@ -67,6 +66,7 @@ const App: React.FC = () => {
             <Route path="billing" element={<BillingPage />} />
             <Route path="account-settings" element={<AccountSettingsPage />} />
             <Route path="admin" element={<AdminDashboardPage />} />
+            <Route path="support" element={<SupportPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/login" />} />
         </Routes>

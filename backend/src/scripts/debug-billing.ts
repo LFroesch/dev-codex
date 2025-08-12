@@ -95,8 +95,8 @@ async function debugBilling() {
       console.log('Recent paid users:');
       for (const user of recentPaidUsers) {
         console.log(`- ${user.email}: ${user.planTier} (${user.subscriptionStatus})`);
-        console.log(`  Subscription ID: ${user.subscriptionId || 'None'}`);
-        console.log(`  Customer ID: ${user.stripeCustomerId || 'None'}`);
+        console.log(`  Subscription ID: [REDACTED]`);
+        console.log(`  Customer ID: [REDACTED]`);
         console.log('');
       }
     }

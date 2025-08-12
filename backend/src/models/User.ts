@@ -136,4 +136,14 @@ userSchema.methods.comparePassword = async function(password: string): Promise<b
   return bcrypt.compare(password, this.password);
 };
 
+// Override toJSON to exclude sensitive fields from logs
+userSchema.methods.toJSON = function() {
+  const user = this.toObject();
+  delete user.password;
+  delete user.stripeCustomerId;
+  delete user.subscriptionId;
+  delete user.googleId;
+  return user;
+};
+
 export const User = mongoose.model<IUser>('User', userSchema);

@@ -102,85 +102,100 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
 
   return (
     <div className="space-y-4">
-      {/* Invite form */}
+      {/* Invite Team Member */}
       {canManageTeam && (
-        <div className="bg-base-200 p-4 rounded-lg">
-          <h4 className="font-medium mb-3">Invite Team Member</h4>
-        <form onSubmit={handleInvite} className="flex gap-2">
-          <input
-            type="email"
-            placeholder="Enter email address"
-            value={inviteEmail}
-            onChange={(e) => setInviteEmail(e.target.value)}
-            className="input input-bordered flex-1"
-            required
-          />
-          <select
-            value={inviteRole}
-            onChange={(e) => setInviteRole(e.target.value as 'editor' | 'viewer')}
-            className="select select-bordered"
-          >
-            <option value="viewer">Viewer</option>
-            <option value="editor">Editor</option>
-          </select>
-          <button type="submit" className="btn btn-primary" disabled={inviting}>
-            {inviting ? <span className="loading loading-spinner loading-sm"></span> : 'Invite'}
-          </button>
-        </form>
+        <div className="card bg-base-200 shadow-sm">
+          <div className="card-body p-4">
+            <h3 className="card-title text-base mb-3">Invite Team Member</h3>
+            <form onSubmit={handleInvite} className="flex gap-3">
+              <input
+                type="email"
+                placeholder="colleague@company.com"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                className="input input-bordered input-sm flex-1"
+                required
+              />
+              <select
+                value={inviteRole}
+                onChange={(e) => setInviteRole(e.target.value as 'editor' | 'viewer')}
+                className="select select-bordered select-sm w-24"
+              >
+                <option value="viewer">Viewer</option>
+                <option value="editor">Editor</option>
+              </select>
+              <button type="submit" className="btn btn-primary btn-sm px-6" disabled={inviting}>
+                {inviting ? <span className="loading loading-spinner loading-xs mr-2"></span> : null}
+                {inviting ? 'Sending' : 'Send Invite'}
+              </button>
+            </form>
+          </div>
         </div>
       )}
 
-      {/* Members list */}
-      <div>
-        <h4 className="font-medium mb-3">Team Members</h4>
-        <div className="space-y-2">
-        {members.map((member) => (
-          <div key={member._id} className="flex items-center justify-between p-3 bg-base-200 rounded-lg">
-            <div className="flex items-center gap-3">
-              <div className="avatar placeholder">
-                <div className="bg-neutral text-neutral-content rounded-full w-8">
-                  <span className="text-xs">
-                    {member.userId.firstName[0]}{member.userId.lastName[0]}
-                  </span>
-                </div>
-              </div>
-              <div>
-                <div className="font-medium">{member.userId.firstName} {member.userId.lastName}</div>
-                <div className="text-sm text-base-content/70">{member.userId.email}</div>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              {member.isOwner ? (
-                <span className="badge badge-primary">Owner</span>
-              ) : (
-                <>
-                  {canManageTeam ? (
-                    <select
-                      value={member.role}
-                      onChange={(e) => handleRoleChange(member.userId._id, e.target.value as 'editor' | 'viewer')}
-                      className="select select-sm"
-                    >
-                      <option value="viewer">Viewer</option>
-                      <option value="editor">Editor</option>
-                    </select>
-                  ) : (
-                    <span className="badge">{member.role}</span>
-                  )}
-                  
-                  {canManageTeam && (
-                    <button
-                      onClick={() => handleRemoveMember(member.userId._id)}
-                      className="btn btn-sm btn-error"
-                    >
-                      Remove
-                    </button>
-                  )}
-                </>
-              )}
-            </div>
+      {/* Team Members */}
+      <div className="card bg-base-100 shadow-sm">
+        <div className="card-body p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="card-title text-base">Team Members</h3>
+            <span className="badge badge-ghost">{members.length}</span>
           </div>
-        ))}
+          
+          {members.length === 0 ? (
+            <div className="text-center py-4 text-base-content/60">
+              <p className="text-sm">No team members yet</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {members.map((member) => (
+                <div key={member._id} className="flex items-center justify-between py-2 border-b border-base-300 last:border-b-0">
+                  <div className="flex items-center gap-3">
+                    <div className="avatar placeholder">
+                      <div className="bg-primary text-primary-content rounded-full w-8">
+                        <span className="text-xs font-medium">
+                          {member.userId.firstName[0]}{member.userId.lastName[0]}
+                        </span>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="font-medium text-sm">{member.userId.firstName} {member.userId.lastName}</div>
+                      <div className="text-xs text-base-content/60">{member.userId.email}</div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    {member.isOwner ? (
+                      <span className="badge badge-primary badge-sm">Owner</span>
+                    ) : (
+                      <>
+                        {canManageTeam ? (
+                          <select
+                            value={member.role}
+                            onChange={(e) => handleRoleChange(member.userId._id, e.target.value as 'editor' | 'viewer')}
+                            className="select select-xs select-bordered"
+                          >
+                            <option value="viewer">Viewer</option>
+                            <option value="editor">Editor</option>
+                          </select>
+                        ) : (
+                          <span className="badge badge-sm capitalize">{member.role}</span>
+                        )}
+                        
+                        {canManageTeam && (
+                          <button
+                            onClick={() => handleRemoveMember(member.userId._id)}
+                            className="btn btn-xs btn-error btn-outline"
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

@@ -11,6 +11,7 @@ import { checkProjectLimit } from '../middleware/planLimits';
 import { trackProjectAccess } from '../middleware/analytics';
 import { AnalyticsService } from '../middleware/analytics';
 import { trackFieldChanges, trackArrayChanges } from '../utils/trackFieldChanges';
+import activityLogger from '../services/activityLogger';
 import { v4 as uuidv4 } from 'uuid';
 
 const router = express.Router();
@@ -68,7 +69,11 @@ router.get('/', async (req: AuthRequest, res) => {
         { userId: userId },
         { ownerId: userId }
       ]
-    }).sort({ createdAt: -1 });
+    })
+    .populate('todos.assignedTo', 'firstName lastName email')
+    .populate('todos.createdBy', 'firstName lastName')
+    .populate('todos.updatedBy', 'firstName lastName')
+    .sort({ createdAt: -1 });
 
     // Get projects where user is a team member
     const teamMemberships = await TeamMember.find({ userId }).select('projectId');
@@ -82,7 +87,11 @@ router.get('/', async (req: AuthRequest, res) => {
             { userId: userId },
             { ownerId: userId }
           ]
-        }).sort({ createdAt: -1 })
+        })
+        .populate('todos.assignedTo', 'firstName lastName email')
+        .populate('todos.createdBy', 'firstName lastName')
+        .populate('todos.updatedBy', 'firstName lastName')
+        .sort({ createdAt: -1 })
       : [];
 
     // Combine and format projects, marking ownership status
@@ -101,7 +110,10 @@ router.get('/', async (req: AuthRequest, res) => {
 // Get single project
 router.get('/:id', requireProjectAccess('view'), async (req: AuthRequest, res) => {
   try {
-    const project = await Project.findById(req.params.id);
+    const project = await Project.findById(req.params.id)
+      .populate('todos.assignedTo', 'firstName lastName email')
+      .populate('todos.createdBy', 'firstName lastName')
+      .populate('todos.updatedBy', 'firstName lastName');
     
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
@@ -461,7 +473,7 @@ router.delete('/:id/packages/:category/:name', requireProjectAccess('edit'), asy
 // TODO MANAGEMENT
 router.post('/:id/todos', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
-    const { text, description, priority } = req.body;
+    const { text, description, priority, status, dueDate, reminderDate, assignedTo, parentTodoId, tags } = req.body;
     
     if (!text || !text.trim()) {
       return res.status(400).json({ message: 'Todo text is required' });
@@ -473,17 +485,96 @@ router.post('/:id/todos', requireProjectAccess('edit'), async (req: AuthRequest,
       return res.status(404).json({ message: 'Project not found' });
     }
 
+    // Validate assignedTo user is a team member or project owner for shared projects
+    if (assignedTo && project.isShared) {
+      const isOwner = project.ownerId?.toString() === assignedTo || project.userId?.toString() === assignedTo;
+      const isTeamMember = await TeamMember.findOne({ 
+        projectId: project._id, 
+        userId: assignedTo 
+      });
+      if (!isOwner && !isTeamMember) {
+        return res.status(400).json({ message: 'Assigned user must be a team member or project owner' });
+      }
+    }
+
     const newTodo = {
       id: uuidv4(),
       text: text.trim(),
       description: description?.trim() || '',
       priority: priority || 'medium',
       completed: false,
-      createdAt: new Date()
+      status: status || 'not_started',
+      dueDate: dueDate ? new Date(dueDate) : undefined,
+      reminderDate: reminderDate ? new Date(reminderDate) : undefined,
+      assignedTo: assignedTo ? new mongoose.Types.ObjectId(assignedTo) : undefined,
+      parentTodoId: parentTodoId || undefined,
+      tags: tags || [],
+      createdAt: new Date(),
+      createdBy: req.userId ? new mongoose.Types.ObjectId(req.userId) : undefined
     };
 
     project.todos.push(newTodo);
     await project.save();
+
+    // Log todo creation activity
+    try {
+      await activityLogger.logResourceCreation(
+        req.params.id,
+        req.userId!,
+        (req as any).sessionId || req.headers['x-session-id'] || 'unknown',
+        'todo',
+        newTodo.id,
+        {
+          todoTitle: newTodo.text,
+          priority: newTodo.priority,
+          status: newTodo.status,
+          isSubtask: !!parentTodoId,
+          assignedTo: assignedTo,
+          dueDate: newTodo.dueDate,
+          reminderDate: newTodo.reminderDate
+        },
+        req.get('user-agent'),
+        req.ip
+      );
+    } catch (error) {
+      console.error('Failed to log todo creation:', error);
+    }
+
+    // Create assignment notification if assigning to someone else
+    if (assignedTo && assignedTo !== req.userId?.toString()) {
+      await Notification.create({
+        userId: assignedTo,
+        type: 'todo_assigned',
+        title: 'Todo Assigned',
+        message: `You have been assigned a new todo: "${text.trim()}"`,
+        relatedProjectId: project._id,
+        relatedTodoId: newTodo.id,
+        actionUrl: `/projects/${project._id}`
+      });
+
+      // Log todo assignment activity with user name
+      try {
+        const assignedUser = await User.findById(assignedTo).select('firstName lastName');
+        const assignedUserName = assignedUser ? `${assignedUser.firstName} ${assignedUser.lastName}` : assignedTo;
+        
+        await activityLogger.logFieldUpdate(
+          req.params.id,
+          req.userId!,
+          (req as any).sessionId || req.headers['x-session-id'] || 'unknown',
+          'todo',
+          newTodo.id,
+          'assignedTo',
+          null,
+          assignedUserName,
+          newTodo.text,
+          undefined,
+          req.get('user-agent'),
+          req.ip
+        );
+      } catch (error) {
+        console.error('Failed to log todo assignment:', error);
+      }
+    }
 
     res.json({
       message: 'Todo added successfully',
@@ -497,7 +588,7 @@ router.post('/:id/todos', requireProjectAccess('edit'), async (req: AuthRequest,
 
 router.put('/:id/todos/:todoId', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
-    const { text, description, priority, completed } = req.body;
+    const { text, description, priority, completed, status, dueDate, reminderDate, assignedTo, parentTodoId, tags } = req.body;
 
     const project = await Project.findById(req.params.id);
 
@@ -510,12 +601,112 @@ router.put('/:id/todos/:todoId', requireProjectAccess('edit'), async (req: AuthR
       return res.status(404).json({ message: 'Todo not found' });
     }
 
+    // Validate assignedTo user is a team member or project owner for shared projects
+    if (assignedTo && project.isShared) {
+      const isOwner = project.ownerId?.toString() === assignedTo || project.userId?.toString() === assignedTo;
+      const isTeamMember = await TeamMember.findOne({ 
+        projectId: project._id, 
+        userId: assignedTo 
+      });
+      if (!isOwner && !isTeamMember) {
+        return res.status(400).json({ message: 'Assigned user must be a team member or project owner' });
+      }
+    }
+
+    // Store original values for activity logging
+    const originalValues = {
+      text: todo.text,
+      description: todo.description,
+      priority: todo.priority,
+      completed: todo.completed,
+      status: todo.status,
+      dueDate: todo.dueDate,
+      reminderDate: todo.reminderDate,
+      assignedTo: todo.assignedTo?.toString(),
+      parentTodoId: todo.parentTodoId,
+      tags: todo.tags
+    };
+
+    const previousAssignedTo = todo.assignedTo?.toString();
+
     if (text !== undefined) todo.text = text.trim();
     if (description !== undefined) todo.description = description.trim();
     if (priority !== undefined) todo.priority = priority;
     if (completed !== undefined) todo.completed = completed;
+    if (status !== undefined) todo.status = status;
+    if (dueDate !== undefined) todo.dueDate = dueDate ? new Date(dueDate) : undefined;
+    if (reminderDate !== undefined) todo.reminderDate = reminderDate ? new Date(reminderDate) : undefined;
+    if (assignedTo !== undefined) todo.assignedTo = assignedTo ? new mongoose.Types.ObjectId(assignedTo) : undefined;
+    if (parentTodoId !== undefined) todo.parentTodoId = parentTodoId;
+    if (tags !== undefined) todo.tags = tags;
+    todo.updatedBy = req.userId ? new mongoose.Types.ObjectId(req.userId) : undefined;
 
     await project.save();
+
+    // Log field changes for activity tracking
+    const fieldMappings = [
+      { field: 'text', oldValue: originalValues.text, newValue: text },
+      { field: 'description', oldValue: originalValues.description, newValue: description },
+      { field: 'priority', oldValue: originalValues.priority, newValue: priority },
+      { field: 'completed', oldValue: originalValues.completed, newValue: completed },
+      { field: 'status', oldValue: originalValues.status, newValue: status },
+      { field: 'dueDate', oldValue: originalValues.dueDate, newValue: dueDate },
+      { field: 'reminderDate', oldValue: originalValues.reminderDate, newValue: reminderDate },
+      { field: 'assignedTo', oldValue: originalValues.assignedTo, newValue: assignedTo },
+      { field: 'parentTodoId', oldValue: originalValues.parentTodoId, newValue: parentTodoId },
+      { field: 'tags', oldValue: originalValues.tags, newValue: tags }
+    ];
+
+    for (const mapping of fieldMappings) {
+      if (mapping.newValue !== undefined && mapping.oldValue !== mapping.newValue) {
+        try {
+          let logOldValue = mapping.oldValue;
+          let logNewValue = mapping.newValue;
+
+          // Resolve user names for assignedTo field
+          if (mapping.field === 'assignedTo') {
+            if (mapping.oldValue) {
+              const oldUser = await User.findById(mapping.oldValue).select('firstName lastName');
+              logOldValue = oldUser ? `${oldUser.firstName} ${oldUser.lastName}` : mapping.oldValue;
+            }
+            if (mapping.newValue) {
+              const newUser = await User.findById(mapping.newValue).select('firstName lastName');
+              logNewValue = newUser ? `${newUser.firstName} ${newUser.lastName}` : mapping.newValue;
+            }
+          }
+
+          await activityLogger.logFieldUpdate(
+            req.params.id,
+            req.userId!,
+            (req as any).sessionId || req.headers['x-session-id'] || 'unknown',
+            'todo',
+            req.params.todoId,
+            mapping.field,
+            logOldValue,
+            logNewValue,
+            todo.text,
+            undefined,
+            req.get('user-agent'),
+            req.ip
+          );
+        } catch (error) {
+          console.error(`Failed to log todo ${mapping.field} update:`, error);
+        }
+      }
+    }
+
+    // Create assignment notification if assigned to a new user
+    if (assignedTo && assignedTo !== previousAssignedTo && assignedTo !== req.userId?.toString()) {
+      await Notification.create({
+        userId: assignedTo,
+        type: 'todo_assigned',
+        title: 'Todo Assigned',
+        message: `You have been assigned a todo: "${todo.text}"`,
+        relatedProjectId: project._id,
+        relatedTodoId: todo.id,
+        actionUrl: `/projects/${project._id}`
+      });
+    }
 
     res.json({
       message: 'Todo updated successfully',
@@ -533,6 +724,38 @@ router.delete('/:id/todos/:todoId', requireProjectAccess('edit'), async (req: Au
 
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
+    }
+
+    // Find the todo to get its details before deletion
+    const todoToDelete = project.todos.find(t => t.id === req.params.todoId);
+    
+    if (!todoToDelete) {
+      return res.status(404).json({ message: 'Todo not found' });
+    }
+
+    // Log todo deletion activity
+    try {
+      await activityLogger.logResourceDeletion(
+        req.params.id,
+        req.userId!,
+        (req as any).sessionId || req.headers['x-session-id'] || 'unknown',
+        'todo',
+        req.params.todoId,
+        {
+          todoTitle: todoToDelete.text,
+          priority: todoToDelete.priority,
+          status: todoToDelete.status,
+          completed: todoToDelete.completed,
+          isSubtask: !!todoToDelete.parentTodoId,
+          assignedTo: todoToDelete.assignedTo?.toString(),
+          dueDate: todoToDelete.dueDate,
+          reminderDate: todoToDelete.reminderDate
+        },
+        req.get('user-agent'),
+        req.ip
+      );
+    } catch (error) {
+      console.error('Failed to log todo deletion:', error);
     }
 
     project.todos = project.todos.filter(t => t.id !== req.params.todoId);
@@ -1076,5 +1299,6 @@ router.patch('/:id/members/:userId', requireAuth, requireProjectAccess('manage')
     res.status(500).json({ message: 'Server error updating team member role' });
   }
 });
+
 
 export default router;

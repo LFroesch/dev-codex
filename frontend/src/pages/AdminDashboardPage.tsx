@@ -994,6 +994,7 @@ const AdminDashboardPage: React.FC = () => {
           />
         )}
 
+
         {/* User Details Modal */}
         {selectedUser && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -1202,5 +1203,6 @@ const AdminDashboardPage: React.FC = () => {
     </div>
   );
 };
+
 
 export default AdminDashboardPage;

@@ -18,6 +18,7 @@ import notificationRoutes from './routes/notifications';
 import publicRoutes from './routes/public';
 import { normalRateLimit, authRateLimit, devRateLimit } from './middleware/rateLimit';
 import { trackPageView, sessionMiddleware } from './middleware/analytics';
+import ReminderService from './services/reminderService';
 
 dotenv.config();
 
@@ -91,6 +92,11 @@ app.get('/health', (_, res) => {
 const startServer = async () => {
   try {
     await connectDatabase();
+    
+    // Initialize reminder service
+    const reminderService = ReminderService.getInstance();
+    reminderService.initialize();
+    
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });

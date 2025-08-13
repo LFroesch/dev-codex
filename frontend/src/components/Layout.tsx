@@ -337,7 +337,7 @@ const Layout: React.FC = () => {
 
   const tabs = [
     { id: 'notes', label: 'Notes / To Dos', path: '/notes' },
-    { id: 'roadmap', label: 'Stack', path: '/roadmap' },
+    { id: 'stack', label: 'Stack', path: '/stack' },
     { id: 'docs', label: 'Docs', path: '/docs' },
     { id: 'deployment', label: 'Deployment', path: '/deployment' },
     { id: 'public', label: 'Public', path: '/public' },
@@ -494,7 +494,7 @@ const Layout: React.FC = () => {
                 <span className="sm:hidden">Projects</span>
               </button>
               <button 
-                className={`btn btn-sm ${(location.pathname === '/notes' || location.pathname === '/roadmap' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/settings') && searchParams.get('view') !== 'projects' ? 'btn-primary' : 'btn-ghost'} gap-1 font-bold whitespace-nowrap`}
+                className={`btn btn-sm ${(location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/settings') && searchParams.get('view') !== 'projects' ? 'btn-primary' : 'btn-ghost'} gap-1 font-bold whitespace-nowrap`}
                 onClick={() => handleNavigateWithCheck('/notes')}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -599,7 +599,7 @@ const Layout: React.FC = () => {
                 My Projects
               </button>
               <button 
-                className={`btn ${(location.pathname === '/notes' || location.pathname === '/roadmap' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/settings') && searchParams.get('view') !== 'projects' ? 'btn-primary' : 'btn-ghost'} gap-2 font-bold`}
+                className={`btn ${(location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/settings') && searchParams.get('view') !== 'projects' ? 'btn-primary' : 'btn-ghost'} gap-2 font-bold`}
                 onClick={() => handleNavigateWithCheck('/notes')}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

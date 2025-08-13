@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { authAPI } from '../api';
 import { useLoadingState } from '../hooks/useLoadingState';
 import { useApiCall } from '../hooks/useApiCall';
@@ -15,6 +15,7 @@ const THEMES = [
 
 const AccountSettingsPage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<'theme' | 'connections' | 'profile' | 'analytics'>('theme');
   const [currentTheme, setCurrentTheme] = useState('retro');
   const [user, setUser] = useState<any>(null);
@@ -65,22 +66,21 @@ const AccountSettingsPage: React.FC = () => {
 
   useEffect(() => {
     // Handle Google linking URL params
-    const urlParams = new URLSearchParams(window.location.search);
-    const googleLinked = urlParams.get('google_linked');
-    const message = urlParams.get('message');
+    const googleLinked = searchParams.get('google_linked');
+    const message = searchParams.get('message');
 
     if (googleLinked === 'success') {
       setSuccess('Google account linked successfully!');
       // Refresh user data to show updated state
       authAPI.getMe().then(response => setUser(response.user)).catch(() => {});
-      // Clean up URL
-      window.history.replaceState({}, document.title, window.location.pathname);
+      // Clean up URL using React Router
+      setSearchParams({});
     } else if (googleLinked === 'error') {
       setError(message ? decodeURIComponent(message) : 'Failed to link Google account');
-      // Clean up URL
-      window.history.replaceState({}, document.title, window.location.pathname);
+      // Clean up URL using React Router
+      setSearchParams({});
     }
-  }, []);
+  }, [searchParams, setSearchParams]);
 
   const handleThemeChange = async (newTheme: string) => {
     await withSaving(async () => {

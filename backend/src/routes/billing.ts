@@ -58,6 +58,32 @@ router.post('/create-checkout-session', requireAuth, async (req: AuthRequest, re
 
     console.log('User found:', user.email);
     console.log('Current plan:', user.planTier);
+    console.log('Current subscription status:', user.subscriptionStatus);
+
+    // Check if user is trying to subscribe to the same plan they already have
+    if (user.planTier === planTier && user.subscriptionStatus === 'active') {
+      console.log('User already has this plan:', planTier);
+      return res.status(400).json({ 
+        error: `You already have an active ${planTier} subscription.`,
+        currentPlan: user.planTier,
+        subscriptionStatus: user.subscriptionStatus
+      });
+    }
+
+    // If user has an active subscription but wants to upgrade, we'll need to handle the upgrade
+    // Stripe will manage the proration automatically
+    if (user.subscriptionStatus === 'active' && user.subscriptionId && stripe) {
+      console.log('User has active subscription, checking if this is an upgrade/downgrade');
+      try {
+        const existingSubscription = await stripe.subscriptions.retrieve(user.subscriptionId);
+        if (existingSubscription.status === 'active') {
+          console.log('Found active Stripe subscription, will create new checkout for plan change');
+        }
+      } catch (error) {
+        console.error('Error checking existing subscription:', error);
+        // Continue with checkout creation if we can't verify the existing subscription
+      }
+    }
 
     // Create or retrieve Stripe customer
     let customerId = user.stripeCustomerId;
@@ -222,6 +248,7 @@ async function handleSuccessfulPayment(session: Stripe.Checkout.Session) {
   user.subscriptionStatus = 'active';
   user.subscriptionId = session.subscription as string;
   user.stripeCustomerId = session.customer as string;
+  user.lastBillingUpdate = new Date();
   
   await user.save();
   console.log(`Successfully updated user ${userId} to ${planTier} plan`);
@@ -240,6 +267,7 @@ async function handleSuccessfulSubscriptionPayment(invoice: Stripe.Invoice) {
   if (!user) return;
   
   user.subscriptionStatus = 'active';
+  user.lastBillingUpdate = new Date();
   await user.save();
 }
 
@@ -262,6 +290,7 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
   // Update subscription status
   user.subscriptionStatus = subscription.status as any;
   user.subscriptionId = subscription.id;
+  user.lastBillingUpdate = new Date();
   
   if (subscription.status === 'canceled' || subscription.status === 'incomplete_expired') {
     // Subscription was cancelled or expired
@@ -432,10 +461,10 @@ router.post('/cancel-subscription', requireAuth, async (req: AuthRequest, res) =
     }
 
     console.log('Attempting to cancel subscription: [REDACTED]');
-    const updatedSubscription = await stripe.subscriptions.update(user.subscriptionId, {
+    await stripe.subscriptions.update(user.subscriptionId, {
       cancel_at_period_end: true
     });
-    console.log('Stripe response:', updatedSubscription.cancel_at_period_end);
+    console.log('Subscription marked for cancellation at period end');
 
     res.json({ success: true, message: 'Subscription will be canceled at the end of the billing period' });
   } catch (error) {
@@ -460,7 +489,7 @@ router.post('/resume-subscription', requireAuth, async (req: AuthRequest, res) =
     }
 
     console.log('Attempting to resume subscription: [REDACTED]');
-    const updatedSubscription = await stripe.subscriptions.update(user.subscriptionId, {
+    await stripe.subscriptions.update(user.subscriptionId, {
       cancel_at_period_end: false
     });
     

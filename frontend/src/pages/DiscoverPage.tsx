@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { publicAPI } from '../api';
 
@@ -120,15 +120,6 @@ const DiscoverPage: React.FC = () => {
                 {pagination.total} projects found
               </span>
             )}
-            {(debouncedSearchTerm || selectedCategory !== 'all' || selectedTag) && (
-              <button
-                type="button"
-                onClick={clearFilters}
-                className="btn btn-ghost btn-xs"
-              >
-                Clear Filters
-              </button>
-            )}
           </div>
         </div>
         <div className="collapse-content">
@@ -142,7 +133,7 @@ const DiscoverPage: React.FC = () => {
                   </svg>
                   <input
                     type="text"
-                    placeholder="Search projects, technologies, or descriptions..."
+                    placeholder="Search projects, users, technologies, or descriptions..."
                     className="input input-bordered w-full pl-10"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}

@@ -473,7 +473,7 @@ router.delete('/:id/packages/:category/:name', requireProjectAccess('edit'), asy
 // TODO MANAGEMENT
 router.post('/:id/todos', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
-    const { text, description, priority, status, dueDate, reminderDate, assignedTo, parentTodoId, tags } = req.body;
+    const { text, description, priority, status, dueDate, reminderDate, assignedTo, parentTodoId } = req.body;
     
     if (!text || !text.trim()) {
       return res.status(400).json({ message: 'Todo text is required' });
@@ -508,7 +508,6 @@ router.post('/:id/todos', requireProjectAccess('edit'), async (req: AuthRequest,
       reminderDate: reminderDate ? new Date(reminderDate) : undefined,
       assignedTo: assignedTo ? new mongoose.Types.ObjectId(assignedTo) : undefined,
       parentTodoId: parentTodoId || undefined,
-      tags: tags || [],
       createdAt: new Date(),
       createdBy: req.userId ? new mongoose.Types.ObjectId(req.userId) : undefined
     };
@@ -588,7 +587,7 @@ router.post('/:id/todos', requireProjectAccess('edit'), async (req: AuthRequest,
 
 router.put('/:id/todos/:todoId', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
-    const { text, description, priority, completed, status, dueDate, reminderDate, assignedTo, parentTodoId, tags } = req.body;
+    const { text, description, priority, completed, status, dueDate, reminderDate, assignedTo, parentTodoId } = req.body;
 
     const project = await Project.findById(req.params.id);
 
@@ -623,8 +622,7 @@ router.put('/:id/todos/:todoId', requireProjectAccess('edit'), async (req: AuthR
       dueDate: todo.dueDate,
       reminderDate: todo.reminderDate,
       assignedTo: todo.assignedTo?.toString(),
-      parentTodoId: todo.parentTodoId,
-      tags: todo.tags
+      parentTodoId: todo.parentTodoId
     };
 
     const previousAssignedTo = todo.assignedTo?.toString();
@@ -638,7 +636,6 @@ router.put('/:id/todos/:todoId', requireProjectAccess('edit'), async (req: AuthR
     if (reminderDate !== undefined) todo.reminderDate = reminderDate ? new Date(reminderDate) : undefined;
     if (assignedTo !== undefined) todo.assignedTo = assignedTo ? new mongoose.Types.ObjectId(assignedTo) : undefined;
     if (parentTodoId !== undefined) todo.parentTodoId = parentTodoId;
-    if (tags !== undefined) todo.tags = tags;
     todo.updatedBy = req.userId ? new mongoose.Types.ObjectId(req.userId) : undefined;
 
     await project.save();
@@ -653,8 +650,7 @@ router.put('/:id/todos/:todoId', requireProjectAccess('edit'), async (req: AuthR
       { field: 'dueDate', oldValue: originalValues.dueDate, newValue: dueDate },
       { field: 'reminderDate', oldValue: originalValues.reminderDate, newValue: reminderDate },
       { field: 'assignedTo', oldValue: originalValues.assignedTo, newValue: assignedTo },
-      { field: 'parentTodoId', oldValue: originalValues.parentTodoId, newValue: parentTodoId },
-      { field: 'tags', oldValue: originalValues.tags, newValue: tags }
+      { field: 'parentTodoId', oldValue: originalValues.parentTodoId, newValue: parentTodoId }
     ];
 
     for (const mapping of fieldMappings) {

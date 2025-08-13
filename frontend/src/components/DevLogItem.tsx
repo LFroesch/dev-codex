@@ -114,11 +114,11 @@ const DevLogItem: React.FC<DevLogItemProps> = ({ entry, projectId, onUpdate }) =
               </div>
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="font-medium text-sm">
+              <h3 className="font-semibold text-lg">
                 {entry.title || entry.entry}
               </h3>
               {entry.description && (
-                <p className="text-xs text-base-content/70 mt-1">
+                <p className="text-sm text-base-content/70 mt-1">
                   {entry.description}
                 </p>
               )}

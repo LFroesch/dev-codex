@@ -28,7 +28,6 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, projectId, onUpdate, onArchiv
   const [editAssignedTo, setEditAssignedTo] = useState(
     typeof todo.assignedTo === 'object' ? todo.assignedTo._id : (todo.assignedTo || '')
   );
-  const [editTags, setEditTags] = useState((todo.tags || []).join(', '));
   const [loading, setLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -37,8 +36,6 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, projectId, onUpdate, onArchiv
 
     setLoading(true);
     try {
-      const tagsArray = editTags.split(',').map(tag => tag.trim()).filter(tag => tag);
-      
       await projectAPI.updateTodo(projectId, todo.id, {
         text: editTitle.trim(),
         description: editDescription.trim(),
@@ -46,8 +43,7 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, projectId, onUpdate, onArchiv
         status: editStatus,
         dueDate: editDueDate || undefined,
         reminderDate: editReminderDate || undefined,
-        assignedTo: editAssignedTo || undefined,
-        tags: tagsArray.length > 0 ? tagsArray : undefined
+        assignedTo: editAssignedTo || undefined
       });
       setIsEditing(false);
       onUpdate();
@@ -244,32 +240,13 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, projectId, onUpdate, onArchiv
             />
           </div>
 
-          <TeamMemberSelect
-            projectId={projectId}
-            value={editAssignedTo}
-            onChange={setEditAssignedTo}
-            isSharedProject={isSharedProject}
-            placeholder="Assign to team member..."
-          />
-
-          {/* Tags hidden for now - user doesn't want them */}
-          {false && (
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text font-medium">Tags</span>
-              </label>
-              <input
-                type="text"
-                value={editTags}
-                onChange={(e) => setEditTags(e.target.value)}
-                className="input input-bordered input-sm"
-                placeholder="tag1, tag2, tag3..."
-              />
-              <label className="label">
-                <span className="label-text-alt">Separate tags with commas</span>
-              </label>
-            </div>
-          )}
+            <TeamMemberSelect
+              projectId={projectId}
+              value={editAssignedTo}
+              onChange={(userId) => setEditAssignedTo(userId ?? '')}
+              isSharedProject={isSharedProject}
+              placeholder="Assign to team member..."
+            />
           <div className="flex justify-end gap-2">
             <button
               onClick={() => setIsEditing(false)}
@@ -298,7 +275,7 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, projectId, onUpdate, onArchiv
             />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <h3 className={`font-medium text-sm ${todo.completed ? 'line-through text-base-content/60' : ''}`}>
+                <h3 className={`font-semibold text-lg ${todo.completed ? 'line-through text-base-content/60' : ''}`}>
                   {todo.text}
                 </h3>
                 <div className={`badge badge-xs ${getPriorityColor(todo.priority || 'medium')}`}>
@@ -324,7 +301,7 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, projectId, onUpdate, onArchiv
                 )}
               </div>
               {todo.description && (
-                <p className={`text-xs text-base-content/70 mt-1 ${todo.completed ? 'line-through' : ''}`}>
+                <p className={`text-sm text-base-content/70 mt-1 ${todo.completed ? 'line-through' : ''}`}>
                   {todo.description}
                 </p>
               )}
@@ -346,16 +323,6 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, projectId, onUpdate, onArchiv
                     👤 Assigned to: {typeof todo.assignedTo === 'object' 
                       ? `${todo.assignedTo.firstName} ${todo.assignedTo.lastName}` 
                       : todo.assignedTo}
-                  </div>
-                )}
-                {/* Tags hidden - user doesn't want them */}
-                {false && todo.tags && todo.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {todo.tags.map((tag, index) => (
-                      <span key={index} className="badge badge-xs badge-outline">
-                        #{tag}
-                      </span>
-                    ))}
                   </div>
                 )}
                 <div className="text-xs text-base-content/50">
@@ -481,7 +448,6 @@ const NewTodoForm: React.FC<NewTodoFormProps> = ({ projectId, onAdd, isSharedPro
   const [dueDate, setDueDate] = useState('');
   const [reminderDate, setReminderDate] = useState('');
   const [assignedTo, setAssignedTo] = useState('');
-  const [tags, setTags] = useState('');
   const [loading, setLoading] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -491,8 +457,6 @@ const NewTodoForm: React.FC<NewTodoFormProps> = ({ projectId, onAdd, isSharedPro
 
     setLoading(true);
     try {
-      const tagsArray = tags.split(',').map(tag => tag.trim()).filter(tag => tag);
-      
       await projectAPI.createTodo(projectId, {
         text: title.trim(),
         description: description.trim(),
@@ -501,8 +465,7 @@ const NewTodoForm: React.FC<NewTodoFormProps> = ({ projectId, onAdd, isSharedPro
         dueDate: dueDate || undefined,
         reminderDate: reminderDate || undefined,
         assignedTo: assignedTo || undefined,
-        parentTodoId: parentTodoId || undefined,
-        tags: tagsArray.length > 0 ? tagsArray : undefined
+        parentTodoId: parentTodoId || undefined
       });
       
       // Reset form
@@ -513,7 +476,6 @@ const NewTodoForm: React.FC<NewTodoFormProps> = ({ projectId, onAdd, isSharedPro
       setDueDate('');
       setReminderDate('');
       setAssignedTo('');
-      setTags('');
       setIsExpanded(false);
       onAdd();
     } catch (error) {
@@ -651,29 +613,11 @@ const NewTodoForm: React.FC<NewTodoFormProps> = ({ projectId, onAdd, isSharedPro
           <TeamMemberSelect
             projectId={projectId}
             value={assignedTo}
-            onChange={setAssignedTo}
+            onChange={(userId) => setAssignedTo(userId ?? '')}
             isSharedProject={isSharedProject}
             placeholder="Assign to team member..."
           />
 
-          {/* Tags hidden - user doesn't want them */}
-          {false && (
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text font-medium">Tags (Optional)</span>
-              </label>
-              <input
-                type="text"
-                value={tags}
-                onChange={(e) => setTags(e.target.value)}
-                className="input input-bordered border-base-300"
-                placeholder="tag1, tag2, tag3..."
-              />
-              <label className="label">
-                <span className="label-text-alt">Separate tags with commas</span>
-              </label>
-            </div>
-          )}
           
           <div className="flex justify-end">
             <button

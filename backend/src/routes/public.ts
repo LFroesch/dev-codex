@@ -189,41 +189,127 @@ router.get('/projects', async (req, res) => {
     }
 
     if (search) {
+      // Search in project fields and also match projects by owner names
       query.$or = [
         { name: { $regex: search, $options: 'i' } },
         { description: { $regex: search, $options: 'i' } },
-        { publicDescription: { $regex: search, $options: 'i' } }
+        { publicDescription: { $regex: search, $options: 'i' } },
+        { tags: { $regex: search, $options: 'i' } }
       ];
     }
 
-    const [projects, total] = await Promise.all([
-      Project.find(query)
-        .populate('ownerId', 'firstName lastName publicSlug isPublic')
-        .select('name description publicDescription color category tags publicSlug createdAt updatedAt selectedTechnologies')
-        .sort({ updatedAt: -1 })
-        .skip(skip)
-        .limit(parseInt(limit as string)),
-      Project.countDocuments(query)
-    ]);
+    let projects, total;
+    
+    if (search) {
+      // Use aggregation for user name search
+      const searchRegex = { $regex: search, $options: 'i' };
+      
+      const aggregationPipeline = [
+        {
+          $match: {
+            isPublic: true,
+            isArchived: false,
+            ...(category && category !== 'all' ? { category } : {}),
+            ...(tag ? { tags: { $in: [tag] } } : {})
+          }
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'ownerId',
+            foreignField: '_id',
+            as: 'owner'
+          }
+        },
+        {
+          $match: {
+            $or: [
+              { name: searchRegex },
+              { description: searchRegex },
+              { publicDescription: searchRegex },
+              { tags: searchRegex },
+              { 'owner.firstName': searchRegex },
+              { 'owner.lastName': searchRegex }
+            ]
+          }
+        },
+        {
+          $addFields: {
+            ownerId: { $arrayElemAt: ['$owner', 0] }
+          }
+        },
+        {
+          $project: {
+            name: 1,
+            description: 1,
+            publicDescription: 1,
+            color: 1,
+            category: 1,
+            tags: 1,
+            publicSlug: 1,
+            createdAt: 1,
+            updatedAt: 1,
+            selectedTechnologies: 1,
+            'ownerId.firstName': 1,
+            'ownerId.lastName': 1,
+            'ownerId.publicSlug': 1,
+            'ownerId.isPublic': 1,
+            'ownerId._id': 1
+          }
+        },
+        { $sort: { updatedAt: -1 as -1 } }
+      ];
 
-    const publicProjects = projects.map(project => ({
-      id: project._id,
-      name: project.name,
-      description: project.publicDescription || project.description,
-      color: project.color,
-      category: project.category,
-      tags: project.tags,
-      publicSlug: project.publicSlug,
-      createdAt: project.createdAt,
-      updatedAt: project.updatedAt,
-      technologies: project.selectedTechnologies?.slice(0, 3) || [],
-      owner: ((project.ownerId as any)?.isPublic) ? {
-        id: (project.ownerId as any)._id,
-        firstName: (project.ownerId as any).firstName,
-        lastName: (project.ownerId as any).lastName,
-        publicSlug: (project.ownerId as any).publicSlug
-      } : null
-    }));
+      const [projectsResult, countResult] = await Promise.all([
+        Project.aggregate([
+          ...aggregationPipeline,
+          { $skip: skip },
+          { $limit: parseInt(limit as string) }
+        ]),
+        Project.aggregate([
+          ...aggregationPipeline,
+          { $count: 'total' }
+        ])
+      ]);
+
+      projects = projectsResult;
+      total = countResult.length > 0 ? countResult[0].total : 0;
+    } else {
+      // Regular query without search
+      [projects, total] = await Promise.all([
+        Project.find(query)
+          .populate('ownerId', 'firstName lastName publicSlug isPublic')
+          .select('name description publicDescription color category tags publicSlug createdAt updatedAt selectedTechnologies')
+          .sort({ updatedAt: -1 })
+          .skip(skip)
+          .limit(parseInt(limit as string)),
+        Project.countDocuments(query)
+      ]);
+    }
+
+    const publicProjects = projects.map((project: any) => {
+      // Handle both aggregation results and populated results
+      const owner = project.ownerId;
+      
+      return {
+        id: project._id,
+        name: project.name,
+        description: project.publicDescription || project.description,
+        color: project.color,
+        category: project.category,
+        tags: project.tags,
+        publicSlug: project.publicSlug,
+        createdAt: project.createdAt,
+        updatedAt: project.updatedAt,
+        technologies: project.selectedTechnologies?.slice(0, 3) || [],
+        owner: (owner?.isPublic) ? {
+          id: owner._id,
+          firstName: owner.firstName,
+          lastName: owner.lastName,
+          publicSlug: owner.publicSlug
+        } : null
+      };
+    });
 
     res.json({
       success: true,

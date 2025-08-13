@@ -349,7 +349,8 @@ const Layout: React.FC = () => {
   // Filter projects and group by category
   const filteredProjects = projects.filter(p => 
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (p.category && p.category.toLowerCase().includes(searchTerm.toLowerCase()))
+    (p.category && p.category.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (p.tags && p.tags.some((tag: string) => tag.toLowerCase().includes(searchTerm.toLowerCase())))
   );
 
   const currentProjects = filteredProjects.filter(p => !p.isArchived && !p.isShared);
@@ -419,7 +420,7 @@ const Layout: React.FC = () => {
                   </svg>
                   <input
                     type="text"
-                    placeholder="Search..."
+                    placeholder="Search projects, tags..."
                     value={searchTerm}
                     onChange={(e) => {
                       const newSearchTerm = e.target.value;
@@ -429,7 +430,8 @@ const Layout: React.FC = () => {
                       if (newSearchTerm.trim()) {
                         const filteredCount = projects.filter(p => 
                           p.name.toLowerCase().includes(newSearchTerm.toLowerCase()) ||
-                          (p.category && p.category.toLowerCase().includes(newSearchTerm.toLowerCase()))
+                          (p.category && p.category.toLowerCase().includes(newSearchTerm.toLowerCase())) ||
+                          (p.tags && p.tags.some((tag: string) => tag.toLowerCase().includes(newSearchTerm.toLowerCase())))
                         ).length;
                         
                         analytics.trackSearch(newSearchTerm, filteredCount, 'MobileSearch');
@@ -480,7 +482,7 @@ const Layout: React.FC = () => {
             
             {/* Third row: Navigation buttons */}
             {location.pathname !== '/support' && (
-            <div className="flex my-2 gap-1 overflow-x-auto scrollbar-hide self-center">
+            <div className="flex my-2 gap-1 overflow-x-auto scrollbar-hide self-center pb-2">
               <button 
                 className={`btn btn-sm ${searchParams.get('view') === 'projects' ? 'btn-primary' : 'btn-ghost'} gap-1 font-bold whitespace-nowrap`}
                 onClick={() => handleNavigateWithCheck('/notes?view=projects')}
@@ -547,7 +549,7 @@ const Layout: React.FC = () => {
                   </svg>
                   <input
                     type="text"
-                    placeholder="Search projects..."
+                    placeholder="Search projects, tags..."
                     value={searchTerm}
                     onChange={(e) => {
                       setSearchTerm(e.target.value);
@@ -672,7 +674,7 @@ const Layout: React.FC = () => {
         </div>
       </header>
 
-      <div className="flex-1 w-full max-w-7xl mx-auto px-4 bg-base-100 flex flex-col mb-4">
+      <div className="flex-1 w-full max-w-7xl mx-auto px-4 bg-base-100 flex flex-col mb-4 min-h-0">
         {/* Render content based on current route */}
         {searchParams.get('view') === 'projects' ? (
           /* My Projects Tab - Modern Style */
@@ -709,7 +711,7 @@ const Layout: React.FC = () => {
             </div>
 
             {/* Tab Content */}
-            <div className="flex-1 overflow-auto border border-base-content/10 bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-sm">
+            <div className="flex-1 overflow-auto border border-base-content/10 bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-sm container-height-fix">
               <div className="p-6">
                 <div className="space-y-4">
                 {activeProjectTab === 'active' && (
@@ -973,7 +975,7 @@ const Layout: React.FC = () => {
               </div>
             </div>
             
-            <div className="flex-1 overflow-auto border border-base-content/10 bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-sm">
+            <div className="flex-1 overflow-auto border border-base-content/10 bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-sm container-height-fix">
               <div className="p-1">
                 <Outlet />
               </div>
@@ -981,7 +983,7 @@ const Layout: React.FC = () => {
           </>
         ) : location.pathname.startsWith('/project/') || location.pathname.startsWith('/user/') ? (
           /* Public Pages - Same styling as discover */
-          <div className="flex-1 overflow-auto border border-base-content/10 bg-gradient-to-br from-base-50 to-base-100/50 mx-4 my-4 rounded-2xl shadow-2xl backdrop-blur-sm">
+          <div className="flex-1 overflow-auto border border-base-content/10 bg-gradient-to-br from-base-50 to-base-100/50 mx-4 my-4 rounded-2xl shadow-2xl backdrop-blur-sm container-height-fix">
             <div className="p-1">
               <Outlet />
             </div>
@@ -998,7 +1000,7 @@ const Layout: React.FC = () => {
               </div>
             </div>
             
-            <div className="flex-1 overflow-auto border border-base-content/10 bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-sm">
+            <div className="flex-1 overflow-auto border border-base-content/10 bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-sm container-height-fix">
               <div className="p-1">
                 <Outlet />
               </div>
@@ -1040,7 +1042,7 @@ const Layout: React.FC = () => {
               </div>
             </div>
             
-            <div className="flex-1 overflow-auto border border-base-content/10 bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-sm">
+            <div className="flex-1 overflow-auto border border-base-content/10 bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-sm container-height-fix">
               <div className="p-1">
                 <Outlet context={{ 
                   selectedProject, 
@@ -1056,7 +1058,7 @@ const Layout: React.FC = () => {
           </>
         ) : location.pathname === '/billing' || location.pathname === '/account-settings' ? (
           /* Billing and Account Settings - No sub-menu */
-          <div className="flex-1 overflow-auto border border-base-content/10 bg-gradient-to-br from-base-50 to-base-100/50 mx-4 my-4 rounded-2xl shadow-2xl backdrop-blur-sm">
+          <div className="flex-1 overflow-auto border border-base-content/10 bg-gradient-to-br from-base-50 to-base-100/50 mx-4 my-4 rounded-2xl shadow-2xl backdrop-blur-sm container-height-fix">
             <div className="p-1">
               <Outlet />
             </div>
@@ -1082,7 +1084,7 @@ const Layout: React.FC = () => {
             )}
 
             {/* Page Content */}
-            <div className={`flex-1 overflow-auto border border-base-content/10 bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-sm ${location.pathname === '/support' ? 'mt-4' : ''}`}>
+            <div className={`flex-1 overflow-auto border border-base-content/10 bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-sm container-height-fix ${location.pathname === '/support' ? 'mt-4' : ''}`}>
               {selectedProject ? (
                 <div className="p-1">
                   <Outlet context={{ 

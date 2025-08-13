@@ -11,7 +11,7 @@ import BillingCancelPage from './pages/BillingCancelPage';
 import Layout from './components/Layout';
 import CreateProject from './pages/CreateProject';
 import NotesPage from './pages/NotesPage';
-import RoadmapPage from './pages/RoadmapPage';
+import StackPage from './pages/StackPage';
 import DocsPage from './pages/DocsPage';
 import DeploymentPage from './pages/DeploymentPage';
 import PublicPage from './pages/PublicPage';
@@ -52,7 +52,7 @@ const App: React.FC = () => {
           <Route path="/" element={<Layout />}>
             <Route index element={<Navigate to="/notes?view=projects" />} />
             <Route path="notes" element={<NotesPage />} />
-            <Route path="roadmap" element={<RoadmapPage />} />
+            <Route path="stack" element={<StackPage />} />
             <Route path="docs" element={<DocsPage />} />
             <Route path="deployment" element={<DeploymentPage />} />
             <Route path="public" element={<PublicPage />} />

@@ -13,6 +13,7 @@ export interface IUser extends Document {
   stripeCustomerId?: string;
   subscriptionId?: string;
   subscriptionStatus?: 'active' | 'inactive' | 'canceled' | 'past_due' | 'incomplete_expired';
+  lastBillingUpdate?: Date;
   isAdmin: boolean;
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
@@ -81,6 +82,10 @@ const userSchema = new Schema<IUser>({
     type: String,
     enum: ['active', 'inactive', 'canceled', 'past_due', 'incomplete_expired'],
     default: 'inactive'
+  },
+  lastBillingUpdate: {
+    type: Date,
+    required: false
   },
   isAdmin: {
     type: Boolean,

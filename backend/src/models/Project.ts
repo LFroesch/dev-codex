@@ -20,7 +20,6 @@ const todoSchema = new Schema({
   reminderDate: { type: Date },
   assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   parentTodoId: { type: String },
-  tags: [{ type: String, trim: true }],
   createdAt: { type: Date, default: Date.now },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
@@ -138,7 +137,6 @@ export interface IProject extends Document {
     reminderDate?: Date;
     assignedTo?: mongoose.Types.ObjectId;
     parentTodoId?: string;
-    tags?: string[];
     createdAt: Date;
     createdBy?: mongoose.Types.ObjectId;
     updatedBy?: mongoose.Types.ObjectId;

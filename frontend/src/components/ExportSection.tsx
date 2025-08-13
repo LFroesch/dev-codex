@@ -39,6 +39,7 @@ const ExportSection: React.FC<ExportSectionProps> = ({ selectedProject }) => {
   const [exportFormat, setExportFormat] = useState<'json' | 'prompt' | 'markdown'>('json');
   const [exportedData, setExportedData] = useState<string>('');
   const [showExportResult, setShowExportResult] = useState(false);
+  const [customAiRequest, setCustomAiRequest] = useState<string>('');
 
   const toggleOption = (key: keyof ExportOptions) => {
     setExportOptions(prev => ({
@@ -157,9 +158,26 @@ const ExportSection: React.FC<ExportSectionProps> = ({ selectedProject }) => {
   };
 
   const generatePromptFormat = (data: any): string => {
-    let prompt = `# Project Context for AI Assistant
+    const requestSection = customAiRequest.trim() 
+      ? customAiRequest 
+      : `[Please replace this text with what you need help with regarding this project. For example:
+- Code review or optimization suggestions
+- Architecture advice
+- Debugging assistance
+- Feature implementation guidance
+- Testing strategies
+- Performance improvements
+- Security considerations
+- Deployment help
+- Documentation improvements]`;
 
-I'm working on a project called "${selectedProject.name}" and need your help. Here's the complete context:
+    let prompt = `
+# Project Context for AI Assistant for "${selectedProject.name}"
+
+${selectedProject.description ? `**Description:** ${selectedProject.description}` : ''}
+
+## 🤖 MY REQUEST:
+${requestSection}
 
 ## 📋 PROJECT OVERVIEW`;
 
@@ -172,13 +190,6 @@ I'm working on a project called "${selectedProject.name}" and need your help. He
 **Current Environment:** ${data.basicInfo.stagingEnvironment}`;
       if (data.basicInfo.color) prompt += `
 **Theme Color:** ${data.basicInfo.color}`;
-    }
-
-    if (data.description) {
-      prompt += `
-
-**Project Description:**
-${data.description}`;
     }
 
     if (data.tags) {
@@ -349,22 +360,7 @@ ${noteContent}`;
 
     prompt += `
 
----
-
-## 🤖 MY REQUEST:
-[Please describe what you need help with regarding this project. For example:
-- Code review or optimization suggestions
-- Architecture advice
-- Debugging assistance
-- Feature implementation guidance
-- Testing strategies
-- Performance improvements
-- Security considerations
-- Deployment help
-- Documentation improvements]
-
-## 💡 ADDITIONAL CONTEXT:
-[Add any specific details about your current challenge, error messages, or particular aspects you want to focus on]`;
+---`;
 
     return prompt;
   };
@@ -509,18 +505,25 @@ ${noteContent}`;
         </select>
       </div>
 
+      {/* Custom AI Request Input - Only show when AI Prompt format is selected */}
+      {exportFormat === 'prompt' && (
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Custom AI Request</label>
+          <textarea
+            value={customAiRequest}
+            onChange={(e) => setCustomAiRequest(e.target.value)}
+            placeholder="Type your custom request here (optional). If left empty, a default template will be used."
+            className="textarea textarea-bordered w-full text-sm"
+            rows={3}
+          />
+        </div>
+      )}
+
       {/* Data Selection - Compact Grid */}
       <div>
         <div className="flex justify-between items-center mb-2">
           <span className="text-sm font-medium">Select Data ({selectedCount})</span>
-          <div className="flex gap-1">
-            <button onClick={() => toggleAll(true)} className="btn btn-ghost btn-xs">
-              All
-            </button>
-            <button onClick={() => toggleAll(false)} className="btn btn-ghost btn-xs">
-              None
-            </button>
-          </div>
+          
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
@@ -545,6 +548,14 @@ ${noteContent}`;
         </div>
       </div>
 
+        <div className="ml-5 flex gap-1">
+            <button onClick={() => toggleAll(true)} className="btn btn-ghost btn-xs">
+              All
+            </button>
+            <button onClick={() => toggleAll(false)} className="btn btn-ghost btn-xs">
+              None
+            </button>
+          </div>
       {/* Action Buttons */}
       <div className="flex gap-2">
         <button

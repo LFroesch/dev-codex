@@ -12,6 +12,7 @@ const EnhancedTextEditor: React.FC<EnhancedTextEditorProps> = ({
   placeholder = "Write your note here..." 
 }) => {
   const [isPreview, setIsPreview] = useState(false);
+  const [lastSelection, setLastSelection] = useState({ start: 0, end: 0 });
 
   // Enhanced markdown to HTML converter with proper link handling
   const renderMarkdown = (text: string): string => {
@@ -83,34 +84,38 @@ const EnhancedTextEditor: React.FC<EnhancedTextEditorProps> = ({
     return processedText;
   };
 
-  const insertMarkdown = (before: string, after: string = '', placeholder: string = '') => {
+  const insertMarkdown = (before: string, after: string = '') => {
     const textarea = document.querySelector('.enhanced-textarea') as HTMLTextAreaElement;
     if (!textarea) return;
 
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
+    // Use stored selection if textarea has lost focus, otherwise use current selection
+    const start = textarea === document.activeElement ? textarea.selectionStart : lastSelection.start;
+    const end = textarea === document.activeElement ? textarea.selectionEnd : lastSelection.end;
     const selectedText = value.slice(start, end);
-    const textToInsert = selectedText || placeholder;
+    const hasSelection = start !== end;
     
+    const textToInsert = hasSelection ? selectedText : '';
     const newText = value.slice(0, start) + before + textToInsert + after + value.slice(end);
     onChange(newText);
     
-    // Restore focus and cursor position
+    // Restore focus and cursor position after React re-renders
     setTimeout(() => {
-      textarea.focus();
-      if (selectedText) {
-        // If text was selected, select the newly formatted text
-        textarea.setSelectionRange(start + before.length, start + before.length + textToInsert.length);
-      } else {
-        // If no text was selected, place cursor between the markdown syntax
-        const newPos = start + before.length + placeholder.length;
-        textarea.setSelectionRange(newPos, newPos);
+      const updatedTextarea = document.querySelector('.enhanced-textarea') as HTMLTextAreaElement;
+      if (updatedTextarea) {
+        updatedTextarea.focus();
+        if (hasSelection) {
+          // Keep the formatted text selected
+          updatedTextarea.setSelectionRange(start + before.length, start + before.length + textToInsert.length);
+        } else {
+          // Place cursor between the markdown syntax
+          updatedTextarea.setSelectionRange(start + before.length, start + before.length);
+        }
       }
     }, 0);
   };
 
   const handleButtonClick = (e: React.MouseEvent, action: () => void) => {
-    e.preventDefault(); // Prevent form submission
+    e.preventDefault(); // Prevent focus change and form submission
     e.stopPropagation(); // Stop event bubbling
     action();
   };
@@ -119,31 +124,31 @@ const EnhancedTextEditor: React.FC<EnhancedTextEditorProps> = ({
     { 
       icon: '**B**', 
       label: 'Bold', 
-      action: () => insertMarkdown('**', '**', 'bold text'),
+      action: () => insertMarkdown('**', '**'),
       className: 'font-bold'
     },
     { 
       icon: '*I*', 
       label: 'Italic', 
-      action: () => insertMarkdown('*', '*', 'italic text'),
+      action: () => insertMarkdown('*', '*'),
       className: 'italic'
     },
     { 
       icon: '</>', 
       label: 'Code', 
-      action: () => insertMarkdown('`', '`', 'code'),
+      action: () => insertMarkdown('`', '`'),
       className: 'font-mono text-xs'
     },
     { 
       icon: '""', 
       label: 'Quote', 
-      action: () => insertMarkdown('> ', '', 'quote'),
+      action: () => insertMarkdown('> '),
       className: ''
     },
     { 
       icon: '•', 
       label: 'List', 
-      action: () => insertMarkdown('- ', '', 'list item'),
+      action: () => insertMarkdown('- '),
       className: ''
     },
   ];
@@ -157,7 +162,7 @@ const EnhancedTextEditor: React.FC<EnhancedTextEditorProps> = ({
             <button
               key={idx}
               type="button"
-              onClick={(e) => handleButtonClick(e, btn.action)}
+              onMouseDown={(e) => handleButtonClick(e, btn.action)}
               className={`btn btn-xs btn-ghost border border-base-300 hover:bg-base-300 ${btn.className}`}
               title={btn.label}
             >
@@ -169,7 +174,7 @@ const EnhancedTextEditor: React.FC<EnhancedTextEditorProps> = ({
           
           <button
             type="button"
-            onClick={(e) => handleButtonClick(e, () => insertMarkdown('# ', '', 'Header'))}
+            onMouseDown={(e) => handleButtonClick(e, () => insertMarkdown('# '))}
             className="btn btn-xs btn-ghost border border-base-300 hover:bg-base-300 font-bold"
             title="Header"
           >
@@ -177,7 +182,7 @@ const EnhancedTextEditor: React.FC<EnhancedTextEditorProps> = ({
           </button>
           <button
             type="button"
-            onClick={(e) => handleButtonClick(e, () => insertMarkdown('## ', '', 'Header'))}
+            onMouseDown={(e) => handleButtonClick(e, () => insertMarkdown('## '))}
             className="btn btn-xs btn-ghost border border-base-300 hover:bg-base-300 font-bold"
             title="Header 2"
           >
@@ -233,6 +238,13 @@ const EnhancedTextEditor: React.FC<EnhancedTextEditorProps> = ({
             className="enhanced-textarea w-full min-h-[300px] sm:min-h-[500px] lg:min-h-[600px] xl:min-h-[700px] p-6 resize-none border-0 focus:outline-none bg-base-100 text-base-content font-mono text-sm leading-relaxed rounded-b-lg"
             value={value}
             onChange={(e) => onChange(e.target.value)}
+            onSelect={(e) => {
+              const target = e.target as HTMLTextAreaElement;
+              setLastSelection({ start: target.selectionStart, end: target.selectionEnd });
+            }}
+            onBlur={(e) => {
+              setLastSelection({ start: e.target.selectionStart, end: e.target.selectionEnd });
+            }}
             placeholder={placeholder}
             style={{
               fontFamily: "'JetBrains Mono', 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', monospace"

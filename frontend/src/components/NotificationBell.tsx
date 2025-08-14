@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { notificationAPI, invitationAPI, Notification } from '../api';
+import { unsavedChangesManager } from '../utils/unsavedChanges';
 
 const NotificationBell: React.FC = () => {
   const [unreadCount, setUnreadCount] = useState(0);
@@ -81,10 +82,14 @@ const NotificationBell: React.FC = () => {
         } else {
           // Invitation already processed, redirect to project
           if (notification.relatedProjectId) {
-            const projectId = typeof notification.relatedProjectId === 'string' ? notification.relatedProjectId : notification.relatedProjectId._id;
-            localStorage.setItem('selectedProjectId', projectId);
-            window.dispatchEvent(new CustomEvent('selectProject', { detail: { projectId } }));
-            navigate('/notes');
+            // Check for unsaved changes before navigation
+            const canNavigate = await unsavedChangesManager.checkNavigationAllowed();
+            if (canNavigate) {
+              const projectId = typeof notification.relatedProjectId === 'string' ? notification.relatedProjectId : notification.relatedProjectId._id;
+              localStorage.setItem('selectedProjectId', projectId);
+              window.dispatchEvent(new CustomEvent('selectProject', { detail: { projectId } }));
+              navigate('/notes');
+            }
           }
         }
       } catch (error) {
@@ -95,13 +100,17 @@ const NotificationBell: React.FC = () => {
       }
     } else if (notification.relatedProjectId) {
       // For other notification types, redirect to the associated project
-      // Store the project ID and trigger a custom event
-      const projectId = typeof notification.relatedProjectId === 'string' ? notification.relatedProjectId : notification.relatedProjectId._id;
-      localStorage.setItem('selectedProjectId', projectId);
-      
-      // Dispatch custom event to notify Layout component
-      window.dispatchEvent(new CustomEvent('selectProject', { detail: { projectId } }));
-      navigate('/notes');
+      // Check for unsaved changes before navigation
+      const canNavigate = await unsavedChangesManager.checkNavigationAllowed();
+      if (canNavigate) {
+        // Store the project ID and trigger a custom event
+        const projectId = typeof notification.relatedProjectId === 'string' ? notification.relatedProjectId : notification.relatedProjectId._id;
+        localStorage.setItem('selectedProjectId', projectId);
+        
+        // Dispatch custom event to notify Layout component
+        window.dispatchEvent(new CustomEvent('selectProject', { detail: { projectId } }));
+        navigate('/notes');
+      }
     }
   };
 
@@ -123,15 +132,19 @@ const NotificationBell: React.FC = () => {
         setShowInviteSuccessModal(true);
         
         // Navigate to the project after a short delay
-        setTimeout(() => {
+        setTimeout(async () => {
           if (selectedInvitation.relatedProjectId) {
-            const projectId = typeof selectedInvitation.relatedProjectId === 'string' ? selectedInvitation.relatedProjectId : selectedInvitation.relatedProjectId._id;
-            localStorage.setItem('selectedProjectId', projectId);
-            
-            // Dispatch custom event to notify Layout component
-            window.dispatchEvent(new CustomEvent('selectProject', { detail: { projectId } }));
+            // Check for unsaved changes before navigation
+            const canNavigate = await unsavedChangesManager.checkNavigationAllowed();
+            if (canNavigate) {
+              const projectId = typeof selectedInvitation.relatedProjectId === 'string' ? selectedInvitation.relatedProjectId : selectedInvitation.relatedProjectId._id;
+              localStorage.setItem('selectedProjectId', projectId);
+              
+              // Dispatch custom event to notify Layout component
+              window.dispatchEvent(new CustomEvent('selectProject', { detail: { projectId } }));
+              navigate('/notes');
+            }
           }
-          navigate('/notes');
         }, 1500);
       } else {
         setInviteMessage('Invitation not found or already processed');

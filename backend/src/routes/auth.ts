@@ -9,6 +9,7 @@ import dotenv from 'dotenv';
 import { User } from '../models/User';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import RateLimit from '../models/RateLimit';
+import { AnalyticsService } from '../middleware/analytics';
 
 dotenv.config();
 
@@ -206,9 +207,23 @@ router.post('/login', async (req, res) => {
 });
 
 // Logout route
-router.post('/logout', (_req, res) => {
-  res.clearCookie('token');
-  res.json({ message: 'Logged out successfully' });
+router.post('/logout', async (req, res) => {
+  try {
+    const sessionId = req.headers['x-session-id'] as string;
+    
+    // End the analytics session if one exists
+    if (sessionId) {
+      await AnalyticsService.endSession(sessionId);
+    }
+    
+    res.clearCookie('token');
+    res.json({ message: 'Logged out successfully' });
+  } catch (error) {
+    console.error('Error during logout:', error);
+    // Still clear cookie even if session cleanup fails
+    res.clearCookie('token');
+    res.json({ message: 'Logged out successfully' });
+  }
 });
 
 // Check auth status

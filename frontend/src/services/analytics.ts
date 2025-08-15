@@ -62,14 +62,18 @@ class AnalyticsService {
   private readonly MAX_PENDING_EVENTS = 100;
   private readonly RETRY_ATTEMPTS = 3;
   private readonly RETRY_DELAY = 1000;
+  private isAuthenticated = false;
 
   private constructor() {
     this.setupEventListeners();
     this.startInactivityTimer();
     
-    // Try to restore existing session
+    // Check if user is already authenticated (has cookie)
+    this.checkAuthenticationStatus();
+    
+    // Try to restore existing session only if authenticated
     const stored = localStorage.getItem('analytics_session');
-    if (stored) {
+    if (stored && this.isAuthenticated) {
       try {
         const data = JSON.parse(stored);
         const now = Date.now();
@@ -146,7 +150,14 @@ class AnalyticsService {
   }
 
   async startSession(): Promise<string> {
+    // Don't start session if not authenticated
+    if (!this.isAuthenticated) {
+      return 'offline_unauthenticated';
+    }
+
     if (this.session) {
+      // Reset activity timer when starting/resuming session
+      this.startInactivityTimer();
       return this.session.sessionId;
     }
 
@@ -156,6 +167,11 @@ class AnalyticsService {
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' }
       });
+
+      if (response.status === 401) {
+        this.isAuthenticated = false;
+        return 'offline_unauthenticated';
+      }
 
       if (response.ok) {
         const { sessionId } = await response.json();
@@ -238,9 +254,16 @@ class AnalyticsService {
   }
 
   async trackEvent(event: AnalyticsEvent) {
-    if (!this.session) {
-      console.warn('Analytics: No active session, event ignored');
+    if (!this.isAuthenticated) {
       return;
+    }
+
+    if (!this.session) {
+      await this.startSession();
+      if (!this.session) {
+        console.warn('Analytics: Failed to start session, event ignored');
+        return;
+      }
     }
 
     // Add timestamp if not provided
@@ -381,7 +404,7 @@ class AnalyticsService {
       projectsViewed: this.session.projectsViewed.length,
       events: this.session.events.length,
       pendingEvents: this.pendingEvents.length,
-      isActive: !document.hidden,
+      isActive: this.session !== null && !document.hidden && timeSinceLastActivity < this.SESSION_TIMEOUT,
       isOnline: this.isOnline,
       startTime: new Date(this.session.startTime).toISOString(),
       lastActivity: new Date(this.session.lastActivity).toISOString(),
@@ -570,27 +593,51 @@ class AnalyticsService {
 
   setCurrentUser(userId: string | null) {
     this.currentUserId = userId;
+    this.isAuthenticated = userId !== null;
     
     if (this.session && userId && !this.session.userId) {
       this.session.userId = userId;
       this.updateStorage();
     }
+    
+    // If user logged out, end session
+    if (!userId && this.session) {
+      this.endSession();
+    }
   }
 
   clearUserSession() {
     this.currentUserId = null;
+    this.isAuthenticated = false;
     this.endSession();
     localStorage.removeItem('analytics_session');
   }
 
+  // Check authentication status by trying to make a simple auth request
+  private async checkAuthenticationStatus() {
+    try {
+      const response = await fetch('/api/auth/me', {
+        method: 'GET',
+        credentials: 'include'
+      });
+      this.isAuthenticated = response.ok;
+      if (response.ok) {
+        const data = await response.json();
+        this.currentUserId = data.user?.id || null;
+      }
+    } catch (error) {
+      this.isAuthenticated = false;
+    }
+  }
+
   async setCurrentProject(projectId: string | null) {
-    if (this.session) {
+    if (this.session && this.isAuthenticated) {
       const previousProjectId = this.session.currentProjectId;
       
       // Call backend to record time spent on previous project
       if (this.isOnline && (previousProjectId !== projectId)) {
         try {
-          await fetch('/api/analytics/project/switch', {
+          const response = await fetch('/api/analytics/project/switch', {
             method: 'POST',
             credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
@@ -599,6 +646,12 @@ class AnalyticsService {
               newProjectId: projectId
             })
           });
+          
+          if (response.status === 401 || response.status === 403) {
+            console.log('Analytics: Project switch failed - user not authenticated');
+            this.isAuthenticated = false;
+            return;
+          }
         } catch (error) {
           console.warn('Failed to record project switch:', error);
         }
@@ -607,7 +660,7 @@ class AnalyticsService {
       this.session.currentProjectId = projectId || undefined;
       this.updateStorage();
       
-      if (projectId && this.isOnline) {
+      if (projectId && this.isOnline && this.isAuthenticated) {
         await this.sendHeartbeatNow();
       }
     }
@@ -697,6 +750,13 @@ class AnalyticsService {
   }
 
   private recordActivity() {
+    // Only start sessions if user is authenticated
+    if (!this.session && this.isAuthenticated) {
+      console.log('Analytics: No active session detected, starting new session due to activity');
+      this.startSession().catch(console.error);
+      return;
+    }
+
     if (this.session) {
       this.session.lastActivity = Date.now();
       this.updateStorage();
@@ -709,7 +769,14 @@ class AnalyticsService {
   }
 
   private startInactivityTimer() {
-    // Keep session alive as long as page is open
+    if (this.activityTimer) {
+      clearTimeout(this.activityTimer);
+    }
+    
+    this.activityTimer = window.setTimeout(async () => {
+      console.log('Analytics: Session timeout due to inactivity');
+      await this.endSession();
+    }, this.SESSION_TIMEOUT);
   }
 
   private startHeartbeat() {
@@ -732,7 +799,7 @@ class AnalyticsService {
   }
 
   private async sendHeartbeat() {
-    if (!this.session || !this.isOnline) return;
+    if (!this.session || !this.isOnline || !this.isAuthenticated) return;
 
     try {
       this.session.lastActivity = Date.now();
@@ -756,7 +823,8 @@ class AnalyticsService {
 
       if (!response.ok) {
         if (response.status === 401 || response.status === 403) {
-          console.warn('Analytics: Session unauthorized, ending session');
+          console.warn('Analytics: Session unauthorized, ending session and stopping heartbeat');
+          this.isAuthenticated = false;
           this.session = null;
           localStorage.removeItem('analytics_session');
           this.stopHeartbeat();

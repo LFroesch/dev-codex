@@ -21,18 +21,51 @@ export const useAnalytics = (options: UseAnalyticsOptions = {}) => {
   const previousValues = useRef<Record<string, any>>({});
   const sessionInitialized = useRef(false);
   const [sessionReady, setSessionReady] = useState(false);
+  const sessionCheckInterval = useRef<number | null>(null);
 
-  // Start session only once per app lifecycle
+  // Start session and monitor session state
   useEffect(() => {
-    if (!sessionInitialized.current) {
-      analyticsService.startSession().then(() => {
-        setSessionReady(true);
-      }).catch(error => {
-        console.error('Failed to initialize analytics session:', error);
-        setSessionReady(true); // Set to true anyway to avoid blocking
-      });
-      sessionInitialized.current = true;
-    }
+    const initializeSession = async () => {
+      if (!sessionInitialized.current) {
+        try {
+          await analyticsService.startSession();
+          setSessionReady(true);
+        } catch (error) {
+          console.error('Failed to initialize analytics session:', error);
+          setSessionReady(true); // Set to true anyway to avoid blocking
+        }
+        sessionInitialized.current = true;
+      }
+    };
+
+    initializeSession();
+
+    // Check session state periodically and restart if needed
+    sessionCheckInterval.current = window.setInterval(() => {
+      const hasActiveSession = analyticsService.hasActiveSession();
+      if (!hasActiveSession && sessionInitialized.current) {
+        // Session ended, allow it to restart on next activity
+        setSessionReady(false);
+        // Don't reset sessionInitialized to prevent immediate restart
+        // Let recordActivity() handle restart when user interacts
+        
+        // Re-enable session ready when session restarts
+        const checkRestart = () => {
+          if (analyticsService.hasActiveSession()) {
+            setSessionReady(true);
+          } else {
+            setTimeout(checkRestart, 1000);
+          }
+        };
+        setTimeout(checkRestart, 1000);
+      }
+    }, 5000); // Check every 5 seconds
+
+    return () => {
+      if (sessionCheckInterval.current) {
+        clearInterval(sessionCheckInterval.current);
+      }
+    };
   }, []);
 
   // Track page views - only after session is ready
@@ -42,12 +75,12 @@ export const useAnalytics = (options: UseAnalyticsOptions = {}) => {
     }
   }, [location.pathname, trackPageViews, sessionReady]);
 
-  // Track project opens
+  // Track project opens - also trigger when session restarts
   useEffect(() => {
-    if (projectId && projectName) {
+    if (projectId && projectName && sessionReady) {
       analyticsService.trackProjectOpen(projectId, projectName);
     }
-  }, [projectId, projectName]);
+  }, [projectId, projectName, sessionReady]);
 
   // Function to track field edits
   const trackFieldEdit = useCallback((

@@ -243,7 +243,22 @@ router.post('/project/switch', requireAuth, async (req: AuthRequest, res) => {
 
     // Switch to new project
     session.currentProjectId = newProjectId;
-    session.currentProjectStartTime = newProjectId ? now : undefined;
+    
+    // Set project start time - if this is a brand new session (no previous project),
+    // use the session start time instead of now to capture all time since session began
+    if (newProjectId) {
+      if (!session.currentProjectStartTime) {
+        // This is the first project set for this session, use session start time
+        session.currentProjectStartTime = session.startTime;
+        console.log(`Analytics: Setting project start time to session start for new session: ${session.sessionId}`);
+      } else {
+        // This is a project switch, use current time
+        session.currentProjectStartTime = now;
+      }
+    } else {
+      session.currentProjectStartTime = undefined;
+    }
+    
     session.lastActivity = now;
     
     // Add to projectsViewed if not already there

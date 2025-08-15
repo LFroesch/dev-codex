@@ -75,20 +75,45 @@ export class AnalyticsService {
       const endTime = new Date();
       const duration = endTime.getTime() - session.startTime.getTime();
 
-      await UserSession.updateOne(
-        { sessionId },
-        {
-          endTime,
-          duration,
-          isActive: false
+      // Save time spent on current project before ending session
+      if (session.currentProjectId && session.currentProjectStartTime) {
+        const timeSpent = endTime.getTime() - session.currentProjectStartTime.getTime();
+        
+        // Find existing project time entry or create new one
+        let existingProject = session.projectTimeBreakdown?.find(
+          p => p.projectId === session.currentProjectId
+        );
+        
+        if (existingProject) {
+          existingProject.timeSpent += timeSpent;
+          existingProject.lastSwitchTime = endTime;
+        } else {
+          if (!session.projectTimeBreakdown) {
+            session.projectTimeBreakdown = [];
+          }
+          session.projectTimeBreakdown.push({
+            projectId: session.currentProjectId,
+            timeSpent,
+            lastSwitchTime: endTime
+          });
         }
-      );
+        
+        console.log(`Analytics: Saved ${Math.round(timeSpent / 1000)}s for project ${session.currentProjectId} before ending session`);
+      }
+
+      // Update session with final data
+      session.endTime = endTime;
+      session.duration = duration;
+      session.isActive = false;
+      await session.save();
 
       // Track session end event
       if (userId) {
         await this.trackEvent(userId, 'session_end', { 
           sessionId, 
-          duration: Math.round(duration / 1000) // duration in seconds
+          duration: Math.round(duration / 1000), // duration in seconds
+          currentProjectTime: session.currentProjectId && session.currentProjectStartTime ? 
+            Math.round((endTime.getTime() - session.currentProjectStartTime.getTime()) / 1000) : 0
         });
       }
     } catch (error) {

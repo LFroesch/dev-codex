@@ -21,6 +21,7 @@ import IdeasPage from './pages/IdeasPage';
 import AccountSettingsPage from './pages/AccountSettingsPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import SupportPage from './pages/SupportPage';
+import HelpPage from './pages/HelpPage';
 import PublicProjectPage from './pages/PublicProjectPage';
 import PublicProfilePage from './pages/PublicProfilePage';
 
@@ -67,6 +68,7 @@ const App: React.FC = () => {
             <Route path="account-settings" element={<AccountSettingsPage />} />
             <Route path="admin" element={<AdminDashboardPage />} />
             <Route path="support" element={<SupportPage />} />
+            <Route path="help" element={<HelpPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/login" />} />
         </Routes>

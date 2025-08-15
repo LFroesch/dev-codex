@@ -53,7 +53,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout }) => {
         <div className="flex justify-between items-center p-2">
           <h3 className="font-semibold">User Menu</h3>
         </div>
-        <div className="max-h-64 overflow-y-auto">
+        <div className="max-h-80 overflow-y-auto">
           <div 
             className="p-2 rounded cursor-pointer hover:bg-base-200"
             onClick={() => handleNavigation('/billing')}
@@ -65,6 +65,12 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout }) => {
             onClick={() => handleNavigation('/account-settings')}
           >
             Account Settings
+          </div>
+          <div 
+            className="p-2 rounded cursor-pointer hover:bg-base-200"
+            onClick={() => handleNavigation('/help')}
+          >
+            Help & Info
           </div>
           <div 
             className="p-2 rounded cursor-pointer hover:bg-base-200"

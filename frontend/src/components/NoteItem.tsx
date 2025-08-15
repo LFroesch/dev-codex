@@ -281,9 +281,10 @@ const NoteItem: React.FC<NoteItemProps> = ({
     );
     
     // 6. Bold and Italic
+    // 6. Bold and Italic
     processedText = processedText
-      .replace(/\*\*([^*]+)\*\*/gim, '<strong class="font-semibold">$1</strong>')
-      .replace(/\*([^*]+)\*/gim, '<em class="italic">$1</em>');
+      .replace(/\*\*([^*]+?)\*\*/g, '<strong class="font-semibold">$1</strong>')  // removed \n from exclusion
+      .replace(/\*([^*]+?)\*/g, '<em class="italic">$1</em>');                   // removed \n from exclusion
     
     // 7. Blockquotes
     processedText = processedText
@@ -294,9 +295,12 @@ const NoteItem: React.FC<NoteItemProps> = ({
       .replace(/^- (.*$)/gim, '<li class="ml-4 list-disc list-inside">$1</li>')
       .replace(/^\* (.*$)/gim, '<li class="ml-4 list-disc list-inside">$1</li>')
       .replace(/^\d+\. (.*$)/gim, '<li class="ml-4 list-decimal list-inside">$1</li>');
+
+    // Remove newlines after list items to prevent double spacing
+    processedText = processedText.replace(/<\/li>\n/g, '</li>');
     
     // 9. Line breaks - preserve single breaks, avoid double spacing with block elements
-    processedText = processedText.replace(/\n(?![<\/])/gim, '<br>');
+    processedText = processedText.replace(/\n(?!<\/)/gim, '<br>');
     
     return processedText;
   };

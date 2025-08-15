@@ -897,12 +897,7 @@ const AccountSettingsPage: React.FC = () => {
 
             {activeTab === 'analytics' && (
               <div className="space-y-6">
-                <div>
-                  <h2 className="text-2xl font-bold mb-2">📊 Usage Analytics</h2>
-                  <p className="text-base-content/60 mb-6">
-                    Track your productivity and app usage patterns. All data is private and only visible to you.
-                  </p>
-                </div>
+                
                 
                 {/* Enhanced Analytics Dashboard */}
                 <AnalyticsDashboard />

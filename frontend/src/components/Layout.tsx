@@ -507,7 +507,7 @@ const Layout: React.FC = () => {
                   </svg>
                   <input
                     type="text"
-                    placeholder="Search projects, tags..."
+                    placeholder="Search"
                     value={searchTerm}
                     onChange={(e) => {
                       const newSearchTerm = e.target.value;
@@ -636,7 +636,7 @@ const Layout: React.FC = () => {
                   </svg>
                   <input
                     type="text"
-                    placeholder="Search projects, tags..."
+                    placeholder="Search"
                     value={searchTerm}
                     onChange={(e) => {
                       setSearchTerm(e.target.value);
@@ -644,7 +644,7 @@ const Layout: React.FC = () => {
                         navigate('/notes?view=projects');
                       }
                     }}
-                    className="input-field input-sm pl-9 pr-8 w-48 bg-base-100/80 backdrop-blur-sm shadow-sm"
+                    className="input-field input-sm pl-9 pr-8 w-48 h-8 bg-base-100/80 backdrop-blur-sm shadow-sm"
                   />
                   {searchTerm && (
                     <button

@@ -270,12 +270,18 @@ export class AnalyticsService {
         }
       }).filter(id => id !== null);
       
-      // Query projects by user and matching IDs
+      // Import TeamMember model
+      const TeamMember = (await import('../models/TeamMember')).default;
+      
+      // Get projects the user has access to (owned or team member)
+      const teamMemberProjects = await TeamMember.find({ userId }).select('projectId').lean();
+      const accessibleProjectIds = [...objectIds, ...teamMemberProjects.map(tm => tm.projectId)];
+      
+      // Query projects by accessible project IDs
       const projects = await Project.find({
-        userId: userId,
         $or: [
-          { _id: { $in: objectIds } },
-          { _id: { $in: projectIds } }
+          { userId: userId, _id: { $in: objectIds } }, // User-owned projects
+          { _id: { $in: accessibleProjectIds } } // Team member projects
         ]
       }).select('_id name').lean();
 

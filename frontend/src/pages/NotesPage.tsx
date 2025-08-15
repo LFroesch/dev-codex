@@ -3,7 +3,7 @@ import { useOutletContext } from 'react-router-dom';
 import { Project, projectAPI, Todo } from '../api';
 import {TodoItem, NewTodoForm} from '../components/TodoItem';
 import { DevLogItem, NewDevLogForm } from '../components/DevLogItem';
-import { NoteItem, NewNoteForm } from '../components/NoteItem';
+import { NoteItem, NewNoteForm, NoteModal } from '../components/NoteItem';
 import activityTracker from '../services/activityTracker';
 
 interface ContextType {
@@ -16,8 +16,10 @@ interface ContextType {
 const NotesPage: React.FC = () => {
   const { selectedProject, user, onProjectRefresh } = useOutletContext<ContextType>();
   
-  // State for expanded notes
-  const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set());
+  // State for note modal
+  const [selectedNote, setSelectedNote] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<'view' | 'edit'>('view');
   const [error, setError] = useState('');
 
   // Set activity tracker context when project changes
@@ -27,15 +29,31 @@ const NotesPage: React.FC = () => {
     }
   }, [selectedProject, user]);
 
-  const toggleNoteExpanded = (noteId: string) => {
-    const newExpanded = new Set(expandedNotes);
-    if (newExpanded.has(noteId)) {
-      newExpanded.delete(noteId);
-    } else {
-      newExpanded.add(noteId);
-    }
-    setExpandedNotes(newExpanded);
+  const handleNoteClick = (note: any) => {
+    setSelectedNote(note);
+    setModalMode('view');
+    setIsModalOpen(true);
   };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedNote(null);
+  };
+
+  const handleNoteUpdate = async () => {
+    // Refresh the project data first
+    await onProjectRefresh();
+  };
+
+  // Effect to update selectedNote when project data changes
+  useEffect(() => {
+    if (selectedNote && selectedProject && isModalOpen) {
+      const updatedNote = selectedProject.notes?.find(note => note.id === selectedNote.id);
+      if (updatedNote) {
+        setSelectedNote(updatedNote);
+      }
+    }
+  }, [selectedProject?.notes, selectedNote?.id, isModalOpen]);
 
   const handleArchiveTodoToDevLog = async (todo: Todo) => {
     if (!selectedProject) return;
@@ -94,14 +112,14 @@ const NotesPage: React.FC = () => {
               onAdd={onProjectRefresh}
             />
             
-            <div className="space-y-3">
-              {selectedProject.notes?.length === 0 ? (
-                <div className="text-center py-8">
-                  <div className="text-4xl mb-4">📄</div>
-                  <p className="text-base-content/60">No notes yet. Create one above!</p>
-                </div>
-              ) : (
-                selectedProject.notes
+            {selectedProject.notes?.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="text-4xl mb-4">📄</div>
+                <p className="text-base-content/60">No notes yet. Create one above!</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {selectedProject.notes
                   ?.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
                   ?.map((note) => (
                     <NoteItem
@@ -109,15 +127,26 @@ const NotesPage: React.FC = () => {
                       note={note}
                       projectId={selectedProject.id}
                       onUpdate={onProjectRefresh}
-                      isExpanded={expandedNotes.has(note.id)}
-                      onToggleExpand={() => toggleNoteExpanded(note.id)}
+                      onClick={() => handleNoteClick(note)}
                     />
                   ))
-              )}
-            </div>
+                }
+              </div>
+            )}
           </div>
         </div>
       </div>
+
+      {/* Note Modal */}
+      <NoteModal
+        note={selectedNote}
+        projectId={selectedProject.id}
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        onUpdate={handleNoteUpdate}
+        mode={modalMode}
+        onModeChange={setModalMode}
+      />
 
       {/* Todo List Section */}
       <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10">

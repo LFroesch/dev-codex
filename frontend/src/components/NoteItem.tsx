@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Note, projectAPI } from '../api';
 import EnhancedTextEditor from './EnhancedTextEditor';
 import ConfirmationModal from './ConfirmationModal';
@@ -9,42 +10,197 @@ interface NoteItemProps {
   note: Note;
   projectId: string;
   onUpdate: () => void;
-  isExpanded: boolean;
-  onToggleExpand: () => void;
+  onClick: () => void;
+}
+
+interface NoteModalProps {
+  note: Note | null;
+  projectId: string;
+  isOpen: boolean;
+  onClose: () => void;
+  onUpdate: () => void;
+  mode: 'view' | 'edit';
+  onModeChange: (mode: 'view' | 'edit') => void;
 }
 
 const NoteItem: React.FC<NoteItemProps> = ({ 
   note, 
   projectId, 
-  onUpdate, 
-  isExpanded, 
-  onToggleExpand 
+  onUpdate,
+  onClick
 }) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editTitle, setEditTitle] = useState(note.title);
-  const [editDescription, setEditDescription] = useState(note.description || '');
-  const [editContent, setEditContent] = useState(note.content);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const handleDelete = async () => {
+    try {
+      await projectAPI.deleteNote(projectId, note.id);
+      
+      // Track note deletion
+      await activityTracker.trackDelete(
+        'note',
+        note.id,
+        note.title, // resourceName
+        undefined, // no fileName for notes
+        { originalTitle: note.title } // metadata
+      );
+      
+      onUpdate();
+      setShowDeleteConfirm(false);
+    } catch (error) {
+      console.error('Failed to delete note:', error);
+      setShowDeleteConfirm(false);
+    }
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowDeleteConfirm(true);
+  };
+
+  const handleCopy = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(note.content);
+    } catch (error) {
+      console.error('Failed to copy note content:', error);
+    }
+  };
+
+  return (
+    <>
+      <div 
+        className="bg-base-100 shadow-lg border-subtle rounded-lg p-4 cursor-pointer hover:shadow-xl transition-shadow duration-200 group"
+        onClick={onClick}
+      >
+        <div className="flex items-start justify-between">
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-lg mb-2 text-base-content truncate group-hover:text-primary transition-colors">
+              {note.title}
+            </h3>
+            {note.description && (
+              <p className="text-sm text-base-content/70 mb-3">{note.description}</p>
+            )}
+            <div className="text-xs text-base-content/50">
+              {note.updatedAt !== note.createdAt && (
+                <>Updated: {new Date(note.updatedAt).toLocaleDateString()}{note.updatedBy && ` by ${note.updatedBy}`} • </>
+              )}
+              {note.createdAt && (
+                <>Created: {new Date(note.createdAt).toLocaleDateString()}{note.createdBy && ` by ${note.createdBy}`}</>
+              )}
+            </div>
+          </div>
+          
+          <div className="flex gap-1 ml-4 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              onClick={handleCopy}
+              className="btn btn-xs btn-ghost"
+              title="Copy content"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+            </button>
+            <button
+              onClick={handleDeleteClick}
+              className="btn btn-xs btn-ghost text-error hover:bg-error/20"
+              title="Delete note"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <ConfirmationModal
+        isOpen={showDeleteConfirm}
+        onConfirm={handleDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+        title="Delete Note"
+        message={`Are you sure you want to delete "<strong>${note.title}</strong>"? This action cannot be undone.`}
+        confirmText="Delete Note"
+        variant="error"
+      />
+    </>
+  );
+};
+
+const NoteModal: React.FC<NoteModalProps> = ({ 
+  note, 
+  projectId, 
+  isOpen, 
+  onClose, 
+  onUpdate, 
+  mode, 
+  onModeChange 
+}) => {
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editContent, setEditContent] = useState('');
   const [loading, setLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  
+
   // Create unique component ID for unsaved changes tracking
-  const componentId = `note-${note.id}`;
+  const componentId = note ? `note-modal-${note.id}` : 'note-modal';
   
   const autoSaveTimeoutRef = useRef<number | null>(null);
-  const editingContainerRef = useRef<HTMLDivElement>(null);
   const isCancelingRef = useRef(false);
   const isSavingRef = useRef(false);
 
-  // Reset form when note changes or editing is cancelled
-  React.useEffect(() => {
-    setEditTitle(note.title);
-    setEditDescription(note.description || '');
-    setEditContent(note.content);
-  }, [note.title, note.description, note.content]);
+  // Effect to handle keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = async (e: KeyboardEvent) => {
+      if (!isOpen || !note) return;
+      
+      if (e.key === 'Escape') {
+        if (mode === 'edit') {
+          // In edit mode, Escape goes back to view mode (with unsaved changes check)
+          const hasChanges = editTitle.trim() !== note.title || 
+                            editDescription.trim() !== (note.description || '') || 
+                            editContent.trim() !== note.content;
+          if (hasChanges) {
+            const canProceed = await unsavedChangesManager.checkNavigationAllowed();
+            if (!canProceed) return;
+          }
+          handleCancel();
+        } else {
+          // In view mode, Escape closes the modal
+          onClose();
+        }
+      } else if (e.key === 'e' && mode === 'view') {
+        onModeChange('edit');
+      } else if (e.key === 'c' && mode === 'view') {
+        handleCopy();
+      } else if (e.ctrlKey && e.key === 's' && mode === 'edit') {
+        e.preventDefault();
+        handleSave();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen, onClose, mode, onModeChange, editTitle, editDescription, editContent, note?.title, note?.description, note?.content]);
+
+  // Reset form when note changes
+  useEffect(() => {
+    if (note) {
+      setEditTitle(note.title);
+      setEditDescription(note.description || '');
+      setEditContent(note.content);
+    }
+  }, [note]);
 
   // Track unsaved changes and register with the manager
-  React.useEffect(() => {
-    if (isEditing) {
+  useEffect(() => {
+    if (mode === 'edit' && note) {
       const hasChanges = editTitle.trim() !== note.title || 
                         editDescription.trim() !== (note.description || '') || 
                         editContent.trim() !== note.content;
@@ -54,14 +210,16 @@ const NoteItem: React.FC<NoteItemProps> = ({
       // Clear unsaved changes when not editing
       unsavedChangesManager.setUnsavedChanges(componentId, false);
     }
-  }, [isEditing, editTitle, editDescription, editContent, note.title, note.description, note.content, componentId]);
+  }, [mode, editTitle, editDescription, editContent, note?.title, note?.description, note?.content, componentId]);
 
   // Cleanup: remove from unsaved changes when component unmounts
-  React.useEffect(() => {
+  useEffect(() => {
     return () => {
       unsavedChangesManager.setUnsavedChanges(componentId, false);
     };
   }, [componentId]);
+
+  if (!isOpen || !note) return null;
 
   // Auto-save functionality
   const scheduleAutoSave = () => {
@@ -70,48 +228,11 @@ const NoteItem: React.FC<NoteItemProps> = ({
     }
     
     autoSaveTimeoutRef.current = window.setTimeout(() => {
-      if (isEditing && (editTitle.trim() !== note.title || editDescription.trim() !== (note.description || '') || editContent.trim() !== note.content)) {
+      if (mode === 'edit' && (editTitle.trim() !== note.title || editDescription.trim() !== (note.description || '') || editContent.trim() !== note.content)) {
         handleSave();
       }
     }, 30000); // 30 seconds
   };
-
-  // Handle blur events (clicking outside)
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (isEditing && editingContainerRef.current && !editingContainerRef.current.contains(event.target as Node)) {
-        // Check if clicked on a save or cancel button
-        const target = event.target as Element;
-        const isClickingButton = target.closest('button');
-        const buttonText = isClickingButton?.textContent?.toLowerCase();
-        
-        if (buttonText?.includes('save') || buttonText?.includes('cancel')) {
-          return; // Let the button handle it
-        }
-        
-        // Check if there are changes before asking to save
-        if (editTitle.trim() !== note.title || editDescription.trim() !== (note.description || '') || editContent.trim() !== note.content) {
-          event.preventDefault();
-          // Changes will now be handled by the global unsaved changes manager
-          // Just prevent the click from proceeding - navigation blocking will handle the rest
-        } else {
-          setIsEditing(false);
-        }
-      }
-    };
-
-    if (isEditing) {
-      document.addEventListener('mousedown', handleClickOutside);
-      scheduleAutoSave(); // Start the timer when entering edit mode
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      if (autoSaveTimeoutRef.current) {
-        clearTimeout(autoSaveTimeoutRef.current);
-      }
-    };
-  }, [isEditing, editTitle, editDescription, editContent, note.title, note.description, note.content]);
 
   // Reset auto-save timer on input changes
   const handleInputChange = (field: 'title' | 'description' | 'content', value: string) => {
@@ -172,7 +293,7 @@ const NoteItem: React.FC<NoteItemProps> = ({
         );
       }
       
-      setIsEditing(false);
+      onModeChange('view');
       onUpdate();
     } catch (error) {
       console.error('Failed to update note:', error);
@@ -198,6 +319,7 @@ const NoteItem: React.FC<NoteItemProps> = ({
       );
       
       onUpdate();
+      onClose();
       setShowDeleteConfirm(false);
     } catch (error) {
       console.error('Failed to delete note:', error);
@@ -205,29 +327,34 @@ const NoteItem: React.FC<NoteItemProps> = ({
     }
   };
 
-
-
-  const handleCancel = () => {
+  const handleCancel = async () => {
+    const hasChanges = editTitle.trim() !== note.title || 
+                      editDescription.trim() !== (note.description || '') || 
+                      editContent.trim() !== note.content;
+    if (hasChanges) {
+      const canProceed = await unsavedChangesManager.checkNavigationAllowed();
+      if (!canProceed) return;
+    }
+    
     isCancelingRef.current = true;
     setEditTitle(note.title);
     setEditDescription(note.description || '');
     setEditContent(note.content);
-    setIsEditing(false);
+    onModeChange('view');
     setTimeout(() => {
       isCancelingRef.current = false;
     }, 0);
   };
 
-  const handleEditClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent toggling expand when clicking edit
-    setIsEditing(true);
-    if (!isExpanded) {
-      onToggleExpand(); // Expand if not already expanded
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(note.content);
+    } catch (error) {
+      console.error('Failed to copy note content:', error);
     }
   };
 
-  const handleDeleteClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent toggling expand when clicking delete
+  const handleDeleteClick = () => {
     setShowDeleteConfirm(true);
   };
 
@@ -249,9 +376,9 @@ const NoteItem: React.FC<NoteItemProps> = ({
     
     // 1. Headers
     processedText = processedText
-      .replace(/^### (.*$)/gim, '<h3 class="text-lg font-semibold mt-4 mb-2">$1</h3>')
-      .replace(/^## (.*$)/gim, '<h2 class="text-xl font-semibold mt-4 mb-2">$1</h2>')
-      .replace(/^# (.*$)/gim, '<h1 class="text-2xl font-bold mt-4 mb-2">$1</h1>');
+      .replace(/^### (.*$)/gm, '<h3 class="text-lg font-semibold mt-4 mb-2">$1</h3>')
+      .replace(/^## (.*$)/gm, '<h2 class="text-xl font-semibold mt-4 mb-2">$1</h2>')
+      .replace(/^# (.*$)/gm, '<h1 class="text-2xl font-bold mt-4 mb-2">$1</h1>');
     
     // 2. Code blocks (must come before inline code and links)
     processedText = processedText
@@ -281,10 +408,9 @@ const NoteItem: React.FC<NoteItemProps> = ({
     );
     
     // 6. Bold and Italic
-    // 6. Bold and Italic
     processedText = processedText
-      .replace(/\*\*([^*]+?)\*\*/g, '<strong class="font-semibold">$1</strong>')  // removed \n from exclusion
-      .replace(/\*([^*]+?)\*/g, '<em class="italic">$1</em>');                   // removed \n from exclusion
+      .replace(/\*\*([^*]+?)\*\*/g, '<strong class="font-semibold">$1</strong>')
+      .replace(/\*([^*]+?)\*/g, '<em class="italic">$1</em>');
     
     // 7. Blockquotes
     processedText = processedText
@@ -292,12 +418,13 @@ const NoteItem: React.FC<NoteItemProps> = ({
     
     // 8. Lists
     processedText = processedText
-      .replace(/^- (.*$)/gim, '<li class="ml-4 list-disc list-inside">$1</li>')
-      .replace(/^\* (.*$)/gim, '<li class="ml-4 list-disc list-inside">$1</li>')
-      .replace(/^\d+\. (.*$)/gim, '<li class="ml-4 list-decimal list-inside">$1</li>');
+      .replace(/^- (.*$)/gm, '<li class="ml-4 list-disc list-inside">$1</li>')
+      .replace(/^\* (.*$)/gm, '<li class="ml-4 list-disc list-inside">$1</li>')
+      .replace(/^\d+\. (.*$)/gm, '<li class="ml-4 list-decimal list-inside">$1</li>');
 
-    // Remove newlines after list items to prevent double spacing
+    // Remove newlines after list items and headers to prevent double spacing
     processedText = processedText.replace(/<\/li>\n/g, '</li>');
+    processedText = processedText.replace(/<\/h[1-6]>\n/g, (match) => match.replace('\n', ''));
     
     // 9. Line breaks - preserve single breaks, avoid double spacing with block elements
     processedText = processedText.replace(/\n(?!<\/)/gim, '<br>');
@@ -305,93 +432,111 @@ const NoteItem: React.FC<NoteItemProps> = ({
     return processedText;
   };
 
-  return (
-    <div className="bg-base-100 shadow-lg border-subtle rounded-lg mb-4">
-      <div className="p-4">
-        {/* Header with title and controls */}
-        <div className="flex items-center justify-between">
-          <button
-            onClick={onToggleExpand}
-            className="flex items-center gap-3 flex-1 text-left hover:bg-base-200 p-2 -m-2 rounded-lg transition-colors"
-            disabled={isEditing}
-          >
-            <div className={`transform transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}>
-              <svg className="icon-md text-base-content/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-lg">{note.title}</h3>
-              {note.description && (
-                <p className="text-sm text-base-content/70">{note.description}</p>
+  const modalContent = (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-[9999]">
+      <div className="bg-base-100 w-full h-screen flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-base-300 flex-shrink-0">
+          <div className="flex-1 min-w-0">
+            <h2 className="text-2xl font-bold text-base-content truncate">{note.title}</h2>
+            {note.description && (
+              <p className="text-base-content/70 mt-1">{note.description}</p>
+            )}
+            <div className="text-sm text-base-content/50 mt-2">
+              {note.updatedAt !== note.createdAt && (
+                <>Updated: {new Date(note.updatedAt).toLocaleDateString()}{note.updatedBy && ` by ${note.updatedBy}`} • </>
               )}
-              <div className="text-xs text-base-content/50 mt-1">
-                {note.updatedAt !== note.createdAt && (
-                  <>Updated: {new Date(note.updatedAt).toLocaleDateString()}{note.updatedBy && ` by ${note.updatedBy}`} • </>
-                )}
-                {note.createdAt && (
-                  <>Created: {new Date(note.createdAt).toLocaleDateString()}{note.createdBy && ` by ${note.createdBy}`}</>
-                )}
-              </div>
+              {note.createdAt && (
+                <>Created: {new Date(note.createdAt).toLocaleDateString()}{note.createdBy && ` by ${note.createdBy}`}</>
+              )}
             </div>
-          </button>
+          </div>
           
-          <div className="flex gap-2 ml-4">
-            {isEditing ? (
+          {/* Side panel with options */}
+          <div className="flex items-center gap-2 ml-6 flex-shrink-0">
+            {mode === 'edit' ? (
               <>
                 <button
                   onClick={handleSave}
-                  className="btn btn-sm btn-primary"
+                  className="btn btn-primary"
                   disabled={loading || !editTitle.trim() || !editContent.trim()}
                 >
-                  <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                   {loading ? 'Saving...' : 'Save'}
                 </button>
                 <button
                   onClick={handleCancel}
-                  className="btn btn-sm btn-ghost"
+                  className="btn btn-ghost"
                   disabled={loading}
                 >
-                  <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
                   Cancel
                 </button>
               </>
             ) : (
               <>
                 <button
-                  onClick={handleEditClick}
-                  className="btn btn-sm btn-ghost"
-                  disabled={isEditing}
+                  onClick={handleCopy}
+                  className="btn btn-ghost"
+                  title="Copy content (C)"
                 >
-                  <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  Copy
+                </button>
+                <button
+                  onClick={() => onModeChange('edit')}
+                  className="btn btn-ghost"
+                  title="Edit note (E)"
+                >
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                   </svg>
                   Edit
                 </button>
                 <button
                   onClick={handleDeleteClick}
-                  className="btn btn-sm btn-error btn-outline"
+                  className="btn btn-error btn-outline"
                 >
-                  <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                   </svg>
                   Delete
                 </button>
               </>
             )}
+            <button
+              onClick={async () => {
+                if (mode === 'edit') {
+                  const hasChanges = editTitle.trim() !== note.title || 
+                                    editDescription.trim() !== (note.description || '') || 
+                                    editContent.trim() !== note.content;
+                  if (hasChanges) {
+                    const canProceed = await unsavedChangesManager.checkNavigationAllowed();
+                    if (!canProceed) return;
+                  }
+                }
+                onClose();
+              }}
+              className="btn btn-primary gap-2"
+              title={mode === 'view' ? "Back (Esc) • E to edit • C to copy" : "Back (Esc) • Ctrl+S to save"}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Back
+            </button>
           </div>
         </div>
 
-        {/* Collapsible content */}
-        {isExpanded && (
-          <div className="mt-4 border-t border-base-300 pt-4">
-            {isEditing ? (
-              <div className="space-y-4" ref={editingContainerRef}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Content */}
+        <div className="flex-1 overflow-hidden">
+          {mode === 'edit' ? (
+            <div className="h-full p-4">
+              <div className="space-y-2 h-full flex flex-col">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-shrink-0">
                   <div className="form-control">
                     <label className="label">
                       <span className="label-text font-medium">Title</span>
@@ -419,46 +564,31 @@ const NoteItem: React.FC<NoteItemProps> = ({
                   </div>
                 </div>
                 
-                <div className="form-control">
+                <div className="form-control flex-1 flex flex-col">
                   <label className="label">
                     <span className="label-text font-medium">Content</span>
                   </label>
-                  <EnhancedTextEditor
-                    value={editContent}
-                    onChange={(value) => handleInputChange('content', value)}
-                    placeholder="Enter your note content here... (Markdown supported)"
-                  />
-                </div>
-
-                <div className="flex justify-end gap-2">
-                  <button
-                    onClick={handleCancel}
-                    className="btn-ghost-sm"
-                    disabled={loading}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSave}
-                    className="btn-primary-sm"
-                    disabled={loading || !editTitle.trim() || !editContent.trim()}
-                  >
-                    {loading ? 'Saving...' : 'Save'}
-                  </button>
+                  <div className="flex-1">
+                    <EnhancedTextEditor
+                      value={editContent}
+                      onChange={(value) => handleInputChange('content', value)}
+                      placeholder="Enter your note content here... (Markdown supported)"
+                    />
+                  </div>
                 </div>
               </div>
-            ) : (
-              <div className="bg-base-200 rounded-lg p-4 border border-base-300">
-                <div 
-                  className="prose prose-sm max-w-none text-base-content"
-                  dangerouslySetInnerHTML={{ 
-                    __html: renderMarkdown(note.content) 
-                  }}
-                />
-              </div>
-            )}
-          </div>
-        )}
+            </div>
+          ) : (
+            <div className="h-full p-6 overflow-auto">
+              <div 
+                className="prose prose-lg max-w-none text-base-content mb-4"
+                dangerouslySetInnerHTML={{ 
+                  __html: renderMarkdown(note.content) 
+                }}
+              />
+            </div>
+          )}
+        </div>
       </div>
 
       <ConfirmationModal
@@ -472,6 +602,8 @@ const NoteItem: React.FC<NoteItemProps> = ({
       />
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 interface NewNoteFormProps {
@@ -599,4 +731,4 @@ const NewNoteForm: React.FC<NewNoteFormProps> = ({ projectId, onAdd }) => {
   );
 };
 
-export { NoteItem, NewNoteForm };
+export { NoteItem, NewNoteForm, NoteModal };

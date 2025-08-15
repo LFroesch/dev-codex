@@ -16,6 +16,13 @@ export interface IUserSession extends Document {
   ipAddress?: string;
   isActive: boolean;
   isVisible?: boolean;
+  // Project time tracking
+  projectTimeBreakdown?: Array<{
+    projectId: string;
+    timeSpent: number; // in milliseconds
+    lastSwitchTime: Date;
+  }>;
+  currentProjectStartTime?: Date; // When current project was started
   createdAt: Date;
   updatedAt: Date;
 }
@@ -75,6 +82,24 @@ const userSessionSchema: Schema = new Schema({
   isVisible: {
     type: Boolean,
     default: true
+  },
+  // Project time tracking
+  projectTimeBreakdown: [{
+    projectId: {
+      type: String,
+      required: true
+    },
+    timeSpent: {
+      type: Number,
+      default: 0 // in milliseconds
+    },
+    lastSwitchTime: {
+      type: Date,
+      default: Date.now
+    }
+  }],
+  currentProjectStartTime: {
+    type: Date
   }
 }, {
   timestamps: true

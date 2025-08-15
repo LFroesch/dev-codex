@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import Analytics from '../models/Analytics';
 import UserSession from '../models/UserSession';
+import { Project } from '../models/Project';
 import { v4 as uuidv4 } from 'uuid';
 import mongoose from 'mongoose';
 
@@ -181,19 +182,97 @@ export class AnalyticsService {
           }
         },
         {
+          $addFields: {
+            calculatedDuration: {
+              $cond: {
+                if: { $and: [{ $gt: ['$duration', 0] }] },
+                then: '$duration',
+                else: {
+                  $subtract: [
+                    { $ifNull: ['$lastActivity', new Date()] },
+                    '$startTime'
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
           $group: {
             _id: null,
             totalSessions: { $sum: 1 },
-            totalDuration: { $sum: '$duration' },
-            avgDuration: { $avg: '$duration' },
+            totalDuration: { $sum: '$calculatedDuration' },
+            avgDuration: { $avg: '$calculatedDuration' },
             uniqueProjects: { $addToSet: '$projectsViewed' }
           }
         }
       ]);
 
+      // Get project time breakdown data with simplified approach
+      const projectTimeData = await UserSession.aggregate([
+        {
+          $match: {
+            userId,
+            startTime: { $gte: startDate },
+            projectTimeBreakdown: { $exists: true, $ne: [] }
+          }
+        },
+        {
+          $unwind: '$projectTimeBreakdown'
+        },
+        {
+          $group: {
+            _id: '$projectTimeBreakdown.projectId',
+            totalTime: { $sum: '$projectTimeBreakdown.timeSpent' },
+            sessions: { $sum: 1 },
+            lastUsed: { $max: '$projectTimeBreakdown.lastSwitchTime' }
+          }
+        },
+        {
+          $sort: { totalTime: -1 }
+        }
+      ]);
+
+      // Get project names for the user to ensure we only get accessible projects
+      const projectIds = projectTimeData.map(p => p._id).filter(id => id);
+      
+      // Convert string IDs to ObjectIds where possible
+      const objectIds = projectIds.map(id => {
+        try {
+          return mongoose.Types.ObjectId.isValid(id) ? new mongoose.Types.ObjectId(id) : null;
+        } catch (e) {
+          return null;
+        }
+      }).filter(id => id !== null);
+      
+      // Query projects by user and matching IDs
+      const projects = await Project.find({
+        userId: userId,
+        $or: [
+          { _id: { $in: objectIds } },
+          { _id: { $in: projectIds } }
+        ]
+      }).select('_id name').lean();
+
+      // Combine the data
+      const projectBreakdown = projectTimeData.map(timeData => {
+        const project = projects.find(p => 
+          p._id.toString() === timeData._id?.toString()
+        );
+        
+        return {
+          projectId: timeData._id,
+          projectName: project?.name || `Project ${timeData._id?.toString().slice(-6)}`,
+          totalTime: timeData.totalTime,
+          sessions: timeData.sessions,
+          lastUsed: timeData.lastUsed
+        };
+      });
+
       return {
         eventCounts: analytics,
         sessionStats: sessions[0] || {},
+        projectBreakdown: projectBreakdown,
         period: `${days} days`
       };
     } catch (error) {

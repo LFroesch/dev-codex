@@ -4,6 +4,10 @@ export * from './project';
 export * from './team';
 export * from './analytics';
 
+// Import types for use in interfaces
+import type { BaseUser } from './user';
+import type { BaseProject, ProjectTeamData } from './project';
+
 // Common API response patterns
 export interface ApiResponse<T = any> {
   success: boolean;

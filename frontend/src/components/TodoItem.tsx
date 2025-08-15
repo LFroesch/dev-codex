@@ -147,28 +147,28 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, projectId, onUpdate, onArchiv
   const hasSubtasks = subtasks.length > 0;
 
   return (
-    <div className={`bg-base-100 border border-base-content/10 rounded-lg p-3 mb-3 ${todo.completed ? 'opacity-60' : ''}`}>
+    <div className={`bg-base-100 border-subtle rounded-lg p-3 mb-3 ${todo.completed ? 'opacity-60' : ''}`}>
       {isEditing ? (
         <div className="space-y-3">
-          <div className="flex justify-between items-center mb-3">
+          <div className="flex-center-gap-2 justify-between mb-3">
             <h4 className="font-medium text-sm text-base-content/70">Editing Todo</h4>
-            <div className="flex gap-2">
+            <div className="flex-center-gap-2">
               <button
                 onClick={handleSave}
-                className="btn btn-xs btn-primary"
+                className="btn-primary-xs"
                 disabled={loading || !editTitle.trim()}
               >
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
                 {loading ? 'Saving...' : 'Save'}
               </button>
               <button
                 onClick={() => setIsEditing(false)}
-                className="btn btn-xs btn-ghost"
+                className="btn-ghost-xs"
                 disabled={loading}
               >
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
                 Cancel
@@ -179,7 +179,7 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, projectId, onUpdate, onArchiv
             type="text"
             value={editTitle}
             onChange={(e) => setEditTitle(e.target.value)}
-            className="input input-bordered input-sm w-full"
+            className="input-field input-sm w-full"
             placeholder="Todo title..."
           />
           <textarea
@@ -247,17 +247,17 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, projectId, onUpdate, onArchiv
               isSharedProject={isSharedProject}
               placeholder="Assign to team member..."
             />
-          <div className="flex justify-end gap-2">
+          <div className="flex-center-gap-2 justify-end">
             <button
               onClick={() => setIsEditing(false)}
-              className="btn btn-ghost btn-sm"
+              className="btn-ghost-sm"
               disabled={loading}
             >
               Cancel
             </button>
             <button
               onClick={handleSave}
-              className="btn btn-primary btn-sm"
+              className="btn-primary-sm"
               disabled={loading || !editTitle.trim()}
             >
               {loading ? 'Saving...' : 'Save'}
@@ -274,7 +274,7 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, projectId, onUpdate, onArchiv
               className="checkbox checkbox-primary checkbox-sm mt-0.5"
             />
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex-center-gap-2 flex-wrap">
                 <h3 className={`font-semibold text-lg ${todo.completed ? 'line-through text-base-content/60' : ''}`}>
                   {todo.text}
                 </h3>
@@ -332,7 +332,7 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, projectId, onUpdate, onArchiv
             </div>
           </div>
           
-          <div className="flex gap-2 ml-2">
+          <div className="flex-center-gap-2 ml-2">
             {/* Add Subtask Button - Only show for parent todos (not subtasks themselves) */}
             {!isSubtask && canEdit && (
               <button
@@ -340,7 +340,7 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, projectId, onUpdate, onArchiv
                 className="btn btn-sm btn-primary btn-outline"
                 title="Add Subtask"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
                 Subtask
@@ -353,7 +353,7 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, projectId, onUpdate, onArchiv
                 className="btn btn-sm btn-info btn-outline"
                 title="Archive to Dev Log"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8l6 6 6-6" />
                 </svg>
                 Archive
@@ -361,9 +361,9 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, projectId, onUpdate, onArchiv
             )}
             <button
               onClick={() => setIsEditing(true)}
-              className="btn btn-sm btn-ghost"
+              className="btn-ghost-sm"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
               </svg>
               Edit
@@ -372,7 +372,7 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, projectId, onUpdate, onArchiv
               onClick={() => setShowDeleteConfirm(true)}
               className="btn btn-sm btn-error btn-outline"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
               </svg>
               Delete
@@ -394,14 +394,14 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, projectId, onUpdate, onArchiv
       {/* Add Subtask Form */}
       {showAddSubtask && !isSubtask && (
         <div className="mt-3 p-3 bg-base-200/50 rounded-lg border-l-4 border-primary">
-          <div className="flex justify-between items-center mb-3">
+          <div className="flex-center-gap-2 justify-between mb-3">
             <h4 className="font-medium text-sm text-primary">Add Subtask to "{todo.text}"</h4>
             <button
               onClick={() => setShowAddSubtask(false)}
-              className="btn btn-xs btn-ghost"
+              className="btn-ghost-xs"
               title="Cancel"
             >
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
@@ -493,13 +493,13 @@ const NewTodoForm: React.FC<NewTodoFormProps> = ({ projectId, onAdd, isSharedPro
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="input input-bordered input-sm"
+            className="input-field input-sm"
             placeholder="Enter subtask title..."
             required
           />
         </div>
         
-        <div className="flex gap-2">
+        <div className="flex-center-gap-2">
           <select
             value={priority}
             onChange={(e) => setPriority(e.target.value as 'low' | 'medium' | 'high')}
@@ -512,7 +512,7 @@ const NewTodoForm: React.FC<NewTodoFormProps> = ({ projectId, onAdd, isSharedPro
           
           <button
             type="submit"
-            className="btn btn-primary btn-sm"
+            className="btn-primary-sm"
             disabled={loading || !title.trim()}
           >
             {loading ? 'Adding...' : 'Add'}
@@ -523,13 +523,13 @@ const NewTodoForm: React.FC<NewTodoFormProps> = ({ projectId, onAdd, isSharedPro
   }
 
   return (
-    <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10 mb-4">
+    <div className="collapse collapse-arrow bg-base-100 shadow-lg border-subtle mb-4">
       <input 
         type="checkbox" 
         checked={isExpanded}
         onChange={(e) => setIsExpanded(e.target.checked)}
       />
-      <div className="collapse-title text-lg font-semibold bg-base-200 border-b border-base-content/10">
+      <div className="collapse-title text-lg font-semibold bg-base-200 border-b border-subtle">
         {parentTodoId ? 'Create New Subtask' : 'Create New Todo'}
       </div>
       <div className="collapse-content">
@@ -542,7 +542,7 @@ const NewTodoForm: React.FC<NewTodoFormProps> = ({ projectId, onAdd, isSharedPro
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="input input-bordered border-base-300"
+              className="input-field border-base-300"
               placeholder="Enter todo title..."
               required
             />

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { teamAPI, TeamMember, InviteUserData } from '../api';
+import { teamAPI, TeamMember, InviteUserData, analyticsAPI } from '../api';
 import ActivityLog from './ActivityLog';
 import ActiveUsers from './ActiveUsers';
 import ConfirmationModal from './ConfirmationModal';
@@ -18,6 +18,9 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
   const [inviteRole, setInviteRole] = useState<'editor' | 'viewer'>('viewer');
   const [inviting, setInviting] = useState(false);
   
+  // Simple team time tracking like Layout.tsx
+  const [teamTimeData, setTeamTimeData] = useState<{ [userId: string]: number }>({});
+  
   // Modal states
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
@@ -27,6 +30,16 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
 
   useEffect(() => {
     fetchMembers();
+    loadTeamTimeData();
+  }, [projectId]);
+
+  // Auto-update team time data every 30 seconds (copy from Layout.tsx)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      loadTeamTimeData();
+    }, 30000);
+
+    return () => clearInterval(interval);
   }, [projectId]);
 
   const fetchMembers = async () => {
@@ -38,6 +51,36 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadTeamTimeData = async () => {
+    try {
+      const response = await analyticsAPI.getProjectTeamTime(projectId, 30) as any;
+      console.log('Team time response:', response);
+      if (response && response.teamTimeData && Array.isArray(response.teamTimeData)) {
+        const timeMap: { [userId: string]: number } = {};
+        response.teamTimeData.forEach((data: any) => {
+          timeMap[data._id] = data.totalTime || 0;
+        });
+        console.log('Team time map:', timeMap);
+        setTeamTimeData(timeMap);
+      }
+    } catch (err) {
+      console.error('Failed to load team time data:', err);
+    }
+  };
+
+  // Copy exact formatProjectTime from Layout.tsx
+  const formatProjectTime = (userId: string): string => {
+    const timeMs = teamTimeData[userId] || 0;
+    const totalMinutes = Math.floor(timeMs / (1000 * 60));
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    }
+    return `${minutes}m`;
   };
 
   const handleInvite = async (e: React.FormEvent) => {
@@ -148,51 +191,65 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
               <p className="text-sm">No team members yet</p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
               {members.map((member) => (
-                <div key={member._id} className="flex items-center justify-between py-2 border-b border-base-300 last:border-b-0">
-                  <div className="flex items-center gap-3">
-                    <div className="avatar placeholder">
+                <div key={member._id} className="bg-base-200/50 border border-base-content/10 rounded-lg p-3">
+                  <div className="flex items-center gap-2">
+                    <div className="avatar placeholder flex-shrink-0">
                       <div className="bg-primary text-primary-content rounded-full w-8">
                         <span className="text-xs font-medium">
                           {member.userId.firstName[0]}{member.userId.lastName[0]}
                         </span>
                       </div>
                     </div>
-                    <div>
-                      <div className="font-medium text-sm">{member.userId.firstName} {member.userId.lastName}</div>
-                      <div className="text-xs text-base-content/60">{member.userId.email}</div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    {member.isOwner ? (
-                      <span className="badge badge-primary badge-sm">Owner</span>
-                    ) : (
-                      <>
-                        {canManageTeam ? (
-                          <select
-                            value={member.role}
-                            onChange={(e) => handleRoleChange(member.userId._id, e.target.value as 'editor' | 'viewer')}
-                            className="select select-xs select-bordered"
-                          >
-                            <option value="viewer">Viewer</option>
-                            <option value="editor">Editor</option>
-                          </select>
-                        ) : (
-                          <span className="badge badge-sm capitalize">{member.role}</span>
-                        )}
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium text-xs truncate">
+                            {member.userId.firstName} {member.userId.lastName}
+                          </h4>
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <svg className="w-2.5 h-2.5 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span className="text-xs text-success font-medium">
+                              {formatProjectTime(member.userId._id)}
+                            </span>
+                          </div>
+                        </div>
                         
-                        {canManageTeam && (
-                          <button
-                            onClick={() => handleRemoveMember(member.userId._id)}
-                            className="btn btn-xs btn-error btn-outline"
-                          >
-                            Remove
-                          </button>
-                        )}
-                      </>
-                    )}
+                        <div className="flex flex-col items-end gap-1">
+                          {member.isOwner ? (
+                            <span className="badge badge-primary badge-xs">Owner</span>
+                          ) : (
+                            <>
+                              {canManageTeam ? (
+                                <select
+                                  value={member.role}
+                                  onChange={(e) => handleRoleChange(member.userId._id, e.target.value as 'editor' | 'viewer')}
+                                  className="select select-xs select-bordered w-16 h-5"
+                                >
+                                  <option value="viewer">View</option>
+                                  <option value="editor">Edit</option>
+                                </select>
+                              ) : (
+                                <span className="badge badge-xs capitalize">{member.role}</span>
+                              )}
+                              {canManageTeam && (
+                                <button
+                                  onClick={() => handleRemoveMember(member.userId._id)}
+                                  className="btn btn-xs btn-error btn-outline h-4 min-h-4 px-1"
+                                  title="Remove member"
+                                >
+                                  ×
+                                </button>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))}

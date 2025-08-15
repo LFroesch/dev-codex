@@ -148,7 +148,7 @@ const BillingPage: React.FC = () => {
             onClick={() => navigate('/')}
             className="btn btn-primary gap-2"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
             Back to Projects
@@ -169,12 +169,12 @@ const BillingPage: React.FC = () => {
         {/* Error/Success Notifications */}
         {error && (
           <div className="alert alert-error mb-6 shadow-lg">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="icon-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
             </svg>
             <span>{error}</span>
             <button onClick={() => setError(null)} className="btn btn-ghost btn-sm">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
@@ -183,12 +183,12 @@ const BillingPage: React.FC = () => {
 
         {success && (
           <div className="alert alert-success mb-6 shadow-lg">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="icon-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <span>{success}</span>
             <button onClick={() => setSuccess(null)} className="btn btn-ghost btn-sm">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
@@ -197,12 +197,12 @@ const BillingPage: React.FC = () => {
 
         {/* Current Plan Status */}
         {billingInfo && (
-          <div className="card bg-base-100 shadow-xl mb-8 border border-base-300">
+          <div className="card-default mb-8 border border-base-300">
             <div className="card-body">
               <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
+                <div className="flex-center-gap-2">
                   <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                    <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="icon-md text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
                     </svg>
                   </div>
@@ -299,7 +299,7 @@ const BillingPage: React.FC = () => {
               {billingInfo.cancelAtPeriodEnd && billingInfo.nextBillingDate && (
                 <div className="mt-6 p-4 bg-warning/10 border border-warning/20 rounded-lg">
                   <div className="flex items-start gap-3">
-                    <svg className="w-5 h-5 text-warning mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="icon-md text-warning mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                     </svg>
                     <div>
@@ -323,7 +323,7 @@ const BillingPage: React.FC = () => {
               {!billingInfo.cancelAtPeriodEnd && billingInfo.hasActiveSubscription && billingInfo.nextBillingDate && (
                 <div className="mt-6 p-4 bg-success/10 border border-success/20 rounded-lg">
                   <div className="flex items-start gap-3">
-                    <svg className="w-5 h-5 text-success mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="icon-md text-success mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                     </svg>
                     <div>
@@ -361,7 +361,7 @@ const BillingPage: React.FC = () => {
           {plans.map((plan) => (
             <div 
               key={plan.id} 
-              className={`card bg-base-100 shadow-xl border-2 transition-all duration-200 hover:shadow-2xl ${
+              className={`card-default border-2 transition-all duration-200 hover:shadow-2xl ${
                 plan.current ? 'border-primary ring-2 ring-primary/20' : 'border-base-300 hover:border-primary/50'
               } ${plan.popular ? 'transform lg:scale-105' : ''}`}
             >
@@ -402,8 +402,8 @@ const BillingPage: React.FC = () => {
 
                 <ul className="space-y-3 mb-8 text-left">
                   {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-center gap-3">
-                      <svg className="w-5 h-5 text-success flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <li key={feature} className="flex-center-gap-2">
+                      <svg className="icon-md text-success flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                       </svg>
                       <span className="text-base-content">{feature}</span>
@@ -427,7 +427,7 @@ const BillingPage: React.FC = () => {
                             </>
                           ) : (
                             <>
-                              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg className="icon-sm mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                               </svg>
                               Cancel Plan
@@ -448,7 +448,7 @@ const BillingPage: React.FC = () => {
                             </>
                           ) : (
                             <>
-                              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg className="icon-sm mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.001 8.001 0 01-15.357-2m15.357 2H15" />
                               </svg>
                               Resume Plan
@@ -458,7 +458,7 @@ const BillingPage: React.FC = () => {
                       )}
                       {plan.id === 'free' && (
                         <button className="btn btn-outline w-full" disabled>
-                          <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                          <svg className="icon-sm mr-2" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
                           Current Plan
@@ -480,7 +480,7 @@ const BillingPage: React.FC = () => {
                         </>
                       ) : (
                         <>
-                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="icon-sm mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                           </svg>
                           Choose Plan
@@ -500,20 +500,20 @@ const BillingPage: React.FC = () => {
             Trusted by developers worldwide • 14-day free trial • Cancel anytime
           </p>
           <div className="flex justify-center items-center space-x-8 text-base-content/60">
-            <div className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-success" fill="currentColor" viewBox="0 0 20 20">
+            <div className="flex-center-gap-2">
+              <svg className="icon-md text-success" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
               </svg>
               <span>SSL Encrypted</span>
             </div>
-            <div className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-success" fill="currentColor" viewBox="0 0 20 20">
+            <div className="flex-center-gap-2">
+              <svg className="icon-md text-success" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
               </svg>
               <span>PCI Compliant</span>
             </div>
-            <div className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-success" fill="currentColor" viewBox="0 0 20 20">
+            <div className="flex-center-gap-2">
+              <svg className="icon-md text-success" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
               <span>30-day Money Back</span>

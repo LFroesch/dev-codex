@@ -302,7 +302,7 @@ const NoteItem: React.FC<NoteItemProps> = ({
   };
 
   return (
-    <div className="bg-base-100 shadow-lg border border-base-content/10 rounded-lg mb-4">
+    <div className="bg-base-100 shadow-lg border-subtle rounded-lg mb-4">
       <div className="p-4">
         {/* Header with title and controls */}
         <div className="flex items-center justify-between">
@@ -312,7 +312,7 @@ const NoteItem: React.FC<NoteItemProps> = ({
             disabled={isEditing}
           >
             <div className={`transform transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}>
-              <svg className="w-5 h-5 text-base-content/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="icon-md text-base-content/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </div>
@@ -340,7 +340,7 @@ const NoteItem: React.FC<NoteItemProps> = ({
                   className="btn btn-sm btn-primary"
                   disabled={loading || !editTitle.trim() || !editContent.trim()}
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                   {loading ? 'Saving...' : 'Save'}
@@ -350,7 +350,7 @@ const NoteItem: React.FC<NoteItemProps> = ({
                   className="btn btn-sm btn-ghost"
                   disabled={loading}
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                   Cancel
@@ -363,7 +363,7 @@ const NoteItem: React.FC<NoteItemProps> = ({
                   className="btn btn-sm btn-ghost"
                   disabled={isEditing}
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                   </svg>
                   Edit
@@ -372,7 +372,7 @@ const NoteItem: React.FC<NoteItemProps> = ({
                   onClick={handleDeleteClick}
                   className="btn btn-sm btn-error btn-outline"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                   </svg>
                   Delete
@@ -396,7 +396,7 @@ const NoteItem: React.FC<NoteItemProps> = ({
                       type="text"
                       value={editTitle}
                       onChange={(e) => handleInputChange('title', e.target.value)}
-                      className="input input-bordered"
+                      className="input-field"
                       placeholder="Note title..."
                       required
                     />
@@ -409,7 +409,7 @@ const NoteItem: React.FC<NoteItemProps> = ({
                       type="text"
                       value={editDescription}
                       onChange={(e) => handleInputChange('description', e.target.value)}
-                      className="input input-bordered"
+                      className="input-field"
                       placeholder="Brief description (optional)..."
                     />
                   </div>
@@ -429,14 +429,14 @@ const NoteItem: React.FC<NoteItemProps> = ({
                 <div className="flex justify-end gap-2">
                   <button
                     onClick={handleCancel}
-                    className="btn btn-ghost btn-sm"
+                    className="btn-ghost-sm"
                     disabled={loading}
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleSave}
-                    className="btn btn-primary btn-sm"
+                    className="btn-primary-sm"
                     disabled={loading || !editTitle.trim() || !editContent.trim()}
                   >
                     {loading ? 'Saving...' : 'Save'}
@@ -519,7 +519,7 @@ const NewNoteForm: React.FC<NewNoteFormProps> = ({ projectId, onAdd }) => {
   };
 
   return (
-    <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10 mb-4">
+    <div className="collapse collapse-arrow bg-base-100 shadow-lg border-subtle mb-4">
       <input 
         type="checkbox" 
         checked={isExpanded}
@@ -540,7 +540,7 @@ const NewNoteForm: React.FC<NewNoteFormProps> = ({ projectId, onAdd }) => {
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="input input-bordered border-base-300"
+                className="input-field border-base-300"
                 placeholder="Enter note title..."
                 required
               />
@@ -553,7 +553,7 @@ const NewNoteForm: React.FC<NewNoteFormProps> = ({ projectId, onAdd }) => {
                 type="text"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="input input-bordered border-base-300"
+                className="input-field border-base-300"
                 placeholder="Brief description..."
               />
             </div>
@@ -566,7 +566,7 @@ const NewNoteForm: React.FC<NewNoteFormProps> = ({ projectId, onAdd }) => {
               </label>
               <button
                 type="submit"
-                className="btn btn-primary btn-sm"
+                className="btn-primary-sm"
                 disabled={loading || !title.trim() || !content.trim()}
               >
                 {loading ? 'Adding...' : 'Add Note'}
@@ -581,7 +581,7 @@ const NewNoteForm: React.FC<NewNoteFormProps> = ({ projectId, onAdd }) => {
               <div className="flex justify-end">
                 <button
                   type="submit"
-                  className="btn btn-primary btn-sm"
+                  className="btn-primary-sm"
                   disabled={loading || !title.trim() || !content.trim()}
                 >
                   {loading ? 'Adding...' : 'Add Note'}

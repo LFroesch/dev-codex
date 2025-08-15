@@ -34,8 +34,10 @@ interface CombinedAnalyticsData {
   topProjects: Array<{
     projectId: string;
     projectName: string;
-    totalEvents: number;
+    totalTime: number;
+    totalEvents?: number;
     uniqueUserCount: number;
+    sessions: number;
     lastActivity: string;
   }>;
   recentActivity: Array<{
@@ -49,9 +51,9 @@ interface OptimizedAnalyticsProps {
   onResetAnalytics?: () => void;
 }
 
-// Simple cache with 5-minute expiry
+// Simple cache with shorter expiry for real-time updates
 const cache = new Map<string, { data: any; timestamp: number }>();
-const CACHE_TTL = 1 * 60 * 1000; // 1 minute
+const CACHE_TTL = 30 * 1000; // 30 seconds
 
 const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytics }) => {
   const [data, setData] = useState<CombinedAnalyticsData | null>(null);
@@ -61,6 +63,9 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
   const [selectedPeriod, setSelectedPeriod] = useState(30);
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'projects' | 'features'>('overview');
   const [lastFetch, setLastFetch] = useState<number>(0);
+  const [expandedProject, setExpandedProject] = useState<string | null>(null);
+  const [projectUserData, setProjectUserData] = useState<{[projectId: string]: any}>({});
+  const [loadingProjectData, setLoadingProjectData] = useState<string | null>(null);
 
   // Cache-aware fetch function
   const fetchAnalytics = useCallback(async (days: number, force = false) => {
@@ -104,6 +109,49 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
     }
   }, []);
 
+  // Fetch user breakdown for a specific project
+  const fetchProjectUserData = useCallback(async (projectId: string) => {
+    try {
+      setLoadingProjectData(projectId);
+      console.log('Fetching team time for project:', projectId);
+      const response = await analyticsAPI.getProjectTeamTime(projectId, selectedPeriod);
+      console.log('Team time response:', response);
+      setProjectUserData(prev => {
+        const newData = {
+          ...prev,
+          [projectId]: response.teamTimeData || []
+        };
+        console.log('Updated projectUserData:', newData);
+        return newData;
+      });
+    } catch (error) {
+      console.error('Failed to fetch project user data:', error);
+    } finally {
+      setLoadingProjectData(null);
+    }
+  }, [selectedPeriod]);
+
+  // Handle project expand/collapse
+  const toggleProject = useCallback(async (projectId: string, uniqueUserCount: number) => {
+    console.log('Toggle project clicked:', projectId, uniqueUserCount);
+    console.log('Current expandedProject:', expandedProject);
+    console.log('Current projectUserData:', projectUserData);
+    
+    if (uniqueUserCount < 2) return; // Don't expand single-user projects
+    
+    if (expandedProject === projectId) {
+      console.log('Collapsing project');
+      setExpandedProject(null);
+    } else {
+      console.log('Expanding project');
+      setExpandedProject(projectId);
+      if (!projectUserData[projectId]) {
+        console.log('Fetching user data for project:', projectId);
+        await fetchProjectUserData(projectId);
+      }
+    }
+  }, [expandedProject, projectUserData, fetchProjectUserData]);
+
   // Debounced effect for period changes
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -120,13 +168,13 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
     }
   }, [activeTab, selectedPeriod, fetchAnalytics]);
 
-  // Auto-refresh every 2 minutes
+  // Auto-refresh every 30 seconds for real-time updates
   useEffect(() => {
     const interval = setInterval(() => {
-      if (Date.now() - lastFetch > 2 * 60 * 1000) { // 2 minutes
+      if (Date.now() - lastFetch > 30 * 1000) { // 30 seconds
         fetchAnalytics(selectedPeriod, true);
       }
-    }, 30000); // Check every 30 seconds
+    }, 10000); // Check every 10 seconds
 
     return () => clearInterval(interval);
   }, [selectedPeriod, lastFetch, fetchAnalytics]);
@@ -227,7 +275,8 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
               <thead>
                 <tr>
                   <th>Project</th>
-                  <th>Events</th>
+                  <th>Time Spent</th>
+                  <th>Sessions</th>
                   <th>Users</th>
                   <th>Last Activity</th>
                 </tr>
@@ -239,7 +288,15 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
                       <div className="font-medium text-sm">{project.projectName || 'Unnamed Project'}</div>
                       <div className="text-xs opacity-60 font-mono">{project.projectId}</div>
                     </td>
-                    <td className="font-semibold">{project.totalEvents}</td>
+                    <td>
+                      <div className="font-mono font-semibold text-primary">
+                        {formatTime(project.totalTime)}
+                      </div>
+                      <div className="text-xs opacity-60">
+                        Avg: {formatTime(project.totalTime / (project.sessions || 1))}
+                      </div>
+                    </td>
+                    <td className="font-semibold">{project.sessions}</td>
                     <td>
                       <span className="badge badge-outline badge-xs">
                         {project.uniqueUserCount} users
@@ -573,7 +630,7 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
 
           {/* Footer Info */}
           <div className="text-xs opacity-50 text-center mt-4">
-            Last updated: {lastFetch ? new Date(lastFetch).toLocaleTimeString() : 'Never'} • Auto-refresh: 2min
+            Last updated: {lastFetch ? new Date(lastFetch).toLocaleTimeString() : 'Never'} • Auto-refresh: 30s
           </div>
         </div>
       </div>

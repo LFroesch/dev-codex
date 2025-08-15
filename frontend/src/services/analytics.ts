@@ -585,6 +585,25 @@ class AnalyticsService {
 
   async setCurrentProject(projectId: string | null) {
     if (this.session) {
+      const previousProjectId = this.session.currentProjectId;
+      
+      // Call backend to record time spent on previous project
+      if (this.isOnline && (previousProjectId !== projectId)) {
+        try {
+          await fetch('/api/analytics/project/switch', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              sessionId: this.session.sessionId,
+              newProjectId: projectId
+            })
+          });
+        } catch (error) {
+          console.warn('Failed to record project switch:', error);
+        }
+      }
+      
       this.session.currentProjectId = projectId || undefined;
       this.updateStorage();
       
@@ -770,6 +789,44 @@ class AnalyticsService {
       return 'text_short';
     }
     return 'unknown';
+  }
+
+  // Project Time Tracking Methods
+  
+  async getProjectsTimeData(days: number = 30): Promise<any> {
+    try {
+      const response = await fetch(`/api/analytics/projects/time?days=${days}`, {
+        method: 'GET',
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch projects time data: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Failed to fetch projects time data:', error);
+      return { projects: [], period: `${days} days` };
+    }
+  }
+
+  async getProjectTimeData(projectId: string, days: number = 30): Promise<any> {
+    try {
+      const response = await fetch(`/api/analytics/project/${projectId}/time?days=${days}`, {
+        method: 'GET',
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch project time data: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Failed to fetch project time data:', error);
+      return { projectId, totalTime: 0, dailyBreakdown: [], period: `${days} days` };
+    }
   }
 }
 

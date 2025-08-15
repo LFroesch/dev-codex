@@ -43,6 +43,74 @@ body {
   will-change: transform;
 }
 
+/* Custom Utility Classes - High Priority */
+@layer components {
+  /* Button Utilities */
+  .btn-primary-sm {
+    @apply btn btn-primary btn-sm;
+  }
+  
+  .btn-ghost-sm {
+    @apply btn btn-ghost btn-sm;
+  }
+  
+  .btn-primary-xs {
+    @apply btn btn-primary btn-xs;
+  }
+  
+  .btn-ghost-xs {
+    @apply btn btn-ghost btn-xs;
+  }
+  
+  .btn-outline-sm {
+    @apply btn btn-outline btn-sm;
+  }
+  
+  /* Layout Utilities */
+  .flex-center-gap-2 {
+    @apply flex items-center gap-2;
+  }
+  
+  .flex-between-center {
+    @apply flex justify-between items-center;
+  }
+  
+  /* Form Utilities */
+  .input-field {
+    @apply input input-bordered;
+  }
+  
+  .input-field-sm {
+    @apply input input-bordered input-sm;
+  }
+  
+  .form-field {
+    @apply form-control w-full;
+  }
+  
+  /* Border and Container Utilities */
+  .border-subtle {
+    @apply border border-base-content/10;
+  }
+  
+  .card-default {
+    @apply card bg-base-100 shadow;
+  }
+  
+  .container-default {
+    @apply bg-base-100 border-subtle rounded-lg;
+  }
+  
+  /* Icon Utilities */
+  .icon-sm {
+    @apply w-4 h-4;
+  }
+  
+  .icon-md {
+    @apply w-5 h-5;
+  }
+}
+
 /* Line clamp for consistent text truncation */
 .line-clamp-2 {
   display: -webkit-box;

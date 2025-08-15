@@ -1,6 +1,7 @@
 import express from 'express';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { AnalyticsService } from '../middleware/analytics';
+import UserSession from '../models/UserSession';
 
 const router = express.Router();
 
@@ -50,66 +51,11 @@ router.get('/comprehensive', requireAuth, async (req: AuthRequest, res) => {
   try {
     const { days = '30' } = req.query;
     
-    // Get feature usage stats from the analytics table
-    const featureUsageQuery = `
-      SELECT 
-        JSON_EXTRACT(eventData, '$.featureName') as feature_name,
-        JSON_EXTRACT(eventData, '$.componentName') as component_name,
-        COUNT(*) as usage_count,
-        MAX(timestamp) as last_used
-      FROM analytics 
-      WHERE eventType = 'feature_usage' 
-        AND timestamp >= DATE_SUB(NOW(), INTERVAL ? DAY)
-      GROUP BY feature_name, component_name
-      ORDER BY usage_count DESC
-    `;
-    
-    // Get navigation patterns
-    const navigationQuery = `
-      SELECT 
-        JSON_EXTRACT(eventData, '$.navigationSource') as from_page,
-        JSON_EXTRACT(eventData, '$.navigationTarget') as to_page,
-        COUNT(*) as count
-      FROM analytics 
-      WHERE eventType = 'navigation' 
-        AND timestamp >= DATE_SUB(NOW(), INTERVAL ? DAY)
-      GROUP BY from_page, to_page
-      ORDER BY count DESC
-      LIMIT 10
-    `;
-    
-    // Get search analytics
-    const searchQuery = `
-      SELECT 
-        JSON_EXTRACT(eventData, '$.searchTerm') as search_term,
-        AVG(JSON_EXTRACT(eventData, '$.searchResultsCount')) as avg_results,
-        COUNT(*) as search_count
-      FROM analytics 
-      WHERE eventType = 'search' 
-        AND timestamp >= DATE_SUB(NOW(), INTERVAL ? DAY)
-      GROUP BY search_term
-      ORDER BY search_count DESC
-      LIMIT 10
-    `;
-    
-    // Get error stats
-    const errorQuery = `
-      SELECT 
-        JSON_EXTRACT(eventData, '$.errorType') as error_type,
-        COUNT(*) as error_count,
-        MAX(timestamp) as last_occurrence
-      FROM analytics 
-      WHERE eventType = 'error' 
-        AND timestamp >= DATE_SUB(NOW(), INTERVAL ? DAY)
-      GROUP BY error_type
-      ORDER BY error_count DESC
-    `;
-    
     const [featureUsage, navigation, searches, errors, performance, uiInteractions] = await Promise.all([
-      AnalyticsService.runQuery(featureUsageQuery, [days, days]),
-      AnalyticsService.runQuery(navigationQuery, [days, days]),
-      AnalyticsService.runQuery(searchQuery, [days]),
-      AnalyticsService.runQuery(errorQuery, [days]),
+      AnalyticsService.runQuery('feature_usage', [days]),
+      AnalyticsService.runQuery('navigation', [days]),
+      AnalyticsService.runQuery('search', [days]),
+      AnalyticsService.runQuery('error', [days]),
       AnalyticsService.runQuery('performance', [days]),
       AnalyticsService.runQuery('ui_interaction', [days])
     ]);
@@ -122,12 +68,12 @@ router.get('/comprehensive', requireAuth, async (req: AuthRequest, res) => {
       performance,
       uiInteractions,
       summary: {
-        totalFeatureUsage: featureUsage.reduce((sum: number, item: any) => sum + item.usage_count, 0),
-        totalNavigationEvents: navigation.reduce((sum: number, item: any) => sum + item.count, 0),
-        totalSearches: searches.reduce((sum: number, item: any) => sum + item.search_count, 0),
-        totalErrors: errors.reduce((sum: number, item: any) => sum + item.error_count, 0),
-        totalPerformanceEvents: performance.reduce((sum: number, item: any) => sum + item.count, 0),
-        totalUIInteractions: uiInteractions.reduce((sum: number, item: any) => sum + item.interaction_count, 0)
+        totalFeatureUsage: featureUsage.reduce((sum: number, item: any) => sum + (item.usage_count || 0), 0),
+        totalNavigationEvents: navigation.reduce((sum: number, item: any) => sum + (item.count || 0), 0),
+        totalSearches: searches.reduce((sum: number, item: any) => sum + (item.search_count || 0), 0),
+        totalErrors: errors.reduce((sum: number, item: any) => sum + (item.error_count || 0), 0),
+        totalPerformanceEvents: performance.reduce((sum: number, item: any) => sum + (item.count || 0), 0),
+        totalUIInteractions: uiInteractions.reduce((sum: number, item: any) => sum + (item.interaction_count || 0), 0)
       }
     };
     
@@ -249,6 +195,235 @@ router.post('/heartbeat', requireAuth, async (req: AuthRequest, res) => {
     res.json({ success: true });
   } catch (error) {
     console.error('Error processing heartbeat:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Project Time Tracking Routes
+
+// Switch to a new project (records time spent on previous project)
+router.post('/project/switch', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const { sessionId, newProjectId } = req.body;
+    
+    if (!sessionId) {
+      return res.status(400).json({ error: 'sessionId is required' });
+    }
+
+    const session = await UserSession.findOne({ sessionId, userId: req.userId!, isActive: true });
+    if (!session) {
+      return res.status(404).json({ error: 'Active session not found' });
+    }
+
+    const now = new Date();
+    
+    // If switching FROM a project, record time spent
+    if (session.currentProjectId && session.currentProjectStartTime) {
+      const timeSpent = now.getTime() - session.currentProjectStartTime.getTime();
+      
+      // Find existing project time entry or create new one
+      let existingProject = session.projectTimeBreakdown?.find(
+        p => p.projectId === session.currentProjectId
+      );
+      
+      if (existingProject) {
+        existingProject.timeSpent += timeSpent;
+        existingProject.lastSwitchTime = now;
+      } else {
+        if (!session.projectTimeBreakdown) {
+          session.projectTimeBreakdown = [];
+        }
+        session.projectTimeBreakdown.push({
+          projectId: session.currentProjectId,
+          timeSpent,
+          lastSwitchTime: now
+        });
+      }
+    }
+
+    // Switch to new project
+    session.currentProjectId = newProjectId;
+    session.currentProjectStartTime = newProjectId ? now : undefined;
+    session.lastActivity = now;
+    
+    // Add to projectsViewed if not already there
+    if (newProjectId && !session.projectsViewed.includes(newProjectId)) {
+      session.projectsViewed.push(newProjectId);
+    }
+
+    await session.save();
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error switching project:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get project time data for all user's projects
+router.get('/projects/time', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const { days = '30' } = req.query;
+    const daysInt = parseInt(days as string);
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - daysInt);
+
+    // Aggregate project time from all user sessions
+    const sessions = await UserSession.aggregate([
+      {
+        $match: {
+          userId: req.userId!,
+          startTime: { $gte: startDate },
+          projectTimeBreakdown: { $exists: true, $ne: [] }
+        }
+      },
+      {
+        $unwind: '$projectTimeBreakdown'
+      },
+      {
+        $group: {
+          _id: '$projectTimeBreakdown.projectId',
+          totalTime: { $sum: '$projectTimeBreakdown.timeSpent' },
+          sessions: { $sum: 1 },
+          lastUsed: { $max: '$projectTimeBreakdown.lastSwitchTime' }
+        }
+      },
+      {
+        $sort: { totalTime: -1 }
+      }
+    ]);
+
+    res.json({ projects: sessions, period: `${days} days` });
+  } catch (error) {
+    console.error('Error fetching project time data:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get time data for a specific project
+router.get('/project/:projectId/time', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const { projectId } = req.params;
+    const { days = '30' } = req.query;
+    const daysInt = parseInt(days as string);
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - daysInt);
+
+    const projectTime = await UserSession.aggregate([
+      {
+        $match: {
+          userId: req.userId!,
+          startTime: { $gte: startDate },
+          'projectTimeBreakdown.projectId': projectId
+        }
+      },
+      {
+        $unwind: '$projectTimeBreakdown'
+      },
+      {
+        $match: {
+          'projectTimeBreakdown.projectId': projectId
+        }
+      },
+      {
+        $group: {
+          _id: {
+            date: {
+              $dateToString: {
+                format: '%Y-%m-%d',
+                date: '$projectTimeBreakdown.lastSwitchTime'
+              }
+            }
+          },
+          dailyTime: { $sum: '$projectTimeBreakdown.timeSpent' },
+          sessions: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { '_id.date': 1 }
+      }
+    ]);
+
+    const totalTime = projectTime.reduce((sum, day) => sum + day.dailyTime, 0);
+
+    res.json({
+      projectId,
+      totalTime,
+      dailyBreakdown: projectTime,
+      period: `${days} days`
+    });
+  } catch (error) {
+    console.error('Error fetching project time data:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get time data for all team members on a specific project
+router.get('/project/:projectId/team-time', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const { projectId } = req.params;
+    const { days = '30' } = req.query;
+    const daysInt = parseInt(days as string);
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - daysInt);
+
+    // First, get all team members for this project
+    const { Project } = await import('../models/Project');
+    const project = await Project.findById(projectId).select('userId').lean();
+    
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+
+    // Get team members from TeamMember collection
+    const TeamMember = await import('../models/TeamMember');
+    const teamMembers = await TeamMember.default.find({ projectId }).populate('userId', 'firstName lastName email').lean();
+    
+    // Get all user IDs (owner + team members)
+    const userIds = [project.userId.toString()];
+    if (teamMembers?.length > 0) {
+      userIds.push(...teamMembers.map((m: any) => m.userId._id.toString()));
+    }
+
+    const mongoose = await import('mongoose');
+    const objectIdUserIds = userIds.map(id => new mongoose.Types.ObjectId(id));
+
+    // Simple aggregation to get time per user for this project
+    const teamTimeData = await UserSession.aggregate([
+      {
+        $match: {
+          userId: { $in: objectIdUserIds },
+          startTime: { $gte: startDate },
+          projectTimeBreakdown: { $exists: true, $ne: [] }
+        }
+      },
+      {
+        $unwind: '$projectTimeBreakdown'
+      },
+      {
+        $match: {
+          'projectTimeBreakdown.projectId': projectId
+        }
+      },
+      {
+        $group: {
+          _id: '$userId',
+          totalTime: { $sum: '$projectTimeBreakdown.timeSpent' },
+          sessions: { $sum: 1 },
+          lastUsed: { $max: '$projectTimeBreakdown.lastSwitchTime' }
+        }
+      },
+      {
+        $sort: { totalTime: -1 }
+      }
+    ]);
+
+    res.json({
+      projectId,
+      teamTimeData,
+      period: `${days} days`
+    });
+  } catch (error) {
+    console.error('Error fetching team project time data:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

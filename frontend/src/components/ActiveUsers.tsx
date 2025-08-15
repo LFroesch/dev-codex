@@ -137,11 +137,11 @@ const ActiveUsers: React.FC<ActiveUsersProps> = ({
   return (
     <div className="space-y-3">
       {showTitle && (
-        <div className="flex items-center justify-between">
-          <h3 className="font-semibold">Active Team Members</h3>
-          <span className="text-xs text-base-content/60">
-            {activeUsers.length} active
-          </span>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-3">
+            <h3 className="card-title text-base">Active Team Members</h3>
+            <span className="badge badge-success badge-sm">{activeUsers.length}</span>
+          </div>
         </div>
       )}
 

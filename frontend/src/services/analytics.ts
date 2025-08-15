@@ -176,17 +176,51 @@ class AnalyticsService {
       if (response.ok) {
         const { sessionId } = await response.json();
         
-        this.session = {
-          sessionId,
-          userId: this.currentUserId || undefined,
-          startTime: Date.now(),
-          lastActivity: Date.now(),
-          pageViews: [],
-          projectsViewed: [],
-          events: [],
-          userAgent: navigator.userAgent,
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
-        };
+        // Check if we have stored session data for this session ID
+        const stored = localStorage.getItem('analytics_session');
+        let restoredSession = false;
+        
+        if (stored) {
+          try {
+            const data = JSON.parse(stored);
+            if (data.sessionId === sessionId) {
+              // Restore the existing session data
+              this.session = {
+                sessionId,
+                userId: this.currentUserId || data.userId,
+                startTime: data.startTime || Date.now(),
+                lastActivity: Date.now(),
+                pageViews: data.pageViews || [],
+                projectsViewed: data.projectsViewed || [],
+                events: [],
+                currentProjectId: data.currentProjectId,
+                currentPage: data.currentPage,
+                userAgent: navigator.userAgent,
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+              };
+              restoredSession = true;
+              console.log('Analytics: Restored session from localStorage:', sessionId);
+            }
+          } catch (e) {
+            console.warn('Analytics: Failed to restore session from storage');
+          }
+        }
+        
+        // If we didn't restore from storage, create new session data
+        if (!restoredSession) {
+          this.session = {
+            sessionId,
+            userId: this.currentUserId || undefined,
+            startTime: Date.now(),
+            lastActivity: Date.now(),
+            pageViews: [],
+            projectsViewed: [],
+            events: [],
+            userAgent: navigator.userAgent,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+          };
+          console.log('Analytics: Created new session:', sessionId);
+        }
 
         this.updateStorage();
         this.startHeartbeat();

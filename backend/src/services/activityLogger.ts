@@ -253,19 +253,17 @@ class ActivityLogger {
     ipAddress?: string
   ): Promise<IActivityLog | null> {
     try {
-      // Check if user has "joined_project" in the last 15 minutes
-      const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
-      
-      const recentJoin = await ActivityLog.findOne({
+      // Check if user has already "joined_project" in this session
+      const existingJoin = await ActivityLog.findOne({
         projectId: new mongoose.Types.ObjectId(projectId),
         userId: new mongoose.Types.ObjectId(userId),
-        action: 'joined_project',
-        timestamp: { $gte: fifteenMinutesAgo }
+        sessionId,
+        action: 'joined_project'
       }).lean();
 
-      // If they already joined recently, don't log again
-      if (recentJoin) {
-        console.log(`User ${userId} already joined project ${projectId} recently, skipping duplicate log`);
+      // If they already joined in this session, don't log again
+      if (existingJoin) {
+        console.log(`User ${userId} already joined project ${projectId} in session ${sessionId}, skipping duplicate log`);
         return null;
       }
 

@@ -985,22 +985,30 @@ const Layout: React.FC = () => {
                                       <div className="text-xs mt-1 line-clamp-2 text-base-content/70">{project.description}</div>
                                     )}
                                     {project.tags && project.tags.length > 0 && (
-                                      <div className="flex flex-wrap gap-1 mt-2">
-                                        {project.tags.slice(0, 3).map((tag, index) => (
-                                          <span
-                                            key={index}
-                                            className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20"
-                                          >
-                                            {tag}
-                                          </span>
-                                        ))}
-                                        {project.tags.length > 3 && (
-                                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-base-300 text-base-content/60 border border-base-300">
-                                            +{project.tags.length - 3}
-                                          </span>
-                                        )}
-                                      </div>
-                                    )}
+                                        <div className="flex flex-wrap gap-1 mt-2">
+                                          {project.tags.slice(0, 3).map((tag, index) => (
+                                            <span
+                                              key={index}
+                                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                                selectedProject?.id === project.id 
+                                                  ? 'bg-white/20 text-white border border-white/30' 
+                                                  : 'bg-primary/10 text-primary border border-primary/20'
+                                              }`}
+                                            >
+                                              {tag}
+                                            </span>
+                                          ))}
+                                          {project.tags.length > 3 && (
+                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                              selectedProject?.id === project.id 
+                                                ? 'bg-white/10 text-white/70 border border-white/20' 
+                                                : 'bg-base-300 text-base-content/60 border border-base-300'
+                                            }`}>
+                                              +{project.tags.length - 3}
+                                            </span>
+                                          )}
+                                        </div>
+                                      )}
                                     <div className="flex items-center justify-between mt-2 text-xs">
                                       <div className="flex items-center gap-3 text-base-content/50">
                                         <span>Updated: {new Date(project.updatedAt).toLocaleDateString()}</span>
@@ -1083,34 +1091,54 @@ const Layout: React.FC = () => {
                                       <div className="text-xs mt-1 line-clamp-2 text-base-content/70">{project.description}</div>
                                     )}
                                     {project.tags && project.tags.length > 0 && (
-                                      <div className="flex flex-wrap gap-1 mt-2">
-                                        {project.tags.slice(0, 3).map((tag, index) => (
-                                          <span
-                                            key={index}
-                                            className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20"
-                                          >
-                                            {tag}
+                                        <div className="flex flex-wrap gap-1 mt-2">
+                                          {project.tags.slice(0, 3).map((tag, index) => (
+                                            <span
+                                              key={index}
+                                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                                selectedProject?.id === project.id 
+                                                  ? 'bg-white/20 text-white border border-white/30' 
+                                                  : 'bg-primary/10 text-primary border border-primary/20'
+                                              }`}
+                                            >
+                                              {tag}
+                                            </span>
+                                          ))}
+                                          {project.tags.length > 3 && (
+                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                              selectedProject?.id === project.id 
+                                                ? 'bg-white/10 text-white/70 border border-white/20' 
+                                                : 'bg-base-300 text-base-content/60 border border-base-300'
+                                            }`}>
+                                              +{project.tags.length - 3}
+                                            </span>
+                                          )}
+                                        </div>
+                                      )}
+                                    <div className="flex items-center justify-between mt-2 text-xs">
+                                        <div className="flex items-center gap-3 text-base-content/50">
+                                          <span>Updated: {new Date(project.updatedAt).toLocaleDateString()}</span>
+                                        </div>
+                                        <div className={`flex items-center gap-1 px-2 py-1 rounded-full font-medium ${
+                                          selectedProject?.id === project.id 
+                                            ? 'bg-white/10 text-white/80' 
+                                            : 'bg-success/10 text-success'
+                                        }`}>
+                                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                          </svg>
+                                          <span className="text-xs">
+                                            {formatProjectTime(project.id)}
                                           </span>
-                                        ))}
-                                        {project.tags.length > 3 && (
-                                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-base-300 text-base-content/60 border border-base-300">
-                                            +{project.tags.length - 3}
-                                          </span>
-                                        )}
+                                        </div>
                                       </div>
-                                    )}
-                                    <div className="flex items-center gap-3 mt-2 text-xs text-base-content/50">
-                                      <span>Created: {new Date(project.createdAt).toLocaleDateString()}</span>
-                                      <span>•</span>
-                                      <span>Updated: {new Date(project.updatedAt).toLocaleDateString()}</span>
                                     </div>
-                                  </div>
-                                  {selectedProject?.id === project.id && (
-                                    <svg className="icon-sm flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                    </svg>
-                                  )}
-                                </button>
+                                    {selectedProject?.id === project.id && (
+                                      <svg className="icon-sm flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                      </svg>
+                                    )}
+                                  </button>
                               ))}
                             </div>
                           </div>

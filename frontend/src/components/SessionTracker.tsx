@@ -103,7 +103,7 @@ const SessionTracker: React.FC<SessionTrackerProps> = ({
       {/* Detailed view */}
       {(isVisible || showDetails) && (
         <div className="absolute right-0 top-full mt-2 bg-base-100 border border-base-content/10 rounded-lg shadow-lg p-4 z-50 min-w-64">
-          <div className="space-y-3">
+          <div className="space-y-1">
             <div className="flex justify-between items-center">
               <h4 className="font-semibold text-sm">Session Info</h4>
               <button
@@ -113,7 +113,7 @@ const SessionTracker: React.FC<SessionTrackerProps> = ({
                 ×
               </button>
             </div>
-            
+            <div className="divider"></div>
             <div className="space-y-2 text-xs">
               <div className="flex justify-between">
                 <span className="text-base-content/60">Status:</span>
@@ -140,28 +140,14 @@ const SessionTracker: React.FC<SessionTrackerProps> = ({
               <div className="flex justify-between">
                 <span className="text-base-content/60">Actions:</span>
                 <span>{sessionInfo.events}</span>
-              </div>
-              
+              </div>           
               <div className="flex justify-between">
                 <span className="text-base-content/60">Session ID:</span>
                 <span className="font-mono text-xs truncate max-w-24" title={sessionInfo.sessionId}>
                   {sessionInfo.sessionId.slice(-8)}
                 </span>
               </div>
-            </div>
-
-            <div className="divider my-2"></div>
-            
-            <div className="text-xs text-base-content/50">
-              <div className="flex items-center gap-1 mb-1">
-                <div className="w-1 h-1 rounded-full bg-success"></div>
-                <span>Active - Page is focused</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <div className="w-1 h-1 rounded-full bg-info"></div>
-                <span>Background - Page is hidden/minimized</span>
-              </div>
-            </div>
+            </div>  
           </div>
         </div>
       )}

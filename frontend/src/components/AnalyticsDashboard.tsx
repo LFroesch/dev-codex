@@ -116,10 +116,15 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   if (!metrics) return null;
 
   return (
-    <div className="space-y-6">
-      {/* Period Selector */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">📊 Usage Overview</h2>
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex justify-between items-center gap-4">
+        <div className="flex items-center gap-4">
+          <h2 className="text-2xl font-bold">📊 Usage Analytics</h2>
+        </div>
+          <p className="translate-y-[3px] text-base-content/60">
+            Track your productivity and app usage patterns. All data is private and only visible to you.
+          </p>
         <select
           className="select select-bordered select-sm"
           value={selectedPeriod}
@@ -131,150 +136,109 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
         </select>
       </div>
 
-      {/* Key Metrics - Clean & Simple */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="stat bg-primary/10 rounded-xl border border-primary/20">
-          <div className="stat-figure text-primary">
-            <div className="text-3xl">⏱️</div>
-          </div>
-          <div className="stat-title text-primary">Total Time</div>
-          <div className="stat-value text-primary text-2xl">
+      {/* Compact Metrics */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="stat bg-primary/5 rounded-lg border border-primary/20 p-3">
+          <div className="stat-title text-xs text-primary">Total Time</div>
+          <div className="stat-value text-primary text-lg">
             {formatDuration(metrics.totalTime)}
           </div>
         </div>
 
-        <div className="stat bg-secondary/10 rounded-xl border border-secondary/20">
-          <div className="stat-figure text-secondary">
-            <div className="text-3xl">✏️</div>
-          </div>
-          <div className="stat-title text-secondary">Edits Made</div>
-          <div className="stat-value text-secondary text-2xl">
+        <div className="stat bg-secondary/5 rounded-lg border border-secondary/20 p-3">
+          <div className="stat-title text-xs text-secondary">Edits</div>
+          <div className="stat-value text-secondary text-lg">
             {metrics.fieldEdits}
           </div>
         </div>
 
-        <div className="stat bg-accent/10 rounded-xl border border-accent/20">
-          <div className="stat-figure text-accent">
-            <div className="text-3xl">📂</div>
-          </div>
-          <div className="stat-title text-accent">Projects Opened</div>
-          <div className="stat-value text-accent text-2xl">
+        <div className="stat bg-accent/5 rounded-lg border border-accent/20 p-3">
+          <div className="stat-title text-xs text-accent">Projects</div>
+          <div className="stat-value text-accent text-lg">
             {metrics.projectOpens}
           </div>
         </div>
 
-        <div className="stat bg-info/10 rounded-xl border border-info/20">
-          <div className="stat-figure text-info">
-            <div className="text-3xl">🚀</div>
-          </div>
-          <div className="stat-title text-info">Sessions</div>
-          <div className="stat-value text-info text-2xl">
+        <div className="stat bg-info/5 rounded-lg border border-info/20 p-3">
+          <div className="stat-title text-xs text-info">Sessions</div>
+          <div className="stat-value text-info text-lg">
             {metrics.sessions}
           </div>
         </div>
       </div>
 
-      {/* Quick Insights */}
-      {!compact && (
-        <div className="card-default">
-          <div className="card-body">
-            <h3 className="card-title text-lg mb-4">📈 Quick Insights</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-base-content/70">Average Session:</span>
-                  <span className="font-semibold">
-                    {formatDuration(analyticsData.sessionStats?.avgDuration || 0)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-base-content/70">Edits per Session:</span>
-                  <span className="font-semibold">
-                    {metrics.sessions > 0 ? Math.round(metrics.fieldEdits / metrics.sessions) : 0}
-                  </span>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-base-content/70">Projects Used:</span>
-                  <span className="font-semibold">
-                    {analyticsData.sessionStats?.uniqueProjects?.[0]?.length || 0}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-base-content/70">Period:</span>
-                  <span className="font-semibold">{selectedPeriod} days</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Project Time Breakdown */}
       {!compact && analyticsData.projectBreakdown && analyticsData.projectBreakdown.length > 0 && (
         <div className="card-default">
-          <div className="card-body">
-            <h3 className="card-title text-lg mb-4">⏱️ Project Time Breakdown</h3>
+          <div className="card-body p-4">
+            <h3 className="font-semibold mb-3">⏱️ Project Time</h3>
             
-            <div className="space-y-3">
+            <div className="space-y-2">
               {analyticsData.projectBreakdown
                 .sort((a, b) => b.totalTime - a.totalTime)
                 .map((project) => (
-                <div key={project.projectId} className="flex justify-between items-center p-3 bg-base-200/50 rounded-lg border border-base-300/50">
-                  <div className="flex-1">
-                    <div className="font-semibold text-base-content">
+                <div key={project.projectId} className="flex justify-between items-center p-2 bg-base-100 rounded border">
+                  <div>
+                    <div className="font-medium text-sm">
                       {project.projectName}
                     </div>
-                    <div className="text-sm text-base-content/60">
-                      {project.sessions} session{project.sessions !== 1 ? 's' : ''} • 
-                      Last used: {new Date(project.lastUsed).toLocaleDateString()}
+                    <div className="text-xs text-base-content/60">
+                      {project.sessions} sessions
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="font-mono font-semibold text-lg">
+                    <div className="font-mono font-semibold">
                       {formatDuration(project.totalTime)}
-                    </div>
-                    <div className="text-sm text-base-content/60">
-                      Avg: {formatDuration(project.totalTime / (project.sessions || 1))}
                     </div>
                   </div>
                 </div>
               ))}
             </div>
-            
-            {analyticsData.projectBreakdown.length === 0 && (
-              <div className="text-center py-8 text-base-content/60">
-                <div className="text-4xl mb-2">📊</div>
-                <p>No project time data yet. Start working on projects to see the breakdown!</p>
-              </div>
-            )}
           </div>
         </div>
       )}
 
-      {/* Export (Simplified) */}
+      {/* Quick Stats */}
       {!compact && (
-        <div className="flex justify-end">
-          <button 
-            className="btn-outline-sm gap-2"
-            onClick={() => {
-              const dataStr = JSON.stringify(analyticsData, null, 2);
-              const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-              const exportFileDefaultName = `analytics-${selectedPeriod}days-${new Date().toISOString().split('T')[0]}.json`;
-              const linkElement = document.createElement('a');
-              linkElement.setAttribute('href', dataUri);
-              linkElement.setAttribute('download', exportFileDefaultName);
-              linkElement.click();
-            }}
-          >
-            <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-4-4m4 4l4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            Export Data
-          </button>
+        <div className="grid grid-cols-2 gap-4 text-sm p-4 card-default">
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <span className="text-base-content/70">Avg Session:</span>
+              <span className="font-medium">
+                {formatDuration(analyticsData.sessionStats?.avgDuration || 0)}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-base-content/70">Edits/Session:</span>
+              <span className="font-medium">
+                {metrics.sessions > 0 ? Math.round(metrics.fieldEdits / metrics.sessions) : 0}
+              </span>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <span className="text-base-content/70">Projects Used:</span>
+              <span className="font-medium">
+                {analyticsData.sessionStats?.uniqueProjects?.[0]?.length || 0}
+              </span>
+            </div>
+            <div className="flex justify-end">
+              <button 
+                className="btn btn-xs btn-outline"
+                onClick={() => {
+                  const dataStr = JSON.stringify(analyticsData, null, 2);
+                  const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+                  const exportFileDefaultName = `analytics-${selectedPeriod}days-${new Date().toISOString().split('T')[0]}.json`;
+                  const linkElement = document.createElement('a');
+                  linkElement.setAttribute('href', dataUri);
+                  linkElement.setAttribute('download', exportFileDefaultName);
+                  linkElement.click();
+                }}
+              >
+                Export
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

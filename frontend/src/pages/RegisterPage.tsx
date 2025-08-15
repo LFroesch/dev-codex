@@ -25,34 +25,31 @@ const RegisterPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError('');
+    clearError();
 
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      setLoading(false);
+      handleError(new Error('Passwords do not match'));
       return;
     }
 
     if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters long');
-      setLoading(false);
+      handleError(new Error('Password must be at least 6 characters long'));
       return;
     }
 
-    try {
-      await authAPI.register({
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        password: formData.password
-      });
-      navigate('/');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Registration failed');
-    } finally {
-      setLoading(false);
-    }
+    await withLoading(async () => {
+      try {
+        await authAPI.register({
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          password: formData.password
+        });
+        navigate('/');
+      } catch (err: any) {
+        handleError(err);
+      }
+    });
   };
 
   const handleGoogleSignup = () => {

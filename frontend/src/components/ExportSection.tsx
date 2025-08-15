@@ -521,7 +521,7 @@ ${noteContent}`;
 
       {/* Data Selection - Compact Grid */}
       <div>
-        <div className="flex justify-between items-center mb-2">
+        <div className="flex-between-center mb-2">
           <span className="text-sm font-medium">Select Data ({selectedCount})</span>
           
         </div>
@@ -549,10 +549,10 @@ ${noteContent}`;
       </div>
 
         <div className="ml-5 flex gap-1">
-            <button onClick={() => toggleAll(true)} className="btn btn-ghost btn-xs">
+            <button onClick={() => toggleAll(true)} className="btn-ghost-xs">
               All
             </button>
-            <button onClick={() => toggleAll(false)} className="btn btn-ghost btn-xs">
+            <button onClick={() => toggleAll(false)} className="btn-ghost-xs">
               None
             </button>
           </div>
@@ -561,20 +561,20 @@ ${noteContent}`;
         <button
           onClick={generateExport}
           disabled={selectedCount === 0}
-          className="btn btn-primary btn-sm"
+          className="btn-primary-sm"
         >
           {showExportResult ? 'Regenerate' : 'Generate Export'}
         </button>
         
         {showExportResult && (
           <>
-            <button onClick={copyToClipboard} className="btn btn-outline btn-sm">
+            <button onClick={copyToClipboard} className="btn-outline-sm">
               📋 Copy
             </button>
-            <button onClick={downloadFile} className="btn btn-outline btn-sm">
+            <button onClick={downloadFile} className="btn-outline-sm">
               💾 Download
             </button>
-            <button onClick={() => setShowExportResult(false)} className="btn btn-ghost btn-sm">
+            <button onClick={() => setShowExportResult(false)} className="btn-ghost-sm">
               ✕
             </button>
           </>
@@ -584,7 +584,7 @@ ${noteContent}`;
       {/* Export Result - Compact */}
       {showExportResult && (
         <div className="space-y-2">
-          <div className="text-xs text-base-content/60 flex justify-between items-center">
+          <div className="text-xs text-base-content/60 flex-between-center">
             <span>Export Result ({exportFormat.toUpperCase()})</span>
             <span>{exportedData.length} characters</span>
           </div>

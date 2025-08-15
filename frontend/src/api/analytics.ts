@@ -33,8 +33,33 @@ class AnalyticsService extends BaseApiService {
     return response.json();
   }
 
+  async resetProjectTimeData() {
+    const response = await fetch('/api/admin/analytics/project-time/reset', {
+      method: 'DELETE',
+      credentials: 'include'
+    });
+    return response.json();
+  }
+
   async getComprehensive(days = 30) {
     return this.get(`/comprehensive?days=${days}`);
+  }
+
+  // Project Time Tracking API methods
+  async getProjectsTime(days = 30) {
+    return this.get(`/projects/time?days=${days}`);
+  }
+
+  async getProjectTime(projectId: string, days = 30) {
+    return this.get(`/project/${projectId}/time?days=${days}`);
+  }
+
+  async switchProject(sessionId: string, newProjectId: string) {
+    return this.post('/project/switch', { sessionId, newProjectId });
+  }
+
+  async getProjectTeamTime(projectId: string, days = 30) {
+    return this.get(`/project/${projectId}/team-time?days=${days}`);
   }
 }
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import { authAPI, projectAPI } from '../api';
+import { authAPI, projectAPI, analyticsAPI } from '../api';
 import type { BaseProject } from '../../../shared/types';
 import SessionTracker from './SessionTracker';
 import NotificationBell from './NotificationBell';
@@ -20,6 +20,7 @@ const Layout: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeProjectTab, setActiveProjectTab] = useState('active');
   const [activeAdminTab, setActiveAdminTab] = useState<'users' | 'tickets' | 'analytics'>('users');
+  const [projectTimeData, setProjectTimeData] = useState<{ [projectId: string]: number }>({});
   
   // Unsaved changes modal state
   const [showUnsavedChangesModal, setShowUnsavedChangesModal] = useState(false);
@@ -110,6 +111,7 @@ const Layout: React.FC = () => {
     localStorage.setItem('selectedProjectId', project.id);
     setSearchTerm(''); // Clear search when selecting a project
     
+    
     // Track project selection
     analytics.trackFeatureUsage('project_selection', 'Layout', {
       projectId: project.id,
@@ -118,6 +120,19 @@ const Layout: React.FC = () => {
       selectionMethod: 'direct_click',
       projectCategory: project.category
     });
+
+    // Call project switch to record time tracking
+    const sessionInfo = analytics.getSessionInfo();
+    if (sessionInfo?.sessionId) {
+      analyticsAPI.switchProject(sessionInfo.sessionId, project.id).catch(err => {
+        console.warn('Failed to record project switch:', err);
+      });
+    }
+    
+    // Update project time data immediately after switching
+    setTimeout(() => {
+      loadProjectTimeData();
+    }, 1000); // Small delay to allow backend time tracking to update
     
     // Scroll to top when selecting a project
     window.scrollTo(0, 0);
@@ -169,10 +184,53 @@ const Layout: React.FC = () => {
     return grouped;
   };
 
+  const loadProjectTimeData = async () => {
+    try {
+      const response = await analyticsAPI.getProjectsTime(30) as any;
+      console.log('Project time response:', response);
+      if (response && response.projects && Array.isArray(response.projects)) {
+        const timeMap: { [projectId: string]: number } = {};
+        response.projects.forEach((project: any) => {
+          timeMap[project._id] = project.totalTime || 0;
+        });
+        console.log('Project time map:', timeMap);
+        setProjectTimeData(timeMap);
+      } else if (response && Array.isArray(response)) {
+        // Handle case where response is directly an array
+        const timeMap: { [projectId: string]: number } = {};
+        response.forEach((project: any) => {
+          timeMap[project._id] = project.totalTime || 0;
+        });
+        console.log('Project time map (array):', timeMap);
+        setProjectTimeData(timeMap);
+      }
+    } catch (err) {
+      console.error('Failed to load project time data:', err);
+    }
+  };
+
+  const formatProjectTime = (projectId: string): string => {
+    const timeMs = projectTimeData[projectId] || 0;
+    const totalMinutes = Math.floor(timeMs / (1000 * 60));
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    } else if (minutes > 0) {
+      return `${minutes}m`;
+    } else {
+      return '0m';
+    }
+  };
+
   const loadProjects = async () => {
     try {
       const projectsResponse = await projectAPI.getAll();
       setProjects(projectsResponse.projects);
+      
+      // Load project time data
+      await loadProjectTimeData();
       
       // Try to restore previously selected project
       const savedProjectId = localStorage.getItem('selectedProjectId');
@@ -213,6 +271,9 @@ const Layout: React.FC = () => {
         ]);
         setUser(userResponse.user);
         setProjects(projectsResponse.projects);
+        
+        // Load project time data
+        await loadProjectTimeData();
         
         // Update theme from user preference (always sync on login)
         if (userResponse.user?.theme) {
@@ -275,6 +336,35 @@ const Layout: React.FC = () => {
       window.removeEventListener('selectProject', handleSelectProject as EventListener);
     };
   }, [projects]);
+
+  // Auto-update project time data every 30 seconds
+  useEffect(() => {
+    if (!user) return;
+
+    const interval = setInterval(() => {
+      loadProjectTimeData();
+    }, 30000); // Update every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [user]);
+
+  // Update project time data when user becomes active
+  useEffect(() => {
+    if (!user) return;
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        // User became active, refresh project time data
+        loadProjectTimeData();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [user]);
 
   const handleLogout = async () => {
     try {
@@ -366,13 +456,13 @@ const Layout: React.FC = () => {
       {/* Header */}
       <header className="bg-base-100 border-b border-base-content/10 shadow-sm sticky top-0 z-40">
         {/* Mobile and Tablet Layout */}
-        <div className="block lg:hidden px-4 py-2">
+        <div className="block desktop:hidden px-4 py-2">
           <div className="flex flex-col gap-2">
             {/* Top row: Logo and User Menu */}
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/notes?view=projects')}>
+            <div className="flex-between-center">
+              <div className="flex-center-gap-2 cursor-pointer" onClick={() => navigate('/notes?view=projects')}>
                 <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-sm">
-                  <svg className="w-5 h-5 text-primary-content" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="icon-md text-primary-content" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
                   </svg>
                 </div>
@@ -380,7 +470,7 @@ const Layout: React.FC = () => {
               </div>
               
               {user ? (
-                <div className="flex items-center gap-2">
+                <div className="flex-center-gap-2">
                   <SessionTracker 
                     projectId={selectedProject?.id}
                     currentUserId={user?.id}
@@ -391,7 +481,7 @@ const Layout: React.FC = () => {
               ) : (
                 <button 
                   onClick={() => navigate('/login')}
-                  className="btn btn-primary btn-sm"
+                  className="btn-primary-sm"
                 >
                   Sign In
                 </button>
@@ -401,10 +491,10 @@ const Layout: React.FC = () => {
             {/* Second row: Search and Navigation */}
             <div className="flex flex-col sm:flex-row gap-2">
               {/* Search bar and project info */}
-              <div className="flex items-center gap-2 flex-1">
+              <div className="flex-center-gap-2 flex-1">
                 {selectedProject && (
                   <div 
-                    className="flex items-center gap-1 px-2 py-1 bg-base-100/80 rounded-lg border border-base-content/10 shadow-sm cursor-pointer hover:bg-base-200/70 transition-all duration-200"
+                    className="flex items-center gap-1 px-2 py-1 bg-base-100/80 rounded-lg border-subtle shadow-sm cursor-pointer hover:bg-base-200/70 transition-all duration-200"
                     onClick={() => handleNavigateWithCheck('/notes')}
                   >
                     <div 
@@ -415,7 +505,7 @@ const Layout: React.FC = () => {
                   </div>
                 )}
                 <div className="relative flex-1">
-                  <svg className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-base-content/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="absolute left-2.5 top-1/2 transform -translate-y-1/2 icon-sm text-base-content/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                   <input
@@ -444,12 +534,12 @@ const Layout: React.FC = () => {
                         analytics.trackFeatureUsage('search_clear', 'MobileSearch');
                       }
                     }}
-                    className="input input-sm input-bordered pl-9 pr-8 w-full bg-base-100/80 backdrop-blur-sm"
+                    className="input-field input-sm pl-9 pr-8 w-full bg-base-100/80 backdrop-blur-sm"
                   />
                   {searchTerm && (
                     <button
                       onClick={() => setSearchTerm('')}
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-base-content/50 hover:text-base-content/80 transition-colors"
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 icon-sm text-base-content/50 hover:text-base-content/80 transition-colors"
                     >
                       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -472,7 +562,7 @@ const Layout: React.FC = () => {
                   title="New Project"
                   style={{ pointerEvents: 'auto' }}
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                   </svg>
                 </button>
@@ -487,7 +577,7 @@ const Layout: React.FC = () => {
                 className={`btn btn-sm ${searchParams.get('view') === 'projects' ? 'btn-primary' : 'btn-ghost'} gap-1 font-bold whitespace-nowrap`}
                 onClick={() => handleNavigateWithCheck('/notes?view=projects')}
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                 </svg>
                 <span className="hidden sm:inline">My Projects</span>
@@ -497,7 +587,7 @@ const Layout: React.FC = () => {
                 className={`btn btn-sm ${(location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/settings') && searchParams.get('view') !== 'projects' ? 'btn-primary' : 'btn-ghost'} gap-1 font-bold whitespace-nowrap`}
                 onClick={() => handleNavigateWithCheck('/notes')}
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
                 <span className="hidden sm:inline">Project Details</span>
@@ -507,7 +597,7 @@ const Layout: React.FC = () => {
                 className={`btn btn-sm ${location.pathname === '/ideas' ? 'btn-primary' : 'btn-ghost'} gap-1 font-bold whitespace-nowrap`}
                 onClick={() => handleNavigateWithCheck('/ideas')}
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                 </svg>
                 Ideas
@@ -519,7 +609,7 @@ const Layout: React.FC = () => {
                   handleNavigateWithCheck('/discover');
                 }}
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
                 Discover
@@ -530,21 +620,21 @@ const Layout: React.FC = () => {
         </div>
 
         {/* Desktop Layout */}
-        <div className="hidden lg:block px-6 py-2">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-3 bg-base-200/50 backdrop-blur-sm border border-base-content/10 rounded-xl px-4 py-2 h-12 shadow-sm hover:shadow-md transition-all cursor-pointer" onClick={() => navigate('/notes?view=projects')}>
+        <div className="hidden desktop:block px-6 py-2">
+          <div className="flex-between-center">
+            <div className="flex items-center gap-3 bg-base-200/50 backdrop-blur-sm border-subtle rounded-xl px-4 py-2 h-12 shadow-sm hover:shadow-md transition-all cursor-pointer" onClick={() => navigate('/notes?view=projects')}>
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-sm">
-                <svg className="w-5 h-5 text-primary-content" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="icon-md text-primary-content" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
                 </svg>
               </div>
               <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">Dev Codex</h1>
               
               {/* Search bar */}
-              <div className="relative ml-4 flex items-center gap-2">
+              <div className="relative ml-4 flex-center-gap-2">
                 
                 <div className="relative">
-                  <svg className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-base-content/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="absolute left-2.5 top-1/2 transform -translate-y-1/2 icon-sm text-base-content/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                   <input
@@ -557,12 +647,12 @@ const Layout: React.FC = () => {
                         navigate('/notes?view=projects');
                       }
                     }}
-                    className="input input-sm input-bordered pl-9 pr-8 w-48 bg-base-100/80 backdrop-blur-sm shadow-sm"
+                    className="input-field input-sm pl-9 pr-8 w-48 bg-base-100/80 backdrop-blur-sm shadow-sm"
                   />
                   {searchTerm && (
                     <button
                       onClick={() => setSearchTerm('')}
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-base-content/50 hover:text-base-content/80 transition-colors"
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 icon-sm text-base-content/50 hover:text-base-content/80 transition-colors"
                     >
                       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -581,7 +671,7 @@ const Layout: React.FC = () => {
                   title="New Project"
                   style={{ pointerEvents: 'auto' }}
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                   </svg>
                 </button>
@@ -593,7 +683,7 @@ const Layout: React.FC = () => {
                 className={`btn ${searchParams.get('view') === 'projects' ? 'btn-primary' : 'btn-ghost'} gap-2 font-bold`}
                 onClick={() => handleNavigateWithCheck('/notes?view=projects')}
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                 </svg>
                 My Projects
@@ -602,7 +692,7 @@ const Layout: React.FC = () => {
                 className={`btn ${(location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/settings') && searchParams.get('view') !== 'projects' ? 'btn-primary' : 'btn-ghost'} gap-2 font-bold`}
                 onClick={() => handleNavigateWithCheck('/notes')}
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
                 Project Details
@@ -611,7 +701,7 @@ const Layout: React.FC = () => {
                 className={`btn ${location.pathname === '/ideas' ? 'btn-primary' : 'btn-ghost'} gap-2 font-bold`}
                 onClick={() => handleNavigateWithCheck('/ideas')}
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                 </svg>
                 Ideas
@@ -620,7 +710,7 @@ const Layout: React.FC = () => {
                 className={`btn ${location.pathname === '/discover' || location.pathname.startsWith('/discover/') ? 'btn-primary' : 'btn-ghost'} gap-2 font-bold`}
                 onClick={() => handleNavigateWithCheck('/discover')}
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
                 Discover
@@ -628,10 +718,10 @@ const Layout: React.FC = () => {
             </div>
             
             {user ? (
-              <div className="flex items-center gap-0 bg-base-200/50 backdrop-blur-sm border border-base-content/10 rounded-xl px-2 py-2 h-12 shadow-sm">
+              <div className="flex items-center gap-0 bg-base-200/50 backdrop-blur-sm border-subtle rounded-xl px-2 py-2 h-12 shadow-sm">
                 {selectedProject && (
                   <div 
-                    className="flex items-center gap-2 px-3 py-1.5 bg-base-100/80 rounded-lg border border-base-content/10 shadow-sm mr-2 cursor-pointer hover:bg-base-200/70 transition-all duration-200 h-8"
+                    className="flex-center-gap-2 px-3 py-1.5 bg-base-100/80 rounded-lg border-subtle shadow-sm mr-2 cursor-pointer hover:bg-base-200/70 transition-all duration-200 h-8"
                     onClick={() => handleNavigateWithCheck('/notes')}
                   >
                     <div 
@@ -661,10 +751,10 @@ const Layout: React.FC = () => {
                 <UserMenu user={user} onLogout={handleLogout} />
               </div>
             ) : (
-              <div className="flex items-center gap-3 bg-base-200/50 backdrop-blur-sm border border-base-content/10 rounded-xl px-4 py-2 h-12 shadow-sm">
+              <div className="flex items-center gap-3 bg-base-200/50 backdrop-blur-sm border-subtle rounded-xl px-4 py-2 h-12 shadow-sm">
                 <button 
                   onClick={() => navigate('/login')}
-                  className="btn btn-primary btn-sm"
+                  className="btn-primary-sm"
                 >
                   Sign In
                 </button>
@@ -681,7 +771,7 @@ const Layout: React.FC = () => {
           <>
             {/* Tab Navigation */}
             <div className="flex justify-center px-4 py-6">
-              <div className="tabs tabs-boxed tabs-lg border border-base-content/10 shadow-sm">
+              <div className="tabs tabs-boxed tabs-lg border-subtle shadow-sm">
                 <button
                   onClick={() => {
                     analytics.trackTabSwitch(activeProjectTab, 'active', 'ProjectTabs');
@@ -711,14 +801,14 @@ const Layout: React.FC = () => {
             </div>
 
             {/* Tab Content */}
-            <div className="flex-1 overflow-auto border border-base-content/10 bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-sm container-height-fix">
+            <div className="flex-1 overflow-auto border-subtle bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-sm container-height-fix">
               <div className="p-6">
                 <div className="space-y-4">
                 {activeProjectTab === 'active' && (
                   <div className="space-y-4">
                     {Object.keys(groupedCurrentProjects).length === 0 ? (
                       <div className="flex items-center justify-center min-h-[50vh] py-16">
-                        <div className="text-center bg-base-100 rounded-xl p-12 border border-base-content/10 shadow-lg max-w-md mx-auto">
+                        <div className="text-center bg-base-100 rounded-xl p-12 border-subtle shadow-lg max-w-md mx-auto">
                           <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-full flex items-center justify-center">
                             <svg className="w-10 h-10 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
@@ -736,7 +826,7 @@ const Layout: React.FC = () => {
                             className="btn btn-primary btn-lg gap-2 relative z-50"
                             style={{ pointerEvents: 'auto' }}
                           >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="icon-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                             </svg>
                             Create Project
@@ -745,14 +835,14 @@ const Layout: React.FC = () => {
                       </div>
                     ) : (
                       Object.entries(groupedCurrentProjects).map(([category, categoryProjects]) => (
-                        <div key={category} className="border border-base-content/10 rounded-xl bg-base-100 shadow-sm">
+                        <div key={category} className="border-subtle rounded-xl bg-base-100 shadow-sm">
                           <div className="tabs tabs-boxed tabs-lg">
                             <div 
                               className="tab tab-lg cursor-pointer hover:tab-active transition-all flex items-center gap-3 w-full font-bold text-base"
                               onClick={() => toggleSection(`active-${category}`)}
                             >
                               <svg 
-                                className={`w-5 h-5 transition-transform ${collapsedSections[`active-${category}`] ? '' : 'rotate-90'}`}
+                                className={`icon-md transition-transform ${collapsedSections[`active-${category}`] ? '' : 'rotate-90'}`}
                                 fill="currentColor" 
                                 viewBox="0 0 20 20"
                               >
@@ -778,26 +868,63 @@ const Layout: React.FC = () => {
                                     className={`btn btn-lg w-full justify-start gap-3 h-auto py-4 min-h-[6rem] ${
                                       selectedProject?.id === project.id 
                                         ? 'btn-primary border-2 border-primary ring-4 ring-primary/20 shadow-lg' 
-                                        : 'btn-ghost bg-base-100 hover:bg-base-200 border border-base-content/10 shadow-md'
+                                        : 'btn-ghost bg-base-100 hover:bg-base-200 border-subtle shadow-md'
                                     }`}
                                   >
                                     <div 
-                                      className="w-5 h-5 rounded-md shadow-sm flex-shrink-0"
+                                      className="icon-md rounded-md shadow-sm flex-shrink-0"
                                       style={{ backgroundColor: project.color }}
                                     ></div>
                                     <div className="flex-1 text-left">
                                       <div className="font-semibold leading-tight truncate">{project.name}</div>
                                       {project.description && (
-                                        <div className="text-xs mt-1 line-clamp-2">{project.description}</div>
+                                        <div className="text-xs mt-1 line-clamp-2 text-base-content/70">{project.description}</div>
                                       )}
-                                      <div className="flex items-center gap-3 mt-2 text-xs">
-                                        <span>Created: {new Date(project.createdAt).toLocaleDateString()}</span>
-                                        <span>•</span>
-                                        <span>Updated: {new Date(project.updatedAt).toLocaleDateString()}</span>
+                                      {project.tags && project.tags.length > 0 && (
+                                        <div className="flex flex-wrap gap-1 mt-2">
+                                          {project.tags.slice(0, 3).map((tag, index) => (
+                                            <span
+                                              key={index}
+                                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                                selectedProject?.id === project.id 
+                                                  ? 'bg-white/20 text-white border border-white/30' 
+                                                  : 'bg-primary/10 text-primary border border-primary/20'
+                                              }`}
+                                            >
+                                              {tag}
+                                            </span>
+                                          ))}
+                                          {project.tags.length > 3 && (
+                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                              selectedProject?.id === project.id 
+                                                ? 'bg-white/10 text-white/70 border border-white/20' 
+                                                : 'bg-base-300 text-base-content/60 border border-base-300'
+                                            }`}>
+                                              +{project.tags.length - 3}
+                                            </span>
+                                          )}
+                                        </div>
+                                      )}
+                                      <div className="flex items-center justify-between mt-2 text-xs">
+                                        <div className="flex items-center gap-3 text-base-content/50">
+                                          <span>Updated: {new Date(project.updatedAt).toLocaleDateString()}</span>
+                                        </div>
+                                        <div className={`flex items-center gap-1 px-2 py-1 rounded-full font-medium ${
+                                          selectedProject?.id === project.id 
+                                            ? 'bg-white/10 text-white/80' 
+                                            : 'bg-success/10 text-success'
+                                        }`}>
+                                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                          </svg>
+                                          <span className="text-xs">
+                                            {formatProjectTime(project.id)}
+                                          </span>
+                                        </div>
                                       </div>
                                     </div>
                                     {selectedProject?.id === project.id && (
-                                      <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                      <svg className="icon-sm flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                       </svg>
                                     )}
@@ -815,14 +942,14 @@ const Layout: React.FC = () => {
                 {activeProjectTab === 'archived' && (
                   <div className="space-y-4">
                     {Object.entries(groupedArchivedProjects).map(([category, categoryProjects]) => (
-                      <div key={category} className="border border-base-content/10 rounded-xl bg-base-100 shadow-sm">
+                      <div key={category} className="border-subtle rounded-xl bg-base-100 shadow-sm">
                         <div className="tabs tabs-boxed tabs-lg">
                           <div 
                             className="tab tab-lg cursor-pointer hover:tab-active transition-all flex items-center gap-3 w-full font-bold text-base"
                             onClick={() => toggleSection(`archived-${category}`)}
                           >
                             <svg 
-                              className={`w-5 h-5 transition-transform ${collapsedSections[`archived-${category}`] ? '' : 'rotate-90'}`}
+                              className={`icon-md transition-transform ${collapsedSections[`archived-${category}`] ? '' : 'rotate-90'}`}
                               fill="currentColor" 
                               viewBox="0 0 20 20"
                             >
@@ -848,26 +975,55 @@ const Layout: React.FC = () => {
                                   className={`btn btn-lg w-full justify-start gap-3 h-auto py-4 min-h-[6rem] ${
                                     selectedProject?.id === project.id 
                                       ? 'btn-primary border-2 border-primary ring-4 ring-primary/20 shadow-lg' 
-                                      : 'btn-ghost bg-base-100 hover:bg-base-200 border border-base-content/10 shadow-md'
+                                      : 'btn-ghost bg-base-100 hover:bg-base-200 border-subtle shadow-md'
                                   }`}
                                 >
                                   <div 
-                                    className="w-5 h-5 rounded-md shadow-sm flex-shrink-0"
+                                    className="icon-md rounded-md shadow-sm flex-shrink-0"
                                     style={{ backgroundColor: project.color }}
                                   ></div>
                                   <div className="flex-1 text-left">
                                     <div className="font-semibold leading-tight truncate">{project.name}</div>
                                     {project.description && (
-                                      <div className="text-xs mt-1 line-clamp-2">{project.description}</div>
+                                      <div className="text-xs mt-1 line-clamp-2 text-base-content/70">{project.description}</div>
                                     )}
-                                    <div className="flex items-center gap-3 mt-2 text-xs">
-                                      <span>Created: {new Date(project.createdAt).toLocaleDateString()}</span>
-                                      <span>•</span>
-                                      <span>Updated: {new Date(project.updatedAt).toLocaleDateString()}</span>
+                                    {project.tags && project.tags.length > 0 && (
+                                      <div className="flex flex-wrap gap-1 mt-2">
+                                        {project.tags.slice(0, 3).map((tag, index) => (
+                                          <span
+                                            key={index}
+                                            className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20"
+                                          >
+                                            {tag}
+                                          </span>
+                                        ))}
+                                        {project.tags.length > 3 && (
+                                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-base-300 text-base-content/60 border border-base-300">
+                                            +{project.tags.length - 3}
+                                          </span>
+                                        )}
+                                      </div>
+                                    )}
+                                    <div className="flex items-center justify-between mt-2 text-xs">
+                                      <div className="flex items-center gap-3 text-base-content/50">
+                                        <span>Updated: {new Date(project.updatedAt).toLocaleDateString()}</span>
+                                      </div>
+                                      <div className={`flex items-center gap-1 px-2 py-1 rounded-full font-medium ${
+                                        selectedProject?.id === project.id 
+                                          ? 'bg-white/10 text-white/80' 
+                                          : 'bg-success/10 text-success'
+                                      }`}>
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        <span className="text-xs">
+                                          {formatProjectTime(project.id)}
+                                        </span>
+                                      </div>
                                     </div>
                                   </div>
                                   {selectedProject?.id === project.id && (
-                                    <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <svg className="icon-sm flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                     </svg>
                                   )}
@@ -884,14 +1040,14 @@ const Layout: React.FC = () => {
                 {activeProjectTab === 'shared' && (
                   <div className="space-y-4">
                     {Object.entries(groupedSharedProjects).map(([category, categoryProjects]) => (
-                      <div key={category} className="space-y-3 border border-base-content/10 rounded-xl bg-base-100 shadow-sm">
+                      <div key={category} className="space-y-3 border-subtle rounded-xl bg-base-100 shadow-sm">
                         <div className="tabs tabs-boxed tabs-lg">
                           <div 
                             className="tab tab-lg cursor-pointer hover:tab-active transition-all flex items-center gap-3 w-full font-bold text-base"
                             onClick={() => toggleSection(`shared-${category}`)}
                           >
                             <svg 
-                              className={`w-5 h-5 transition-transform ${collapsedSections[`shared-${category}`] ? '' : 'rotate-90'}`}
+                              className={`icon-md transition-transform ${collapsedSections[`shared-${category}`] ? '' : 'rotate-90'}`}
                               fill="currentColor" 
                               viewBox="0 0 20 20"
                             >
@@ -917,26 +1073,43 @@ const Layout: React.FC = () => {
                                   className={`btn btn-lg w-full justify-start gap-3 h-auto py-4 min-h-[6rem] ${
                                     selectedProject?.id === project.id 
                                       ? 'btn-primary border-2 border-primary ring-4 ring-primary/20 shadow-lg' 
-                                      : 'btn-ghost bg-base-100 hover:bg-base-200 border border-base-content/10 shadow-md'
+                                      : 'btn-ghost bg-base-100 hover:bg-base-200 border-subtle shadow-md'
                                   }`}
                                 >
                                   <div 
-                                    className="w-5 h-5 rounded-md shadow-sm flex-shrink-0"
+                                    className="icon-md rounded-md shadow-sm flex-shrink-0"
                                     style={{ backgroundColor: project.color }}
                                   ></div>
                                   <div className="flex-1 text-left">
                                     <div className="font-semibold leading-tight truncate">{project.name}</div>
                                     {project.description && (
-                                      <div className="text-xs mt-1 line-clamp-2">{project.description}</div>
+                                      <div className="text-xs mt-1 line-clamp-2 text-base-content/70">{project.description}</div>
                                     )}
-                                    <div className="flex items-center gap-3 mt-2 text-xs">
+                                    {project.tags && project.tags.length > 0 && (
+                                      <div className="flex flex-wrap gap-1 mt-2">
+                                        {project.tags.slice(0, 3).map((tag, index) => (
+                                          <span
+                                            key={index}
+                                            className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20"
+                                          >
+                                            {tag}
+                                          </span>
+                                        ))}
+                                        {project.tags.length > 3 && (
+                                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-base-300 text-base-content/60 border border-base-300">
+                                            +{project.tags.length - 3}
+                                          </span>
+                                        )}
+                                      </div>
+                                    )}
+                                    <div className="flex items-center gap-3 mt-2 text-xs text-base-content/50">
                                       <span>Created: {new Date(project.createdAt).toLocaleDateString()}</span>
                                       <span>•</span>
                                       <span>Updated: {new Date(project.updatedAt).toLocaleDateString()}</span>
                                     </div>
                                   </div>
                                   {selectedProject?.id === project.id && (
-                                    <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <svg className="icon-sm flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                     </svg>
                                   )}
@@ -958,7 +1131,7 @@ const Layout: React.FC = () => {
           <>
             {/* Tab Navigation for Discover */}
             <div className="flex justify-center px-4 py-6">
-              <div className="tabs tabs-boxed tabs-lg border border-base-content/10 shadow-sm">
+              <div className="tabs tabs-boxed tabs-lg border-subtle shadow-sm">
                 <button
                   onClick={() => handleNavigateWithCheck('/discover')}
                   className={`tab tab-lg font-bold text-base ${location.pathname === '/discover' ? 'tab-active' : ''}`}
@@ -975,7 +1148,7 @@ const Layout: React.FC = () => {
               </div>
             </div>
             
-            <div className="flex-1 overflow-auto border border-base-content/10 bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-sm container-height-fix">
+            <div className="flex-1 overflow-auto border-subtle bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-sm container-height-fix">
               <div className="p-1">
                 <Outlet />
               </div>
@@ -983,7 +1156,7 @@ const Layout: React.FC = () => {
           </>
         ) : location.pathname.startsWith('/project/') || location.pathname.startsWith('/user/') ? (
           /* Public Pages - Same styling as discover */
-          <div className="flex-1 overflow-auto border border-base-content/10 bg-gradient-to-br from-base-50 to-base-100/50 mx-4 my-4 rounded-2xl shadow-2xl backdrop-blur-sm container-height-fix">
+          <div className="flex-1 overflow-auto border-subtle bg-gradient-to-br from-base-50 to-base-100/50 mx-4 my-4 rounded-2xl shadow-2xl backdrop-blur-sm container-height-fix">
             <div className="p-1">
               <Outlet />
             </div>
@@ -993,14 +1166,14 @@ const Layout: React.FC = () => {
           <>
             {/* Tab-style header for Ideas */}
             <div className="flex justify-center px-4 py-6">
-              <div className="tabs tabs-boxed tabs-lg border border-base-content/10 shadow-sm">
+              <div className="tabs tabs-boxed tabs-lg border-subtle shadow-sm">
                 <div className="tab tab-lg tab-active font-bold text-base">
                   Ideas
                 </div>
               </div>
             </div>
             
-            <div className="flex-1 overflow-auto border border-base-content/10 bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-sm container-height-fix">
+            <div className="flex-1 overflow-auto border-subtle bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-sm container-height-fix">
               <div className="p-1">
                 <Outlet />
               </div>
@@ -1011,12 +1184,12 @@ const Layout: React.FC = () => {
           <>
             {/* Admin Dashboard Tab Navigation */}
             <div className="flex justify-center px-4 py-6">
-              <div className="tabs tabs-boxed tabs-lg border border-base-content/10 shadow-sm bg-base-200">
+              <div className="tabs tabs-boxed tabs-lg border-subtle shadow-sm bg-base-200">
                 <button 
                   className={`tab tab-lg font-bold text-base ${activeAdminTab === 'users' ? 'tab-active' : ''}`}
                   onClick={() => setActiveAdminTab('users')}
                 >
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="icon-sm mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
                   </svg>
                   Users
@@ -1025,7 +1198,7 @@ const Layout: React.FC = () => {
                   className={`tab tab-lg font-bold text-base ${activeAdminTab === 'tickets' ? 'tab-active' : ''}`}
                   onClick={() => setActiveAdminTab('tickets')}
                 >
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="icon-sm mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   Support Tickets
@@ -1034,7 +1207,7 @@ const Layout: React.FC = () => {
                   className={`tab tab-lg font-bold text-base ${activeAdminTab === 'analytics' ? 'tab-active' : ''}`}
                   onClick={() => setActiveAdminTab('analytics')}
                 >
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="icon-sm mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                   </svg>
                   Platform Analytics
@@ -1042,7 +1215,7 @@ const Layout: React.FC = () => {
               </div>
             </div>
             
-            <div className="flex-1 overflow-auto border border-base-content/10 bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-sm container-height-fix">
+            <div className="flex-1 overflow-auto border-subtle bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-sm container-height-fix">
               <div className="p-1">
                 <Outlet context={{ 
                   selectedProject, 
@@ -1058,7 +1231,7 @@ const Layout: React.FC = () => {
           </>
         ) : location.pathname === '/billing' || location.pathname === '/account-settings' ? (
           /* Billing and Account Settings - No sub-menu */
-          <div className="flex-1 overflow-auto border border-base-content/10 bg-gradient-to-br from-base-50 to-base-100/50 mx-4 my-4 rounded-2xl shadow-2xl backdrop-blur-sm container-height-fix">
+          <div className="flex-1 overflow-auto border-subtle bg-gradient-to-br from-base-50 to-base-100/50 mx-4 my-4 rounded-2xl shadow-2xl backdrop-blur-sm container-height-fix">
             <div className="p-1">
               <Outlet />
             </div>
@@ -1069,7 +1242,7 @@ const Layout: React.FC = () => {
             {/* Tab Navigation */}
             {selectedProject && location.pathname !== '/support' && (
               <div className="flex justify-center px-4 py-6">
-                <div className="tabs tabs-boxed tabs-lg border border-base-content/10 shadow-sm">
+                <div className="tabs tabs-boxed tabs-lg border-subtle shadow-sm">
                   {tabs.map((tab) => (
                     <button
                       key={tab.id}
@@ -1084,7 +1257,7 @@ const Layout: React.FC = () => {
             )}
 
             {/* Page Content */}
-            <div className={`flex-1 overflow-auto border border-base-content/10 bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-sm container-height-fix ${location.pathname === '/support' ? 'mt-4' : ''}`}>
+            <div className={`flex-1 overflow-auto border-subtle bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-sm container-height-fix ${location.pathname === '/support' ? 'mt-4' : ''}`}>
               {selectedProject ? (
                 <div className="p-1">
                   <Outlet context={{ 
@@ -1098,7 +1271,7 @@ const Layout: React.FC = () => {
                 </div>
               ) : (
                 <div className="flex items-center justify-center min-h-[50vh] h-full">
-                  <div className="text-center bg-base-100 rounded-xl p-12 border border-base-content/10 shadow-lg max-w-md mx-auto">
+                  <div className="text-center bg-base-100 rounded-xl p-12 border-subtle shadow-lg max-w-md mx-auto">
                     <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-full flex items-center justify-center">
                       <svg className="w-10 h-10 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
@@ -1110,7 +1283,7 @@ const Layout: React.FC = () => {
                       onClick={() => navigate('/notes?view=projects')}
                       className="btn btn-primary btn-lg gap-2"
                     >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="icon-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                       </svg>
                       View My Projects

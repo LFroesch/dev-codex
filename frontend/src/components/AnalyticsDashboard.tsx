@@ -13,6 +13,13 @@ interface AnalyticsData {
     avgDuration: number;
     uniqueProjects: string[][];
   };
+  projectBreakdown?: Array<{
+    projectId: string;
+    projectName: string;
+    totalTime: number;
+    sessions: number;
+    lastUsed: string;
+  }>;
   period: string;
 }
 
@@ -41,7 +48,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       const data = userId 
         ? await analyticsAPI.getAdminAnalytics(userId, selectedPeriod)
         : await analyticsAPI.getUserAnalytics(selectedPeriod);
-      setAnalyticsData(data);
+      setAnalyticsData(data as AnalyticsData);
     } catch (err) {
       setError('Failed to load analytics data');
       console.error('Analytics error:', err);
@@ -84,7 +91,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   if (error) {
     return (
       <div className="alert alert-error">
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="icon-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
         </svg>
         <span>{error}</span>
@@ -169,7 +176,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
       {/* Quick Insights */}
       {!compact && (
-        <div className="card bg-base-100 shadow-lg">
+        <div className="card-default">
           <div className="card-body">
             <h3 className="card-title text-lg mb-4">📈 Quick Insights</h3>
             
@@ -206,11 +213,53 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
         </div>
       )}
 
+      {/* Project Time Breakdown */}
+      {!compact && analyticsData.projectBreakdown && analyticsData.projectBreakdown.length > 0 && (
+        <div className="card-default">
+          <div className="card-body">
+            <h3 className="card-title text-lg mb-4">⏱️ Project Time Breakdown</h3>
+            
+            <div className="space-y-3">
+              {analyticsData.projectBreakdown
+                .sort((a, b) => b.totalTime - a.totalTime)
+                .map((project) => (
+                <div key={project.projectId} className="flex justify-between items-center p-3 bg-base-200/50 rounded-lg border border-base-300/50">
+                  <div className="flex-1">
+                    <div className="font-semibold text-base-content">
+                      {project.projectName}
+                    </div>
+                    <div className="text-sm text-base-content/60">
+                      {project.sessions} session{project.sessions !== 1 ? 's' : ''} • 
+                      Last used: {new Date(project.lastUsed).toLocaleDateString()}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-mono font-semibold text-lg">
+                      {formatDuration(project.totalTime)}
+                    </div>
+                    <div className="text-sm text-base-content/60">
+                      Avg: {formatDuration(project.totalTime / (project.sessions || 1))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            {analyticsData.projectBreakdown.length === 0 && (
+              <div className="text-center py-8 text-base-content/60">
+                <div className="text-4xl mb-2">📊</div>
+                <p>No project time data yet. Start working on projects to see the breakdown!</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Export (Simplified) */}
       {!compact && (
         <div className="flex justify-end">
           <button 
-            className="btn btn-outline btn-sm gap-2"
+            className="btn-outline-sm gap-2"
             onClick={() => {
               const dataStr = JSON.stringify(analyticsData, null, 2);
               const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
@@ -221,7 +270,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
               linkElement.click();
             }}
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-4-4m4 4l4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             Export Data

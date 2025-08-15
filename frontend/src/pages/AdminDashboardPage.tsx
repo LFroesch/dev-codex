@@ -257,7 +257,7 @@ const AdminDashboardPage: React.FC = () => {
     try {
       setResettingAnalytics(true);
       const result = await analyticsAPI.resetAllAnalytics();
-      alert(`Analytics reset successful! Deleted ${(result as any).deletedAnalytics} analytics events and ${(result as any).deletedSessions} sessions.`);
+      alert(`Analytics reset successful! Deleted ${(result as any).deletedAnalytics} analytics events, ${(result as any).deletedSessions} sessions, and cleared all project time data.`);
       setShowAnalyticsResetConfirm(false);
     } catch (err: any) {
       alert('Failed to reset analytics: ' + (err.response?.data?.error || err.message));
@@ -308,7 +308,7 @@ const AdminDashboardPage: React.FC = () => {
   if (error) {
     return (
       <div className="p-6 flex items-center justify-center min-h-[50vh]">
-        <div className="card w-96 bg-base-100 shadow-lg border border-base-content/10 rounded-lg">
+        <div className="card w-96 bg-base-100 shadow-lg border-subtle rounded-lg">
           <div className="card-body items-center text-center">
             <h2 className="card-title text-error">Access Denied</h2>
             <p>{error}</p>
@@ -376,23 +376,23 @@ const AdminDashboardPage: React.FC = () => {
         {/* Stats Cards */}
         {activeTab === 'users' && stats && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="stat bg-base-100 rounded-lg shadow-lg border border-base-content/10">
+            <div className="stat bg-base-100 rounded-lg shadow-lg border-subtle">
               <div className="stat-title">Total Users</div>
               <div className="stat-value text-primary">{stats.totalUsers}</div>
               <div className="stat-desc">↗︎ {stats.recentSignups} new this month</div>
             </div>
             
-            <div className="stat bg-base-100 rounded-lg shadow-lg border border-base-content/10">
+            <div className="stat bg-base-100 rounded-lg shadow-lg border-subtle">
               <div className="stat-title">Total Projects</div>
               <div className="stat-value text-secondary">{stats.totalProjects}</div>
             </div>
             
-            <div className="stat bg-base-100 rounded-lg shadow-lg border border-base-content/10">
+            <div className="stat bg-base-100 rounded-lg shadow-lg border-subtle">
               <div className="stat-title">Active Subscriptions</div>
               <div className="stat-value text-accent">{stats.activeSubscriptions}</div>
             </div>
             
-            <div className="stat bg-base-100 rounded-lg shadow-lg border border-base-content/10">
+            <div className="stat bg-base-100 rounded-lg shadow-lg border-subtle">
               <div className="stat-title">Plan Distribution</div>
               <div className="stat-value text-sm">
                 <div>Free: {stats.planDistribution.free}</div>
@@ -406,25 +406,25 @@ const AdminDashboardPage: React.FC = () => {
         {/* Ticket Stats Cards */}
         {activeTab === 'tickets' && ticketStats && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="stat bg-base-100 rounded-lg shadow-lg border border-base-content/10">
+            <div className="stat bg-base-100 rounded-lg shadow-lg border-subtle">
               <div className="stat-title">Open Tickets</div>
               <div className="stat-value text-error">{ticketStats.open}</div>
               <div className="stat-desc">Require attention</div>
             </div>
             
-            <div className="stat bg-base-100 rounded-lg shadow-lg border border-base-content/10">
+            <div className="stat bg-base-100 rounded-lg shadow-lg border-subtle">
               <div className="stat-title">In Progress</div>
               <div className="stat-value text-warning">{ticketStats.inProgress}</div>
               <div className="stat-desc">Being worked on</div>
             </div>
             
-            <div className="stat bg-base-100 rounded-lg shadow-lg border border-base-content/10">
+            <div className="stat bg-base-100 rounded-lg shadow-lg border-subtle">
               <div className="stat-title">Resolved</div>
               <div className="stat-value text-success">{ticketStats.resolved}</div>
               <div className="stat-desc">Awaiting closure</div>
             </div>
             
-            <div className="stat bg-base-100 rounded-lg shadow-lg border border-base-content/10">
+            <div className="stat bg-base-100 rounded-lg shadow-lg border-subtle">
               <div className="stat-title">Closed</div>
               <div className="stat-value text-neutral">{ticketStats.closed}</div>
               <div className="stat-desc">Completed tickets</div>
@@ -434,9 +434,9 @@ const AdminDashboardPage: React.FC = () => {
 
         {/* Users Table */}
         {activeTab === 'users' && (
-          <div className="card bg-base-100 shadow-lg border border-base-content/10 rounded-lg" style={{ overflow: 'visible' }}>
+          <div className="card-default border-subtle rounded-lg" style={{ overflow: 'visible' }}>
             <div className="card-body" style={{ overflow: 'visible' }}>
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex-between-center mb-4">
               <h2 className="card-title">Users</h2>
               <div className="badge badge-neutral">{users.length} of {stats?.totalUsers} total</div>
             </div>
@@ -499,14 +499,14 @@ const AdminDashboardPage: React.FC = () => {
                           <div 
                             tabIndex={0}
                             role="button" 
-                            className="btn btn-ghost btn-xs"
+                            className="btn-ghost-xs"
                           >
                             ⋮
                           </div>
                           <ul tabIndex={0} className="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-48" style={{ zIndex: 9999 }}>
                             <li>
                               <a onClick={() => fetchUserDetails(user._id)}>
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                 </svg>
@@ -515,7 +515,7 @@ const AdminDashboardPage: React.FC = () => {
                             </li>
                             <li>
                               <a onClick={() => sendPasswordReset(user._id)} className="text-warning">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
                                 </svg>
                                 Send Password Reset
@@ -530,7 +530,7 @@ const AdminDashboardPage: React.FC = () => {
                                   setShowDeleteConfirm(true);
                                 }}
                               >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                 </svg>
                                 Delete User
@@ -583,12 +583,12 @@ const AdminDashboardPage: React.FC = () => {
 
         {/* Tickets Table */}
         {activeTab === 'tickets' && (
-          <div className="card bg-base-100 shadow-lg border border-base-content/10 rounded-lg" style={{ overflow: 'visible' }}>
+          <div className="card-default border-subtle rounded-lg" style={{ overflow: 'visible' }}>
             <div className="card-body p-4" style={{ overflow: 'visible' }}>
 
               {/* Ticket Status Tabs */}
               <div className="flex justify-center mb-2">
-                <div className="tabs tabs-boxed tabs-lg bg-base-200 shadow-lg border border-base-content/10 rounded-lg">
+                <div className="tabs tabs-boxed tabs-lg bg-base-200 shadow-lg border-subtle rounded-lg">
                 <button 
                   className={`tab tab-lg font-bold text-base ${ticketStatusTab === 'open' ? 'tab-active' : ''}`}
                   onClick={() => {
@@ -596,7 +596,7 @@ const AdminDashboardPage: React.FC = () => {
                     setPage(1);
                   }}
                 >
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="icon-sm mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
                   </svg>
                   Open ({ticketStats?.open || 0})
@@ -608,7 +608,7 @@ const AdminDashboardPage: React.FC = () => {
                     setPage(1);
                   }}
                 >
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="icon-sm mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   In Progress ({ticketStats?.inProgress || 0})
@@ -620,7 +620,7 @@ const AdminDashboardPage: React.FC = () => {
                     setPage(1);
                   }}
                 >
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="icon-sm mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   Resolved ({ticketStats?.resolved || 0})
@@ -632,7 +632,7 @@ const AdminDashboardPage: React.FC = () => {
                     setPage(1);
                   }}
                 >
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="icon-sm mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   Closed ({ticketStats?.closed || 0})
@@ -702,9 +702,9 @@ const AdminDashboardPage: React.FC = () => {
                             <div 
                               tabIndex={0}
                               role="button" 
-                              className="btn btn-ghost btn-xs"
+                              className="btn-ghost-xs"
                             >
-                              <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg className="icon-sm ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                               </svg>
                             </div>
@@ -713,7 +713,7 @@ const AdminDashboardPage: React.FC = () => {
                                 <a 
                                   onClick={() => setSelectedTicket(selectedTicket?._id === ticket._id ? null : ticket)}
                                 >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                   </svg>
@@ -728,7 +728,7 @@ const AdminDashboardPage: React.FC = () => {
                                     setAdminResponse('');
                                   }}
                                 >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                                   </svg>
                                   Send Response
@@ -743,7 +743,7 @@ const AdminDashboardPage: React.FC = () => {
                                       className="text-warning"
                                       onClick={() => updateTicket(ticket.ticketId, 'in_progress')}
                                     >
-                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                       </svg>
                                       Start Working
@@ -757,7 +757,7 @@ const AdminDashboardPage: React.FC = () => {
                                       className="text-success"
                                       onClick={() => updateTicket(ticket.ticketId, 'resolved')}
                                     >
-                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                       </svg>
                                       Mark Resolved
@@ -772,7 +772,7 @@ const AdminDashboardPage: React.FC = () => {
                                         className="text-neutral"
                                         onClick={() => updateTicket(ticket.ticketId, 'closed')}
                                       >
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                         </svg>
                                         Close Ticket
@@ -783,7 +783,7 @@ const AdminDashboardPage: React.FC = () => {
                                         className="text-warning"
                                         onClick={() => updateTicket(ticket.ticketId, 'in_progress')}
                                       >
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.001 8.001 0 01-15.357-2m15.357 2H15" />
                                         </svg>
                                         Reopen
@@ -798,7 +798,7 @@ const AdminDashboardPage: React.FC = () => {
                                       className="text-warning"
                                       onClick={() => updateTicket(ticket.ticketId, 'in_progress')}
                                     >
-                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.001 8.001 0 01-15.357-2m15.357 2H15" />
                                       </svg>
                                       Reopen Ticket
@@ -809,7 +809,7 @@ const AdminDashboardPage: React.FC = () => {
                                 <div className="divider my-1"></div>
                                 <li>
                                   <a className="text-error">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                     </svg>
                                     Delete Ticket
@@ -826,7 +826,7 @@ const AdminDashboardPage: React.FC = () => {
 
               {/* Ticket Details */}
               {selectedTicket && (
-                <div className="mt-6 p-4 bg-base-200 shadow-lg border border-base-content/10 rounded-lg">
+                <div className="mt-6 p-4 bg-base-200 shadow-lg border-subtle rounded-lg">
                   <h3 className="font-bold text-lg mb-2">Ticket Details</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
@@ -861,7 +861,7 @@ const AdminDashboardPage: React.FC = () => {
 
               {/* Admin Response Form */}
               {respondingToTicket && (
-                <div className="mt-6 p-4 bg-warning/10 shadow-lg border border-base-content/10 rounded-lg">
+                <div className="mt-6 p-4 bg-warning/10 shadow-lg border-subtle rounded-lg">
                   <h3 className="font-bold text-lg mb-4">Respond to Ticket: {respondingToTicket}</h3>
                   <div className="form-control mb-4">
                     <label className="label">
@@ -1000,13 +1000,13 @@ const AdminDashboardPage: React.FC = () => {
         {selectedUser && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-base-100 rounded-lg shadow-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-              <div className="flex justify-between items-center mb-6">
+              <div className="flex-between-center mb-6">
                 <h2 className="text-2xl font-bold">User Details</h2>
                 <button 
-                  className="btn btn-ghost btn-sm"
+                  className="btn-ghost-sm"
                   onClick={() => setSelectedUser(null)}
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="icon-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
@@ -1072,7 +1072,7 @@ const AdminDashboardPage: React.FC = () => {
                     setSelectedUser(null);
                   }}
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1721 9z" />
                   </svg>
                   Send Password Reset
@@ -1085,7 +1085,7 @@ const AdminDashboardPage: React.FC = () => {
                     setSelectedUser(null);
                   }}
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                   </svg>
                   Delete User
@@ -1121,12 +1121,13 @@ const AdminDashboardPage: React.FC = () => {
           onConfirm={resetAnalytics}
           onCancel={() => setShowAnalyticsResetConfirm(false)}
           title="Reset Analytics Data"
-          message={`Are you sure you want to reset all analytics data? This will clear all session tracking and user activity data.<br/><br/>
+          message={`Are you sure you want to reset all analytics data? This will clear all session tracking, user activity data, and project time tracking.<br/><br/>
             <div style="background: rgb(248 113 113 / 0.1); padding: 1rem; border-radius: 0.5rem; margin: 1rem 0;">
               <p style="color: rgb(248 113 113); font-weight: 600; margin-bottom: 0.5rem;">⚠️ This action cannot be undone!</p>
               <ul style="color: rgb(138 138 138); font-size: 0.875rem; margin: 0; padding-left: 1rem;">
                 <li>• All analytics events will be deleted</li>
                 <li>• All user session data will be cleared</li>
+                <li>• All project time tracking data will be deleted</li>
                 <li>• Historical usage data will be lost</li>
                 <li>• This is useful for dev/testing environments</li>
               </ul>

@@ -145,7 +145,7 @@ const ActiveUsers: React.FC<ActiveUsersProps> = ({
         </div>
       )}
 
-      <div className="space-y-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
         {activeUsers.map((user) => {
           const status = getActivityStatus(user);
           const statusColor = getStatusColor(status);
@@ -153,56 +153,39 @@ const ActiveUsers: React.FC<ActiveUsersProps> = ({
           return (
             <div
               key={user.sessionId}
-              className="flex items-center gap-3 p-2 bg-base-100 rounded-lg border border-base-content/5"
+              className="bg-base-200/50 border border-base-content/10 rounded-lg p-3"
             >
-              {/* Status indicator */}
-              <div className="flex-shrink-0 relative">
-                <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-content text-sm font-medium">
-                  {user.user.firstName.charAt(0)}{user.user.lastName.charAt(0)}
-                </div>
-                <div 
-                  className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-base-100 ${statusColor}`}
-                  title={getStatusText(status)}
-                >
-                  {status === 'active' && (
-                    <div className={`w-full h-full rounded-full ${statusColor} animate-pulse`}></div>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-sm">
-                      {user.user.firstName} {user.user.lastName}
-                    </p>
-                    {showDetails && (
-                      <p className="text-xs text-base-content/60">
-                        {user.currentPage ? `Viewing ${user.currentPage}` : 'In project'}
-                      </p>
-                    )}
+              <div className="flex items-center gap-2">
+                {/* Status indicator */}
+                <div className="flex-shrink-0 relative">
+                  <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-content text-xs font-medium">
+                    {user.user.firstName.charAt(0)}{user.user.lastName.charAt(0)}
                   </div>
-                  
-                  <div className="text-right">
-                    <p className="text-xs text-base-content/60">
-                      {getLastSeenText(user.lastActivity)}
-                    </p>
-                    {showDetails && user.duration > 0 && (
-                      <p className="text-xs text-base-content/40">
-                        {formatDuration(user.duration)} session
-                      </p>
+                  <div 
+                    className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-base-200 ${statusColor}`}
+                    title={getStatusText(status)}
+                  >
+                    {status === 'active' && (
+                      <div className={`w-full h-full rounded-full ${statusColor} animate-pulse`}></div>
                     )}
                   </div>
                 </div>
 
-                {showDetails && user.isVisible !== undefined && (
-                  <div className="flex items-center gap-2 mt-1">
-                    <div className={`w-2 h-2 rounded-full ${user.isVisible ? 'bg-success' : 'bg-base-content/30'}`}></div>
-                    <span className="text-xs text-base-content/50">
-                      {user.isVisible ? 'Tab visible' : 'Tab hidden'}
-                    </span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium text-xs truncate">
+                        {user.user.firstName} {user.user.lastName}
+                      </h4>
+                    </div>
+                    
+                    <div className="text-right">
+                      <span className={`badge badge-xs ${status === 'active' ? 'badge-success' : status === 'recent' ? 'badge-warning' : 'badge-ghost'}`}>
+                        {status === 'active' ? 'Active' : status === 'recent' ? 'Recent' : 'Away'}
+                      </span>
+                    </div>
                   </div>
-                )}
+                </div>
               </div>
             </div>
           );

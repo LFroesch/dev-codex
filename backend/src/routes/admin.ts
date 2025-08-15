@@ -1,4 +1,5 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import { User } from '../models/User';
 import { Project } from '../models/Project';
 import { Ticket } from '../models/Ticket';
@@ -545,17 +546,225 @@ router.delete('/analytics/reset', async (_req, res) => {
     // Clear all analytics events
     const analyticsResult = await Analytics.deleteMany({});
     
-    // Clear all user sessions
+    // Clear all user sessions (this also clears project time data)
     const sessionsResult = await UserSession.deleteMany({});
     
     res.json({ 
       message: 'Analytics data reset successfully',
       deletedAnalytics: analyticsResult.deletedCount,
-      deletedSessions: sessionsResult.deletedCount
+      deletedSessions: sessionsResult.deletedCount,
+      projectTimeDataCleared: true
     });
   } catch (error) {
     console.error('Error resetting analytics:', error);
     res.status(500).json({ error: 'Failed to reset analytics data' });
+  }
+});
+
+// Reset only project time data
+router.delete('/analytics/project-time/reset', async (_req, res) => {
+  try {
+    // Clear project time breakdown from all active sessions
+    const result = await UserSession.updateMany(
+      {},
+      { 
+        $unset: { 
+          projectTimeBreakdown: 1,
+          currentProjectStartTime: 1
+        }
+      }
+    );
+    
+    res.json({ 
+      message: 'Project time data reset successfully',
+      updatedSessions: result.modifiedCount
+    });
+  } catch (error) {
+    console.error('Error resetting project time data:', error);
+    res.status(500).json({ error: 'Failed to reset project time data' });
+  }
+});
+
+// Combined analytics endpoint for admin dashboard
+router.get('/analytics/combined', async (req, res) => {
+  try {
+    const { days = '30', limit = '10' } = req.query;
+    const daysInt = parseInt(days as string);
+    const limitInt = parseInt(limit as string);
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - daysInt);
+
+    // Get overview stats
+    const [totalUsers, totalSessions, totalEvents] = await Promise.all([
+      User.countDocuments({}),
+      UserSession.countDocuments({ startTime: { $gte: startDate } }),
+      Analytics.countDocuments({ timestamp: { $gte: startDate } })
+    ]);
+
+    // Get session stats with total time
+    const sessionStats = await UserSession.aggregate([
+      { $match: { startTime: { $gte: startDate } } },
+      {
+        $addFields: {
+          calculatedDuration: {
+            $cond: {
+              if: { $and: [{ $gt: ['$duration', 0] }] },
+              then: '$duration',
+              else: {
+                $subtract: [
+                  { $ifNull: ['$lastActivity', new Date()] },
+                  '$startTime'
+                ]
+              }
+            }
+          }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalTime: { $sum: '$calculatedDuration' },
+          avgSessionTime: { $avg: '$calculatedDuration' },
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    // Get top users with activity and time spent (simplified approach)
+    const userSessions = await UserSession.aggregate([
+      { $match: { startTime: { $gte: startDate } } },
+      {
+        $addFields: {
+          calculatedDuration: {
+            $cond: {
+              if: { $and: [{ $gt: ['$duration', 0] }] },
+              then: '$duration',
+              else: {
+                $subtract: [
+                  { $ifNull: ['$lastActivity', new Date()] },
+                  '$startTime'
+                ]
+              }
+            }
+          }
+        }
+      },
+      {
+        $group: {
+          _id: '$userId',
+          totalTime: { $sum: '$calculatedDuration' },
+          sessionCount: { $sum: 1 },
+          lastActivity: { $max: '$lastActivity' }
+        }
+      },
+      { $sort: { totalTime: -1 } },
+      { $limit: limitInt }
+    ]);
+
+    // Get analytics data for these users
+    const userAnalytics = await Analytics.aggregate([
+      { 
+        $match: { 
+          timestamp: { $gte: startDate },
+          userId: { $in: userSessions.map(u => u._id.toString()) }
+        } 
+      },
+      {
+        $group: {
+          _id: '$userId',
+          totalEvents: { $sum: 1 },
+          fieldEdits: { 
+            $sum: { $cond: [{ $eq: ['$eventType', 'field_edit'] }, 1, 0] } 
+          }
+        }
+      }
+    ]);
+
+    // Get user info with proper ObjectId conversion
+    const userIds = userSessions.map(u => new mongoose.Types.ObjectId(u._id));
+    const users = await User.find({ _id: { $in: userIds } })
+      .select('firstName lastName email planTier')
+      .lean();
+
+    // Combine the data
+    const topUsers = userSessions.map(session => {
+      const user = users.find(u => u._id.toString() === session._id.toString());
+      const analytics = userAnalytics.find(a => a._id.toString() === session._id.toString());
+      
+      return {
+        userId: session._id,
+        firstName: user?.firstName || 'Unknown',
+        lastName: user?.lastName || 'User',
+        email: user?.email || 'unknown@email.com',
+        planTier: user?.planTier || 'free',
+        totalTime: session.totalTime || 0,
+        totalEvents: analytics?.totalEvents || 0,
+        fieldEdits: analytics?.fieldEdits || 0,
+        lastActivity: session.lastActivity
+      };
+    }).filter(user => user.firstName !== 'Unknown');
+
+    // Get top projects with time spent data (simplified approach)
+    const projectTimeData = await UserSession.aggregate([
+      {
+        $match: {
+          startTime: { $gte: startDate },
+          projectTimeBreakdown: { $exists: true, $ne: [] }
+        }
+      },
+      { $unwind: '$projectTimeBreakdown' },
+      {
+        $group: {
+          _id: '$projectTimeBreakdown.projectId',
+          totalTime: { $sum: '$projectTimeBreakdown.timeSpent' },
+          uniqueUsers: { $addToSet: '$userId' },
+          sessions: { $sum: 1 },
+          lastActivity: { $max: '$projectTimeBreakdown.lastSwitchTime' }
+        }
+      },
+      { $sort: { totalTime: -1 } },
+      { $limit: limitInt }
+    ]);
+
+    // Get project names with proper ObjectId conversion
+    const projectIds = projectTimeData.map(p => p._id).filter(id => id);
+    const projects = await Project.find({ _id: { $in: projectIds } })
+      .select('name')
+      .lean();
+
+    // Combine project data
+    const topProjects = projectTimeData.map(projectData => {
+      const project = projects.find(p => p._id.toString() === projectData._id?.toString());
+      
+      return {
+        projectId: projectData._id,
+        projectName: project?.name || `Project ${projectData._id?.toString().slice(-6)}`,
+        totalTime: projectData.totalTime || 0,
+        uniqueUserCount: projectData.uniqueUsers?.length || 0,
+        sessions: projectData.sessions || 0,
+        lastActivity: projectData.lastActivity
+      };
+    }).filter(project => project.projectId);
+
+    // Calculate overview totals
+    const overview = {
+      totalUsers,
+      totalSessions,
+      totalEvents,
+      avgSessionTime: sessionStats[0]?.avgSessionTime || 0,
+      totalTimeSpent: sessionStats[0]?.totalTime || 0
+    };
+
+    res.json({
+      overview,
+      topUsers,
+      topProjects,
+      recentActivity: [] // Can be populated later if needed
+    });
+
+  } catch (error) {
+    console.error('Error getting combined analytics:', error);
+    res.status(500).json({ error: 'Failed to get combined analytics' });
   }
 });
 
@@ -739,199 +948,6 @@ router.get('/analytics/leaderboard', async (req, res) => {
   }
 });
 
-// Get combined analytics data (optimized single call)
-router.get('/analytics/combined', async (req, res) => {
-  try {
-    const days = parseInt(req.query.days as string) || 30;
-    const limit = parseInt(req.query.limit as string) || 10;
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
-
-    // Get all users for mapping
-    const allUsers = await User.find({}, { firstName: 1, lastName: 1, email: 1, planTier: 1 }).lean();
-    const userMap = new Map();
-    allUsers.forEach(user => {
-      userMap.set(user._id.toString(), user);
-    });
-
-    // Parallel execution for better performance
-    const [
-      activityData,
-      sessionData,
-      projectActivityRaw,
-      overviewStats
-    ] = await Promise.all([
-      // User activity data
-      Analytics.aggregate([
-        { $match: { timestamp: { $gte: startDate } } },
-        {
-          $group: {
-            _id: '$userId',
-            totalEvents: { $sum: 1 },
-            fieldEdits: { $sum: { $cond: [{ $eq: ['$eventType', 'field_edit'] }, 1, 0] } },
-            lastEvent: { $max: '$timestamp' }
-          }
-        },
-        { $sort: { totalEvents: -1 } },
-        { $limit: limit }
-      ]),
-
-      // Session data
-      UserSession.aggregate([
-        { $match: { startTime: { $gte: startDate } } },
-        {
-          $group: {
-            _id: '$userId',
-            totalTime: { 
-              $sum: {
-                $cond: {
-                  if: { $gt: ['$duration', 0] },
-                  then: '$duration',
-                  else: { $subtract: [{ $ifNull: ['$lastActivity', new Date()] }, '$startTime'] }
-                }
-              }
-            },
-            sessionCount: { $sum: 1 },
-            lastActivity: { $max: '$lastActivity' }
-          }
-        },
-        { $sort: { totalTime: -1 } },
-        { $limit: limit }
-      ]),
-
-      // Project activity
-      Analytics.aggregate([
-        {
-          $match: {
-            'eventData.projectId': { $exists: true, $ne: null },
-            timestamp: { $gte: startDate }
-          }
-        },
-        {
-          $group: {
-            _id: '$eventData.projectId',
-            totalEvents: { $sum: 1 },
-            projectName: { $first: '$eventData.projectName' },
-            uniqueUserCount: { $addToSet: '$userId' },
-            lastActivity: { $max: '$timestamp' }
-          }
-        },
-        {
-          $project: {
-            projectId: '$_id',
-            totalEvents: 1,
-            projectName: 1,
-            uniqueUserCount: { $size: '$uniqueUserCount' },
-            lastActivity: 1
-          }
-        },
-        { $sort: { totalEvents: -1 } },
-        { $limit: limit }
-      ]),
-
-      // Overview statistics
-      Promise.all([
-        UserSession.aggregate([
-          { $match: { startTime: { $gte: startDate } } },
-          {
-            $group: {
-              _id: null,
-              totalSessions: { $sum: 1 },
-              totalTime: { 
-                $sum: {
-                  $cond: {
-                    if: { $gt: ['$duration', 0] },
-                    then: '$duration',
-                    else: { $subtract: [{ $ifNull: ['$lastActivity', new Date()] }, '$startTime'] }
-                  }
-                }
-              },
-              avgTime: { 
-                $avg: {
-                  $cond: {
-                    if: { $gt: ['$duration', 0] },
-                    then: '$duration',
-                    else: { $subtract: [{ $ifNull: ['$lastActivity', new Date()] }, '$startTime'] }
-                  }
-                }
-              },
-              uniqueUsers: { $addToSet: '$userId' }
-            }
-          }
-        ]),
-        Analytics.aggregate([
-          { $match: { timestamp: { $gte: startDate } } },
-          { $group: { _id: null, totalEvents: { $sum: 1 } } }
-        ])
-      ])
-    ]);
-
-    // Process overview stats
-    const sessionOverview = overviewStats[0][0] || {};
-    const eventOverview = overviewStats[1][0] || {};
-
-    // Build optimized response
-    const topUsers = activityData.map(activity => {
-      const session = sessionData.find(s => s._id === activity._id);
-      const user = userMap.get(activity._id);
-      
-      return {
-        userId: activity._id,
-        firstName: user?.firstName || 'Unknown',
-        lastName: user?.lastName || 'User',
-        email: user?.email || 'unknown@email.com',
-        planTier: user?.planTier || 'free',
-        totalTime: session?.totalTime || 0,
-        totalEvents: activity.totalEvents,
-        fieldEdits: activity.fieldEdits,
-        lastActivity: activity.lastEvent || session?.lastActivity
-      };
-    }).filter(item => item.firstName !== 'Unknown');
-
-    // Process projects with names
-    const topProjects = await Promise.all(
-      projectActivityRaw.map(async (project) => {
-        let projectName = project.projectName;
-        
-        if (!projectName || projectName === 'Unknown Project') {
-          try {
-            const dbProject = await Project.findById(project.projectId).select('name').lean();
-            projectName = dbProject?.name || 'Deleted Project';
-          } catch (error) {
-            projectName = 'Deleted Project';
-          }
-        }
-        
-        return {
-          ...project,
-          projectName
-        };
-      })
-    );
-
-    res.json({
-      overview: {
-        totalUsers: sessionOverview.uniqueUsers?.length || 0,
-        totalSessions: sessionOverview.totalSessions || 0,
-        totalEvents: eventOverview.totalEvents || 0,
-        avgSessionTime: sessionOverview.avgTime || 0,
-        totalTimeSpent: sessionOverview.totalTime || 0
-      },
-      topUsers,
-      topProjects,
-      recentActivity: [
-        { type: 'sessions', count: sessionOverview.totalSessions || 0, period: `${days} days` },
-        { type: 'events', count: eventOverview.totalEvents || 0, period: `${days} days` }
-      ],
-      period: `Last ${days} days`,
-      generatedAt: new Date().toISOString()
-    });
-
-  } catch (error) {
-    console.error('Error fetching combined analytics:', error);
-    res.status(500).json({ error: 'Failed to fetch analytics data' });
-  }
-});
 
 // Database cleanup endpoints
 router.get('/cleanup/stats', async (req, res) => {

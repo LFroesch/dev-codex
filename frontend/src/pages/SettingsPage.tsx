@@ -593,85 +593,59 @@ const SettingsPage: React.FC = () => {
           </div>
           <div className="collapse-content">
             <div className="pt-4">
-              {selectedProject.isShared ? (
-                <div className="space-y-6">
-                  {/* Sharing Status Card */}
-                  <div className="card bg-success/5 border border-success/20">
-                    <div className="card-body p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-success/20 flex items-center justify-center">
-                            <svg className="w-5 h-5 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.196-2.121M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.196-2.121M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                            </svg>
-                          </div>
-                          <div>
-                            <h4 className="font-semibold text-success">Sharing Enabled</h4>
-                            <p className="text-sm text-base-content/70">This project is accessible to team members</p>
-                          </div>
-                        </div>
-                        
-                        {(selectedProject.canManageTeam !== false) && (
-                          <div className="form-control">
-                            <label className="label cursor-pointer gap-3">
-                              <span className="label-text font-medium">Enable Sharing</span>
-                              <input 
-                                type="checkbox" 
-                                className="toggle toggle-success" 
-                                checked={true}
-                                onChange={() => {
-                                  onProjectUpdate(selectedProject.id, { isShared: false }).then(() => {
-                                    onProjectRefresh();
-                                  });
-                                }}
-                              />
-                            </label>
-                          </div>
-                        )}
+              <div className="space-y-4">
+                {/* Compact Sharing Status */}
+                <div className="flex items-center justify-between p-3 bg-base-200 rounded-lg border">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                      selectedProject.isShared ? 'bg-success/20' : 'bg-base-300'
+                    }`}>
+                      <svg className={`w-4 h-4 ${selectedProject.isShared ? 'text-success' : 'text-base-content/60'}`} 
+                           fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                              d={selectedProject.isShared 
+                                ? "M17 20h5v-2a3 3 0 00-5.196-2.121M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.196-2.121M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                                : "M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"} />
+                      </svg>
+                    </div>
+                    <div>
+                      <div className={`font-medium text-sm ${selectedProject.isShared ? 'text-success' : 'text-base-content'}`}>
+                        {selectedProject.isShared ? 'Sharing Enabled' : 'Private Project'}
+                      </div>
+                      <div className="text-xs text-base-content/60">
+                        {selectedProject.isShared 
+                          ? 'Team members can access this project' 
+                          : 'Only you can access this project'}
                       </div>
                     </div>
                   </div>
                   
+                  {(selectedProject.canManageTeam !== false) && (
+                    <label className="label cursor-pointer gap-2">
+                      <span className="label-text text-xs">Enable</span>
+                      <input 
+                        type="checkbox" 
+                        className="toggle toggle-success toggle-sm" 
+                        checked={selectedProject.isShared}
+                        onChange={() => {
+                          onProjectUpdate(selectedProject.id, { isShared: !selectedProject.isShared }).then(() => {
+                            onProjectRefresh();
+                          });
+                        }}
+                      />
+                    </label>
+                  )}
+                </div>
+
+                {/* Team Management - Only show if sharing is enabled */}
+                {selectedProject.isShared && (
                   <TeamManagement 
                     projectId={selectedProject.id} 
                     canManageTeam={selectedProject.canManageTeam ?? selectedProject.isOwner ?? false}
                     currentUserId={undefined} // TODO: Get current user ID from auth context
                   />
-                </div>
-              ) : (
-                <div className="card bg-base-200/50 border border-base-content/10">
-                  <div className="card-body p-6 text-center">
-                    <div className="w-16 h-16 rounded-full bg-base-content/10 flex items-center justify-center mx-auto mb-4">
-                      <svg className="w-8 h-8 text-base-content/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                      </svg>
-                    </div>
-                    
-                    <h3 className="text-xl font-bold mb-2">Private Project</h3>
-                    <p className="text-base-content/70 mb-6 max-w-md mx-auto">
-                      This project is currently private and only accessible to you. Enable sharing to collaborate with team members.
-                    </p>
-                    
-                    {selectedProject.canManageTeam !== false && (
-                      <div className="form-control w-fit mx-auto">
-                        <label className="label cursor-pointer gap-4">
-                          <span className="label-text font-medium">Enable Sharing</span>
-                          <input 
-                            type="checkbox" 
-                            className="toggle toggle-primary toggle-lg" 
-                            checked={false}
-                            onChange={() => {
-                              onProjectUpdate(selectedProject.id, { isShared: true }).then(() => {
-                                onProjectRefresh();
-                              });
-                            }}
-                          />
-                        </label>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </div>

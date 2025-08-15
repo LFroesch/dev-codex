@@ -7,7 +7,11 @@ export default {
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      screens: {
+        'desktop': '1450px',
+      },
+    },
   },
   plugins: [daisyui],
   daisyui: {

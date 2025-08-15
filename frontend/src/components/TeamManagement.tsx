@@ -30,8 +30,14 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
 
   useEffect(() => {
     fetchMembers();
-    loadTeamTimeData();
   }, [projectId]);
+
+  // Load team time data after members are loaded
+  useEffect(() => {
+    if (members.length > 0) {
+      loadTeamTimeData();
+    }
+  }, [members, projectId]);
 
   // Auto-update team time data every 30 seconds (copy from Layout.tsx)
   useEffect(() => {
@@ -55,14 +61,16 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
 
   const loadTeamTimeData = async () => {
     try {
-      const response = await analyticsAPI.getProjectTeamTime(projectId, 30) as any;
+      console.log('Fetching team time for project:', projectId);
+      const response = await analyticsAPI.getProjectTeamTime(projectId, 30);
       console.log('Team time response:', response);
+      
       if (response && response.teamTimeData && Array.isArray(response.teamTimeData)) {
         const timeMap: { [userId: string]: number } = {};
         response.teamTimeData.forEach((data: any) => {
           timeMap[data._id] = data.totalTime || 0;
         });
-        console.log('Team time map:', timeMap);
+        console.log('Setting team time data:', timeMap);
         setTeamTimeData(timeMap);
       }
     } catch (err) {
@@ -70,7 +78,6 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
     }
   };
 
-  // Copy exact formatProjectTime from Layout.tsx
   const formatProjectTime = (userId: string): string => {
     const timeMs = teamTimeData[userId] || 0;
     const totalMinutes = Math.floor(timeMs / (1000 * 60));
@@ -79,8 +86,11 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
 
     if (hours > 0) {
       return `${hours}h ${minutes}m`;
+    } else if (minutes > 0) {
+      return `${minutes}m`;
+    } else {
+      return '0m';
     }
-    return `${minutes}m`;
   };
 
   const handleInvite = async (e: React.FormEvent) => {

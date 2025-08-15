@@ -387,35 +387,55 @@ router.get('/project/:projectId/team-time', requireAuth, async (req: AuthRequest
     const mongoose = await import('mongoose');
     const objectIdUserIds = userIds.map(id => new mongoose.Types.ObjectId(id));
 
-    // Simple aggregation to get time per user for this project
-    const teamTimeData = await UserSession.aggregate([
-      {
-        $match: {
-          userId: { $in: objectIdUserIds },
-          startTime: { $gte: startDate },
-          projectTimeBreakdown: { $exists: true, $ne: [] }
+    // Get current active sessions for all team members
+    const activeSessions = await UserSession.find({
+      userId: { $in: objectIdUserIds },
+      isActive: true
+    }).lean();
+
+    const teamTimeData: any[] = [];
+    
+    // For each team member, calculate their total time on this project
+    for (const userId of userIds) {
+      const userObjectId = new mongoose.Types.ObjectId(userId);
+      
+      // Get all sessions for this user that have project time data
+      const userSessions = await UserSession.find({
+        userId: userObjectId,
+        projectTimeBreakdown: { $exists: true, $ne: [] }
+      }).lean();
+      
+      let totalTime = 0;
+      let lastUsed: Date | null = null;
+      
+      userSessions.forEach(session => {
+        const projectEntry = session.projectTimeBreakdown?.find(p => 
+          p.projectId === projectId || p.projectId?.toString() === projectId
+        );
+        if (projectEntry) {
+          totalTime += projectEntry.timeSpent || 0;
+          if (!lastUsed || projectEntry.lastSwitchTime > lastUsed) {
+            lastUsed = projectEntry.lastSwitchTime;
+          }
         }
-      },
-      {
-        $unwind: '$projectTimeBreakdown'
-      },
-      {
-        $match: {
-          'projectTimeBreakdown.projectId': projectId
-        }
-      },
-      {
-        $group: {
-          _id: '$userId',
-          totalTime: { $sum: '$projectTimeBreakdown.timeSpent' },
-          sessions: { $sum: 1 },
-          lastUsed: { $max: '$projectTimeBreakdown.lastSwitchTime' }
-        }
-      },
-      {
-        $sort: { totalTime: -1 }
+      });
+      
+      // Check for current active session with this project
+      const activeSession = activeSessions.find(s => s.userId.toString() === userId);
+      if (activeSession && activeSession.currentProjectId === projectId && activeSession.currentProjectStartTime) {
+        const currentSessionTime = Date.now() - activeSession.currentProjectStartTime.getTime();
+        totalTime += currentSessionTime;
+        lastUsed = new Date();
       }
-    ]);
+      
+      // Always include team members in the result, even with 0 time
+      teamTimeData.push({
+        _id: userObjectId,
+        totalTime,
+        sessions: userSessions.length,
+        lastUsed
+      });
+    }
 
     res.json({
       projectId,

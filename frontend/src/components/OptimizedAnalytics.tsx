@@ -113,9 +113,7 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
   const fetchProjectUserData = useCallback(async (projectId: string) => {
     try {
       setLoadingProjectData(projectId);
-      console.log('Fetching team time for project:', projectId);
-      const response = await analyticsAPI.getProjectTeamTime(projectId, selectedPeriod);
-      console.log('Team time response:', response);
+      const response = await analyticsAPI.getProjectTeamTime(projectId, selectedPeriod) as any;
       setProjectUserData(prev => {
         const newData = {
           ...prev,

@@ -61,9 +61,7 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
 
   const loadTeamTimeData = async () => {
     try {
-      console.log('Fetching team time for project:', projectId);
-      const response = await analyticsAPI.getProjectTeamTime(projectId, 30);
-      console.log('Team time response:', response);
+      const response = await analyticsAPI.getProjectTeamTime(projectId, 30) as any;
       
       if (response && response.teamTimeData && Array.isArray(response.teamTimeData)) {
         const timeMap: { [userId: string]: number } = {};

@@ -187,13 +187,11 @@ const Layout: React.FC = () => {
   const loadProjectTimeData = async () => {
     try {
       const response = await analyticsAPI.getProjectsTime(30) as any;
-      console.log('Project time response:', response);
       if (response && response.projects && Array.isArray(response.projects)) {
         const timeMap: { [projectId: string]: number } = {};
         response.projects.forEach((project: any) => {
           timeMap[project._id] = project.totalTime || 0;
         });
-        console.log('Project time map:', timeMap);
         setProjectTimeData(timeMap);
       } else if (response && Array.isArray(response)) {
         // Handle case where response is directly an array
@@ -201,7 +199,6 @@ const Layout: React.FC = () => {
         response.forEach((project: any) => {
           timeMap[project._id] = project.totalTime || 0;
         });
-        console.log('Project time map (array):', timeMap);
         setProjectTimeData(timeMap);
       }
     } catch (err) {

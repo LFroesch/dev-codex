@@ -17,8 +17,9 @@ import invitationRoutes from './routes/invitations';
 import notificationRoutes from './routes/notifications';
 import publicRoutes from './routes/public';
 import { normalRateLimit, authRateLimit, devRateLimit } from './middleware/rateLimit';
-import { trackPageView, sessionMiddleware } from './middleware/analytics';
+import { trackPageView, sessionMiddleware, AnalyticsService } from './middleware/analytics';
 import ReminderService from './services/reminderService';
+import UserSession from './models/UserSession';
 
 dotenv.config();
 
@@ -88,6 +89,42 @@ app.get('/health', (_, res) => {
   res.json({ status: 'OK' });
 });
 
+// Graceful shutdown handler
+const gracefulShutdown = async (signal: string) => {
+  console.log(`\n${signal} received. Starting graceful shutdown...`);
+  
+  try {
+    // End all active sessions
+    const activeSessions = await UserSession.find({ isActive: true });
+    console.log(`Ending ${activeSessions.length} active sessions...`);
+    
+    const endPromises = activeSessions.map(session => 
+      AnalyticsService.endSession(session.sessionId, session.userId)
+    );
+    
+    await Promise.allSettled(endPromises);
+    console.log('All sessions ended successfully');
+    
+    // Close database connections
+    await new Promise<void>((resolve) => {
+      // Give time for final database operations
+      setTimeout(() => {
+        console.log('Graceful shutdown complete');
+        resolve();
+      }, 1000);
+    });
+    
+    process.exit(0);
+  } catch (error) {
+    console.error('Error during graceful shutdown:', error);
+    process.exit(1);
+  }
+};
+
+// Handle shutdown signals
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
 // Start server
 const startServer = async () => {
   try {
@@ -97,9 +134,21 @@ const startServer = async () => {
     const reminderService = ReminderService.getInstance();
     reminderService.initialize();
     
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });
+    
+    // Handle uncaught exceptions
+    process.on('uncaughtException', (error) => {
+      console.error('Uncaught Exception:', error);
+      gracefulShutdown('UNCAUGHT_EXCEPTION');
+    });
+    
+    process.on('unhandledRejection', (reason, promise) => {
+      console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+      gracefulShutdown('UNHANDLED_REJECTION');
+    });
+    
   } catch (error) {
     console.error('Failed to start server:', error);
     process.exit(1);

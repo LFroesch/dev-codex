@@ -464,7 +464,7 @@ const Layout: React.FC = () => {
         {/* Mobile and Tablet Layout */}
         <div className="block desktop:hidden px-4 py-2">
           <div className="flex flex-col gap-2">
-            {/* Top row: Logo and User Menu */}
+            {/* Top row: Logo, Current Project, and User Menu */}
             <div className="flex-between-center">
               <div className="flex-center-gap-2 cursor-pointer" onClick={() => navigate('/notes?view=projects')}>
                 <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-sm">
@@ -477,6 +477,20 @@ const Layout: React.FC = () => {
               
               {user ? (
                 <div className="flex-center-gap-2">
+                  {/* Current Project indicator styled like SessionTracker */}
+                  {selectedProject && (
+                    <div 
+                      className="flex items-center gap-2 px-3 py-1.5 bg-base-100/80 rounded-lg border border-base-content/10 shadow-sm hover:bg-base-200/70 transition-all duration-200 cursor-pointer h-8"
+                      onClick={() => handleNavigateWithCheck('/notes')}
+                      title={`Current project: ${selectedProject.name}`}
+                    >
+                      <div 
+                        className="w-2 h-2 rounded-full shadow-sm"
+                        style={{ backgroundColor: selectedProject.color }}
+                      ></div>
+                      <span className="text-xs font-medium truncate max-w-16">{selectedProject.name}</span>
+                    </div>
+                  )}
                   <SessionTracker 
                     projectId={selectedProject?.id}
                     currentUserId={user?.id}
@@ -496,20 +510,8 @@ const Layout: React.FC = () => {
             
             {/* Second row: Search and Navigation */}
             <div className="flex flex-col sm:flex-row gap-2">
-              {/* Search bar and project info */}
+              {/* Search bar */}
               <div className="flex-center-gap-2 flex-1">
-                {selectedProject && (
-                  <div 
-                    className="flex items-center gap-1 px-2 py-1 bg-base-100/80 rounded-lg border-subtle shadow-sm cursor-pointer hover:bg-base-200/70 transition-all duration-200"
-                    onClick={() => handleNavigateWithCheck('/notes')}
-                  >
-                    <div 
-                      className="w-2 h-2 rounded-full shadow-sm"
-                      style={{ backgroundColor: selectedProject.color }}
-                    ></div>
-                    <span className="text-xs font-medium truncate max-w-20">{selectedProject.name}</span>
-                  </div>
-                )}
                 <div className="relative flex-1">
                   <svg className="absolute left-2.5 top-1/2 transform -translate-y-1/2 icon-sm text-base-content/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -1330,6 +1332,8 @@ const Layout: React.FC = () => {
         )}
       </div>
 
+      <ToastContainer />
+
       <ConfirmationModal
         isOpen={showUnsavedChangesModal}
         onConfirm={handleUnsavedChangesLeave}
@@ -1340,8 +1344,6 @@ const Layout: React.FC = () => {
         cancelText="Stay Here"
         variant="warning"
       />
-      
-      <ToastContainer />
     </div>
   );
 };

@@ -327,12 +327,20 @@ const Layout: React.FC = () => {
       }
     };
 
+    const handleRefreshProject = () => {
+      if (user) {
+        loadProjects();
+      }
+    };
+
     window.addEventListener('selectProject', handleSelectProject as EventListener);
+    window.addEventListener('refreshProject', handleRefreshProject as EventListener);
     
     return () => {
       window.removeEventListener('selectProject', handleSelectProject as EventListener);
+      window.removeEventListener('refreshProject', handleRefreshProject as EventListener);
     };
-  }, [projects]);
+  }, [projects, user]);
 
   // Auto-update project time data every 30 seconds
   useEffect(() => {

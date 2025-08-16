@@ -4,6 +4,8 @@ import cookieParser from 'cookie-parser';
 import passport from 'passport';
 import dotenv from 'dotenv';
 import path from 'path';
+import { Server } from 'socket.io';
+import { createServer } from 'http';
 import { connectDatabase } from './config/database';
 import authRoutes from './routes/auth';
 import projectRoutes from './routes/projects';
@@ -134,7 +136,41 @@ const startServer = async () => {
     const reminderService = ReminderService.getInstance();
     reminderService.initialize();
     
-    const server = app.listen(PORT, () => {
+    const server = createServer(app);
+    
+    // Initialize Socket.IO
+    const io = new Server(server, {
+      cors: {
+        origin: isDevelopment ? 'http://localhost:5002' : true,
+        credentials: true
+      }
+    });
+
+    // Simple lock signaling - no authentication needed, just project-based rooms
+    io.on('connection', (socket) => {
+      console.log('Client connected:', socket.id);
+
+      // Join project room for lock updates
+      socket.on('join-project', (projectId: string) => {
+        socket.join(`project-${projectId}`);
+        console.log(`Socket ${socket.id} joined project-${projectId}`);
+      });
+
+      // Leave project room
+      socket.on('leave-project', (projectId: string) => {
+        socket.leave(`project-${projectId}`);
+        console.log(`Socket ${socket.id} left project-${projectId}`);
+      });
+
+      socket.on('disconnect', () => {
+        console.log('Client disconnected:', socket.id);
+      });
+    });
+
+    // Make io available globally for lock signaling
+    (global as any).io = io;
+    
+    server.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });
     

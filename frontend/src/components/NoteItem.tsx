@@ -5,6 +5,7 @@ import EnhancedTextEditor from './EnhancedTextEditor';
 import ConfirmationModal from './ConfirmationModal';
 import { unsavedChangesManager } from '../utils/unsavedChanges';
 import activityTracker from '../services/activityTracker';
+import { lockSignaling } from '../services/lockSignaling';
 
 interface NoteItemProps {
   note: Note;
@@ -140,6 +141,11 @@ const NoteModal: React.FC<NoteModalProps> = ({
   const [editContent, setEditContent] = useState('');
   const [loading, setLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  
+  // Locking states
+  const [isLocked, setIsLocked] = useState(false);
+  const [lockedBy, setLockedBy] = useState<{ email: string; name: string; isCurrentUser: boolean } | null>(null);
+  const [lockError, setLockError] = useState('');
 
   // Create unique component ID for unsaved changes tracking
   const componentId = note ? `note-modal-${note.id}` : 'note-modal';
@@ -147,6 +153,7 @@ const NoteModal: React.FC<NoteModalProps> = ({
   const autoSaveTimeoutRef = useRef<number | null>(null);
   const isCancelingRef = useRef(false);
   const isSavingRef = useRef(false);
+  const heartbeatIntervalRef = useRef<number | null>(null);
 
   // Effect to handle keyboard shortcuts
   useEffect(() => {
@@ -169,7 +176,7 @@ const NoteModal: React.FC<NoteModalProps> = ({
           onClose();
         }
       } else if (e.key === 'e' && mode === 'view') {
-        onModeChange('edit');
+        await handleEnterEditMode();
       } else if (e.key === 'c' && mode === 'view') {
         handleCopy();
       } else if (e.ctrlKey && e.key === 's' && mode === 'edit') {
@@ -219,6 +226,129 @@ const NoteModal: React.FC<NoteModalProps> = ({
     };
   }, [componentId]);
 
+  // Check lock status when modal opens or note changes, and set up WebSocket listeners
+  useEffect(() => {
+    if (isOpen && note) {
+      checkLockStatus();
+      
+      // Connect to lock signaling and join project
+      lockSignaling.connect();
+      lockSignaling.joinProject(projectId);
+      
+      // Set up WebSocket event listeners for this specific note
+      const handleNoteLocked = (data: { noteId: string; lockedBy: { email: string; name: string } }) => {
+        if (data.noteId === note.id) {
+          setIsLocked(true);
+          setLockedBy({ ...data.lockedBy, isCurrentUser: false });
+          setLockError(`Note is being edited by ${data.lockedBy.name}`);
+        }
+      };
+      
+      const handleNoteUnlocked = (data: { noteId: string }) => {
+        if (data.noteId === note.id) {
+          setIsLocked(false);
+          setLockedBy(null);
+          setLockError('');
+        }
+      };
+      
+      const handleNoteUpdated = (data: { noteId: string; note: any }) => {
+        if (data.noteId === note.id && mode === 'view') {
+          // Trigger a refresh of the project data to get the updated note
+          window.dispatchEvent(new CustomEvent('refreshProject'));
+        }
+      };
+      
+      lockSignaling.on('note-locked', handleNoteLocked);
+      lockSignaling.on('note-unlocked', handleNoteUnlocked);
+      lockSignaling.on('note-updated', handleNoteUpdated);
+      
+      return () => {
+        lockSignaling.off('note-locked', handleNoteLocked);
+        lockSignaling.off('note-unlocked', handleNoteUnlocked);
+        lockSignaling.off('note-updated', handleNoteUpdated);
+      };
+    }
+  }, [isOpen, note?.id, mode, projectId]);
+
+  // Start heartbeat when entering edit mode
+  useEffect(() => {
+    if (mode === 'edit' && note && lockedBy?.isCurrentUser) {
+      startHeartbeat();
+    } else {
+      stopHeartbeat();
+    }
+    
+    return () => stopHeartbeat();
+  }, [mode, lockedBy?.isCurrentUser]);
+
+  const checkLockStatus = async () => {
+    if (!note) return;
+    
+    try {
+      const lockStatus = await projectAPI.checkNoteLock(projectId, note.id);
+      setIsLocked(lockStatus.locked);
+      setLockedBy(lockStatus.lockedBy || null);
+    } catch (error) {
+      console.error('Failed to check lock status:', error);
+    }
+  };
+
+  const acquireLock = async () => {
+    if (!note) return false;
+    
+    try {
+      await projectAPI.lockNote(projectId, note.id);
+      setIsLocked(true);
+      setLockedBy({ email: '', name: '', isCurrentUser: true }); // Will be updated by checkLockStatus
+      setLockError('');
+      return true;
+    } catch (error: any) {
+      if (error.response?.status === 423) {
+        setLockError(`Note is being edited by ${error.response.data.lockedBy?.name || 'another user'}`);
+        setIsLocked(true);
+        setLockedBy(error.response.data.lockedBy);
+      } else {
+        setLockError('Failed to acquire lock');
+      }
+      return false;
+    }
+  };
+
+  const releaseLock = async () => {
+    if (!note) return;
+    
+    try {
+      await projectAPI.unlockNote(projectId, note.id);
+      setIsLocked(false);
+      setLockedBy(null);
+      setLockError('');
+    } catch (error) {
+      console.error('Failed to release lock:', error);
+    }
+  };
+
+  const startHeartbeat = () => {
+    if (heartbeatIntervalRef.current) return;
+    
+    heartbeatIntervalRef.current = window.setInterval(async () => {
+      if (note && mode === 'edit') {
+        try {
+          await projectAPI.heartbeatNoteLock(projectId, note.id);
+        } catch (error) {
+          console.error('Heartbeat failed:', error);
+        }
+      }
+    }, 60000); // Every minute
+  };
+
+  const stopHeartbeat = () => {
+    if (heartbeatIntervalRef.current) {
+      clearInterval(heartbeatIntervalRef.current);
+      heartbeatIntervalRef.current = null;
+    }
+  };
+
   if (!isOpen || !note) return null;
 
   // Auto-save functionality
@@ -242,6 +372,18 @@ const NoteModal: React.FC<NoteModalProps> = ({
     
     // Reset the auto-save timer whenever user types
     scheduleAutoSave();
+  };
+
+  const handleEnterEditMode = async () => {
+    if (isLocked && !lockedBy?.isCurrentUser) {
+      setLockError(`Note is being edited by ${lockedBy?.name || 'another user'}`);
+      return;
+    }
+    
+    const lockAcquired = await acquireLock();
+    if (lockAcquired) {
+      onModeChange('edit');
+    }
   };
 
   const handleSave = async () => {
@@ -293,10 +435,16 @@ const NoteModal: React.FC<NoteModalProps> = ({
         );
       }
       
+      // Release lock and switch to view mode
+      await releaseLock();
       onModeChange('view');
       onUpdate();
-    } catch (error) {
-      console.error('Failed to update note:', error);
+    } catch (error: any) {
+      if (error.response?.status === 423) {
+        setLockError(`Note is being edited by ${error.response.data.lockedBy?.name || 'another user'}`);
+      } else {
+        console.error('Failed to update note:', error);
+      }
     } finally {
       setLoading(false);
       setTimeout(() => {
@@ -340,7 +488,11 @@ const NoteModal: React.FC<NoteModalProps> = ({
     setEditTitle(note.title);
     setEditDescription(note.description || '');
     setEditContent(note.content);
+    
+    // Release lock when canceling
+    await releaseLock();
     onModeChange('view');
+    
     setTimeout(() => {
       isCancelingRef.current = false;
     }, 0);
@@ -487,14 +639,21 @@ const NoteModal: React.FC<NoteModalProps> = ({
                   Copy
                 </button>
                 <button
-                  onClick={() => onModeChange('edit')}
-                  className="btn btn-ghost"
-                  title="Edit note (E)"
+                  onClick={handleEnterEditMode}
+                  className={`btn ${isLocked && !lockedBy?.isCurrentUser ? 'btn-disabled' : 'btn-ghost'}`}
+                  title={isLocked && !lockedBy?.isCurrentUser ? `Being edited by ${lockedBy?.name}` : "Edit note (E)"}
+                  disabled={isLocked && !lockedBy?.isCurrentUser}
                 >
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                  </svg>
-                  Edit
+                  {isLocked && !lockedBy?.isCurrentUser ? (
+                    <svg className="w-4 h-4 mr-2 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                  ) : (
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  )}
+                  {isLocked && !lockedBy?.isCurrentUser ? 'Locked' : 'Edit'}
                 </button>
                 <button
                   onClick={handleDeleteClick}
@@ -530,6 +689,24 @@ const NoteModal: React.FC<NoteModalProps> = ({
             </button>
           </div>
         </div>
+
+        {/* Lock Error Alert */}
+        {lockError && (
+          <div className="px-4 py-2 bg-warning/10 border-b border-warning/20">
+            <div className="flex items-center gap-2 text-warning">
+              <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              <span className="text-sm font-medium">{lockError}</span>
+              <button 
+                onClick={() => setLockError('')}
+                className="ml-auto btn btn-xs btn-ghost text-warning hover:bg-warning/20"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Content */}
         <div className="flex-1 overflow-hidden">

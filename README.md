@@ -11,6 +11,7 @@ A modern, clean full-stack development platform designed for developers and team
 - **Development Log**: Track progress and document development milestones
 - **Documentation Templates**: Pre-built templates for APIs, models, routes, and more
 - **Tech Stack Tracking**: Monitor technologies and packages used in projects
+- **Deployment Management**: Track deployment status, platforms, commands, and environment variables
 
 ### Team Collaboration
 - **Team Management**: Invite members with role-based permissions (owner/editor/viewer)

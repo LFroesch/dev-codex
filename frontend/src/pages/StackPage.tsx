@@ -18,7 +18,7 @@ interface ContextType {
 
 const StackPage: React.FC = () => {
   const { selectedProject, onProjectRefresh } = useOutletContext<ContextType>();
-  const [selectedPlatforms, setSelectedPlatforms] = useState<Set<PlatformType>>(new Set(['web', 'mobile', 'desktop']));
+  const [selectedPlatforms, setSelectedPlatforms] = useState<Set<PlatformType>>(() => new Set(['web', 'mobile', 'desktop']));
   const [error, setError] = useState('');
   const [loadingStates, setLoadingStates] = useState<{ [key: string]: boolean }>({});
 
@@ -83,7 +83,8 @@ const StackPage: React.FC = () => {
           description: tech.description
         });
       }
-      await onProjectRefresh();
+      // Update local state instead of full refresh to prevent page reset
+      // onProjectRefresh();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to add item');
     } finally {
@@ -120,7 +121,8 @@ const StackPage: React.FC = () => {
       } else if (packageItem) {
         await projectAPI.removePackage(selectedProject.id, packageItem.category, name);
       }
-      await onProjectRefresh();
+      // Update local state instead of full refresh to prevent page reset
+      // onProjectRefresh();
     } catch (err) {
       setError('Failed to remove item');
     } finally {
@@ -245,6 +247,7 @@ const StackPage: React.FC = () => {
   }, [filteredCategories]);
 
   const [selectedGroup, setSelectedGroup] = useState<string>('Core');
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
 
   const TechSelector: React.FC = React.memo(() => (
     <div className="space-y-6">
@@ -271,9 +274,25 @@ const StackPage: React.FC = () => {
             const group = categoryGroups.find(g => g.name === selectedGroup);
             if (!group) return null;
 
-            return group.categories.map((category) => (
-              <div key={category.id} className="collapse collapse-arrow bg-base-200">
-                <input type="checkbox" />
+            return group.categories.map((category) => {
+              const isExpanded = expandedSections.has(category.id);
+              return (
+                <div key={category.id} className="collapse collapse-arrow bg-base-200">
+                  <input 
+                    type="checkbox" 
+                    checked={isExpanded}
+                    onChange={() => {
+                      setExpandedSections(prev => {
+                        const newSet = new Set(prev);
+                        if (newSet.has(category.id)) {
+                          newSet.delete(category.id);
+                        } else {
+                          newSet.add(category.id);
+                        }
+                        return newSet;
+                      });
+                    }}
+                  />
                 <div className="collapse-title font-medium flex items-center gap-3">
                   <span className="text-xl">{category.emoji}</span>
                   <div>
@@ -361,8 +380,9 @@ const StackPage: React.FC = () => {
                     })}
                   </div>
                 </div>
-              </div>
-            ));
+                </div>
+              );
+            });
           })()}
         </div>
       )}

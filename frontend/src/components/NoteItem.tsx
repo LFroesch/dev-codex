@@ -6,6 +6,7 @@ import ConfirmationModal from './ConfirmationModal';
 import { unsavedChangesManager } from '../utils/unsavedChanges';
 import activityTracker from '../services/activityTracker';
 import { lockSignaling } from '../services/lockSignaling';
+import { toast } from '../services/toast';
 
 interface NoteItemProps {
   note: Note;
@@ -22,6 +23,7 @@ interface NoteModalProps {
   onUpdate: () => void;
   mode: 'view' | 'edit';
   onModeChange: (mode: 'view' | 'edit') => void;
+  project?: any; // Project with permission info
 }
 
 const NoteItem: React.FC<NoteItemProps> = ({ 
@@ -134,7 +136,8 @@ const NoteModal: React.FC<NoteModalProps> = ({
   onClose, 
   onUpdate, 
   mode, 
-  onModeChange 
+  onModeChange,
+  project
 }) => {
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
@@ -308,8 +311,14 @@ const NoteModal: React.FC<NoteModalProps> = ({
         setLockError(`Note is being edited by ${error.response.data.lockedBy?.name || 'another user'}`);
         setIsLocked(true);
         setLockedBy(error.response.data.lockedBy);
+        toast.warning(`Note is currently being edited by ${error.response.data.lockedBy?.name || 'another user'}`, 4000);
+      } else if (error.response?.status === 403) {
+        toast.error('You do not have permission to edit this note', 5000);
+      } else if (error.response?.status === 401) {
+        toast.error('You need to be logged in to edit notes', 5000);
       } else {
         setLockError('Failed to acquire lock');
+        toast.error('Failed to start editing. Please try again.', 4000);
       }
       return false;
     }
@@ -375,6 +384,16 @@ const NoteModal: React.FC<NoteModalProps> = ({
   };
 
   const handleEnterEditMode = async () => {
+    // Check permissions first
+    if (project && project.canEdit === false) {
+      if (project.userRole === 'viewer') {
+        toast.error('You need editor access to edit notes in this project', 5000);
+      } else {
+        toast.error('You do not have permission to edit this note', 5000);
+      }
+      return;
+    }
+    
     if (isLocked && !lockedBy?.isCurrentUser) {
       setLockError(`Note is being edited by ${lockedBy?.name || 'another user'}`);
       return;
@@ -388,6 +407,16 @@ const NoteModal: React.FC<NoteModalProps> = ({
 
   const handleSave = async () => {
     if (!editTitle.trim() || !editContent.trim()) return;
+
+    // Check permissions before saving
+    if (project && project.canEdit === false) {
+      if (project.userRole === 'viewer') {
+        toast.error('You need editor access to save changes to notes', 5000);
+      } else {
+        toast.error('You do not have permission to save changes to this note', 5000);
+      }
+      return;
+    }
 
     isSavingRef.current = true;
     setLoading(true);
@@ -442,8 +471,13 @@ const NoteModal: React.FC<NoteModalProps> = ({
     } catch (error: any) {
       if (error.response?.status === 423) {
         setLockError(`Note is being edited by ${error.response.data.lockedBy?.name || 'another user'}`);
+      } else if (error.response?.status === 403) {
+        toast.error('You do not have permission to edit this note', 5000);
+      } else if (error.response?.status === 401) {
+        toast.error('You need to be logged in to edit notes', 5000);
       } else {
         console.error('Failed to update note:', error);
+        toast.error('Failed to save note. Please try again.', 5000);
       }
     } finally {
       setLoading(false);
@@ -640,11 +674,25 @@ const NoteModal: React.FC<NoteModalProps> = ({
                 </button>
                 <button
                   onClick={handleEnterEditMode}
-                  className={`btn ${isLocked && !lockedBy?.isCurrentUser ? 'btn-disabled' : 'btn-ghost'}`}
-                  title={isLocked && !lockedBy?.isCurrentUser ? `Being edited by ${lockedBy?.name}` : "Edit note (E)"}
-                  disabled={isLocked && !lockedBy?.isCurrentUser}
+                  className={`btn ${
+                    (isLocked && !lockedBy?.isCurrentUser) || (project && project.canEdit === false) 
+                      ? 'btn-disabled' 
+                      : 'btn-ghost'
+                  }`}
+                  title={
+                    project && project.canEdit === false 
+                      ? (project.userRole === 'viewer' ? 'You need editor access to edit notes' : 'No edit permission')
+                      : isLocked && !lockedBy?.isCurrentUser 
+                        ? `Being edited by ${lockedBy?.name}` 
+                        : "Edit note (E)"
+                  }
+                  disabled={(isLocked && !lockedBy?.isCurrentUser) || (project && project.canEdit === false)}
                 >
-                  {isLocked && !lockedBy?.isCurrentUser ? (
+                  {project && project.canEdit === false ? (
+                    <svg className="w-4 h-4 mr-2 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636M5.636 18.364l12.728-12.728" />
+                    </svg>
+                  ) : isLocked && !lockedBy?.isCurrentUser ? (
                     <svg className="w-4 h-4 mr-2 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
@@ -653,7 +701,12 @@ const NoteModal: React.FC<NoteModalProps> = ({
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                     </svg>
                   )}
-                  {isLocked && !lockedBy?.isCurrentUser ? 'Locked' : 'Edit'}
+                  {project && project.canEdit === false 
+                    ? 'No Access' 
+                    : isLocked && !lockedBy?.isCurrentUser 
+                      ? 'Locked' 
+                      : 'Edit'
+                  }
                 </button>
                 <button
                   onClick={handleDeleteClick}

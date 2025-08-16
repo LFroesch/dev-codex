@@ -146,6 +146,7 @@ const NotesPage: React.FC = () => {
         onUpdate={handleNoteUpdate}
         mode={modalMode}
         onModeChange={setModalMode}
+        project={selectedProject}
       />
 
       {/* Todo List Section */}

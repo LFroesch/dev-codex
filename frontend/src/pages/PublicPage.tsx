@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, Link } from 'react-router-dom';
 
 interface PublicVisibilityOptions {
   description: boolean;
@@ -312,7 +312,7 @@ const PublicPage: React.FC = () => {
                 </span>
               </label>
               <div className="join">
-                <span className="join-item bg-base-200 px-3 py-2 text-sm text-base-content/70">
+                <span className="join-itembg-base-200 px-3 py-2 text-sm text-base-content/70">
                   {window.location.origin}/project/
                 </span>
                 <input
@@ -327,23 +327,19 @@ const PublicPage: React.FC = () => {
               <div className="label">
                 <span className="label-text-alt">
                   {publicSlug ? (
-                    <>Your project will be accessible at: <a 
-                      href={`${window.location.origin}/project/${publicSlug}`} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
+                    <>Your project will be accessible at: <Link 
+                      to={`/project/${publicSlug}`} 
                       className="link link-primary font-bold"
                     >
                       /project/{publicSlug}
-                    </a></>
+                    </Link></>
                   ) : (
-                    <>Your project will be accessible at: <a 
-                      href={`${window.location.origin}/project/${selectedProject.id}`} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
+                    <>Your project will be accessible at: <Link 
+                      to={`/project/${selectedProject.id}`} 
                       className="link link-primary font-bold"
                     >
                       /project/{selectedProject.id}
-                    </a></>
+                    </Link></>
                   )}
                 </span>
               </div>

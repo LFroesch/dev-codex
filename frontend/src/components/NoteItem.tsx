@@ -144,6 +144,7 @@ const NoteModal: React.FC<NoteModalProps> = ({
   const [editContent, setEditContent] = useState('');
   const [loading, setLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   
   // Locking states
   const [isLocked, setIsLocked] = useState(false);
@@ -165,22 +166,24 @@ const NoteModal: React.FC<NoteModalProps> = ({
       
       if (e.key === 'Escape') {
         if (mode === 'edit') {
-          // In edit mode, Escape goes back to view mode (with unsaved changes check)
+          // In edit mode, Escape checks for changes and prompts to save
           const hasChanges = editTitle.trim() !== note.title || 
                             editDescription.trim() !== (note.description || '') || 
                             editContent.trim() !== note.content;
           if (hasChanges) {
-            const canProceed = await unsavedChangesManager.checkNavigationAllowed();
-            if (!canProceed) return;
+            // Show save confirmation modal
+            setShowSaveConfirm(true);
+          } else {
+            // No changes, just go back to view mode
+            onModeChange('view');
           }
-          handleCancel();
         } else {
           // In view mode, Escape closes the modal
           onClose();
         }
       } else if (e.key === 'e' && mode === 'view') {
         await handleEnterEditMode();
-      } else if (e.key === 'c' && mode === 'view') {
+      } else if (e.key === 'c' && mode === 'view' && !e.ctrlKey && !e.metaKey) {
         handleCopy();
       } else if (e.ctrlKey && e.key === 's' && mode === 'edit') {
         e.preventDefault();
@@ -544,6 +547,49 @@ const NoteModal: React.FC<NoteModalProps> = ({
     setShowDeleteConfirm(true);
   };
 
+  const handleSaveAndExit = async () => {
+    setShowSaveConfirm(false);
+    await handleSave();
+  };
+
+  const handleDiscardAndExit = async () => {
+    setShowSaveConfirm(false);
+    
+    // Directly discard changes without showing another confirmation
+    isCancelingRef.current = true;
+    setEditTitle(note.title);
+    setEditDescription(note.description || '');
+    setEditContent(note.content);
+    
+    // Release lock when canceling
+    await releaseLock();
+    onModeChange('view');
+    
+    setTimeout(() => {
+      isCancelingRef.current = false;
+    }, 0);
+  };
+
+  const handleCancelSavePrompt = () => {
+    setShowSaveConfirm(false);
+    // Stay in edit mode
+  };
+
+  const handleCancelClick = () => {
+    // Check for unsaved changes
+    const hasChanges = editTitle.trim() !== note.title || 
+                      editDescription.trim() !== (note.description || '') || 
+                      editContent.trim() !== note.content;
+    
+    if (hasChanges) {
+      // Show save confirmation modal
+      setShowSaveConfirm(true);
+    } else {
+      // No changes, just cancel normally
+      handleCancel();
+    }
+  };
+
   // Enhanced markdown to HTML converter
   const renderMarkdown = (text: string): string => {
     if (!text) return '<p class="text-base-content/60 italic">No content...</p>';
@@ -653,7 +699,7 @@ const NoteModal: React.FC<NoteModalProps> = ({
                   {loading ? 'Saving...' : 'Save'}
                 </button>
                 <button
-                  onClick={handleCancel}
+                  onClick={handleCancelClick}
                   className="btn btn-ghost"
                   disabled={loading}
                 >
@@ -733,7 +779,7 @@ const NoteModal: React.FC<NoteModalProps> = ({
                 onClose();
               }}
               className="btn btn-primary gap-2"
-              title={mode === 'view' ? "Back (Esc) • E to edit • C to copy" : "Back (Esc) • Ctrl+S to save"}
+              title={mode === 'view' ? "Back (Esc)" : "Back (Esc) • Ctrl+S to save"}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -830,6 +876,49 @@ const NoteModal: React.FC<NoteModalProps> = ({
         confirmText="Delete Note"
         variant="error"
       />
+
+      {/* Save Confirmation Modal */}
+      {showSaveConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10000]">
+          <div className="bg-base-100 rounded-lg shadow-xl p-6 w-full max-w-md">
+            <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-warning/10 rounded-full">
+              <svg className="w-8 h-8 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            
+            <h3 className="text-xl font-bold text-center mb-4">Unsaved Changes</h3>
+            
+            <div className="text-center text-base-content/70 mb-6">
+              You have unsaved changes. What would you like to do?
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <button 
+                className="btn btn-primary"
+                onClick={handleSaveAndExit}
+                disabled={loading}
+              >
+                {loading ? 'Saving...' : 'Save & Exit'}
+              </button>
+              <button 
+                className="btn btn-error btn-outline"
+                onClick={handleDiscardAndExit}
+                disabled={loading}
+              >
+                Discard Changes
+              </button>
+              <button 
+                className="btn btn-ghost"
+                onClick={handleCancelSavePrompt}
+                disabled={loading}
+              >
+                Continue Editing
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 

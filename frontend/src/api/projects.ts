@@ -5,7 +5,6 @@ import type {
   CreateTodoData, UpdateTodoData, BaseTodo,
   CreateDevLogData, UpdateDevLogData, BaseDevLogEntry,
   CreateDocData, UpdateDocData, BaseDoc,
-  CreateLinkData, UpdateLinkData, BaseLink,
   CreateTechnologyData, BaseSelectedTechnology,
   CreatePackageData, BaseSelectedPackage
 } from '../../../shared/types';
@@ -109,18 +108,6 @@ class ProjectService extends BaseApiService {
     return this.delete(`/${projectId}/docs/${docId}`);
   }
 
-  // Links management
-  async createLink(projectId: string, data: CreateLinkData): Promise<{ message: string; link: BaseLink }> {
-    return this.post(`/${projectId}/links`, data);
-  }
-
-  async updateLink(projectId: string, linkId: string, data: UpdateLinkData): Promise<{ message: string; link: BaseLink }> {
-    return this.put(`/${projectId}/links/${linkId}`, data);
-  }
-
-  async deleteLink(projectId: string, linkId: string): Promise<{ message: string }> {
-    return this.delete(`/${projectId}/links/${linkId}`);
-  }
 
   // Tech stack management
   async addTechnology(projectId: string, data: CreateTechnologyData): Promise<{ message: string; technology: BaseSelectedTechnology }> {

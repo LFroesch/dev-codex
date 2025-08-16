@@ -13,6 +13,7 @@ import { AnalyticsService } from '../middleware/analytics';
 import { trackFieldChanges, trackArrayChanges } from '../utils/trackFieldChanges';
 import activityLogger from '../services/activityLogger';
 import { v4 as uuidv4 } from 'uuid';
+import NoteLock from '../models/NoteLock';
 
 const router = express.Router();
 
@@ -293,12 +294,167 @@ router.post('/:id/notes', requireProjectAccess('edit'), async (req: AuthRequest,
   }
 });
 
+// Note lock management routes
+router.post('/:id/notes/:noteId/lock', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
+  try {
+    const noteId = req.params.noteId;
+    const projectId = req.params.id;
+    const userId = req.userId!;
+
+    // Get user details
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Check if note is already locked by someone else
+    const existingLock = await NoteLock.findOne({ noteId, projectId });
+    if (existingLock && existingLock.userId.toString() !== userId.toString()) {
+      return res.status(423).json({ 
+        message: 'Note is currently being edited by another user',
+        lockedBy: {
+          email: existingLock.userEmail,
+          name: existingLock.userName
+        }
+      });
+    }
+
+    // If locked by current user, extend the lock
+    if (existingLock && existingLock.userId.toString() === userId.toString()) {
+      existingLock.expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+      existingLock.lastHeartbeat = new Date();
+      await existingLock.save();
+      
+      return res.json({ 
+        message: 'Lock extended',
+        lock: existingLock
+      });
+    }
+
+    // Create new lock
+    const lock = new NoteLock({
+      noteId,
+      projectId: new mongoose.Types.ObjectId(projectId),
+      userId: new mongoose.Types.ObjectId(userId),
+      userEmail: user.email,
+      userName: `${user.firstName} ${user.lastName}`,
+      expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes
+    });
+
+    await lock.save();
+
+    // Signal to other users in the project that this note is now locked
+    if ((global as any).io) {
+      (global as any).io.to(`project-${projectId}`).emit('note-locked', {
+        noteId,
+        lockedBy: {
+          email: user.email,
+          name: `${user.firstName} ${user.lastName}`
+        }
+      });
+    }
+
+    res.json({ 
+      message: 'Note locked successfully',
+      lock
+    });
+  } catch (error) {
+    console.error('Lock note error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+router.delete('/:id/notes/:noteId/lock', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
+  try {
+    const noteId = req.params.noteId;
+    const projectId = req.params.id;
+    const userId = req.userId!;
+
+    const lock = await NoteLock.findOne({ noteId, projectId, userId });
+    if (lock) {
+      await NoteLock.deleteOne({ _id: lock._id });
+      
+      // Signal to other users that this note is now unlocked
+      if ((global as any).io) {
+        (global as any).io.to(`project-${projectId}`).emit('note-unlocked', {
+          noteId
+        });
+      }
+    }
+
+    res.json({ message: 'Note unlocked successfully' });
+  } catch (error) {
+    console.error('Unlock note error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+router.put('/:id/notes/:noteId/lock/heartbeat', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
+  try {
+    const noteId = req.params.noteId;
+    const projectId = req.params.id;
+    const userId = req.userId!;
+
+    const lock = await NoteLock.findOne({ noteId, projectId, userId });
+    if (lock) {
+      lock.lastHeartbeat = new Date();
+      lock.expiresAt = new Date(Date.now() + 10 * 60 * 1000); // Extend by 10 minutes
+      await lock.save();
+    }
+
+    res.json({ message: 'Heartbeat updated' });
+  } catch (error) {
+    console.error('Heartbeat error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+router.get('/:id/notes/:noteId/lock', requireProjectAccess('view'), async (req: AuthRequest, res) => {
+  try {
+    const noteId = req.params.noteId;
+    const projectId = req.params.id;
+
+    const lock = await NoteLock.findOne({ noteId, projectId });
+    
+    if (!lock) {
+      return res.json({ locked: false });
+    }
+
+    res.json({ 
+      locked: true,
+      lockedBy: {
+        email: lock.userEmail,
+        name: lock.userName,
+        isCurrentUser: lock.userId.toString() === req.userId!.toString()
+      }
+    });
+  } catch (error) {
+    console.error('Check lock error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 router.put('/:id/notes/:noteId', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
     const { title, description, content } = req.body;
+    const noteId = req.params.noteId;
+    const projectId = req.params.id;
+    const userId = req.userId!;
 
     if (!title || !title.trim() || !content || !content.trim()) {
       return res.status(400).json({ message: 'Title and content are required' });
+    }
+
+    // Check if note is locked by someone else
+    const lock = await NoteLock.findOne({ noteId, projectId });
+    if (lock && lock.userId.toString() !== userId.toString()) {
+      return res.status(423).json({ 
+        message: 'Note is currently being edited by another user',
+        lockedBy: {
+          email: lock.userEmail,
+          name: lock.userName
+        }
+      });
     }
 
     const project = await Project.findById(req.params.id);
@@ -318,6 +474,41 @@ router.put('/:id/notes/:noteId', requireProjectAccess('edit'), async (req: AuthR
     note.updatedAt = new Date();
 
     await project.save();
+
+    // Release the lock after successful save
+    if (lock && lock.userId.toString() === userId.toString()) {
+      await NoteLock.deleteOne({ _id: lock._id });
+      
+      // Signal that note is unlocked and updated
+      if ((global as any).io) {
+        (global as any).io.to(`project-${projectId}`).emit('note-unlocked', {
+          noteId
+        });
+        (global as any).io.to(`project-${projectId}`).emit('note-updated', {
+          noteId,
+          note: note
+        });
+      }
+    }
+
+    // Send broadcast event to all team members (we'll add this notification for real-time updates)
+    const teamMembers = await TeamMember.find({ projectId: new mongoose.Types.ObjectId(projectId) }).populate('userId');
+    for (const member of teamMembers) {
+      if (member.userId._id.toString() !== userId.toString()) {
+        // Create a notification for other team members about the note update
+        await Notification.create({
+          userId: member.userId._id,
+          type: 'project_shared',
+          title: 'Note Updated',
+          message: `"${note.title}" was updated in ${project.name}`,
+          relatedProjectId: project._id,
+          metadata: {
+            noteId: note.id,
+            action: 'note_updated'
+          }
+        });
+      }
+    }
 
     res.json({
       message: 'Note updated successfully',

@@ -49,6 +49,23 @@ class ProjectService extends BaseApiService {
     return this.put(`/${projectId}/notes/${noteId}`, data);
   }
 
+  // Note locking
+  async lockNote(projectId: string, noteId: string): Promise<{ message: string; lock: any }> {
+    return this.post(`/${projectId}/notes/${noteId}/lock`, {});
+  }
+
+  async unlockNote(projectId: string, noteId: string): Promise<{ message: string }> {
+    return this.delete(`/${projectId}/notes/${noteId}/lock`);
+  }
+
+  async checkNoteLock(projectId: string, noteId: string): Promise<{ locked: boolean; lockedBy?: { email: string; name: string; isCurrentUser: boolean } }> {
+    return this.get(`/${projectId}/notes/${noteId}/lock`);
+  }
+
+  async heartbeatNoteLock(projectId: string, noteId: string): Promise<{ message: string }> {
+    return this.put(`/${projectId}/notes/${noteId}/lock/heartbeat`, {});
+  }
+
   async deleteNote(projectId: string, noteId: string): Promise<{ message: string }> {
     return this.delete(`/${projectId}/notes/${noteId}`);
   }

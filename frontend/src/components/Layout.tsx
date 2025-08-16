@@ -8,6 +8,7 @@ import UserMenu from './UserMenu';
 import ConfirmationModal from './ConfirmationModal';
 import { useAnalytics } from '../hooks/useAnalytics';
 import { unsavedChangesManager } from '../utils/unsavedChanges';
+import ToastContainer from './Toast';
 
 const Layout: React.FC = () => {
   const navigate = useNavigate();
@@ -1339,6 +1340,8 @@ const Layout: React.FC = () => {
         cancelText="Stay Here"
         variant="warning"
       />
+      
+      <ToastContainer />
     </div>
   );
 };

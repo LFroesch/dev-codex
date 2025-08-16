@@ -95,6 +95,27 @@ const selectedPackageSchema = new Schema({
   description: { type: String, default: '' }
 });
 
+// Deployment data schema
+const deploymentSchema = new Schema({
+  liveUrl: { type: String, default: '' },
+  githubRepo: { type: String, default: '' },
+  deploymentPlatform: { type: String, default: '' },
+  deploymentStatus: { 
+    type: String, 
+    enum: ['active', 'inactive', 'error'],
+    default: 'inactive'
+  },
+  buildCommand: { type: String, default: '' },
+  startCommand: { type: String, default: '' },
+  lastDeployDate: { type: Date },
+  deploymentBranch: { type: String, default: 'main' },
+  environmentVariables: [{
+    key: { type: String, required: false, default: '' },
+    value: { type: String, required: false, default: '' }
+  }],
+  notes: { type: String, default: '' }
+});
+
 export interface IProject extends Document {
   // Basic fields
   name: string;
@@ -183,6 +204,23 @@ export interface IProject extends Document {
   color: string;
   category: string;
   tags: string[];
+  
+  // Deployment Section
+  deploymentData: {
+    liveUrl: string;
+    githubRepo: string;
+    deploymentPlatform: string;
+    deploymentStatus: 'active' | 'inactive' | 'error';
+    buildCommand: string;
+    startCommand: string;
+    lastDeployDate?: Date;
+    deploymentBranch: string;
+    environmentVariables: Array<{
+      key: string;
+      value: string;
+    }>;
+    notes: string;
+  };
 }
 
 const projectSchema = new Schema<IProject>({
@@ -274,6 +312,27 @@ const projectSchema = new Schema<IProject>({
     docs: { type: Boolean, default: true },
     techStack: { type: Boolean, default: true },
     timestamps: { type: Boolean, default: true }
+  },
+  
+  // Deployment Section
+  deploymentData: {
+    liveUrl: { type: String, default: '' },
+    githubRepo: { type: String, default: '' },
+    deploymentPlatform: { type: String, default: '' },
+    deploymentStatus: { 
+      type: String, 
+      enum: ['active', 'inactive', 'error'],
+      default: 'inactive'
+    },
+    buildCommand: { type: String, default: '' },
+    startCommand: { type: String, default: '' },
+    lastDeployDate: { type: Date },
+    deploymentBranch: { type: String, default: 'main' },
+    environmentVariables: [{
+      key: { type: String, default: '' },
+      value: { type: String, default: '' }
+    }],
+    notes: { type: String, default: '' }
   },
 }, {
   timestamps: true

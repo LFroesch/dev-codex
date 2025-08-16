@@ -98,7 +98,21 @@ export interface BaseProject {
   
   // Additional features
   roadmapItems?: any[];
-  deploymentData?: any;
+  deploymentData?: {
+    liveUrl: string;
+    githubRepo: string;
+    deploymentPlatform: string;
+    deploymentStatus: 'active' | 'inactive' | 'error';
+    buildCommand: string;
+    startCommand: string;
+    lastDeployDate?: string;
+    deploymentBranch: string;
+    environmentVariables: Array<{
+      key: string;
+      value: string;
+    }>;
+    notes: string;
+  };
   publicPageData?: any;
 }
 
@@ -223,4 +237,19 @@ export interface UpdateProjectData {
   tags?: string[];
   selectedTechnologies?: BaseSelectedTechnology[];
   selectedPackages?: BaseSelectedPackage[];
+  deploymentData?: {
+    liveUrl?: string;
+    githubRepo?: string;
+    deploymentPlatform?: string;
+    deploymentStatus?: 'active' | 'inactive' | 'error';
+    buildCommand?: string;
+    startCommand?: string;
+    lastDeployDate?: string;
+    deploymentBranch?: string;
+    environmentVariables?: Array<{
+      key: string;
+      value: string;
+    }>;
+    notes?: string;
+  };
 }

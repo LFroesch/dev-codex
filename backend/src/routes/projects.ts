@@ -139,6 +139,11 @@ router.put('/:id', requireProjectAccess('edit'), async (req: AuthRequest, res) =
   try {
     const updateData = { ...req.body };
     
+    console.log('Project update request:', {
+      projectId: req.params.id,
+      updateData: JSON.stringify(updateData, null, 2)
+    });
+    
     if (updateData.name && !updateData.name.trim()) {
       return res.status(400).json({ message: 'Name cannot be empty' });
     }
@@ -162,6 +167,10 @@ router.put('/:id', requireProjectAccess('edit'), async (req: AuthRequest, res) =
       updateData,
       { new: true, runValidators: true }
     );
+    
+    console.log('Project after update:', {
+      deploymentData: project?.deploymentData
+    });
 
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
@@ -180,8 +189,15 @@ router.put('/:id', requireProjectAccess('edit'), async (req: AuthRequest, res) =
       message: 'Project updated successfully',
       project: formatProjectResponse(project)
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Update project error:', error);
+    if (error.name === 'ValidationError') {
+      console.error('Validation details:', error.errors);
+      return res.status(400).json({ 
+        message: 'Validation error', 
+        details: error.errors 
+      });
+    }
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -1057,6 +1073,7 @@ function formatProjectResponse(project: any) {
     isPublic: project.isPublic,
     publicSlug: project.publicSlug,
     publicDescription: project.publicDescription,
+    deploymentData: project.deploymentData,
     createdAt: project.createdAt,
     updatedAt: project.updatedAt
   };

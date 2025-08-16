@@ -3,16 +3,14 @@ import { useOutletContext } from 'react-router-dom';
 
 interface DeploymentData {
   liveUrl?: string;
-  githubUrl?: string;
+  githubRepo?: string;
   deploymentPlatform?: string;
-  environmentVariables?: Array<{ key: string; value: string }>;
-  buildCommand?: string;
-  deployCommand?: string;
-  lastDeployment?: string;
   deploymentStatus?: 'active' | 'inactive' | 'error';
-  monitoringUrl?: string;
-  analyticsUrl?: string;
-  errorTrackingUrl?: string;
+  buildCommand?: string;
+  startCommand?: string;
+  lastDeployDate?: string;
+  deploymentBranch?: string;
+  environmentVariables?: Array<{ key: string; value: string }>;
   notes?: string;
 }
 
@@ -23,19 +21,46 @@ const DeploymentPage: React.FC = () => {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   useEffect(() => {
-    if (selectedProject?.deploymentData) {
-      setDeploymentData(selectedProject.deploymentData);
+    if (selectedProject) {
+      console.log('Loading deployment data from project:', {
+        selectedProject,
+        deploymentData: selectedProject.deploymentData
+      });
+      
+      const projectDeploymentData = selectedProject.deploymentData || {};
+      const loadedData = {
+        liveUrl: projectDeploymentData.liveUrl || '',
+        githubRepo: projectDeploymentData.githubRepo || '',
+        deploymentPlatform: projectDeploymentData.deploymentPlatform || '',
+        deploymentStatus: projectDeploymentData.deploymentStatus || 'inactive',
+        buildCommand: projectDeploymentData.buildCommand || '',
+        startCommand: projectDeploymentData.startCommand || '',
+        lastDeployDate: projectDeploymentData.lastDeployDate || '',
+        deploymentBranch: projectDeploymentData.deploymentBranch || 'main',
+        environmentVariables: projectDeploymentData.environmentVariables || [],
+        notes: projectDeploymentData.notes || ''
+      };
+      
+      console.log('Setting deployment data to:', loadedData);
+      setDeploymentData(loadedData);
+      setHasUnsavedChanges(false);
     }
   }, [selectedProject]);
 
   const handleSave = async () => {
     if (!selectedProject) return;
     
+    console.log('Saving deployment data:', {
+      projectId: selectedProject.id,
+      deploymentData: deploymentData
+    });
+    
     setLoading(true);
     try {
-      await onProjectUpdate(selectedProject.id, {
+      const response = await onProjectUpdate(selectedProject.id, {
         deploymentData
       });
+      console.log('Save response:', response);
       setHasUnsavedChanges(false);
     } catch (error) {
       console.error('Failed to save deployment data:', error);
@@ -82,7 +107,7 @@ const DeploymentPage: React.FC = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">Deployment</h1>
-          <p className="text-base-content/60 mt-1">Manage production deployment and monitoring</p>
+          <p className="text-base-content/60 mt-1">Manage deployment settings, commands, and environment configuration</p>
         </div>
         <button
           onClick={handleSave}
@@ -120,8 +145,8 @@ const DeploymentPage: React.FC = () => {
                 type="url"
                 placeholder="https://github.com/username/repo"
                 className="input input-bordered w-full"
-                value={deploymentData.githubUrl || ''}
-                onChange={(e) => updateField('githubUrl', e.target.value)}
+                value={deploymentData.githubRepo || ''}
+                onChange={(e) => updateField('githubRepo', e.target.value)}
               />
             </div>
 
@@ -129,21 +154,13 @@ const DeploymentPage: React.FC = () => {
               <label className="label">
                 <span className="label-text font-medium">Deployment Platform</span>
               </label>
-              <select
-                className="select select-bordered w-full"
+              <input
+                type="text"
+                placeholder="Vercel, Netlify, AWS, Railway, etc."
+                className="input input-bordered w-full"
                 value={deploymentData.deploymentPlatform || ''}
                 onChange={(e) => updateField('deploymentPlatform', e.target.value)}
-              >
-                <option value="">Select Platform</option>
-                <option value="vercel">Vercel</option>
-                <option value="netlify">Netlify</option>
-                <option value="aws">AWS</option>
-                <option value="heroku">Heroku</option>
-                <option value="digitalocean">DigitalOcean</option>
-                <option value="railway">Railway</option>
-                <option value="render">Render</option>
-                <option value="other">Other</option>
-              </select>
+              />
             </div>
 
             <div className="form-control">
@@ -153,7 +170,7 @@ const DeploymentPage: React.FC = () => {
               <select
                 className="select select-bordered w-full"
                 value={deploymentData.deploymentStatus || 'inactive'}
-                onChange={(e) => updateField('deploymentStatus', e.target.value)}
+                onChange={(e) => updateField('deploymentStatus', e.target.value as 'active' | 'inactive' | 'error')}
               >
                 <option value="active">🟢 Active</option>
                 <option value="inactive">🟡 Inactive</option>
@@ -183,78 +200,50 @@ const DeploymentPage: React.FC = () => {
 
             <div className="form-control mb-4">
               <label className="label">
-                <span className="label-text font-medium">Deploy Command</span>
+                <span className="label-text font-medium">Start Command</span>
               </label>
               <input
                 type="text"
-                placeholder="npm run deploy"
+                placeholder="npm start"
                 className="input input-bordered w-full font-mono"
-                value={deploymentData.deployCommand || ''}
-                onChange={(e) => updateField('deployCommand', e.target.value)}
+                value={deploymentData.startCommand || ''}
+                onChange={(e) => updateField('startCommand', e.target.value)}
+              />
+            </div>
+
+            <div className="form-control mb-4">
+              <label className="label">
+                <span className="label-text font-medium">Deployment Branch</span>
+              </label>
+              <input
+                type="text"
+                placeholder="main"
+                className="input input-bordered w-full font-mono"
+                value={deploymentData.deploymentBranch || ''}
+                onChange={(e) => updateField('deploymentBranch', e.target.value)}
               />
             </div>
 
             <div className="form-control">
               <label className="label">
-                <span className="label-text font-medium">Last Deployment</span>
+                <span className="label-text font-medium">Last Deploy Date</span>
               </label>
               <input
                 type="datetime-local"
                 className="input input-bordered w-full"
-                value={deploymentData.lastDeployment || ''}
-                onChange={(e) => updateField('lastDeployment', e.target.value)}
+                value={deploymentData.lastDeployDate ? (() => {
+                  try {
+                    return new Date(deploymentData.lastDeployDate!).toISOString().slice(0, 16);
+                  } catch {
+                    return '';
+                  }
+                })() : ''}
+                onChange={(e) => updateField('lastDeployDate', e.target.value)}
               />
             </div>
           </div>
         </div>
 
-        {/* Monitoring & Analytics */}
-        <div className="card bg-base-200 shadow-lg lg:col-span-2">
-          <div className="card-body">
-            <h2 className="card-title text-xl mb-4">Monitoring & Analytics</h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-medium">Monitoring URL</span>
-                </label>
-                <input
-                  type="url"
-                  placeholder="https://monitoring.service.com"
-                  className="input input-bordered w-full"
-                  value={deploymentData.monitoringUrl || ''}
-                  onChange={(e) => updateField('monitoringUrl', e.target.value)}
-                />
-              </div>
-
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-medium">Analytics URL</span>
-                </label>
-                <input
-                  type="url"
-                  placeholder="https://analytics.google.com"
-                  className="input input-bordered w-full"
-                  value={deploymentData.analyticsUrl || ''}
-                  onChange={(e) => updateField('analyticsUrl', e.target.value)}
-                />
-              </div>
-
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-medium">Error Tracking URL</span>
-                </label>
-                <input
-                  type="url"
-                  placeholder="https://sentry.io/project"
-                  className="input input-bordered w-full"
-                  value={deploymentData.errorTrackingUrl || ''}
-                  onChange={(e) => updateField('errorTrackingUrl', e.target.value)}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* Environment Variables */}
         <div className="card bg-base-200 shadow-lg lg:col-span-2">
@@ -301,21 +290,16 @@ const DeploymentPage: React.FC = () => {
           </div>
         </div>
 
-      {/* Notes */}
-      <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10">
-        <input type="checkbox" defaultChecked />
-        <div className="collapse-title text-lg font-semibold bg-base-200 border-b border-base-content/10">
-          📝 Deployment Notes
-        </div>
-        <div className="collapse-content">
-          <div className="pt-4">
+        {/* Notes */}
+        <div className="card bg-base-200 shadow-lg lg:col-span-2">
+          <div className="card-body">
+            <h2 className="card-title text-xl mb-4">📝 Deployment Notes</h2>
             <textarea
               className="textarea textarea-bordered w-full h-32"
               placeholder="Add notes about deployment process, issues, or configurations..."
               value={deploymentData.notes || ''}
               onChange={(e) => updateField('notes', e.target.value)}
             />
-            </div>
           </div>
         </div>
       </div>

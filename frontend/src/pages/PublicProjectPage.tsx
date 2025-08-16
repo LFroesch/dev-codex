@@ -144,23 +144,19 @@ const PublicProjectPage: React.FC = () => {
 
       {/* Project Meta Info */}
       <div className="flex flex-wrap gap-4 items-center text-sm text-base-content/60">
-        <div className="badge badge-primary">{project.category}</div>
+        <div className="badge badge-outline badge-sm">{project.category}</div>
         {project.owner && (
           <div>
-            by{' '}
             {project.owner.isPublic || project.owner.publicSlug ? (
               <Link 
                 to={`/discover/user/${project.owner.publicSlug || project.owner.id}`}
                 className="link link-primary font-medium"
               >
-                {project.owner.firstName} {project.owner.lastName}
-                {project.owner.publicSlug && (
-                  <span className="ml-1">@{project.owner.publicSlug}</span>
-                )}
+                @{project.owner.publicSlug || `${project.owner.firstName}${project.owner.lastName}`.toLowerCase()}
               </Link>
             ) : (
               <span className="font-medium">
-                {project.owner.firstName} {project.owner.lastName}
+                @{`${project.owner.firstName}${project.owner.lastName}`.toLowerCase()}
               </span>
             )}
           </div>
@@ -170,9 +166,9 @@ const PublicProjectPage: React.FC = () => {
 
       {/* Tags */}
       {visibility.tags && project.tags && project.tags.length > 0 && (
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-1">
           {project.tags.map((tag: string, index: number) => (
-            <span key={index} className="badge badge-outline badge-sm">
+            <span key={index} className="badge badge-ghost badge-sm">
               {tag}
             </span>
           ))}
@@ -198,10 +194,10 @@ const PublicProjectPage: React.FC = () => {
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     {docs.map((doc: any) => (
-                      <div key={doc.id} className="card bg-base-100 shadow-sm border border-base-content/10">
-                        <div className="card-body p-3">
-                          <h5 className="font-semibold text-sm mb-2">{doc.title}</h5>
-                          <pre className="whitespace-pre-wrap text-xs bg-base-200/50 p-2 rounded border overflow-x-auto max-h-32">
+                      <div key={doc.id} className="card bg-base-100 shadow-lg border border-base-content/10 hover:shadow-xl transition-all duration-200">
+                        <div className="card-body p-5">
+                          <h5 className="font-semibold text-sm mb-3">{doc.title}</h5>
+                          <pre className="whitespace-pre-wrap text-xs bg-base-200/70 p-3 rounded-lg border overflow-x-auto max-h-32 font-mono">
                             {doc.content}
                           </pre>
                         </div>
@@ -220,12 +216,12 @@ const PublicProjectPage: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Tech Stack */}
           {hasTechStack && (
-            <div className="card bg-base-100 shadow-sm">
-              <div className="card-body p-4">
+            <div className="card bg-base-100 shadow-lg border border-base-content/10 hover:shadow-xl transition-all duration-200">
+              <div className="card-body p-5">
                 <h3 className="font-semibold text-sm mb-3">🚀 Tech Stack ({project.technologies.length})</h3>
                 <div className="flex flex-wrap gap-1">
                   {project.technologies.map((tech: any, index: number) => (
-                    <span key={index} className="badge badge-primary badge-xs" title={tech.purpose || tech.version}>
+                    <span key={index} className="badge badge-primary badge-sm" title={tech.purpose || tech.version}>
                       {tech.name}
                     </span>
                   ))}
@@ -236,8 +232,8 @@ const PublicProjectPage: React.FC = () => {
 
           {/* Project Links */}
           {hasLinks && (
-            <div className="card bg-base-100 shadow-sm">
-              <div className="card-body p-4">
+            <div className="card bg-base-100 shadow-lg border border-base-content/10 hover:shadow-xl transition-all duration-200">
+              <div className="card-body p-5">
                 <h3 className="font-semibold text-sm mb-3">🔗 Links ({project.links.length})</h3>
                 <div className="space-y-2">
                   {project.links.map((link: any, index: number) => (

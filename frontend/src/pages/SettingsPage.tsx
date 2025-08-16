@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
-import { projectAPI } from '../api';
+import { projectAPI, teamAPI } from '../api';
 import type { BaseProject } from '../../../shared/types';
 import ExportSection from '../components/ExportSection';
 import TeamManagement from '../components/TeamManagement';
@@ -39,6 +39,7 @@ const SettingsPage: React.FC = () => {
   const [savingMetadata, setSavingMetadata] = useState(false);
   const [archiveLoading, setArchiveLoading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [makePrivateConfirm, setMakePrivateConfirm] = useState(false);
   const [addingLink, setAddingLink] = useState(false);
   const [updatingLink, setUpdatingLink] = useState(false);
   const [error, setError] = useState('');
@@ -197,6 +198,31 @@ const SettingsPage: React.FC = () => {
     } catch (err) {
       setError('Failed to delete project');
       setDeleteConfirm(false);
+    }
+  };
+
+  const handleMakePrivate = async () => {
+    if (!selectedProject) return;
+
+    try {
+      // First, get all team members to remove non-owner users
+      const response = await teamAPI.getMembers(selectedProject.id);
+      
+      // Remove all non-owner members
+      for (const member of response.members) {
+        if (!member.isOwner) {
+          await teamAPI.removeMember(selectedProject.id, member.userId._id);
+        }
+      }
+
+      // Then set the project to not shared
+      await onProjectUpdate(selectedProject.id, { isShared: false });
+      await onProjectRefresh();
+      setMakePrivateConfirm(false);
+    } catch (err) {
+      console.error('Failed to make project private:', err);
+      setError('Failed to make project private');
+      setMakePrivateConfirm(false);
     }
   };
 
@@ -628,9 +654,15 @@ const SettingsPage: React.FC = () => {
                         className="toggle toggle-success toggle-sm" 
                         checked={selectedProject.isShared}
                         onChange={() => {
-                          onProjectUpdate(selectedProject.id, { isShared: !selectedProject.isShared }).then(() => {
-                            onProjectRefresh();
-                          });
+                          // If toggling off (making private), show confirmation
+                          if (selectedProject.isShared) {
+                            setMakePrivateConfirm(true);
+                          } else {
+                            // If toggling on (making shared), just do it directly
+                            onProjectUpdate(selectedProject.id, { isShared: true }).then(() => {
+                              onProjectRefresh();
+                            });
+                          }
                         }}
                       />
                     </label>
@@ -870,6 +902,16 @@ const SettingsPage: React.FC = () => {
         message={`Are you sure you want to delete "<strong>${selectedProject?.name}</strong>"? This will permanently delete the project and all of its data. This action cannot be undone.`}
         confirmText="Delete Project"
         variant="error"
+      />
+
+      <ConfirmationModal
+        isOpen={makePrivateConfirm}
+        onConfirm={handleMakePrivate}
+        onCancel={() => setMakePrivateConfirm(false)}
+        title="Make Project Private"
+        message={`Are you sure you want to make "<strong>${selectedProject?.name}</strong>" private? This will remove all team members except the owner from the project.`}
+        confirmText="Make Private"
+        variant="warning"
       />
     </div>
   );

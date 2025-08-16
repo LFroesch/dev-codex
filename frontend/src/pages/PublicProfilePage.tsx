@@ -105,7 +105,7 @@ const PublicProfilePage: React.FC = () => {
 
       {/* Bio */}
       {user.bio && (
-        <div className="card bg-base-100 shadow-lg">
+        <div className="card bg-base-100 shadow-lg border border-base-content/10">
           <div className="card-body">
             <p className="text-base leading-relaxed">{user.bio}</p>
           </div>
@@ -113,7 +113,7 @@ const PublicProfilePage: React.FC = () => {
       )}
 
       {/* Stats */}
-      <div className="stats stats-vertical lg:stats-horizontal shadow-lg w-full">
+      <div className="stats stats-vertical lg:stats-horizontal shadow-lg w-full border border-base-content/10">
         <div className="stat">
           <div className="stat-title">Public Projects</div>
           <div className="stat-value">{user.projects?.length || 0}</div>
@@ -137,10 +137,10 @@ const PublicProfilePage: React.FC = () => {
               <Link
                 key={project.id}
                 to={`/discover/project/${project.publicSlug || project.id}`}
-                className="card bg-base-100 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-[1.02]"
+                className="card bg-base-100 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-[1.02] border border-base-content/10 h-full"
               >
-                <div className="card-body">
-                  <div className="flex items-start gap-3 mb-3">
+                <div className="card-body p-5 flex flex-col h-full">
+                  <div className="flex items-start gap-3 mb-4">
                     <div 
                       className="w-12 h-12 rounded-lg flex items-center justify-center text-lg font-bold text-white flex-shrink-0"
                       style={{ backgroundColor: project.color }}
@@ -148,8 +148,8 @@ const PublicProfilePage: React.FC = () => {
                       {project.name.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="card-title text-lg truncate">{project.name}</h3>
-                      <div className="flex items-center gap-2 mt-1">
+                      <h3 className="card-title text-lg truncate mb-2">{project.name}</h3>
+                      <div className="flex items-center gap-2">
                         <span className="badge badge-outline badge-sm">
                           {project.category}
                         </span>
@@ -160,39 +160,44 @@ const PublicProfilePage: React.FC = () => {
                     </div>
                   </div>
 
-                  <p className="text-sm text-base-content/70 line-clamp-3 mb-3">
+                  <p className="text-sm text-base-content/70 line-clamp-3 mb-4 flex-grow">
                     {project.publicDescription || project.description}
                   </p>
 
-                  {project.tags && project.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mb-3">
-                      {project.tags.slice(0, 3).map((tag: string, index: number) => (
-                        <span key={index} className="badge badge-ghost badge-xs">
-                          {tag}
-                        </span>
-                      ))}
-                      {project.tags.length > 3 && (
-                        <span className="badge badge-ghost badge-xs">
-                          +{project.tags.length - 3}
-                        </span>
-                      )}
-                    </div>
-                  )}
+                  {/* Tags & Technologies Section */}
+                  <div className="space-y-3 mb-4">
+                    {/* Tags */}
+                    {project.tags && project.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {project.tags.slice(0, 4).map((tag: string, index: number) => (
+                          <span key={index} className="badge badge-ghost badge-sm">
+                            {tag}
+                          </span>
+                        ))}
+                        {project.tags.length > 4 && (
+                          <span className="badge badge-ghost badge-sm">
+                            +{project.tags.length - 4}
+                          </span>
+                        )}
+                      </div>
+                    )}
 
-                  {project.technologies && project.technologies.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      {project.technologies.slice(0, 4).map((tech: any, index: number) => (
-                        <span key={index} className="badge badge-primary badge-xs">
-                          {tech.name}
-                        </span>
-                      ))}
-                      {project.technologies.length > 4 && (
-                        <span className="badge badge-primary badge-xs">
-                          +{project.technologies.length - 4}
-                        </span>
-                      )}
-                    </div>
-                  )}
+                    {/* Technologies */}
+                    {project.technologies && project.technologies.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {project.technologies.slice(0, 6).map((tech: any, index: number) => (
+                          <span key={index} className="badge badge-primary badge-sm">
+                            {tech.name}
+                          </span>
+                        ))}
+                        {project.technologies.length > 6 && (
+                          <span className="badge badge-primary badge-sm">
+                            +{project.technologies.length - 6}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </Link>
             ))}

@@ -38,6 +38,13 @@ class UnsavedChangesManager {
     this.confirmationHandler = handler;
   }
 
+  // Custom save prompt handler
+  private savePromptHandler: ((message: string) => Promise<'save' | 'discard' | 'cancel'>) | null = null;
+
+  setSavePromptHandler(handler: (message: string) => Promise<'save' | 'discard' | 'cancel'>) {
+    this.savePromptHandler = handler;
+  }
+
   async checkNavigationAllowed(): Promise<boolean> {
     if (!this.hasUnsavedChanges()) {
       return true;
@@ -51,6 +58,22 @@ class UnsavedChangesManager {
     
     // Fallback to window.confirm if no custom handler is set
     return window.confirm(message);
+  }
+
+  async checkSavePrompt(): Promise<'save' | 'discard' | 'cancel'> {
+    if (!this.hasUnsavedChanges()) {
+      return 'discard'; // No changes to save
+    }
+    
+    const message = 'You have unsaved changes. What would you like to do?';
+    
+    if (this.savePromptHandler) {
+      return await this.savePromptHandler(message);
+    }
+    
+    // Fallback to simple confirm dialog
+    const result = window.confirm('You have unsaved changes. Do you want to save before continuing?');
+    return result ? 'save' : 'discard';
   }
 
   // Synchronous version for compatibility with existing code
@@ -79,7 +102,8 @@ export const useUnsavedChanges = () => {
   return {
     hasUnsavedChanges: hasChanges,
     setUnsavedChanges: unsavedChangesManager.setUnsavedChanges.bind(unsavedChangesManager),
-    checkNavigationAllowed: unsavedChangesManager.checkNavigationAllowed.bind(unsavedChangesManager)
+    checkNavigationAllowed: unsavedChangesManager.checkNavigationAllowed.bind(unsavedChangesManager),
+    checkSavePrompt: unsavedChangesManager.checkSavePrompt.bind(unsavedChangesManager)
   };
 };
 

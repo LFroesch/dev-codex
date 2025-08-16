@@ -40,7 +40,6 @@ router.post('/', checkProjectLimit, async (req: AuthRequest, res) => {
       selectedTechnologies: [],
       selectedPackages: [],
       stagingEnvironment: stagingEnvironment || 'development',
-      links: [],
       color: color || '#3B82F6',
       category: category || 'general',
       tags: tags || [],
@@ -1158,89 +1157,6 @@ router.delete('/:id/docs/:docId', requireProjectAccess('edit'), async (req: Auth
   }
 });
 
-// LINKS MANAGEMENT
-router.post('/:id/links', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
-  try {
-    const { title, url, type } = req.body;
-    
-    if (!title || !url) {
-      return res.status(400).json({ message: 'Title and URL are required' });
-    }
-
-    const project = await Project.findById(req.params.id);
-
-    if (!project) {
-      return res.status(404).json({ message: 'Project not found' });
-    }
-
-    const newLink = {
-      id: uuidv4(),
-      title: title.trim(),
-      url: url.trim(),
-      type: type || 'other'
-    };
-
-    project.links.push(newLink);
-    await project.save();
-
-    res.json({
-      message: 'Link added successfully',
-      link: newLink
-    });
-  } catch (error) {
-    console.error('Add link error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-router.put('/:id/links/:linkId', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
-  try {
-    const { title, url, type } = req.body;
-
-    const project = await Project.findById(req.params.id);
-
-    if (!project) {
-      return res.status(404).json({ message: 'Project not found' });
-    }
-
-    const link = project.links.find(l => l.id === req.params.linkId);
-    if (!link) {
-      return res.status(404).json({ message: 'Link not found' });
-    }
-
-    if (title !== undefined) link.title = title.trim();
-    if (url !== undefined) link.url = url.trim();
-    if (type !== undefined) link.type = type;
-
-    await project.save();
-
-    res.json({
-      message: 'Link updated successfully',
-      link: link
-    });
-  } catch (error) {
-    console.error('Update link error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-router.delete('/:id/links/:linkId', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
-  try {
-    const project = await Project.findById(req.params.id);
-
-    if (!project) {
-      return res.status(404).json({ message: 'Project not found' });
-    }
-
-    project.links = project.links.filter(l => l.id !== req.params.linkId);
-    await project.save();
-
-    res.json({ message: 'Link deleted successfully' });
-  } catch (error) {
-    console.error('Delete link error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
 
 // Helper function to format project response
 function formatProjectResponse(project: any) {
@@ -1255,7 +1171,6 @@ function formatProjectResponse(project: any) {
     selectedTechnologies: project.selectedTechnologies || [],
     selectedPackages: project.selectedPackages || [],
     stagingEnvironment: project.stagingEnvironment,
-    links: project.links,
     color: project.color,
     category: project.category,
     tags: project.tags,

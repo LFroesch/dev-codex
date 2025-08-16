@@ -62,16 +62,6 @@ const docSchema = new Schema({
   updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 });
 
-const linkSchema = new Schema({
-  id: { type: String, required: true },
-  title: { type: String, required: true },
-  url: { type: String, required: true },
-  type: { 
-    type: String, 
-    enum: ['github', 'demo', 'docs', 'other'],
-    default: 'other'
-  }
-});
 
 // Tech stack selection schemas
 const selectedTechSchema = new Schema({
@@ -130,7 +120,6 @@ export interface IProject extends Document {
   publicVisibility?: {
     description: boolean;
     tags: boolean;
-    links: boolean;
     docs: boolean;
     techStack: boolean;
     timestamps: boolean;
@@ -195,12 +184,6 @@ export interface IProject extends Document {
   
   // Settings Section
   stagingEnvironment: 'development' | 'staging' | 'production';
-  links: Array<{
-    id: string;
-    title: string;
-    url: string;
-    type: 'github' | 'demo' | 'docs' | 'other';
-  }>;
   color: string;
   category: string;
   tags: string[];
@@ -253,7 +236,6 @@ const projectSchema = new Schema<IProject>({
     enum: ['development', 'staging', 'production'],
     default: 'development'
   },
-  links: [linkSchema],
   color: {
     type: String,
     default: '#3B82F6'
@@ -308,7 +290,6 @@ const projectSchema = new Schema<IProject>({
   publicVisibility: {
     description: { type: Boolean, default: true },
     tags: { type: Boolean, default: true },
-    links: { type: Boolean, default: true },
     docs: { type: Boolean, default: true },
     techStack: { type: Boolean, default: true },
     timestamps: { type: Boolean, default: true }

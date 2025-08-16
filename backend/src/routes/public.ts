@@ -33,7 +33,6 @@ router.get('/project/:identifier', async (req, res) => {
     const visibility = project.publicVisibility || {
       description: true,
       tags: true,
-      links: true,
       docs: true,
       techStack: true,
       timestamps: true,
@@ -66,10 +65,6 @@ router.get('/project/:identifier', async (req, res) => {
       publicProject.tags = project.tags;
     }
     
-    if (visibility.links && project.links?.length) {
-      publicProject.links = project.links;
-    }
-    
     if (visibility.docs && project.docs?.length) {
       publicProject.docs = project.docs;
     }
@@ -86,6 +81,11 @@ router.get('/project/:identifier', async (req, res) => {
     if (visibility.timestamps) {
       publicProject.createdAt = project.createdAt;
       publicProject.updatedAt = project.updatedAt;
+    }
+    
+    // Always include deployment data if it exists (replaces links functionality)
+    if (project.deploymentData) {
+      publicProject.deploymentData = project.deploymentData;
     }
 
     res.json({

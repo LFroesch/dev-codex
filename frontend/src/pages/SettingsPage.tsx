@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
-import { projectAPI, teamAPI } from '../api';
+import { teamAPI } from '../api';
 import type { BaseProject } from '../../../shared/types';
 import ExportSection from '../components/ExportSection';
 import TeamManagement from '../components/TeamManagement';
@@ -21,7 +21,6 @@ const SettingsPage: React.FC = () => {
   // Edit states
   const [isEditingBasic, setIsEditingBasic] = useState(false);
   const [isEditingMetadata, setIsEditingMetadata] = useState(false);
-  const [editingLinkId, setEditingLinkId] = useState<string | null>(null);
   
   // Form data
   const [name, setName] = useState('');
@@ -31,8 +30,6 @@ const SettingsPage: React.FC = () => {
   const [category, setCategory] = useState('general');
   const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState('');
-  const [newLink, setNewLink] = useState({ title: '', url: '', type: 'other' as 'github' | 'demo' | 'docs' | 'other' });
-  const [editLinkData, setEditLinkData] = useState({ title: '', url: '', type: 'other' as 'github' | 'demo' | 'docs' | 'other' });
   
   // Loading states
   const [savingBasic, setSavingBasic] = useState(false);
@@ -40,8 +37,6 @@ const SettingsPage: React.FC = () => {
   const [archiveLoading, setArchiveLoading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [makePrivateConfirm, setMakePrivateConfirm] = useState(false);
-  const [addingLink, setAddingLink] = useState(false);
-  const [updatingLink, setUpdatingLink] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -112,65 +107,6 @@ const SettingsPage: React.FC = () => {
     setTags(tags.filter(tag => tag !== tagToRemove));
   };
 
-  const handleAddLink = async () => {
-    if (!selectedProject || !newLink.title.trim() || !newLink.url.trim()) return;
-
-    setAddingLink(true);
-    setError('');
-
-    try {
-      await projectAPI.createLink(selectedProject.id, newLink);
-      setNewLink({ title: '', url: '', type: 'other' });
-      await onProjectRefresh();
-    } catch (err) {
-      setError('Failed to add link');
-    } finally {
-      setAddingLink(false);
-    }
-  };
-
-  const handleEditLink = (link: any) => {
-    setEditingLinkId(link.id);
-    setEditLinkData({
-      title: link.title,
-      url: link.url,
-      type: link.type
-    });
-  };
-
-  const handleUpdateLink = async () => {
-    if (!selectedProject || !editingLinkId) return;
-
-    setUpdatingLink(true);
-    setError('');
-
-    try {
-      await projectAPI.updateLink(selectedProject.id, editingLinkId, editLinkData);
-      setEditingLinkId(null);
-      setEditLinkData({ title: '', url: '', type: 'other' });
-      await onProjectRefresh();
-    } catch (err) {
-      setError('Failed to update link');
-    } finally {
-      setUpdatingLink(false);
-    }
-  };
-
-  const handleCancelEditLink = () => {
-    setEditingLinkId(null);
-    setEditLinkData({ title: '', url: '', type: 'other' });
-  };
-
-  const handleDeleteLink = async (linkId: string) => {
-    if (!selectedProject) return;
-
-    try {
-      await projectAPI.deleteLink(selectedProject.id, linkId);
-      await onProjectRefresh();
-    } catch (err) {
-      setError('Failed to delete link');
-    }
-  };
 
   const handleArchiveToggle = async () => {
     if (!selectedProject) return;
@@ -683,162 +619,6 @@ const SettingsPage: React.FC = () => {
         </div>
       )}
 
-      {/* Project Links - Updated with editing */}
-      <div className="collapse collapse-arrow bg-base-200 shadow-lg border border-base-content/10">
-        <input type="checkbox" />
-        <div className="collapse-title text-xl font-medium">
-          🔗 Project Links ({selectedProject.links?.length || 0})
-        </div>
-        <div className="collapse-content">
-          <div className="mb-4">
-            <h4 className="font-medium mb-3">Add New Link</h4>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
-              <input
-                type="text"
-                value={newLink.title}
-                onChange={(e) => setNewLink({...newLink, title: e.target.value})}
-                className="input input-bordered border-base-300"
-                placeholder="Link title..."
-              />
-              <input
-                type="url"
-                value={newLink.url}
-                onChange={(e) => setNewLink({...newLink, url: e.target.value})}
-                className="input input-bordered border-base-300"
-                placeholder="https://..."
-              />
-              <select
-                value={newLink.type}
-                onChange={(e) => setNewLink({...newLink, type: e.target.value as any})}
-                className="select select-bordered border-base-300"
-              >
-                <option value="other">Other</option>
-                <option value="github">GitHub</option>
-                <option value="demo">Demo</option>
-                <option value="docs">Documentation</option>
-              </select>
-              <button
-                onClick={handleAddLink}
-                disabled={addingLink || !newLink.title.trim() || !newLink.url.trim()}
-                className="btn btn-success"
-              >
-                {addingLink ? 'Adding...' : 'Add Link'}
-              </button>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            {selectedProject.links?.length === 0 ? (
-              <div className="text-center py-8">
-                <div className="text-4xl mb-4">🔗</div>
-                <p className="text-base-content/60">No links yet. Add one above!</p>
-              </div>
-            ) : (
-              selectedProject.links?.map((link) => (
-                <div
-                  key={link.id}
-                  className="p-3 bg-base-200 rounded-lg border border-base-300"
-                >
-                  {editingLinkId === link.id ? (
-                    // Edit mode
-                    <div className="space-y-3">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                        <input
-                          type="text"
-                          value={editLinkData.title}
-                          onChange={(e) => setEditLinkData({...editLinkData, title: e.target.value})}
-                          className="input input-bordered input-sm"
-                          placeholder="Link title..."
-                        />
-                        <input
-                          type="url"
-                          value={editLinkData.url}
-                          onChange={(e) => setEditLinkData({...editLinkData, url: e.target.value})}
-                          className="input input-bordered input-sm"
-                          placeholder="https://..."
-                        />
-                        <select
-                          value={editLinkData.type}
-                          onChange={(e) => setEditLinkData({...editLinkData, type: e.target.value as any})}
-                          className="select select-bordered select-sm"
-                        >
-                          <option value="other">Other</option>
-                          <option value="github">GitHub</option>
-                          <option value="demo">Demo</option>
-                          <option value="docs">Documentation</option>
-                        </select>
-                      </div>
-                      <div className="flex justify-end gap-2">
-                        <button
-                          onClick={handleCancelEditLink}
-                          className="btn btn-ghost btn-sm"
-                          disabled={updatingLink}
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={handleUpdateLink}
-                          className="btn btn-primary btn-sm"
-                          disabled={updatingLink || !editLinkData.title.trim() || !editLinkData.url.trim()}
-                        >
-                          {updatingLink ? 'Updating...' : 'Update'}
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    // View mode
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <span className="text-2xl">
-                          {link.type === 'github' ? '💻' : 
-                           link.type === 'demo' ? '🌐' : 
-                           link.type === 'docs' ? '📚' : '🔗'}
-                        </span>
-                        <div className="flex-1">
-                          <a 
-                            href={link.url} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="link link-primary font-medium"
-                          >
-                            {link.title}
-                          </a>
-                          <div className="text-base-content/60 text-sm">
-                            {link.url}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <span className="badge badge-outline">
-                          {link.type}
-                        </span>
-                        <button
-                          onClick={() => handleEditLink(link)}
-                          className="btn btn-ghost btn-outline btn-sm"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDeleteLink(link.id)}
-                          className="btn btn-error btn-outline btn-sm"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      </div>
 
       {/* Export Data */}
       <div className="collapse collapse-arrow bg-base-200 shadow-lg border border-base-content/10">

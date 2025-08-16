@@ -47,12 +47,6 @@ export interface BaseDoc {
   updatedBy?: string;
 }
 
-export interface BaseLink {
-  id: string;
-  title: string;
-  url: string;
-  type: 'github' | 'demo' | 'docs' | 'other';
-}
 
 export interface BaseSelectedTechnology {
   category: 'styling' | 'database' | 'framework' | 'runtime' | 'deployment' | 'testing' | 'tooling';
@@ -78,7 +72,6 @@ export interface BaseProject {
   selectedTechnologies: BaseSelectedTechnology[];
   selectedPackages: BaseSelectedPackage[];
   stagingEnvironment: 'development' | 'staging' | 'production';
-  links: BaseLink[];
   color: string;
   category: string;
   tags: string[];
@@ -126,7 +119,6 @@ export interface ProjectTeamData {
 export interface ProjectVisibility {
   description: boolean;
   tags: boolean;
-  links: boolean;
   docs: boolean;
   techStack: boolean;
   timestamps: boolean;
@@ -194,17 +186,6 @@ export interface UpdateDocData {
   content?: string;
 }
 
-export interface CreateLinkData {
-  title: string;
-  url: string;
-  type?: 'github' | 'demo' | 'docs' | 'other';
-}
-
-export interface UpdateLinkData {
-  title?: string;
-  url?: string;
-  type?: 'github' | 'demo' | 'docs' | 'other';
-}
 
 export interface CreateTechnologyData {
   category: 'styling' | 'database' | 'framework' | 'runtime' | 'deployment' | 'testing' | 'tooling';

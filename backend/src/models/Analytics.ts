@@ -31,7 +31,9 @@ export interface IAnalytics extends Document {
   timestamp: Date;
   userAgent?: string;
   ipAddress?: string;
+  planTier: 'free' | 'pro' | 'enterprise'; // Plan tier at time of event
   createdAt: Date;
+  expiresAt?: Date; // Plan-specific expiration date
 }
 
 const analyticsSchema: Schema = new Schema({
@@ -80,7 +82,18 @@ const analyticsSchema: Schema = new Schema({
     index: true
   },
   userAgent: String,
-  ipAddress: String
+  ipAddress: String,
+  planTier: {
+    type: String,
+    required: true,
+    enum: ['free', 'pro', 'enterprise'],
+    default: 'free',
+    index: true
+  },
+  expiresAt: {
+    type: Date,
+    index: true // MongoDB will automatically delete documents when this date is reached
+  }
 }, {
   timestamps: { createdAt: true, updatedAt: false }
 });
@@ -88,9 +101,13 @@ const analyticsSchema: Schema = new Schema({
 // Compound indexes for efficient queries
 analyticsSchema.index({ userId: 1, timestamp: -1 });
 analyticsSchema.index({ userId: 1, eventType: 1, timestamp: -1 });
+analyticsSchema.index({ userId: 1, planTier: 1, timestamp: -1 });
 analyticsSchema.index({ 'eventData.projectId': 1, timestamp: -1 });
+analyticsSchema.index({ planTier: 1, timestamp: -1 });
 
-// TTL index to automatically clean up old analytics data after 6 months
-analyticsSchema.index({ timestamp: 1 }, { expireAfterSeconds: 6 * 30 * 24 * 60 * 60 });
+// Plan-based TTL index for automatic cleanup
+// Free tier: expires based on expiresAt field
+// Pro/Enterprise: no expiration (expiresAt is null) unless subscription cancelled
+analyticsSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 export default mongoose.model<IAnalytics>('Analytics', analyticsSchema);

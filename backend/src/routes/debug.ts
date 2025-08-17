@@ -2,6 +2,7 @@ import express from 'express';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import RateLimit from '../models/RateLimit';
 import ReminderService from '../services/reminderService';
+import Analytics from '../models/Analytics';
 
 const router = express.Router();
 
@@ -107,6 +108,37 @@ if (process.env.NODE_ENV !== 'production') {
     } catch (error) {
       console.error('Error clearing all rate limits:', error);
       res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  // Debug endpoint to see what's actually in the analytics database
+  router.get('/analytics-events', async (req, res) => {
+    try {
+      // Get all distinct event types
+      const eventTypes = await Analytics.distinct('eventType');
+      console.log('Available event types:', eventTypes);
+      
+      const results: any = {
+        eventTypes,
+        samples: {},
+        counts: {}
+      };
+      
+      // Get sample of each event type and counts
+      for (const eventType of eventTypes) {
+        const samples = await Analytics.find({ eventType }).limit(2).lean();
+        const count = await Analytics.countDocuments({ eventType });
+        
+        results.samples[eventType] = samples;
+        results.counts[eventType] = count;
+        
+        console.log(`\n${eventType} (${count} total):`, JSON.stringify(samples[0], null, 2));
+      }
+      
+      res.json(results);
+    } catch (error) {
+      console.error('Debug error:', error);
+      res.status(500).json({ error: 'Debug failed' });
     }
   });
 }

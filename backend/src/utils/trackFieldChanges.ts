@@ -39,7 +39,7 @@ export const trackFieldChanges = async (
     }
   }
 
-  // Track each change as a separate event
+  // Track each change as a separate event using optimized analytics
   for (const change of changes) {
     await AnalyticsService.trackEvent(
       req.userId,

@@ -55,39 +55,57 @@ router.get('/users', async (req, res) => {
       .limit(limit);
 
     // Get project counts for each user
-    const usersWithProjectCounts = await Promise.all(
-      users.map(async (user) => {
-        const projectCount = await Project.countDocuments({ userId: user._id });
-        
-        // Get user's current session info
-        const activeSession = await UserSession.findOne({ 
-          userId: user._id, 
-          isActive: true 
-        }).sort({ startTime: -1 });
-
-        // Get recent activity (last 7 days)
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-        const recentSessions = await UserSession.countDocuments({
-          userId: user._id,
+    // Optimize user fetching with aggregation pipeline to reduce N+1 queries
+    const userIds = users.map(user => user._id);
+    
+    // Get project counts for all users at once
+    const projectCounts = await Project.aggregate([
+      { $match: { userId: { $in: userIds } } },
+      { $group: { _id: '$userId', count: { $sum: 1 } } }
+    ]);
+    
+    // Get active sessions for all users at once
+    const activeSessions = await UserSession.find({
+      userId: { $in: userIds },
+      isActive: true
+    }).sort({ startTime: -1 });
+    
+    // Get recent activity counts for all users at once
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const recentSessionCounts = await UserSession.aggregate([
+      {
+        $match: {
+          userId: { $in: userIds },
           startTime: { $gte: sevenDaysAgo }
-        });
+        }
+      },
+      { $group: { _id: '$userId', count: { $sum: 1 } } }
+    ]);
 
-        return {
-          ...user.toObject(),
-          projectCount,
-          activeSession: activeSession ? {
-            sessionId: activeSession.sessionId,
-            startTime: activeSession.startTime,
-            lastActivity: activeSession.lastActivity,
-            duration: activeSession.duration || (Date.now() - activeSession.startTime.getTime()),
-            isVisible: activeSession.isVisible,
-            totalEvents: activeSession.totalEvents
-          } : null,
-          recentSessions
-        };
-      })
-    );
+    // Create lookup maps for efficiency
+    const projectCountMap = new Map(projectCounts.map(pc => [pc._id.toString(), pc.count]));
+    const activeSessionMap = new Map(activeSessions.map(session => [session.userId.toString(), session]));
+    const recentSessionMap = new Map(recentSessionCounts.map(rsc => [rsc._id.toString(), rsc.count]));
+
+    const usersWithProjectCounts = users.map(user => {
+      const userId = user._id.toString();
+      const activeSession = activeSessionMap.get(userId);
+      
+      return {
+        ...user.toObject(),
+        projectCount: projectCountMap.get(userId) || 0,
+        activeSession: activeSession ? {
+          sessionId: activeSession.sessionId,
+          startTime: activeSession.startTime,
+          lastActivity: activeSession.lastActivity,
+          duration: activeSession.duration || (Date.now() - activeSession.startTime.getTime()),
+          isVisible: activeSession.isVisible,
+          totalEvents: activeSession.totalEvents
+        } : null,
+        recentSessions: recentSessionMap.get(userId) || 0
+      };
+    });
 
     const total = await User.countDocuments();
     const totalPages = Math.ceil(total / limit);
@@ -980,6 +998,152 @@ router.post('/cleanup/run', async (req, res) => {
   } catch (error) {
     console.error('Error running cleanup:', error);
     res.status(500).json({ error: 'Failed to run cleanup' });
+  }
+});
+
+// Advanced cleanup endpoints
+router.post('/cleanup/orphaned', async (req, res) => {
+  try {
+    const results = await CleanupService.cleanupOrphanedProjects();
+    res.json({
+      message: 'Orphaned data cleanup completed',
+      results
+    });
+  } catch (error) {
+    console.error('Error cleaning orphaned data:', error);
+    res.status(500).json({ error: 'Failed to cleanup orphaned data' });
+  }
+});
+
+router.post('/cleanup/optimize', async (req, res) => {
+  try {
+    const results = await CleanupService.optimizeDatabase();
+    res.json({
+      message: 'Database optimization completed',
+      results
+    });
+  } catch (error) {
+    console.error('Error optimizing database:', error);
+    res.status(500).json({ error: 'Failed to optimize database' });
+  }
+});
+
+router.post('/cleanup/emergency', async (req, res) => {
+  try {
+    const results = await CleanupService.emergencyCleanup();
+    res.json({
+      message: 'Emergency cleanup completed',
+      results
+    });
+  } catch (error) {
+    console.error('Error running emergency cleanup:', error);
+    res.status(500).json({ error: 'Failed to run emergency cleanup' });
+  }
+});
+
+router.post('/cleanup/archive-projects', async (req, res) => {
+  try {
+    const { daysInactive = 365 } = req.body;
+    const results = await CleanupService.archiveOldProjects(daysInactive);
+    res.json({
+      message: 'Project archiving completed',
+      results
+    });
+  } catch (error) {
+    console.error('Error archiving projects:', error);
+    res.status(500).json({ error: 'Failed to archive projects' });
+  }
+});
+
+router.delete('/cleanup/analytics/:days', async (req, res) => {
+  try {
+    const days = parseInt(req.params.days) || 180;
+    const results = await CleanupService.cleanupOldAnalytics(days);
+    res.json({
+      message: `Analytics older than ${days} days cleaned up`,
+      results
+    });
+  } catch (error) {
+    console.error('Error cleaning analytics:', error);
+    res.status(500).json({ error: 'Failed to cleanup analytics' });
+  }
+});
+
+router.delete('/cleanup/notifications/:days', async (req, res) => {
+  try {
+    const days = parseInt(req.params.days) || 90;
+    const results = await CleanupService.cleanupOldNotifications(days);
+    res.json({
+      message: `Notifications older than ${days} days cleaned up`,
+      results
+    });
+  } catch (error) {
+    console.error('Error cleaning notifications:', error);
+    res.status(500).json({ error: 'Failed to cleanup notifications' });
+  }
+});
+
+router.delete('/cleanup/activity-logs/:days', async (req, res) => {
+  try {
+    const days = parseInt(req.params.days) || 90;
+    const results = await CleanupService.cleanupOldActivityLogs(days);
+    res.json({
+      message: `Activity logs older than ${days} days cleaned up`,
+      results
+    });
+  } catch (error) {
+    console.error('Error cleaning activity logs:', error);
+    res.status(500).json({ error: 'Failed to cleanup activity logs' });
+  }
+});
+
+router.delete('/cleanup/inactive-sessions', async (req, res) => {
+  try {
+    const results = await CleanupService.cleanupInactiveSessions();
+    res.json({
+      message: 'Inactive sessions cleaned up',
+      results
+    });
+  } catch (error) {
+    console.error('Error cleaning inactive sessions:', error);
+    res.status(500).json({ error: 'Failed to cleanup inactive sessions' });
+  }
+});
+
+router.delete('/cleanup/stale-locks', async (req, res) => {
+  try {
+    const results = await CleanupService.cleanupStaleNoteLocks();
+    res.json({
+      message: 'Stale note locks cleaned up',
+      results
+    });
+  } catch (error) {
+    console.error('Error cleaning stale locks:', error);
+    res.status(500).json({ error: 'Failed to cleanup stale locks' });
+  }
+});
+
+router.delete('/cleanup/rate-limits', async (req, res) => {
+  try {
+    const results = await CleanupService.cleanupOldRateLimits();
+    res.json({
+      message: 'Old rate limits cleaned up',
+      results
+    });
+  } catch (error) {
+    console.error('Error cleaning rate limits:', error);
+    res.status(500).json({ error: 'Failed to cleanup rate limits' });
+  }
+});
+
+// Performance monitoring endpoints
+router.get('/performance/recommendations', async (req, res) => {
+  try {
+    const recommendations = await CleanupService.getPerformanceRecommendations();
+    res.json(recommendations);
+  } catch (error) {
+    console.error('Error fetching performance recommendations:', error);
+    res.status(500).json({ error: 'Failed to fetch performance recommendations' });
   }
 });
 

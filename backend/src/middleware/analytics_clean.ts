@@ -2,16 +2,8 @@ import { Request, Response, NextFunction } from 'express';
 import Analytics from '../models/Analytics';
 import UserSession from '../models/UserSession';
 import { Project } from '../models/Project';
-import { User } from '../models/User';
 import { v4 as uuidv4 } from 'uuid';
 import mongoose from 'mongoose';
-import { 
-  getAnalyticsConfig, 
-  getThrottleDuration, 
-  canTrackEvent, 
-  getAnalyticsTTL,
-  BASE_THROTTLE_DURATIONS 
-} from '../config/analyticsConfig';
 
 interface AuthenticatedRequest extends Request {
   userId?: string;
@@ -21,51 +13,33 @@ interface AuthenticatedRequest extends Request {
 // Event throttling cache to prevent over-tracking
 const eventThrottleCache = new Map<string, number>();
 const projectAccessCache = new Map<string, number>();
-const dailyEventCounts = new Map<string, number>();
 
-// Consolidated and optimized Analytics service class with Plan-aware TTL
+// Consolidated and optimized Analytics service class
 export class AnalyticsService {
-  // Get user's current plan tier and subscription status
-  private static async getUserPlanInfo(userId: string): Promise<{
-    planTier: 'free' | 'pro' | 'enterprise';
-    subscriptionStatus?: string;
-  }> {
-    try {
-      const user = await User.findById(userId).select('planTier subscriptionStatus');
-      return {
-        planTier: user?.planTier || 'free',
-        subscriptionStatus: user?.subscriptionStatus
-      };
-    } catch (error) {
-      console.error('Error fetching user plan:', error);
-      return { planTier: 'free' };
-    }
-  }
+  // Event throttling durations (in milliseconds)
+  private static readonly THROTTLE_DURATIONS: Record<string, number> = {
+    page_view: 30000,      // 30 seconds
+    project_open: 60000,   // 1 minute  
+    field_edit: 5000,      // 5 seconds
+    ui_interaction: 10000, // 10 seconds
+    heartbeat: 300000,     // 5 minutes
+    action: 15000,         // 15 seconds
+    feature_usage: 20000,  // 20 seconds
+    navigation: 10000,     // 10 seconds
+    search: 5000,          // 5 seconds
+    error: 0,              // Never throttle errors
+    performance: 30000,    // 30 seconds
+    session_start: 0,      // Never throttle
+    session_end: 0         // Never throttle
+  };
 
-  // Check daily event limits based on plan
-  private static async checkDailyLimit(userId: string, planTier: 'free' | 'pro' | 'enterprise'): Promise<boolean> {
-    const today = new Date().toDateString();
-    const cacheKey = `${userId}-${today}`;
-    
-    let currentCount = dailyEventCounts.get(cacheKey) || 0;
-    
-    // If not cached, get from database
-    if (currentCount === 0) {
-      const startOfDay = new Date();
-      startOfDay.setHours(0, 0, 0, 0);
-      const endOfDay = new Date();
-      endOfDay.setHours(23, 59, 59, 999);
-      
-      currentCount = await Analytics.countDocuments({
-        userId,
-        timestamp: { $gte: startOfDay, $lte: endOfDay }
-      });
-      
-      dailyEventCounts.set(cacheKey, currentCount);
-    }
-    
-    return canTrackEvent(currentCount, planTier);
-  }
+  // Critical events that should never be throttled
+  private static readonly CRITICAL_EVENTS = new Set([
+    'session_start',
+    'session_end', 
+    'error',
+    'security_event'
+  ]);
 
   static async trackEvent(
     userId: string,
@@ -74,23 +48,12 @@ export class AnalyticsService {
     req?: Request
   ) {
     try {
-      // Get user's plan information
-      const { planTier, subscriptionStatus } = await this.getUserPlanInfo(userId);
-      
-      // Check daily event limits for plan tier
-      const canTrack = await this.checkDailyLimit(userId, planTier);
-      if (!canTrack) {
-        console.log(`Daily event limit reached for user ${userId} (${planTier} plan)`);
-        return null;
-      }
-
-      // Check if this event should be throttled based on plan
-      const criticalEvents = ['session_start', 'session_end', 'error'];
-      if (!criticalEvents.includes(eventType)) {
+      // Check if this event should be throttled
+      if (!this.CRITICAL_EVENTS.has(eventType)) {
         const cacheKey = `${userId}-${eventType}-${JSON.stringify(eventData)}`;
         const now = Date.now();
         const lastTracked = eventThrottleCache.get(cacheKey);
-        const throttleDuration = getThrottleDuration(eventType, planTier);
+        const throttleDuration = this.THROTTLE_DURATIONS[eventType] || 30000;
 
         if (lastTracked && (now - lastTracked) < throttleDuration) {
           // Event is throttled, skip tracking
@@ -106,10 +69,6 @@ export class AnalyticsService {
         this.cleanThrottleCache();
       }
 
-      // Calculate expiration date based on plan and subscription status
-      const ttlSeconds = getAnalyticsTTL(planTier, subscriptionStatus);
-      const expiresAt = ttlSeconds > 0 ? new Date(Date.now() + (ttlSeconds * 1000)) : undefined;
-
       const analyticsData = new Analytics({
         userId,
         sessionId: req?.headers['x-session-id'] as string,
@@ -117,18 +76,10 @@ export class AnalyticsService {
         eventData: this.sanitizeEventData(eventData),
         timestamp: new Date(),
         userAgent: req?.headers['user-agent'],
-        ipAddress: this.getClientIP(req),
-        planTier, // Store plan tier at time of event
-        expiresAt // Plan-based expiration (undefined = never expires)
+        ipAddress: this.getClientIP(req)
       });
 
       await analyticsData.save();
-
-      // Update daily count cache
-      const today = new Date().toDateString();
-      const dailyCacheKey = `${userId}-${today}`;
-      const currentCount = dailyEventCounts.get(dailyCacheKey) || 0;
-      dailyEventCounts.set(dailyCacheKey, currentCount + 1);
 
       // Update session if exists
       if (req?.headers['x-session-id']) {
@@ -189,109 +140,6 @@ export class AnalyticsService {
       if (now - timestamp > maxAge) {
         eventThrottleCache.delete(key);
       }
-    }
-  }
-
-  // Update analytics retention when user's plan changes
-  static async updateUserAnalyticsRetention(
-    userId: string, 
-    newPlanTier: 'free' | 'pro' | 'enterprise',
-    subscriptionStatus?: string
-  ): Promise<void> {
-    try {
-      const ttlSeconds = getAnalyticsTTL(newPlanTier, subscriptionStatus);
-      
-      if (ttlSeconds > 0) {
-        // Plan has limited retention - set expiration dates
-        const expiresAt = new Date(Date.now() + (ttlSeconds * 1000));
-        
-        await Analytics.updateMany(
-          { userId, expiresAt: { $exists: false } }, // Only update records without expiration
-          { 
-            $set: { 
-              expiresAt,
-              planTier: newPlanTier 
-            } 
-          }
-        );
-        
-        console.log(`Updated analytics retention for user ${userId} (${newPlanTier}) - expires ${expiresAt}`);
-      } else {
-        // Unlimited retention - remove expiration dates
-        await Analytics.updateMany(
-          { userId },
-          { 
-            $unset: { expiresAt: 1 },
-            $set: { planTier: newPlanTier }
-          }
-        );
-        
-        console.log(`Updated analytics retention for user ${userId} (${newPlanTier}) - unlimited`);
-      }
-    } catch (error) {
-      console.error('Error updating user analytics retention:', error);
-    }
-  }
-
-  // Handle subscription cancellation - convert to free tier retention
-  static async handleSubscriptionCancellation(userId: string): Promise<void> {
-    try {
-      await this.updateUserAnalyticsRetention(userId, 'free', 'canceled');
-      console.log(`Converted analytics to free tier for cancelled user: ${userId}`);
-    } catch (error) {
-      console.error('Error handling subscription cancellation:', error);
-    }
-  }
-
-  // Get analytics summary with plan-aware counts
-  static async getAnalyticsSummary(userId: string): Promise<{
-    totalEvents: number;
-    eventsByType: Record<string, number>;
-    planTier: string;
-    retentionStatus: string;
-    dailyEventsRemaining?: number;
-  }> {
-    try {
-      const { planTier } = await this.getUserPlanInfo(userId);
-      const config = getAnalyticsConfig(planTier);
-      
-      // Get total events
-      const totalEvents = await Analytics.countDocuments({ userId });
-      
-      // Get events by type
-      const eventsByType = await Analytics.aggregate([
-        { $match: { userId } },
-        { $group: { _id: '$eventType', count: { $sum: 1 } } },
-        { $project: { eventType: '$_id', count: 1, _id: 0 } }
-      ]).then(results => 
-        results.reduce((acc, { eventType, count }) => ({ ...acc, [eventType]: count }), {})
-      );
-      
-      // Get today's event count
-      const startOfDay = new Date();
-      startOfDay.setHours(0, 0, 0, 0);
-      const todayEvents = await Analytics.countDocuments({
-        userId,
-        timestamp: { $gte: startOfDay }
-      });
-      
-      const retentionStatus = config.retentionPeriod === 0 ? 'unlimited' : `${config.retentionPeriod / (24 * 60 * 60)} days`;
-      
-      return {
-        totalEvents,
-        eventsByType,
-        planTier,
-        retentionStatus,
-        dailyEventsRemaining: config.maxEventsPerDay - todayEvents
-      };
-    } catch (error) {
-      console.error('Error getting analytics summary:', error);
-      return {
-        totalEvents: 0,
-        eventsByType: {},
-        planTier: 'free',
-        retentionStatus: 'error'
-      };
     }
   }
 
@@ -948,140 +796,6 @@ export class AnalyticsService {
               }
             },
             { $sort: { interaction_count: -1 } }
-          ]);
-
-        case 'page_view':
-          return await Analytics.aggregate([
-            { $match: { eventType: 'page_view', timestamp: { $gte: startDate } } },
-            {
-              $group: {
-                _id: '$eventData.pageName',
-                view_count: { $sum: 1 },
-                unique_users: { $addToSet: '$userId' }
-              }
-            },
-            {
-              $project: {
-                page_name: '$_id',
-                view_count: 1,
-                unique_users: { $size: '$unique_users' },
-                _id: 0
-              }
-            },
-            { $sort: { view_count: -1 } }
-          ]);
-
-        case 'field_edit':
-          return await Analytics.aggregate([
-            { $match: { eventType: 'field_edit', timestamp: { $gte: startDate } } },
-            {
-              $group: {
-                _id: '$eventData.fieldName',
-                edit_count: { $sum: 1 },
-                unique_users: { $addToSet: '$userId' }
-              }
-            },
-            {
-              $project: {
-                field_name: '$_id',
-                edit_count: 1,
-                unique_users: { $size: '$unique_users' },
-                _id: 0
-              }
-            },
-            { $sort: { edit_count: -1 } }
-          ]);
-
-        case 'project_open':
-          return await Analytics.aggregate([
-            { $match: { eventType: 'project_open', timestamp: { $gte: startDate } } },
-            {
-              $group: {
-                _id: {
-                  projectId: '$eventData.projectId',
-                  projectName: '$eventData.projectName'
-                },
-                access_count: { $sum: 1 },
-                unique_users: { $addToSet: '$userId' },
-                last_accessed: { $max: '$timestamp' }
-              }
-            },
-            {
-              $project: {
-                project_id: '$_id.projectId',
-                project_name: '$_id.projectName',
-                access_count: 1,
-                unique_users: { $size: '$unique_users' },
-                last_accessed: 1,
-                _id: 0
-              }
-            },
-            { $sort: { access_count: -1 } }
-          ]);
-
-        case 'action':
-          return await Analytics.aggregate([
-            { $match: { eventType: 'action', timestamp: { $gte: startDate } } },
-            {
-              $group: {
-                _id: '$eventData.actionName',
-                action_count: { $sum: 1 },
-                unique_users: { $addToSet: '$userId' }
-              }
-            },
-            {
-              $project: {
-                action_name: '$_id',
-                action_count: 1,
-                unique_users: { $size: '$unique_users' },
-                _id: 0
-              }
-            },
-            { $sort: { action_count: -1 } }
-          ]);
-
-        case 'session_start':
-          return await Analytics.aggregate([
-            { $match: { eventType: 'session_start', timestamp: { $gte: startDate } } },
-            {
-              $group: {
-                _id: { $dateToString: { format: '%Y-%m-%d', date: '$timestamp' } },
-                session_count: { $sum: 1 },
-                unique_users: { $addToSet: '$userId' }
-              }
-            },
-            {
-              $project: {
-                date: '$_id',
-                session_count: 1,
-                unique_users: { $size: '$unique_users' },
-                _id: 0
-              }
-            },
-            { $sort: { date: -1 } }
-          ]);
-
-        case 'session_end':
-          return await Analytics.aggregate([
-            { $match: { eventType: 'session_end', timestamp: { $gte: startDate } } },
-            {
-              $group: {
-                _id: { $dateToString: { format: '%Y-%m-%d', date: '$timestamp' } },
-                session_end_count: { $sum: 1 },
-                avg_duration: { $avg: { $ifNull: ['$eventData.duration', 0] } },
-                total_duration: { $sum: { $ifNull: ['$eventData.duration', 0] } }
-              }
-            },
-            {
-              $project: {
-                date: '$_id',
-                session_end_count: 1,
-                avg_duration: { $round: ['$avg_duration', 0] },
-                total_duration: { $round: ['$total_duration', 0] },
-                _id: 0
-              }
-            },
-            { $sort: { date: -1 } }
           ]);
 
         default:

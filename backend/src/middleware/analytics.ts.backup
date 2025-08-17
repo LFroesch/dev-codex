@@ -2,16 +2,8 @@ import { Request, Response, NextFunction } from 'express';
 import Analytics from '../models/Analytics';
 import UserSession from '../models/UserSession';
 import { Project } from '../models/Project';
-import { User } from '../models/User';
 import { v4 as uuidv4 } from 'uuid';
 import mongoose from 'mongoose';
-import { 
-  getAnalyticsConfig, 
-  getThrottleDuration, 
-  canTrackEvent, 
-  getAnalyticsTTL,
-  BASE_THROTTLE_DURATIONS 
-} from '../config/analyticsConfig';
 
 interface AuthenticatedRequest extends Request {
   userId?: string;
@@ -21,52 +13,33 @@ interface AuthenticatedRequest extends Request {
 // Event throttling cache to prevent over-tracking
 const eventThrottleCache = new Map<string, number>();
 const projectAccessCache = new Map<string, number>();
-const dailyEventCounts = new Map<string, number>();
 
-// Consolidated and optimized Analytics service class with Plan-aware TTL
+// Consolidated and optimized Analytics service class
 export class AnalyticsService {
-  // Get user's current plan tier and subscription status
-  private static async getUserPlanInfo(userId: string): Promise<{
-    planTier: 'free' | 'pro' | 'enterprise';
-    subscriptionStatus?: string;
-  }> {
-    try {
-      const user = await User.findById(userId).select('planTier subscriptionStatus');
-      return {
-        planTier: user?.planTier || 'free',
-        subscriptionStatus: user?.subscriptionStatus
-      };
-    } catch (error) {
-      console.error('Error fetching user plan:', error);
-      return { planTier: 'free' };
-    }
-  }
+  // Event throttling durations (in milliseconds)
+  private static readonly THROTTLE_DURATIONS: Record<string, number> = {
+    page_view: 30000,      // 30 seconds
+    project_open: 60000,   // 1 minute  
+    field_edit: 5000,      // 5 seconds
+    ui_interaction: 10000, // 10 seconds
+    heartbeat: 300000,     // 5 minutes
+    action: 15000,         // 15 seconds
+    feature_usage: 20000,  // 20 seconds
+    navigation: 10000,     // 10 seconds
+    search: 5000,          // 5 seconds
+    error: 0,              // Never throttle errors
+    performance: 30000,    // 30 seconds
+    session_start: 0,      // Never throttle
+    session_end: 0         // Never throttle
+  };
 
-  // Check daily event limits based on plan
-  private static async checkDailyLimit(userId: string, planTier: 'free' | 'pro' | 'enterprise'): Promise<boolean> {
-    const today = new Date().toDateString();
-    const cacheKey = `${userId}-${today}`;
-    
-    let currentCount = dailyEventCounts.get(cacheKey) || 0;
-    
-    // If not cached, get from database
-    if (currentCount === 0) {
-      const startOfDay = new Date();
-      startOfDay.setHours(0, 0, 0, 0);
-      const endOfDay = new Date();
-      endOfDay.setHours(23, 59, 59, 999);
-      
-      currentCount = await Analytics.countDocuments({
-        userId,
-        timestamp: { $gte: startOfDay, $lte: endOfDay }
-      });
-      
-      dailyEventCounts.set(cacheKey, currentCount);
-    }
-    
-    return canTrackEvent(currentCount, planTier);
-  }
-
+  // Critical events that should never be throttled
+  private static readonly CRITICAL_EVENTS = new Set([
+    'session_start',
+    'session_end', 
+    'error',
+    'security_event'
+  ]);
   static async trackEvent(
     userId: string,
     eventType: 'project_open' | 'field_edit' | 'session_start' | 'session_end' | 'page_view' | 'action' | 'feature_usage' | 'navigation' | 'search' | 'error' | 'performance' | 'ui_interaction' | 'heartbeat',
@@ -74,23 +47,12 @@ export class AnalyticsService {
     req?: Request
   ) {
     try {
-      // Get user's plan information
-      const { planTier, subscriptionStatus } = await this.getUserPlanInfo(userId);
-      
-      // Check daily event limits for plan tier
-      const canTrack = await this.checkDailyLimit(userId, planTier);
-      if (!canTrack) {
-        console.log(`Daily event limit reached for user ${userId} (${planTier} plan)`);
-        return null;
-      }
-
-      // Check if this event should be throttled based on plan
-      const criticalEvents = ['session_start', 'session_end', 'error'];
-      if (!criticalEvents.includes(eventType)) {
+      // Check if this event should be throttled
+      if (!this.CRITICAL_EVENTS.has(eventType)) {
         const cacheKey = `${userId}-${eventType}-${JSON.stringify(eventData)}`;
         const now = Date.now();
         const lastTracked = eventThrottleCache.get(cacheKey);
-        const throttleDuration = getThrottleDuration(eventType, planTier);
+        const throttleDuration = this.THROTTLE_DURATIONS[eventType] || 30000;
 
         if (lastTracked && (now - lastTracked) < throttleDuration) {
           // Event is throttled, skip tracking
@@ -106,10 +68,6 @@ export class AnalyticsService {
         this.cleanThrottleCache();
       }
 
-      // Calculate expiration date based on plan and subscription status
-      const ttlSeconds = getAnalyticsTTL(planTier, subscriptionStatus);
-      const expiresAt = ttlSeconds > 0 ? new Date(Date.now() + (ttlSeconds * 1000)) : undefined;
-
       const analyticsData = new Analytics({
         userId,
         sessionId: req?.headers['x-session-id'] as string,
@@ -117,18 +75,10 @@ export class AnalyticsService {
         eventData: this.sanitizeEventData(eventData),
         timestamp: new Date(),
         userAgent: req?.headers['user-agent'],
-        ipAddress: this.getClientIP(req),
-        planTier, // Store plan tier at time of event
-        expiresAt // Plan-based expiration (undefined = never expires)
+        ipAddress: this.getClientIP(req)
       });
 
       await analyticsData.save();
-
-      // Update daily count cache
-      const today = new Date().toDateString();
-      const dailyCacheKey = `${userId}-${today}`;
-      const currentCount = dailyEventCounts.get(dailyCacheKey) || 0;
-      dailyEventCounts.set(dailyCacheKey, currentCount + 1);
 
       // Update session if exists
       if (req?.headers['x-session-id']) {
@@ -189,109 +139,6 @@ export class AnalyticsService {
       if (now - timestamp > maxAge) {
         eventThrottleCache.delete(key);
       }
-    }
-  }
-
-  // Update analytics retention when user's plan changes
-  static async updateUserAnalyticsRetention(
-    userId: string, 
-    newPlanTier: 'free' | 'pro' | 'enterprise',
-    subscriptionStatus?: string
-  ): Promise<void> {
-    try {
-      const ttlSeconds = getAnalyticsTTL(newPlanTier, subscriptionStatus);
-      
-      if (ttlSeconds > 0) {
-        // Plan has limited retention - set expiration dates
-        const expiresAt = new Date(Date.now() + (ttlSeconds * 1000));
-        
-        await Analytics.updateMany(
-          { userId, expiresAt: { $exists: false } }, // Only update records without expiration
-          { 
-            $set: { 
-              expiresAt,
-              planTier: newPlanTier 
-            } 
-          }
-        );
-        
-        console.log(`Updated analytics retention for user ${userId} (${newPlanTier}) - expires ${expiresAt}`);
-      } else {
-        // Unlimited retention - remove expiration dates
-        await Analytics.updateMany(
-          { userId },
-          { 
-            $unset: { expiresAt: 1 },
-            $set: { planTier: newPlanTier }
-          }
-        );
-        
-        console.log(`Updated analytics retention for user ${userId} (${newPlanTier}) - unlimited`);
-      }
-    } catch (error) {
-      console.error('Error updating user analytics retention:', error);
-    }
-  }
-
-  // Handle subscription cancellation - convert to free tier retention
-  static async handleSubscriptionCancellation(userId: string): Promise<void> {
-    try {
-      await this.updateUserAnalyticsRetention(userId, 'free', 'canceled');
-      console.log(`Converted analytics to free tier for cancelled user: ${userId}`);
-    } catch (error) {
-      console.error('Error handling subscription cancellation:', error);
-    }
-  }
-
-  // Get analytics summary with plan-aware counts
-  static async getAnalyticsSummary(userId: string): Promise<{
-    totalEvents: number;
-    eventsByType: Record<string, number>;
-    planTier: string;
-    retentionStatus: string;
-    dailyEventsRemaining?: number;
-  }> {
-    try {
-      const { planTier } = await this.getUserPlanInfo(userId);
-      const config = getAnalyticsConfig(planTier);
-      
-      // Get total events
-      const totalEvents = await Analytics.countDocuments({ userId });
-      
-      // Get events by type
-      const eventsByType = await Analytics.aggregate([
-        { $match: { userId } },
-        { $group: { _id: '$eventType', count: { $sum: 1 } } },
-        { $project: { eventType: '$_id', count: 1, _id: 0 } }
-      ]).then(results => 
-        results.reduce((acc, { eventType, count }) => ({ ...acc, [eventType]: count }), {})
-      );
-      
-      // Get today's event count
-      const startOfDay = new Date();
-      startOfDay.setHours(0, 0, 0, 0);
-      const todayEvents = await Analytics.countDocuments({
-        userId,
-        timestamp: { $gte: startOfDay }
-      });
-      
-      const retentionStatus = config.retentionPeriod === 0 ? 'unlimited' : `${config.retentionPeriod / (24 * 60 * 60)} days`;
-      
-      return {
-        totalEvents,
-        eventsByType,
-        planTier,
-        retentionStatus,
-        dailyEventsRemaining: config.maxEventsPerDay - todayEvents
-      };
-    } catch (error) {
-      console.error('Error getting analytics summary:', error);
-      return {
-        totalEvents: 0,
-        eventsByType: {},
-        planTier: 'free',
-        retentionStatus: 'error'
-      };
     }
   }
 
@@ -409,7 +256,7 @@ export class AnalyticsService {
         if (eventData.pageName) {
           updateData.$addToSet = { 
             ...updateData.$addToSet,
-            pagesViewed: eventData.pageName 
+            pagesVisited: eventData.pageName 
           };
         }
       }
@@ -483,7 +330,7 @@ export class AnalyticsService {
       return { success: true };
     } catch (error) {
       console.error('Error switching project:', error);
-      return { success: false, error: (error as Error).message };
+      return { success: false, error: error.message };
     }
   }
 
@@ -594,8 +441,8 @@ export class AnalyticsService {
       }
 
       // Get team members from TeamMember collection
-      const TeamMember = (await import('../models/TeamMember')).default;
-      const teamMembers = await TeamMember.find({ projectId }).populate('userId', 'firstName lastName email').lean();
+      const TeamMember = await import('../models/TeamMember');
+      const teamMembers = await TeamMember.default.find({ projectId }).populate('userId', 'firstName lastName email').lean();
       
       // Get all user IDs (owner + team members)
       const userIds = [project.userId.toString()];
@@ -614,8 +461,8 @@ export class AnalyticsService {
       const teamTimeData: any[] = [];
       
       // For each team member, calculate their total time on this project
-      for (const userId of userIds) {
-        const userObjectId = new mongoose.Types.ObjectId(userId);
+      for (const userIdStr of userIds) {
+        const userObjectId = new mongoose.Types.ObjectId(userIdStr);
         
         // Get all sessions for this user that have project time data
         const userSessions = await UserSession.find({
@@ -639,7 +486,7 @@ export class AnalyticsService {
         });
         
         // Check for current active session with this project
-        const activeSession = activeSessions.find(s => s.userId.toString() === userId);
+        const activeSession = activeSessions.find(s => s.userId.toString() === userIdStr);
         if (activeSession && activeSession.currentProjectId === projectId && activeSession.currentProjectStartTime) {
           const currentSessionTime = Date.now() - activeSession.currentProjectStartTime.getTime();
           totalTime += currentSessionTime;
@@ -663,6 +510,216 @@ export class AnalyticsService {
     } catch (error) {
       console.error('Error fetching team project time data:', error);
       return null;
+    }
+  }
+
+  // Helper method to get analytics for specific event type
+  private static async getEventAnalytics(eventType: string, startDate: Date) {
+    try {
+      return await Analytics.aggregate([
+        {
+          $match: {
+            eventType,
+            timestamp: { $gte: startDate }
+          }
+        },
+        {
+          $group: {
+            _id: {
+              eventType: '$eventType',
+              data: { $ifNull: ['$eventData', {}] }
+            },
+            count: { $sum: 1 },
+            latestTimestamp: { $max: '$timestamp' },
+            users: { $addToSet: '$userId' }
+          }
+        },
+        {
+          $project: {
+            eventType: '$_id.eventType',
+            eventData: '$_id.data',
+            count: 1,
+            uniqueUsers: { $size: '$users' },
+            latestTimestamp: 1
+          }
+        },
+        {
+          $sort: { count: -1 }
+        },
+        {
+          $limit: 50
+        }
+      ]);
+    } catch (error) {
+      console.error(`Error fetching ${eventType} analytics:`, error);
+      return [];
+    }
+  }
+
+  // Legacy method for compatibility with routes
+  static async runQuery(eventType: string, params: any[]) {
+    const days = parseInt(params[0]) || 30;
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
+    switch (eventType) {
+      case 'feature_usage':
+        const features = await this.getEventAnalytics('feature_usage', startDate);
+        return features.map(f => ({
+          feature_name: f.eventData?.feature || f.eventData?.featureName || 'Unknown',
+          usage_count: f.count,
+          unique_users: f.uniqueUsers
+        }));
+
+      case 'navigation':
+        const nav = await this.getEventAnalytics('navigation', startDate);
+        return nav.map(n => ({
+          from_page: n.eventData?.from || 'Unknown',
+          to_page: n.eventData?.to || n.eventData?.page || 'Unknown',
+          count: n.count
+        }));
+
+      case 'search':
+        const searches = await this.getEventAnalytics('search', startDate);
+        return searches.map(s => ({
+          search_term: s.eventData?.query || s.eventData?.searchTerm || 'Empty Query',
+          search_count: s.count,
+          avg_results: s.eventData?.results || 0
+        }));
+
+      case 'error':
+        const errors = await this.getEventAnalytics('error', startDate);
+        return errors.map(e => ({
+          error_type: e.eventData?.type || e.eventData?.errorType || 'Unknown Error',
+          error_count: e.count,
+          error_message: e.eventData?.message || 'No message'
+        }));
+
+      case 'performance':
+        const perf = await this.getEventAnalytics('performance', startDate);
+        return perf.map(p => ({
+          action_type: p.eventData?.action || p.eventData?.actionType || 'Unknown Action',
+          avg_duration: p.eventData?.duration || 0,
+          count: p.count
+        }));
+
+      case 'ui_interaction':
+        const ui = await this.getEventAnalytics('ui_interaction', startDate);
+        return ui.map(u => ({
+          interaction_type: u.eventData?.type || u.eventData?.interactionType || 'Unknown Interaction',
+          interaction_count: u.count,
+          element: u.eventData?.element || 'Unknown'
+        }));
+
+      default:
+        return [];
+    }
+  }
+
+  // Get comprehensive analytics with all event types
+  static async getComprehensiveAnalytics(userId: string, days: number = 30) {
+    try {
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - days);
+
+      const [
+        featureUsage,
+        navigation, 
+        searches,
+        errors,
+        performance,
+        uiInteractions,
+        pageViews,
+        projectOpens,
+        fieldEdits,
+        actions,
+        heartbeats
+      ] = await Promise.all([
+        this.getEventAnalytics('feature_usage', startDate),
+        this.getEventAnalytics('navigation', startDate),
+        this.getEventAnalytics('search', startDate),
+        this.getEventAnalytics('error', startDate),
+        this.getEventAnalytics('performance', startDate),
+        this.getEventAnalytics('ui_interaction', startDate),
+        this.getEventAnalytics('page_view', startDate),
+        this.getEventAnalytics('project_open', startDate),
+        this.getEventAnalytics('field_edit', startDate),
+        this.getEventAnalytics('action', startDate),
+        this.getEventAnalytics('heartbeat', startDate)
+      ]);
+
+      return {
+        featureUsage,
+        navigation,
+        searches,
+        errors,
+        performance,
+        uiInteractions,
+        pageViews,
+        projectOpens,
+        fieldEdits,
+        actions,
+        heartbeats,
+        summary: {
+          totalFeatureUsage: featureUsage.length,
+          totalNavigationEvents: navigation.length,
+          totalSearches: searches.length,
+          totalErrors: errors.length,
+          totalPerformanceEvents: performance.length,
+          totalUIInteractions: uiInteractions.length,
+          totalPageViews: pageViews.length,
+          totalProjectOpens: projectOpens.length,
+          totalFieldEdits: fieldEdits.length,
+          totalActions: actions.length,
+          totalHeartbeats: heartbeats.length
+        }
+      };
+    } catch (error) {
+      console.error('Error fetching comprehensive analytics:', error);
+      return null;
+    }
+  }
+
+  // Helper method to get analytics for specific event type
+  private static async getEventAnalytics(eventType: string, startDate: Date) {
+    try {
+      return await Analytics.aggregate([
+        {
+          $match: {
+            eventType,
+            timestamp: { $gte: startDate }
+          }
+        },
+        {
+          $group: {
+            _id: {
+              eventType: '$eventType',
+              data: { $ifNull: ['$eventData', {}] }
+            },
+            count: { $sum: 1 },
+            latestTimestamp: { $max: '$timestamp' },
+            users: { $addToSet: '$userId' }
+          }
+        },
+        {
+          $project: {
+            eventType: '$_id.eventType',
+            eventData: '$_id.data',
+            count: 1,
+            uniqueUsers: { $size: '$users' },
+            latestTimestamp: 1
+          }
+        },
+        {
+          $sort: { count: -1 }
+        },
+        {
+          $limit: 50
+        }
+      ]);
+    } catch (error) {
+      console.error(`Error fetching ${eventType} analytics:`, error);
+      return [];
     }
   }
 
@@ -812,284 +869,63 @@ export class AnalyticsService {
     }
   }
 
-  // Legacy method for compatibility with routes - FIXED for proper event data mapping
+  // Legacy method for compatibility with routes
   static async runQuery(eventType: string, params: any[]) {
     const days = parseInt(params[0]) || 30;
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
-    try {
-      switch (eventType) {
-        case 'feature_usage':
-          return await Analytics.aggregate([
-            { $match: { eventType: 'feature_usage', timestamp: { $gte: startDate } } },
-            {
-              $group: {
-                _id: {
-                  feature: { $ifNull: ['$eventData.featureName', '$eventData.feature'] }
-                },
-                usage_count: { $sum: 1 },
-                unique_users: { $addToSet: '$userId' }
-              }
-            },
-            {
-              $project: {
-                feature_name: '$_id.feature',
-                usage_count: 1,
-                unique_users: { $size: '$unique_users' },
-                _id: 0
-              }
-            },
-            { $sort: { usage_count: -1 } }
-          ]);
+    switch (eventType) {
+      case 'feature_usage':
+        const features = await this.getEventAnalytics('feature_usage', startDate);
+        return features.map(f => ({
+          feature_name: f.eventData?.feature || f.eventData?.featureName || 'Unknown',
+          usage_count: f.count,
+          unique_users: f.uniqueUsers
+        }));
 
-        case 'navigation':
-          return await Analytics.aggregate([
-            { $match: { eventType: 'navigation', timestamp: { $gte: startDate } } },
-            {
-              $group: {
-                _id: {
-                  from: { $ifNull: ['$eventData.navigationSource', '$eventData.from'] },
-                  to: { $ifNull: ['$eventData.navigationTarget', '$eventData.to'] }
-                },
-                count: { $sum: 1 }
-              }
-            },
-            {
-              $project: {
-                from_page: '$_id.from',
-                to_page: '$_id.to',
-                count: 1,
-                _id: 0
-              }
-            },
-            { $sort: { count: -1 } }
-          ]);
+      case 'navigation':
+        const nav = await this.getEventAnalytics('navigation', startDate);
+        return nav.map(n => ({
+          from_page: n.eventData?.from || 'Unknown',
+          to_page: n.eventData?.to || n.eventData?.page || 'Unknown',
+          count: n.count
+        }));
 
-        case 'search':
-          return await Analytics.aggregate([
-            { $match: { eventType: 'search', timestamp: { $gte: startDate } } },
-            {
-              $group: {
-                _id: { $ifNull: ['$eventData.searchTerm', '$eventData.query'] },
-                search_count: { $sum: 1 },
-                avg_results: { $avg: { $ifNull: ['$eventData.searchResultsCount', 0] } }
-              }
-            },
-            {
-              $project: {
-                search_term: '$_id',
-                search_count: 1,
-                avg_results: { $round: ['$avg_results', 1] },
-                _id: 0
-              }
-            },
-            { $sort: { search_count: -1 } }
-          ]);
+      case 'search':
+        const searches = await this.getEventAnalytics('search', startDate);
+        return searches.map(s => ({
+          search_term: s.eventData?.query || s.eventData?.searchTerm || 'Empty Query',
+          search_count: s.count,
+          avg_results: s.eventData?.results || 0
+        }));
 
-        case 'error':
-          return await Analytics.aggregate([
-            { $match: { eventType: 'error', timestamp: { $gte: startDate } } },
-            {
-              $group: {
-                _id: { $ifNull: ['$eventData.errorType', '$eventData.type'] },
-                error_count: { $sum: 1 },
-                last_occurrence: { $max: '$timestamp' }
-              }
-            },
-            {
-              $project: {
-                error_type: '$_id',
-                error_count: 1,
-                last_occurrence: 1,
-                _id: 0
-              }
-            },
-            { $sort: { error_count: -1 } }
-          ]);
+      case 'error':
+        const errors = await this.getEventAnalytics('error', startDate);
+        return errors.map(e => ({
+          error_type: e.eventData?.type || e.eventData?.errorType || 'Unknown Error',
+          error_count: e.count,
+          error_message: e.eventData?.message || 'No message'
+        }));
 
-        case 'performance':
-          return await Analytics.aggregate([
-            { $match: { eventType: 'performance', timestamp: { $gte: startDate } } },
-            {
-              $group: {
-                _id: { $ifNull: ['$eventData.actionType', '$eventData.action'] },
-                avg_duration: { $avg: { $ifNull: ['$eventData.duration', 0] } },
-                max_duration: { $max: { $ifNull: ['$eventData.duration', 0] } },
-                count: { $sum: 1 }
-              }
-            },
-            {
-              $project: {
-                action_type: '$_id',
-                avg_duration: { $round: ['$avg_duration', 0] },
-                max_duration: { $round: ['$max_duration', 0] },
-                count: 1,
-                _id: 0
-              }
-            },
-            { $sort: { avg_duration: -1 } }
-          ]);
+      case 'performance':
+        const perf = await this.getEventAnalytics('performance', startDate);
+        return perf.map(p => ({
+          action_type: p.eventData?.action || p.eventData?.actionType || 'Unknown Action',
+          avg_duration: p.eventData?.duration || 0,
+          count: p.count
+        }));
 
-        case 'ui_interaction':
-          return await Analytics.aggregate([
-            { $match: { eventType: 'ui_interaction', timestamp: { $gte: startDate } } },
-            {
-              $group: {
-                _id: { $ifNull: ['$eventData.interactionType', '$eventData.type'] },
-                interaction_count: { $sum: 1 }
-              }
-            },
-            {
-              $project: {
-                interaction_type: '$_id',
-                interaction_count: 1,
-                _id: 0
-              }
-            },
-            { $sort: { interaction_count: -1 } }
-          ]);
+      case 'ui_interaction':
+        const ui = await this.getEventAnalytics('ui_interaction', startDate);
+        return ui.map(u => ({
+          interaction_type: u.eventData?.type || u.eventData?.interactionType || 'Unknown Interaction',
+          interaction_count: u.count,
+          element: u.eventData?.element || 'Unknown'
+        }));
 
-        case 'page_view':
-          return await Analytics.aggregate([
-            { $match: { eventType: 'page_view', timestamp: { $gte: startDate } } },
-            {
-              $group: {
-                _id: '$eventData.pageName',
-                view_count: { $sum: 1 },
-                unique_users: { $addToSet: '$userId' }
-              }
-            },
-            {
-              $project: {
-                page_name: '$_id',
-                view_count: 1,
-                unique_users: { $size: '$unique_users' },
-                _id: 0
-              }
-            },
-            { $sort: { view_count: -1 } }
-          ]);
-
-        case 'field_edit':
-          return await Analytics.aggregate([
-            { $match: { eventType: 'field_edit', timestamp: { $gte: startDate } } },
-            {
-              $group: {
-                _id: '$eventData.fieldName',
-                edit_count: { $sum: 1 },
-                unique_users: { $addToSet: '$userId' }
-              }
-            },
-            {
-              $project: {
-                field_name: '$_id',
-                edit_count: 1,
-                unique_users: { $size: '$unique_users' },
-                _id: 0
-              }
-            },
-            { $sort: { edit_count: -1 } }
-          ]);
-
-        case 'project_open':
-          return await Analytics.aggregate([
-            { $match: { eventType: 'project_open', timestamp: { $gte: startDate } } },
-            {
-              $group: {
-                _id: {
-                  projectId: '$eventData.projectId',
-                  projectName: '$eventData.projectName'
-                },
-                access_count: { $sum: 1 },
-                unique_users: { $addToSet: '$userId' },
-                last_accessed: { $max: '$timestamp' }
-              }
-            },
-            {
-              $project: {
-                project_id: '$_id.projectId',
-                project_name: '$_id.projectName',
-                access_count: 1,
-                unique_users: { $size: '$unique_users' },
-                last_accessed: 1,
-                _id: 0
-              }
-            },
-            { $sort: { access_count: -1 } }
-          ]);
-
-        case 'action':
-          return await Analytics.aggregate([
-            { $match: { eventType: 'action', timestamp: { $gte: startDate } } },
-            {
-              $group: {
-                _id: '$eventData.actionName',
-                action_count: { $sum: 1 },
-                unique_users: { $addToSet: '$userId' }
-              }
-            },
-            {
-              $project: {
-                action_name: '$_id',
-                action_count: 1,
-                unique_users: { $size: '$unique_users' },
-                _id: 0
-              }
-            },
-            { $sort: { action_count: -1 } }
-          ]);
-
-        case 'session_start':
-          return await Analytics.aggregate([
-            { $match: { eventType: 'session_start', timestamp: { $gte: startDate } } },
-            {
-              $group: {
-                _id: { $dateToString: { format: '%Y-%m-%d', date: '$timestamp' } },
-                session_count: { $sum: 1 },
-                unique_users: { $addToSet: '$userId' }
-              }
-            },
-            {
-              $project: {
-                date: '$_id',
-                session_count: 1,
-                unique_users: { $size: '$unique_users' },
-                _id: 0
-              }
-            },
-            { $sort: { date: -1 } }
-          ]);
-
-        case 'session_end':
-          return await Analytics.aggregate([
-            { $match: { eventType: 'session_end', timestamp: { $gte: startDate } } },
-            {
-              $group: {
-                _id: { $dateToString: { format: '%Y-%m-%d', date: '$timestamp' } },
-                session_end_count: { $sum: 1 },
-                avg_duration: { $avg: { $ifNull: ['$eventData.duration', 0] } },
-                total_duration: { $sum: { $ifNull: ['$eventData.duration', 0] } }
-              }
-            },
-            {
-              $project: {
-                date: '$_id',
-                session_end_count: 1,
-                avg_duration: { $round: ['$avg_duration', 0] },
-                total_duration: { $round: ['$total_duration', 0] },
-                _id: 0
-              }
-            },
-            { $sort: { date: -1 } }
-          ]);
-
-        default:
-          return [];
-      }
-    } catch (error) {
-      console.error(`Error running query for ${eventType}:`, error);
-      return [];
+      default:
+        return [];
     }
   }
 }

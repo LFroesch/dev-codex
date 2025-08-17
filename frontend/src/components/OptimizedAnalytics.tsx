@@ -183,13 +183,25 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
             </div>
 
             <div className="bg-base-100/80 backdrop-blur-sm border border-subtle rounded-xl p-6 shadow-lg">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
-                  <svg className="w-5 h-5 text-primary" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+                    <svg className="w-5 h-5 text-primary" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-semibold text-base-content">Recent Activity Timeline</h3>
                 </div>
-                <h3 className="text-lg font-semibold text-base-content">Recent Activity Timeline</h3>
+                <button 
+                  className="btn btn-outline btn-sm bg-base-100/80 backdrop-blur-sm border-subtle shadow-sm hover:shadow-md transition-all"
+                  onClick={() => fetchAnalytics(selectedPeriod, true)}
+                  disabled={loading}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Refresh
+                </button>
               </div>
               <div className="space-y-3 max-h-64 overflow-y-auto">
                 {(data?.timeline?.length ?? 0) > 0 ? (
@@ -206,7 +218,7 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
                       }</div>
                       <div className="flex-1">
                         <div className="font-medium text-sm text-base-content">
-                          {event.user_email || `User ${event.user_id?.slice(-6)}`}
+                          {event.user_name || event.user_email || `User ${event.user_id?.slice(-6)}`}
                         </div>
                         <div className="text-xs text-base-content/60">
                           {event.event_type.replace('_', ' ')} • {formatDate(event.timestamp)}

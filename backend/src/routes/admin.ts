@@ -809,9 +809,14 @@ router.get('/analytics/combined', async (req, res) => {
         } 
       },
       {
+        $addFields: {
+          userObjectId: { $toObjectId: '$userId' }
+        }
+      },
+      {
         $lookup: {
           from: 'users',
-          localField: 'userId',
+          localField: 'userObjectId',
           foreignField: '_id',
           as: 'user'
         }
@@ -850,7 +855,7 @@ router.get('/analytics/combined', async (req, res) => {
         }
       },
       { $sort: { timestamp: -1 } },
-      { $limit: 20 }
+      { $limit: 10 }
     ]);
 
     res.json({

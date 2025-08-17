@@ -1,8 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { BaseProject } from '../../../shared/types';
+import { projectAPI } from '../api/projects';
+import ConfirmationModal from './ConfirmationModal';
 
 interface ExportSectionProps {
   selectedProject: BaseProject;
+  onProjectRefresh?: () => void;
 }
 
 interface ExportOptions {
@@ -20,7 +24,8 @@ interface ExportOptions {
   timestamps: boolean;
 }
 
-const ExportSection: React.FC<ExportSectionProps> = ({ selectedProject }) => {
+const ExportSection: React.FC<ExportSectionProps> = ({ selectedProject, onProjectRefresh }) => {
+  const navigate = useNavigate();
   const [exportOptions, setExportOptions] = useState<ExportOptions>({
     basicInfo: true,
     description: true,
@@ -40,6 +45,15 @@ const ExportSection: React.FC<ExportSectionProps> = ({ selectedProject }) => {
   const [exportedData, setExportedData] = useState<string>('');
   const [showExportResult, setShowExportResult] = useState(false);
   const [customAiRequest, setCustomAiRequest] = useState<string>('');
+  
+  // Import/Export states
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importError, setImportError] = useState<string>('');
+  const [importSuccess, setImportSuccess] = useState<string>('');
+  const [showImportSuccessModal, setShowImportSuccessModal] = useState(false);
+  const [importedProjectData, setImportedProjectData] = useState<any>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const toggleOption = (key: keyof ExportOptions) => {
     setExportOptions(prev => ({
@@ -77,9 +91,10 @@ const ExportSection: React.FC<ExportSectionProps> = ({ selectedProject }) => {
       data.tags = selectedProject.tags;
     }
 
-    if (exportOptions.links && selectedProject.links?.length) {
-      data.links = selectedProject.links;
-    }
+    // Note: links property might not exist in BaseProject interface
+    // if (exportOptions.links && selectedProject.links?.length) {
+    //   data.links = selectedProject.links;
+    // }
 
     if (exportOptions.notes && selectedProject.notes?.length) {
       data.notes = selectedProject.notes;
@@ -483,6 +498,104 @@ ${noteContent}`;
     URL.revokeObjectURL(url);
   };
 
+  // Backend Export Handler
+  const handleBackendExport = async () => {
+    try {
+      setIsExporting(true);
+      console.log('Export: selectedProject:', selectedProject);
+      console.log('Export: project id:', selectedProject.id || (selectedProject as any)._id);
+      const projectId = selectedProject.id || (selectedProject as any)._id;
+      if (!projectId) {
+        throw new Error('Project ID not found');
+      }
+      const blob = await projectAPI.exportProject(projectId);
+      
+      // Create download
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${selectedProject.name.replace(/[^a-zA-Z0-9]/g, '_')}_backup_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error: any) {
+      console.error('Export error:', error);
+      setImportError('Failed to export project: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // Import Handler
+  const handleFileImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsImporting(true);
+      setImportError('');
+      setImportSuccess('');
+      console.log('Import: Starting file import:', file.name);
+
+      // Read file
+      const text = await file.text();
+      const importData = JSON.parse(text);
+
+      // Validate basic structure
+      if (!importData.project) {
+        throw new Error('Invalid import file: missing project data');
+      }
+
+      // Import via API
+      console.log('Import: Sending data to API:', importData);
+      const result = await projectAPI.importProject(importData);
+      console.log('Import: API result:', result);
+      
+      if (result.success) {
+        setImportSuccess(`✅ NEW PROJECT CREATED: "${result.project.name}" has been imported as a separate project for safety. Check your project list!`);
+        setImportedProjectData(result.project);
+        setShowImportSuccessModal(true);
+        
+        if (onProjectRefresh) {
+          await onProjectRefresh();
+        }
+      } else {
+        throw new Error(result.message || 'Import failed');
+      }
+    } catch (error: any) {
+      console.error('Import error:', error);
+      console.error('Import error details:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message,
+        config: error.config
+      });
+      
+      // Check if it's an authentication error
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        console.error('Authentication error during import - this might cause logout');
+      }
+      
+      if (error instanceof SyntaxError) {
+        setImportError('Invalid JSON file format');
+      } else if (error.response?.data?.message) {
+        setImportError(`Import failed: ${error.response.data.message}`);
+      } else if (error.response?.data?.errors) {
+        setImportError(`Validation errors: ${error.response.data.errors.join(', ')}`);
+      } else {
+        setImportError(`Import failed: ${error.message || 'Unknown error'}`);
+      }
+    } finally {
+      setIsImporting(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
   const selectedCount = Object.values(exportOptions).filter(Boolean).length;
 
   return (
@@ -491,7 +604,7 @@ ${noteContent}`;
       <div className="flex justify-between items-start mb-3">
         <div>
           <p className="text-sm text-base-content/70">
-            Export project data in various formats for backup or sharing with AI assistants.
+            Export project data for backup, sharing, or AI assistance. Import project data from backups.
           </p>
         </div>
         <select
@@ -504,6 +617,96 @@ ${noteContent}`;
           <option value="markdown">Markdown</option>
         </select>
       </div>
+
+      {/* Import/Export Quick Actions */}
+      <div className="bg-base-200/30 rounded-lg p-4 space-y-3">
+        <h4 className="font-semibold text-sm flex items-center gap-2">
+          📦 Project Backup & Import
+          <span className="badge badge-xs badge-primary">Creates New Project</span>
+        </h4>
+        
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={handleBackendExport}
+            disabled={isExporting}
+            className="btn btn-primary btn-sm"
+          >
+            {isExporting ? (
+              <>
+                <span className="loading loading-spinner loading-xs"></span>
+                Exporting...
+              </>
+            ) : (
+              <>
+                📥 Export Project Backup
+              </>
+            )}
+          </button>
+          
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              fileInputRef.current?.click();
+            }}
+            disabled={isImporting}
+            className="btn btn-outline btn-sm"
+          >
+            {isImporting ? (
+              <>
+                <span className="loading loading-spinner loading-xs"></span>
+                Importing...
+              </>
+            ) : (
+              <>
+                📤 Import Project
+              </>
+            )}
+          </button>
+          
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json"
+            onChange={handleFileImport}
+            className="hidden"
+          />
+        </div>
+
+        {/* Import/Export Status Messages */}
+        {importError && (
+          <div className="alert alert-error alert-sm">
+            <span className="text-xs">{importError}</span>
+            <button 
+              onClick={() => setImportError('')}
+              className="btn btn-ghost btn-xs"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+        
+        {importSuccess && (
+          <div className="alert alert-success alert-sm">
+            <span className="text-xs">{importSuccess}</span>
+            <button 
+              onClick={() => setImportSuccess('')}
+              className="btn btn-ghost btn-xs"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
+        <p className="text-xs text-base-content/50">
+          💡 <strong>Export:</strong> Downloads a complete backup with all project data (sanitized for security).
+          <br />
+          🚀 <strong>Import:</strong> Creates a NEW project from backup file (keeps your original project safe).
+        </p>
+      </div>
+
+      <div className="divider text-xs">Custom Export Options</div>
 
       {/* Custom AI Request Input - Only show when AI Prompt format is selected */}
       {exportFormat === 'prompt' && (
@@ -594,6 +797,32 @@ ${noteContent}`;
           </div>
         </div>
       )}
+
+      {/* Import Success Modal */}
+      <ConfirmationModal
+        isOpen={showImportSuccessModal}
+        onConfirm={() => {
+          setShowImportSuccessModal(false);
+          // Navigate to projects view where user can see the new project
+          navigate('/notes?view=projects');
+        }}
+        onCancel={() => {
+          setShowImportSuccessModal(false);
+          setImportedProjectData(null);
+        }}
+        title="🎉 Import Successful!"
+        message={importedProjectData ? 
+          `<p>A new project <strong>"${importedProjectData.name}"</strong> has been created successfully!</p>
+           <br/>
+           <p>This approach keeps your original project safe while giving you a clean copy to work with.</p>
+           <br/>
+           <p>Would you like to open the new project now?</p>` : 
+          'Project imported successfully!'
+        }
+        confirmText="Open New Project"
+        cancelText="Stay Here"
+        variant="info"
+      />
     </div>
   );
 };

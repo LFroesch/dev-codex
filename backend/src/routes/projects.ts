@@ -1426,4 +1426,301 @@ router.patch('/:id/members/:userId', requireAuth, requireProjectAccess('manage')
 });
 
 
+// Export project data (GET /api/projects/:id/export)
+router.get('/:id/export', requireAuth, requireProjectAccess('view'), async (req: AuthRequest, res) => {
+  try {
+    const projectId = req.params.id;
+    
+    // Get project with all data
+    const project = await Project.findById(projectId)
+      .populate('ownerId', 'firstName lastName email')
+      .lean();
+    
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    // Get team members
+    const teamMembers = await TeamMember.find({ projectId })
+      .populate('userId', 'firstName lastName email')
+      .lean();
+
+    // Sanitize the data for export
+    const exportData = {
+      version: '1.0',
+      exportedAt: new Date().toISOString(),
+      exportedBy: req.userId,
+      project: {
+        // Basic project info
+        name: project.name,
+        description: project.description,
+        stagingEnvironment: project.stagingEnvironment,
+        color: project.color,
+        category: project.category,
+        tags: project.tags,
+        isArchived: project.isArchived,
+        
+        // Project content
+        notes: project.notes || [],
+        todos: project.todos?.map(todo => ({
+          id: todo.id,
+          text: todo.text,
+          description: todo.description,
+          priority: todo.priority,
+          completed: todo.completed,
+          status: todo.status,
+          dueDate: todo.dueDate,
+          reminderDate: todo.reminderDate,
+          parentTodoId: todo.parentTodoId,
+          createdAt: todo.createdAt
+        })) || [],
+        devLog: project.devLog || [],
+        docs: project.docs || [],
+        
+        // Tech stack
+        selectedTechnologies: project.selectedTechnologies || [],
+        selectedPackages: project.selectedPackages || [],
+        
+        // Deployment (sanitized - no sensitive data)
+        deploymentData: {
+          liveUrl: project.deploymentData?.liveUrl || '',
+          githubRepo: project.deploymentData?.githubRepo || '',
+          deploymentPlatform: project.deploymentData?.deploymentPlatform || '',
+          deploymentStatus: project.deploymentData?.deploymentStatus || 'inactive',
+          buildCommand: project.deploymentData?.buildCommand || '',
+          startCommand: project.deploymentData?.startCommand || '',
+          deploymentBranch: project.deploymentData?.deploymentBranch || 'main',
+          notes: project.deploymentData?.notes || ''
+          // Note: environmentVariables excluded for security
+        },
+        
+        // Metadata
+        createdAt: project.createdAt,
+        updatedAt: project.updatedAt
+      },
+      
+      // Team info (sanitized)
+      team: {
+        owner: project.ownerId ? {
+          firstName: (project.ownerId as any).firstName,
+          lastName: (project.ownerId as any).lastName,
+          email: (project.ownerId as any).email
+        } : null,
+        members: teamMembers.map(member => ({
+          role: member.role,
+          joinedAt: member.joinedAt,
+          user: {
+            firstName: (member.userId as any).firstName,
+            lastName: (member.userId as any).lastName,
+            email: (member.userId as any).email
+          }
+        }))
+      }
+    };
+
+    // Set headers for file download
+    const filename = `${project.name.replace(/[^a-zA-Z0-9]/g, '_')}_export_${new Date().toISOString().split('T')[0]}.json`;
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    
+    res.json(exportData);
+    
+  } catch (error) {
+    console.error('Export project error:', error);
+    res.status(500).json({ message: 'Server error exporting project' });
+  }
+});
+
+// Import project data (POST /api/projects/import)
+router.post('/import', requireAuth, checkProjectLimit, async (req: AuthRequest, res) => {
+  try {
+    const importData = req.body;
+    
+    // Validate import data structure
+    if (!importData || typeof importData !== 'object') {
+      return res.status(400).json({ message: 'Invalid import data format' });
+    }
+    
+    if (!importData.project || typeof importData.project !== 'object') {
+      return res.status(400).json({ message: 'Missing project data in import' });
+    }
+    
+    const { project: projectData } = importData;
+    
+    // Validate required fields
+    if (!projectData.name || typeof projectData.name !== 'string') {
+      return res.status(400).json({ message: 'Project name is required and must be a string' });
+    }
+    
+    if (!projectData.description || typeof projectData.description !== 'string') {
+      return res.status(400).json({ message: 'Project description is required and must be a string' });
+    }
+
+    // Sanitize and validate input data
+    const sanitizedProject = {
+      name: projectData.name.trim().substring(0, 100),
+      description: projectData.description.trim().substring(0, 500),
+      stagingEnvironment: ['development', 'staging', 'production'].includes(projectData.stagingEnvironment) 
+        ? projectData.stagingEnvironment : 'development',
+      color: typeof projectData.color === 'string' && /^#[0-9A-Fa-f]{6}$/.test(projectData.color) 
+        ? projectData.color : '#3B82F6',
+      category: typeof projectData.category === 'string' ? projectData.category.trim().substring(0, 50) : 'general',
+      tags: Array.isArray(projectData.tags) 
+        ? projectData.tags.filter((tag: any) => typeof tag === 'string').map((tag: any) => tag.trim().substring(0, 30)).slice(0, 10)
+        : [],
+      isArchived: Boolean(projectData.isArchived),
+      
+      // Content arrays with validation
+      notes: Array.isArray(projectData.notes) ? projectData.notes.map((note: any) => ({
+        id: note.id || uuidv4(),
+        title: typeof note.title === 'string' ? note.title.trim().substring(0, 200) : '',
+        description: typeof note.description === 'string' ? note.description.trim().substring(0, 500) : '',
+        content: typeof note.content === 'string' ? note.content.trim().substring(0, 50000) : '',
+        createdAt: note.createdAt ? new Date(note.createdAt) : new Date(),
+        updatedAt: note.updatedAt ? new Date(note.updatedAt) : new Date()
+      })).slice(0, 100) : [],
+      
+      todos: Array.isArray(projectData.todos) ? projectData.todos.map((todo: any) => ({
+        id: todo.id || uuidv4(),
+        text: typeof todo.text === 'string' ? todo.text.trim().substring(0, 500) : '',
+        description: typeof todo.description === 'string' ? todo.description.trim().substring(0, 1000) : '',
+        priority: ['low', 'medium', 'high'].includes(todo.priority) ? todo.priority : 'medium',
+        completed: Boolean(todo.completed),
+        status: ['not_started', 'in_progress', 'blocked', 'completed'].includes(todo.status) ? todo.status : 'not_started',
+        dueDate: todo.dueDate ? new Date(todo.dueDate) : undefined,
+        reminderDate: todo.reminderDate ? new Date(todo.reminderDate) : undefined,
+        parentTodoId: typeof todo.parentTodoId === 'string' ? todo.parentTodoId : undefined,
+        createdAt: todo.createdAt ? new Date(todo.createdAt) : new Date(),
+        createdBy: req.userId,
+        updatedBy: req.userId
+      })).slice(0, 500) : [],
+      
+      devLog: Array.isArray(projectData.devLog) ? projectData.devLog.map((log: any) => ({
+        id: log.id || uuidv4(),
+        title: typeof log.title === 'string' ? log.title.trim().substring(0, 200) : '',
+        description: typeof log.description === 'string' ? log.description.trim().substring(0, 500) : '',
+        entry: typeof log.entry === 'string' ? log.entry.trim().substring(0, 10000) : '',
+        date: log.date ? new Date(log.date) : new Date(),
+        createdBy: req.userId,
+        updatedBy: req.userId
+      })).slice(0, 200) : [],
+      
+      docs: Array.isArray(projectData.docs) ? projectData.docs.map((doc: any) => ({
+        id: doc.id || uuidv4(),
+        type: ['Model', 'Route', 'API', 'Util', 'ENV', 'Auth', 'Runtime', 'Framework'].includes(doc.type) 
+          ? doc.type : 'API',
+        title: typeof doc.title === 'string' ? doc.title.trim().substring(0, 200) : '',
+        content: typeof doc.content === 'string' ? doc.content.trim().substring(0, 50000) : '',
+        createdAt: doc.createdAt ? new Date(doc.createdAt) : new Date(),
+        updatedAt: doc.updatedAt ? new Date(doc.updatedAt) : new Date(),
+        createdBy: req.userId,
+        updatedBy: req.userId
+      })).slice(0, 100) : [],
+      
+      selectedTechnologies: Array.isArray(projectData.selectedTechnologies) 
+        ? projectData.selectedTechnologies.filter((tech: any) => 
+            tech && typeof tech === 'object' && tech.category && tech.name
+          ).map((tech: any) => ({
+            category: ['styling', 'database', 'framework', 'runtime', 'deployment', 'testing', 'tooling'].includes(tech.category)
+              ? tech.category : 'tooling',
+            name: typeof tech.name === 'string' ? tech.name.trim().substring(0, 100) : '',
+            version: typeof tech.version === 'string' ? tech.version.trim().substring(0, 20) : ''
+          })).slice(0, 50) : [],
+          
+      selectedPackages: Array.isArray(projectData.selectedPackages)
+        ? projectData.selectedPackages.filter((pkg: any) => 
+            pkg && typeof pkg === 'object' && pkg.category && pkg.name
+          ).map((pkg: any) => ({
+            category: ['ui', 'state', 'routing', 'forms', 'animation', 'utility', 'api', 'auth', 'data'].includes(pkg.category)
+              ? pkg.category : 'utility',
+            name: typeof pkg.name === 'string' ? pkg.name.trim().substring(0, 100) : '',
+            version: typeof pkg.version === 'string' ? pkg.version.trim().substring(0, 20) : '',
+            description: typeof pkg.description === 'string' ? pkg.description.trim().substring(0, 200) : ''
+          })).slice(0, 100) : [],
+      
+      // Deployment data (excluding sensitive environment variables)
+      deploymentData: projectData.deploymentData && typeof projectData.deploymentData === 'object' ? {
+        liveUrl: typeof projectData.deploymentData.liveUrl === 'string' 
+          ? projectData.deploymentData.liveUrl.trim().substring(0, 200) : '',
+        githubRepo: typeof projectData.deploymentData.githubRepo === 'string' 
+          ? projectData.deploymentData.githubRepo.trim().substring(0, 200) : '',
+        deploymentPlatform: typeof projectData.deploymentData.deploymentPlatform === 'string' 
+          ? projectData.deploymentData.deploymentPlatform.trim().substring(0, 100) : '',
+        deploymentStatus: ['active', 'inactive', 'error'].includes(projectData.deploymentData.deploymentStatus)
+          ? projectData.deploymentData.deploymentStatus : 'inactive',
+        buildCommand: typeof projectData.deploymentData.buildCommand === 'string' 
+          ? projectData.deploymentData.buildCommand.trim().substring(0, 500) : '',
+        startCommand: typeof projectData.deploymentData.startCommand === 'string' 
+          ? projectData.deploymentData.startCommand.trim().substring(0, 500) : '',
+        deploymentBranch: typeof projectData.deploymentData.deploymentBranch === 'string' 
+          ? projectData.deploymentData.deploymentBranch.trim().substring(0, 100) : 'main',
+        environmentVariables: [], // Always empty for security
+        notes: typeof projectData.deploymentData.notes === 'string' 
+          ? projectData.deploymentData.notes.trim().substring(0, 2000) : ''
+      } : {
+        liveUrl: '',
+        githubRepo: '',
+        deploymentPlatform: '',
+        deploymentStatus: 'inactive',
+        buildCommand: '',
+        startCommand: '',
+        deploymentBranch: 'main',
+        environmentVariables: [],
+        notes: ''
+      },
+      
+      // Set ownership
+      userId: req.userId,
+      ownerId: req.userId,
+      isShared: false,
+      isPublic: false
+    };
+
+    // Create the new project
+    const newProject = new Project(sanitizedProject);
+    await newProject.save();
+
+    // Log the activity
+    try {
+      await activityLogger.log({
+        projectId: newProject._id.toString(),
+        userId: req.userId!,
+        sessionId: 'import-session', // TODO: Get actual session ID if available
+        action: 'project_imported',
+        resourceType: 'project',
+        resourceId: newProject._id.toString(),
+        details: {
+          resourceName: newProject.name,
+          metadata: {
+            importVersion: importData.version || 'unknown'
+          }
+        }
+      });
+    } catch (logError) {
+      console.error('Failed to log import activity:', logError);
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'Project imported successfully',
+      project: {
+        _id: newProject._id,
+        name: newProject.name,
+        description: newProject.description
+      }
+    });
+    
+  } catch (error) {
+    console.error('Import project error:', error);
+    if (error instanceof mongoose.Error.ValidationError) {
+      const errorMessages = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({ 
+        message: 'Validation error during import',
+        errors: errorMessages 
+      });
+    }
+    res.status(500).json({ message: 'Server error importing project' });
+  }
+});
+
 export default router;

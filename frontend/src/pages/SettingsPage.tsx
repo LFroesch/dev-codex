@@ -627,7 +627,7 @@ const SettingsPage: React.FC = () => {
           📤 Export Data
         </div>
         <div className="collapse-content">
-          <ExportSection selectedProject={selectedProject} />
+          <ExportSection selectedProject={selectedProject} onProjectRefresh={onProjectRefresh} />
         </div>
       </div>
 

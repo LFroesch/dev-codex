@@ -72,14 +72,24 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
 
         <div className="flex gap-3">
           <button 
+            type="button"
             className="btn btn-ghost flex-1"
-            onClick={onCancel}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onCancel();
+            }}
           >
             {cancelText}
           </button>
           <button 
+            type="button"
             className={`btn ${btnClass} flex-1`}
-            onClick={onConfirm}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onConfirm();
+            }}
           >
             {confirmText}
           </button>

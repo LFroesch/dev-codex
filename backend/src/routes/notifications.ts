@@ -1,6 +1,7 @@
 import express from 'express';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import Notification from '../models/Notification';
+import NotificationService from '../services/notificationService';
 
 const router = express.Router();
 
@@ -10,28 +11,16 @@ router.get('/', requireAuth, async (req: AuthRequest, res) => {
     const userId = req.userId!;
     const { limit = 20, skip = 0, unread_only = false } = req.query;
 
-    const query: any = { userId };
-    if (unread_only === 'true') {
-      query.isRead = false;
-    }
-
-    const notifications = await Notification.find(query)
-      .populate('relatedProjectId', 'name color')
-      .populate('relatedUserId', 'firstName lastName')
-      .sort({ createdAt: -1 })
-      .limit(parseInt(limit as string))
-      .skip(parseInt(skip as string));
-
-    const unreadCount = await Notification.countDocuments({
-      userId,
-      isRead: false,
+    const notificationService = NotificationService.getInstance();
+    const result = await notificationService.getNotifications(userId, {
+      limit: parseInt(limit as string),
+      skip: parseInt(skip as string),
+      unreadOnly: unread_only === 'true',
     });
 
     res.json({
       success: true,
-      notifications,
-      unreadCount,
-      total: await Notification.countDocuments(query),
+      ...result,
     });
   } catch (error) {
     console.error('Get notifications error:', error);
@@ -45,11 +34,8 @@ router.patch('/:id/read', requireAuth, async (req: AuthRequest, res) => {
     const { id } = req.params;
     const userId = req.userId!;
 
-    const notification = await Notification.findOneAndUpdate(
-      { _id: id, userId },
-      { isRead: true },
-      { new: true }
-    );
+    const notificationService = NotificationService.getInstance();
+    const notification = await notificationService.markAsRead(id, userId);
 
     if (!notification) {
       return res.status(404).json({ message: 'Notification not found' });
@@ -92,12 +78,10 @@ router.delete('/:id', requireAuth, async (req: AuthRequest, res) => {
     const { id } = req.params;
     const userId = req.userId!;
 
-    const notification = await Notification.findOneAndDelete({
-      _id: id,
-      userId,
-    });
+    const notificationService = NotificationService.getInstance();
+    const deleted = await notificationService.deleteNotification(id, userId);
 
-    if (!notification) {
+    if (!deleted) {
       return res.status(404).json({ message: 'Notification not found' });
     }
 

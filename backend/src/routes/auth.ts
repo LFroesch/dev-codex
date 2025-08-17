@@ -10,11 +10,79 @@ import { User } from '../models/User';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import RateLimit from '../models/RateLimit';
 import { AnalyticsService } from '../middleware/analytics';
+import { Project } from '../models/Project';
+import Notification from '../models/Notification';
 
 dotenv.config();
 
 // Temporary store for linking user IDs (in production, use Redis or database)
 const linkingStore = new Map<string, string>();
+
+// Helper function to create login notifications for due today tasks
+const createLoginNotifications = async (userId: string) => {
+  try {
+    const projects = await Project.find({
+      $or: [
+        { ownerId: userId },
+        { userId: userId },
+        { 'todos.assignedTo': userId }
+      ]
+    }).populate('ownerId');
+
+    const today = new Date();
+    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
+
+    let dueTodayCount = 0;
+    const dueTodayTasks: string[] = [];
+
+    for (const project of projects) {
+      for (const todo of project.todos) {
+        if (todo.completed || !todo.dueDate) continue;
+
+        const assignedToUser = todo.assignedTo?.toString() === userId;
+        const isOwner = project.ownerId?.toString() === userId;
+        
+        if (!assignedToUser && !isOwner) continue;
+
+        const dueDate = new Date(todo.dueDate);
+        if (dueDate >= startOfDay && dueDate <= endOfDay) {
+          dueTodayCount++;
+          dueTodayTasks.push(`"${todo.text}" in ${project.name}`);
+        }
+      }
+    }
+
+    // Create notification if there are tasks due today
+    if (dueTodayCount > 0) {
+      // Check if we already sent a login notification today
+      const existingNotification = await Notification.findOne({
+        userId,
+        type: 'todo_due_soon',
+        title: 'Welcome Back!',
+        createdAt: { $gte: startOfDay }
+      });
+
+      if (!existingNotification) {
+        const message = dueTodayCount === 1 
+          ? `You have 1 task due today: ${dueTodayTasks[0]}`
+          : `You have ${dueTodayCount} tasks due today: ${dueTodayTasks.slice(0, 3).join(', ')}${dueTodayCount > 3 ? ` and ${dueTodayCount - 3} more` : ''}`;
+
+        await Notification.create({
+          userId,
+          type: 'todo_due_soon',
+          title: 'Welcome Back!',
+          message,
+          actionUrl: '/notes'
+        });
+
+        console.log(`Created login notification for user ${userId}: ${dueTodayCount} tasks due today`);
+      }
+    }
+  } catch (error) {
+    console.error('Error creating login notifications:', error);
+  }
+};
 
 const router = express.Router();
 
@@ -189,6 +257,9 @@ router.post('/login', async (req, res) => {
       sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
+
+    // Create login notifications for due today tasks
+    await createLoginNotifications(user._id.toString());
 
     res.json({
       message: 'Login successful',

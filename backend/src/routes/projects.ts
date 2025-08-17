@@ -747,15 +747,21 @@ router.post('/:id/todos', requireProjectAccess('edit'), async (req: AuthRequest,
 
     // Create assignment notification if assigning to someone else
     if (assignedTo && assignedTo !== req.userId?.toString()) {
-      await Notification.create({
-        userId: assignedTo,
-        type: 'todo_assigned',
-        title: 'Todo Assigned',
-        message: `You have been assigned a new todo: "${text.trim()}"`,
-        relatedProjectId: project._id,
-        relatedTodoId: newTodo.id,
-        actionUrl: `/projects/${project._id}`
-      });
+      console.log(`Creating assignment notification for user ${assignedTo}, todo: ${text.trim()}`);
+      try {
+        await Notification.create({
+          userId: assignedTo,
+          type: 'todo_assigned',
+          title: 'Todo Assigned',
+          message: `You have been assigned a new todo: "${text.trim()}"`,
+          relatedProjectId: project._id,
+          relatedTodoId: newTodo.id,
+          actionUrl: `/projects/${project._id}`
+        });
+        console.log(`Assignment notification created successfully`);
+      } catch (notifError) {
+        console.error('Failed to create assignment notification:', notifError);
+      }
 
       // Log todo assignment activity with user name
       try {

@@ -2,6 +2,7 @@ import cron from 'node-cron';
 import { Project } from '../models/Project';
 import Notification from '../models/Notification';
 import { User } from '../models/User';
+import NotificationService from './notificationService';
 
 class ReminderService {
   private static instance: ReminderService;
@@ -22,13 +23,13 @@ class ReminderService {
 
     console.log('Initializing reminder service...');
 
-    // Check for due/overdue todos every hour
-    cron.schedule('0 * * * *', () => {
+    // Check for due/overdue todos every 15 minutes
+    cron.schedule('*/15 * * * *', () => {
       this.checkDueTodos();
     });
 
-    // Check for reminder notifications every 5 minutes
-    cron.schedule('*/5 * * * *', () => {
+    // Check for reminder notifications every 1 minute
+    cron.schedule('*/1 * * * *', () => {
       this.checkReminderNotifications();
     });
 
@@ -43,7 +44,6 @@ class ReminderService {
 
   private async checkDueTodos(): Promise<void> {
     try {
-      console.log('Checking for due todos...');
       
       const projects = await Project.find({}).populate('ownerId');
       const now = new Date();
@@ -59,7 +59,7 @@ class ReminderService {
 
           // Send overdue notification
           if (isOverdue && !await this.hasRecentNotification(todo.assignedTo || project.ownerId, 'todo_overdue', todo.id)) {
-            await this.createNotification({
+            await Notification.create({
               userId: todo.assignedTo || project.ownerId,
               type: 'todo_overdue',
               title: 'Todo Overdue',
@@ -68,11 +68,12 @@ class ReminderService {
               relatedTodoId: todo.id,
               actionUrl: `/projects/${project._id}`
             });
+            console.log(`Created overdue notification for todo "${todo.text}"`);
           }
 
           // Send due soon notification
           if (isDueSoon && !await this.hasRecentNotification(todo.assignedTo || project.ownerId, 'todo_due_soon', todo.id)) {
-            await this.createNotification({
+            await Notification.create({
               userId: todo.assignedTo || project.ownerId,
               type: 'todo_due_soon',
               title: 'Todo Due Soon',
@@ -81,11 +82,11 @@ class ReminderService {
               relatedTodoId: todo.id,
               actionUrl: `/projects/${project._id}`
             });
+            console.log(`Created due soon notification for todo "${todo.text}"`);
           }
         }
       }
 
-      console.log('Due todos check completed');
     } catch (error) {
       console.error('Error checking due todos:', error);
     }
@@ -100,29 +101,57 @@ class ReminderService {
 
       for (const project of projects) {
         for (const todo of project.todos) {
-          if (!todo.reminderDate || todo.completed) continue;
+          if (todo.completed) continue;
 
-          const reminderDate = new Date(todo.reminderDate);
-          
-          // Send reminder if it's within the next 15 minutes or within the last minute
-          if (reminderDate <= reminderWindow && reminderDate >= pastWindow) {
-            const hasRecent = await this.hasRecentNotification(
-              todo.assignedTo || project.ownerId, 
-              'todo_due_soon', 
-              todo.id,
-              60 // Within last 60 minutes
-            );
+          // Check reminderDate
+          if (todo.reminderDate) {
+            const reminderDate = new Date(todo.reminderDate);
+            if (reminderDate <= reminderWindow && reminderDate >= pastWindow) {
+              const hasRecent = await this.hasRecentNotification(
+                todo.assignedTo || project.ownerId, 
+                'todo_due_soon', 
+                todo.id,
+                60 // Within last 60 minutes
+              );
 
-            if (!hasRecent) {
-              await this.createNotification({
-                userId: todo.assignedTo || project.ownerId,
-                type: 'todo_due_soon',
-                title: 'Todo Reminder',
-                message: `Reminder: "${todo.text}" in project "${project.name}"`,
-                relatedProjectId: project._id,
-                relatedTodoId: todo.id,
-                actionUrl: `/projects/${project._id}`
-              });
+              if (!hasRecent) {
+                await Notification.create({
+                  userId: todo.assignedTo || project.ownerId,
+                  type: 'todo_due_soon',
+                  title: 'Todo Reminder',
+                  message: `Reminder: "${todo.text}" in project "${project.name}"`,
+                  relatedProjectId: project._id,
+                  relatedTodoId: todo.id,
+                  actionUrl: `/projects/${project._id}`
+                });
+                console.log(`Created reminder notification for todo "${todo.text}"`);
+              }
+            }
+          }
+
+          // Also check dueDate as a reminder (separate from overdue check)
+          if (todo.dueDate) {
+            const dueDate = new Date(todo.dueDate);
+            if (dueDate <= reminderWindow && dueDate >= pastWindow) {
+              const hasRecent = await this.hasRecentNotification(
+                todo.assignedTo || project.ownerId, 
+                'todo_due_soon', 
+                todo.id,
+                60 // Within last 60 minutes
+              );
+
+              if (!hasRecent) {
+                await Notification.create({
+                  userId: todo.assignedTo || project.ownerId,
+                  type: 'todo_due_soon',
+                  title: 'Todo Due Soon',
+                  message: `Todo "${todo.text}" in project "${project.name}" is due soon`,
+                  relatedProjectId: project._id,
+                  relatedTodoId: todo.id,
+                  actionUrl: `/projects/${project._id}`
+                });
+                console.log(`Created due soon notification for todo "${todo.text}"`);
+              }
             }
           }
         }
@@ -134,7 +163,6 @@ class ReminderService {
 
   private async sendDailySummary(): Promise<void> {
     try {
-      console.log('Sending daily summaries...');
       
       const users = await User.find({});
       
@@ -181,17 +209,17 @@ class ReminderService {
             message += `You have ${dueTodayTodos} todo(s) due today.`;
           }
 
-          await this.createNotification({
+          await Notification.create({
             userId: user._id,
             type: 'todo_due_soon',
             title: 'Daily Todo Summary',
             message: message.trim(),
             actionUrl: '/projects'
           });
+          console.log(`Created daily summary notification for user ${user._id}`);
         }
       }
 
-      console.log('Daily summaries sent');
     } catch (error) {
       console.error('Error sending daily summaries:', error);
     }
@@ -215,23 +243,13 @@ class ReminderService {
     return !!existingNotification;
   }
 
-  private async createNotification(data: {
-    userId: any;
-    type: string;
-    title: string;
-    message: string;
-    relatedProjectId?: any;
-    relatedTodoId?: string;
-    actionUrl?: string;
-  }): Promise<void> {
-    try {
-      await Notification.create(data);
-      console.log(`Created ${data.type} notification for user ${data.userId}`);
-    } catch (error) {
-      console.error('Error creating notification:', error);
-    }
-  }
 
+  // Public method to manually trigger checks (for testing)
+  public async triggerChecks(): Promise<void> {
+    console.log('Manually triggering notification checks...');
+    await this.checkDueTodos();
+    await this.checkReminderNotifications();
+  }
 
   public stop(): void {
     // Note: node-cron doesn't provide a direct way to stop specific tasks

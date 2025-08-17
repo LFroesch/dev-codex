@@ -768,14 +768,19 @@ const NoteModal: React.FC<NoteModalProps> = ({
             <button
               onClick={async () => {
                 if (mode === 'edit') {
+                  // In edit mode, check for unsaved changes before closing
                   const hasChanges = editTitle.trim() !== note.title || 
                                     editDescription.trim() !== (note.description || '') || 
                                     editContent.trim() !== note.content;
                   if (hasChanges) {
-                    const canProceed = await unsavedChangesManager.checkNavigationAllowed();
-                    if (!canProceed) return;
+                    // Show save confirmation modal instead of using unsavedChangesManager
+                    setShowSaveConfirm(true);
+                    return;
                   }
+                  // No changes, release lock and close
+                  await releaseLock();
                 }
+                // In view mode, just close directly
                 onClose();
               }}
               className="btn btn-primary gap-2"
@@ -970,6 +975,7 @@ const NewNoteForm: React.FC<NewNoteFormProps> = ({ projectId, onAdd }) => {
       console.error('Failed to create note:', error);
     } finally {
       setLoading(false);
+      toast.success('Note Created Successfully')
     }
   };
 

@@ -1,12 +1,6 @@
 # CLAUDE Changes
-- [ ] Toasts Manager
-- [ ] Notifications not working like if you log in and the notification hasnt been sent to you yet it should, idk somethings wrong
-- [ ] Help/Info Page Implemented
-- [ ] Performance analytics and metrics tune up - on admin / user / per project / debloat
-- [ ] Import/export project data [also overall data/input sanitization/validation / safety]
-- [ ] Refactor & Clean Code: Fix any repetition / unused code / debugs / console logs / fix comments / etc
-- [ ] TTL / garbage collection on db info, keep it from bloating, tracking unnecessary shit for now
-- [ ] Add checkboxes to enhancedtexteditor.tsx buttons
+- [ ] Fix up analytics / admin dashboard for any weird outputs [ HIGH IMPORTANCE ]
+- [ ] Import/export project data [also entire project data/input sanitization/validation / safety]
 
 ## Manual Changes / Phase 2
 - [ ] Mobile/smaller window improvements

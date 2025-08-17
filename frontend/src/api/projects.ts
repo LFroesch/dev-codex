@@ -126,6 +126,18 @@ class ProjectService extends BaseApiService {
   async removePackage(projectId: string, category: string, name: string): Promise<{ message: string }> {
     return this.delete(`/${projectId}/packages/${category}/${encodeURIComponent(name)}`);
   }
+
+  // Import/Export functionality
+  async exportProject(projectId: string): Promise<Blob> {
+    const response = await apiClient.get(`${this.endpoint}/${projectId}/export`, {
+      responseType: 'blob'
+    });
+    return response.data;
+  }
+
+  async importProject(importData: any): Promise<{ success: boolean; message: string; project: { _id: string; name: string; description: string } }> {
+    return this.post('/import', importData);
+  }
 }
 
 export const projectAPI = new ProjectService();

@@ -801,11 +801,63 @@ router.get('/analytics/combined', async (req, res) => {
       totalTimeSpent: sessionStats[0]?.totalTime || 0
     };
 
+    // Get recent activity from Analytics collection
+    const recentActivity = await Analytics.aggregate([
+      { 
+        $match: { 
+          timestamp: { $gte: startDate }
+        } 
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'user'
+        }
+      },
+      {
+        $lookup: {
+          from: 'projects',
+          localField: 'eventData.projectId',
+          foreignField: '_id',
+          as: 'project'
+        }
+      },
+      {
+        $addFields: {
+          user_email: { $arrayElemAt: ['$user.email', 0] },
+          user_name: { 
+            $concat: [
+              { $arrayElemAt: ['$user.firstName', 0] },
+              ' ',
+              { $arrayElemAt: ['$user.lastName', 0] }
+            ]
+          },
+          project_name: { $arrayElemAt: ['$project.name', 0] }
+        }
+      },
+      {
+        $project: {
+          timestamp: 1,
+          eventType: 1,
+          event_type: '$eventType', // For frontend compatibility
+          user_id: '$userId',
+          user_email: 1,
+          user_name: 1,
+          project_name: 1,
+          eventData: 1
+        }
+      },
+      { $sort: { timestamp: -1 } },
+      { $limit: 20 }
+    ]);
+
     res.json({
       overview,
       topUsers,
       topProjects,
-      recentActivity: [] // Can be populated later if needed
+      recentActivity
     });
 
   } catch (error) {

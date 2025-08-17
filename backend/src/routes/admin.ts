@@ -629,10 +629,16 @@ router.get('/analytics/combined', async (req, res) => {
               if: { $and: [{ $gt: ['$duration', 0] }] },
               then: '$duration',
               else: {
-                $subtract: [
-                  { $ifNull: ['$lastActivity', new Date()] },
-                  '$startTime'
-                ]
+                $cond: {
+                  if: { $and: [{ $ne: ['$lastActivity', null] }, { $gte: ['$lastActivity', '$startTime'] }] },
+                  then: {
+                    $min: [
+                      { $subtract: ['$lastActivity', '$startTime'] },
+                      86400000  // Cap at 24 hours (in milliseconds)
+                    ]
+                  },
+                  else: 0  // Default to 0 if no valid lastActivity
+                }
               }
             }
           }
@@ -658,10 +664,32 @@ router.get('/analytics/combined', async (req, res) => {
               if: { $and: [{ $gt: ['$duration', 0] }] },
               then: '$duration',
               else: {
-                $subtract: [
-                  { $ifNull: ['$lastActivity', new Date()] },
-                  '$startTime'
-                ]
+                $cond: {
+                  if: { $and: [{ $ne: ['$lastActivity', null] }, { $gte: ['$lastActivity', '$startTime'] }] },
+                  then: {
+                    $min: [
+                      { 
+                        $subtract: [
+                          { $min: ['$lastActivity', { $add: ['$lastActivity', 900000] }] }, // Cap at lastActivity + 15 minutes
+                          '$startTime'
+                        ]
+                      },
+                      86400000  // Cap at 24 hours (in milliseconds)
+                    ]
+                  },
+                  else: {
+                    $cond: {
+                      if: { $eq: ['$isActive', true] },
+                      then: {
+                        $min: [
+                          900000,  // If still active but no lastActivity, assume 15 minutes max
+                          { $subtract: [new Date(), '$startTime'] }
+                        ]
+                      },
+                      else: 0
+                    }
+                  }
+                }
               }
             }
           }

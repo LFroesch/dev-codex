@@ -80,26 +80,32 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
     setError(null);
 
     try {
-      const [basicResponse, comprehensiveResponse] = await Promise.all([
-        analyticsAPI.getAdminAnalytics(undefined, days),
+      const [combinedResponse, comprehensiveResponse] = await Promise.all([
+        fetch('/api/admin/analytics/combined?days=' + days, {
+          credentials: 'include'
+        }).then(res => res.json()),
         analyticsAPI.getComprehensive(days)
       ]);
 
       const transformedBasicData = {
         summary: {
-          totalEvents: (basicResponse as any).eventCounts?.reduce((sum: number, item: any) => sum + (item.count || 0), 0) || 0,
-          totalUsers: (basicResponse as any).sessionStats?.uniqueUsers || 0,
-          totalProjects: (basicResponse as any).projectBreakdown?.length || 0,
-          avgSessionDuration: (basicResponse as any).sessionStats?.averageSessionDuration || 0
+          totalEvents: combinedResponse.overview?.totalEvents || 0,
+          totalUsers: combinedResponse.overview?.totalUsers || 0,
+          totalProjects: combinedResponse.topProjects?.length || 0,
+          avgSessionDuration: (combinedResponse.overview?.avgSessionTime || 0) / 1000 // Convert ms to seconds
         },
-        topUsers: [],
-        topProjects: (basicResponse as any).projectBreakdown?.map((project: any) => ({
-          name: project.project_name || project._id,
-          totalActivity: project.event_count || 0,
-          uniqueUserCount: project.unique_users || 0,
-          lastActivity: project.last_activity || new Date().toISOString()
+        topUsers: combinedResponse.topUsers?.map((user: any) => ({
+          ...user,
+          totalTime: (user.totalTime || 0) / 1000 // Convert ms to seconds
         })) || [],
-        timeline: []
+        topProjects: combinedResponse.topProjects?.map((project: any) => ({
+          _id: project.projectId,
+          name: project.projectName,
+          totalActivity: Math.round((project.totalTime || 0) / 1000), // Convert ms to seconds for total time across all users
+          uniqueUserCount: project.uniqueUserCount,
+          lastActivity: project.lastActivity
+        })) || [],
+        timeline: combinedResponse.recentActivity || []
       };
 
       setData(transformedBasicData);
@@ -169,7 +175,7 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
                 <div className="flex flex-col items-center text-center space-y-2">
                   <div className="text-2xl group-hover:scale-110 transition-transform duration-200">⏱️</div>
                   <div className="text-2xl font-bold text-accent">
-                    {data?.summary?.avgSessionDuration ? formatTime(data.summary.avgSessionDuration / 1000) : '0s'}
+                    {data?.summary?.avgSessionDuration ? formatTime(data.summary.avgSessionDuration) : '0s'}
                   </div>
                   <div className="text-xs text-base-content/60">Avg Session</div>
                 </div>
@@ -227,7 +233,57 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
               </div>
               <h3 className="text-lg font-semibold text-base-content">Most Active Users (Last {selectedPeriod} days)</h3>
             </div>
-            <div className="text-center text-base-content/60 py-8">No user activity data available</div>
+            <div className="overflow-x-auto">
+              <table className="table table-sm w-full">
+                <thead>
+                  <tr className="border-subtle">
+                    <th className="bg-base-200/30 text-base-content/70">User</th>
+                    <th className="bg-base-200/30 text-base-content/70">Plan</th>
+                    <th className="bg-base-200/30 text-base-content/70">Time Spent</th>
+                    <th className="bg-base-200/30 text-base-content/70">Events</th>
+                    <th className="bg-base-200/30 text-base-content/70">Field Edits</th>
+                    <th className="bg-base-200/30 text-base-content/70">Last Active</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(data?.topUsers?.length ?? 0) > 0 ? (
+                    data?.topUsers?.map((user: any, index: number) => (
+                      <tr key={index} className={`border-subtle hover:bg-base-200/20 transition-colors duration-200 ${index < 3 ? 'bg-success/5' : ''}`}>
+                        <td>
+                          <div className="flex items-center gap-2">
+                            {index < 3 && <span className="text-lg">🏆</span>}
+                            <div>
+                              <div className="font-medium text-sm text-base-content">
+                                {user.firstName} {user.lastName}
+                              </div>
+                              <div className="text-xs text-base-content/60">{user.email}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <span className={`badge badge-xs ${
+                            user.planTier === 'pro' ? 'badge-primary' : 
+                            user.planTier === 'enterprise' ? 'badge-secondary' : 'badge-ghost'
+                          }`}>
+                            {user.planTier}
+                          </span>
+                        </td>
+                        <td className="font-mono text-sm">{formatTime(user.totalTime)}</td>
+                        <td>
+                          <span className="badge badge-primary">{user.totalEvents}</span>
+                        </td>
+                        <td>{user.fieldEdits}</td>
+                        <td className="text-xs text-base-content/60">{formatDate(user.lastActivity)}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={6} className="text-center text-base-content/60 py-8">No user activity data</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         );
 
@@ -247,7 +303,7 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
                 <thead>
                   <tr className="border-subtle">
                     <th className="bg-base-200/30 text-base-content/70">Project</th>
-                    <th className="bg-base-200/30 text-base-content/70">Total Activities</th>
+                    <th className="bg-base-200/30 text-base-content/70">Total Time</th>
                     <th className="bg-base-200/30 text-base-content/70">Unique Users</th>
                     <th className="bg-base-200/30 text-base-content/70">Last Activity</th>
                   </tr>
@@ -263,7 +319,7 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
                           </div>
                         </td>
                         <td>
-                          <span className="badge badge-primary">{project.totalActivity}</span>
+                          <span className="badge badge-primary">{formatTime(project.totalActivity)}</span>
                         </td>
                         <td>
                           <span className="badge badge-outline badge-xs text-base-content/70">

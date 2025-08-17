@@ -480,9 +480,9 @@ const Layout: React.FC = () => {
                   {/* Current Project indicator styled like SessionTracker */}
                   {selectedProject && (
                     <div 
-                      className="flex items-center gap-2 px-3 py-1.5 bg-base-100/80 rounded-lg border border-base-content/10 shadow-sm hover:bg-base-200/70 transition-all duration-200 cursor-pointer h-8"
-                      onClick={() => handleNavigateWithCheck('/notes')}
-                      title={`Current project: ${selectedProject.name}`}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-base-100/80 rounded-lg border border-base-content/10 shadow-sm hover:bg-base-200/70 transition-all duration-200 cursor-pointer h-8"
+                    onClick={() => handleNavigateWithCheck('/notes')}
+                    title={`Current project: ${selectedProject.name}`}
                     >
                       <div 
                         className="w-2 h-2 rounded-full shadow-sm"
@@ -495,6 +495,7 @@ const Layout: React.FC = () => {
                     projectId={selectedProject?.id}
                     currentUserId={user?.id}
                   />
+                  <span className="text-sm font-medium text-base-content/80 ml-2">Hi, {user?.firstName}!</span>
                   <NotificationBell />
                   <UserMenu user={user} onLogout={handleLogout} />
                 </div>

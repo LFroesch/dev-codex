@@ -1,6 +1,7 @@
 import express from 'express';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import RateLimit from '../models/RateLimit';
+import ReminderService from '../services/reminderService';
 
 const router = express.Router();
 
@@ -40,6 +41,21 @@ if (process.env.NODE_ENV !== 'production') {
       });
     } catch (error) {
       console.error('Error clearing IP rate limits:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  // Trigger reminder checks manually for testing
+  router.post('/trigger-reminders', requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const reminderService = ReminderService.getInstance();
+      await reminderService.triggerChecks();
+      res.json({ 
+        message: 'Reminder checks triggered successfully',
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error triggering reminder checks:', error);
       res.status(500).json({ error: 'Internal server error' });
     }
   });

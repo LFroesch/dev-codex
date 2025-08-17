@@ -146,7 +146,7 @@ const startServer = async () => {
       }
     });
 
-    // Simple lock signaling - no authentication needed, just project-based rooms
+    // Socket.IO for real-time updates (lock signaling and notifications)
     io.on('connection', (socket) => {
       console.log('Client connected:', socket.id);
 
@@ -160,6 +160,18 @@ const startServer = async () => {
       socket.on('leave-project', (projectId: string) => {
         socket.leave(`project-${projectId}`);
         console.log(`Socket ${socket.id} left project-${projectId}`);
+      });
+
+      // Join user notification room
+      socket.on('join-user-notifications', (userId: string) => {
+        socket.join(`user-${userId}`);
+        console.log(`Socket ${socket.id} joined user-${userId} notifications`);
+      });
+
+      // Leave user notification room
+      socket.on('leave-user-notifications', (userId: string) => {
+        socket.leave(`user-${userId}`);
+        console.log(`Socket ${socket.id} left user-${userId} notifications`);
       });
 
       socket.on('disconnect', () => {

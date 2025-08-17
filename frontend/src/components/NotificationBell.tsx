@@ -21,9 +21,6 @@ const NotificationBell: React.FC = () => {
     const fetchNotifications = async () => {
       try {
         const response = await notificationAPI.getNotifications({ limit: 5 });
-        
-        // Note: Real-time updates now handled by WebSocket signals
-        
         setNotifications(response.notifications);
         setUnreadCount(response.unreadCount);
       } catch (error) {
@@ -32,9 +29,9 @@ const NotificationBell: React.FC = () => {
     };
 
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000);
+    const interval = setInterval(fetchNotifications, 10000); // Check every 10 seconds for testing
     return () => clearInterval(interval);
-  }, [notifications]);
+  }, []);
 
   // Close dropdown when clicking outside
   useEffect(() => {

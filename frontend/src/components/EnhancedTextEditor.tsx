@@ -72,8 +72,10 @@ const EnhancedTextEditor: React.FC<EnhancedTextEditorProps> = ({
     processedText = processedText
       .replace(/^> (.*$)/gim, '<blockquote class="border-l-4 border-primary pl-4 my-2 italic text-base-content/80">$1</blockquote>');
     
-    // 8. Lists
+    // 8. Lists and Checkboxes
     processedText = processedText
+      .replace(/^- \[ \] (.*$)/gim, '<li class="ml-4 flex items-center gap-2"><input type="checkbox" class="checkbox checkbox-sm" disabled> <span>$1</span></li>')
+      .replace(/^- \[x\] (.*$)/gim, '<li class="ml-4 flex items-center gap-2"><input type="checkbox" class="checkbox checkbox-sm" checked disabled> <span class="line-through text-base-content/60">$1</span></li>')
       .replace(/^- (.*$)/gim, '<li class="ml-4 list-disc list-inside">$1</li>')
       .replace(/^\* (.*$)/gim, '<li class="ml-4 list-disc list-inside">$1</li>')
       .replace(/^\d+\. (.*$)/gim, '<li class="ml-4 list-decimal list-inside">$1</li>');
@@ -125,31 +127,43 @@ const EnhancedTextEditor: React.FC<EnhancedTextEditorProps> = ({
       icon: '**B**', 
       label: 'Bold', 
       action: () => insertMarkdown('**', '**'),
-      className: 'font-bold'
+      className: 'font-bold',
+      hasCheckbox: false
     },
     { 
       icon: '*I*', 
       label: 'Italic', 
       action: () => insertMarkdown('*', '*'),
-      className: 'italic'
+      className: 'italic',
+      hasCheckbox: false
     },
     { 
       icon: '</>', 
       label: 'Code', 
       action: () => insertMarkdown('`', '`'),
-      className: 'font-mono text-xs'
+      className: 'font-mono text-xs',
+      hasCheckbox: false
     },
     { 
       icon: '""', 
       label: 'Quote', 
       action: () => insertMarkdown('> '),
-      className: ''
+      className: '',
+      hasCheckbox: false
     },
     { 
       icon: '•', 
       label: 'List', 
       action: () => insertMarkdown('- '),
-      className: ''
+      className: '',
+      hasCheckbox: false
+    },
+    { 
+      icon: '☐', 
+      label: 'Checkbox', 
+      action: () => insertMarkdown('- [ ] '),
+      className: '',
+      hasCheckbox: true
     },
   ];
 
@@ -288,6 +302,10 @@ const EnhancedTextEditor: React.FC<EnhancedTextEditorProps> = ({
             <div className="flex items-center gap-2">
               <kbd className="kbd kbd-sm bg-base-300 text-base-content">&gt; quote</kbd>
               <span className="text-xs">Quote</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <kbd className="kbd kbd-sm bg-base-300 text-base-content">- [ ]</kbd>
+              <span className="text-xs">Checkbox</span>
             </div>
           </div>
           <div className="mt-3 pt-2 border-t border-base-300">

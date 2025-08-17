@@ -76,8 +76,20 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     const projectOpens = analyticsData.eventCounts?.find(e => e._id === 'project_open')?.count || 0;
     const totalTime = analyticsData.sessionStats?.totalDuration || 0;
     const sessions = analyticsData.sessionStats?.totalSessions || 0;
+    
+    // Calculate unique projects count
+    let uniqueProjects = 0;
+    if (analyticsData.projectBreakdown && analyticsData.projectBreakdown.length > 0) {
+      // Use projectBreakdown if available (more reliable)
+      uniqueProjects = analyticsData.projectBreakdown.length;
+    } else if (analyticsData.sessionStats?.uniqueProjects) {
+      // Fallback to uniqueProjects from sessionStats
+      uniqueProjects = Array.isArray(analyticsData.sessionStats.uniqueProjects) 
+        ? analyticsData.sessionStats.uniqueProjects.length 
+        : 0;
+    }
 
-    return { fieldEdits, projectOpens, totalTime, sessions };
+    return { fieldEdits, projectOpens, totalTime, sessions, uniqueProjects };
   };
 
   if (loading) {
@@ -153,9 +165,9 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
         </div>
 
         <div className="stat bg-accent/5 rounded-lg border border-accent/20 p-3">
-          <div className="stat-title text-xs text-accent">Projects</div>
+          <div className="stat-title text-xs text-accent">Unique Projects</div>
           <div className="stat-value text-accent text-lg">
-            {metrics.projectOpens}
+            {metrics.uniqueProjects}
           </div>
         </div>
 

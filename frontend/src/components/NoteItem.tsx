@@ -691,6 +691,7 @@ const NoteModal: React.FC<NoteModalProps> = ({
                 <button
                   onClick={handleSave}
                   className="btn btn-primary"
+                  title="Ctrl+S to save"
                   disabled={loading || !editTitle.trim() || !editContent.trim()}
                 >
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -784,7 +785,7 @@ const NoteModal: React.FC<NoteModalProps> = ({
                 onClose();
               }}
               className="btn btn-primary gap-2"
-              title={mode === 'view' ? "Back (Esc)" : "Back (Esc) • Ctrl+S to save"}
+              title={mode === 'view' ? "Back (Esc)" : "Back (Esc)"}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />

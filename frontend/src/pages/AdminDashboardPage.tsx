@@ -257,7 +257,9 @@ const AdminDashboardPage: React.FC = () => {
     try {
       setResettingAnalytics(true);
       const result = await analyticsAPI.resetAllAnalytics();
-      alert(`Analytics reset successful! Deleted ${(result as any).deletedAnalytics} analytics events, ${(result as any).deletedSessions} sessions, and cleared all project time data.`);
+      const deletedAnalytics = result?.deletedAnalytics ?? 0;
+      const deletedSessions = result?.deletedSessions ?? 0;
+      alert(`Analytics reset successful! Deleted ${deletedAnalytics} analytics events, ${deletedSessions} sessions, and cleared all project time data.`);
       setShowAnalyticsResetConfirm(false);
     } catch (err: any) {
       alert('Failed to reset analytics: ' + (err.response?.data?.error || err.message));

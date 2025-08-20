@@ -45,6 +45,8 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
   const [selectedAnalyticsDetail, setSelectedAnalyticsDetail] = useState<string | null>(null);
 
   const formatTime = useCallback((seconds: number) => {
+    if (!seconds || isNaN(seconds) || seconds < 0) return '0s';
+    
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const remainingSeconds = Math.floor(seconds % 60);
@@ -55,7 +57,14 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
   }, []);
 
   const formatDate = useCallback((dateString: string) => {
-    return new Date(dateString).toLocaleString();
+    if (!dateString) return 'Unknown';
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return 'Invalid Date';
+      return date.toLocaleString();
+    } catch {
+      return 'Invalid Date';
+    }
   }, []);
 
   const styles = `

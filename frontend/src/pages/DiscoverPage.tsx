@@ -11,7 +11,7 @@ const DiscoverPage: React.FC = () => {
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedTag, setSelectedTag] = useState('');
-  const [sortBy, setSortBy] = useState<'recent' | 'popular' | 'trending'>('recent');
+  const [sortBy] = useState<'recent' | 'popular' | 'trending'>('recent');
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState<any>(null);
   const [categories, setCategories] = useState<string[]>([]);
@@ -301,13 +301,16 @@ const DiscoverPage: React.FC = () => {
                         {project.owner ? (
                           <div className="text-sm text-base-content/60">
                             {project.owner.isPublic || project.owner.publicSlug ? (
-                              <Link 
-                                to={`/discover/user/${project.owner.publicSlug || project.owner.id}`}
-                                className="font-medium text-primary hover:text-primary-focus transition-colors"
-                                onClick={(e) => e.stopPropagation()}
+                              <span 
+                                className="font-medium text-primary hover:text-primary-focus transition-colors cursor-pointer"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  navigate(`/discover/user/${project.owner.publicSlug || project.owner.id}`);
+                                }}
                               >
                                 @{project.owner.publicSlug || `${project.owner.firstName}${project.owner.lastName}`.toLowerCase()}
-                              </Link>
+                              </span>
                             ) : (
                               <span className="font-medium text-base-content/80">
                                 @{`${project.owner.firstName}${project.owner.lastName}`.toLowerCase()}

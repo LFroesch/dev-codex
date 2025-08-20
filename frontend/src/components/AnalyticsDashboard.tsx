@@ -58,7 +58,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   };
 
   const formatDuration = (milliseconds: number): string => {
-    if (!milliseconds) return '0m';
+    if (!milliseconds || isNaN(milliseconds) || milliseconds < 0) return '0m';
     
     const hours = Math.floor(milliseconds / (1000 * 60 * 60));
     const minutes = Math.floor((milliseconds % (1000 * 60 * 60)) / (1000 * 60));

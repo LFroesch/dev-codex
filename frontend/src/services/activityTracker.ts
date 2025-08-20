@@ -4,7 +4,6 @@ import analyticsService from './analytics';
 class ActivityTracker {
   private static instance: ActivityTracker;
   private currentProjectId: string | null = null;
-  private currentUserId: string | null = null;
 
   private constructor() {}
 
@@ -15,9 +14,8 @@ class ActivityTracker {
     return ActivityTracker.instance;
   }
 
-  setContext(projectId: string | null, userId: string | null) {
+  setContext(projectId: string | null, _userId: string | null) {
     this.currentProjectId = projectId;
-    this.currentUserId = userId;
   }
 
   // Track when user creates something

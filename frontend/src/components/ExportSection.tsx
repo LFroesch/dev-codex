@@ -502,8 +502,6 @@ ${noteContent}`;
   const handleBackendExport = async () => {
     try {
       setIsExporting(true);
-      console.log('Export: selectedProject:', selectedProject);
-      console.log('Export: project id:', selectedProject.id || (selectedProject as any)._id);
       const projectId = selectedProject.id || (selectedProject as any)._id;
       if (!projectId) {
         throw new Error('Project ID not found');
@@ -536,7 +534,6 @@ ${noteContent}`;
       setIsImporting(true);
       setImportError('');
       setImportSuccess('');
-      console.log('Import: Starting file import:', file.name);
 
       // Read file
       const text = await file.text();
@@ -548,9 +545,7 @@ ${noteContent}`;
       }
 
       // Import via API
-      console.log('Import: Sending data to API:', importData);
       const result = await projectAPI.importProject(importData);
-      console.log('Import: API result:', result);
       
       if (result.success) {
         setImportSuccess(`✅ NEW PROJECT CREATED: "${result.project.name}" has been imported as a separate project for safety. Check your project list!`);
@@ -815,6 +810,8 @@ ${noteContent}`;
           `<p>A new project <strong>"${importedProjectData.name}"</strong> has been created successfully!</p>
            <br/>
            <p>This approach keeps your original project safe while giving you a clean copy to work with.</p>
+           <br/>
+           <p>Make sure to clean up your old project if you decide to delete it.</p>
            <br/>
            <p>Would you like to open the new project now?</p>` : 
           'Project imported successfully!'

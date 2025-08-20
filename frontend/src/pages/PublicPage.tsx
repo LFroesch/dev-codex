@@ -312,7 +312,7 @@ const PublicPage: React.FC = () => {
                 </span>
               </label>
               <div className="join">
-                <span className="join-itembg-base-200 px-3 py-2 text-sm text-base-content/70">
+                <span className="join-item bg-base-200 px-3 py-2 text-lg text-base-content/70 h-12">
                   {window.location.origin}/project/
                 </span>
                 <input

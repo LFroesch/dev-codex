@@ -499,23 +499,88 @@ const NewTodoForm: React.FC<NewTodoFormProps> = ({ projectId, onAdd, isSharedPro
           />
         </div>
         
-        <div className="flex-center-gap-2">
-          <select
-            value={priority}
-            onChange={(e) => setPriority(e.target.value as 'low' | 'medium' | 'high')}
-            className="select select-bordered select-sm flex-1"
-          >
-            <option value="low">🌱 Low</option>
-            <option value="medium">⚡ Medium</option>
-            <option value="high">🔥 High</option>
-          </select>
-          
+        <div className="collapse collapse-arrow bg-base-100/50">
+          <input type="checkbox" />
+          <div className="collapse-title text-sm font-medium py-2 min-h-0">
+            Additional Options
+          </div>
+          <div className="collapse-content space-y-3">
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="textarea textarea-bordered textarea-sm w-full"
+              placeholder="Subtask description..."
+              rows={2}
+            />
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-medium">Priority</span>
+                </label>
+                <select
+                  value={priority}
+                  onChange={(e) => setPriority(e.target.value as 'low' | 'medium' | 'high')}
+                  className="select select-bordered select-xs"
+                >
+                  <option value="low">🌱 Low</option>
+                  <option value="medium">⚡ Medium</option>
+                  <option value="high">🔥 High</option>
+                </select>
+              </div>
+              
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-medium">Status</span>
+                </label>
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value as 'not_started' | 'in_progress' | 'blocked' | 'completed')}
+                  className="select select-bordered select-xs"
+                >
+                  <option value="not_started">⭕ Not Started</option>
+                  <option value="in_progress">🔄 In Progress</option>
+                  <option value="blocked">🚫 Blocked</option>
+                  <option value="completed">✅ Completed</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <DatePicker
+                label="Due Date"
+                value={dueDate}
+                onChange={setDueDate}
+                placeholder="Set due date..."
+                className=""
+              />
+              
+              <DatePicker
+                label="Reminder Date"
+                value={reminderDate}
+                onChange={setReminderDate}
+                placeholder="Set reminder..."
+                className=""
+              />
+            </div>
+
+            <TeamMemberSelect
+              projectId={projectId}
+              value={assignedTo}
+              onChange={(userId) => setAssignedTo(userId ?? '')}
+              isSharedProject={isSharedProject}
+              placeholder="Assign to team member..."
+            />
+          </div>
+        </div>
+        
+        <div className="flex-center-gap-2 justify-end">
           <button
             type="submit"
             className="btn-primary-sm"
             disabled={loading || !title.trim()}
           >
-            {loading ? 'Adding...' : 'Add'}
+            {loading ? 'Adding...' : 'Add Subtask'}
           </button>
         </div>
       </form>

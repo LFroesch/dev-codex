@@ -13,8 +13,7 @@ const ActiveUsers: React.FC<ActiveUsersProps> = ({
   projectId,
   currentUserId,
   showTitle = true,
-  refreshInterval = 5000, // 5 seconds for more responsive feel
-  showDetails = false
+  refreshInterval = 5000 // 5 seconds for more responsive feel
 }) => {
   const [activeUsers, setActiveUsers] = useState<ActiveUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,36 +45,7 @@ const ActiveUsers: React.FC<ActiveUsersProps> = ({
     return () => clearInterval(interval);
   }, [projectId, currentUserId, refreshInterval]);
 
-  const formatDuration = (milliseconds: number): string => {
-    const seconds = Math.floor(milliseconds / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const hours = Math.floor(minutes / 60);
 
-    if (hours > 0) {
-      return `${hours}h ${minutes % 60}m`;
-    } else if (minutes > 0) {
-      return `${minutes}m`;
-    } else {
-      return `${seconds}s`;
-    }
-  };
-
-  const getLastSeenText = (lastActivity: string): string => {
-    const now = new Date();
-    const activity = new Date(lastActivity);
-    const diffInSeconds = Math.floor((now.getTime() - activity.getTime()) / 1000);
-
-    if (diffInSeconds < 60) {
-      return 'Active now';
-    }
-    
-    const diffInMinutes = Math.floor(diffInSeconds / 60);
-    if (diffInMinutes < 3) {
-      return `${diffInMinutes}m ago`;
-    }
-    
-    return 'Recently active';
-  };
 
   const getActivityStatus = (user: ActiveUser): 'active' | 'recent' | 'away' => {
     const now = new Date();

@@ -48,7 +48,7 @@ const activityLogSchema: Schema = new Schema({
       'invited_member', 'removed_member', 'updated_role',
       'added_tech', 'removed_tech', 'added_package', 'removed_package',
       'shared_project', 'unshared_project', 'archived_project', 'unarchived_project',
-      'exported_data', 'imported_data',
+      'exported_data', 'imported_data', 'project_imported',
       // Session actions
       'joined_project', 'left_project',
       // Management actions

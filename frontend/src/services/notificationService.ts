@@ -34,19 +34,16 @@ class NotificationService {
     
     this.socket = io(serverUrl, {
       withCredentials: true,
-      transports: ['websocket', 'polling'],
-      forceNew: true
+      transports: ['websocket', 'polling']
     });
 
     this.socket.on('connect', () => {
-      console.log('Notification service connected');
       this.isConnected = true;
       this.reconnectAttempts = 0;
       
       // Join user notification room if we have a userId
       if (this.currentUserId) {
         this.socket?.emit('join-user-notifications', this.currentUserId);
-        console.log(`Joined notification room for user ${this.currentUserId}`);
       }
       
       // Request initial notifications
@@ -54,7 +51,6 @@ class NotificationService {
     });
 
     this.socket.on('disconnect', (reason) => {
-      console.log('Notification service disconnected:', reason);
       this.isConnected = false;
       
       // Auto-reconnect on unexpected disconnections
@@ -73,22 +69,18 @@ class NotificationService {
 
     // Real-time notification events
     this.socket.on('notification-created', (notification: Notification) => {
-      console.log('New notification received:', notification);
       this.addNotification(notification);
     });
 
     this.socket.on('notification-updated', (notification: Notification) => {
-      console.log('Notification updated:', notification);
       this.updateNotification(notification);
     });
 
     this.socket.on('notification-deleted', (notificationId: string) => {
-      console.log('Notification deleted:', notificationId);
       this.removeNotification(notificationId);
     });
 
     this.socket.on('notifications-cleared', () => {
-      console.log('All notifications cleared');
       this.clearAllNotifications();
     });
   }
@@ -102,7 +94,6 @@ class NotificationService {
     this.reconnectAttempts++;
     const delay = Math.pow(2, this.reconnectAttempts) * 1000; // Exponential backoff
     
-    console.log(`Attempting to reconnect in ${delay}ms (attempt ${this.reconnectAttempts})`);
     
     setTimeout(() => {
       this.connect();
@@ -117,8 +108,9 @@ class NotificationService {
       // Get userId if not provided
       if (!userId) {
         const { authAPI } = await import('../api');
-        const user = await authAPI.getCurrentUser();
-        userId = user?._id;
+        const response = await authAPI.getMe();
+        const user = response.user;
+        userId = user?.id;
       }
       
       if (!userId) {
@@ -132,7 +124,6 @@ class NotificationService {
       // Now connect to socket
       this.connect();
       
-      console.log(`Notification service initialized for user ${userId}`);
     } catch (error) {
       console.error('Failed to initialize notification service:', error);
     }

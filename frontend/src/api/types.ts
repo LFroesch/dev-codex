@@ -6,7 +6,6 @@ export type {
   BaseTodo as Todo,
   BaseDevLogEntry as DevLogEntry,
   BaseDoc as Doc,
-  BaseLink as Link,
   BaseSelectedTechnology as SelectedTechnology,
   BaseSelectedPackage as SelectedPackage,
   BaseTeamMember as TeamMember,

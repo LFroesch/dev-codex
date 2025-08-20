@@ -19,7 +19,6 @@ const TeamMemberSelect: React.FC<TeamMemberSelectProps> = ({
   label = "Assigned To",
   placeholder = "Select team member...",
   className = "",
-  isSharedProject,
   required = false
 }) => {
   const [members, setMembers] = useState<TeamMember[]>([]);

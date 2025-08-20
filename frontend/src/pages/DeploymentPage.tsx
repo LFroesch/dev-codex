@@ -22,10 +22,6 @@ const DeploymentPage: React.FC = () => {
 
   useEffect(() => {
     if (selectedProject) {
-      console.log('Loading deployment data from project:', {
-        selectedProject,
-        deploymentData: selectedProject.deploymentData
-      });
       
       const projectDeploymentData = selectedProject.deploymentData || {};
       const loadedData = {
@@ -41,7 +37,6 @@ const DeploymentPage: React.FC = () => {
         notes: projectDeploymentData.notes || ''
       };
       
-      console.log('Setting deployment data to:', loadedData);
       setDeploymentData(loadedData);
       setHasUnsavedChanges(false);
     }
@@ -50,17 +45,12 @@ const DeploymentPage: React.FC = () => {
   const handleSave = async () => {
     if (!selectedProject) return;
     
-    console.log('Saving deployment data:', {
-      projectId: selectedProject.id,
-      deploymentData: deploymentData
-    });
     
     setLoading(true);
     try {
-      const response = await onProjectUpdate(selectedProject.id, {
+      await onProjectUpdate(selectedProject.id, {
         deploymentData
       });
-      console.log('Save response:', response);
       setHasUnsavedChanges(false);
     } catch (error) {
       console.error('Failed to save deployment data:', error);

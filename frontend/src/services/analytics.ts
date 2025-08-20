@@ -199,7 +199,6 @@ class AnalyticsService {
                 timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
               };
               restoredSession = true;
-              console.log('Analytics: Restored session from localStorage:', sessionId);
             }
           } catch (e) {
             console.warn('Analytics: Failed to restore session from storage');
@@ -219,7 +218,6 @@ class AnalyticsService {
             userAgent: navigator.userAgent,
             timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
           };
-          console.log('Analytics: Created new session:', sessionId);
         }
 
         this.updateStorage();
@@ -682,7 +680,6 @@ class AnalyticsService {
           });
           
           if (response.status === 401 || response.status === 403) {
-            console.log('Analytics: Project switch failed - user not authenticated');
             this.isAuthenticated = false;
             return;
           }
@@ -786,7 +783,6 @@ class AnalyticsService {
   private recordActivity() {
     // Only start sessions if user is authenticated
     if (!this.session && this.isAuthenticated) {
-      console.log('Analytics: No active session detected, starting new session due to activity');
       this.startSession().catch(console.error);
       return;
     }
@@ -808,7 +804,6 @@ class AnalyticsService {
     }
     
     this.activityTimer = window.setTimeout(async () => {
-      console.log('Analytics: Session timeout due to inactivity');
       await this.endSession();
     }, this.SESSION_TIMEOUT);
   }

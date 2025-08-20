@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Project, projectAPI } from '../api';
-import { STACK_CATEGORIES, TechCategory, TechOption } from '../data/techStackData';
+import { STACK_CATEGORIES, TechOption } from '../data/techStackData';
 
 type PlatformType = 'web' | 'mobile' | 'desktop';
 
@@ -83,8 +83,7 @@ const StackPage: React.FC = () => {
           description: tech.description
         });
       }
-      // Update local state instead of full refresh to prevent page reset
-      // onProjectRefresh();
+      onProjectRefresh();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to add item');
     } finally {
@@ -121,8 +120,7 @@ const StackPage: React.FC = () => {
       } else if (packageItem) {
         await projectAPI.removePackage(selectedProject.id, packageItem.category, name);
       }
-      // Update local state instead of full refresh to prevent page reset
-      // onProjectRefresh();
+      onProjectRefresh();
     } catch (err) {
       setError('Failed to remove item');
     } finally {
@@ -213,7 +211,7 @@ const StackPage: React.FC = () => {
 
   const categoryGroups = useMemo(() => {
     const groups = {
-      'Core': {
+      'Frontend': {
         description: 'Frontend frameworks, UI libraries, and styling',
         categories: ['frontend-framework', 'meta-framework', 'ui-library', 'styling']
       },
@@ -246,7 +244,7 @@ const StackPage: React.FC = () => {
     })).filter(group => group.categories.length > 0);
   }, [filteredCategories]);
 
-  const [selectedGroup, setSelectedGroup] = useState<string>('Core');
+  const [selectedGroup, setSelectedGroup] = useState<string>('Frontend');
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
 
   const TechSelector: React.FC = React.memo(() => (

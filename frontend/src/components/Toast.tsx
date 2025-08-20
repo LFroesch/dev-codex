@@ -7,7 +7,9 @@ const ToastContainer: React.FC = () => {
 
   useEffect(() => {
     const unsubscribe = toast.subscribe(setToasts);
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   if (toasts.length === 0) return null;

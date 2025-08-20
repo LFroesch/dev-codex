@@ -673,7 +673,6 @@ const Layout: React.FC = () => {
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('Create project button clicked (desktop)');
                     navigate('/create-project');
                   }}
                   className="btn btn-primary btn-sm btn-circle shadow-sm relative z-50"
@@ -829,7 +828,6 @@ const Layout: React.FC = () => {
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
-                              console.log('Create project button clicked (no projects)');
                               navigate('/create-project');
                             }} 
                             className="btn btn-primary btn-lg gap-2 relative z-50"

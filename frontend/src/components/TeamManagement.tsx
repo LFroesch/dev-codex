@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { teamAPI, TeamMember, InviteUserData, analyticsAPI } from '../api';
+import { teamAPI, TeamMember, analyticsAPI } from '../api';
 import ActivityLog from './ActivityLog';
 import ActiveUsers from './ActiveUsers';
 import ConfirmationModal from './ConfirmationModal';
@@ -75,7 +75,6 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
         response.teamTimeData.forEach((data: any) => {
           timeMap[data._id] = data.totalTime || 0;
         });
-        console.log('Setting team time data:', timeMap);
         setTeamTimeData(timeMap);
       }
     } catch (err) {
@@ -119,11 +118,10 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
 
     setInviting(true);
     try {
-      const response = await teamAPI.inviteUser(projectId, { email: inviteEmail, role: inviteRole });
+      await teamAPI.inviteUser(projectId, { email: inviteEmail, role: inviteRole });
       setModalMessage(`Invitation sent successfully to ${inviteEmail}!`);
       setShowSuccessModal(true);
       setInviteEmail('');
-      console.log('Invite response:', response);
     } catch (error: any) {
       console.error('Failed to invite user:', error);
       const errorMessage = error.response?.data?.message || error.message || 'Failed to send invitation';
@@ -258,7 +256,12 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
             </div>
           </div>
           
-          {members.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-4">
+              <div className="loading loading-spinner loading-sm"></div>
+              <p className="text-sm text-base-content/60 mt-2">Loading team members...</p>
+            </div>
+          ) : members.length === 0 ? (
             <div className="text-center py-4 text-base-content/60">
               <p className="text-sm">No team members yet</p>
             </div>

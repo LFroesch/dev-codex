@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { authAPI } from '../api';
 import { useLoadingState } from '../hooks/useLoadingState';
-import { useApiCall } from '../hooks/useApiCall';
 import AnalyticsDashboard from '../components/AnalyticsDashboard';
 
 const THEMES = [

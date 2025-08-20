@@ -81,7 +81,7 @@ const EnhancedTextEditor: React.FC<EnhancedTextEditorProps> = ({
       .replace(/^\d+\. (.*$)/gim, '<li class="ml-4 list-decimal list-inside">$1</li>');
     
     // 9. Line breaks - preserve single breaks, avoid double spacing with block elements
-    processedText = processedText.replace(/\n(?![<\/])/gim, '<br>');
+    processedText = processedText.replace(/\n(?![</])/gim, '<br>');
     
     return processedText;
   };

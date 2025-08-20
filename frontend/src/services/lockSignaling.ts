@@ -16,7 +16,6 @@ class LockSignalingService {
     });
 
     this.socket.on('connect', () => {
-      console.log('Lock signaling connected');
       // Rejoin current project if we were in one
       if (this.currentProjectId) {
         this.joinProject(this.currentProjectId);
@@ -24,7 +23,6 @@ class LockSignalingService {
     });
 
     this.socket.on('disconnect', () => {
-      console.log('Lock signaling disconnected');
     });
 
     // Set up event listeners

@@ -11,7 +11,6 @@ export const debugUtils = {
       
       if (response.ok) {
         const result = await response.json();
-        console.log('✅ Rate limits cleared:', result);
         return result;
       } else {
         console.error('❌ Failed to clear rate limits:', response.status);
@@ -31,7 +30,6 @@ export const debugUtils = {
       
       if (response.ok) {
         const result = await response.json();
-        console.log('✅ IP rate limits cleared:', result);
         return result;
       } else {
         console.error('❌ Failed to clear IP rate limits:', response.status);
@@ -51,7 +49,6 @@ export const debugUtils = {
       
       if (response.ok) {
         const result = await response.json();
-        console.log('📊 Current rate limit status:', result);
         return result;
       } else {
         console.error('❌ Failed to get rate limit status:', response.status);
@@ -63,16 +60,12 @@ export const debugUtils = {
 
   // Quick fix for 429 errors - clears both user and IP limits
   async fixRateLimitError() {
-    console.log('🔧 Fixing rate limit errors...');
     await this.clearUserRateLimits();
     await this.clearIPRateLimits();
-    console.log('✅ Rate limits cleared! Try your request again.');
   }
 };
 
 // Make it available globally in development
-if (process.env.NODE_ENV === 'development') {
-  (window as any).debugUtils = debugUtils;
-  console.log('🛠️ Debug utils available at window.debugUtils');
-  console.log('💡 Try: debugUtils.fixRateLimitError() if you get 429 errors');
+if (import.meta.env.DEV) {
+  (window as unknown as Record<string, unknown>).debugUtils = debugUtils;
 }

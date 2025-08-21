@@ -624,7 +624,7 @@ const SettingsPage: React.FC = () => {
       <div className="collapse collapse-arrow bg-base-200 shadow-lg border border-base-content/10">
         <input type="checkbox" />
         <div className="collapse-title text-xl font-medium">
-          📤 Export Data
+          📤 Export & Import Project Data
         </div>
         <div className="collapse-content">
           <ExportSection selectedProject={selectedProject} onProjectRefresh={onProjectRefresh} />

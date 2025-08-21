@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import { authAPI, projectAPI, analyticsAPI } from '../api';
+import { authAPI, projectAPI, analyticsAPI, ideasAPI } from '../api';
 import type { BaseProject } from '../../../shared/types';
 import SessionTracker from './SessionTracker';
 import NotificationBell from './NotificationBell';
@@ -9,6 +9,7 @@ import ConfirmationModal from './ConfirmationModal';
 import { useAnalytics } from '../hooks/useAnalytics';
 import { unsavedChangesManager } from '../utils/unsavedChanges';
 import ToastContainer from './Toast';
+import IdeasPage from '../pages/IdeasPage';
 
 const Layout: React.FC = () => {
   const navigate = useNavigate();
@@ -22,6 +23,7 @@ const Layout: React.FC = () => {
   const [activeProjectTab, setActiveProjectTab] = useState('active');
   const [activeAdminTab, setActiveAdminTab] = useState<'users' | 'tickets' | 'analytics'>('users');
   const [projectTimeData, setProjectTimeData] = useState<{ [projectId: string]: number }>({});
+  const [ideasCount, setIdeasCount] = useState(0);
   
   // Unsaved changes modal state
   const [showUnsavedChangesModal, setShowUnsavedChangesModal] = useState(false);
@@ -207,6 +209,15 @@ const Layout: React.FC = () => {
     }
   };
 
+  const loadIdeasCount = async () => {
+    try {
+      const response = await ideasAPI.getAll();
+      setIdeasCount(response.ideas.length);
+    } catch (err) {
+      console.error('Failed to load ideas count:', err);
+    }
+  };
+
   const formatProjectTime = (projectId: string): string => {
     const timeMs = projectTimeData[projectId] || 0;
     const totalMinutes = Math.floor(timeMs / (1000 * 60));
@@ -229,6 +240,9 @@ const Layout: React.FC = () => {
       
       // Load project time data
       await loadProjectTimeData();
+      
+      // Load ideas count
+      await loadIdeasCount();
       
       // Try to restore previously selected project
       const savedProjectId = localStorage.getItem('selectedProjectId');
@@ -272,6 +286,9 @@ const Layout: React.FC = () => {
         
         // Load project time data
         await loadProjectTimeData();
+        
+        // Load ideas count
+        await loadIdeasCount();
         
         // Update theme from user preference (always sync on login)
         if (userResponse.user?.theme) {
@@ -432,12 +449,12 @@ const Layout: React.FC = () => {
   }
 
   const tabs = [
-    { id: 'notes', label: 'Notes / To Dos', path: '/notes' },
+    { id: 'notes', label: 'Notes/To Dos', path: '/notes' },
     { id: 'stack', label: 'Stack', path: '/stack' },
     { id: 'docs', label: 'Docs', path: '/docs' },
     { id: 'deployment', label: 'Deployment', path: '/deployment' },
     { id: 'public', label: 'Public', path: '/public' },
-    { id: 'settings', label: 'Settings', path: '/settings' }
+    { id: 'settings', label: 'Info/Sharing', path: '/settings' }
   ];
 
   const currentTab = location.pathname.slice(1) || 'notes';
@@ -603,15 +620,6 @@ const Layout: React.FC = () => {
                 <span className="sm:hidden">Details</span>
               </button>
               <button 
-                className={`btn btn-sm ${location.pathname === '/ideas' ? 'btn-primary' : 'btn-ghost'} gap-1 font-bold whitespace-nowrap`}
-                onClick={() => handleNavigateWithCheck('/ideas')}
-              >
-                <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                </svg>
-                Ideas
-              </button>
-              <button 
                 className={`btn btn-sm ${location.pathname === '/discover' || location.pathname.startsWith('/discover/') ? 'btn-primary' : 'btn-ghost'} gap-1 font-bold whitespace-nowrap`}
                 onClick={() => {
                   analytics.trackFeatureUsage('discover_button_click', 'Layout');
@@ -706,15 +714,6 @@ const Layout: React.FC = () => {
                 Project Details
               </button>
               <button 
-                className={`btn ${location.pathname === '/ideas' ? 'btn-primary' : 'btn-ghost'} gap-2 font-bold`}
-                onClick={() => handleNavigateWithCheck('/ideas')}
-              >
-                <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                </svg>
-                Ideas
-              </button>
-              <button 
                 className={`btn ${location.pathname === '/discover' || location.pathname.startsWith('/discover/') ? 'btn-primary' : 'btn-ghost'} gap-2 font-bold`}
                 onClick={() => handleNavigateWithCheck('/discover')}
               >
@@ -805,6 +804,12 @@ const Layout: React.FC = () => {
                     Shared ({sharedProjects.length})
                   </button>
                 )}
+                <button
+                  onClick={() => setActiveProjectTab('ideas')}
+                  className={`tab tab-lg font-bold text-base ${activeProjectTab === 'ideas' ? 'tab-active' : ''}`}
+                >
+                  Ideas ({ideasCount})
+                </button>
               </div>
             </div>
 
@@ -1157,6 +1162,13 @@ const Layout: React.FC = () => {
                     ))}
                   </div>
                 )}
+
+                {activeProjectTab === 'ideas' && (
+                  <div className="space-y-4">
+                    {/* Embed IdeasPage content here */}
+                    <IdeasPage onIdeasCountChange={setIdeasCount} />
+                  </div>
+                )}
                 </div>
               </div>
             </div>
@@ -1196,24 +1208,6 @@ const Layout: React.FC = () => {
               <Outlet />
             </div>
           </div>
-        ) : location.pathname === '/ideas' ? (
-          /* Ideas Tab - Standalone user notes */
-          <>
-            {/* Tab-style header for Ideas */}
-            <div className="flex justify-center px-4 py-6">
-              <div className="tabs tabs-boxed tabs-lg border-subtle shadow-sm">
-                <div className="tab tab-lg tab-active font-bold text-base">
-                  Ideas
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex-1 overflow-auto border-subtle bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-sm container-height-fix">
-              <div className="p-1">
-                <Outlet />
-              </div>
-            </div>
-          </>
         ) : location.pathname === '/admin' ? (
           /* Admin Dashboard - With submenu tabs */
           <>

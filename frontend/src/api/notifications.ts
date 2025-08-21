@@ -33,6 +33,10 @@ class NotificationService extends BaseApiService {
     return this.delete(`/${notificationId}`);
   }
 
+  async clearAllNotifications(): Promise<{ success: boolean; message: string; deletedCount: number }> {
+    return this.delete('/clear-all');
+  }
+
   async getInvitationNotification(invitationId: string): Promise<{ 
     success: boolean; 
     notification: BaseNotification; 

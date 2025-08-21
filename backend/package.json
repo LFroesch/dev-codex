@@ -8,6 +8,7 @@
     "start:prod": "NODE_ENV=production node dist/app.js",
     "dev": "nodemon src/app.ts",
     "build": "tsc",
+    "test:security": "ts-node src/tests/importExportSecurity.test.js",
     "create-admin": "ts-node src/scripts/create-admin.ts",
     "reset-password": "ts-node src/scripts/reset-user-password.ts",
     "setup-stripe": "ts-node src/scripts/setup-stripe.ts",
@@ -17,6 +18,7 @@
     "cleanup": "ts-node src/scripts/cleanup-database.ts"
   },
   "dependencies": {
+    "@types/dompurify": "^3.0.5",
     "@types/node-cron": "^3.0.11",
     "@types/nodemailer": "^6.4.17",
     "@types/passport": "^1.0.17",
@@ -28,6 +30,7 @@
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "express-rate-limit": "^8.0.1",
+    "isomorphic-dompurify": "^2.26.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^7.5.0",
     "node-cron": "^4.2.1",

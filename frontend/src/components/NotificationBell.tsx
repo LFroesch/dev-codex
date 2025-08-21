@@ -292,10 +292,7 @@ const NotificationBell: React.FC = () => {
                 className="btn btn-warning flex-1"
                 onClick={async () => {
                   try {
-                    // Delete all notifications
-                    for (const notification of notifications) {
-                      await notificationAPI.deleteNotification(notification._id);
-                    }
+                    await notificationAPI.clearAllNotifications();
                     setNotifications([]);
                     setUnreadCount(0);
                     setShowClearAllModal(false);

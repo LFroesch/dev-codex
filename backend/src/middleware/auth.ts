@@ -23,7 +23,12 @@ export const requireAuth = (req: AuthRequest, res: Response, next: NextFunction)
       return res.status(401).json({ message: 'Not authenticated' });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret') as any;
+    if (!process.env.JWT_SECRET) {
+      console.error('CRITICAL: JWT_SECRET environment variable is not set');
+      return res.status(500).json({ message: 'Server configuration error' });
+    }
+    
+    const decoded = jwt.verify(token, process.env.JWT_SECRET) as any;
     req.userId = decoded.userId;
     
     next();

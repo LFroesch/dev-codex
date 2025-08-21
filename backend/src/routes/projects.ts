@@ -14,6 +14,13 @@ import { trackFieldChanges, trackArrayChanges } from '../utils/trackFieldChanges
 import activityLogger from '../services/activityLogger';
 import { v4 as uuidv4 } from 'uuid';
 import NoteLock from '../models/NoteLock';
+import {
+  importExportRateLimit,
+  importSizeLimit,
+  validateAndSanitizeImport,
+  validateExportRequest,
+  securityHeaders
+} from '../middleware/importExportSecurity';
 
 const router = express.Router();
 
@@ -1427,7 +1434,13 @@ router.patch('/:id/members/:userId', requireAuth, requireProjectAccess('manage')
 
 
 // Export project data (GET /api/projects/:id/export)
-router.get('/:id/export', requireAuth, requireProjectAccess('view'), async (req: AuthRequest, res) => {
+router.get('/:id/export', 
+  importExportRateLimit,
+  securityHeaders,
+  requireAuth, 
+  requireProjectAccess('view'), 
+  validateExportRequest,
+  async (req: AuthRequest, res) => {
   try {
     const projectId = req.params.id;
     
@@ -1518,10 +1531,28 @@ router.get('/:id/export', requireAuth, requireProjectAccess('view'), async (req:
       }
     };
 
-    // Set headers for file download
-    const filename = `${project.name.replace(/[^a-zA-Z0-9]/g, '_')}_export_${new Date().toISOString().split('T')[0]}.json`;
-    res.setHeader('Content-Type', 'application/json');
+    // Check export size limit
+    const exportSize = JSON.stringify(exportData).length;
+    if (exportSize > 100 * 1024 * 1024) { // 100MB limit
+      console.warn(`Export size ${exportSize} bytes exceeds limit for project ${projectId}`);
+      return res.status(413).json({
+        error: 'Export too large',
+        message: 'Project data exceeds maximum export size limit',
+        size: exportSize,
+        limit: 100 * 1024 * 1024
+      });
+    }
+
+    // Set headers for file download with security measures
+    const sanitizedName = project.name.replace(/[^a-zA-Z0-9\-_]/g, '_').substring(0, 50);
+    const filename = `${sanitizedName}_export_${new Date().toISOString().split('T')[0]}.json`;
+    
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Length', exportSize.toString());
+    
+    // Log export activity for security monitoring
+    console.log(`Project export: ${projectId} by user ${req.userId}, size: ${exportSize} bytes`);
     
     res.json(exportData);
     
@@ -1532,31 +1563,20 @@ router.get('/:id/export', requireAuth, requireProjectAccess('view'), async (req:
 });
 
 // Import project data (POST /api/projects/import)
-router.post('/import', requireAuth, checkProjectLimit, async (req: AuthRequest, res) => {
+router.post('/import', 
+  importExportRateLimit,
+  securityHeaders,
+  importSizeLimit,
+  requireAuth, 
+  checkProjectLimit,
+  validateAndSanitizeImport,
+  async (req: AuthRequest, res) => {
   try {
+    // Input validation and sanitization is now handled by middleware
     const importData = req.body;
-    
-    // Validate import data structure
-    if (!importData || typeof importData !== 'object') {
-      return res.status(400).json({ message: 'Invalid import data format' });
-    }
-    
-    if (!importData.project || typeof importData.project !== 'object') {
-      return res.status(400).json({ message: 'Missing project data in import' });
-    }
-    
     const { project: projectData } = importData;
-    
-    // Validate required fields
-    if (!projectData.name || typeof projectData.name !== 'string') {
-      return res.status(400).json({ message: 'Project name is required and must be a string' });
-    }
-    
-    if (!projectData.description || typeof projectData.description !== 'string') {
-      return res.status(400).json({ message: 'Project description is required and must be a string' });
-    }
 
-    // Sanitize and validate input data
+    // Create sanitized project data with enhanced validation
     const sanitizedProject = {
       name: projectData.name.trim().substring(0, 100),
       description: projectData.description.trim().substring(0, 500),
@@ -1566,24 +1586,24 @@ router.post('/import', requireAuth, checkProjectLimit, async (req: AuthRequest, 
         ? projectData.color : '#3B82F6',
       category: typeof projectData.category === 'string' ? projectData.category.trim().substring(0, 50) : 'general',
       tags: Array.isArray(projectData.tags) 
-        ? projectData.tags.filter((tag: any) => typeof tag === 'string').map((tag: any) => tag.trim().substring(0, 30)).slice(0, 10)
+        ? projectData.tags.filter((tag: any) => typeof tag === 'string' && tag.trim()).map((tag: any) => tag.trim().substring(0, 30)).slice(0, 10)
         : [],
       isArchived: Boolean(projectData.isArchived),
       
-      // Content arrays with validation
+      // Content arrays with enhanced validation (already sanitized by middleware)
       notes: Array.isArray(projectData.notes) ? projectData.notes.map((note: any) => ({
         id: note.id || uuidv4(),
-        title: typeof note.title === 'string' ? note.title.trim().substring(0, 200) : '',
-        description: typeof note.description === 'string' ? note.description.trim().substring(0, 500) : '',
-        content: typeof note.content === 'string' ? note.content.trim().substring(0, 50000) : '',
+        title: (note.title || '').substring(0, 200),
+        description: (note.description || '').substring(0, 500),
+        content: (note.content || '').substring(0, 50000),
         createdAt: note.createdAt ? new Date(note.createdAt) : new Date(),
         updatedAt: note.updatedAt ? new Date(note.updatedAt) : new Date()
       })).slice(0, 100) : [],
       
       todos: Array.isArray(projectData.todos) ? projectData.todos.map((todo: any) => ({
         id: todo.id || uuidv4(),
-        text: typeof todo.text === 'string' ? todo.text.trim().substring(0, 500) : '',
-        description: typeof todo.description === 'string' ? todo.description.trim().substring(0, 1000) : '',
+        text: (todo.text || '').substring(0, 500),
+        description: (todo.description || '').substring(0, 1000),
         priority: ['low', 'medium', 'high'].includes(todo.priority) ? todo.priority : 'medium',
         completed: Boolean(todo.completed),
         status: ['not_started', 'in_progress', 'blocked', 'completed'].includes(todo.status) ? todo.status : 'not_started',
@@ -1597,24 +1617,20 @@ router.post('/import', requireAuth, checkProjectLimit, async (req: AuthRequest, 
       
       devLog: Array.isArray(projectData.devLog) ? projectData.devLog.map((log: any) => ({
         id: log.id || uuidv4(),
-        title: typeof log.title === 'string' ? log.title.trim().substring(0, 200) : '',
-        description: typeof log.description === 'string' ? log.description.trim().substring(0, 500) : '',
-        entry: typeof log.entry === 'string' ? log.entry.trim().substring(0, 10000) : '',
-        date: log.date ? new Date(log.date) : new Date(),
-        createdBy: req.userId,
-        updatedBy: req.userId
+        title: (log.title || '').substring(0, 200),
+        description: (log.description || '').substring(0, 500),
+        entry: (log.entry || '').substring(0, 10000),
+        date: log.date ? new Date(log.date) : new Date()
       })).slice(0, 200) : [],
       
       docs: Array.isArray(projectData.docs) ? projectData.docs.map((doc: any) => ({
         id: doc.id || uuidv4(),
         type: ['Model', 'Route', 'API', 'Util', 'ENV', 'Auth', 'Runtime', 'Framework'].includes(doc.type) 
           ? doc.type : 'API',
-        title: typeof doc.title === 'string' ? doc.title.trim().substring(0, 200) : '',
-        content: typeof doc.content === 'string' ? doc.content.trim().substring(0, 50000) : '',
+        title: (doc.title || '').substring(0, 200),
+        content: (doc.content || '').substring(0, 50000),
         createdAt: doc.createdAt ? new Date(doc.createdAt) : new Date(),
-        updatedAt: doc.updatedAt ? new Date(doc.updatedAt) : new Date(),
-        createdBy: req.userId,
-        updatedBy: req.userId
+        updatedAt: doc.updatedAt ? new Date(doc.updatedAt) : new Date()
       })).slice(0, 100) : [],
       
       selectedTechnologies: Array.isArray(projectData.selectedTechnologies) 
@@ -1623,8 +1639,8 @@ router.post('/import', requireAuth, checkProjectLimit, async (req: AuthRequest, 
           ).map((tech: any) => ({
             category: ['styling', 'database', 'framework', 'runtime', 'deployment', 'testing', 'tooling'].includes(tech.category)
               ? tech.category : 'tooling',
-            name: typeof tech.name === 'string' ? tech.name.trim().substring(0, 100) : '',
-            version: typeof tech.version === 'string' ? tech.version.trim().substring(0, 20) : ''
+            name: tech.name.substring(0, 100),
+            version: (tech.version || '').substring(0, 20)
           })).slice(0, 50) : [],
           
       selectedPackages: Array.isArray(projectData.selectedPackages)
@@ -1633,30 +1649,23 @@ router.post('/import', requireAuth, checkProjectLimit, async (req: AuthRequest, 
           ).map((pkg: any) => ({
             category: ['ui', 'state', 'routing', 'forms', 'animation', 'utility', 'api', 'auth', 'data'].includes(pkg.category)
               ? pkg.category : 'utility',
-            name: typeof pkg.name === 'string' ? pkg.name.trim().substring(0, 100) : '',
-            version: typeof pkg.version === 'string' ? pkg.version.trim().substring(0, 20) : '',
-            description: typeof pkg.description === 'string' ? pkg.description.trim().substring(0, 200) : ''
+            name: pkg.name.substring(0, 100),
+            version: (pkg.version || '').substring(0, 20),
+            description: (pkg.description || '').substring(0, 200)
           })).slice(0, 100) : [],
       
       // Deployment data (excluding sensitive environment variables)
       deploymentData: projectData.deploymentData && typeof projectData.deploymentData === 'object' ? {
-        liveUrl: typeof projectData.deploymentData.liveUrl === 'string' 
-          ? projectData.deploymentData.liveUrl.trim().substring(0, 200) : '',
-        githubRepo: typeof projectData.deploymentData.githubRepo === 'string' 
-          ? projectData.deploymentData.githubRepo.trim().substring(0, 200) : '',
-        deploymentPlatform: typeof projectData.deploymentData.deploymentPlatform === 'string' 
-          ? projectData.deploymentData.deploymentPlatform.trim().substring(0, 100) : '',
+        liveUrl: (projectData.deploymentData.liveUrl || '').substring(0, 200),
+        githubRepo: (projectData.deploymentData.githubRepo || '').substring(0, 200),
+        deploymentPlatform: (projectData.deploymentData.deploymentPlatform || '').substring(0, 100),
         deploymentStatus: ['active', 'inactive', 'error'].includes(projectData.deploymentData.deploymentStatus)
           ? projectData.deploymentData.deploymentStatus : 'inactive',
-        buildCommand: typeof projectData.deploymentData.buildCommand === 'string' 
-          ? projectData.deploymentData.buildCommand.trim().substring(0, 500) : '',
-        startCommand: typeof projectData.deploymentData.startCommand === 'string' 
-          ? projectData.deploymentData.startCommand.trim().substring(0, 500) : '',
-        deploymentBranch: typeof projectData.deploymentData.deploymentBranch === 'string' 
-          ? projectData.deploymentData.deploymentBranch.trim().substring(0, 100) : 'main',
+        buildCommand: (projectData.deploymentData.buildCommand || '').substring(0, 500),
+        startCommand: (projectData.deploymentData.startCommand || '').substring(0, 500),
+        deploymentBranch: (projectData.deploymentData.deploymentBranch || 'main').substring(0, 100),
         environmentVariables: [], // Always empty for security
-        notes: typeof projectData.deploymentData.notes === 'string' 
-          ? projectData.deploymentData.notes.trim().substring(0, 2000) : ''
+        notes: (projectData.deploymentData.notes || '').substring(0, 2000)
       } : {
         liveUrl: '',
         githubRepo: '',
@@ -1680,19 +1689,32 @@ router.post('/import', requireAuth, checkProjectLimit, async (req: AuthRequest, 
     const newProject = new Project(sanitizedProject);
     await newProject.save();
 
+    // Enhanced logging for security monitoring
+    const importSize = JSON.stringify(req.body).length;
+    console.log(`Project import: ${newProject._id} by user ${req.userId}, size: ${importSize} bytes, name: "${newProject.name}"`);
+    
     // Log the activity
     try {
       await activityLogger.log({
         projectId: newProject._id.toString(),
         userId: req.userId!,
-        sessionId: 'import-session', // TODO: Get actual session ID if available
+        sessionId: (req as any).sessionId || req.headers['x-session-id'] || 'import-session',
         action: 'project_imported',
         resourceType: 'project',
         resourceId: newProject._id.toString(),
         details: {
           resourceName: newProject.name,
           metadata: {
-            importVersion: importData.version || 'unknown'
+            importVersion: importData.version || 'unknown',
+            importSize: importSize,
+            itemCounts: {
+              notes: sanitizedProject.notes.length,
+              todos: sanitizedProject.todos.length,
+              devLog: sanitizedProject.devLog.length,
+              docs: sanitizedProject.docs.length,
+              technologies: sanitizedProject.selectedTechnologies.length,
+              packages: sanitizedProject.selectedPackages.length
+            }
           }
         }
       });

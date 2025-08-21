@@ -72,6 +72,25 @@ router.patch('/read-all', requireAuth, async (req: AuthRequest, res) => {
   }
 });
 
+// DELETE /api/notifications/clear-all - Clear all notifications
+router.delete('/clear-all', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.userId!;
+
+    const notificationService = NotificationService.getInstance();
+    const deletedCount = await notificationService.clearAllNotifications(userId);
+
+    res.json({
+      success: true,
+      message: `Cleared ${deletedCount} notifications`,
+      deletedCount,
+    });
+  } catch (error) {
+    console.error('Clear all notifications error:', error);
+    res.status(500).json({ message: 'Server error clearing notifications' });
+  }
+});
+
 // DELETE /api/notifications/:id - Delete notification
 router.delete('/:id', requireAuth, async (req: AuthRequest, res) => {
   try {

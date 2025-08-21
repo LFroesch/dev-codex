@@ -25,11 +25,13 @@ class ReminderService {
 
     // Check for due/overdue todos every 15 minutes
     cron.schedule('*/15 * * * *', () => {
+      console.log('Running checkDueTodos cron job...');
       this.checkDueTodos();
     });
 
-    // Check for reminder notifications every 1 minute
-    cron.schedule('*/1 * * * *', () => {
+    // Check for reminder notifications every 5 minutes
+    cron.schedule('*/5 * * * *', () => {
+      console.log('Running checkReminderNotifications cron job...');
       this.checkReminderNotifications();
     });
 
@@ -59,6 +61,13 @@ class ReminderService {
 
           // Send overdue notification
           if (isOverdue && !await this.hasRecentNotification(todo.assignedTo || project.ownerId, 'todo_overdue', todo.id)) {
+            // Remove any existing overdue notifications for this todo to ensure uniqueness
+            await Notification.deleteMany({
+              userId: todo.assignedTo || project.ownerId,
+              type: 'todo_overdue',
+              relatedTodoId: todo.id
+            });
+
             await Notification.create({
               userId: todo.assignedTo || project.ownerId,
               type: 'todo_overdue',

@@ -2,17 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import EnhancedTextEditor from '../components/EnhancedTextEditor';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { unsavedChangesManager } from '../utils/unsavedChanges';
+import { ideasAPI, type Idea } from '../api/ideas';
 
-interface Idea {
-  id: string;
-  title: string;
-  description?: string;
-  content: string;
-  createdAt: string;
-  updatedAt: string;
+interface IdeasPageProps {
+  onIdeasCountChange?: (count: number) => void;
 }
 
-const IdeasPage: React.FC = () => {
+const IdeasPage: React.FC<IdeasPageProps> = ({ onIdeasCountChange }) => {
   const [ideas, setIdeas] = useState<Idea[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -20,11 +16,9 @@ const IdeasPage: React.FC = () => {
 
   const loadIdeas = async () => {
     try {
-      // For now, store ideas in localStorage until backend support is added
-      const savedIdeas = localStorage.getItem('userIdeas');
-      if (savedIdeas) {
-        setIdeas(JSON.parse(savedIdeas));
-      }
+      const response = await ideasAPI.getAll();
+      setIdeas(response.ideas);
+      onIdeasCountChange?.(response.ideas.length);
     } catch (err) {
       console.error('Failed to load ideas:', err);
       setError('Failed to load ideas');
@@ -33,41 +27,51 @@ const IdeasPage: React.FC = () => {
     }
   };
 
-  const saveIdeas = (updatedIdeas: Idea[]) => {
-    localStorage.setItem('userIdeas', JSON.stringify(updatedIdeas));
-    setIdeas(updatedIdeas);
-  };
-
   useEffect(() => {
     loadIdeas();
   }, []);
 
-  const handleCreateIdea = (title: string, description: string, content: string) => {
-    const newIdea: Idea = {
-      id: Date.now().toString(),
-      title,
-      description,
-      content,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    const updatedIdeas = [newIdea, ...ideas];
-    saveIdeas(updatedIdeas);
+  const handleCreateIdea = async (title: string, description: string, content: string) => {
+    try {
+      const response = await ideasAPI.create({ title, description, content });
+      setIdeas(prevIdeas => {
+        const newIdeas = [response.idea, ...prevIdeas];
+        onIdeasCountChange?.(newIdeas.length);
+        return newIdeas;
+      });
+    } catch (err) {
+      console.error('Failed to create idea:', err);
+      setError('Failed to create idea');
+    }
   };
 
-  const handleUpdateIdea = (ideaId: string, title: string, description: string, content: string) => {
-    const updatedIdeas = ideas.map(idea =>
-      idea.id === ideaId
-        ? { ...idea, title, description, content, updatedAt: new Date().toISOString() }
-        : idea
-    );
-    saveIdeas(updatedIdeas);
+  const handleUpdateIdea = async (ideaId: string, title: string, description: string, content: string) => {
+    try {
+      const response = await ideasAPI.update(ideaId, { title, description, content });
+      setIdeas(prevIdeas => 
+        prevIdeas.map(idea =>
+          idea.id === ideaId ? response.idea : idea
+        )
+      );
+      // Count doesn't change for updates, but we could refresh if needed
+    } catch (err) {
+      console.error('Failed to update idea:', err);
+      setError('Failed to update idea');
+    }
   };
 
-  const handleDeleteIdea = (ideaId: string) => {
-    const updatedIdeas = ideas.filter(idea => idea.id !== ideaId);
-    saveIdeas(updatedIdeas);
+  const handleDeleteIdea = async (ideaId: string) => {
+    try {
+      await ideasAPI.deleteIdea(ideaId);
+      setIdeas(prevIdeas => {
+        const newIdeas = prevIdeas.filter(idea => idea.id !== ideaId);
+        onIdeasCountChange?.(newIdeas.length);
+        return newIdeas;
+      });
+    } catch (err) {
+      console.error('Failed to delete idea:', err);
+      setError('Failed to delete idea');
+    }
   };
 
   const toggleIdeaExpanded = (ideaId: string) => {

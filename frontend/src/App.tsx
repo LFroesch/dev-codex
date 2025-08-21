@@ -17,7 +17,6 @@ import DeploymentPage from './pages/DeploymentPage';
 import PublicPage from './pages/PublicPage';
 import SettingsPage from './pages/SettingsPage';
 import DiscoverPage from './pages/DiscoverPage';
-import IdeasPage from './pages/IdeasPage';
 import AccountSettingsPage from './pages/AccountSettingsPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import SupportPage from './pages/SupportPage';
@@ -58,7 +57,6 @@ const App: React.FC = () => {
             <Route path="deployment" element={<DeploymentPage />} />
             <Route path="public" element={<PublicPage />} />
             <Route path="settings" element={<SettingsPage />} />
-            <Route path="ideas" element={<IdeasPage />} />
             <Route path="discover" element={<DiscoverPage />} />
             <Route path="discover/project/:identifier" element={<PublicProjectPage />} />
             <Route path="discover/user/:identifier" element={<PublicProfilePage />} />

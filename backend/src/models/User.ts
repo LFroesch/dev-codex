@@ -2,6 +2,15 @@ import mongoose, { Document, Schema } from 'mongoose';
 import bcrypt from 'bcryptjs';
 import type { UserTheme } from '../../../shared/types';
 
+export interface IIdea {
+  id: string;
+  title: string;
+  description?: string;
+  content: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface IUser extends Document {
   email: string;
   password: string;
@@ -22,6 +31,7 @@ export interface IUser extends Document {
   isPublic: boolean;
   publicSlug?: string;
   publicDescription?: string;
+  ideas: IIdea[];
   createdAt: Date;
   updatedAt: Date;
   comparePassword(password: string): Promise<boolean>;
@@ -125,7 +135,38 @@ const userSchema = new Schema<IUser>({
     type: String,
     required: false,
     maxlength: 200
-  }
+  },
+  ideas: [{
+    id: {
+      type: String,
+      required: true
+    },
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 200
+    },
+    description: {
+      type: String,
+      required: false,
+      trim: true,
+      maxlength: 500
+    },
+    content: {
+      type: String,
+      required: true,
+      maxlength: 10000
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now
+    },
+    updatedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }]
 }, {
   timestamps: true
 });

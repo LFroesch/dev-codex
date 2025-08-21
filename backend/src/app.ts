@@ -18,6 +18,7 @@ import debugRoutes from './routes/debug';
 import invitationRoutes from './routes/invitations';
 import notificationRoutes from './routes/notifications';
 import publicRoutes from './routes/public';
+import ideasRoutes from './routes/ideas';
 import { normalRateLimit, authRateLimit, devRateLimit } from './middleware/rateLimit';
 import { trackPageView, sessionMiddleware, AnalyticsService } from './middleware/analytics';
 import ReminderService from './services/reminderService';
@@ -65,6 +66,7 @@ app.use('/api/admin', rateLimitMiddleware, adminRoutes);
 app.use('/api/tickets', rateLimitMiddleware, ticketRoutes);
 app.use('/api/analytics', rateLimitMiddleware, sessionMiddleware, trackPageView, analyticsRoutes);
 app.use('/api/activity-logs', rateLimitMiddleware, activityLogRoutes);
+app.use('/api/ideas', rateLimitMiddleware, ideasRoutes);
 
 // Debug routes (only in development)
 if (isDevelopment) {

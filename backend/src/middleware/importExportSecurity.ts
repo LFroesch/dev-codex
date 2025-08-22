@@ -4,7 +4,7 @@ import { createRateLimit } from './rateLimit';
 
 // Request size limits for import/export
 export const REQUEST_SIZE_LIMITS = {
-  IMPORT_MAX_SIZE: 50 * 1024 * 1024, // 50MB max for import
+  IMPORT_MAX_SIZE: 10 * 1024 * 1024, // 10MB max for import
   EXPORT_MAX_SIZE: 100 * 1024 * 1024, // 100MB max for export response
   MAX_FIELD_LENGTH: 100000, // 100KB for individual fields
   MAX_ARRAY_LENGTH: 10000, // Maximum items in arrays

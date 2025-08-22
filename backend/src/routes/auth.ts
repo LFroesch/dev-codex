@@ -12,6 +12,7 @@ import RateLimit from '../models/RateLimit';
 import { AnalyticsService } from '../middleware/analytics';
 import { Project } from '../models/Project';
 import Notification from '../models/Notification';
+import { authRateLimit, createRateLimit } from '../middleware/rateLimit';
 
 dotenv.config();
 
@@ -175,7 +176,7 @@ if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
 }
 
 // Register route
-router.post('/register', async (req, res) => {
+router.post('/register', authRateLimit, async (req, res) => {
   try {
     const { email, password, firstName, lastName, theme } = req.body;
 
@@ -228,7 +229,7 @@ router.post('/register', async (req, res) => {
 });
 
 // Login route
-router.post('/login', async (req, res) => {
+router.post('/login', authRateLimit, async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -527,7 +528,15 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 }
 
 // Password reset request
-router.post('/forgot-password', async (req, res) => {
+// Stricter rate limit for password reset requests
+const passwordResetRateLimit = createRateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  maxRequests: 3, // Only 3 password reset attempts per 15 minutes
+  endpoint: 'password_reset',
+  message: 'Too many password reset attempts. Please try again in 15 minutes.'
+});
+
+router.post('/forgot-password', passwordResetRateLimit, async (req, res) => {
   try {
     if (!transporter) {
       return res.status(501).json({ message: 'Email service not configured' });
@@ -567,7 +576,7 @@ router.post('/forgot-password', async (req, res) => {
 });
 
 // Password reset
-router.post('/reset-password', async (req, res) => {
+router.post('/reset-password', passwordResetRateLimit, async (req, res) => {
   try {
     const { token, password } = req.body;
     

@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { authenticateJWT } from '../middleware/auth';
+import { requireAuth } from '../middleware/auth';
 
 export interface RouteConfig {
   method: 'get' | 'post' | 'put' | 'patch' | 'delete';
@@ -30,7 +30,7 @@ export class BaseRouter {
     const allMiddleware = [];
     
     if (requireAuth) {
-      allMiddleware.push(authenticateJWT);
+      allMiddleware.push(requireAuth);
     }
     
     allMiddleware.push(...middleware);

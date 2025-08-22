@@ -141,29 +141,30 @@ const BillingPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-base-100 to-base-200">
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 py-4 sm:py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
           <button
             onClick={() => navigate('/')}
-            className="btn btn-primary gap-2"
+            className="btn btn-primary gap-2 self-start"
           >
-            <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Back to Projects
+            <span className="hidden sm:inline">Back to Projects</span>
+            <span className="sm:hidden">Back</span>
           </button>
           
-          <div className="text-center flex-1">
-            <h1 className="text-4xl font-bold text-base-content">
+          <div className="text-center sm:flex-1">
+            <h1 className="text-2xl sm:text-4xl font-bold text-base-content">
               Billing & Plans
             </h1>
-            <p className="text-lg text-base-content/70 mt-2">
+            <p className="text-sm sm:text-lg text-base-content/70 mt-1 sm:mt-2">
               Manage your subscription and upgrade your development workflow
             </p>
           </div>
           
-          <div className="w-32"></div> {/* Spacer for centering */}
+          <div className="hidden sm:block w-32"></div> {/* Spacer for centering */}
         </div>
 
         {/* Error/Success Notifications */}
@@ -357,7 +358,7 @@ const BillingPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
           {plans.map((plan) => (
             <div 
               key={plan.id} 

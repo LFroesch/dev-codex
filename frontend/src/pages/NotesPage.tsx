@@ -118,7 +118,7 @@ const NotesPage: React.FC = () => {
                 <p className="text-base-content/60">No notes yet. Create one above!</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 {selectedProject.notes
                   ?.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
                   ?.map((note) => (

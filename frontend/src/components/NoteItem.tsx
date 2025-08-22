@@ -49,9 +49,11 @@ const NoteItem: React.FC<NoteItemProps> = ({
       
       onUpdate();
       setShowDeleteConfirm(false);
+      toast.success('Note deleted successfully!');
     } catch (error) {
       console.error('Failed to delete note:', error);
       setShowDeleteConfirm(false);
+      toast.error('Failed to delete note. Please try again.');
     }
   };
 
@@ -64,7 +66,9 @@ const NoteItem: React.FC<NoteItemProps> = ({
     e.stopPropagation();
     try {
       await navigator.clipboard.writeText(note.content);
+      toast.success('Note content copied to clipboard!');
     } catch (error) {
+      toast.error('Failed to copy to clipboard.');
       console.error('Failed to copy note content:', error);
     }
   };
@@ -471,6 +475,7 @@ const NoteModal: React.FC<NoteModalProps> = ({
       await releaseLock();
       onModeChange('view');
       onUpdate();
+      toast.success('Note saved successfully!');
     } catch (error: any) {
       if (error.response?.status === 423) {
         setLockError(`Note is being edited by ${error.response.data.lockedBy?.name || 'another user'}`);
@@ -972,11 +977,12 @@ const NewNoteForm: React.FC<NewNoteFormProps> = ({ projectId, onAdd }) => {
       setContent('');
       setIsExpanded(false);
       onAdd();
+      toast.success('Note created successfully!');
     } catch (error) {
       console.error('Failed to create note:', error);
+      toast.error('Failed to create note. Please try again.');
     } finally {
       setLoading(false);
-      toast.success('Note Created Successfully')
     }
   };
 
@@ -993,7 +999,7 @@ const NewNoteForm: React.FC<NewNoteFormProps> = ({ projectId, onAdd }) => {
       
       <div className="collapse-content">
         <form onSubmit={handleSubmit} className="space-y-4 pt-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div className="form-control">
               <label className="label">
                 <span className="label-text font-medium">Note Title</span>

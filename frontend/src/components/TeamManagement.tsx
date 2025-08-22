@@ -4,6 +4,7 @@ import ActivityLog from './ActivityLog';
 import ActiveUsers from './ActiveUsers';
 import ConfirmationModal from './ConfirmationModal';
 import InfoModal from './InfoModal';
+import { toast } from '../services/toast';
 
 interface TeamManagementProps {
   projectId: string;
@@ -119,14 +120,12 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
     setInviting(true);
     try {
       await teamAPI.inviteUser(projectId, { email: inviteEmail, role: inviteRole });
-      setModalMessage(`Invitation sent successfully to ${inviteEmail}!`);
-      setShowSuccessModal(true);
+      toast.success(`Invitation sent successfully to ${inviteEmail}!`);
       setInviteEmail('');
     } catch (error: any) {
       console.error('Failed to invite user:', error);
       const errorMessage = error.response?.data?.message || error.message || 'Failed to send invitation';
-      setModalMessage(errorMessage);
-      setShowErrorModal(true);
+      toast.error(errorMessage);
     } finally {
       setInviting(false);
     }
@@ -151,10 +150,10 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
       setMembers(prev => prev.filter(m => m.userId._id !== memberToRemove.id));
       setShowRemoveModal(false);
       setMemberToRemove(null);
+      toast.success(`${memberToRemove.name} removed from team successfully!`);
     } catch (error) {
       console.error('Failed to remove member:', error);
-      setModalMessage('Failed to remove team member');
-      setShowErrorModal(true);
+      toast.error('Failed to remove team member. Please try again.');
       setShowRemoveModal(false);
       setMemberToRemove(null);
     }
@@ -166,8 +165,11 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
       setMembers(prev => prev.map(m => 
         m.userId._id === userId ? { ...m, role: newRole } : m
       ));
+      const member = members.find(m => m.userId._id === userId);
+      toast.success(`${member?.userId?.firstName || 'Member'}'s role updated to ${newRole}!`);
     } catch (error) {
       console.error('Failed to update role:', error);
+      toast.error('Failed to update member role. Please try again.');
       setModalMessage('Failed to update role');
       setShowErrorModal(true);
     }
@@ -266,7 +268,7 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
               <p className="text-sm">No team members yet</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
               {members.map((member) => (
                 <div key={member._id} className="bg-base-200/50 border border-base-content/10 rounded-lg p-3">
                   <div className="flex items-start gap-3">

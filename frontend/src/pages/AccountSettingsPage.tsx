@@ -204,74 +204,79 @@ const AccountSettingsPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-base-100 to-base-200">
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 py-4 sm:py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
           <button
             onClick={() => navigate('/')}
-            className="btn btn-primary gap-2"
+            className="btn btn-primary gap-2 self-start"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Back to Projects
+            <span className="hidden sm:inline">Back to Projects</span>
+            <span className="sm:hidden">Back</span>
           </button>
           
-          <div className="text-center flex-1">
-            <h1 className="text-4xl font-bold text-base-content">
+          <div className="text-center sm:flex-1">
+            <h1 className="text-2xl sm:text-4xl font-bold text-base-content">
               Account Settings
             </h1>
-            <p className="text-lg text-base-content/70 mt-2">
+            <p className="text-sm sm:text-lg text-base-content/70 mt-1 sm:mt-2">
               Customize your account preferences and connections
             </p>
             {user && (
-              <p className="text-base-content/80 mt-1">
+              <p className="text-sm sm:text-base text-base-content/80 mt-1">
                 Welcome, {user.firstName} {user.lastName}!
               </p>
             )}
           </div>
           
-          <div className="w-32"></div> {/* Spacer for centering */}
+          <div className="hidden sm:block w-32"></div> {/* Spacer for centering */}
         </div>
 
         {/* Tabs */}
-        <div className="flex justify-center mb-8">
-          <div className="tabs tabs-boxed tabs-lg bg-base-200 shadow-lg border border-base-content/10">
+        <div className="flex justify-center mb-6 sm:mb-8 px-2">
+          <div className="tabs tabs-boxed tabs-lg bg-base-200 shadow-lg border border-base-content/10 w-full max-w-4xl overflow-x-auto">
           <button 
-            className={`tab tab-lg font-bold text-base ${activeTab === 'theme' ? 'tab-active' : ''}`}
+            className={`tab tab-sm sm:tab-lg font-medium sm:font-bold text-xs sm:text-base whitespace-nowrap ${activeTab === 'theme' ? 'tab-active' : ''}`}
             onClick={() => setActiveTab('theme')}
           >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4 4 4 0 004-4V5z" />
             </svg>
-            Theme Preferences
+            <span className="hidden sm:inline">Theme Preferences</span>
+            <span className="sm:hidden">Theme</span>
           </button>
           <button 
-            className={`tab tab-lg font-bold text-base ${activeTab === 'connections' ? 'tab-active' : ''}`}
+            className={`tab tab-sm sm:tab-lg font-medium sm:font-bold text-xs sm:text-base whitespace-nowrap ${activeTab === 'connections' ? 'tab-active' : ''}`}
             onClick={() => setActiveTab('connections')}
           >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
             </svg>
-            Account Connections
+            <span className="hidden sm:inline">Account Connections</span>
+            <span className="sm:hidden">Connections</span>
           </button>
           <button 
-            className={`tab tab-lg font-bold text-base ${activeTab === 'profile' ? 'tab-active' : ''}`}
+            className={`tab tab-sm sm:tab-lg font-medium sm:font-bold text-xs sm:text-base whitespace-nowrap ${activeTab === 'profile' ? 'tab-active' : ''}`}
             onClick={() => setActiveTab('profile')}
           >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
-            Profile & Public Settings
+            <span className="hidden sm:inline">Profile & Public Settings</span>
+            <span className="sm:hidden">Profile</span>
           </button>
           <button 
-            className={`tab tab-lg font-bold text-base ${activeTab === 'analytics' ? 'tab-active' : ''}`}
+            className={`tab tab-sm sm:tab-lg font-medium sm:font-bold text-xs sm:text-base whitespace-nowrap ${activeTab === 'analytics' ? 'tab-active' : ''}`}
             onClick={() => setActiveTab('analytics')}
           >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
-            Usage Analytics
+            <span className="hidden sm:inline">Usage Analytics</span>
+            <span className="sm:hidden">Analytics</span>
           </button>
           </div>
         </div>
@@ -300,7 +305,7 @@ const AccountSettingsPage: React.FC = () => {
 
         {/* Tab Content */}
         <div className="card bg-base-100 shadow-xl">
-          <div className="card-body">
+          <div className="card-body p-4 sm:p-6">
             {/* Theme Tab */}
             {activeTab === 'theme' && (
               <div className="space-y-6">
@@ -319,11 +324,11 @@ const AccountSettingsPage: React.FC = () => {
                   </div>
                 )}
 
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 sm:gap-3">
                   {THEMES.map((theme) => (
                     <button
                       key={theme}
-                      className={`group flex flex-col items-center gap-2 p-3 rounded-lg transition-all hover:scale-105 ${
+                      className={`group flex flex-col items-center gap-1 sm:gap-2 p-2 sm:p-3 rounded-lg transition-all hover:scale-105 ${
                         currentTheme === theme 
                           ? "bg-primary/20 ring-2 ring-primary" 
                           : "hover:bg-base-200"
@@ -331,7 +336,7 @@ const AccountSettingsPage: React.FC = () => {
                       onClick={() => handleThemeChange(theme)}
                       disabled={saving}
                     >
-                      <div className="h-12 w-full rounded-lg overflow-hidden shadow-sm" data-theme={theme}>
+                      <div className="h-8 sm:h-12 w-full rounded-lg overflow-hidden shadow-sm" data-theme={theme}>
                         <div className="h-full grid grid-cols-4 gap-px p-1">
                           <div className="rounded bg-primary"></div>
                           <div className="rounded bg-secondary"></div>
@@ -339,7 +344,7 @@ const AccountSettingsPage: React.FC = () => {
                           <div className="rounded bg-neutral"></div>
                         </div>
                       </div>
-                      <span className="text-xs font-medium text-center capitalize">
+                      <span className="text-xs sm:text-sm font-medium text-center capitalize">
                         {theme}
                       </span>
                       {currentTheme === theme && (
@@ -442,7 +447,7 @@ const AccountSettingsPage: React.FC = () => {
                       </div>
                       <div className="collapse-content">
                         <div className="pt-4 space-y-4">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                             <div>
                               <h3 className="font-semibold text-base mb-3">Account Details</h3>
                               <div className="space-y-3">
@@ -813,7 +818,7 @@ const AccountSettingsPage: React.FC = () => {
                       </div>
                       <div className="collapse-content">
                         <div className="pt-4">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-3">
                               <h4 className="font-medium text-success">✅ Included</h4>
                               <ul className="space-y-2 text-sm">

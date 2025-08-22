@@ -189,7 +189,7 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, projectId, onUpdate, onArchiv
             placeholder="Todo description..."
             rows={2}
           />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
             <div className="form-control">
               <label className="label">
                 <span className="label-text font-medium">Priority</span>
@@ -222,7 +222,7 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, projectId, onUpdate, onArchiv
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
             <DatePicker
               label="Due Date"
               value={editDueDate}
@@ -513,7 +513,7 @@ const NewTodoForm: React.FC<NewTodoFormProps> = ({ projectId, onAdd, isSharedPro
               rows={2}
             />
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
               <div className="form-control">
                 <label className="label">
                   <span className="label-text font-medium">Priority</span>
@@ -546,7 +546,7 @@ const NewTodoForm: React.FC<NewTodoFormProps> = ({ projectId, onAdd, isSharedPro
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
               <DatePicker
                 label="Due Date"
                 value={dueDate}

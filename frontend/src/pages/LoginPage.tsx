@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { authAPI } from '../api';
 import { useApiCall } from '../hooks/useApiCall';
+import { toast } from '../services/toast';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -20,6 +21,7 @@ const LoginPage: React.FC = () => {
     
     const result = await call(() => authAPI.login({ email, password }));
     if (result) {
+      toast.success('Welcome back! Successfully logged in.');
       navigate('/notes?view=projects');
     }
   };
@@ -29,8 +31,8 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-base-200 flex items-center justify-center">
-      <div className="card w-96 bg-base-100 shadow-xl">
+    <div className="min-h-screen bg-base-200 flex items-center justify-center px-4 py-8">
+      <div className="card w-full max-w-md bg-base-100 shadow-xl">
         <div className="card-body">
           <h2 className="card-title text-3xl font-bold text-center justify-center mb-6">
             Welcome Back

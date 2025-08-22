@@ -575,12 +575,12 @@ const StackPage: React.FC = () => {
           {/* Target Platforms */}
           <div>
             <h3 className="text-lg font-semibold mb-3">Target Platforms</h3>
-            <div className="flex gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
               {PLATFORMS.map(platform => (
                 <button
                   key={platform.id}
                   onClick={() => handlePlatformToggle(platform.id)}
-                  className={`btn btn-sm gap-2 ${
+                  className={`btn btn-sm gap-2 w-full ${
                     selectedPlatforms.has(platform.id)
                       ? 'btn-primary'
                       : 'btn-outline'

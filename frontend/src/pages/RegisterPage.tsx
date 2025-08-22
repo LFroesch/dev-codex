@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { authAPI } from '../api';
 import { useLoadingState } from '../hooks/useLoadingState';
 import { useErrorHandler } from '../hooks/useErrorHandler';
+import { toast } from '../services/toast';
 
 const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
@@ -45,6 +46,7 @@ const RegisterPage: React.FC = () => {
           email: formData.email,
           password: formData.password
         });
+        toast.success('Account created successfully! Welcome to Dev Codex.');
         navigate('/');
       } catch (err: any) {
         handleError(err);

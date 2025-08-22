@@ -44,8 +44,8 @@ router.use(requireAuth, adminMiddleware);
 // Get all users with pagination
 router.get('/users', async (req, res) => {
   try {
-    const page = Math.min(Math.max(parseInt(req.query.page as string) || 1, 1), 1000);
-    const limit = Math.min(Math.max(parseInt(req.query.limit as string) || 10, 1), 100);
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
     const skip = (page - 1) * limit;
 
     const users = await User.find()
@@ -259,8 +259,8 @@ router.get('/stats', async (req, res) => {
 // Get all projects with user info
 router.get('/projects', async (req, res) => {
   try {
-    const page = Math.min(Math.max(parseInt(req.query.page as string) || 1, 1), 1000);
-    const limit = Math.min(Math.max(parseInt(req.query.limit as string) || 10, 1), 100);
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
     const skip = (page - 1) * limit;
 
     const projects = await Project.find()
@@ -292,8 +292,8 @@ router.get('/projects', async (req, res) => {
 // Get all tickets with pagination and filtering
 router.get('/tickets', async (req, res) => {
   try {
-    const page = Math.min(Math.max(parseInt(req.query.page as string) || 1, 1), 1000);
-    const limit = Math.min(Math.max(parseInt(req.query.limit as string) || 10, 1), 100);
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
     const skip = (page - 1) * limit;
     const status = req.query.status as string;
     const priority = req.query.priority as string;

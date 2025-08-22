@@ -10,6 +10,7 @@ import { useAnalytics } from '../hooks/useAnalytics';
 import { unsavedChangesManager } from '../utils/unsavedChanges';
 import ToastContainer from './Toast';
 import IdeasPage from '../pages/IdeasPage';
+import { toast } from '../services/toast';
 
 const Layout: React.FC = () => {
   const navigate = useNavigate();
@@ -394,10 +395,12 @@ const Layout: React.FC = () => {
       // Clear user session before logout
       analytics.clearUserSession();
       await authAPI.logout();
+      toast.success('Successfully logged out. See you next time!');
       navigate('/login');
     } catch (err) {
       // Clear session even if logout fails
       analytics.clearUserSession();
+      toast.info('Logged out successfully.');
       navigate('/login');
     }
   };
@@ -410,8 +413,10 @@ const Layout: React.FC = () => {
 
       const response = await projectAPI.update(projectId, updatedData);
       await loadProjects();
+      toast.success('Project updated successfully!');
       return response;
     } catch (error) {
+      toast.error('Failed to update project. Please try again.');
       console.error('Failed to update project:', error);
       throw error;
     }
@@ -421,7 +426,9 @@ const Layout: React.FC = () => {
     try {
       await projectAPI.archive(projectId, isArchived);
       await loadProjects();
+      toast.success(isArchived ? 'Project archived successfully!' : 'Project restored successfully!');
     } catch (error) {
+      toast.error(`Failed to ${isArchived ? 'archive' : 'restore'} project. Please try again.`);
       console.error('Failed to archive project:', error);
       throw error;
     }
@@ -434,7 +441,9 @@ const Layout: React.FC = () => {
       if (selectedProject?.id === projectId) {
         setSelectedProject(null);
       }
+      toast.success('Project deleted successfully!');
     } catch (error) {
+      toast.error('Failed to delete project. Please try again.');
       console.error('Failed to delete project:', error);
       throw error;
     }
@@ -481,50 +490,52 @@ const Layout: React.FC = () => {
         {/* Mobile and Tablet Layout */}
         <div className="block desktop:hidden px-4 py-2">
           <div className="flex flex-col gap-2">
-            {/* Top row: Logo, Current Project, and User Menu */}
+            {/* Top row: Logo and User Menu */}
             <div className="flex-between-center">
-              <div className="flex-center-gap-2 cursor-pointer" onClick={() => navigate('/notes?view=projects')}>
-                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-sm">
-                  <svg className="icon-md text-primary-content" fill="currentColor" viewBox="0 0 20 20">
+              <div className="flex-center-gap-2 cursor-pointer min-w-0 flex-1" onClick={() => navigate('/notes?view=projects')}>
+                <div className="w-7 h-7 bg-primary rounded-lg flex items-center justify-center shadow-sm flex-shrink-0">
+                  <svg className="w-4 h-4 text-primary-content" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
                   </svg>
                 </div>
-                <h1 className="text-lg font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">Dev Codex</h1>
+                <h1 className="text-base font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent truncate">Dev Codex</h1>
               </div>
               
               {user ? (
-                <div className="flex-center-gap-2">
-                  {/* Current Project indicator styled like SessionTracker */}
-                  {selectedProject && (
-                    <div 
-                    className="flex items-center gap-2 px-3 py-1.5 bg-base-100/80 rounded-lg border border-base-content/10 shadow-sm hover:bg-base-200/70 transition-all duration-200 cursor-pointer h-8"
-                    onClick={() => handleNavigateWithCheck('/notes')}
-                    title={`Current project: ${selectedProject.name}`}
-                    >
-                      <div 
-                        className="w-2 h-2 rounded-full shadow-sm"
-                        style={{ backgroundColor: selectedProject.color }}
-                      ></div>
-                      <span className="text-xs font-medium truncate max-w-16">{selectedProject.name}</span>
-                    </div>
-                  )}
-                  <SessionTracker 
-                    projectId={selectedProject?.id}
-                    currentUserId={user?.id}
-                  />
-                  <span className="text-sm font-medium text-base-content/80 ml-2">Hi, {user?.firstName}!</span>
+                <div className="flex items-center gap-1 flex-shrink-0">
                   <NotificationBell />
                   <UserMenu user={user} onLogout={handleLogout} />
                 </div>
               ) : (
                 <button 
                   onClick={() => navigate('/login')}
-                  className="btn-primary-sm"
+                  className="btn btn-primary btn-sm flex-shrink-0"
                 >
                   Sign In
                 </button>
               )}
             </div>
+            
+            {/* Current Project Row */}
+            {user && selectedProject && (
+              <div className="flex items-center justify-between gap-2 mt-2">
+                <div 
+                  className="flex items-center gap-2 px-3 py-1.5 bg-base-200/80 rounded-lg border border-base-content/10 shadow-sm hover:bg-base-200 transition-all duration-200 cursor-pointer min-w-0 flex-1"
+                  onClick={() => handleNavigateWithCheck('/notes')}
+                  title={`Current project: ${selectedProject.name}`}
+                >
+                  <div 
+                    className="w-2.5 h-2.5 rounded-full shadow-sm flex-shrink-0"
+                    style={{ backgroundColor: selectedProject.color }}
+                  ></div>
+                  <span className="text-sm font-medium truncate">{selectedProject.name}</span>
+                </div>
+                <SessionTracker 
+                  projectId={selectedProject?.id}
+                  currentUserId={user?.id}
+                />
+              </div>
+            )}
             
             {/* Second row: Search and Navigation */}
             <div className="flex flex-col sm:flex-row gap-2">
@@ -596,40 +607,38 @@ const Layout: React.FC = () => {
               </div>
             </div>
             
-            {/* Third row: Navigation buttons */}
+            {/* Navigation buttons */}
             {location.pathname !== '/support' && (
-            <div className="flex my-2 gap-1 overflow-x-auto scrollbar-hide self-center pb-2">
+            <div className="flex gap-2 overflow-x-auto scrollbar-hide pt-2 pb-1">
               <button 
-                className={`btn btn-sm ${searchParams.get('view') === 'projects' ? 'btn-primary' : 'btn-ghost'} gap-1 font-bold whitespace-nowrap`}
+                className={`btn btn-sm ${searchParams.get('view') === 'projects' ? 'btn-primary' : 'btn-ghost'} gap-2 font-medium whitespace-nowrap min-h-10 px-4`}
                 onClick={() => handleNavigateWithCheck('/notes?view=projects')}
               >
-                <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                 </svg>
-                <span className="hidden sm:inline">My Projects</span>
-                <span className="sm:hidden">Projects</span>
+                <span>Projects</span>
               </button>
               <button 
-                className={`btn btn-sm ${(location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/settings') && searchParams.get('view') !== 'projects' ? 'btn-primary' : 'btn-ghost'} gap-1 font-bold whitespace-nowrap`}
+                className={`btn btn-sm ${(location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/settings') && searchParams.get('view') !== 'projects' ? 'btn-primary' : 'btn-ghost'} gap-2 font-medium whitespace-nowrap min-h-10 px-4`}
                 onClick={() => handleNavigateWithCheck('/notes')}
               >
-                <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                <span className="hidden sm:inline">Project Details</span>
-                <span className="sm:hidden">Details</span>
+                <span>Details</span>
               </button>
               <button 
-                className={`btn btn-sm ${location.pathname === '/discover' || location.pathname.startsWith('/discover/') ? 'btn-primary' : 'btn-ghost'} gap-1 font-bold whitespace-nowrap`}
+                className={`btn btn-sm ${location.pathname === '/discover' || location.pathname.startsWith('/discover/') ? 'btn-primary' : 'btn-ghost'} gap-2 font-medium whitespace-nowrap min-h-10 px-4`}
                 onClick={() => {
                   analytics.trackFeatureUsage('discover_button_click', 'Layout');
                   handleNavigateWithCheck('/discover');
                 }}
               >
-                <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
-                Discover
+                <span>Discover</span>
               </button>
             </div>
             )}
@@ -771,51 +780,55 @@ const Layout: React.FC = () => {
         </div>
       </header>
 
-      <div className="flex-1 w-full max-w-7xl mx-auto px-4 bg-base-100 flex flex-col mb-4 min-h-0">
+      <div className="flex-1 w-full max-w-7xl mx-auto px-2 sm:px-4 bg-base-100 flex flex-col mb-4 min-h-0">
         {/* Render content based on current route */}
         {searchParams.get('view') === 'projects' ? (
           /* My Projects Tab - Modern Style */
           <>
             {/* Tab Navigation */}
-            <div className="flex justify-center px-4 py-6">
-              <div className="tabs tabs-boxed tabs-lg border-subtle shadow-sm">
+            <div className="flex justify-center px-2 sm:px-4 py-4 sm:py-6">
+              <div className="tabs tabs-boxed border-subtle shadow-sm">
                 <button
                   onClick={() => {
                     analytics.trackTabSwitch(activeProjectTab, 'active', 'ProjectTabs');
                     setActiveProjectTab('active');
                   }}
-                  className={`tab tab-lg font-bold text-base ${activeProjectTab === 'active' ? 'tab-active' : ''}`}
+                  className={`tab tab-sm sm:tab-lg font-bold text-sm sm:text-base ${activeProjectTab === 'active' ? 'tab-active' : ''}`}
                 >
-                  Active ({currentProjects.length})
+                  <span className="hidden sm:inline">Active ({currentProjects.length})</span>
+                  <span className="sm:hidden">Active</span>
                 </button>
                 {archivedProjects.length > 0 && (
                   <button
                     onClick={() => setActiveProjectTab('archived')}
-                    className={`tab tab-lg font-bold text-base ${activeProjectTab === 'archived' ? 'tab-active' : ''}`}
+                    className={`tab tab-sm sm:tab-lg font-bold text-sm sm:text-base ${activeProjectTab === 'archived' ? 'tab-active' : ''}`}
                   >
-                    Archived ({archivedProjects.length})
+                    <span className="hidden sm:inline">Archived ({archivedProjects.length})</span>
+                    <span className="sm:hidden">Archived</span>
                   </button>
                 )}
                 {sharedProjects.length > 0 && (
                   <button
                     onClick={() => setActiveProjectTab('shared')}
-                    className={`tab tab-lg font-bold text-base ${activeProjectTab === 'shared' ? 'tab-active' : ''}`}
+                    className={`tab tab-sm sm:tab-lg font-bold text-sm sm:text-base ${activeProjectTab === 'shared' ? 'tab-active' : ''}`}
                   >
-                    Shared ({sharedProjects.length})
+                    <span className="hidden sm:inline">Shared ({sharedProjects.length})</span>
+                    <span className="sm:hidden">Shared</span>
                   </button>
                 )}
                 <button
                   onClick={() => setActiveProjectTab('ideas')}
-                  className={`tab tab-lg font-bold text-base ${activeProjectTab === 'ideas' ? 'tab-active' : ''}`}
+                  className={`tab tab-sm sm:tab-lg font-bold text-sm sm:text-base ${activeProjectTab === 'ideas' ? 'tab-active' : ''}`}
                 >
-                  Ideas ({ideasCount})
+                  <span className="hidden sm:inline">Ideas ({ideasCount})</span>
+                  <span className="sm:hidden">Ideas</span>
                 </button>
               </div>
             </div>
 
             {/* Tab Content */}
             <div className="flex-1 overflow-auto border-subtle bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-sm container-height-fix">
-              <div className="p-6">
+              <div className="p-3 sm:p-6">
                 <div className="space-y-4">
                 {activeProjectTab === 'active' && (
                   <div className="space-y-4">
@@ -869,7 +882,7 @@ const Layout: React.FC = () => {
                           </div>
                           {!collapsedSections[`active-${category}`] && (
                             <div className="p-4">
-                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                                 {categoryProjects.map((project) => (
                                   <button
                                     key={project.id}
@@ -877,51 +890,51 @@ const Layout: React.FC = () => {
                                       handleProjectSelect(project);
                                       navigate('/notes');
                                     }}
-                                    className={`btn btn-lg w-full justify-start gap-3 h-auto py-4 min-h-[6rem] ${
+                                    className={`btn w-full justify-start gap-3 h-auto py-3 px-4 min-h-[5rem] text-left ${
                                       selectedProject?.id === project.id 
-                                        ? 'btn-primary border-2 border-primary ring-4 ring-primary/20 shadow-lg' 
-                                        : 'btn-ghost bg-base-100 hover:bg-base-200 border-subtle shadow-md'
+                                        ? 'btn-primary border-2 border-primary ring-2 ring-primary/20 shadow-lg' 
+                                        : 'btn-ghost bg-base-100 hover:bg-base-200 border border-base-content/10 shadow-sm'
                                     }`}
                                   >
                                     <div 
                                       className="icon-md rounded-md shadow-sm flex-shrink-0"
                                       style={{ backgroundColor: project.color }}
                                     ></div>
-                                    <div className="flex-1 text-left">
-                                      <div className="font-semibold leading-tight truncate">{project.name}</div>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="font-medium leading-tight truncate text-sm">{project.name}</div>
                                       {project.description && (
-                                        <div className="text-xs mt-1 line-clamp-2 text-base-content/70">{project.description}</div>
+                                        <div className="text-xs mt-1 line-clamp-2 text-base-content/60">{project.description}</div>
                                       )}
                                       {project.tags && project.tags.length > 0 && (
                                         <div className="flex flex-wrap gap-1 mt-2">
-                                          {project.tags.slice(0, 3).map((tag, index) => (
+                                          {project.tags.slice(0, 2).map((tag, index) => (
                                             <span
                                               key={index}
-                                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                              className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${
                                                 selectedProject?.id === project.id 
-                                                  ? 'bg-white/20 text-white border border-white/30' 
-                                                  : 'bg-primary/10 text-primary border border-primary/20'
+                                                  ? 'bg-white/20 text-white' 
+                                                  : 'bg-primary/10 text-primary'
                                               }`}
                                             >
                                               {tag}
                                             </span>
                                           ))}
-                                          {project.tags.length > 3 && (
-                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                          {project.tags.length > 2 && (
+                                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${
                                               selectedProject?.id === project.id 
-                                                ? 'bg-white/10 text-white/70 border border-white/20' 
-                                                : 'bg-base-300 text-base-content/60 border border-base-300'
+                                                ? 'bg-white/10 text-white/70' 
+                                                : 'bg-base-300 text-base-content/60'
                                             }`}>
-                                              +{project.tags.length - 3}
+                                              +{project.tags.length - 2}
                                             </span>
                                           )}
                                         </div>
                                       )}
                                       <div className="flex items-center justify-between mt-2 text-xs">
-                                        <div className="flex items-center gap-3 text-base-content/50">
-                                          <span>Updated: {new Date(project.updatedAt).toLocaleDateString()}</span>
+                                        <div className="text-base-content/50 truncate">
+                                          <span>{new Date(project.updatedAt).toLocaleDateString()}</span>
                                         </div>
-                                        <div className={`flex items-center gap-1 px-2 py-1 rounded-full font-medium ${
+                                        <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium ${
                                           selectedProject?.id === project.id 
                                             ? 'bg-white/10 text-white/80' 
                                             : 'bg-success/10 text-success'
@@ -929,7 +942,7 @@ const Layout: React.FC = () => {
                                           <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                           </svg>
-                                          <span className="text-xs">
+                                          <span>
                                             {formatProjectTime(project.id)}
                                           </span>
                                         </div>
@@ -976,7 +989,7 @@ const Layout: React.FC = () => {
                         </div>
                         {!collapsedSections[`archived-${category}`] && (
                           <div className="p-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                               {categoryProjects.map((project) => (
                                 <button
                                   key={project.id}
@@ -984,10 +997,10 @@ const Layout: React.FC = () => {
                                     handleProjectSelect(project);
                                     navigate('/notes');
                                   }}
-                                  className={`btn btn-lg w-full justify-start gap-3 h-auto py-4 min-h-[6rem] ${
+                                  className={`btn w-full justify-start gap-3 h-auto py-3 px-4 min-h-[5rem] text-left ${
                                     selectedProject?.id === project.id 
-                                      ? 'btn-primary border-2 border-primary ring-4 ring-primary/20 shadow-lg' 
-                                      : 'btn-ghost bg-base-100 hover:bg-base-200 border-subtle shadow-md'
+                                      ? 'btn-primary border-2 border-primary ring-2 ring-primary/20 shadow-lg' 
+                                      : 'btn-ghost bg-base-100 hover:bg-base-200 border border-base-content/10 shadow-sm'
                                   }`}
                                 >
                                   <div 
@@ -1082,7 +1095,7 @@ const Layout: React.FC = () => {
                         </div>
                         {!collapsedSections[`shared-${category}`] && (
                           <div className="p-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                               {categoryProjects.map((project) => (
                                 <button
                                   key={project.id}
@@ -1090,10 +1103,10 @@ const Layout: React.FC = () => {
                                     handleProjectSelect(project);
                                     navigate('/notes');
                                   }}
-                                  className={`btn btn-lg w-full justify-start gap-3 h-auto py-4 min-h-[6rem] ${
+                                  className={`btn w-full justify-start gap-3 h-auto py-3 px-4 min-h-[5rem] text-left ${
                                     selectedProject?.id === project.id 
-                                      ? 'btn-primary border-2 border-primary ring-4 ring-primary/20 shadow-lg' 
-                                      : 'btn-ghost bg-base-100 hover:bg-base-200 border-subtle shadow-md'
+                                      ? 'btn-primary border-2 border-primary ring-2 ring-primary/20 shadow-lg' 
+                                      : 'btn-ghost bg-base-100 hover:bg-base-200 border border-base-content/10 shadow-sm'
                                   }`}
                                 >
                                   <div 
@@ -1196,7 +1209,7 @@ const Layout: React.FC = () => {
             </div>
             
             <div className="flex-1 overflow-auto border-subtle bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-sm container-height-fix">
-              <div className="p-1">
+              <div className="p-2 sm:p-4 lg:p-6">
                 <Outlet />
               </div>
             </div>
@@ -1270,15 +1283,23 @@ const Layout: React.FC = () => {
           <>
             {/* Tab Navigation */}
             {selectedProject && location.pathname !== '/support' && (
-              <div className="flex justify-center px-4 py-6">
-                <div className="tabs tabs-boxed tabs-lg border-subtle shadow-sm">
+              <div className="flex justify-center px-4 py-6 sticky top-[140px] desktop:top-16 z-30 bg-base-100/80 backdrop-blur-sm">
+                <div className="tabs tabs-boxed border-subtle shadow-sm overflow-x-auto scrollbar-hide">
                   {tabs.map((tab) => (
                     <button
                       key={tab.id}
                       onClick={() => handleNavigateWithCheck(tab.path)}
-                      className={`tab tab-lg font-bold text-base ${currentTab === tab.id ? 'tab-active' : ''}`}
+                      className={`tab tab-sm sm:tab-lg font-medium sm:font-bold text-sm sm:text-base whitespace-nowrap ${currentTab === tab.id ? 'tab-active' : ''}`}
                     >
-                      {tab.label}
+                      <span className="hidden sm:inline">{tab.label}</span>
+                      <span className="sm:hidden">
+                        {tab.id === 'notes' ? 'Notes' : 
+                         tab.id === 'stack' ? 'Stack' : 
+                         tab.id === 'docs' ? 'Docs' : 
+                         tab.id === 'deployment' ? 'Deploy' : 
+                         tab.id === 'public' ? 'Public' : 
+                         tab.id === 'settings' ? 'Settings' : tab.label}
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -1288,7 +1309,7 @@ const Layout: React.FC = () => {
             {/* Page Content */}
             <div className={`flex-1 overflow-auto border-subtle bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-sm container-height-fix ${location.pathname === '/support' ? 'mt-4' : ''}`}>
               {selectedProject ? (
-                <div className="p-1">
+                <div className="p-2 sm:p-4 lg:p-6">
                   <Outlet context={{ 
                     selectedProject, 
                     user,

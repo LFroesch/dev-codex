@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { projectAPI } from '../api';
 import { useLoadingState } from '../hooks/useLoadingState';
 import { useErrorHandler } from '../hooks/useErrorHandler';
+import { toast } from '../services/toast';
 
 const CreateProject: React.FC = () => {
   const navigate = useNavigate();
@@ -39,6 +40,7 @@ const CreateProject: React.FC = () => {
           stagingEnvironment: formData.stagingEnvironment,
         });
       });
+      toast.success(`Project "${formData.name}" created successfully!`);
       navigate('/');
     } catch (err: any) {
       handleError(err);

@@ -5,8 +5,8 @@ const BillingCancelPage: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-base-200 flex items-center justify-center">
-      <div className="card w-96 bg-base-100 shadow-xl">
+    <div className="min-h-screen bg-base-200 flex items-center justify-center px-4 py-8">
+      <div className="card w-full max-w-md bg-base-100 shadow-xl">
         <div className="card-body text-center">
           <div className="w-16 h-16 bg-warning/10 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-8 h-8 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">

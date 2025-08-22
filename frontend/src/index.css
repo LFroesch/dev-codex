@@ -33,8 +33,15 @@ body {
 
 /* Improved container height management */
 .container-height-fix {
-  height: calc(100vh - 140px);
-  min-height: 400px;
+  height: calc(100vh - 180px);
+  min-height: 300px;
+}
+
+@media (min-width: 1450px) {
+  .container-height-fix {
+    height: calc(100vh - 140px);
+    min-height: 400px;
+  }
 }
 
 /* Virtual scrolling optimization for large lists */

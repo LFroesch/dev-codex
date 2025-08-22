@@ -2,8 +2,17 @@ import express from 'express';
 import Stripe from 'stripe';
 import { User } from '../models/User';
 import { requireAuth, AuthRequest } from '../middleware/auth';
+import { createRateLimit } from '../middleware/rateLimit';
 
 const router = express.Router();
+
+// Rate limiting for billing operations
+const billingRateLimit = createRateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  maxRequests: 10, // Max 10 billing operations per 15 minutes
+  endpoint: 'billing',
+  message: 'Too many billing operations. Please try again in 15 minutes.'
+});
 
 // Initialize Stripe only if API key is provided
 let stripe: Stripe | null = null;
@@ -34,7 +43,7 @@ console.log('Webhook secret:', process.env.STRIPE_WEBHOOK_SECRET ? 'SET' : 'MISS
 console.log('=============================');
 
 // Create checkout session
-router.post('/create-checkout-session', requireAuth, async (req: AuthRequest, res) => {
+router.post('/create-checkout-session', billingRateLimit, requireAuth, async (req: AuthRequest, res) => {
   try {
     if (!stripe) {
       return res.status(501).json({ error: 'Payment processing not configured' });
@@ -420,7 +429,7 @@ router.get('/info', requireAuth, async (req: AuthRequest, res) => {
 });
 
 // Cancel subscription
-router.post('/cancel-subscription', requireAuth, async (req: AuthRequest, res) => {
+router.post('/cancel-subscription', billingRateLimit, requireAuth, async (req: AuthRequest, res) => {
   try {
     console.log('=== CANCEL SUBSCRIPTION DEBUG ===');
     console.log('User ID:', req.userId);
@@ -474,7 +483,7 @@ router.post('/cancel-subscription', requireAuth, async (req: AuthRequest, res) =
 });
 
 // Resume cancelled subscription
-router.post('/resume-subscription', requireAuth, async (req: AuthRequest, res) => {
+router.post('/resume-subscription', billingRateLimit, requireAuth, async (req: AuthRequest, res) => {
   try {
     console.log('=== RESUME SUBSCRIPTION ===');
     console.log('User ID:', req.userId);

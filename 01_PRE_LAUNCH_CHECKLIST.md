@@ -2,11 +2,6 @@
 
 ## 🚨 **Phase 2: High Priority Finishing Tasks**
 
-### Input Validation & Security
-- [ ] **Test import/export improvements** - Validate all edge cases
-- [ ] **Full input sanitization audit** - Ensure industry-standard data safety
-- [ ] **Improve/consolidate Export Sections** - UI/UX cleanup
-
 ### Authentication & API Security
 - [ ] **Audit all API endpoints** - Verify proper authentication
 - [ ] **CORS configuration review** - Configure for production domains
@@ -17,8 +12,6 @@
 - [ ] **File size validation** - 10MB limit
 - [ ] **Malicious content detection** - Pattern scanning
 - [ ] **Enhanced audit logging** - IP tracking for security
-
----
 
 ## 🎨 **Phase 3: UI/UX Polish & Mobile**
 

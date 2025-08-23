@@ -100,7 +100,7 @@ const NotesPage: React.FC = () => {
       )}
 
       {/* Notes Section */}
-      <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10 w-full max-w-full overflow-hidden">
+      <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10">
         <input type="checkbox" defaultChecked />
         <div className="collapse-title text-lg font-semibold bg-base-200 border-b border-base-content/10">
           Notes ({selectedProject.notes?.length || 0})
@@ -149,7 +149,7 @@ const NotesPage: React.FC = () => {
       />
 
       {/* Todo List Section */}
-      <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10 w-full max-w-full overflow-hidden">
+      <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10">
         <input type="checkbox" defaultChecked />
         <div className="collapse-title text-lg font-semibold bg-base-200 border-b border-base-content/10">
           To Do ({selectedProject.todos?.filter(todo => !todo.parentTodoId).length || 0})
@@ -190,7 +190,7 @@ const NotesPage: React.FC = () => {
       </div>
 
       {/* Dev Log Section */}
-      <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10 w-full max-w-full overflow-hidden">
+      <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10">
         <input type="checkbox" />
         <div className="collapse-title text-lg font-semibold bg-base-200 border-b border-base-content/10">
           Dev Log ({selectedProject.devLog?.length || 0})

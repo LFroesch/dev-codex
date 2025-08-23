@@ -377,7 +377,7 @@ const AdminDashboardPage: React.FC = () => {
 
         {/* Stats Cards */}
         {activeTab === 'users' && stats && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-4 sm:mb-8">
             <div className="stat bg-base-100 rounded-lg shadow-lg border-subtle">
               <div className="stat-title">Total Users</div>
               <div className="stat-value text-primary">{stats.totalUsers}</div>
@@ -407,7 +407,7 @@ const AdminDashboardPage: React.FC = () => {
 
         {/* Ticket Stats Cards */}
         {activeTab === 'tickets' && ticketStats && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-4 sm:mb-8">
             <div className="stat bg-base-100 rounded-lg shadow-lg border-subtle">
               <div className="stat-title">Open Tickets</div>
               <div className="stat-value text-error">{ticketStats.open}</div>
@@ -590,54 +590,58 @@ const AdminDashboardPage: React.FC = () => {
 
               {/* Ticket Status Tabs */}
               <div className="flex justify-center mb-2">
-                <div className="tabs tabs-boxed tabs-lg bg-base-200 shadow-lg border-subtle rounded-lg">
+                <div className="tabs tabs-boxed tabs-lg bg-base-200 shadow-lg border-subtle rounded-lg w-full max-w-4xl overflow-x-auto">
                 <button 
-                  className={`tab tab-lg font-bold text-base ${ticketStatusTab === 'open' ? 'tab-active' : ''}`}
+                  className={`tab tab-sm sm:tab-lg min-h-14 sm:min-h-16 font-bold text-xs sm:text-base px-2 sm:px-4 whitespace-nowrap ${ticketStatusTab === 'open' ? 'tab-active' : ''}`}
                   onClick={() => {
                     setTicketStatusTab('open');
                     setPage(1);
                   }}
                 >
-                  <svg className="icon-sm mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
                   </svg>
-                  Open ({ticketStats?.open || 0})
+                  <span className="hidden sm:inline">Open ({ticketStats?.open || 0})</span>
+                  <span className="sm:hidden">Open</span>
                 </button>
                 <button 
-                  className={`tab tab-lg font-bold text-base ${ticketStatusTab === 'in_progress' ? 'tab-active' : ''}`}
+                  className={`tab tab-sm sm:tab-lg min-h-14 sm:min-h-16 font-bold text-xs sm:text-base px-2 sm:px-4 whitespace-nowrap ${ticketStatusTab === 'in_progress' ? 'tab-active' : ''}`}
                   onClick={() => {
                     setTicketStatusTab('in_progress');
                     setPage(1);
                   }}
                 >
-                  <svg className="icon-sm mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  In Progress ({ticketStats?.inProgress || 0})
+                  <span className="hidden sm:inline">In Progress ({ticketStats?.inProgress || 0})</span>
+                  <span className="sm:hidden">Progress</span>
                 </button>
                 <button 
-                  className={`tab tab-lg font-bold text-base ${ticketStatusTab === 'resolved' ? 'tab-active' : ''}`}
+                  className={`tab tab-sm sm:tab-lg min-h-14 sm:min-h-16 font-bold text-xs sm:text-base px-2 sm:px-4 whitespace-nowrap ${ticketStatusTab === 'resolved' ? 'tab-active' : ''}`}
                   onClick={() => {
                     setTicketStatusTab('resolved');
                     setPage(1);
                   }}
                 >
-                  <svg className="icon-sm mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  Resolved ({ticketStats?.resolved || 0})
+                  <span className="hidden sm:inline">Resolved ({ticketStats?.resolved || 0})</span>
+                  <span className="sm:hidden">Resolved</span>
                 </button>
                 <button 
-                  className={`tab tab-lg font-bold text-base ${ticketStatusTab === 'closed' ? 'tab-active' : ''}`}
+                  className={`tab tab-sm sm:tab-lg min-h-14 sm:min-h-16 font-bold text-xs sm:text-base px-2 sm:px-4 whitespace-nowrap ${ticketStatusTab === 'closed' ? 'tab-active' : ''}`}
                   onClick={() => {
                     setTicketStatusTab('closed');
                     setPage(1);
                   }}
                 >
-                  <svg className="icon-sm mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  Closed ({ticketStats?.closed || 0})
+                  <span className="hidden sm:inline">Closed ({ticketStats?.closed || 0})</span>
+                  <span className="sm:hidden">Closed</span>
                 </button>
                 </div>
               </div>

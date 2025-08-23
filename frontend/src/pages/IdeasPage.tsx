@@ -499,10 +499,12 @@ const IdeaItem: React.FC<IdeaItemProps> = ({
                   <label className="label">
                     <span className="label-text font-medium">Content</span>
                   </label>
-                  <EnhancedTextEditor
+                  <textarea
                     value={editContent}
-                    onChange={(value) => handleInputChange('content', value)}
+                    onChange={(e) => handleInputChange('content', e.target.value)}
+                    className="textarea textarea-bordered border-base-300 w-full"
                     placeholder="Enter your idea content here... (Markdown supported)"
+                    rows={4}
                   />
                 </div>
 
@@ -634,10 +636,12 @@ const NewIdeaForm: React.FC<NewIdeaFormProps> = ({ onAdd }) => {
               </button>
             </div>
             <div className="space-y-2">
-              <EnhancedTextEditor
+              <textarea
                 value={content}
-                onChange={setContent}
+                onChange={(e) => setContent(e.target.value)}
+                className="textarea textarea-bordered border-base-300 w-full"
                 placeholder="Enter your idea content here... (Markdown supported)"
+                rows={4}
               />
               <div className="flex justify-end">
                 <button

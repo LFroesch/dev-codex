@@ -6,23 +6,39 @@ class LockSignalingService {
   private listeners: Map<string, Set<Function>> = new Map();
 
   connect() {
-    if (this.socket?.connected) return;
+    if (this.socket?.connected) {
+      console.log('Lock signaling already connected');
+      return;
+    }
+
+    // Clean up any existing socket before creating new one
+    if (this.socket && !this.socket.connected) {
+      this.socket.removeAllListeners();
+      this.socket = null;
+    }
 
     const serverUrl = import.meta.env.DEV ? 'http://localhost:5003' : window.location.origin;
     
     this.socket = io(serverUrl, {
       withCredentials: true,
-      transports: ['websocket', 'polling']
+      transports: ['websocket', 'polling'],
+      forceNew: false // Reuse existing connection if possible
     });
 
     this.socket.on('connect', () => {
+      console.log('Lock signaling connected');
       // Rejoin current project if we were in one
       if (this.currentProjectId) {
-        this.joinProject(this.currentProjectId);
+        this.joinProjectRoom(this.currentProjectId);
       }
     });
 
-    this.socket.on('disconnect', () => {
+    this.socket.on('disconnect', (reason) => {
+      console.log('Lock signaling disconnected:', reason);
+      // Clear listeners on unexpected disconnect to prevent memory leaks
+      if (reason === 'transport close' || reason === 'transport error') {
+        this.listeners.clear();
+      }
     });
 
     // Set up event listeners
@@ -41,23 +57,47 @@ class LockSignalingService {
 
   disconnect() {
     if (this.socket) {
+      // Remove all socket event listeners before disconnecting
+      this.socket.removeAllListeners();
       this.socket.disconnect();
       this.socket = null;
     }
     this.currentProjectId = null;
+    // Clear all event listeners to prevent memory leaks
+    this.listeners.clear();
+  }
+
+  // Add cleanup method for component unmounting
+  cleanup() {
+    this.leaveProject();
+    this.disconnect();
+    this.listeners.clear();
   }
 
   joinProject(projectId: string) {
+    // Only connect if not already connected
     if (!this.socket?.connected) {
       this.connect();
+      // Wait for connection before joining project
+      if (this.socket) {
+        this.socket.once('connect', () => {
+          this.joinProjectRoom(projectId);
+        });
+      }
+      return;
     }
     
+    this.joinProjectRoom(projectId);
+  }
+
+  private joinProjectRoom(projectId: string) {
     if (this.currentProjectId && this.currentProjectId !== projectId) {
       this.socket?.emit('leave-project', this.currentProjectId);
     }
     
     this.currentProjectId = projectId;
     this.socket?.emit('join-project', projectId);
+    console.log(`Joined project room: ${projectId}`);
   }
 
   leaveProject() {

@@ -987,7 +987,7 @@ const NewNoteForm: React.FC<NewNoteFormProps> = ({ projectId, onAdd }) => {
   };
 
   return (
-    <div className="collapse collapse-arrow bg-base-100 shadow-lg border-subtle mb-4 w-full max-w-full overflow-hidden">
+    <div className="collapse collapse-arrow bg-base-100 shadow-lg border-subtle mb-4">
       <input 
         type="checkbox" 
         checked={isExpanded}
@@ -999,7 +999,7 @@ const NewNoteForm: React.FC<NewNoteFormProps> = ({ projectId, onAdd }) => {
       
       <div className="collapse-content">
         <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4 pt-2 sm:pt-4">
-          <div className="grid grid-cols-1 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
             <div className="form-control">
               <label className="label">
                 <span className="label-text font-medium">Note Title</span>
@@ -1041,10 +1041,12 @@ const NewNoteForm: React.FC<NewNoteFormProps> = ({ projectId, onAdd }) => {
               </button>
             </div>
             <div className="space-y-2">
-              <EnhancedTextEditor
+              <textarea
                 value={content}
-                onChange={setContent}
+                onChange={(e) => setContent(e.target.value)}
+                className="textarea textarea-bordered border-base-300 w-full"
                 placeholder="Enter your note content here... (Markdown supported)"
+                rows={4}
               />
               <div className="flex justify-end">
                 <button

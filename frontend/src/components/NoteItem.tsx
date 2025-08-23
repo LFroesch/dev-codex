@@ -76,7 +76,7 @@ const NoteItem: React.FC<NoteItemProps> = ({
   return (
     <>
       <div 
-        className="bg-base-100 shadow-lg border-subtle rounded-lg p-4 cursor-pointer hover:shadow-xl transition-shadow duration-200 group"
+        className="bg-base-100 shadow-lg border-subtle rounded-lg p-3 sm:p-4 cursor-pointer hover:shadow-xl transition-shadow duration-200 group"
         onClick={onClick}
       >
         <div className="flex items-start justify-between">
@@ -673,7 +673,7 @@ const NoteModal: React.FC<NoteModalProps> = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 z-[9999]">
       <div className="bg-base-100 w-full h-screen flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-base-300 flex-shrink-0">
+        <div className="flex items-center justify-between p-3 sm:p-4 border-b border-base-300 flex-shrink-0">
           <div className="flex-1 min-w-0">
             <h2 className="text-2xl font-bold text-base-content truncate">{note.title}</h2>
             {note.description && (
@@ -821,7 +821,7 @@ const NoteModal: React.FC<NoteModalProps> = ({
         {/* Content */}
         <div className="flex-1 overflow-hidden">
           {mode === 'edit' ? (
-            <div className="h-full p-4">
+            <div className="h-full p-3 sm:p-4">
               <div className="space-y-2 h-full flex flex-col">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-shrink-0">
                   <div className="form-control">
@@ -987,7 +987,7 @@ const NewNoteForm: React.FC<NewNoteFormProps> = ({ projectId, onAdd }) => {
   };
 
   return (
-    <div className="collapse collapse-arrow bg-base-100 shadow-lg border-subtle mb-4">
+    <div className="collapse collapse-arrow bg-base-100 shadow-lg border-subtle mb-4 w-full max-w-full overflow-hidden">
       <input 
         type="checkbox" 
         checked={isExpanded}
@@ -998,8 +998,8 @@ const NewNoteForm: React.FC<NewNoteFormProps> = ({ projectId, onAdd }) => {
       </div>
       
       <div className="collapse-content">
-        <form onSubmit={handleSubmit} className="space-y-4 pt-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+        <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4 pt-2 sm:pt-4">
+          <div className="grid grid-cols-1 gap-3 sm:gap-4">
             <div className="form-control">
               <label className="label">
                 <span className="label-text font-medium">Note Title</span>

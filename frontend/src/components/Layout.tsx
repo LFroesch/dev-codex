@@ -520,7 +520,7 @@ const Layout: React.FC = () => {
             {user && selectedProject && (
               <div className="flex items-center justify-between gap-2 mt-2">
                 <div 
-                  className="flex items-center gap-2 px-3 py-1.5 bg-base-200/80 rounded-lg border border-base-content/10 shadow-sm hover:bg-base-200 transition-all duration-200 cursor-pointer min-w-0 flex-1"
+                  className="flex items-center gap-2 px-3 py-1.5 bg-base-200/80 rounded-lg border border-base-content/10 shadow-sm hover:bg-base-200 transition-all duration-200 cursor-pointer min-w-0 flex-1 w-28 h-8"
                   onClick={() => handleNavigateWithCheck('/notes')}
                   title={`Current project: ${selectedProject.name}`}
                 >
@@ -609,7 +609,7 @@ const Layout: React.FC = () => {
             
             {/* Navigation buttons */}
             {location.pathname !== '/support' && (
-            <div className="flex gap-2 overflow-x-auto scrollbar-hide pt-2 pb-1">
+            <div className="flex justify-center gap-2 overflow-x-auto scrollbar-hide pt-2 pb-1">
               <button 
                 className={`btn btn-sm ${searchParams.get('view') === 'projects' ? 'btn-primary' : 'btn-ghost'} gap-2 font-medium whitespace-nowrap min-h-10 px-4`}
                 onClick={() => handleNavigateWithCheck('/notes?view=projects')}
@@ -793,7 +793,7 @@ const Layout: React.FC = () => {
                     analytics.trackTabSwitch(activeProjectTab, 'active', 'ProjectTabs');
                     setActiveProjectTab('active');
                   }}
-                  className={`tab tab-sm sm:tab-lg font-bold text-sm sm:text-base ${activeProjectTab === 'active' ? 'tab-active' : ''}`}
+                  className={`tab tab-sm sm:tab-lg min-h-10 sm:min-h-12 font-bold text-sm sm:text-base ${activeProjectTab === 'active' ? 'tab-active' : ''}`}
                 >
                   <span className="hidden sm:inline">Active ({currentProjects.length})</span>
                   <span className="sm:hidden">Active</span>
@@ -801,7 +801,7 @@ const Layout: React.FC = () => {
                 {archivedProjects.length > 0 && (
                   <button
                     onClick={() => setActiveProjectTab('archived')}
-                    className={`tab tab-sm sm:tab-lg font-bold text-sm sm:text-base ${activeProjectTab === 'archived' ? 'tab-active' : ''}`}
+                    className={`tab tab-sm sm:tab-lg min-h-10 sm:min-h-12 font-bold text-sm sm:text-base ${activeProjectTab === 'archived' ? 'tab-active' : ''}`}
                   >
                     <span className="hidden sm:inline">Archived ({archivedProjects.length})</span>
                     <span className="sm:hidden">Archived</span>
@@ -810,7 +810,7 @@ const Layout: React.FC = () => {
                 {sharedProjects.length > 0 && (
                   <button
                     onClick={() => setActiveProjectTab('shared')}
-                    className={`tab tab-sm sm:tab-lg font-bold text-sm sm:text-base ${activeProjectTab === 'shared' ? 'tab-active' : ''}`}
+                    className={`tab tab-sm sm:tab-lg min-h-10 sm:min-h-12 font-bold text-sm sm:text-base ${activeProjectTab === 'shared' ? 'tab-active' : ''}`}
                   >
                     <span className="hidden sm:inline">Shared ({sharedProjects.length})</span>
                     <span className="sm:hidden">Shared</span>
@@ -818,7 +818,7 @@ const Layout: React.FC = () => {
                 )}
                 <button
                   onClick={() => setActiveProjectTab('ideas')}
-                  className={`tab tab-sm sm:tab-lg font-bold text-sm sm:text-base ${activeProjectTab === 'ideas' ? 'tab-active' : ''}`}
+                  className={`tab tab-sm sm:tab-lg min-h-10 sm:min-h-12 font-bold text-sm sm:text-base ${activeProjectTab === 'ideas' ? 'tab-active' : ''}`}
                 >
                   <span className="hidden sm:inline">Ideas ({ideasCount})</span>
                   <span className="sm:hidden">Ideas</span>
@@ -1225,34 +1225,37 @@ const Layout: React.FC = () => {
           /* Admin Dashboard - With submenu tabs */
           <>
             {/* Admin Dashboard Tab Navigation */}
-            <div className="flex justify-center px-4 py-6">
-              <div className="tabs tabs-boxed tabs-lg border-subtle shadow-sm bg-base-200">
+            <div className="flex justify-center px-2 sm:px-4 py-4 sm:py-6">
+              <div className="tabs tabs-boxed tabs-lg border-subtle shadow-sm bg-base-200 w-full max-w-4xl overflow-x-auto">
                 <button 
-                  className={`tab tab-lg font-bold text-base ${activeAdminTab === 'users' ? 'tab-active' : ''}`}
+                  className={`tab tab-sm sm:tab-lg min-h-14 sm:min-h-16 font-bold text-xs sm:text-base px-3 sm:px-4 whitespace-nowrap ${activeAdminTab === 'users' ? 'tab-active' : ''}`}
                   onClick={() => setActiveAdminTab('users')}
                 >
-                  <svg className="icon-sm mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
                   </svg>
-                  Users
+                  <span className="hidden sm:inline">Users</span>
+                  <span className="sm:hidden">Users</span>
                 </button>
                 <button 
-                  className={`tab tab-lg font-bold text-base ${activeAdminTab === 'tickets' ? 'tab-active' : ''}`}
+                  className={`tab tab-sm sm:tab-lg min-h-14 sm:min-h-16 font-bold text-xs sm:text-base px-3 sm:px-4 whitespace-nowrap ${activeAdminTab === 'tickets' ? 'tab-active' : ''}`}
                   onClick={() => setActiveAdminTab('tickets')}
                 >
-                  <svg className="icon-sm mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  Support Tickets
+                  <span className="hidden sm:inline">Support Tickets</span>
+                  <span className="sm:hidden">Tickets</span>
                 </button>
                 <button 
-                  className={`tab tab-lg font-bold text-base ${activeAdminTab === 'analytics' ? 'tab-active' : ''}`}
+                  className={`tab tab-sm sm:tab-lg min-h-14 sm:min-h-16 font-bold text-xs sm:text-base px-3 sm:px-4 whitespace-nowrap ${activeAdminTab === 'analytics' ? 'tab-active' : ''}`}
                   onClick={() => setActiveAdminTab('analytics')}
                 >
-                  <svg className="icon-sm mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                   </svg>
-                  Platform Analytics
+                  <span className="hidden sm:inline">Platform Analytics</span>
+                  <span className="sm:hidden">Analytics</span>
                 </button>
               </div>
             </div>

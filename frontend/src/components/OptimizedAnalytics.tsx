@@ -629,31 +629,39 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
             </div>
           </div>
 
-          <div className="flex justify-center mb-6">
-            <div className="tabs tabs-boxed bg-base-200/50 backdrop-blur-sm border-subtle shadow-sm">
+          <div className="flex justify-center mb-6 px-2">
+            <div className="tabs tabs-boxed bg-base-200/50 backdrop-blur-sm border-subtle shadow-sm w-full max-w-4xl overflow-x-auto">
               <button 
-                className={`tab font-bold ${activeTab === 'overview' ? 'tab-active' : ''}`}
+                className={`tab tab-sm sm:tab-lg min-h-14 sm:min-h-16 font-bold text-xs sm:text-base px-2 sm:px-4 whitespace-nowrap ${activeTab === 'overview' ? 'tab-active' : ''}`}
                 onClick={() => setActiveTab('overview')}
               >
-                📈 Overview
+                <span className="mr-1">📈</span>
+                <span className="hidden sm:inline">Overview</span>
+                <span className="sm:hidden">Overview</span>
               </button>
               <button 
-                className={`tab font-bold ${activeTab === 'users' ? 'tab-active' : ''}`}
+                className={`tab tab-sm sm:tab-lg min-h-14 sm:min-h-16 font-bold text-xs sm:text-base px-2 sm:px-4 whitespace-nowrap ${activeTab === 'users' ? 'tab-active' : ''}`}
                 onClick={() => setActiveTab('users')}
               >
-                👥 Top Users
+                <span className="mr-1">👥</span>
+                <span className="hidden sm:inline">Top Users</span>
+                <span className="sm:hidden">Users</span>
               </button>
               <button 
-                className={`tab font-bold ${activeTab === 'projects' ? 'tab-active' : ''}`}
+                className={`tab tab-sm sm:tab-lg min-h-14 sm:min-h-16 font-bold text-xs sm:text-base px-2 sm:px-4 whitespace-nowrap ${activeTab === 'projects' ? 'tab-active' : ''}`}
                 onClick={() => setActiveTab('projects')}
               >
-                🚀 Top Projects
+                <span className="mr-1">🚀</span>
+                <span className="hidden sm:inline">Top Projects</span>
+                <span className="sm:hidden">Projects</span>
               </button>
               <button 
-                className={`tab font-bold ${activeTab === 'features' ? 'tab-active' : ''}`}
+                className={`tab tab-sm sm:tab-lg min-h-14 sm:min-h-16 font-bold text-xs sm:text-base px-2 sm:px-4 whitespace-nowrap ${activeTab === 'features' ? 'tab-active' : ''}`}
                 onClick={() => setActiveTab('features')}
               >
-                📊 All Tracking
+                <span className="mr-1">📊</span>
+                <span className="hidden sm:inline">All Tracking</span>
+                <span className="sm:hidden">Tracking</span>
               </button>
             </div>
           </div>

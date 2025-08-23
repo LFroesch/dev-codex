@@ -521,9 +521,9 @@ const HelpPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-base-100 to-base-200">
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 py-4 sm:py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row items-center justify-between mb-4 sm:mb-8 gap-4">
           <button
             onClick={() => navigate('/')}
             className="btn btn-primary gap-2"
@@ -535,24 +535,24 @@ const HelpPage: React.FC = () => {
           </button>
           
           <div className="text-center flex-1">
-            <h1 className="text-4xl font-bold text-base-content">
+            <h1 className="text-2xl sm:text-4xl font-bold text-base-content">
               Help & Documentation
             </h1>
-            <p className="text-lg text-base-content/70 mt-2">
+            <p className="text-sm sm:text-lg text-base-content/70 mt-2">
               Learn how to make the most of your project management workflow
             </p>
           </div>
           
-          <div className="w-32"></div>
+          <div className="w-0 sm:w-32"></div>
         </div>
 
-        <div className="flex gap-8">
+        <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
           {/* Sidebar Navigation */}
-          <div className="w-64 flex-shrink-0">
-            <div className="card bg-base-100 border border-base-300 sticky top-4">
+          <div className="w-full lg:w-64 flex-shrink-0">
+            <div className="card bg-base-100 border border-base-300 lg:sticky lg:top-4">
               <div className="card-body p-4">
                 <h3 className="font-semibold mb-4">Topics</h3>
-                <ul className="space-y-2">
+                <ul className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-1 gap-2 lg:space-y-2">
                   {sections.map((section) => (
                     <li key={section.id}>
                       <button
@@ -578,7 +578,7 @@ const HelpPage: React.FC = () => {
           {/* Main Content */}
           <div className="flex-1">
             <div className="card bg-base-100 border border-base-300">
-              <div className="card-body p-8">
+              <div className="card-body p-4 sm:p-8">
                 {renderContent()}
               </div>
             </div>

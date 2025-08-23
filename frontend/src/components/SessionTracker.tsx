@@ -72,7 +72,7 @@ const SessionTracker: React.FC<SessionTrackerProps> = ({
   }
 
   return (
-    <div className={`session-tracker relative ${className}`}>
+    <div className={`session-tracker relative z-[100] ${className}`}>
       {/* Compact view with backdrop - matching project indicator style */}
       <div className="flex items-center gap-2 px-3 py-1.5 bg-base-100/80 rounded-lg border border-base-content/10 shadow-sm hover:bg-base-200/70 transition-all duration-200 w-28 h-8">
         <div 
@@ -102,7 +102,7 @@ const SessionTracker: React.FC<SessionTrackerProps> = ({
 
       {/* Detailed view */}
       {(isVisible || showDetails) && (
-        <div className="absolute right-0 top-full mt-2 bg-base-100 border border-base-content/10 rounded-lg shadow-lg p-4 z-50 w-72 max-w-[calc(100vw-2rem)]">
+        <div className="absolute right-0 top-full mt-2 bg-base-100 border border-base-content/10 rounded-lg shadow-lg p-4 z-[9999] w-72 max-w-[calc(100vw-2rem)]">
           <div className="space-y-1">
             <div className="flex justify-between items-center">
               <h4 className="font-semibold text-sm">Session Info</h4>

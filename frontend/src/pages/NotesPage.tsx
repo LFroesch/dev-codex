@@ -89,7 +89,7 @@ const NotesPage: React.FC = () => {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-4 lg:space-y-6">
       {error && (
         <div className="alert alert-error shadow-md">
           <svg className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
@@ -100,26 +100,26 @@ const NotesPage: React.FC = () => {
       )}
 
       {/* Notes Section */}
-      <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10">
+      <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10 w-full max-w-full overflow-hidden">
         <input type="checkbox" defaultChecked />
         <div className="collapse-title text-lg font-semibold bg-base-200 border-b border-base-content/10">
           Notes ({selectedProject.notes?.length || 0})
         </div>
         <div className="collapse-content">
-          <div className="pt-4">
+          <div className="pt-2 sm:pt-4">
             <NewNoteForm 
               projectId={selectedProject.id} 
               onAdd={onProjectRefresh}
             />
             
-            {selectedProject.notes?.length === 0 ? (
-              <div className="text-center py-8">
-                <div className="text-4xl mb-4">📄</div>
-                <p className="text-base-content/60">No notes yet. Create one above!</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-                {selectedProject.notes
+            <div className="space-y-3">
+              {selectedProject.notes?.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="text-4xl mb-4">📄</div>
+                  <p className="text-base-content/60">No notes yet. Create one above!</p>
+                </div>
+              ) : (
+                selectedProject.notes
                   ?.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
                   ?.map((note) => (
                     <NoteItem
@@ -130,9 +130,8 @@ const NotesPage: React.FC = () => {
                       onClick={() => handleNoteClick(note)}
                     />
                   ))
-                }
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -150,13 +149,13 @@ const NotesPage: React.FC = () => {
       />
 
       {/* Todo List Section */}
-      <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10">
+      <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10 w-full max-w-full overflow-hidden">
         <input type="checkbox" defaultChecked />
         <div className="collapse-title text-lg font-semibold bg-base-200 border-b border-base-content/10">
           To Do ({selectedProject.todos?.filter(todo => !todo.parentTodoId).length || 0})
         </div>
         <div className="collapse-content">
-          <div className="pt-4">
+          <div className="pt-2 sm:pt-4">
             <NewTodoForm 
               projectId={selectedProject.id} 
               onAdd={onProjectRefresh}
@@ -191,13 +190,13 @@ const NotesPage: React.FC = () => {
       </div>
 
       {/* Dev Log Section */}
-      <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10">
+      <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10 w-full max-w-full overflow-hidden">
         <input type="checkbox" />
         <div className="collapse-title text-lg font-semibold bg-base-200 border-b border-base-content/10">
           Dev Log ({selectedProject.devLog?.length || 0})
         </div>
         <div className="collapse-content">
-          <div className="pt-4">
+          <div className="pt-2 sm:pt-4">
             <NewDevLogForm 
               projectId={selectedProject.id} 
               onAdd={onProjectRefresh}

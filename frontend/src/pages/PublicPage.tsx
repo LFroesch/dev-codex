@@ -170,7 +170,7 @@ const PublicPage: React.FC = () => {
       <div className="bg-base-200 shadow-lg border border-base-content/10 rounded-lg mb-4">
         <div className="p-4">
           {/* Header with title and controls */}
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
             <button
               onClick={() => setIsPublicSharingExpanded(!isPublicSharingExpanded)}
               className="flex items-center gap-3 flex-1 text-left hover:bg-base-200 p-2 -m-2 rounded-lg transition-colors"
@@ -188,7 +188,7 @@ const PublicPage: React.FC = () => {
               </div>
             </button>
             
-            <div className="flex gap-2 ml-4">
+            <div className="flex flex-wrap gap-2 ml-0 sm:ml-4 mt-2 sm:mt-0">
               {isPublic && (
                 <button
                   onClick={copyPublicUrl}
@@ -311,13 +311,13 @@ const PublicPage: React.FC = () => {
                   </button>
                 </span>
               </label>
-              <div className="join">
-                <span className="join-item bg-base-200 px-3 py-2 text-lg text-base-content/70 h-12">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-0">
+                <span className="bg-base-200 px-3 py-2 text-sm sm:text-base text-base-content/70 rounded-lg sm:rounded-r-none sm:rounded-l-lg border border-base-300 sm:border-r-0">
                   {window.location.origin}/project/
                 </span>
                 <input
                   type="text"
-                  className="input input-bordered join-item flex-1"
+                  className="input input-bordered flex-1 rounded-lg sm:rounded-l-none sm:rounded-r-lg"
                   placeholder={selectedProject.id}
                   value={publicSlug}
                   onChange={(e) => setPublicSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
@@ -467,7 +467,7 @@ const PublicPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
               {Object.entries(visibilityOptions).map(([key, checked]) => (
                 <label key={key} className="label cursor-pointer justify-start p-2 border border-base-content/10 rounded-lg hover:bg-base-200/50">
                   <input
@@ -580,13 +580,13 @@ const PublicPage: React.FC = () => {
 
       {/* Call to Action */}
       {!isPublic && (
-        <div className="bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/20 rounded-lg mb-4">
+        <div className="bg-base-200 shadow-lg border border-base-content/10 rounded-lg mb-4">
           <div className="p-4">
             {/* Header with title and controls */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-2">
               <button
                 onClick={() => setIsShareWorkExpanded(!isShareWorkExpanded)}
-                className="flex items-center gap-3 flex-1 text-left hover:bg-base-200/30 p-2 -m-2 rounded-lg transition-colors"
+                className="flex items-center gap-3 flex-1 text-left hover:bg-base-200 p-2 -m-2 rounded-lg transition-colors"
               >
                 <div className={`transform transition-transform duration-200 ${isShareWorkExpanded ? 'rotate-90' : ''}`}>
                   <svg className="w-5 h-5 text-base-content/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -601,7 +601,7 @@ const PublicPage: React.FC = () => {
                 </div>
               </button>
               
-              <div className="flex gap-2 ml-4">
+              <div className="flex justify-center">
                 <button 
                   onClick={() => setIsPublic(true)}
                   className="btn btn-primary btn-sm"
@@ -619,7 +619,7 @@ const PublicPage: React.FC = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0 9c-1.657 0-3-4.03-3-9s1.343-9 3-9m0 18c1.657 0 3-4.03 3-9s-1.343-9-3-9m-9 9a9 9 0 019-9" />
               </svg>
             </div>
-            <h3 className="text-xl font-bold mb-2">Share Your Work with the World</h3>
+            <h3 className="text-xl font-bold mb-2">Ready to Go Public?</h3>
             <p className="text-base-content/70 mb-4 max-w-md mx-auto">
               Make your project discoverable by the community. Get feedback, inspire others, and showcase your skills.
             </p>

@@ -498,7 +498,7 @@ const BillingPage: React.FC = () => {
         {/* Trust Indicators */}
         <div className="text-center py-8 border-t border-base-300">
           <p className="text-base-content/70 mb-4 text-lg">
-            Trusted by developers worldwide • 14-day free trial • Cancel anytime
+            Trusted by developers worldwide • Cancel anytime
           </p>
           <div className="flex justify-center items-center space-x-8 text-base-content/60">
             <div className="flex-center-gap-2">

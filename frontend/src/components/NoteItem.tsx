@@ -673,9 +673,9 @@ const NoteModal: React.FC<NoteModalProps> = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 z-[9999]">
       <div className="bg-base-100 w-full h-screen flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-3 sm:p-4 border-b border-base-300 flex-shrink-0">
-          <div className="flex-1 min-w-0">
-            <h2 className="text-2xl font-bold text-base-content truncate">{note.title}</h2>
+        <div className="p-3 sm:p-4 border-b border-base-300 flex-shrink-0">
+          <div className="flex-1 min-w-0 w-full mb-3">
+            <h2 className="text-lg sm:text-2xl font-bold text-base-content truncate">{note.title}</h2>
             {note.description && (
               <p className="text-base-content/70 mt-1">{note.description}</p>
             )}
@@ -689,47 +689,74 @@ const NoteModal: React.FC<NoteModalProps> = ({
             </div>
           </div>
           
-          {/* Side panel with options */}
-          <div className="flex items-center gap-2 ml-6 flex-shrink-0">
+          {/* Action buttons - All aligned together */}
+          <div className="flex flex-wrap items-center justify-center sm:justify-end w-full gap-1 sm:gap-2">
             {mode === 'edit' ? (
               <>
                 <button
                   onClick={handleSave}
-                  className="btn btn-primary"
-                  title="Ctrl+S to save"
+                  className="btn btn-primary btn-xs sm:btn-sm"
+                  title="Save (Ctrl+S)"
                   disabled={loading || !editTitle.trim() || !editContent.trim()}
                 >
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  {loading ? 'Saving...' : 'Save'}
+                  <span className="hidden sm:inline">{loading ? 'Saving...' : 'Save'}</span>
                 </button>
                 <button
                   onClick={handleCancelClick}
-                  className="btn btn-ghost"
+                  className="btn btn-primary btn-xs sm:btn-sm"
                   disabled={loading}
                 >
-                  Cancel
+                  <span className="hidden sm:inline">Cancel</span>
+                  <span className="sm:hidden">✕</span>
+                </button>
+                <button
+                  onClick={async () => {
+                    if (mode === 'edit') {
+                      // In edit mode, check for unsaved changes before closing
+                      const hasChanges = editTitle.trim() !== note.title || 
+                                        editDescription.trim() !== (note.description || '') || 
+                                        editContent.trim() !== note.content;
+                      if (hasChanges) {
+                        // Show save confirmation modal instead of using unsavedChangesManager
+                        setShowSaveConfirm(true);
+                        return;
+                      }
+                      // No changes, release lock and close
+                      await releaseLock();
+                    }
+                    // In view mode, just close directly
+                    onClose();
+                  }}
+                  className="btn btn-primary btn-xs sm:btn-sm gap-1 sm:gap-2"
+                  title="Back (Esc)"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  <span className="hidden sm:inline">Back</span>
                 </button>
               </>
             ) : (
               <>
                 <button
                   onClick={handleCopy}
-                  className="btn btn-ghost"
+                  className="btn btn-primary btn-xs sm:btn-sm"
                   title="Copy content (C)"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                   </svg>
-                  Copy
+                  <span className="hidden sm:inline">Copy</span>
                 </button>
                 <button
                   onClick={handleEnterEditMode}
-                  className={`btn ${
+                  className={`btn btn-xs sm:btn-sm ${
                     (isLocked && !lockedBy?.isCurrentUser) || (project && project.canEdit === false) 
                       ? 'btn-disabled' 
-                      : 'btn-ghost'
+                      : 'btn-primary'
                   }`}
                   title={
                     project && project.canEdit === false 
@@ -741,62 +768,48 @@ const NoteModal: React.FC<NoteModalProps> = ({
                   disabled={(isLocked && !lockedBy?.isCurrentUser) || (project && project.canEdit === false)}
                 >
                   {project && project.canEdit === false ? (
-                    <svg className="w-4 h-4 mr-2 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636M5.636 18.364l12.728-12.728" />
                     </svg>
                   ) : isLocked && !lockedBy?.isCurrentUser ? (
-                    <svg className="w-4 h-4 mr-2 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
                   ) : (
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                     </svg>
                   )}
-                  {project && project.canEdit === false 
-                    ? 'No Access' 
-                    : isLocked && !lockedBy?.isCurrentUser 
-                      ? 'Locked' 
-                      : 'Edit'
-                  }
+                  <span className="hidden sm:inline">
+                    {project && project.canEdit === false 
+                      ? 'No Access' 
+                      : isLocked && !lockedBy?.isCurrentUser 
+                        ? 'Locked' 
+                        : 'Edit'
+                    }
+                  </span>
                 </button>
                 <button
                   onClick={handleDeleteClick}
-                  className="btn btn-error btn-outline"
+                  className="btn btn-primary btn-xs sm:btn-sm"
                 >
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                   </svg>
-                  Delete
+                  <span className="hidden sm:inline">Delete</span>
+                </button>
+                <button
+                  onClick={onClose}
+                  className="btn btn-primary btn-xs sm:btn-sm"
+                  title="Back (Esc)"
+                >
+                  <svg className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  <span className="hidden sm:inline">Back</span>
                 </button>
               </>
             )}
-            <button
-              onClick={async () => {
-                if (mode === 'edit') {
-                  // In edit mode, check for unsaved changes before closing
-                  const hasChanges = editTitle.trim() !== note.title || 
-                                    editDescription.trim() !== (note.description || '') || 
-                                    editContent.trim() !== note.content;
-                  if (hasChanges) {
-                    // Show save confirmation modal instead of using unsavedChangesManager
-                    setShowSaveConfirm(true);
-                    return;
-                  }
-                  // No changes, release lock and close
-                  await releaseLock();
-                }
-                // In view mode, just close directly
-                onClose();
-              }}
-              className="btn btn-primary gap-2"
-              title={mode === 'view' ? "Back (Esc)" : "Back (Esc)"}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              Back
-            </button>
           </div>
         </div>
 

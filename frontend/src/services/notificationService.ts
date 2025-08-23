@@ -10,6 +10,7 @@ interface UnreadCountListener {
 }
 
 class NotificationService {
+  private static instance: NotificationService;
   private socket: Socket | null = null;
   private notifications: Notification[] = [];
   private unreadCount: number = 0;
@@ -23,18 +24,35 @@ class NotificationService {
   private isInitialized = false;
   private currentUserId: string | null = null;
 
-  constructor() {
+  private constructor() {
     // Don't auto-connect in constructor - wait for explicit initialization
   }
 
+  public static getInstance(): NotificationService {
+    if (!NotificationService.instance) {
+      NotificationService.instance = new NotificationService();
+    }
+    return NotificationService.instance;
+  }
+
   private connect() {
-    if (this.socket?.connected) return;
+    if (this.socket?.connected) {
+      console.log('Notification service already connected');
+      return;
+    }
+
+    // Clean up any existing socket before creating new one
+    if (this.socket && !this.socket.connected) {
+      this.socket.removeAllListeners();
+      this.socket = null;
+    }
 
     const serverUrl = import.meta.env.DEV ? 'http://localhost:5003' : window.location.origin;
     
     this.socket = io(serverUrl, {
       withCredentials: true,
-      transports: ['websocket', 'polling']
+      transports: ['websocket', 'polling'],
+      forceNew: false
     });
 
     this.socket.on('connect', () => {
@@ -102,7 +120,10 @@ class NotificationService {
 
   // Public method to initialize the service with user authentication
   public async initialize(userId?: string): Promise<void> {
-    if (this.isInitialized) return;
+    if (this.isInitialized) {
+      console.log('Notification service already initialized');
+      return;
+    }
     
     try {
       // Get userId if not provided
@@ -312,6 +333,7 @@ class NotificationService {
 
   public disconnect(): void {
     if (this.socket) {
+      this.socket.removeAllListeners();
       this.socket.disconnect();
       this.socket = null;
     }
@@ -340,4 +362,4 @@ class NotificationService {
   }
 }
 
-export const notificationService = new NotificationService();
+export const notificationService = NotificationService.getInstance();

@@ -490,7 +490,7 @@ const Layout: React.FC = () => {
         {/* Mobile and Tablet Layout */}
         <div className="block desktop:hidden px-4 py-2">
           <div className="flex flex-col gap-2">
-            {/* Top row: Logo and User Menu */}
+            {/* Top row: Logo, Session Tracker, and User Menu */}
             <div className="flex-between-center">
               <div className="flex-center-gap-2 cursor-pointer min-w-0 flex-1" onClick={() => navigate('/notes?view=projects')}>
                 <div className="w-7 h-7 bg-primary rounded-lg flex items-center justify-center shadow-sm flex-shrink-0">
@@ -503,6 +503,12 @@ const Layout: React.FC = () => {
               
               {user ? (
                 <div className="flex items-center gap-1 flex-shrink-0">
+                  {selectedProject && (
+                    <SessionTracker 
+                      projectId={selectedProject?.id}
+                      currentUserId={user?.id}
+                    />
+                  )}
                   <NotificationBell />
                   <UserMenu user={user} onLogout={handleLogout} />
                 </div>
@@ -516,11 +522,11 @@ const Layout: React.FC = () => {
               )}
             </div>
             
-            {/* Current Project Row */}
+            {/* Current Project and Search/Create Row */}
             {user && selectedProject && (
-              <div className="flex items-center justify-between gap-2 mt-2">
+              <div className="flex items-center gap-2">
                 <div 
-                  className="flex items-center gap-2 px-3 py-1.5 bg-base-200/80 rounded-lg border border-base-content/10 shadow-sm hover:bg-base-200 transition-all duration-200 cursor-pointer min-w-0 flex-1 w-28 h-8"
+                  className="flex items-center gap-2 px-3 py-1.5 bg-base-200/80 rounded-lg border border-base-content/10 shadow-sm hover:bg-base-200 transition-all duration-200 cursor-pointer min-w-0 flex-shrink-0"
                   onClick={() => handleNavigateWithCheck('/notes')}
                   title={`Current project: ${selectedProject.name}`}
                 >
@@ -530,116 +536,193 @@ const Layout: React.FC = () => {
                   ></div>
                   <span className="text-sm font-medium truncate">{selectedProject.name}</span>
                 </div>
-                <SessionTracker 
-                  projectId={selectedProject?.id}
-                  currentUserId={user?.id}
-                />
+                
+                {/* Search bar and create button */}
+                <div className="flex-center-gap-2 flex-1">
+                  <div className="relative flex-1">
+                    <svg className="absolute left-2.5 top-1/2 transform -translate-y-1/2 icon-sm text-base-content/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <input
+                      type="text"
+                      placeholder="Search"
+                      value={searchTerm}
+                      onChange={(e) => {
+                        const newSearchTerm = e.target.value;
+                        setSearchTerm(newSearchTerm);
+                        
+                        // Track search
+                        if (newSearchTerm.trim()) {
+                          const filteredCount = projects.filter(p => 
+                            p.name.toLowerCase().includes(newSearchTerm.toLowerCase()) ||
+                            (p.category && p.category.toLowerCase().includes(newSearchTerm.toLowerCase())) ||
+                            (p.tags && p.tags.some((tag: string) => tag.toLowerCase().includes(newSearchTerm.toLowerCase())))
+                          ).length;
+                          
+                          analytics.trackSearch(newSearchTerm, filteredCount, 'MobileSearch');
+                          
+                          if (searchParams.get('view') !== 'projects') {
+                            navigate('/notes?view=projects');
+                          }
+                        } else if (searchTerm.trim()) {
+                          // Track search clear
+                          analytics.trackFeatureUsage('search_clear', 'MobileSearch');
+                        }
+                      }}
+                      className="input-field input-sm pl-9 pr-8 w-full bg-base-100/80 backdrop-blur-sm"
+                    />
+                    {searchTerm && (
+                      <button
+                        onClick={() => setSearchTerm('')}
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 icon-sm text-base-content/50 hover:text-base-content/80 transition-colors"
+                      >
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      analytics.trackButtonClick('Create Project', 'MobileHeader', {
+                        location: 'mobile_header',
+                        hasSelectedProject: !!selectedProject
+                      });
+                      navigate('/create-project');
+                    }}
+                    className="btn btn-primary btn-sm btn-circle shadow-sm relative z-50"
+                    title="New Project"
+                    style={{ pointerEvents: 'auto' }}
+                  >
+                    <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                  </button>
+                </div>
               </div>
             )}
             
-            {/* Second row: Search and Navigation */}
-            <div className="flex flex-col sm:flex-row gap-2">
-              {/* Search bar */}
-              <div className="flex-center-gap-2 flex-1">
-                <div className="relative flex-1">
-                  <svg className="absolute left-2.5 top-1/2 transform -translate-y-1/2 icon-sm text-base-content/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                  <input
-                    type="text"
-                    placeholder="Search"
-                    value={searchTerm}
-                    onChange={(e) => {
-                      const newSearchTerm = e.target.value;
-                      setSearchTerm(newSearchTerm);
-                      
-                      // Track search
-                      if (newSearchTerm.trim()) {
-                        const filteredCount = projects.filter(p => 
-                          p.name.toLowerCase().includes(newSearchTerm.toLowerCase()) ||
-                          (p.category && p.category.toLowerCase().includes(newSearchTerm.toLowerCase())) ||
-                          (p.tags && p.tags.some((tag: string) => tag.toLowerCase().includes(newSearchTerm.toLowerCase())))
-                        ).length;
-                        
-                        analytics.trackSearch(newSearchTerm, filteredCount, 'MobileSearch');
-                        
-                        if (searchParams.get('view') !== 'projects') {
-                          navigate('/notes?view=projects');
-                        }
-                      } else if (searchTerm.trim()) {
-                        // Track search clear
-                        analytics.trackFeatureUsage('search_clear', 'MobileSearch');
-                      }
-                    }}
-                    className="input-field input-sm pl-9 pr-8 w-full bg-base-100/80 backdrop-blur-sm"
-                  />
-                  {searchTerm && (
-                    <button
-                      onClick={() => setSearchTerm('')}
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 icon-sm text-base-content/50 hover:text-base-content/80 transition-colors"
-                    >
-                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  )}
-                </div>
-                <div>
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    analytics.trackButtonClick('Create Project', 'MobileHeader', {
-                      location: 'mobile_header',
-                      hasSelectedProject: !!selectedProject
-                    });
-                    navigate('/create-project');
-                  }}
-                  className="btn btn-primary btn-sm btn-circle shadow-sm relative z-50"
-                  title="New Project"
-                  style={{ pointerEvents: 'auto' }}
-                >
-                  <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
-                </button>
-                </div>
-              </div>
-            </div>
-            
             {/* Navigation buttons */}
             {location.pathname !== '/support' && (
-            <div className="flex justify-center gap-2 overflow-x-auto scrollbar-hide pt-2 pb-1">
-              <button 
-                className={`btn btn-sm ${searchParams.get('view') === 'projects' ? 'btn-primary' : 'btn-ghost'} gap-2 font-medium whitespace-nowrap min-h-10 px-4`}
-                onClick={() => handleNavigateWithCheck('/notes?view=projects')}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                </svg>
-                <span>Projects</span>
-              </button>
-              <button 
-                className={`btn btn-sm ${(location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/settings') && searchParams.get('view') !== 'projects' ? 'btn-primary' : 'btn-ghost'} gap-2 font-medium whitespace-nowrap min-h-10 px-4`}
-                onClick={() => handleNavigateWithCheck('/notes')}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                <span>Details</span>
-              </button>
-              <button 
-                className={`btn btn-sm ${location.pathname === '/discover' || location.pathname.startsWith('/discover/') ? 'btn-primary' : 'btn-ghost'} gap-2 font-medium whitespace-nowrap min-h-10 px-4`}
-                onClick={() => {
-                  analytics.trackFeatureUsage('discover_button_click', 'Layout');
-                  handleNavigateWithCheck('/discover');
-                }}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                <span>Discover</span>
-              </button>
+            <div className="flex justify-center px-4 py-1 bg-base-100/80 backdrop-blur-sm">
+              <div className="tabs tabs-boxed border-subtle shadow-sm">
+                <button 
+                  className={`tab tab-sm ${searchParams.get('view') === 'projects' ? 'tab-active' : ''} gap-1 font-bold whitespace-nowrap min-h-10 px-4`}
+                  onClick={() => handleNavigateWithCheck('/notes?view=projects')}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                  </svg>
+                  <span>Projects</span>
+                </button>
+                <button 
+                  className={`tab tab-sm ${(location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/settings') && searchParams.get('view') !== 'projects' ? 'tab-active' : ''} gap-1 font-bold whitespace-nowrap min-h-10 px-4`}
+                  onClick={() => handleNavigateWithCheck('/notes')}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 712-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <span>Details</span>
+                </button>
+                <button 
+                  className={`tab tab-sm ${location.pathname === '/discover' || location.pathname.startsWith('/discover/') ? 'tab-active' : ''} gap-1 font-bold whitespace-nowrap min-h-10 px-4`}
+                  onClick={() => {
+                    analytics.trackFeatureUsage('discover_button_click', 'Layout');
+                    handleNavigateWithCheck('/discover');
+                  }}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  <span>Discover</span>
+                </button>
+              </div>
+            </div>
+            )}
+
+            {/* Project Views Submenu - Mobile */}
+            {searchParams.get('view') === 'projects' && (
+            <div className="flex justify-center px-2 py-1">
+              <div className="tabs tabs-boxed border-subtle shadow-sm">
+                <button
+                  onClick={() => {
+                    analytics.trackTabSwitch(activeProjectTab, 'active', 'ProjectTabs');
+                    setActiveProjectTab('active');
+                  }}
+                  className={`tab tab-sm min-h-10 font-bold text-sm ${activeProjectTab === 'active' ? 'tab-active' : ''}`}
+                >
+                  <span>Active</span>
+                </button>
+                {archivedProjects.length > 0 && (
+                  <button
+                    onClick={() => setActiveProjectTab('archived')}
+                    className={`tab tab-sm min-h-10 font-bold text-sm ${activeProjectTab === 'archived' ? 'tab-active' : ''}`}
+                  >
+                    <span>Archived</span>
+                  </button>
+                )}
+                {sharedProjects.length > 0 && (
+                  <button
+                    onClick={() => setActiveProjectTab('shared')}
+                    className={`tab tab-sm min-h-10 font-bold text-sm ${activeProjectTab === 'shared' ? 'tab-active' : ''}`}
+                  >
+                    <span>Shared</span>
+                  </button>
+                )}
+                <button
+                  onClick={() => setActiveProjectTab('ideas')}
+                  className={`tab tab-sm min-h-10 font-bold text-sm ${activeProjectTab === 'ideas' ? 'tab-active' : ''}`}
+                >
+                  <span>Ideas</span>
+                </button>
+              </div>
+            </div>
+            )}
+
+            {/* Project Details Submenu - Mobile */}
+            {selectedProject && (location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/settings') && searchParams.get('view') !== 'projects' && (
+            <div className="flex justify-center px-2 py-1">
+              <div className="tabs tabs-boxed border-subtle shadow-sm overflow-x-auto scrollbar-hide">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => handleNavigateWithCheck(tab.path)}
+                    className={`tab tab-sm min-h-10 font-bold text-sm whitespace-nowrap ${currentTab === tab.id ? 'tab-active' : ''}`}
+                  >
+                    <span>
+                      {tab.id === 'notes' ? 'Notes' : 
+                       tab.id === 'stack' ? 'Stack' : 
+                       tab.id === 'docs' ? 'Docs' : 
+                       tab.id === 'deployment' ? 'Deploy' : 
+                       tab.id === 'public' ? 'Public' : 
+                       tab.id === 'settings' ? 'Settings' : tab.label}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            )}
+
+            {/* Discover Submenu - Mobile */}
+            {(location.pathname === '/discover' || location.pathname.startsWith('/discover/')) && (
+            <div className="flex justify-center px-2 py-1">
+              <div className="tabs tabs-boxed border-subtle shadow-sm">
+                <button
+                  onClick={() => handleNavigateWithCheck('/discover')}
+                  className={`tab tab-sm min-h-10 font-bold text-sm ${location.pathname === '/discover' ? 'tab-active' : ''}`}
+                >
+                  Discover
+                </button>
+                <button
+                  onClick={() => handleNavigateWithCheck('/discover')}
+                  className={`tab tab-sm min-h-10 font-bold text-sm ${(location.pathname.startsWith('/discover/project/') || location.pathname.startsWith('/discover/user/')) ? 'tab-active' : ''}`}
+                  disabled={!(location.pathname.startsWith('/discover/project/') || location.pathname.startsWith('/discover/user/'))}
+                >
+                  Details
+                </button>
+              </div>
             </div>
             )}
           </div>
@@ -780,51 +863,12 @@ const Layout: React.FC = () => {
         </div>
       </header>
 
-      <div className="flex-1 w-full max-w-7xl mx-auto px-2 sm:px-4 bg-base-100 flex flex-col mb-4 min-h-0">
+      <div className="flex-1 w-full max-w-7xl mx-auto p-2 sm:p-4 bg-base-100 flex flex-col mb-4 min-h-0">
         {/* Render content based on current route */}
         {searchParams.get('view') === 'projects' ? (
           /* My Projects Tab - Modern Style */
           <>
-            {/* Tab Navigation */}
-            <div className="flex justify-center px-2 sm:px-4 py-4 sm:py-6">
-              <div className="tabs tabs-boxed border-subtle shadow-sm">
-                <button
-                  onClick={() => {
-                    analytics.trackTabSwitch(activeProjectTab, 'active', 'ProjectTabs');
-                    setActiveProjectTab('active');
-                  }}
-                  className={`tab tab-sm sm:tab-lg min-h-10 sm:min-h-12 font-bold text-sm sm:text-base ${activeProjectTab === 'active' ? 'tab-active' : ''}`}
-                >
-                  <span className="hidden sm:inline">Active ({currentProjects.length})</span>
-                  <span className="sm:hidden">Active</span>
-                </button>
-                {archivedProjects.length > 0 && (
-                  <button
-                    onClick={() => setActiveProjectTab('archived')}
-                    className={`tab tab-sm sm:tab-lg min-h-10 sm:min-h-12 font-bold text-sm sm:text-base ${activeProjectTab === 'archived' ? 'tab-active' : ''}`}
-                  >
-                    <span className="hidden sm:inline">Archived ({archivedProjects.length})</span>
-                    <span className="sm:hidden">Archived</span>
-                  </button>
-                )}
-                {sharedProjects.length > 0 && (
-                  <button
-                    onClick={() => setActiveProjectTab('shared')}
-                    className={`tab tab-sm sm:tab-lg min-h-10 sm:min-h-12 font-bold text-sm sm:text-base ${activeProjectTab === 'shared' ? 'tab-active' : ''}`}
-                  >
-                    <span className="hidden sm:inline">Shared ({sharedProjects.length})</span>
-                    <span className="sm:hidden">Shared</span>
-                  </button>
-                )}
-                <button
-                  onClick={() => setActiveProjectTab('ideas')}
-                  className={`tab tab-sm sm:tab-lg min-h-10 sm:min-h-12 font-bold text-sm sm:text-base ${activeProjectTab === 'ideas' ? 'tab-active' : ''}`}
-                >
-                  <span className="hidden sm:inline">Ideas ({ideasCount})</span>
-                  <span className="sm:hidden">Ideas</span>
-                </button>
-              </div>
-            </div>
+
 
             {/* Tab Content */}
             <div className="flex-1 overflow-auto border-subtle bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-sm container-height-fix">
@@ -1189,24 +1233,6 @@ const Layout: React.FC = () => {
         ) : location.pathname === '/discover' || location.pathname.startsWith('/discover/') ? (
           /* Discover Tab - With sub-tabs */
           <>
-            {/* Tab Navigation for Discover */}
-            <div className="flex justify-center px-4 py-6">
-              <div className="tabs tabs-boxed tabs-lg border-subtle shadow-sm">
-                <button
-                  onClick={() => handleNavigateWithCheck('/discover')}
-                  className={`tab tab-lg font-bold text-base ${location.pathname === '/discover' ? 'tab-active' : ''}`}
-                >
-                  Discover
-                </button>
-                <button
-                  onClick={() => handleNavigateWithCheck('/discover')}
-                  className={`tab tab-lg font-bold text-base ${(location.pathname.startsWith('/discover/project/') || location.pathname.startsWith('/discover/user/')) ? 'tab-active' : ''}`}
-                  disabled={!(location.pathname.startsWith('/discover/project/') || location.pathname.startsWith('/discover/user/'))}
-                >
-                  Details
-                </button>
-              </div>
-            </div>
             
             <div className="flex-1 overflow-auto border-subtle bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-sm container-height-fix">
               <div className="p-2 sm:p-4 lg:p-6">
@@ -1284,31 +1310,6 @@ const Layout: React.FC = () => {
         ) : (
           /* Project Details Tab - Show project content with tabs */
           <>
-            {/* Tab Navigation */}
-            {selectedProject && location.pathname !== '/support' && (
-              <div className="flex justify-center px-4 py-6 sticky top-[140px] desktop:top-16 z-30 bg-base-100/80 backdrop-blur-sm">
-                <div className="tabs tabs-boxed border-subtle shadow-sm overflow-x-auto scrollbar-hide">
-                  {tabs.map((tab) => (
-                    <button
-                      key={tab.id}
-                      onClick={() => handleNavigateWithCheck(tab.path)}
-                      className={`tab tab-sm sm:tab-lg font-medium sm:font-bold text-sm sm:text-base whitespace-nowrap ${currentTab === tab.id ? 'tab-active' : ''}`}
-                    >
-                      <span className="hidden sm:inline">{tab.label}</span>
-                      <span className="sm:hidden">
-                        {tab.id === 'notes' ? 'Notes' : 
-                         tab.id === 'stack' ? 'Stack' : 
-                         tab.id === 'docs' ? 'Docs' : 
-                         tab.id === 'deployment' ? 'Deploy' : 
-                         tab.id === 'public' ? 'Public' : 
-                         tab.id === 'settings' ? 'Settings' : tab.label}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* Page Content */}
             <div className={`flex-1 overflow-auto border-subtle bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-sm container-height-fix ${location.pathname === '/support' ? 'mt-4' : ''}`}>
               {selectedProject ? (

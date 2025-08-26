@@ -730,7 +730,7 @@ const Layout: React.FC = () => {
 
         {/* Desktop Layout */}
         <div className="hidden desktop:block px-6 py-2">
-          <div className="flex-between-center">
+          <div className="relative flex-between-center">
             <div className="flex items-center gap-3 bg-base-200/50 backdrop-blur-sm border-subtle rounded-xl px-4 py-2 h-12 shadow-sm hover:shadow-md transition-all cursor-pointer" onClick={() => navigate('/notes?view=projects')}>
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-sm">
                 <svg className="icon-md text-primary-content" fill="currentColor" viewBox="0 0 20 20">
@@ -786,9 +786,10 @@ const Layout: React.FC = () => {
               </div>
             </div>
             
-            <div className="flex gap-1">
+            <div className="absolute left-1/2 transform -translate-x-1/2">
+              <div className="tabs tabs-boxed border-subtle shadow-sm">
               <button 
-                className={`btn ${searchParams.get('view') === 'projects' ? 'btn-primary' : 'btn-ghost'} gap-2 font-bold`}
+                className={`tab tab-sm min-h-10 font-bold text-sm ${searchParams.get('view') === 'projects' ? 'tab-active' : ''} gap-2`}
                 onClick={() => handleNavigateWithCheck('/notes?view=projects')}
               >
                 <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -797,7 +798,7 @@ const Layout: React.FC = () => {
                 My Projects
               </button>
               <button 
-                className={`btn ${(location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/settings') && searchParams.get('view') !== 'projects' ? 'btn-primary' : 'btn-ghost'} gap-2 font-bold`}
+                className={`tab tab-sm min-h-10 font-bold text-sm ${(location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/settings') && searchParams.get('view') !== 'projects' ? 'tab-active' : ''} gap-2`}
                 onClick={() => handleNavigateWithCheck('/notes')}
               >
                 <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -806,7 +807,7 @@ const Layout: React.FC = () => {
                 Project Details
               </button>
               <button 
-                className={`btn ${location.pathname === '/discover' || location.pathname.startsWith('/discover/') ? 'btn-primary' : 'btn-ghost'} gap-2 font-bold`}
+                className={`tab tab-sm min-h-10 font-bold text-sm ${location.pathname === '/discover' || location.pathname.startsWith('/discover/') ? 'tab-active' : ''} gap-2`}
                 onClick={() => handleNavigateWithCheck('/discover')}
               >
                 <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -814,6 +815,7 @@ const Layout: React.FC = () => {
                 </svg>
                 Discover
               </button>
+              </div>
             </div>
             
             {user ? (
@@ -860,6 +862,95 @@ const Layout: React.FC = () => {
               </div>
             )}
           </div>
+          
+          {/* Second Navigation Bar - Desktop */}
+          {user && location.pathname !== '/support' && (
+          <div className="p-4 pb-2">
+            {/* Project Views Submenu - Desktop */}
+            {searchParams.get('view') === 'projects' && (
+            <div className="flex justify-center">
+              <div className="tabs tabs-boxed border-subtle shadow-sm">
+                <button
+                  onClick={() => {
+                    analytics.trackTabSwitch(activeProjectTab, 'active', 'ProjectTabs');
+                    setActiveProjectTab('active');
+                  }}
+                  className={`tab tab-sm min-h-10 font-bold text-sm ${activeProjectTab === 'active' ? 'tab-active' : ''}`}
+                >
+                  <span>Active</span>
+                </button>
+                {archivedProjects.length > 0 && (
+                  <button
+                    onClick={() => setActiveProjectTab('archived')}
+                    className={`tab tab-sm min-h-10 font-bold text-sm ${activeProjectTab === 'archived' ? 'tab-active' : ''}`}
+                  >
+                    <span>Archived</span>
+                  </button>
+                )}
+                {sharedProjects.length > 0 && (
+                  <button
+                    onClick={() => setActiveProjectTab('shared')}
+                    className={`tab tab-sm min-h-10 font-bold text-sm ${activeProjectTab === 'shared' ? 'tab-active' : ''}`}
+                  >
+                    <span>Shared</span>
+                  </button>
+                )}
+                <button
+                  onClick={() => setActiveProjectTab('ideas')}
+                  className={`tab tab-sm min-h-10 font-bold text-sm ${activeProjectTab === 'ideas' ? 'tab-active' : ''}`}
+                >
+                  <span>Ideas</span>
+                </button>
+              </div>
+            </div>
+            )}
+
+            {/* Project Details Submenu - Desktop */}
+            {selectedProject && (location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/settings') && searchParams.get('view') !== 'projects' && (
+            <div className="flex justify-center">
+              <div className="tabs tabs-boxed border-subtle shadow-sm overflow-x-auto scrollbar-hide">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => handleNavigateWithCheck(tab.path)}
+                    className={`tab tab-sm min-h-10 font-bold text-sm whitespace-nowrap ${currentTab === tab.id ? 'tab-active' : ''}`}
+                  >
+                    <span>
+                      {tab.id === 'notes' ? 'Notes' : 
+                       tab.id === 'stack' ? 'Stack' : 
+                       tab.id === 'docs' ? 'Docs' : 
+                       tab.id === 'deployment' ? 'Deploy' : 
+                       tab.id === 'public' ? 'Public' : 
+                       tab.id === 'settings' ? 'Settings' : tab.label}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            )}
+
+            {/* Discover Submenu - Desktop */}
+            {(location.pathname === '/discover' || location.pathname.startsWith('/discover/')) && (
+            <div className="flex justify-center">
+              <div className="tabs tabs-boxed border-subtle shadow-sm">
+                <button
+                  onClick={() => handleNavigateWithCheck('/discover')}
+                  className={`tab tab-sm min-h-10 font-bold text-sm ${location.pathname === '/discover' ? 'tab-active' : ''}`}
+                >
+                  Discover
+                </button>
+                <button
+                  onClick={() => handleNavigateWithCheck('/discover')}
+                  className={`tab tab-sm min-h-10 font-bold text-sm ${(location.pathname.startsWith('/discover/project/') || location.pathname.startsWith('/discover/user/')) ? 'tab-active' : ''}`}
+                  disabled={!(location.pathname.startsWith('/discover/project/') || location.pathname.startsWith('/discover/user/'))}
+                >
+                  Details
+                </button>
+              </div>
+            </div>
+            )}
+          </div>
+          )}
         </div>
       </header>
 

@@ -6,3 +6,5 @@
 /.next
 /.nuxt
 /.nuxt/dist
+backend/dist
+frontend/dist

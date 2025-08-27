@@ -102,7 +102,7 @@ const SessionTracker: React.FC<SessionTrackerProps> = ({
 
       {/* Detailed view */}
       {(isVisible || showDetails) && (
-        <div className="absolute right-0 top-full mt-2 bg-base-100 border border-base-content/10 rounded-lg shadow-lg p-4 z-[9999] w-72 max-w-[calc(100vw-2rem)]">
+        <div className="absolute right-0 top-full mt-2 w-72 max-w-[calc(100vw-2rem)] bg-base-100 border border-base-content/10 rounded-lg shadow-lg p-4 z-[9999] transform translate-x-1/4">
           <div className="space-y-1">
             <div className="flex justify-between items-center">
               <h4 className="font-semibold text-sm">Session Info</h4>

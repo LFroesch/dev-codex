@@ -9,7 +9,8 @@ export default {
   theme: {
     extend: {
       screens: {
-        'desktop': '1450px',
+        'tablet': '1024px',
+        'desktop': '1350px',
       },
     },
   },

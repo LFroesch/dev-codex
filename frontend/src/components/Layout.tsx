@@ -490,41 +490,116 @@ const Layout: React.FC = () => {
         {/* Mobile and Tablet Layout */}
         <div className="block desktop:hidden px-4 py-2">
           <div className="flex flex-col gap-2">
-            {/* Top row: Logo, Session Tracker, and User Menu */}
+            {/* Top row: Logo + Search (tablet), Project indicator (tablet), Session Tracker, and User Menu */}
             <div className="flex-between-center">
-              <div className="flex-center-gap-2 cursor-pointer min-w-0 flex-1" onClick={() => navigate('/notes?view=projects')}>
-                <div className="w-7 h-7 bg-primary rounded-lg flex items-center justify-center shadow-sm flex-shrink-0">
-                  <svg className="w-4 h-4 text-primary-content" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
+              <div className="flex items-center gap-2 bg-base-200/50 backdrop-blur-sm border-subtle rounded-xl px-2 py-1 tablet:h-12 h-12 shadow-sm hover:shadow-md transition-all cursor-pointer" onClick={() => navigate('/notes?view=projects')}>
+                <div className="tablet:w-8 tablet:h-8 w-6 h-6 bg-primary rounded-lg flex items-center justify-center shadow-sm flex-shrink-0">
+                  <svg className="tablet:w-4 tablet:h-4 w-3 h-3 text-primary-content" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1  001-1v-6a1 1 0 00-1-1h-2z" />
                   </svg>
                 </div>
-                <h1 className="text-base font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent truncate">Dev Codex</h1>
+                <h1 className="tablet:text-xl text-base font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent whitespace-nowrap">Dev Codex</h1>
+                
+                {/* Search bar on tablet - hidden on mobile */}
+                {user && selectedProject && (
+                  <div className="hidden tablet:flex relative ml-4 flex-center-gap-2">
+                    <div className="relative">
+                      <svg className="absolute left-2.5 top-1/2 transform -translate-y-1/2 icon-sm text-base-content/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                      <input
+                        type="text"
+                        placeholder="Search"
+                        value={searchTerm}
+                        onChange={(e) => {
+                          setSearchTerm(e.target.value);
+                          if (e.target.value.trim() && searchParams.get('view') !== 'projects') {
+                            navigate('/notes?view=projects');
+                          }
+                        }}
+                        className="input-field input-sm pl-9 pr-8 w-48 h-8 bg-base-100/80 backdrop-blur-sm shadow-sm"
+                      />
+                      {searchTerm && (
+                        <button
+                          onClick={() => setSearchTerm('')}
+                          className="absolute right-2 top-1/2 transform -translate-y-1/2 icon-sm text-base-content/50 hover:text-base-content/80 transition-colors"
+                        >
+                          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        navigate('/create-project');
+                      }}
+                      className="btn btn-primary btn-sm btn-circle shadow-sm relative z-10"
+                      title="New Project"
+                      style={{ pointerEvents: 'auto' }}
+                    >
+                      <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
               </div>
               
+              {/* Project indicator and user section - styled background for all sizes */}
               {user ? (
-                <div className="flex items-center gap-1 flex-shrink-0">
+                <div className="flex items-center gap-0 bg-base-200/50 backdrop-blur-sm border-subtle rounded-xl px-2 py-2 h-12 shadow-sm relative z-30">
+                  {selectedProject && (
+                    <div 
+                      className="hidden tablet:flex items-center gap-2 px-3 py-1.5 bg-base-100/80 rounded-lg border-subtle shadow-sm mr-2 cursor-pointer hover:bg-base-200/70 transition-all duration-200 h-8"
+                      onClick={() => handleNavigateWithCheck('/notes')}
+                      title={`Current project: ${selectedProject.name}`}
+                    >
+                      <div 
+                        className="w-2 h-2 rounded-full shadow-sm"
+                        style={{ backgroundColor: selectedProject.color }}
+                      ></div>
+                      <span className="text-sm font-medium truncate">{selectedProject.name}</span>
+                      {selectedProject.isShared && (
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                          selectedProject.isOwner ? 'bg-primary text-primary-content' :
+                          selectedProject.userRole === 'editor' ? 'bg-secondary text-secondary-content' :
+                          'bg-base-300 text-base-content'
+                        }`}>
+                          {selectedProject.isOwner ? 'owner' : selectedProject.userRole || 'member'}
+                        </span>
+                      )}
+                    </div>
+                  )}
                   {selectedProject && (
                     <SessionTracker 
                       projectId={selectedProject?.id}
                       currentUserId={user?.id}
                     />
                   )}
+                  
+                  <span className="hidden tablet:block text-sm font-medium text-base-content/80 ml-2">Hi, {user?.firstName}!</span>
+
                   <NotificationBell />
                   <UserMenu user={user} onLogout={handleLogout} />
                 </div>
               ) : (
-                <button 
-                  onClick={() => navigate('/login')}
-                  className="btn btn-primary btn-sm flex-shrink-0"
-                >
-                  Sign In
-                </button>
+                <div className="flex items-center gap-3 bg-base-200/50 backdrop-blur-sm border-subtle rounded-xl px-4 py-2 h-12 shadow-sm">
+                  <button 
+                    onClick={() => navigate('/login')}
+                    className="btn-primary-sm"
+                  >
+                    Sign In
+                  </button>
+                </div>
               )}
             </div>
             
-            {/* Current Project and Search/Create Row */}
+            {/* Current Project and Search/Create Row - Mobile only */}
             {user && selectedProject && (
-              <div className="flex items-center gap-2">
+              <div className="flex tablet:hidden items-center gap-2">
                 <div 
                   className="flex items-center gap-2 px-3 py-1.5 bg-base-200/80 rounded-lg border border-base-content/10 shadow-sm hover:bg-base-200 transition-all duration-200 cursor-pointer min-w-0 flex-shrink-0"
                   onClick={() => handleNavigateWithCheck('/notes')}
@@ -592,7 +667,7 @@ const Layout: React.FC = () => {
                       });
                       navigate('/create-project');
                     }}
-                    className="btn btn-primary btn-sm btn-circle shadow-sm relative z-50"
+                    className="btn btn-primary btn-sm btn-circle shadow-sm relative z-10"
                     title="New Project"
                     style={{ pointerEvents: 'auto' }}
                   >
@@ -775,7 +850,7 @@ const Layout: React.FC = () => {
                     e.stopPropagation();
                     navigate('/create-project');
                   }}
-                  className="btn btn-primary btn-sm btn-circle shadow-sm relative z-50"
+                  className="btn btn-primary btn-sm btn-circle shadow-sm relative z-10"
                   title="New Project"
                   style={{ pointerEvents: 'auto' }}
                 >
@@ -819,7 +894,7 @@ const Layout: React.FC = () => {
             </div>
             
             {user ? (
-              <div className="flex items-center gap-0 bg-base-200/50 backdrop-blur-sm border-subtle rounded-xl px-2 py-2 h-12 shadow-sm">
+              <div className="flex items-center gap-0 bg-base-200/50 backdrop-blur-sm border-subtle rounded-xl px-2 py-2 h-12 shadow-sm relative z-30">
                 {selectedProject && (
                   <div 
                     className="flex-center-gap-2 px-3 py-1.5 bg-base-100/80 rounded-lg border-subtle shadow-sm mr-2 cursor-pointer hover:bg-base-200/70 transition-all duration-200 h-8"

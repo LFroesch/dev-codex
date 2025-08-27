@@ -38,7 +38,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout }) => {
   }, [isOpen]);
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative z-[70]" ref={dropdownRef}>
       <button 
         className="btn btn-ghost btn-circle relative"
         onClick={() => setIsOpen(!isOpen)}

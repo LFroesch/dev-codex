@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import EnhancedTextEditor from '../components/EnhancedTextEditor';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { unsavedChangesManager } from '../utils/unsavedChanges';
 import { ideasAPI, type Idea } from '../api/ideas';

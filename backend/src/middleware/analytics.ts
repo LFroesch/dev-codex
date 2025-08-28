@@ -457,17 +457,10 @@ export class AnalyticsService {
       // Switch to new project
       session.currentProjectId = newProjectId;
       
-      // Set project start time - if this is a brand new session (no previous project),
-      // use the session start time instead of now to capture all time since session began
+      // Set project start time - always use current time to avoid double counting
       if (newProjectId) {
-        if (!session.currentProjectStartTime) {
-          // This is the first project set for this session, use session start time
-          session.currentProjectStartTime = session.startTime;
-          console.log(`Analytics: Setting project start time to session start for new session: ${session.sessionId}`);
-        } else {
-          // This is a project switch, use current time
-          session.currentProjectStartTime = now;
-        }
+        session.currentProjectStartTime = now;
+        console.log(`Analytics: Setting project start time to now for session: ${session.sessionId}`);
       } else {
         session.currentProjectStartTime = undefined;
       }

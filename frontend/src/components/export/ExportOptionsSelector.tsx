@@ -9,8 +9,7 @@ interface ExportOptionsSelectorProps {
 
 const ExportOptionsSelector: React.FC<ExportOptionsSelectorProps> = ({
   options,
-  onToggleOption,
-  onToggleAll
+  onToggleOption
 }) => {
   const selectedCount = Object.values(options).filter(Boolean).length;
 

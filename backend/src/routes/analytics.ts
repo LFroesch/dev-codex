@@ -336,6 +336,35 @@ router.get('/projects/time', requireAuth, async (req: AuthRequest, res) => {
       }
     ]);
 
+    // Add current active session time to the results
+    const activeSession = await UserSession.findOne({
+      userId: req.userId!,
+      isActive: true
+    });
+
+    if (activeSession && activeSession.currentProjectId && activeSession.currentProjectStartTime) {
+      const currentSessionTime = Date.now() - activeSession.currentProjectStartTime.getTime();
+      
+      // Find existing project in results
+      let existingProject = sessions.find(s => s._id === activeSession.currentProjectId);
+      
+      if (existingProject) {
+        existingProject.totalTime += currentSessionTime;
+        existingProject.lastUsed = new Date();
+      } else {
+        // New project with only active session time
+        sessions.push({
+          _id: activeSession.currentProjectId,
+          totalTime: currentSessionTime,
+          sessions: 1,
+          lastUsed: new Date()
+        });
+      }
+      
+      // Re-sort after adding active session time
+      sessions.sort((a, b) => b.totalTime - a.totalTime);
+    }
+
     res.json({ projects: sessions, period: `${days} days` });
   } catch (error) {
     console.error('Error fetching project time data:', error);

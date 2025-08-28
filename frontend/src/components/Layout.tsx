@@ -394,12 +394,16 @@ const Layout: React.FC = () => {
     try {
       // Clear user session before logout
       analytics.clearUserSession();
+      // Clear selected project from localStorage
+      localStorage.removeItem('selectedProjectId');
       await authAPI.logout();
       toast.success('Successfully logged out. See you next time!');
       navigate('/login');
     } catch (err) {
       // Clear session even if logout fails
       analytics.clearUserSession();
+      // Clear selected project from localStorage
+      localStorage.removeItem('selectedProjectId');
       toast.info('Logged out successfully.');
       navigate('/login');
     }

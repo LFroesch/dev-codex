@@ -1,19 +1,15 @@
-# Pre-Launch Development Checklist - Dev Codex v1.0
+# Pre-Launch Changes
+- [ ] Debloat Analytics (Ask any questions you need)
+- [ ] Strip down the optimizedanalyticspage to go with the debloated analytics
+- [ ] TTL Analysis / MondoDB Optimizations
+- [ ] Code Cleanup Scan
 
-## ⚡ **Phase 4: Performance Optimization**
+## Tomorrow
+- [ ] Overhaul of Notes section / To Dos / Feature Plans
+        make more UX friendly and usable
 
-### Code Splitting & Bundle Size
-- [ ] **React.lazy implementation** - Route-based code splitting
-- [ ] **Bundle analysis** - Optimize 765KB bundle size
-- [ ] **Loading states** - All async operations covered
-- [ ] **React.memo optimization** - Minimize re-renders
-- [ ] **Performance testing** - Measure and improve load times
-
----
-
-## 🔧 **Phase 5: System Infrastructure**
-
-### Database & Cleanup
-- [ ] **TTL analysis** - Review current time-to-live settings
-- [ ] **Code cleanup scan** - Final codebase improvements
-- [ ] **MongoDB optimization** - Index review and cleanup
+## Human Manual Checkovers -> Refixes
+- [ ] Clean Up Menus / Pages / Panels etc for better UX (Human Manual check and fix)
+- [ ] Mobile Test - All pages on 320px to 768px
+- [ ] Tablet Test - 768px to 1024px breakpoints
+- [ ] Mid Size Test / Desktop

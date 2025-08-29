@@ -3,7 +3,6 @@ import { useNavigate, useOutletContext } from 'react-router-dom';
 import { analyticsAPI } from '../api';
 import OptimizedAnalytics from '../components/OptimizedAnalytics';
 import ConfirmationModal from '../components/ConfirmationModal';
-import analyticsService from '../services/analytics';
 
 interface User {
   _id: string;

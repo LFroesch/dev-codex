@@ -1,5 +1,4 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
-import { useLocation } from 'react-router-dom';
 import analyticsService from '../services/analytics';
 
 interface UseAnalyticsOptions {
@@ -8,15 +7,10 @@ interface UseAnalyticsOptions {
 }
 
 export const useAnalytics = (options: UseAnalyticsOptions = {}) => {
-  const {
-    projectId,
-    projectName
-  } = options;
+  void options; // Suppress unused parameter warning
 
-  const location = useLocation();
-  const previousValues = useRef<Record<string, any>>({});
   const sessionInitialized = useRef(false);
-  const [sessionReady, setSessionReady] = useState(false);
+  const [, setSessionReady] = useState(false);
   const sessionCheckInterval = useRef<number | null>(null);
 
   // Start session and monitor session state

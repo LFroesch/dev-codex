@@ -24,7 +24,7 @@ const Layout: React.FC = () => {
   const [activeProjectTab, setActiveProjectTab] = useState('active');
   const [activeAdminTab, setActiveAdminTab] = useState<'users' | 'tickets' | 'analytics'>('users');
   const [projectTimeData, setProjectTimeData] = useState<{ [projectId: string]: number }>({});
-  const [ideasCount, setIdeasCount] = useState(0);
+  const [, setIdeasCount] = useState(0);
   
   // Unsaved changes modal state
   const [showUnsavedChangesModal, setShowUnsavedChangesModal] = useState(false);
@@ -88,7 +88,6 @@ const Layout: React.FC = () => {
 
   // Helper function to handle navigation with unsaved changes check
   const handleNavigateWithCheck = async (path: string) => {
-    const currentPath = location.pathname + location.search;
     const canNavigate = await unsavedChangesManager.checkNavigationAllowed();
     if (canNavigate) {
       navigate(path);
@@ -99,7 +98,6 @@ const Layout: React.FC = () => {
 
   // Helper function to select and persist project
   const handleProjectSelect = (project: BaseProject) => {
-    const previousProject = selectedProject;
     setSelectedProject(project);
     localStorage.setItem('selectedProjectId', project.id);
     setSearchTerm(''); // Clear search when selecting a project
@@ -123,7 +121,6 @@ const Layout: React.FC = () => {
 
   // Toggle section collapse
   const toggleSection = (section: string) => {
-    const wasCollapsed = collapsedSections[section];
     setCollapsedSections(prev => ({
       ...prev,
       [section]: !prev[section]
@@ -604,6 +601,7 @@ const Layout: React.FC = () => {
                             (p.category && p.category.toLowerCase().includes(newSearchTerm.toLowerCase())) ||
                             (p.tags && p.tags.some((tag: string) => tag.toLowerCase().includes(newSearchTerm.toLowerCase())))
                           ).length;
+                          console.log('Filtered projects count:', filteredCount);
                                                     
                           if (searchParams.get('view') !== 'projects') {
                             navigate('/notes?view=projects');

@@ -10,7 +10,6 @@ import { sendProjectInvitationEmail } from '../services/emailService';
 import { checkProjectLimit } from '../middleware/planLimits';
 import { trackProjectAccess } from '../middleware/analytics';
 import { AnalyticsService } from '../middleware/analytics';
-import { trackFieldChanges, trackArrayChanges } from '../utils/trackFieldChanges';
 import activityLogger from '../services/activityLogger';
 import { v4 as uuidv4 } from 'uuid';
 import NoteLock from '../models/NoteLock';
@@ -183,14 +182,6 @@ router.put('/:id', requireProjectAccess('edit'), async (req: AuthRequest, res) =
       return res.status(404).json({ message: 'Project not found' });
     }
 
-    // Track field changes
-    await trackFieldChanges(
-      req,
-      project._id.toString(),
-      project.name,
-      oldProject.toObject(),
-      updateData
-    );
 
     res.json({
       message: 'Project updated successfully',

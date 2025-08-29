@@ -270,7 +270,6 @@ const AdminDashboardPage: React.FC = () => {
 
   useEffect(() => {
     const loadData = async () => {
-      const startTime = performance.now();
       setLoading(true);
       
       try {
@@ -283,13 +282,6 @@ const AdminDashboardPage: React.FC = () => {
         console.error('Failed to load data:', err);
       } finally {
         setLoading(false);
-        
-        // Track performance
-        const loadTime = performance.now() - startTime;
-        analyticsService.trackPerformance(`admin_dashboard_${activeTab}_load`, loadTime, 'AdminDashboardPage', {
-          tab: activeTab,
-          ticketStatus: ticketStatusTab
-        });
       }
     };
     

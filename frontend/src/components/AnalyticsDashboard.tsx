@@ -72,7 +72,6 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   const getKeyMetrics = () => {
     if (!analyticsData) return null;
 
-    const fieldEdits = analyticsData.eventCounts?.find(e => e._id === 'field_edit')?.count || 0;
     const projectOpens = analyticsData.eventCounts?.find(e => e._id === 'project_open')?.count || 0;
     const totalTime = analyticsData.sessionStats?.totalDuration || 0;
     const sessions = analyticsData.sessionStats?.totalSessions || 0;
@@ -89,7 +88,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
         : 0;
     }
 
-    return { fieldEdits, projectOpens, totalTime, sessions, uniqueProjects };
+    return { projectOpens, totalTime, sessions, uniqueProjects };
   };
 
   if (loading) {
@@ -157,13 +156,6 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           </div>
         </div>
 
-        <div className="stat bg-secondary/5 rounded-lg border border-secondary/20 p-3">
-          <div className="stat-title text-xs text-secondary">Edits</div>
-          <div className="stat-value text-secondary text-lg">
-            {metrics.fieldEdits}
-          </div>
-        </div>
-
         <div className="stat bg-accent/5 rounded-lg border border-accent/20 p-3">
           <div className="stat-title text-xs text-accent">Unique Projects</div>
           <div className="stat-value text-accent text-lg">
@@ -218,12 +210,6 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
               <span className="text-base-content/70">Avg Session:</span>
               <span className="font-medium">
                 {formatDuration(analyticsData.sessionStats?.avgDuration || 0)}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-base-content/70">Edits/Session:</span>
-              <span className="font-medium">
-                {metrics.sessions > 0 ? Math.round(metrics.fieldEdits / metrics.sessions) : 0}
               </span>
             </div>
           </div>

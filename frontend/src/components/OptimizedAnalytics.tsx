@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { analyticsAPI } from '../api/analytics';
 
 interface AnalyticsData {
   summary: {
@@ -36,7 +35,6 @@ interface OptimizedAnalyticsProps {
 
 const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytics }) => {
   const [data, setData] = useState<AnalyticsData | null>(null);
-  const [comprehensiveData, setComprehensiveData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<number>(7);
@@ -89,12 +87,9 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
     setError(null);
 
     try {
-      const [combinedResponse, comprehensiveResponse] = await Promise.all([
-        fetch('/api/admin/analytics/combined?days=' + days, {
-          credentials: 'include'
-        }).then(res => res.json()),
-        analyticsAPI.getComprehensive(days)
-      ]);
+      const combinedResponse = await fetch('/api/admin/analytics/combined?days=' + days, {
+        credentials: 'include'
+      }).then(res => res.json());
 
       const transformedBasicData = {
         summary: {
@@ -118,7 +113,6 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
       };
 
       setData(transformedBasicData);
-      setComprehensiveData(comprehensiveResponse);
       setLastFetch(now);
     } catch (err) {
       console.error('Analytics fetch error:', err);
@@ -141,7 +135,7 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
   }, [selectedPeriod]);
 
   const tabContent = useMemo(() => {
-    if (!data && !comprehensiveData) {
+    if (!data) {
       return <div className="text-center py-8 text-base-content/60">No analytics data available</div>;
     }
 
@@ -262,7 +256,6 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
                     <th className="bg-base-200/30 text-base-content/70">Plan</th>
                     <th className="bg-base-200/30 text-base-content/70">Time Spent</th>
                     <th className="bg-base-200/30 text-base-content/70">Events</th>
-                    <th className="bg-base-200/30 text-base-content/70">Field Edits</th>
                     <th className="bg-base-200/30 text-base-content/70">Last Active</th>
                   </tr>
                 </thead>
@@ -293,7 +286,6 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
                         <td>
                           <span className="badge badge-primary">{user.totalEvents}</span>
                         </td>
-                        <td>{user.fieldEdits}</td>
                         <td className="text-xs text-base-content/60">{formatDate(user.lastActivity)}</td>
                       </tr>
                     ))
@@ -363,7 +355,7 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
       default:
         return null;
     }
-  }, [data, comprehensiveData, activeTab, formatTime, formatDate, selectedAnalyticsDetail, selectedPeriod]);
+  }, [data, activeTab, formatTime, formatDate, selectedAnalyticsDetail, selectedPeriod]);
 
   if (loading && !data) {
     return (

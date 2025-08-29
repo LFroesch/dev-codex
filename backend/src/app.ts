@@ -20,7 +20,7 @@ import notificationRoutes from './routes/notifications';
 import publicRoutes from './routes/public';
 import ideasRoutes from './routes/ideas';
 import { normalRateLimit, authRateLimit, devRateLimit } from './middleware/rateLimit';
-import { trackPageView, sessionMiddleware, AnalyticsService } from './middleware/analytics';
+import { sessionMiddleware, AnalyticsService } from './middleware/analytics';
 import ReminderService from './services/reminderService';
 import UserSession from './models/UserSession';
 
@@ -73,13 +73,13 @@ app.use('/api/public', normalRateLimit, publicRoutes);
 
 // Apply rate limiting to all OTHER routes
 const rateLimitMiddleware = isDevelopment ? devRateLimit : normalRateLimit;
-app.use('/api/projects', rateLimitMiddleware, sessionMiddleware, trackPageView, projectRoutes);
+app.use('/api/projects', rateLimitMiddleware, sessionMiddleware, projectRoutes);
 app.use('/api/invitations', rateLimitMiddleware, invitationRoutes);
 app.use('/api/notifications', rateLimitMiddleware, notificationRoutes);
 app.use('/api/billing', rateLimitMiddleware, billingRoutes);
 app.use('/api/admin', rateLimitMiddleware, adminRoutes);
 app.use('/api/tickets', rateLimitMiddleware, ticketRoutes);
-app.use('/api/analytics', rateLimitMiddleware, sessionMiddleware, trackPageView, analyticsRoutes);
+app.use('/api/analytics', rateLimitMiddleware, sessionMiddleware, analyticsRoutes);
 app.use('/api/activity-logs', rateLimitMiddleware, activityLogRoutes);
 app.use('/api/ideas', rateLimitMiddleware, ideasRoutes);
 

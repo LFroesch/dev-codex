@@ -318,27 +318,6 @@ class AnalyticsService {
     }
   }
 
-  async trackFieldEdit(fieldName: string, oldValue: any, newValue: any, projectId?: string, projectName?: string) {
-    // Sanitize sensitive data
-    const sanitizedOldValue = this.sanitizeValue(oldValue);
-    const sanitizedNewValue = this.sanitizeValue(newValue);
-    
-    await this.trackEvent({
-      eventType: 'field_edit',
-      timestamp: Date.now(),
-      eventData: {
-        fieldName,
-        fieldType: this.getFieldType(fieldName, newValue),
-        oldValue: sanitizedOldValue,
-        newValue: sanitizedNewValue,
-        projectId,
-        projectName,
-        metadata: { 
-          changeSize: JSON.stringify(sanitizedNewValue).length - JSON.stringify(sanitizedOldValue).length
-        }
-      }
-    });
-  }
 
   async trackProjectOpen(projectId: string, projectName: string) {
     if (!projectId || !projectName) {
@@ -384,41 +363,7 @@ class AnalyticsService {
     });
   }
 
-  async trackPageView(pageName: string) {
-    if (this.session) {
-      if (!this.session.pageViews.includes(pageName)) {
-        this.session.pageViews.push(pageName);
-      }
-      this.setCurrentPage(pageName);
-    }
 
-    await this.trackEvent({
-      eventType: 'page_view',
-      timestamp: Date.now(),
-      eventData: {
-        pageName,
-        metadata: {
-          referrer: document.referrer,
-          url: window.location.href,
-          viewportWidth: window.innerWidth,
-          viewportHeight: window.innerHeight,
-          screenWidth: screen.width,
-          screenHeight: screen.height
-        }
-      }
-    });
-  }
-
-  async trackAction(actionName: string, metadata?: Record<string, any>) {
-    await this.trackEvent({
-      eventType: 'action',
-      timestamp: Date.now(),
-      eventData: {
-        actionName,
-        metadata: metadata || {}
-      }
-    });
-  }
 
   getSessionInfo() {
     if (!this.session) return null;
@@ -465,163 +410,16 @@ class AnalyticsService {
     await this.flushPendingEvents();
   }
 
-  // Feature Usage Analytics
-  async trackFeatureUsage(featureName: string, componentName?: string, metadata?: Record<string, any>) {
-    await this.trackEvent({
-      eventType: 'feature_usage',
-      timestamp: Date.now(),
-      eventData: {
-        featureName,
-        componentName,
-        projectId: this.getCurrentProject() || undefined || undefined,
-        metadata: {
-          ...metadata,
-          screenSize: `${window.innerWidth}x${window.innerHeight}`
-        }
-      }
-    });
-  }
 
-  // Navigation Analytics
-  async trackNavigation(source: string, target: string, metadata?: Record<string, any>) {
-    await this.trackEvent({
-      eventType: 'navigation',
-      timestamp: Date.now(),
-      eventData: {
-        navigationSource: source,
-        navigationTarget: target,
-        projectId: this.getCurrentProject() || undefined || undefined,
-        metadata
-      }
-    });
-  }
 
-  // Search Analytics
-  async trackSearch(searchTerm: string, resultsCount: number, componentName?: string) {
-    await this.trackEvent({
-      eventType: 'search',
-      timestamp: Date.now(),
-      eventData: {
-        searchTerm,
-        searchResultsCount: resultsCount,
-        componentName,
-        projectId: this.getCurrentProject() || undefined
-      }
-    });
-  }
 
-  // Error Analytics
-  async trackError(errorType: string, errorMessage: string, componentName?: string, metadata?: Record<string, any>) {
-    await this.trackEvent({
-      eventType: 'error',
-      timestamp: Date.now(),
-      eventData: {
-        errorType,
-        errorMessage,
-        componentName,
-        projectId: this.getCurrentProject() || undefined || undefined,
-        pageName: this.getCurrentPage() || undefined,
-        metadata
-      }
-    });
-  }
 
-  // Performance Analytics
-  async trackPerformance(actionName: string, loadTime: number, componentName?: string, metadata?: Record<string, any>) {
-    await this.trackEvent({
-      eventType: 'performance',
-      timestamp: Date.now(),
-      eventData: {
-        actionType: actionName,
-        duration: loadTime,
-        componentName,
-        projectId: this.getCurrentProject() || undefined || undefined,
-        metadata
-      }
-    });
-  }
 
-  // UI Interaction Analytics
-  async trackUIInteraction(
-    interactionType: 'click' | 'hover' | 'scroll' | 'keyboard' | 'drag' | 'resize',
-    elementId?: string,
-    elementText?: string,
-    componentName?: string,
-    metadata?: Record<string, any>
-  ) {
-    await this.trackEvent({
-      eventType: 'ui_interaction',
-      timestamp: Date.now(),
-      eventData: {
-        interactionType,
-        elementId,
-        elementText,
-        componentName,
-        projectId: this.getCurrentProject() || undefined || undefined,
-        pageName: this.getCurrentPage() || undefined,
-        metadata
-      }
-    });
-  }
 
-  // Button/Link Click Analytics
-  async trackButtonClick(buttonName: string, componentName?: string, metadata?: Record<string, any>) {
-    await this.trackUIInteraction('click', undefined, buttonName, componentName, {
-      buttonName,
-      ...metadata
-    });
-  }
 
-  // Tab Switch Analytics
-  async trackTabSwitch(fromTab: string, toTab: string, componentName?: string) {
-    await this.trackNavigation(fromTab, toTab, {
-      interactionType: 'tab_switch',
-      componentName
-    });
-  }
 
-  // Form Analytics
-  async trackFormSubmission(formName: string, success: boolean, errorMessage?: string, metadata?: Record<string, any>) {
-    if (success) {
-      await this.trackFeatureUsage('form_submit', formName, {
-        formName,
-        success,
-        ...metadata
-      });
-    } else {
-      await this.trackError('form_submission_failed', errorMessage || 'Unknown form error', formName, {
-        formName,
-        ...metadata
-      });
-    }
-  }
 
-  // Modal/Dialog Analytics
-  async trackModalInteraction(modalName: string, action: 'open' | 'close' | 'submit' | 'cancel', metadata?: Record<string, any>) {
-    await this.trackFeatureUsage('modal_interaction', modalName, {
-      modalName,
-      action,
-      ...metadata
-    });
-  }
 
-  // File Operation Analytics
-  async trackFileOperation(operation: 'upload' | 'download' | 'delete' | 'share', fileName?: string, fileSize?: number, success: boolean = true) {
-    if (success) {
-      await this.trackFeatureUsage('file_operation', operation, {
-        operation,
-        fileName,
-        fileSize,
-        success
-      });
-    } else {
-      await this.trackError('file_operation_failed', `Failed to ${operation} file`, operation, {
-        operation,
-        fileName,
-        fileSize
-      });
-    }
-  }
 
   setCurrentUser(userId: string | null) {
     this.currentUserId = userId;
@@ -657,7 +455,7 @@ class AnalyticsService {
         const data = await response.json();
         this.currentUserId = data.user?.id || null;
       }
-    } catch (error) {
+    } catch {
       this.isAuthenticated = false;
     }
   }

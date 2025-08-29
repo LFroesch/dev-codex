@@ -46,72 +46,6 @@ router.get('/me', requireAuth, async (req: AuthRequest, res) => {
   }
 });
 
-// Comprehensive analytics endpoint - simplified for frontend compatibility
-router.get('/comprehensive', requireAuth, async (req: AuthRequest, res) => {
-  try {
-    const { days = '30' } = req.query;
-    const daysInt = parseInt(days as string);
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - daysInt);
-
-    const [
-      featureUsage, 
-      navigation, 
-      performance, 
-      pageViews,
-      fieldEdits,
-      projectOpens,
-      actions,
-      sessionStarts,
-      sessionEnds
-    ] = await Promise.all([
-      AnalyticsService.runQuery('feature_usage', [days]),
-      AnalyticsService.runQuery('navigation', [days]),
-      AnalyticsService.runQuery('performance', [days]),
-      AnalyticsService.runQuery('page_view', [days]),
-      AnalyticsService.runQuery('field_edit', [days]),
-      AnalyticsService.runQuery('project_open', [days]),
-      AnalyticsService.runQuery('action', [days]),
-      AnalyticsService.runQuery('session_start', [days]),
-      AnalyticsService.runQuery('session_end', [days])
-    ]);
-    
-    const comprehensiveData = {
-      featureUsage,
-      navigation,
-      searches: [], // No search events in current data
-      errors: [], // No error events in current data
-      performance,
-      uiInteractions: [], // No UI interaction events in current data
-      pageViews,
-      fieldEdits,
-      projectOpens,
-      actions,
-      sessionStarts,
-      sessionEnds,
-      summary: {
-        totalFeatureUsage: featureUsage.reduce((sum: number, item: any) => sum + (item.usage_count || 0), 0),
-        totalNavigationEvents: navigation.reduce((sum: number, item: any) => sum + (item.count || 0), 0),
-        totalSearches: 0, // No search events in current data
-        totalErrors: 0, // No error events in current data  
-        totalPerformanceEvents: performance.reduce((sum: number, item: any) => sum + (item.count || 0), 0),
-        totalUIInteractions: 0, // No UI interaction events in current data
-        totalPageViews: pageViews.reduce((sum: number, item: any) => sum + (item.view_count || 0), 0),
-        totalFieldEdits: fieldEdits.reduce((sum: number, item: any) => sum + (item.edit_count || 0), 0),
-        totalProjectOpens: projectOpens.reduce((sum: number, item: any) => sum + (item.access_count || 0), 0),
-        totalActions: actions.reduce((sum: number, item: any) => sum + (item.action_count || 0), 0),
-        totalSessionStarts: sessionStarts.reduce((sum: number, item: any) => sum + (item.session_count || 0), 0),
-        totalSessionEnds: sessionEnds.reduce((sum: number, item: any) => sum + (item.session_end_count || 0), 0)
-      },
-      period: `Last ${days} days`
-    };
-    
-    res.json(comprehensiveData);
-  } catch (error) {
-    console.error('Error fetching comprehensive analytics:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
 
 // Track custom event
 router.post('/track', requireAuth, async (req: AuthRequest, res) => {
@@ -123,16 +57,7 @@ router.post('/track', requireAuth, async (req: AuthRequest, res) => {
     }
 
     const allowedEventTypes = [
-      'field_edit', 
-      'action', 
-      'page_view', 
-      'project_open',
-      'feature_usage',
-      'navigation', 
-      'search', 
-      'error', 
-      'performance', 
-      'ui_interaction'
+      'project_open'
     ];
     if (!allowedEventTypes.includes(eventType)) {
       return res.status(400).json({ error: 'Invalid event type' });

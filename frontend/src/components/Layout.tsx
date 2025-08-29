@@ -1425,7 +1425,7 @@ const Layout: React.FC = () => {
           <>
             
             <div className="flex-1 overflow-auto border-subtle bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-sm container-height-fix">
-              <div className="p-2 sm:p-4 lg:p-6">
+              <div className="p-2 sm:p-4 lg:p-4">
                 <Outlet />
               </div>
             </div>
@@ -1503,7 +1503,7 @@ const Layout: React.FC = () => {
             {/* Page Content */}
             <div className={`flex-1 overflow-auto border-subtle bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-sm container-height-fix ${location.pathname === '/support' ? 'mt-4' : ''}`}>
               {selectedProject ? (
-                <div className="p-2 sm:p-4 lg:p-6">
+                <div className="p-2 sm:p-4 lg:p-4">
                   <Outlet context={{ 
                     selectedProject, 
                     user,

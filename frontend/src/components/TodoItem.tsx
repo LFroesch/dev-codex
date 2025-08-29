@@ -271,37 +271,37 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, projectId, onUpdate, onArchiv
               type="checkbox"
               checked={todo.completed}
               onChange={handleToggleComplete}
-              className="checkbox checkbox-primary checkbox-sm mt-0.5"
+              className="checkbox checkbox-primary checkbox-sm mt-1"
             />
             <div className="flex-1 min-w-0">
               <div className="flex-center-gap-2 flex-wrap">
-                <h3 className={`font-semibold text-lg ${todo.completed ? 'line-through text-base-content/60' : ''}`}>
+                <h3 className={`font-semibold text-xl ${todo.completed ? 'line-through text-base-content/60' : ''}`}>
                   {todo.text}
                 </h3>
-                <div className={`badge badge-xs ${getPriorityColor(todo.priority || 'medium')}`}>
+                <div className={`badge badge-md ${getPriorityColor(todo.priority || 'medium')}`}>
                   {getPriorityIcon(todo.priority || 'medium')} {todo.priority || 'medium'}
                 </div>
-                <div className={`badge badge-xs ${getStatusColor(todo.status || 'not_started')}`}>
+                <div className={`badge badge-md ${getStatusColor(todo.status || 'not_started')}`}>
                   {getStatusIcon(todo.status || 'not_started')} {(todo.status || 'not_started').replace('_', ' ')}
                 </div>
                 {hasSubtasks && (
-                  <div className="badge badge-xs badge-info">
+                  <div className="badge badge-md badge-info">
                     📋 {subtasks.filter(s => s.completed).length}/{subtasks.length} subtasks
                   </div>
                 )}
                 {isOverdue(todo.dueDate) && (
-                  <div className="badge badge-xs badge-error">
+                  <div className="badge badge-md badge-error">
                     🚨 Overdue
                   </div>
                 )}
                 {!isOverdue(todo.dueDate) && isDueSoon(todo.dueDate) && (
-                  <div className="badge badge-xs badge-warning">
+                  <div className="badge badge-md badge-warning">
                     ⏰ Due Soon
                   </div>
                 )}
               </div>
               {todo.description && (
-                <p className={`text-sm text-base-content/70 mt-1 ${todo.completed ? 'line-through' : ''}`}>
+                <p className={`text-md text-base-content/70 mt-1 ${todo.completed ? 'line-through' : ''}`}>
                   {todo.description}
                 </p>
               )}

@@ -2,6 +2,7 @@ import React, { useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Layout from './components/Layout';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Lazy load pages
 const LoginPage = lazy(() => import('./pages/LoginPage'));
@@ -45,13 +46,37 @@ const App: React.FC = () => {
     // Apply saved theme on app load
     const savedTheme = localStorage.getItem('theme') || 'retro';
     document.documentElement.setAttribute('data-theme', savedTheme);
+
+    // Cleanup function for when the app unmounts
+    return () => {
+      // Clean up services to prevent memory leaks
+      if (typeof window !== 'undefined') {
+        // Cleanup notification service
+        import('./services/notificationService').then(({ notificationService }) => {
+          notificationService.cleanup();
+        });
+        
+        // Cleanup lock signaling service
+        import('./services/lockSignaling').then(({ lockSignaling }) => {
+          lockSignaling.cleanup();
+        });
+        
+        // Cleanup analytics service
+        import('./services/analytics').then(({ analyticsService }) => {
+          if (analyticsService && typeof analyticsService.endSession === 'function') {
+            analyticsService.endSession();
+          }
+        });
+      }
+    };
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <Router>
-        <Suspense fallback={<LoadingSpinner />}>
-          <Routes>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <Router>
+          <Suspense fallback={<LoadingSpinner />}>
+            <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -79,10 +104,11 @@ const App: React.FC = () => {
               <Route path="help" element={<HelpPage />} />
             </Route>
             <Route path="*" element={<Navigate to="/login" />} />
-          </Routes>
-        </Suspense>
-      </Router>
-    </QueryClientProvider>
+            </Routes>
+          </Suspense>
+        </Router>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 };
 

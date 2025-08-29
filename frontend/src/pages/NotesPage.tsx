@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Project, projectAPI, Todo } from '../api';
-import {TodoItem, NewTodoForm} from '../components/TodoItem';
-import { DevLogItem, NewDevLogForm } from '../components/DevLogItem';
-import { NoteItem, NewNoteForm, NoteModal } from '../components/NoteItem';
+import {TodoItem} from '../components/TodoItem';
+import { DevLogItem } from '../components/DevLogItem';
+import { NoteModal } from '../components/NoteItem';
 import activityTracker from '../services/activityTracker';
 
 interface ContextType {
@@ -88,8 +88,121 @@ const NotesPage: React.FC = () => {
     );
   }
 
+  const [activeSection, setActiveSection] = useState<'notes' | 'todos' | 'devlog'>('notes');
+
+  // Compact note form state
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [newNoteTitle, setNewNoteTitle] = useState('');
+  const [newNoteContent, setNewNoteContent] = useState('');
+  const [isCreatingNote, setIsCreatingNote] = useState(false);
+
+  // Compact todo form state
+  const [showCreateTodoForm, setShowCreateTodoForm] = useState(false);
+  const [newTodoText, setNewTodoText] = useState('');
+  const [newTodoDescription, setNewTodoDescription] = useState('');
+  const [isCreatingTodo, setIsCreatingTodo] = useState(false);
+
+  // Compact dev log form state
+  const [showCreateDevLogForm, setShowCreateDevLogForm] = useState(false);
+  const [newDevLogTitle, setNewDevLogTitle] = useState('');
+  const [newDevLogDescription, setNewDevLogDescription] = useState('');
+  const [isCreatingDevLog, setIsCreatingDevLog] = useState(false);
+
+  const handleCreateNote = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newNoteTitle.trim() || !newNoteContent.trim()) return;
+
+    setIsCreatingNote(true);
+    try {
+      await projectAPI.createNote(selectedProject.id, {
+        title: newNoteTitle.trim(),
+        content: newNoteContent.trim()
+      });
+      
+      await activityTracker.trackCreate(
+        'note',
+        'new-note',
+        newNoteTitle.trim(),
+        undefined,
+        { contentLength: newNoteContent.trim().length }
+      );
+      
+      setNewNoteTitle('');
+      setNewNoteContent('');
+      setShowCreateForm(false);
+      onProjectRefresh();
+    } catch (err) {
+      setError('Failed to create note');
+    } finally {
+      setIsCreatingNote(false);
+    }
+  };
+
+  const handleCreateTodo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTodoText.trim()) return;
+
+    setIsCreatingTodo(true);
+    try {
+      await projectAPI.createTodo(selectedProject.id, {
+        text: newTodoText.trim(),
+        description: newTodoDescription.trim(),
+        priority: 'medium',
+        status: 'not_started'
+      });
+      
+      await activityTracker.trackCreate(
+        'todo',
+        'new-todo',
+        newTodoText.trim(),
+        undefined,
+        { hasDescription: !!newTodoDescription.trim() }
+      );
+      
+      setNewTodoText('');
+      setNewTodoDescription('');
+      setShowCreateTodoForm(false);
+      onProjectRefresh();
+    } catch (err) {
+      setError('Failed to create todo');
+    } finally {
+      setIsCreatingTodo(false);
+    }
+  };
+
+  const handleCreateDevLog = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newDevLogTitle.trim()) return;
+
+    setIsCreatingDevLog(true);
+    try {
+      await projectAPI.createDevLogEntry(selectedProject.id, {
+        title: newDevLogTitle.trim(),
+        description: newDevLogDescription.trim(),
+        entry: newDevLogTitle.trim()
+      });
+      
+      await activityTracker.trackCreate(
+        'devlog',
+        'new-devlog',
+        newDevLogTitle.trim(),
+        undefined,
+        { hasDescription: !!newDevLogDescription.trim() }
+      );
+      
+      setNewDevLogTitle('');
+      setNewDevLogDescription('');
+      setShowCreateDevLogForm(false);
+      onProjectRefresh();
+    } catch (err) {
+      setError('Failed to create dev log entry');
+    } finally {
+      setIsCreatingDevLog(false);
+    }
+  };
+
   return (
-    <div className="space-y-4 lg:space-y-6">
+    <div className="space-y-4">
       {error && (
         <div className="alert alert-error shadow-md">
           <svg className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
@@ -99,42 +212,391 @@ const NotesPage: React.FC = () => {
         </div>
       )}
 
-      {/* Notes Section */}
-      <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10">
-        <input type="checkbox" defaultChecked />
-        <div className="collapse-title text-lg font-semibold bg-base-200 border-b border-base-content/10">
-          Notes ({selectedProject.notes?.length || 0})
-        </div>
-        <div className="collapse-content">
-          <div className="pt-2 sm:pt-4">
-            <NewNoteForm 
-              projectId={selectedProject.id} 
-              onAdd={onProjectRefresh}
-            />
-            
-            <div className="space-y-3">
-              {selectedProject.notes?.length === 0 ? (
-                <div className="text-center py-8">
-                  <div className="text-4xl mb-4">📄</div>
-                  <p className="text-base-content/60">No notes yet. Create one above!</p>
-                </div>
-              ) : (
-                selectedProject.notes
-                  ?.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-                  ?.map((note) => (
-                    <NoteItem
-                      key={note.id}
-                      note={note}
-                      projectId={selectedProject.id}
-                      onUpdate={onProjectRefresh}
-                      onClick={() => handleNoteClick(note)}
-                    />
-                  ))
-              )}
-            </div>
-          </div>
+      {/* Category Navigation */}
+      <div className="flex justify-center">
+        <div className="tabs tabs-boxed border-subtle shadow-sm opacity-90">
+          <button 
+            className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'notes' ? 'tab-active' : ''}`}
+            onClick={() => setActiveSection('notes')}
+          >
+            <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span>Notes <span className="text-xs opacity-70">({selectedProject.notes?.length || 0})</span></span>
+          </button>
+          <button 
+            className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'todos' ? 'tab-active' : ''}`}
+            onClick={() => setActiveSection('todos')}
+          >
+            <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            </svg>
+            <span>Todos <span className="text-xs opacity-70">({selectedProject.todos?.filter(todo => !todo.parentTodoId).length || 0})</span></span>
+          </button>
+          <button 
+            className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'devlog' ? 'tab-active' : ''}`}
+            onClick={() => setActiveSection('devlog')}
+          >
+            <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+            <span>Dev Log <span className="text-xs opacity-70">({selectedProject.devLog?.length || 0})</span></span>
+          </button>
         </div>
       </div>
+
+      {/* Notes Section */}
+      {activeSection === 'notes' && (
+        <div className="space-y-6">
+          {/* Compact Create Note Form */}
+          <div className="bg-base-100 rounded-lg border-subtle shadow-sm">
+            {!showCreateForm ? (
+              <button
+                onClick={() => setShowCreateForm(true)}
+                className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-base-200/40 transition-colors rounded-lg"
+              >
+                <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                  <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                </div>
+                <span className="text-base-content/60">Create a new note...</span>
+              </button>
+            ) : (
+              <form onSubmit={handleCreateNote} className="p-4 space-y-3">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-medium text-sm text-base-content/70">New Note</h4>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCreateForm(false);
+                      setNewNoteTitle('');
+                      setNewNoteContent('');
+                    }}
+                    className="text-base-content/40 hover:text-base-content/60 transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                
+                <input
+                  type="text"
+                  value={newNoteTitle}
+                  onChange={(e) => setNewNoteTitle(e.target.value)}
+                  className="input input-bordered input-sm w-full"
+                  placeholder="Note title..."
+                  required
+                  autoFocus
+                />
+                
+                <textarea
+                  value={newNoteContent}
+                  onChange={(e) => setNewNoteContent(e.target.value)}
+                  className="textarea textarea-bordered textarea-sm w-full"
+                  placeholder="Write your note content..."
+                  rows={3}
+                  required
+                />
+                
+                <div className="flex items-center gap-2 pt-2">
+                  <button
+                    type="submit"
+                    className="btn btn-primary btn-sm"
+                    disabled={isCreatingNote || !newNoteTitle.trim() || !newNoteContent.trim()}
+                  >
+                    {isCreatingNote ? 'Creating...' : 'Create Note'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCreateForm(false);
+                      setNewNoteTitle('');
+                      setNewNoteContent('');
+                    }}
+                    className="btn btn-ghost btn-sm"
+                    disabled={isCreatingNote}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+
+          {selectedProject.notes?.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 mx-auto mb-4 bg-base-200 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-base-content/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 712-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium mb-2 text-base-content/80">No notes yet</h3>
+              <p className="text-sm text-base-content/60">Start documenting your thoughts and ideas</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {selectedProject.notes
+                ?.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+                ?.map((note) => (
+                  <div 
+                    key={note.id}
+                    className="bg-base-100 rounded-lg border-subtle shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group h-48 flex flex-col"
+                    onClick={() => handleNoteClick(note)}
+                  >
+                    <div className="p-4 flex flex-col flex-1">
+                      <div className="flex items-start justify-between mb-3">
+                        <h3 className="font-semibold text-base-content group-hover:text-primary transition-colors duration-200 truncate flex-1">
+                          {note.title}
+                        </h3>
+                        <div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <svg className="w-4 h-4 text-base-content/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </div>
+                      </div>
+                      
+                      {note.description && (
+                        <p className="text-sm text-base-content/60 mb-2 line-clamp-1">
+                          {note.description}
+                        </p>
+                      )}
+                      
+                      <p className="text-sm text-base-content/70 mb-3 line-clamp-3 flex-1">
+                        {note.content}
+                      </p>
+                      
+                      <div className="flex items-center justify-between text-xs text-base-content/50 pt-3 mt-auto">
+                        <span>Updated {new Date(note.updatedAt).toLocaleDateString()}</span>
+                        <div className="flex items-center gap-1">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          <span>{note.content?.length || 0} chars</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Todos Section */}
+      {activeSection === 'todos' && (
+        <div className="space-y-6">
+          {/* Compact Create Todo Form */}
+          <div className="bg-base-100 rounded-lg border-subtle shadow-sm">
+            {!showCreateTodoForm ? (
+              <button
+                onClick={() => setShowCreateTodoForm(true)}
+                className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-base-200/40 transition-colors rounded-lg"
+              >
+                <div className="w-8 h-8 bg-success/10 rounded-full flex items-center justify-center">
+                  <svg className="w-4 h-4 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                </div>
+                <span className="text-base-content/60">Create a new todo...</span>
+              </button>
+            ) : (
+              <form onSubmit={handleCreateTodo} className="p-4 space-y-3">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-medium text-sm text-base-content/70">New Todo</h4>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCreateTodoForm(false);
+                      setNewTodoText('');
+                      setNewTodoDescription('');
+                    }}
+                    className="text-base-content/40 hover:text-base-content/60 transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                
+                <input
+                  type="text"
+                  value={newTodoText}
+                  onChange={(e) => setNewTodoText(e.target.value)}
+                  className="input input-bordered input-sm w-full"
+                  placeholder="Todo title..."
+                  required
+                  autoFocus
+                />
+                
+                <textarea
+                  value={newTodoDescription}
+                  onChange={(e) => setNewTodoDescription(e.target.value)}
+                  className="textarea textarea-bordered textarea-sm w-full"
+                  placeholder="Todo description (optional)..."
+                  rows={2}
+                />
+                
+                <div className="flex items-center gap-2 pt-2">
+                  <button
+                    type="submit"
+                    className="btn btn-success btn-sm"
+                    disabled={isCreatingTodo || !newTodoText.trim()}
+                  >
+                    {isCreatingTodo ? 'Creating...' : 'Create Todo'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCreateTodoForm(false);
+                      setNewTodoText('');
+                      setNewTodoDescription('');
+                    }}
+                    className="btn btn-ghost btn-sm"
+                    disabled={isCreatingTodo}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+          
+          {selectedProject.todos?.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 mx-auto mb-4 bg-base-200 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-base-content/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium mb-2 text-base-content/80">No tasks yet</h3>
+              <p className="text-sm text-base-content/60">Add your first todo to get started</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {selectedProject.todos
+                ?.filter(todo => !todo.parentTodoId)
+                ?.map((todo) => (
+                  <TodoItem
+                    key={todo.id}
+                    todo={todo}
+                    projectId={selectedProject.id}
+                    onUpdate={onProjectRefresh}
+                    onArchiveToDevLog={handleArchiveTodoToDevLog}
+                    isSharedProject={selectedProject.isShared || false}
+                    canEdit={selectedProject.canEdit !== false}
+                    allTodos={selectedProject.todos || []}
+                  />
+                ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Dev Log Section */}
+      {activeSection === 'devlog' && (
+        <div className="space-y-6">
+          {/* Compact Create Dev Log Form */}
+          <div className="bg-base-100 rounded-lg border-subtle shadow-sm">
+            {!showCreateDevLogForm ? (
+              <button
+                onClick={() => setShowCreateDevLogForm(true)}
+                className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-base-200/40 transition-colors rounded-lg"
+              >
+                <div className="w-8 h-8 bg-info/10 rounded-full flex items-center justify-center">
+                  <svg className="w-4 h-4 text-info" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                </div>
+                <span className="text-base-content/60">Create a new dev log entry...</span>
+              </button>
+            ) : (
+              <form onSubmit={handleCreateDevLog} className="p-4 space-y-3">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-medium text-sm text-base-content/70">New Dev Log Entry</h4>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCreateDevLogForm(false);
+                      setNewDevLogTitle('');
+                      setNewDevLogDescription('');
+                    }}
+                    className="text-base-content/40 hover:text-base-content/60 transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                
+                <input
+                  type="text"
+                  value={newDevLogTitle}
+                  onChange={(e) => setNewDevLogTitle(e.target.value)}
+                  className="input input-bordered input-sm w-full"
+                  placeholder="Dev log title..."
+                  required
+                  autoFocus
+                />
+                
+                <textarea
+                  value={newDevLogDescription}
+                  onChange={(e) => setNewDevLogDescription(e.target.value)}
+                  className="textarea textarea-bordered textarea-sm w-full"
+                  placeholder="Describe your development progress..."
+                  rows={3}
+                />
+                
+                <div className="flex items-center gap-2 pt-2">
+                  <button
+                    type="submit"
+                    className="btn btn-info btn-sm"
+                    disabled={isCreatingDevLog || !newDevLogTitle.trim()}
+                  >
+                    {isCreatingDevLog ? 'Creating...' : 'Create Entry'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCreateDevLogForm(false);
+                      setNewDevLogTitle('');
+                      setNewDevLogDescription('');
+                    }}
+                    className="btn btn-ghost btn-sm"
+                    disabled={isCreatingDevLog}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+          
+          {selectedProject.devLog?.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 mx-auto mb-4 bg-base-200 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-base-content/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium mb-2 text-base-content/80">No dev log entries</h3>
+              <p className="text-sm text-base-content/60">Document your development progress and decisions</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {selectedProject.devLog?.map((entry) => (
+                <DevLogItem
+                  key={entry.id}
+                  entry={entry}
+                  projectId={selectedProject.id}
+                  onUpdate={onProjectRefresh}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Note Modal */}
       <NoteModal
@@ -147,81 +609,6 @@ const NotesPage: React.FC = () => {
         onModeChange={setModalMode}
         project={selectedProject}
       />
-
-      {/* Todo List Section */}
-      <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10">
-        <input type="checkbox" defaultChecked />
-        <div className="collapse-title text-lg font-semibold bg-base-200 border-b border-base-content/10">
-          To Do ({selectedProject.todos?.filter(todo => !todo.parentTodoId).length || 0})
-        </div>
-        <div className="collapse-content">
-          <div className="pt-2 sm:pt-4">
-            <NewTodoForm 
-              projectId={selectedProject.id} 
-              onAdd={onProjectRefresh}
-              isSharedProject={selectedProject.isShared || false}
-            />
-            
-            <div className="space-y-3">
-              {selectedProject.todos?.length === 0 ? (
-                <div className="text-center py-8">
-                  <div className="text-4xl mb-4">📋</div>
-                  <p className="text-base-content/60">No todos yet. Create one above!</p>
-                </div>
-              ) : (
-                selectedProject.todos
-                  ?.filter(todo => !todo.parentTodoId) // Only show parent todos, subtasks are shown within their parents
-                  ?.map((todo) => (
-                    <TodoItem
-                      key={todo.id}
-                      todo={todo}
-                      projectId={selectedProject.id}
-                      onUpdate={onProjectRefresh}
-                      onArchiveToDevLog={handleArchiveTodoToDevLog}
-                      isSharedProject={selectedProject.isShared || false}
-                      canEdit={selectedProject.canEdit !== false}
-                      allTodos={selectedProject.todos || []}
-                    />
-                  ))
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Dev Log Section */}
-      <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10">
-        <input type="checkbox" />
-        <div className="collapse-title text-lg font-semibold bg-base-200 border-b border-base-content/10">
-          Dev Log ({selectedProject.devLog?.length || 0})
-        </div>
-        <div className="collapse-content">
-          <div className="pt-2 sm:pt-4">
-            <NewDevLogForm 
-              projectId={selectedProject.id} 
-              onAdd={onProjectRefresh}
-            />
-            
-            <div className="space-y-3">
-              {selectedProject.devLog?.length === 0 ? (
-                <div className="text-center py-8">
-                  <div className="text-4xl mb-4">📖</div>
-                  <p className="text-base-content/60">No dev log entries yet. Create one above!</p>
-                </div>
-              ) : (
-                selectedProject.devLog?.map((entry) => (
-                  <DevLogItem
-                    key={entry.id}
-                    entry={entry}
-                    projectId={selectedProject.id}
-                    onUpdate={onProjectRefresh}
-                  />
-                ))
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };

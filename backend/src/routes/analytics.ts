@@ -76,8 +76,8 @@ router.post('/session/start', requireAuth, async (req: AuthRequest, res) => {
   try {
     const { restoreSession } = req.body;
     
-    // Check for existing active session within last 15 minutes
-    const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
+    // Check for existing active session within last 10 minutes
+    const fifteenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
     const existingSession = await AnalyticsService.getActiveSession(req.userId!);
     
     if (existingSession && existingSession.lastActivity > fifteenMinutesAgo) {

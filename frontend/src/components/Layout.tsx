@@ -1083,7 +1083,7 @@ const Layout: React.FC = () => {
                                 handleProjectSelect(project);
                                 navigate('/notes');
                               }}
-                              className={`p-4 rounded-lg border-2 transition-all duration-200 text-left group hover:shadow-md h-[200px] flex flex-col ${
+                              className={`p-4 rounded-lg border-2 transition-all duration-200 text-left group shadow-md hover:shadow-lg h-[200px] flex flex-col ${
                                 selectedProject?.id === project.id 
                                   ? 'border-primary bg-primary/5 shadow-md' 
                                   : 'border-base-300/50 bg-base-100 hover:border-primary/30'
@@ -1138,7 +1138,7 @@ const Layout: React.FC = () => {
                               
                               {/* Footer - Always at bottom */}
                               <div className="flex items-center justify-between text-xs pt-2 border-t border-base-200 mt-auto">
-                                <div className="flex items-center gap-1 px-2 py-1 rounded-md font-medium bg-success/10 text-success">
+                                <div className="flex items-center gap-1 px-2 py-1 rounded-md font-medium bg-secondary text-secondary-content">
                                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                   </svg>
@@ -1209,7 +1209,7 @@ const Layout: React.FC = () => {
                                 handleProjectSelect(project);
                                 navigate('/notes');
                               }}
-                              className={`p-4 rounded-lg border-2 transition-all duration-200 text-left group hover:shadow-md h-[200px] flex flex-col ${
+                              className={`p-4 rounded-lg border-2 transition-all duration-200 text-left group shadow-md hover:shadow-lg h-[200px] flex flex-col ${
                                 selectedProject?.id === project.id 
                                   ? 'border-primary bg-primary/5 shadow-md' 
                                   : 'border-base-300/50 bg-base-100 hover:border-primary/30'
@@ -1263,7 +1263,7 @@ const Layout: React.FC = () => {
                               
                               {/* Footer - Always at bottom */}
                               <div className="flex items-center justify-between text-xs pt-2 border-t border-base-200 mt-auto">
-                                <div className="flex items-center gap-1 px-2 py-1 rounded-md font-medium bg-success/10 text-success">
+                                <div className="flex items-center gap-1 px-2 py-1 rounded-md font-medium bg-secondary text-secondary-content">
                                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                   </svg>
@@ -1334,7 +1334,7 @@ const Layout: React.FC = () => {
                                 handleProjectSelect(project);
                                 navigate('/notes');
                               }}
-                              className={`p-4 rounded-lg border-2 transition-all duration-200 text-left group hover:shadow-md h-[200px] flex flex-col ${
+                              className={`p-4 rounded-lg border-2 transition-all duration-200 text-left group shadow-md hover:shadow-lg h-[200px] flex flex-col ${
                                 selectedProject?.id === project.id 
                                   ? 'border-primary bg-primary/5 shadow-md' 
                                   : 'border-base-300/50 bg-base-100 hover:border-primary/30'
@@ -1392,7 +1392,7 @@ const Layout: React.FC = () => {
                               
                               {/* Footer - Always at bottom */}
                               <div className="flex items-center justify-between text-xs pt-2 border-t border-base-200 mt-auto">
-                                <div className="flex items-center gap-1 px-2 py-1 rounded-md font-medium bg-success/10 text-success">
+                                <div className="flex items-center gap-1 px-2 py-1 rounded-md font-medium bg-secondary text-secondary-content">
                                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                   </svg>

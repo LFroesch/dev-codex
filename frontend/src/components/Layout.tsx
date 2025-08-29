@@ -26,6 +26,9 @@ const Layout: React.FC = () => {
   const [activeAdminTab, setActiveAdminTab] = useState<'users' | 'tickets' | 'analytics'>('users');
   const [projectTimeData, setProjectTimeData] = useState<{ [projectId: string]: number }>({});
   const [, setIdeasCount] = useState(0);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedArchivedCategory, setSelectedArchivedCategory] = useState<string | null>(null);
+  const [selectedSharedCategory, setSelectedSharedCategory] = useState<string | null>(null);
   
   // Unsaved changes modal state
   const [showUnsavedChangesModal, setShowUnsavedChangesModal] = useState(false);
@@ -702,14 +705,14 @@ const Layout: React.FC = () => {
                   }}
                   className={`tab tab-sm min-h-10 font-bold text-sm ${activeProjectTab === 'active' ? 'tab-active' : ''}`}
                 >
-                  <span>Active</span>
+                  <span>Active <span className="text-xs opacity-60">({currentProjects.length})</span></span>
                 </button>
                 {archivedProjects.length > 0 && (
                   <button
                     onClick={() => setActiveProjectTab('archived')}
                     className={`tab tab-sm min-h-10 font-bold text-sm ${activeProjectTab === 'archived' ? 'tab-active' : ''}`}
                   >
-                    <span>Archived</span>
+                    <span>Archived <span className="text-xs opacity-60">({archivedProjects.length})</span></span>
                   </button>
                 )}
                 {sharedProjects.length > 0 && (
@@ -717,7 +720,7 @@ const Layout: React.FC = () => {
                     onClick={() => setActiveProjectTab('shared')}
                     className={`tab tab-sm min-h-10 font-bold text-sm ${activeProjectTab === 'shared' ? 'tab-active' : ''}`}
                   >
-                    <span>Shared</span>
+                    <span>Shared <span className="text-xs opacity-60">({sharedProjects.length})</span></span>
                   </button>
                 )}
                 <button
@@ -925,14 +928,14 @@ const Layout: React.FC = () => {
                   }}
                   className={`tab tab-sm min-h-10 font-bold text-sm ${activeProjectTab === 'active' ? 'tab-active' : ''}`}
                 >
-                  <span>Active</span>
+                  <span>Active <span className="text-xs opacity-60">({currentProjects.length})</span></span>
                 </button>
                 {archivedProjects.length > 0 && (
                   <button
                     onClick={() => setActiveProjectTab('archived')}
                     className={`tab tab-sm min-h-10 font-bold text-sm ${activeProjectTab === 'archived' ? 'tab-active' : ''}`}
                   >
-                    <span>Archived</span>
+                    <span>Archived <span className="text-xs opacity-60">({archivedProjects.length})</span></span>
                   </button>
                 )}
                 {sharedProjects.length > 0 && (
@@ -940,7 +943,7 @@ const Layout: React.FC = () => {
                     onClick={() => setActiveProjectTab('shared')}
                     className={`tab tab-sm min-h-10 font-bold text-sm ${activeProjectTab === 'shared' ? 'tab-active' : ''}`}
                   >
-                    <span>Shared</span>
+                    <span>Shared <span className="text-xs opacity-60">({sharedProjects.length})</span></span>
                   </button>
                 )}
                 <button
@@ -1042,320 +1045,368 @@ const Layout: React.FC = () => {
                         </div>
                       </div>
                     ) : (
-                      Object.entries(groupedCurrentProjects).map(([category, categoryProjects]) => (
-                        <div key={category} className="border-subtle rounded-xl bg-base-100 shadow-sm">
-                          <div className="tabs tabs-boxed tabs-lg">
-                            <div 
-                              className="tab tab-lg cursor-pointer hover:tab-active transition-all flex items-center gap-3 w-full font-bold text-base"
-                              onClick={() => toggleSection(`active-${category}`)}
+                      <>
+                        {/* Category Selector */}
+                        <div className="flex justify-center mb-8">
+                          <div className="tabs tabs-boxed border-subtle shadow-sm opacity-90">
+                            <button
+                              onClick={() => setSelectedCategory(null)}
+                              className={`tab tab-sm min-h-10 font-bold text-sm ${
+                                selectedCategory === null ? 'tab-active' : ''
+                              }`}
                             >
-                              <svg 
-                                className={`icon-md transition-transform ${collapsedSections[`active-${category}`] ? '' : 'rotate-90'}`}
-                                fill="currentColor" 
-                                viewBox="0 0 20 20"
+                              <span>All <span className="text-xs opacity-70">({Object.values(groupedCurrentProjects).flat().length})</span></span>
+                            </button>
+                            {Object.entries(groupedCurrentProjects).map(([category, categoryProjects]) => (
+                              <button
+                                key={category}
+                                onClick={() => setSelectedCategory(category)}
+                                className={`tab tab-sm min-h-10 font-bold text-sm ${
+                                  selectedCategory === category ? 'tab-active' : ''
+                                }`}
                               >
-                                <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                              </svg>
-                              <svg className="w-6 h-6 text-primary" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
-                              </svg>
-                              <span className="text-xl font-semibold text-base-content flex-1">{category}</span>
-                              <span className="bg-primary/10 text-base-content px-3 py-1 rounded-full text-sm font-medium">{categoryProjects.length}</span>
-                            </div>
+                                <span>{category} <span className="text-xs opacity-70">({categoryProjects.length})</span></span>
+                              </button>
+                            ))}
                           </div>
-                          {!collapsedSections[`active-${category}`] && (
-                            <div className="p-4">
-                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                {categoryProjects.map((project) => (
-                                  <button
-                                    key={project.id}
-                                    onClick={() => {
-                                      handleProjectSelect(project);
-                                      navigate('/notes');
-                                    }}
-                                    className={`btn w-full justify-start gap-3 h-auto py-3 px-4 min-h-[5rem] text-left ${
-                                      selectedProject?.id === project.id 
-                                        ? 'btn-primary border-2 border-primary ring-2 ring-primary/20 shadow-lg' 
-                                        : 'btn-ghost bg-base-100 hover:bg-base-200 border border-base-content/10 shadow-sm'
-                                    }`}
-                                  >
-                                    <div 
-                                      className="icon-md rounded-md shadow-sm flex-shrink-0"
-                                      style={{ backgroundColor: project.color }}
-                                    ></div>
-                                    <div className="flex-1 min-w-0">
-                                      <div className="font-medium leading-tight truncate text-sm">{project.name}</div>
-                                      {project.description && (
-                                        <div className="text-xs mt-1 line-clamp-2 text-base-content/60">{project.description}</div>
-                                      )}
-                                      {project.tags && project.tags.length > 0 && (
-                                        <div className="flex flex-wrap gap-1 mt-2">
-                                          {project.tags.slice(0, 2).map((tag, index) => (
-                                            <span
-                                              key={index}
-                                              className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${
-                                                selectedProject?.id === project.id 
-                                                  ? 'bg-white/20 text-white' 
-                                                  : 'bg-primary/10 text-primary'
-                                              }`}
-                                            >
-                                              {tag}
-                                            </span>
-                                          ))}
-                                          {project.tags.length > 2 && (
-                                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${
-                                              selectedProject?.id === project.id 
-                                                ? 'bg-white/10 text-white/70' 
-                                                : 'bg-base-300 text-base-content/60'
-                                            }`}>
-                                              +{project.tags.length - 2}
-                                            </span>
-                                          )}
-                                        </div>
-                                      )}
-                                      <div className="flex items-center justify-between mt-2 text-xs">
-                                        <div className="text-base-content/50 truncate">
-                                          <span>{new Date(project.updatedAt).toLocaleDateString()}</span>
-                                        </div>
-                                        <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium ${
-                                          selectedProject?.id === project.id 
-                                            ? 'bg-white/10 text-white/80' 
-                                            : 'bg-success/10 text-success'
-                                        }`}>
-                                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                          </svg>
-                                          <span>
-                                            {formatProjectTime(project.id)}
-                                          </span>
-                                        </div>
-                                      </div>
-                                    </div>
-                                    {selectedProject?.id === project.id && (
-                                      <svg className="icon-sm flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                      </svg>
-                                    )}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          )}
                         </div>
-                      ))
+
+                        {/* Projects Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                          {(selectedCategory 
+                            ? groupedCurrentProjects[selectedCategory] || []
+                            : Object.values(groupedCurrentProjects).flat()
+                          ).map((project) => (
+                            <button
+                              key={project.id}
+                              onClick={() => {
+                                handleProjectSelect(project);
+                                navigate('/notes');
+                              }}
+                              className={`p-4 rounded-lg border-2 transition-all duration-200 text-left group hover:shadow-md h-[200px] flex flex-col ${
+                                selectedProject?.id === project.id 
+                                  ? 'border-primary bg-primary/5 shadow-md' 
+                                  : 'border-base-300/50 bg-base-100 hover:border-primary/30'
+                              }`}
+                            >
+                              {/* Header with color indicator and name */}
+                              <div className="flex items-center gap-3 mb-3">
+                                <div 
+                                  className="w-4 h-4 rounded-full flex-shrink-0 border-2 border-white/50 shadow-sm"
+                                  style={{ backgroundColor: project.color }}
+                                ></div>
+                                <h3 className={`font-semibold text-base truncate ${
+                                  selectedProject?.id === project.id ? 'text-primary' : 'text-base-content'
+                                }`}>
+                                  {project.name}
+                                </h3>
+                              </div>
+                              
+                              {/* Description - Fixed height */}
+                              <div className="mb-3 h-[2.5rem] flex-shrink-0">
+                                {project.description && (
+                                  <p className="text-sm text-base-content/70 line-clamp-2">
+                                    {project.description}
+                                  </p>
+                                )}
+                              </div>
+                              
+                              {/* Tags - Fixed height */}
+                              <div className="mb-3 h-[1.5rem] flex-shrink-0">
+                                {project.tags && project.tags.length > 0 && (
+                                  <div className="flex flex-wrap gap-1">
+                                    {project.tags.slice(0, 3).map((tag, tagIndex) => (
+                                      <span
+                                        key={tagIndex}
+                                        className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ${
+                                          selectedProject?.id === project.id 
+                                            ? 'bg-primary/15 text-primary border border-primary/20' 
+                                            : 'bg-base-200 text-base-content/80 border border-base-300/50'
+                                        }`}
+                                      >
+                                        {tag}
+                                      </span>
+                                    ))}
+                                    {project.tags.length > 3 && (
+                                      <span className="text-xs text-base-content/50 font-medium flex items-center">
+                                        +{project.tags.length - 3}
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                              
+                              {/* Footer - Always at bottom */}
+                              <div className="flex items-center justify-between text-xs pt-2 border-t border-base-200 mt-auto">
+                                <div className="flex items-center gap-1 px-2 py-1 rounded-md font-medium bg-success/10 text-success">
+                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                  <span>{formatProjectTime(project.id)}</span>
+                                </div>
+                                <span className="text-base-content/50 font-mono">
+                                  {new Date(project.updatedAt).toLocaleDateString()}
+                                </span>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </>
                     )}
                   </div>
                 )}
                 
                 {activeProjectTab === 'archived' && (
                   <div className="space-y-4">
-                    {Object.entries(groupedArchivedProjects).map(([category, categoryProjects]) => (
-                      <div key={category} className="border-subtle rounded-xl bg-base-100 shadow-sm">
-                        <div className="tabs tabs-boxed tabs-lg">
-                          <div 
-                            className="tab tab-lg cursor-pointer hover:tab-active transition-all flex items-center gap-3 w-full font-bold text-base"
-                            onClick={() => toggleSection(`archived-${category}`)}
-                          >
-                            <svg 
-                              className={`icon-md transition-transform ${collapsedSections[`archived-${category}`] ? '' : 'rotate-90'}`}
-                              fill="currentColor" 
-                              viewBox="0 0 20 20"
+                    {Object.keys(groupedArchivedProjects).length === 0 ? (
+                      <div className="flex items-center justify-center min-h-[50vh] py-16">
+                        <div className="text-center bg-base-100 rounded-xl p-12 border-subtle shadow-lg max-w-md mx-auto">
+                          <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-base-300/50 to-base-400/50 rounded-full flex items-center justify-center">
+                            <svg className="w-10 h-10 text-base-content/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 8l6 6 6-6" />
+                            </svg>
+                          </div>
+                          <h3 className="text-2xl font-bold mb-3 text-base-content/80">No archived projects</h3>
+                          <p className="text-base-content/60">Archive projects to see them here</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        {/* Category Selector */}
+                        <div className="flex justify-center mb-8">
+                          <div className="tabs tabs-boxed border-subtle shadow-sm opacity-90">
+                            <button
+                              onClick={() => setSelectedArchivedCategory(null)}
+                              className={`tab tab-sm min-h-10 font-bold text-sm ${
+                                selectedArchivedCategory === null ? 'tab-active' : ''
+                              }`}
                             >
-                              <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                            </svg>
-                            <svg className="w-6 h-6 text-primary" fill="currentColor" viewBox="0 0 20 20">
-                              <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
-                            </svg>
-                            <span className="text-xl font-semibold text-base-content flex-1">{category}</span>
-                            <span className="bg-primary/10 text-base-content px-3 py-1 rounded-full text-sm font-medium">{categoryProjects.length}</span>
+                              <span>All <span className="text-xs opacity-70">({Object.values(groupedArchivedProjects).flat().length})</span></span>
+                            </button>
+                            {Object.entries(groupedArchivedProjects).map(([category, categoryProjects]) => (
+                              <button
+                                key={category}
+                                onClick={() => setSelectedArchivedCategory(category)}
+                                className={`tab tab-sm min-h-10 font-bold text-sm ${
+                                  selectedArchivedCategory === category ? 'tab-active' : ''
+                                }`}
+                              >
+                                <span>{category} <span className="text-xs opacity-70">({categoryProjects.length})</span></span>
+                              </button>
+                            ))}
                           </div>
                         </div>
-                        {!collapsedSections[`archived-${category}`] && (
-                          <div className="p-4">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                              {categoryProjects.map((project) => (
-                                <button
-                                  key={project.id}
-                                  onClick={() => {
-                                    handleProjectSelect(project);
-                                    navigate('/notes');
-                                  }}
-                                  className={`btn w-full justify-start gap-3 h-auto py-3 px-4 min-h-[5rem] text-left ${
-                                    selectedProject?.id === project.id 
-                                      ? 'btn-primary border-2 border-primary ring-2 ring-primary/20 shadow-lg' 
-                                      : 'btn-ghost bg-base-100 hover:bg-base-200 border border-base-content/10 shadow-sm'
-                                  }`}
-                                >
-                                  <div 
-                                    className="icon-md rounded-md shadow-sm flex-shrink-0"
-                                    style={{ backgroundColor: project.color }}
-                                  ></div>
-                                  <div className="flex-1 text-left">
-                                    <div className="font-semibold leading-tight truncate">{project.name}</div>
-                                    {project.description && (
-                                      <div className="text-xs mt-1 line-clamp-2 text-base-content/70">{project.description}</div>
+
+                        {/* Projects Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                          {(selectedArchivedCategory 
+                            ? groupedArchivedProjects[selectedArchivedCategory] || []
+                            : Object.values(groupedArchivedProjects).flat()
+                          ).map((project) => (
+                            <button
+                              key={project.id}
+                              onClick={() => {
+                                handleProjectSelect(project);
+                                navigate('/notes');
+                              }}
+                              className={`p-4 rounded-lg border-2 transition-all duration-200 text-left group hover:shadow-md h-[200px] flex flex-col ${
+                                selectedProject?.id === project.id 
+                                  ? 'border-primary bg-primary/5 shadow-md' 
+                                  : 'border-base-300/50 bg-base-100 hover:border-primary/30'
+                              }`}
+                            >
+                              {/* Header with color indicator and name */}
+                              <div className="flex items-center gap-3 mb-3">
+                                <div 
+                                  className="w-4 h-4 rounded-full flex-shrink-0 border-2 border-white/50 shadow-sm"
+                                  style={{ backgroundColor: project.color }}
+                                ></div>
+                                <h3 className={`font-semibold text-base truncate ${
+                                  selectedProject?.id === project.id ? 'text-primary' : 'text-base-content'
+                                }`}>
+                                  {project.name}
+                                </h3>
+                                <span className="text-xs bg-base-300/60 text-base-content/60 px-2 py-0.5 rounded-full ml-auto">
+                                  Archived
+                                </span>
+                              </div>
+                              
+                              {/* Description - Fixed height */}
+                              <div className="mb-3 h-[2.5rem] flex-shrink-0">
+                                {project.description && (
+                                  <p className="text-sm text-base-content/70 line-clamp-2">
+                                    {project.description}
+                                  </p>
+                                )}
+                              </div>
+                              
+                              {/* Tags - Fixed height */}
+                              <div className="mb-3 h-[1.5rem] flex-shrink-0">
+                                {project.tags && project.tags.length > 0 && (
+                                  <div className="flex flex-wrap gap-1">
+                                    {project.tags.slice(0, 3).map((tag, tagIndex) => (
+                                      <span
+                                        key={tagIndex}
+                                        className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-base-300/40 text-base-content/60 border border-base-300/50"
+                                      >
+                                        {tag}
+                                      </span>
+                                    ))}
+                                    {project.tags.length > 3 && (
+                                      <span className="text-xs text-base-content/40 font-medium flex items-center">
+                                        +{project.tags.length - 3}
+                                      </span>
                                     )}
-                                    {project.tags && project.tags.length > 0 && (
-                                        <div className="flex flex-wrap gap-1 mt-2">
-                                          {project.tags.slice(0, 3).map((tag, index) => (
-                                            <span
-                                              key={index}
-                                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                                                selectedProject?.id === project.id 
-                                                  ? 'bg-white/20 text-white border border-white/30' 
-                                                  : 'bg-primary/10 text-primary border border-primary/20'
-                                              }`}
-                                            >
-                                              {tag}
-                                            </span>
-                                          ))}
-                                          {project.tags.length > 3 && (
-                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                                              selectedProject?.id === project.id 
-                                                ? 'bg-white/10 text-white/70 border border-white/20' 
-                                                : 'bg-base-300 text-base-content/60 border border-base-300'
-                                            }`}>
-                                              +{project.tags.length - 3}
-                                            </span>
-                                          )}
-                                        </div>
-                                      )}
-                                    <div className="flex items-center justify-between mt-2 text-xs">
-                                      <div className="flex items-center gap-3 text-base-content/50">
-                                        <span>Updated: {new Date(project.updatedAt).toLocaleDateString()}</span>
-                                      </div>
-                                      <div className={`flex items-center gap-1 px-2 py-1 rounded-full font-medium ${
-                                        selectedProject?.id === project.id 
-                                          ? 'bg-white/10 text-white/80' 
-                                          : 'bg-success/10 text-success'
-                                      }`}>
-                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                        <span className="text-xs">
-                                          {formatProjectTime(project.id)}
-                                        </span>
-                                      </div>
-                                    </div>
                                   </div>
-                                  {selectedProject?.id === project.id && (
-                                    <svg className="icon-sm flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                    </svg>
-                                  )}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                                )}
+                              </div>
+                              
+                              {/* Footer - Always at bottom */}
+                              <div className="flex items-center justify-between text-xs pt-2 border-t border-base-200 mt-auto">
+                                <div className="flex items-center gap-1 px-2 py-1 rounded-md font-medium bg-success/10 text-success">
+                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                  <span>{formatProjectTime(project.id)}</span>
+                                </div>
+                                <span className="text-base-content/50 font-mono">
+                                  {new Date(project.updatedAt).toLocaleDateString()}
+                                </span>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
-                
+
                 {activeProjectTab === 'shared' && (
                   <div className="space-y-4">
-                    {Object.entries(groupedSharedProjects).map(([category, categoryProjects]) => (
-                      <div key={category} className="space-y-3 border-subtle rounded-xl bg-base-100 shadow-sm">
-                        <div className="tabs tabs-boxed tabs-lg">
-                          <div 
-                            className="tab tab-lg cursor-pointer hover:tab-active transition-all flex items-center gap-3 w-full font-bold text-base"
-                            onClick={() => toggleSection(`shared-${category}`)}
-                          >
-                            <svg 
-                              className={`icon-md transition-transform ${collapsedSections[`shared-${category}`] ? '' : 'rotate-90'}`}
-                              fill="currentColor" 
-                              viewBox="0 0 20 20"
+                    {Object.keys(groupedSharedProjects).length === 0 ? (
+                      <div className="flex items-center justify-center min-h-[50vh] py-16">
+                        <div className="text-center bg-base-100 rounded-xl p-12 border-subtle shadow-lg max-w-md mx-auto">
+                          <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-secondary/20 to-secondary/30 rounded-full flex items-center justify-center">
+                            <svg className="w-10 h-10 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                          </div>
+                          <h3 className="text-2xl font-bold mb-3 text-base-content/80">No shared projects</h3>
+                          <p className="text-base-content/60">Projects shared with you will appear here</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        {/* Category Selector */}
+                        <div className="flex justify-center mb-8">
+                          <div className="tabs tabs-boxed border-subtle shadow-sm opacity-90">
+                            <button
+                              onClick={() => setSelectedSharedCategory(null)}
+                              className={`tab tab-sm min-h-10 font-bold text-sm ${
+                                selectedSharedCategory === null ? 'tab-active' : ''
+                              }`}
                             >
-                              <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                            </svg>
-                            <svg className="w-6 h-6 text-primary" fill="currentColor" viewBox="0 0 20 20">
-                              <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
-                            </svg>
-                            <span className="text-xl font-semibold text-base-content flex-1">{category}</span>
-                            <span className="bg-primary/10 text-base-content px-3 py-1 rounded-full text-sm font-medium">{categoryProjects.length}</span>
+                              <span>All <span className="text-xs opacity-70">({Object.values(groupedSharedProjects).flat().length})</span></span>
+                            </button>
+                            {Object.entries(groupedSharedProjects).map(([category, categoryProjects]) => (
+                              <button
+                                key={category}
+                                onClick={() => setSelectedSharedCategory(category)}
+                                className={`tab tab-sm min-h-10 font-bold text-sm ${
+                                  selectedSharedCategory === category ? 'tab-active' : ''
+                                }`}
+                              >
+                                <span>{category} <span className="text-xs opacity-70">({categoryProjects.length})</span></span>
+                              </button>
+                            ))}
                           </div>
                         </div>
-                        {!collapsedSections[`shared-${category}`] && (
-                          <div className="p-4">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                              {categoryProjects.map((project) => (
-                                <button
-                                  key={project.id}
-                                  onClick={() => {
-                                    handleProjectSelect(project);
-                                    navigate('/notes');
-                                  }}
-                                  className={`btn w-full justify-start gap-3 h-auto py-3 px-4 min-h-[5rem] text-left ${
-                                    selectedProject?.id === project.id 
-                                      ? 'btn-primary border-2 border-primary ring-2 ring-primary/20 shadow-lg' 
-                                      : 'btn-ghost bg-base-100 hover:bg-base-200 border border-base-content/10 shadow-sm'
-                                  }`}
-                                >
-                                  <div 
-                                    className="icon-md rounded-md shadow-sm flex-shrink-0"
-                                    style={{ backgroundColor: project.color }}
-                                  ></div>
-                                  <div className="flex-1 text-left">
-                                    <div className="font-semibold leading-tight truncate">{project.name}</div>
-                                    {project.description && (
-                                      <div className="text-xs mt-1 line-clamp-2 text-base-content/70">{project.description}</div>
-                                    )}
-                                    {project.tags && project.tags.length > 0 && (
-                                        <div className="flex flex-wrap gap-1 mt-2">
-                                          {project.tags.slice(0, 3).map((tag, index) => (
-                                            <span
-                                              key={index}
-                                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                                                selectedProject?.id === project.id 
-                                                  ? 'bg-white/20 text-white border border-white/30' 
-                                                  : 'bg-primary/10 text-primary border border-primary/20'
-                                              }`}
-                                            >
-                                              {tag}
-                                            </span>
-                                          ))}
-                                          {project.tags.length > 3 && (
-                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                                              selectedProject?.id === project.id 
-                                                ? 'bg-white/10 text-white/70 border border-white/20' 
-                                                : 'bg-base-300 text-base-content/60 border border-base-300'
-                                            }`}>
-                                              +{project.tags.length - 3}
-                                            </span>
-                                          )}
-                                        </div>
-                                      )}
-                                    <div className="flex items-center justify-between mt-2 text-xs">
-                                        <div className="flex items-center gap-3 text-base-content/50">
-                                          <span>Updated: {new Date(project.updatedAt).toLocaleDateString()}</span>
-                                        </div>
-                                        <div className={`flex items-center gap-1 px-2 py-1 rounded-full font-medium ${
+
+                        {/* Projects Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                          {(selectedSharedCategory 
+                            ? groupedSharedProjects[selectedSharedCategory] || []
+                            : Object.values(groupedSharedProjects).flat()
+                          ).map((project) => (
+                            <button
+                              key={project.id}
+                              onClick={() => {
+                                handleProjectSelect(project);
+                                navigate('/notes');
+                              }}
+                              className={`p-4 rounded-lg border-2 transition-all duration-200 text-left group hover:shadow-md h-[200px] flex flex-col ${
+                                selectedProject?.id === project.id 
+                                  ? 'border-primary bg-primary/5 shadow-md' 
+                                  : 'border-base-300/50 bg-base-100 hover:border-primary/30'
+                              }`}
+                            >
+                              {/* Header with color indicator and name */}
+                              <div className="flex items-center gap-3 mb-3">
+                                <div 
+                                  className="w-4 h-4 rounded-full flex-shrink-0 border-2 border-white/50 shadow-sm"
+                                  style={{ backgroundColor: project.color }}
+                                ></div>
+                                <h3 className={`font-semibold text-base truncate ${
+                                  selectedProject?.id === project.id ? 'text-primary' : 'text-base-content'
+                                }`}>
+                                  {project.name}
+                                </h3>
+                                <span className="text-xs bg-secondary/10 text-secondary px-2 py-0.5 rounded-full ml-auto">
+                                  Shared
+                                </span>
+                              </div>
+                              
+                              {/* Description - Fixed height */}
+                              <div className="mb-3 h-[2.5rem] flex-shrink-0">
+                                {project.description && (
+                                  <p className="text-sm text-base-content/70 line-clamp-2">
+                                    {project.description}
+                                  </p>
+                                )}
+                              </div>
+                              
+                              {/* Tags - Fixed height */}
+                              <div className="mb-3 h-[1.5rem] flex-shrink-0">
+                                {project.tags && project.tags.length > 0 && (
+                                  <div className="flex flex-wrap gap-1">
+                                    {project.tags.slice(0, 3).map((tag, tagIndex) => (
+                                      <span
+                                        key={tagIndex}
+                                        className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ${
                                           selectedProject?.id === project.id 
-                                            ? 'bg-white/10 text-white/80' 
-                                            : 'bg-success/10 text-success'
-                                        }`}>
-                                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                          </svg>
-                                          <span className="text-xs">
-                                            {formatProjectTime(project.id)}
-                                          </span>
-                                        </div>
-                                      </div>
-                                    </div>
-                                    {selectedProject?.id === project.id && (
-                                      <svg className="icon-sm flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                      </svg>
+                                            ? 'bg-primary/15 text-primary border border-primary/20' 
+                                            : 'bg-base-200 text-base-content/80 border border-base-300/50'
+                                        }`}
+                                      >
+                                        {tag}
+                                      </span>
+                                    ))}
+                                    {project.tags.length > 3 && (
+                                      <span className="text-xs text-base-content/50 font-medium flex items-center">
+                                        +{project.tags.length - 3}
+                                      </span>
                                     )}
-                                  </button>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                                  </div>
+                                )}
+                              </div>
+                              
+                              {/* Footer - Always at bottom */}
+                              <div className="flex items-center justify-between text-xs pt-2 border-t border-base-200 mt-auto">
+                                <div className="flex items-center gap-1 px-2 py-1 rounded-md font-medium bg-success/10 text-success">
+                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                  <span>{formatProjectTime(project.id)}</span>
+                                </div>
+                                <span className="text-base-content/50 font-mono">
+                                  {new Date(project.updatedAt).toLocaleDateString()}
+                                </span>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
 

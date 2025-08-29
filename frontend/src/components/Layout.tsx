@@ -1095,8 +1095,8 @@ const Layout: React.FC = () => {
                                   className="w-4 h-4 rounded-full flex-shrink-0 border-2 border-white/50 shadow-sm"
                                   style={{ backgroundColor: project.color }}
                                 ></div>
-                                <h3 className={`font-semibold text-base truncate ${
-                                  selectedProject?.id === project.id ? 'text-primary' : 'text-base-content'
+                                <h3 className={`font-semibold text-base truncate px-2 py-1 rounded-md ${
+                                  selectedProject?.id === project.id ? 'bg-primary text-primary-content' : 'bg-base-300 text-base-content'
                                 }`}>
                                   {project.name}
                                 </h3>
@@ -1221,8 +1221,8 @@ const Layout: React.FC = () => {
                                   className="w-4 h-4 rounded-full flex-shrink-0 border-2 border-white/50 shadow-sm"
                                   style={{ backgroundColor: project.color }}
                                 ></div>
-                                <h3 className={`font-semibold text-base truncate ${
-                                  selectedProject?.id === project.id ? 'text-primary' : 'text-base-content'
+                                <h3 className={`font-semibold text-base truncate px-2 py-1 rounded-md ${
+                                  selectedProject?.id === project.id ? 'bg-primary text-primary-content' : 'bg-base-300 text-base-content'
                                 }`}>
                                   {project.name}
                                 </h3>
@@ -1346,8 +1346,8 @@ const Layout: React.FC = () => {
                                   className="w-4 h-4 rounded-full flex-shrink-0 border-2 border-white/50 shadow-sm"
                                   style={{ backgroundColor: project.color }}
                                 ></div>
-                                <h3 className={`font-semibold text-base truncate ${
-                                  selectedProject?.id === project.id ? 'text-primary' : 'text-base-content'
+                                <h3 className={`font-semibold text-base truncate px-2 py-1 rounded-md ${
+                                  selectedProject?.id === project.id ? 'bg-primary text-primary-content' : 'bg-base-300 text-base-content'
                                 }`}>
                                   {project.name}
                                 </h3>

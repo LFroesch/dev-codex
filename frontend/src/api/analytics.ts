@@ -14,13 +14,6 @@ class AnalyticsService extends BaseApiService {
     return this.get(endpoint);
   }
 
-  async trackCustomEvent(eventType: string, eventData: any) {
-    return this.post('/track', {
-      eventType,
-      eventData
-    });
-  }
-
   async getActiveSession() {
     return this.get('/session/active');
   }

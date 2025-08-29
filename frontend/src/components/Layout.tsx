@@ -32,7 +32,6 @@ const Layout: React.FC = () => {
   
   // Initialize analytics
   const analytics = useAnalytics({
-    trackPageViews: true,
     projectId: selectedProject?.id,
     projectName: selectedProject?.name
   });
@@ -92,19 +91,9 @@ const Layout: React.FC = () => {
     const currentPath = location.pathname + location.search;
     const canNavigate = await unsavedChangesManager.checkNavigationAllowed();
     if (canNavigate) {
-      // Track navigation
-      analytics.trackNavigation(currentPath, path, {
-        navigationMethod: 'internal_link',
-        hasUnsavedChanges: false
-      });
       navigate(path);
     } else {
-      // Track blocked navigation due to unsaved changes
-      analytics.trackFeatureUsage('unsaved_changes_protection', 'Layout', {
-        fromPath: currentPath,
-        toPath: path,
-        blocked: true
-      });
+      return
     }
   };
 
@@ -114,16 +103,6 @@ const Layout: React.FC = () => {
     setSelectedProject(project);
     localStorage.setItem('selectedProjectId', project.id);
     setSearchTerm(''); // Clear search when selecting a project
-    
-    
-    // Track project selection
-    analytics.trackFeatureUsage('project_selection', 'Layout', {
-      projectId: project.id,
-      projectName: project.name,
-      previousProjectId: previousProject?.id,
-      selectionMethod: 'direct_click',
-      projectCategory: project.category
-    });
 
     // Call project switch to record time tracking
     const sessionInfo = analytics.getSessionInfo();
@@ -149,18 +128,7 @@ const Layout: React.FC = () => {
       ...prev,
       [section]: !prev[section]
     }));
-    
-    // Track section collapse/expand
-    analytics.trackUIInteraction(
-      'click',
-      `section-${section}`,
-      section,
-      'Layout',
-      {
-        action: wasCollapsed ? 'expand' : 'collapse',
-        sectionName: section
-      }
-    );
+  
   };
 
   // Group projects by category
@@ -630,22 +598,18 @@ const Layout: React.FC = () => {
                         const newSearchTerm = e.target.value;
                         setSearchTerm(newSearchTerm);
                         
-                        // Track search
                         if (newSearchTerm.trim()) {
                           const filteredCount = projects.filter(p => 
                             p.name.toLowerCase().includes(newSearchTerm.toLowerCase()) ||
                             (p.category && p.category.toLowerCase().includes(newSearchTerm.toLowerCase())) ||
                             (p.tags && p.tags.some((tag: string) => tag.toLowerCase().includes(newSearchTerm.toLowerCase())))
                           ).length;
-                          
-                          analytics.trackSearch(newSearchTerm, filteredCount, 'MobileSearch');
-                          
+                                                    
                           if (searchParams.get('view') !== 'projects') {
                             navigate('/notes?view=projects');
                           }
                         } else if (searchTerm.trim()) {
                           // Track search clear
-                          analytics.trackFeatureUsage('search_clear', 'MobileSearch');
                         }
                       }}
                       className="input input-sm pl-10 pr-10 w-full h-10 bg-base-100/80 backdrop-blur-sm border border-base-content/10 rounded-lg focus:border-primary"
@@ -665,10 +629,6 @@ const Layout: React.FC = () => {
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      analytics.trackButtonClick('Create Project', 'MobileHeader', {
-                        location: 'mobile_header',
-                        hasSelectedProject: !!selectedProject
-                      });
                       navigate('/create-project');
                     }}
                     className="btn btn-primary btn-sm btn-circle h-10 w-10 shadow-sm relative z-10"
@@ -708,7 +668,6 @@ const Layout: React.FC = () => {
                 <button 
                   className={`tab tab-sm ${location.pathname === '/discover' || location.pathname.startsWith('/discover/') ? 'tab-active' : ''} gap-2 font-bold whitespace-nowrap min-h-10 px-4`}
                   onClick={() => {
-                    analytics.trackFeatureUsage('discover_button_click', 'Layout');
                     handleNavigateWithCheck('/discover');
                   }}
                 >
@@ -727,7 +686,6 @@ const Layout: React.FC = () => {
               <div className="tabs tabs-boxed border-subtle shadow-sm">
                 <button
                   onClick={() => {
-                    analytics.trackTabSwitch(activeProjectTab, 'active', 'ProjectTabs');
                     setActiveProjectTab('active');
                   }}
                   className={`tab tab-sm min-h-10 font-bold text-sm ${activeProjectTab === 'active' ? 'tab-active' : ''}`}
@@ -951,7 +909,6 @@ const Layout: React.FC = () => {
               <div className="tabs tabs-boxed border-subtle shadow-sm">
                 <button
                   onClick={() => {
-                    analytics.trackTabSwitch(activeProjectTab, 'active', 'ProjectTabs');
                     setActiveProjectTab('active');
                   }}
                   className={`tab tab-sm min-h-10 font-bold text-sm ${activeProjectTab === 'active' ? 'tab-active' : ''}`}

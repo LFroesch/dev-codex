@@ -41,12 +41,6 @@ class ActivityTracker {
         }
       });
 
-      // Also track in analytics
-      await analyticsService.trackAction(`create_${resourceType}`, {
-        projectId: this.currentProjectId,
-        resourceId,
-        ...metadata
-      });
     } catch (error) {
       console.error('Failed to track create action:', error);
     }
@@ -79,14 +73,6 @@ class ActivityTracker {
         }
       });
 
-      // Also track in analytics (just the action, not field details to avoid duplication)
-      await analyticsService.trackAction(`update_${resourceType}`, {
-        projectId: this.currentProjectId,
-        resourceId,
-        field,
-        hasResourceName: !!resourceName,
-        hasFileName: !!fileName
-      });
     } catch (error) {
       console.error('Failed to track update action:', error);
     }
@@ -115,12 +101,6 @@ class ActivityTracker {
         }
       });
 
-      // Also track in analytics
-      await analyticsService.trackAction(`delete_${resourceType}`, {
-        projectId: this.currentProjectId,
-        resourceId,
-        ...metadata
-      });
     } catch (error) {
       console.error('Failed to track delete action:', error);
     }

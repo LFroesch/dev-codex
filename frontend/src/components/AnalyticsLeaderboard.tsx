@@ -266,7 +266,6 @@ const AnalyticsLeaderboard: React.FC<AnalyticsLeaderboardProps> = ({ compact = f
                     <th>User</th>
                     <th>Plan</th>
                     <th>Total Events</th>
-                    <th>Field Edits</th>
                     <th>Projects</th>
                     <th>Page Views</th>
                     <th>Last Event</th>
@@ -296,7 +295,6 @@ const AnalyticsLeaderboard: React.FC<AnalyticsLeaderboardProps> = ({ compact = f
                       <td className="font-bold text-primary">
                         {user.totalEvents}
                       </td>
-                      <td>{user.fieldEdits}</td>
                       <td>{user.projectOpens}</td>
                       <td>{user.pageViews}</td>
                       <td className="text-sm">

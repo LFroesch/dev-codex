@@ -34,9 +34,6 @@ class AnalyticsService extends BaseApiService {
     return response.json();
   }
 
-  async getComprehensive(days = 30) {
-    return this.get(`/comprehensive?days=${days}`);
-  }
 
   // Project Time Tracking API methods
   async getProjectsTime(days = 30) {

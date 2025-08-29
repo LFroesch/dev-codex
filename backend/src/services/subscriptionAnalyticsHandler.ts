@@ -63,7 +63,7 @@ export class SubscriptionAnalyticsHandler {
     );
 
     // Track the upgrade event
-    await AnalyticsService.trackEvent(event.userId, 'action', {
+    await AnalyticsService.trackEvent(event.userId, 'session_start', {
       actionName: 'plan_upgrade',
       metadata: {
         oldPlan: event.oldPlanTier,
@@ -87,7 +87,7 @@ export class SubscriptionAnalyticsHandler {
     );
 
     // Track the downgrade event
-    await AnalyticsService.trackEvent(event.userId, 'action', {
+    await AnalyticsService.trackEvent(event.userId, 'session_start', {
       actionName: 'plan_downgrade',
       metadata: {
         oldPlan: event.oldPlanTier,
@@ -107,7 +107,7 @@ export class SubscriptionAnalyticsHandler {
     await AnalyticsService.handleSubscriptionCancellation(event.userId);
 
     // Track the cancellation event
-    await AnalyticsService.trackEvent(event.userId, 'action', {
+    await AnalyticsService.trackEvent(event.userId, 'session_start', {
       actionName: 'subscription_canceled',
       metadata: {
         canceledPlan: event.oldPlanTier,
@@ -130,7 +130,7 @@ export class SubscriptionAnalyticsHandler {
     );
 
     // Track the reactivation event
-    await AnalyticsService.trackEvent(event.userId, 'action', {
+    await AnalyticsService.trackEvent(event.userId, 'session_start', {
       actionName: 'subscription_reactivated',
       metadata: {
         reactivatedPlan: event.newPlanTier,

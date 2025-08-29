@@ -1,11 +1,12 @@
 # Pre-Launch Changes
 - [ ] TTL Analysis / MondoDB Optimizations
-- [ ] Code Cleanup Scan
 
 ## Tomorrow
+- [ ] Unit Tests
 - [ ] Clean console.logs
 - [ ] Overhaul of Notes section / To Dos / Feature Plans
         make more UX friendly and usable
+- [ ] Prep for Prod
 
 ## Human Manual Checkovers -> Refixes
 - [ ] Clean Up Menus / Pages / Panels etc for better UX (Human Manual check and fix)

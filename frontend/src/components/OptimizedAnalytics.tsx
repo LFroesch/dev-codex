@@ -41,7 +41,7 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
   const [error, setError] = useState<string | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<number>(7);
   const [lastFetch, setLastFetch] = useState<number | null>(null);
-  const [activeTab, setActiveTab] = useState<string>('features');
+  const [activeTab, setActiveTab] = useState<string>('overview');
   const [selectedAnalyticsDetail, setSelectedAnalyticsDetail] = useState<string | null>(null);
 
   const formatTime = useCallback((seconds: number) => {
@@ -360,176 +360,6 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
             </div>
           </div>
         );
-
-      case 'features':
-        return (
-          <div className="space-y-6">
-            <div className="bg-base-100/80 backdrop-blur-sm border border-subtle rounded-xl p-6 shadow-lg">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
-                  <svg className="w-5 h-5 text-primary" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z" />
-                    <path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z" />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-semibold text-base-content">Analytics Overview - Click Cards for Details</h3>
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                
-                <div 
-                  className="bg-base-100/80 backdrop-blur-sm border border-subtle rounded-lg p-4 hover:shadow-lg hover:border-primary/20 transition-all duration-200 cursor-pointer group"
-                  onClick={() => setSelectedAnalyticsDetail(selectedAnalyticsDetail === 'featureUsage' ? null : 'featureUsage')}
-                >
-                  <div className="flex flex-col items-center text-center space-y-2">
-                    <div className="text-2xl group-hover:scale-110 transition-transform duration-200">🚀</div>
-                    <div className="text-2xl font-bold text-primary">
-                      {comprehensiveData?.summary?.totalFeatureUsage?.toLocaleString() || '0'}
-                    </div>
-                    <div className="text-xs text-base-content/60">Feature Usage</div>
-                  </div>
-                </div>
-
-                <div 
-                  className="bg-base-100/80 backdrop-blur-sm border border-subtle rounded-lg p-4 hover:shadow-lg hover:border-secondary/20 transition-all duration-200 cursor-pointer group"
-                  onClick={() => setSelectedAnalyticsDetail(selectedAnalyticsDetail === 'navigation' ? null : 'navigation')}
-                >
-                  <div className="flex flex-col items-center text-center space-y-2">
-                    <div className="text-2xl group-hover:scale-110 transition-transform duration-200">🧭</div>
-                    <div className="text-2xl font-bold text-secondary">
-                      {comprehensiveData?.summary?.totalNavigationEvents?.toLocaleString() || '0'}
-                    </div>
-                    <div className="text-xs text-base-content/60">Navigation</div>
-                  </div>
-                </div>
-
-                <div 
-                  className="bg-base-100/80 backdrop-blur-sm border border-subtle rounded-lg p-4 hover:shadow-lg hover:border-warning/20 transition-all duration-200 cursor-pointer group"
-                  onClick={() => setSelectedAnalyticsDetail(selectedAnalyticsDetail === 'pageViews' ? null : 'pageViews')}
-                >
-                  <div className="flex flex-col items-center text-center space-y-2">
-                    <div className="text-2xl group-hover:scale-110 transition-transform duration-200">👁️</div>
-                    <div className="text-2xl font-bold text-warning">
-                      {comprehensiveData?.summary?.totalPageViews?.toLocaleString() || '0'}
-                    </div>
-                    <div className="text-xs text-base-content/60">Page Views</div>
-                  </div>
-                </div>
-
-                <div 
-                  className="bg-base-100/80 backdrop-blur-sm border border-subtle rounded-lg p-4 hover:shadow-lg hover:border-accent/20 transition-all duration-200 cursor-pointer group"
-                  onClick={() => setSelectedAnalyticsDetail(selectedAnalyticsDetail === 'fieldEdits' ? null : 'fieldEdits')}
-                >
-                  <div className="flex flex-col items-center text-center space-y-2">
-                    <div className="text-2xl group-hover:scale-110 transition-transform duration-200">✏️</div>
-                    <div className="text-2xl font-bold text-accent">
-                      {comprehensiveData?.summary?.totalFieldEdits?.toLocaleString() || '0'}
-                    </div>
-                    <div className="text-xs text-base-content/60">Field Edits</div>
-                  </div>
-                </div>
-
-                <div 
-                  className="bg-base-100/80 backdrop-blur-sm border border-subtle rounded-lg p-4 hover:shadow-lg hover:border-info/20 transition-all duration-200 cursor-pointer group"
-                  onClick={() => setSelectedAnalyticsDetail(selectedAnalyticsDetail === 'projectOpens' ? null : 'projectOpens')}
-                >
-                  <div className="flex flex-col items-center text-center space-y-2">
-                    <div className="text-2xl group-hover:scale-110 transition-transform duration-200">📂</div>
-                    <div className="text-2xl font-bold text-info">
-                      {comprehensiveData?.summary?.totalProjectOpens?.toLocaleString() || '0'}
-                    </div>
-                    <div className="text-xs text-base-content/60">Project Opens</div>
-                  </div>
-                </div>
-
-                <div 
-                  className="bg-base-100/80 backdrop-blur-sm border border-subtle rounded-lg p-4 hover:shadow-lg hover:border-success/20 transition-all duration-200 cursor-pointer group"
-                  onClick={() => setSelectedAnalyticsDetail(selectedAnalyticsDetail === 'actions' ? null : 'actions')}
-                >
-                  <div className="flex flex-col items-center text-center space-y-2">
-                    <div className="text-2xl group-hover:scale-110 transition-transform duration-200">⚡</div>
-                    <div className="text-2xl font-bold text-success">
-                      {comprehensiveData?.summary?.totalActions?.toLocaleString() || '0'}
-                    </div>
-                    <div className="text-xs text-base-content/60">Actions</div>
-                  </div>
-                </div>
-
-                <div 
-                  className="bg-base-100/80 backdrop-blur-sm border border-subtle rounded-lg p-4 hover:shadow-lg hover:border-error/20 transition-all duration-200 cursor-pointer group"
-                  onClick={() => setSelectedAnalyticsDetail(selectedAnalyticsDetail === 'performance' ? null : 'performance')}
-                >
-                  <div className="flex flex-col items-center text-center space-y-2">
-                    <div className="text-2xl group-hover:scale-110 transition-transform duration-200">🏃‍♂️</div>
-                    <div className="text-2xl font-bold text-error">
-                      {comprehensiveData?.summary?.totalPerformanceEvents?.toLocaleString() || '0'}
-                    </div>
-                    <div className="text-xs text-base-content/60">Performance</div>
-                  </div>
-                </div>
-
-                <div 
-                  className="bg-base-100/80 backdrop-blur-sm border border-subtle rounded-lg p-4 hover:shadow-lg hover:border-base-300/20 transition-all duration-200 cursor-pointer group"
-                  onClick={() => setSelectedAnalyticsDetail(selectedAnalyticsDetail === 'errors' ? null : 'errors')}
-                >
-                  <div className="flex flex-col items-center text-center space-y-2">
-                    <div className="text-2xl group-hover:scale-110 transition-transform duration-200">🚨</div>
-                    <div className="text-2xl font-bold text-base-content">
-                      {comprehensiveData?.summary?.totalErrors?.toLocaleString() || '0'}
-                    </div>
-                    <div className="text-xs text-base-content/60">Errors</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {selectedAnalyticsDetail && (
-              <div className="bg-base-100/80 backdrop-blur-sm border border-subtle rounded-xl p-6 shadow-lg">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-semibold text-base-content">
-                    {selectedAnalyticsDetail === 'featureUsage' && '🚀 Feature Usage Details'}
-                    {selectedAnalyticsDetail === 'navigation' && '🧭 Navigation Details'}
-                    {selectedAnalyticsDetail === 'pageViews' && '👁️ Page Views Details'}
-                    {selectedAnalyticsDetail === 'fieldEdits' && '✏️ Field Edits Details'}
-                    {selectedAnalyticsDetail === 'projectOpens' && '📂 Project Opens Details'}
-                    {selectedAnalyticsDetail === 'actions' && '⚡ Actions Details'}
-                    {selectedAnalyticsDetail === 'performance' && '🏃‍♂️ Performance Details'}
-                    {selectedAnalyticsDetail === 'errors' && '🚨 Errors Details'}
-                  </h3>
-                  <button 
-                    className="btn btn-sm btn-circle btn-ghost hover:bg-base-200 transition-colors"
-                    onClick={() => setSelectedAnalyticsDetail(null)}
-                  >
-                    ✕
-                  </button>
-                </div>
-                <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {selectedAnalyticsDetail === 'errors' ? (
-                    <div className="text-center py-8 text-success">
-                      🎉 No errors recorded! Your system is running smoothly.
-                    </div>
-                  ) : !comprehensiveData?.[selectedAnalyticsDetail]?.length ? (
-                    <div className="text-center py-8 text-base-content/60">
-                      No data available for {selectedAnalyticsDetail}
-                    </div>
-                  ) : (
-                    comprehensiveData[selectedAnalyticsDetail].map((item: any, index: number) => (
-                      <div key={index} className="p-3 bg-base-200/30 backdrop-blur-sm border border-subtle rounded-lg hover:bg-base-200/50 transition-all duration-200">
-                        <div className="font-medium text-base-content">
-                          {item.feature_name || item.from_page || item.page_name || item.field_name || item.project_name || item.action_name || item.action_type || 'Unknown'}
-                        </div>
-                        <div className="text-xs text-base-content/60 mt-1">
-                          Count: {item.usage_count || item.count || item.view_count || item.edit_count || item.access_count || item.action_count || '0'} • 
-                          Users: {item.unique_users || '0'}
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        );
-
       default:
         return null;
     }
@@ -654,14 +484,6 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
                 <span className="mr-1">🚀</span>
                 <span className="hidden sm:inline">Top Projects</span>
                 <span className="sm:hidden">Projects</span>
-              </button>
-              <button 
-                className={`tab tab-sm sm:tab-lg min-h-14 sm:min-h-16 font-bold text-xs sm:text-base px-2 sm:px-4 whitespace-nowrap ${activeTab === 'features' ? 'tab-active' : ''}`}
-                onClick={() => setActiveTab('features')}
-              >
-                <span className="mr-1">📊</span>
-                <span className="hidden sm:inline">All Tracking</span>
-                <span className="sm:hidden">Tracking</span>
               </button>
             </div>
           </div>

@@ -543,29 +543,6 @@ class AnalyticsService {
     }
   }
 
-  private sanitizeValue(value: any): any {
-    if (typeof value === 'string') {
-      // Remove potential sensitive patterns
-      return value
-        .replace(/\b\d{4}[\s-]\d{4}[\s-]\d{4}[\s-]\d{4}\b/g, '[CARD_NUMBER]')
-        .replace(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g, '[EMAIL]')
-        .replace(/\b\d{3}[\s-]\d{2}[\s-]\d{4}\b/g, '[SSN]');
-    }
-    
-    if (typeof value === 'object' && value !== null) {
-      const sanitized: any = Array.isArray(value) ? [] : {};
-      for (const key in value) {
-        if (key.toLowerCase().includes('password') || key.toLowerCase().includes('token') || key.toLowerCase().includes('secret')) {
-          sanitized[key] = '[REDACTED]';
-        } else {
-          sanitized[key] = this.sanitizeValue(value[key]);
-        }
-      }
-      return sanitized;
-    }
-    
-    return value;
-  }
 
   private async flushPendingEvents() {
     if (this.pendingEvents.length === 0) return;
@@ -669,22 +646,6 @@ class AnalyticsService {
     await this.sendHeartbeat();
   }
 
-  private getFieldType(fieldName: string, value: any): string {
-    if (Array.isArray(value)) return 'array';
-    if (typeof value === 'object' && value !== null) return 'object';
-    if (typeof value === 'boolean') return 'boolean';
-    if (typeof value === 'number') return 'number';
-    if (typeof value === 'string') {
-      if (fieldName.toLowerCase().includes('email')) return 'email';
-      if (fieldName.toLowerCase().includes('url')) return 'url';
-      if (fieldName.toLowerCase().includes('color')) return 'color';
-      if (fieldName.toLowerCase().includes('date')) return 'date';
-      if (fieldName.toLowerCase().includes('description') || fieldName.toLowerCase().includes('content')) return 'text_long';
-      if (value.length > 100) return 'text_long';
-      return 'text_short';
-    }
-    return 'unknown';
-  }
 
   // Project Time Tracking Methods
   

@@ -40,7 +40,6 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
   const [selectedPeriod, setSelectedPeriod] = useState<number>(7);
   const [lastFetch, setLastFetch] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<string>('overview');
-  const [selectedAnalyticsDetail, setSelectedAnalyticsDetail] = useState<string | null>(null);
 
   const formatTime = useCallback((seconds: number) => {
     if (!seconds || isNaN(seconds) || seconds < 0) return '0s';
@@ -355,7 +354,7 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
       default:
         return null;
     }
-  }, [data, activeTab, formatTime, formatDate, selectedAnalyticsDetail, selectedPeriod]);
+  }, [data, activeTab, formatTime, formatDate, selectedPeriod]);
 
   if (loading && !data) {
     return (

@@ -1,28 +1,30 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import ForgotPasswordPage from './pages/ForgotPasswordPage';
-import ResetPasswordPage from './pages/ResetPasswordPage';
-import BillingPage from './pages/BillingPage';
-import BillingSuccessPage from './pages/BillingSuccessPage';
-import BillingCancelPage from './pages/BillingCancelPage';
 import Layout from './components/Layout';
-import CreateProject from './pages/CreateProject';
-import NotesPage from './pages/NotesPage';
-import StackPage from './pages/StackPage';
-import DocsPage from './pages/DocsPage';
-import DeploymentPage from './pages/DeploymentPage';
-import PublicPage from './pages/PublicPage';
-import SettingsPage from './pages/SettingsPage';
-import DiscoverPage from './pages/DiscoverPage';
-import AccountSettingsPage from './pages/AccountSettingsPage';
-import AdminDashboardPage from './pages/AdminDashboardPage';
-import SupportPage from './pages/SupportPage';
-import HelpPage from './pages/HelpPage';
-import PublicProjectPage from './pages/PublicProjectPage';
-import PublicProfilePage from './pages/PublicProfilePage';
+
+// Lazy load pages
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const RegisterPage = lazy(() => import('./pages/RegisterPage'));
+const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
+const BillingPage = lazy(() => import('./pages/BillingPage'));
+const BillingSuccessPage = lazy(() => import('./pages/BillingSuccessPage'));
+const BillingCancelPage = lazy(() => import('./pages/BillingCancelPage'));
+const CreateProject = lazy(() => import('./pages/CreateProject'));
+const NotesPage = lazy(() => import('./pages/NotesPage'));
+const StackPage = lazy(() => import('./pages/StackPage'));
+const DocsPage = lazy(() => import('./pages/DocsPage'));
+const DeploymentPage = lazy(() => import('./pages/DeploymentPage'));
+const PublicPage = lazy(() => import('./pages/PublicPage'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const DiscoverPage = lazy(() => import('./pages/DiscoverPage'));
+const AccountSettingsPage = lazy(() => import('./pages/AccountSettingsPage'));
+const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage'));
+const SupportPage = lazy(() => import('./pages/SupportPage'));
+const HelpPage = lazy(() => import('./pages/HelpPage'));
+const PublicProjectPage = lazy(() => import('./pages/PublicProjectPage'));
+const PublicProfilePage = lazy(() => import('./pages/PublicProfilePage'));
 
 // Import debug utils in development
 if (import.meta.env.DEV) {
@@ -30,6 +32,13 @@ if (import.meta.env.DEV) {
 }
 
 const queryClient = new QueryClient();
+
+// Loading component for Suspense fallback
+const LoadingSpinner = () => (
+  <div className="flex justify-center items-center h-64">
+    <div className="loading loading-spinner loading-lg"></div>
+  </div>
+);
 
 const App: React.FC = () => {
   useEffect(() => {
@@ -41,35 +50,37 @@ const App: React.FC = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="/reset-password" element={<ResetPasswordPage />} />
-          <Route path="/billing/success" element={<BillingSuccessPage />} />
-          <Route path="/billing/cancel" element={<BillingCancelPage />} />
-          <Route path="/create-project" element={<CreateProject />} />
-          <Route path="/" element={<Layout />}>
-            <Route index element={<Navigate to="/notes?view=projects" />} />
-            <Route path="notes" element={<NotesPage />} />
-            <Route path="stack" element={<StackPage />} />
-            <Route path="docs" element={<DocsPage />} />
-            <Route path="deployment" element={<DeploymentPage />} />
-            <Route path="public" element={<PublicPage />} />
-            <Route path="settings" element={<SettingsPage />} />
-            <Route path="discover" element={<DiscoverPage />} />
-            <Route path="discover/project/:identifier" element={<PublicProjectPage />} />
-            <Route path="discover/user/:identifier" element={<PublicProfilePage />} />
-            <Route path="project/:identifier" element={<PublicProjectPage />} />
-            <Route path="user/:identifier" element={<PublicProfilePage />} />
-            <Route path="billing" element={<BillingPage />} />
-            <Route path="account-settings" element={<AccountSettingsPage />} />
-            <Route path="admin" element={<AdminDashboardPage />} />
-            <Route path="support" element={<SupportPage />} />
-            <Route path="help" element={<HelpPage />} />
-          </Route>
-          <Route path="*" element={<Navigate to="/login" />} />
-        </Routes>
+        <Suspense fallback={<LoadingSpinner />}>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/billing/success" element={<BillingSuccessPage />} />
+            <Route path="/billing/cancel" element={<BillingCancelPage />} />
+            <Route path="/create-project" element={<CreateProject />} />
+            <Route path="/" element={<Layout />}>
+              <Route index element={<Navigate to="/notes?view=projects" />} />
+              <Route path="notes" element={<NotesPage />} />
+              <Route path="stack" element={<StackPage />} />
+              <Route path="docs" element={<DocsPage />} />
+              <Route path="deployment" element={<DeploymentPage />} />
+              <Route path="public" element={<PublicPage />} />
+              <Route path="settings" element={<SettingsPage />} />
+              <Route path="discover" element={<DiscoverPage />} />
+              <Route path="discover/project/:identifier" element={<PublicProjectPage />} />
+              <Route path="discover/user/:identifier" element={<PublicProfilePage />} />
+              <Route path="project/:identifier" element={<PublicProjectPage />} />
+              <Route path="user/:identifier" element={<PublicProfilePage />} />
+              <Route path="billing" element={<BillingPage />} />
+              <Route path="account-settings" element={<AccountSettingsPage />} />
+              <Route path="admin" element={<AdminDashboardPage />} />
+              <Route path="support" element={<SupportPage />} />
+              <Route path="help" element={<HelpPage />} />
+            </Route>
+            <Route path="*" element={<Navigate to="/login" />} />
+          </Routes>
+        </Suspense>
       </Router>
     </QueryClientProvider>
   );

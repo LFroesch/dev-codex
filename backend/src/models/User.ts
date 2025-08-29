@@ -1,6 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import bcrypt from 'bcryptjs';
-import type { UserTheme } from '../../../shared/types';
+import type { UserTheme } from '../types/shared';
 
 export interface IIdea {
   id: string;

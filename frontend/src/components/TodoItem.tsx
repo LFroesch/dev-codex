@@ -101,7 +101,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
 
   const getPriorityIcon = (priority: string) => {
     switch (priority) {
-      case 'high': return '🔥';
+      case 'high': return '🔴';
       case 'medium': return '🟡';
       case 'low': return '🟢';
       default: return '⚪';
@@ -163,7 +163,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
             >
               <option value="low">🟢 Low</option>
               <option value="medium">🟡 Medium</option>
-              <option value="high">🔥 High</option>
+              <option value="high">🔴 High</option>
             </select>
           </div>
 
@@ -213,7 +213,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
   }
 
   return (
-    <div className={`group bg-base-100 rounded-lg border-subtle shadow-sm hover:shadow-md transition-all duration-200 p-3 mb-3 ${
+    <div className={`group bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-3 mb-3 ${
       todo.completed ? 'opacity-70' : ''
     }`}>
       <div className="flex items-start gap-3">

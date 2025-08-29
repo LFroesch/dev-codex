@@ -358,7 +358,7 @@ const NotesPage: React.FC = () => {
       {activeSection === 'notes' && (
         <div className="space-y-6">
           {/* Compact Create Note Form */}
-          <div className="bg-base-100 rounded-lg border-subtle shadow-sm">
+          <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200">
             {!showCreateForm ? (
               <button
                 onClick={() => setShowCreateForm(true)}
@@ -451,7 +451,7 @@ const NotesPage: React.FC = () => {
                 ?.map((note) => (
                   <div 
                     key={note.id}
-                    className="bg-base-100 rounded-lg border-subtle shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group h-48 flex flex-col"
+                    className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 cursor-pointer group h-48 flex flex-col"
                     onClick={() => handleNoteClick(note)}
                   >
                     <div className="p-4 flex flex-col flex-1">
@@ -497,7 +497,7 @@ const NotesPage: React.FC = () => {
       {activeSection === 'todos' && (
         <div className="space-y-6">
           {/* Compact Create Todo Form */}
-          <div className="bg-base-100 rounded-lg border-subtle shadow-sm">
+          <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200">
             {!showCreateTodoForm ? (
               <button
                 onClick={() => setShowCreateTodoForm(true)}
@@ -574,7 +574,7 @@ const NotesPage: React.FC = () => {
 
           {/* Todo Filter and Sort Controls */}
           {selectedProject.todos && selectedProject.todos.filter(todo => !todo.parentTodoId).length > 0 && (
-            <div className="bg-base-100 rounded-lg border-subtle shadow-sm p-4">
+            <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-base-content/80">Sort by:</span>
@@ -583,7 +583,7 @@ const NotesPage: React.FC = () => {
                     onChange={(e) => setTodoSortBy(e.target.value as 'priority' | 'dueDate' | 'created')}
                     className="select select-bordered select-xs"
                   >
-                    <option value="priority">🔥 Priority</option>
+                    <option value="priority">🔴 Priority</option>
                     <option value="dueDate">📅 Due Date</option>
                     <option value="created">⏰ Created</option>
                   </select>
@@ -598,7 +598,7 @@ const NotesPage: React.FC = () => {
                   >
                     <option value="all">📋 All Todos</option>
                     <option value="overdue">🚨 Overdue</option>
-                    <option value="high">🔥 High Priority</option>
+                    <option value="high">🔴 High Priority</option>
                     <option value="medium">🟡 Medium Priority</option>
                     <option value="low">🟢 Low Priority</option>
                     <option value="completed">✅ Completed</option>
@@ -645,7 +645,7 @@ const NotesPage: React.FC = () => {
       {activeSection === 'devlog' && (
         <div className="space-y-6">
           {/* Compact Create Dev Log Form */}
-          <div className="bg-base-100 rounded-lg border-subtle shadow-sm">
+          <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200">
             {!showCreateDevLogForm ? (
               <button
                 onClick={() => setShowCreateDevLogForm(true)}
@@ -737,7 +737,7 @@ const NotesPage: React.FC = () => {
                 ?.map((entry) => (
                   <div 
                     key={entry.id} 
-                    className="bg-base-100 rounded-lg border-subtle shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group h-48 flex flex-col"
+                    className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 cursor-pointer group h-48 flex flex-col"
                     onClick={() => handleDevLogClick(entry)}
                   >
                     <div className="p-4 flex flex-col flex-1">

@@ -46,7 +46,7 @@ const DevLogItem: React.FC<DevLogItemProps> = ({ entry, projectId, onUpdate }) =
   };
 
   return (
-    <div className="bg-base-100 border border-base-content/10 rounded-lg p-3 mb-3">
+    <div className="bg-base-100 border-subtle rounded-lg p-3 mb-3">
       {isEditing ? (
         <div className="space-y-3">
           <div className="flex justify-between items-center mb-3">

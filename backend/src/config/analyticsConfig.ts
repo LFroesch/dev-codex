@@ -42,24 +42,10 @@ export const ANALYTICS_PLAN_CONFIG: Record<string, AnalyticsPlanConfig> = {
 
 // Industry standard event throttling (base times in milliseconds)
 export const BASE_THROTTLE_DURATIONS: Record<string, number> = {
-  // High frequency events - tighter throttling
-  page_view: 15000,      // 15 seconds (industry: 10-30s)
-  ui_interaction: 8000,  // 8 seconds (industry: 5-15s)
-  heartbeat: 240000,     // 4 minutes (industry: 1-10m)
-  
-  // Medium frequency events
-  navigation: 8000,      // 8 seconds (industry: 5-15s)
-  field_edit: 3000,      // 3 seconds (industry: 1-5s)
-  search: 4000,          // 4 seconds (industry: 3-10s)
-  
-  // Lower frequency events
-  feature_usage: 15000,  // 15 seconds (industry: 15-60s)
-  action: 10000,         // 10 seconds (industry: 10-30s)
+  // Project time tracking
   project_open: 45000,   // 45 seconds (industry: 30-120s)
-  performance: 20000,    // 20 seconds (industry: 15-60s)
   
-  // Never throttle critical events
-  error: 0,              // Never throttle errors
+  // Never throttle session events
   session_start: 0,      // Never throttle session events
   session_end: 0         // Never throttle session events
 };

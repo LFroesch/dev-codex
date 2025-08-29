@@ -134,6 +134,11 @@ Fields that may be unused now:
 ### Removed from Backend App (`/app.ts`)
 - **REMOVED**: `trackPageView` import and middleware usage from routes
 
+### Additional Backend Cleanup
+- **REMOVED**: All throttle durations for removed event types from `/config/analyticsConfig.ts`
+- **UPDATED**: Admin analytics aggregations in `/routes/admin.ts` to remove `field_edit` and `page_view` references
+- **UPDATED**: Debug analytics script in `/scripts/debug-analytics.ts` to remove `field_edit` references
+
 ### Removed from Backend Routes (`/routes/projects.ts`)
 - **REMOVED**: `trackFieldChanges` and `trackArrayChanges` import and usage
 - **REMOVED**: Field change tracking calls in project update endpoint

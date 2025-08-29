@@ -719,8 +719,8 @@ router.get('/analytics/combined', async (req, res) => {
         $group: {
           _id: '$userId',
           totalEvents: { $sum: 1 },
-          fieldEdits: { 
-            $sum: { $cond: [{ $eq: ['$eventType', 'field_edit'] }, 1, 0] } 
+          projectOpens: { 
+            $sum: { $cond: [{ $eq: ['$eventType', 'project_open'] }, 1, 0] } 
           }
         }
       }
@@ -897,9 +897,7 @@ router.get('/analytics/leaderboard', async (req, res) => {
         $group: {
           _id: '$userId',
           totalEvents: { $sum: 1 },
-          fieldEdits: { $sum: { $cond: [{ $eq: ['$eventType', 'field_edit'] }, 1, 0] } },
           projectOpens: { $sum: { $cond: [{ $eq: ['$eventType', 'project_open'] }, 1, 0] } },
-          pageViews: { $sum: { $cond: [{ $eq: ['$eventType', 'page_view'] }, 1, 0] } },
           lastEvent: { $max: '$timestamp' }
         }
       },

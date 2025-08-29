@@ -97,17 +97,24 @@ const Layout: React.FC = () => {
   };
 
   // Helper function to select and persist project
-  const handleProjectSelect = (project: BaseProject) => {
+  const handleProjectSelect = async (project: BaseProject) => {
     setSelectedProject(project);
     localStorage.setItem('selectedProjectId', project.id);
     setSearchTerm(''); // Clear search when selecting a project
 
-    // Call project switch to record time tracking
-    const sessionInfo = analytics.getSessionInfo();
-    if (sessionInfo?.sessionId) {
-      analyticsAPI.switchProject(sessionInfo.sessionId, project.id).catch(err => {
-        console.warn('Failed to record project switch:', err);
-      });
+    // Update analytics service current project (this handles backend time recording)
+    try {
+      await analytics.setCurrentProject(project.id);
+    } catch (error) {
+      console.warn('Failed to update analytics current project:', error);
+      
+      // Fallback to direct API call if analytics service fails
+      const sessionInfo = analytics.getSessionInfo();
+      if (sessionInfo?.sessionId) {
+        analyticsAPI.switchProject(sessionInfo.sessionId, project.id).catch(err => {
+          console.warn('Failed to record project switch via fallback:', err);
+        });
+      }
     }
     
     // Update project time data immediately after switching
@@ -215,7 +222,7 @@ const Layout: React.FC = () => {
       if (savedProjectId) {
         const savedProject = projectsResponse.projects.find(p => p.id === savedProjectId);
         if (savedProject) {
-          setSelectedProject(savedProject);
+          handleProjectSelect(savedProject);
           return;
         }
       }
@@ -272,7 +279,7 @@ const Layout: React.FC = () => {
         if (savedProjectId) {
           const savedProject = projectsResponse.projects.find(p => p.id === savedProjectId);
           if (savedProject) {
-            setSelectedProject(savedProject);
+            handleProjectSelect(savedProject);
             return;
           }
         }

@@ -70,6 +70,7 @@ export const useAnalytics = (options: UseAnalyticsOptions = {}) => {
     endSession: () => analyticsService.endSession(),
     startSession: () => analyticsService.startSession(),
     setCurrentUser: (userId: string | null) => analyticsService.setCurrentUser(userId),
+    setCurrentProject: (projectId: string | null) => analyticsService.setCurrentProject(projectId),
     clearUserSession: () => analyticsService.clearUserSession(),
 
     // Debug methods

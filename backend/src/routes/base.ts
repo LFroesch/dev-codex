@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { requireAuth } from '../middleware/auth';
+import { requireAuth as authMiddleware } from '../middleware/auth';
 
 export interface RouteConfig {
   method: 'get' | 'post' | 'put' | 'patch' | 'delete';
@@ -30,7 +30,7 @@ export class BaseRouter {
     const allMiddleware = [];
     
     if (requireAuth) {
-      allMiddleware.push(requireAuth);
+      allMiddleware.push(authMiddleware);
     }
     
     allMiddleware.push(...middleware);

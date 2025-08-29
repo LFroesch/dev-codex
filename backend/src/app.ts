@@ -38,8 +38,10 @@ if (isDevelopment) {
     credentials: true
   }));
 } else {
-  // Production CORS - only allow specific domains
+  // Production CORS - allow localhost for testing
   const allowedOrigins = [
+    'http://localhost:5002',
+    'http://localhost:5003',
     'https://yourdomain.com', // Replace with your actual production domain
     'https://www.yourdomain.com', // Replace with your actual www domain
     // Add any additional production domains here
@@ -49,6 +51,11 @@ if (isDevelopment) {
     origin: function (origin, callback) {
       // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) return callback(null, true);
+      
+      // Allow all localhost origins for testing
+      if (origin && origin.startsWith('http://localhost:')) {
+        return callback(null, true);
+      }
       
       if (allowedOrigins.indexOf(origin) !== -1) {
         callback(null, true);
@@ -158,7 +165,7 @@ const startServer = async () => {
     // Initialize Socket.IO
     const io = new Server(server, {
       cors: {
-        origin: isDevelopment ? 'http://localhost:5002' : true,
+        origin: isDevelopment ? 'http://localhost:5002' : 'http://localhost:5002',
         credentials: true
       }
     });

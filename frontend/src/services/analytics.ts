@@ -58,7 +58,7 @@ class AnalyticsService {
   private isOnline = navigator.onLine;
   private pendingEvents: AnalyticsEvent[] = [];
   private readonly HEARTBEAT_INTERVAL = 30 * 1000;
-  private readonly SESSION_TIMEOUT = 15 * 60 * 1000; // 15 minutes
+  private readonly SESSION_TIMEOUT = 10 * 60 * 1000; // 10 minutes
   private readonly MAX_PENDING_EVENTS = 100;
   private readonly RETRY_ATTEMPTS = 3;
   private readonly RETRY_DELAY = 1000;
@@ -66,7 +66,6 @@ class AnalyticsService {
 
   private constructor() {
     this.setupEventListeners();
-    this.startInactivityTimer();
     
     // Check if user is already authenticated (has cookie)
     this.checkAuthenticationStatus();
@@ -94,6 +93,7 @@ class AnalyticsService {
           };
           this.updateStorage();
           this.startHeartbeat();
+          this.startInactivityTimer();
         }
       } catch (e) {
         localStorage.removeItem('analytics_session');
@@ -222,6 +222,7 @@ class AnalyticsService {
 
         this.updateStorage();
         this.startHeartbeat();
+        this.startInactivityTimer();
         await this.sendHeartbeatNow();
         return sessionId;
       }
@@ -245,6 +246,7 @@ class AnalyticsService {
 
     this.updateStorage();
     this.startHeartbeat();
+    this.startInactivityTimer();
     await this.sendHeartbeatNow();
     return sessionId;
   }
@@ -253,6 +255,12 @@ class AnalyticsService {
     if (!this.session) return;
 
     this.stopHeartbeat();
+    
+    // Clear the inactivity timer to prevent multiple calls
+    if (this.activityTimer) {
+      clearTimeout(this.activityTimer);
+      this.activityTimer = null;
+    }
 
     // Calculate final session stats
     const sessionDuration = Date.now() - this.session.startTime;
@@ -578,9 +586,12 @@ class AnalyticsService {
       clearTimeout(this.activityTimer);
     }
     
-    this.activityTimer = window.setTimeout(async () => {
-      await this.endSession();
-    }, this.SESSION_TIMEOUT);
+    // Only start timer if there's an active session
+    if (this.session) {
+      this.activityTimer = window.setTimeout(async () => {
+        await this.endSession();
+      }, this.SESSION_TIMEOUT);
+    }
   }
 
   private startHeartbeat() {

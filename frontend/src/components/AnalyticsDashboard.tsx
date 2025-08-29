@@ -136,6 +136,20 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           <p className="translate-y-[3px] text-base-content/60">
             Track your productivity and app usage patterns. All data is private and only visible to you.
           </p>
+              <button 
+                className="btn btn-xs btn-outline"
+                onClick={() => {
+                  const dataStr = JSON.stringify(analyticsData, null, 2);
+                  const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+                  const exportFileDefaultName = `analytics-${selectedPeriod}days-${new Date().toISOString().split('T')[0]}.json`;
+                  const linkElement = document.createElement('a');
+                  linkElement.setAttribute('href', dataUri);
+                  linkElement.setAttribute('download', exportFileDefaultName);
+                  linkElement.click();
+                }}
+              >
+                Export
+              </button>
         <select
           className="select select-bordered select-sm"
           value={selectedPeriod}
@@ -169,6 +183,13 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
             {metrics.sessions}
           </div>
         </div>
+
+        <div className="stat bg-secondary/5 rounded-lg border border-secondary/20 p-3">
+          <div className="stat-title text-xs text-secondary">Avg Session</div>
+          <div className="stat-value text-secondary text-lg">
+            {formatDuration(analyticsData.sessionStats?.avgDuration || 0)}
+          </div>
+        </div>
       </div>
 
       {/* Project Time Breakdown */}
@@ -197,44 +218,6 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                   </div>
                 </div>
               ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Quick Stats */}
-      {!compact && (
-        <div className="grid grid-cols-2 gap-4 text-sm p-4 card-default">
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <span className="text-base-content/70">Avg Session:</span>
-              <span className="font-medium">
-                {formatDuration(analyticsData.sessionStats?.avgDuration || 0)}
-              </span>
-            </div>
-          </div>
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <span className="text-base-content/70">Projects Used:</span>
-              <span className="font-medium">
-                {analyticsData.sessionStats?.uniqueProjects?.[0]?.length || 0}
-              </span>
-            </div>
-            <div className="flex justify-end">
-              <button 
-                className="btn btn-xs btn-outline"
-                onClick={() => {
-                  const dataStr = JSON.stringify(analyticsData, null, 2);
-                  const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-                  const exportFileDefaultName = `analytics-${selectedPeriod}days-${new Date().toISOString().split('T')[0]}.json`;
-                  const linkElement = document.createElement('a');
-                  linkElement.setAttribute('href', dataUri);
-                  linkElement.setAttribute('download', exportFileDefaultName);
-                  linkElement.click();
-                }}
-              >
-                Export
-              </button>
             </div>
           </div>
         </div>

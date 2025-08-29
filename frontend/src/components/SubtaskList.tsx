@@ -27,6 +27,53 @@ const SubtaskList: React.FC<SubtaskListProps> = ({
   const completedSubtasks = subtasks.filter(subtask => subtask.completed).length;
   const progressPercentage = subtasks.length > 0 ? (completedSubtasks / subtasks.length) * 100 : 0;
 
+  // Auto-sort subtasks: overdue first, then by priority (high->low), then by creation date
+  const sortSubtasks = (subtasks: Todo[]) => {
+    return [...subtasks].sort((a, b) => {
+      // Helper function to check if overdue
+      const isOverdue = (dueDate?: string) => {
+        if (!dueDate) return false;
+        return new Date(dueDate).getTime() < new Date().getTime();
+      };
+
+      // Helper function to get priority weight
+      const getPriorityWeight = (priority?: string) => {
+        switch (priority) {
+          case 'high': return 3;
+          case 'medium': return 2;
+          case 'low': return 1;
+          default: return 2; // default to medium
+        }
+      };
+
+      // Completed items go to bottom
+      if (a.completed !== b.completed) {
+        return a.completed ? 1 : -1;
+      }
+
+      // For non-completed items, prioritize by overdue status first
+      const aOverdue = isOverdue(a.dueDate);
+      const bOverdue = isOverdue(b.dueDate);
+      
+      if (aOverdue !== bOverdue) {
+        return aOverdue ? -1 : 1; // overdue items first
+      }
+
+      // Then sort by priority (high to low)
+      const aPriority = getPriorityWeight(a.priority);
+      const bPriority = getPriorityWeight(b.priority);
+      
+      if (aPriority !== bPriority) {
+        return bPriority - aPriority; // higher priority first
+      }
+
+      // Finally sort by creation date (newer first)
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+  };
+
+  const sortedSubtasks = sortSubtasks(subtasks);
+
   const handleAddSubtask = () => {
     setShowAddSubtask(false);
     onUpdate();
@@ -50,7 +97,6 @@ const SubtaskList: React.FC<SubtaskListProps> = ({
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
-          </button>
           
           <span className="text-sm font-medium text-base-content/80">
             Subtasks ({completedSubtasks}/{subtasks.length})
@@ -62,26 +108,14 @@ const SubtaskList: React.FC<SubtaskListProps> = ({
                 className="progress progress-primary w-20" 
                 value={progressPercentage} 
                 max="100"
-              />
+                />
               <span className="text-xs text-base-content/60">
                 {Math.round(progressPercentage)}%
               </span>
             </div>
           )}
-        </div>
-
-        {canEdit && (
-          <button
-            onClick={() => setShowAddSubtask(true)}
-            className="btn btn-xs btn-outline btn-primary"
-            title="Add Subtask"
-          >
-            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Add Subtask
           </button>
-        )}
+        </div>
       </div>
 
       {/* Add Subtask Form */}
@@ -111,7 +145,7 @@ const SubtaskList: React.FC<SubtaskListProps> = ({
       {/* Subtask List */}
       {isExpanded && subtasks.length > 0 && (
         <div className="space-y-2">
-          {subtasks.map((subtask) => (
+          {sortedSubtasks.map((subtask) => (
             <div key={subtask.id} className="bg-base-50 rounded-md">
               <TodoItem
                 todo={subtask}

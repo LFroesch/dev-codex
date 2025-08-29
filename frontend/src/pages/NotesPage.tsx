@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Project, projectAPI, Todo } from '../api';
 import {TodoItem} from '../components/TodoItem';
-import { DevLogItem } from '../components/DevLogItem';
 import { NoteModal } from '../components/NoteItem';
 import activityTracker from '../services/activityTracker';
 
@@ -20,6 +19,12 @@ const NotesPage: React.FC = () => {
   const [selectedNote, setSelectedNote] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'view' | 'edit'>('view');
+  
+  // State for dev log editing
+  const [selectedDevLog, setSelectedDevLog] = useState<any>(null);
+  const [isDevLogModalOpen, setIsDevLogModalOpen] = useState(false);
+  const [devLogModalMode, setDevLogModalMode] = useState<'view' | 'edit'>('view');
+  
   const [error, setError] = useState('');
 
   // Set activity tracker context when project changes
@@ -40,7 +45,23 @@ const NotesPage: React.FC = () => {
     setSelectedNote(null);
   };
 
+  const handleDevLogClick = (entry: any) => {
+    setSelectedDevLog(entry);
+    setDevLogModalMode('view');
+    setIsDevLogModalOpen(true);
+  };
+
+  const handleCloseDevLogModal = () => {
+    setIsDevLogModalOpen(false);
+    setSelectedDevLog(null);
+  };
+
   const handleNoteUpdate = async () => {
+    // Refresh the project data first
+    await onProjectRefresh();
+  };
+
+  const handleDevLogUpdate = async () => {
     // Refresh the project data first
     await onProjectRefresh();
   };
@@ -54,6 +75,16 @@ const NotesPage: React.FC = () => {
       }
     }
   }, [selectedProject?.notes, selectedNote?.id, isModalOpen]);
+
+  // Effect to update selectedDevLog when project data changes
+  useEffect(() => {
+    if (selectedDevLog && selectedProject && isDevLogModalOpen) {
+      const updatedDevLog = selectedProject.devLog?.find(entry => entry.id === selectedDevLog.id);
+      if (updatedDevLog) {
+        setSelectedDevLog(updatedDevLog);
+      }
+    }
+  }, [selectedProject?.devLog, selectedDevLog?.id, isDevLogModalOpen]);
 
   const handleArchiveTodoToDevLog = async (todo: Todo) => {
     if (!selectedProject) return;
@@ -74,6 +105,80 @@ const NotesPage: React.FC = () => {
     } catch (err) {
       setError('Failed to archive todo to dev log');
     }
+  };
+
+  // Todo sorting and filtering functions
+  const filterAndSortTodos = (todos: Todo[]) => {
+    // Filter out subtasks - only show parent todos
+    let filteredTodos = todos.filter(todo => !todo.parentTodoId);
+    
+    // Apply filters
+    if (todoFilterBy !== 'all') {
+      if (todoFilterBy === 'overdue') {
+        filteredTodos = filteredTodos.filter(todo => {
+          if (!todo.dueDate) return false;
+          return new Date(todo.dueDate).getTime() < new Date().getTime();
+        });
+      } else if (todoFilterBy === 'completed') {
+        filteredTodos = filteredTodos.filter(todo => todo.completed);
+      } else {
+        // Filter by priority
+        filteredTodos = filteredTodos.filter(todo => todo.priority === todoFilterBy);
+      }
+    }
+    
+    // Sort todos
+    return [...filteredTodos].sort((a, b) => {
+      // Helper functions
+      const isOverdue = (dueDate?: string) => {
+        if (!dueDate) return false;
+        return new Date(dueDate).getTime() < new Date().getTime();
+      };
+
+      const getPriorityWeight = (priority?: string) => {
+        switch (priority) {
+          case 'high': return 3;
+          case 'medium': return 2;
+          case 'low': return 1;
+          default: return 2;
+        }
+      };
+
+      if (todoSortBy === 'priority') {
+        // Completed items go to bottom
+        if (a.completed !== b.completed) {
+          return a.completed ? 1 : -1;
+        }
+
+        // Overdue items first
+        const aOverdue = isOverdue(a.dueDate);
+        const bOverdue = isOverdue(b.dueDate);
+        
+        if (aOverdue !== bOverdue) {
+          return aOverdue ? -1 : 1;
+        }
+
+        // Then by priority
+        const aPriority = getPriorityWeight(a.priority);
+        const bPriority = getPriorityWeight(b.priority);
+        
+        if (aPriority !== bPriority) {
+          return bPriority - aPriority;
+        }
+
+        // Finally by creation date
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      } else if (todoSortBy === 'dueDate') {
+        // Sort by due date (items without due date go last)
+        if (!a.dueDate && !b.dueDate) return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        if (!a.dueDate) return 1;
+        if (!b.dueDate) return -1;
+        return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+      } else {
+        // Sort by creation date (newest first)
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      }
+    });
   };
 
   if (!selectedProject) {
@@ -107,6 +212,10 @@ const NotesPage: React.FC = () => {
   const [newDevLogTitle, setNewDevLogTitle] = useState('');
   const [newDevLogDescription, setNewDevLogDescription] = useState('');
   const [isCreatingDevLog, setIsCreatingDevLog] = useState(false);
+
+  // Todo filtering and sorting state
+  const [todoSortBy, setTodoSortBy] = useState<'priority' | 'dueDate' | 'created'>('priority');
+  const [todoFilterBy, setTodoFilterBy] = useState<'all' | 'high' | 'medium' | 'low' | 'overdue' | 'completed'>('all');
 
   const handleCreateNote = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -462,6 +571,46 @@ const NotesPage: React.FC = () => {
               </form>
             )}
           </div>
+
+          {/* Todo Filter and Sort Controls */}
+          {selectedProject.todos && selectedProject.todos.filter(todo => !todo.parentTodoId).length > 0 && (
+            <div className="bg-base-100 rounded-lg border-subtle shadow-sm p-4">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-base-content/80">Sort by:</span>
+                  <select 
+                    value={todoSortBy} 
+                    onChange={(e) => setTodoSortBy(e.target.value as 'priority' | 'dueDate' | 'created')}
+                    className="select select-bordered select-xs"
+                  >
+                    <option value="priority">🔥 Priority</option>
+                    <option value="dueDate">📅 Due Date</option>
+                    <option value="created">⏰ Created</option>
+                  </select>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-base-content/80">Filter:</span>
+                  <select 
+                    value={todoFilterBy} 
+                    onChange={(e) => setTodoFilterBy(e.target.value as any)}
+                    className="select select-bordered select-xs"
+                  >
+                    <option value="all">📋 All Todos</option>
+                    <option value="overdue">🚨 Overdue</option>
+                    <option value="high">🔥 High Priority</option>
+                    <option value="medium">🟡 Medium Priority</option>
+                    <option value="low">🟢 Low Priority</option>
+                    <option value="completed">✅ Completed</option>
+                  </select>
+                </div>
+
+                <div className="ml-auto text-xs text-base-content/60">
+                  {filterAndSortTodos(selectedProject.todos || []).length} of {selectedProject.todos?.filter(todo => !todo.parentTodoId).length || 0} todos
+                </div>
+              </div>
+            </div>
+          )}
           
           {selectedProject.todos?.length === 0 ? (
             <div className="text-center py-12">
@@ -475,20 +624,18 @@ const NotesPage: React.FC = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              {selectedProject.todos
-                ?.filter(todo => !todo.parentTodoId)
-                ?.map((todo) => (
-                  <TodoItem
-                    key={todo.id}
-                    todo={todo}
-                    projectId={selectedProject.id}
-                    onUpdate={onProjectRefresh}
-                    onArchiveToDevLog={handleArchiveTodoToDevLog}
-                    isSharedProject={selectedProject.isShared || false}
-                    canEdit={selectedProject.canEdit !== false}
-                    allTodos={selectedProject.todos || []}
-                  />
-                ))}
+              {filterAndSortTodos(selectedProject.todos || []).map((todo) => (
+                <TodoItem
+                  key={todo.id}
+                  todo={todo}
+                  projectId={selectedProject.id}
+                  onUpdate={onProjectRefresh}
+                  onArchiveToDevLog={handleArchiveTodoToDevLog}
+                  isSharedProject={selectedProject.isShared || false}
+                  canEdit={selectedProject.canEdit !== false}
+                  allTodos={selectedProject.todos || []}
+                />
+              ))}
             </div>
           )}
         </div>
@@ -584,15 +731,40 @@ const NotesPage: React.FC = () => {
               <p className="text-sm text-base-content/60">Document your development progress and decisions</p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {selectedProject.devLog?.map((entry) => (
-                <DevLogItem
-                  key={entry.id}
-                  entry={entry}
-                  projectId={selectedProject.id}
-                  onUpdate={onProjectRefresh}
-                />
-              ))}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {selectedProject.devLog
+                ?.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                ?.map((entry) => (
+                  <div 
+                    key={entry.id} 
+                    className="bg-base-100 rounded-lg border-subtle shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group h-48 flex flex-col"
+                    onClick={() => handleDevLogClick(entry)}
+                  >
+                    <div className="p-4 flex flex-col flex-1">
+                      <div className="flex items-start justify-between mb-3">
+                        <h3 className="font-semibold text-base-content group-hover:text-primary transition-colors duration-200 truncate flex-1">
+                          {entry.title || entry.entry}
+                        </h3>
+                        <div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <svg className="w-4 h-4 text-base-content/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </div>
+                      </div>
+                      
+                      {entry.description && (
+                        <p className="text-sm text-base-content/70 mb-3 line-clamp-3 flex-1">
+                          {entry.description}
+                        </p>
+                      )}
+                      
+                      <div className="flex items-center justify-between text-xs text-base-content/50 pt-3 mt-auto">
+                        <span>Created {new Date(entry.date).toLocaleDateString()}</span>
+                        
+                      </div>
+                    </div>
+                  </div>
+                ))}
             </div>
           )}
         </div>
@@ -609,6 +781,26 @@ const NotesPage: React.FC = () => {
         onModeChange={setModalMode}
         project={selectedProject}
       />
+
+      {/* Dev Log Modal - reusing NoteModal for consistency */}
+      {selectedDevLog && (
+        <NoteModal
+          note={{
+            id: selectedDevLog.id,
+            title: selectedDevLog.title || selectedDevLog.entry,
+            content: selectedDevLog.description || '',
+            createdAt: selectedDevLog.date,
+            updatedAt: selectedDevLog.date
+          }}
+          projectId={selectedProject.id}
+          isOpen={isDevLogModalOpen}
+          onClose={handleCloseDevLogModal}
+          onUpdate={handleDevLogUpdate}
+          mode={devLogModalMode}
+          onModeChange={setDevLogModalMode}
+          project={selectedProject}
+        />
+      )}
     </div>
   );
 };

@@ -661,7 +661,7 @@ const Layout: React.FC = () => {
             {/* Navigation buttons */}
             {location.pathname !== '/support' && (
             <div className="flex justify-center px-2">
-              <div className="tabs tabs-boxed border border-base-content/10 shadow-sm bg-base-200/50 backdrop-blur-sm">
+              <div className="tabs tabs-boxed border-subtle shadow-sm">
                 <button 
                   className={`tab tab-sm ${searchParams.get('view') === 'projects' ? 'tab-active' : ''} gap-2 font-bold whitespace-nowrap min-h-10 px-4`}
                   onClick={() => handleNavigateWithCheck('/notes?view=projects')}
@@ -1014,7 +1014,7 @@ const Layout: React.FC = () => {
 
             {/* Tab Content */}
             <div className="flex-1 overflow-auto border-subtle bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-sm container-height-fix">
-              <div className="p-3 sm:p-6">
+              <div className="p-4 sm:p-4">
                 <div className="space-y-4">
                 {activeProjectTab === 'active' && (
                   <div className="space-y-4">
@@ -1047,7 +1047,7 @@ const Layout: React.FC = () => {
                     ) : (
                       <>
                         {/* Category Selector */}
-                        <div className="flex justify-center mb-8">
+                        <div className="flex justify-center">
                           <div className="tabs tabs-boxed border-subtle shadow-sm opacity-90">
                             <button
                               onClick={() => setSelectedCategory(null)}

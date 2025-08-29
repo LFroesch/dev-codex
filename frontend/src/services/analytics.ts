@@ -684,6 +684,45 @@ class AnalyticsService {
       return { projectId, totalTime: 0, dailyBreakdown: [], period: `${days} days` };
     }
   }
+
+  // Error tracking method
+  async trackError(errorData: {
+    name: string;
+    message: string;
+    stack?: string;
+    context?: any;
+    severity?: string;
+    componentStack?: string;
+    errorBoundary?: boolean;
+  }): Promise<void> {
+    if (!this.isAuthenticated || !this.isOnline) {
+      return;
+    }
+
+    try {
+      const event = {
+        eventType: 'error' as const,
+        timestamp: Date.now(),
+        eventData: {
+          errorName: errorData.name,
+          errorMessage: errorData.message,
+          errorStack: errorData.stack,
+          context: errorData.context,
+          severity: errorData.severity || 'medium',
+          componentStack: errorData.componentStack,
+          fromErrorBoundary: errorData.errorBoundary || false,
+          userAgent: navigator.userAgent,
+          url: window.location.href,
+          currentProjectId: this.session?.currentProjectId
+        }
+      };
+
+      await this.sendEventWithRetry(event);
+    } catch (error) {
+      console.error('Failed to track error:', error);
+    }
+  }
 }
 
-export default AnalyticsService.getInstance();
+export const analyticsService = AnalyticsService.getInstance();
+export default analyticsService;

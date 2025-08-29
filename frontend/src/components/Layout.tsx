@@ -11,6 +11,7 @@ import { unsavedChangesManager } from '../utils/unsavedChanges';
 import ToastContainer from './Toast';
 import IdeasPage from '../pages/IdeasPage';
 import { toast } from '../services/toast';
+import { handleAPIError } from '../services/errorService';
 
 const Layout: React.FC = () => {
   const navigate = useNavigate();
@@ -391,9 +392,12 @@ const Layout: React.FC = () => {
       await loadProjects();
       toast.success('Project updated successfully!');
       return response;
-    } catch (error) {
-      toast.error('Failed to update project. Please try again.');
-      console.error('Failed to update project:', error);
+    } catch (error: any) {
+      handleAPIError(error, {
+        component: 'Layout',
+        action: 'update_project',
+        projectId
+      });
       throw error;
     }
   };
@@ -403,9 +407,12 @@ const Layout: React.FC = () => {
       await projectAPI.archive(projectId, isArchived);
       await loadProjects();
       toast.success(isArchived ? 'Project archived successfully!' : 'Project restored successfully!');
-    } catch (error) {
-      toast.error(`Failed to ${isArchived ? 'archive' : 'restore'} project. Please try again.`);
-      console.error('Failed to archive project:', error);
+    } catch (error: any) {
+      handleAPIError(error, {
+        component: 'Layout',
+        action: isArchived ? 'archive_project' : 'restore_project',
+        projectId
+      });
       throw error;
     }
   };

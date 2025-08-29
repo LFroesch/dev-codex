@@ -586,15 +586,15 @@ export class AnalyticsService {
         throw new Error('Project not found');
       }
 
-      // Get team members from TeamMember collection
+      // Get team members from TeamMember collection (optimized: only get userIds)
       const TeamMember = (await import('../models/TeamMember')).default;
-      const teamMembers = await TeamMember.find({ projectId }).populate('userId', 'firstName lastName email').lean();
+      const teamMemberIds = await TeamMember.find({ projectId })
+        .select('userId')
+        .lean()
+        .then(members => members.map(m => m.userId.toString()));
       
       // Get all user IDs (owner + team members)
-      const userIds = [project.userId.toString()];
-      if (teamMembers?.length > 0) {
-        userIds.push(...teamMembers.map((m: any) => m.userId._id.toString()));
-      }
+      const userIds = [project.userId.toString(), ...teamMemberIds];
 
       const objectIdUserIds = userIds.map(id => new mongoose.Types.ObjectId(id));
 

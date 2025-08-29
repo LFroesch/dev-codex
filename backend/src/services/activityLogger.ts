@@ -80,12 +80,41 @@ class ActivityLogger {
     }
 
     const [activities, total] = await Promise.all([
-      ActivityLog.find(query)
-        .populate('userId', 'firstName lastName email')
-        .sort({ timestamp: -1 })
-        .skip(offset)
-        .limit(limit)
-        .lean(),
+      ActivityLog.aggregate([
+        { $match: query },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'userId',
+            foreignField: '_id',
+            as: 'userInfo'
+          }
+        },
+        {
+          $unwind: {
+            path: '$userInfo',
+            preserveNullAndEmptyArrays: true
+          }
+        },
+        {
+          $addFields: {
+            userId: {
+              _id: '$userInfo._id',
+              firstName: '$userInfo.firstName',
+              lastName: '$userInfo.lastName',
+              email: '$userInfo.email'
+            }
+          }
+        },
+        {
+          $project: {
+            userInfo: 0
+          }
+        },
+        { $sort: { timestamp: -1 } },
+        { $skip: offset },
+        { $limit: limit }
+      ]),
       ActivityLog.countDocuments(query)
     ]);
 
@@ -123,12 +152,39 @@ class ActivityLogger {
     }
 
     const [activities, total] = await Promise.all([
-      ActivityLog.find(query)
-        .populate('projectId', 'name')
-        .sort({ timestamp: -1 })
-        .skip(offset)
-        .limit(limit)
-        .lean(),
+      ActivityLog.aggregate([
+        { $match: query },
+        {
+          $lookup: {
+            from: 'projects',
+            localField: 'projectId',
+            foreignField: '_id',
+            as: 'projectInfo'
+          }
+        },
+        {
+          $unwind: {
+            path: '$projectInfo',
+            preserveNullAndEmptyArrays: true
+          }
+        },
+        {
+          $addFields: {
+            projectId: {
+              _id: '$projectInfo._id',
+              name: '$projectInfo.name'
+            }
+          }
+        },
+        {
+          $project: {
+            projectInfo: 0
+          }
+        },
+        { $sort: { timestamp: -1 } },
+        { $skip: offset },
+        { $limit: limit }
+      ]),
       ActivityLog.countDocuments(query)
     ]);
 
@@ -141,14 +197,45 @@ class ActivityLogger {
   ): Promise<IActivityLog[]> {
     const cutoffTime = new Date(Date.now() - minutes * 60 * 1000);
     
-    return ActivityLog.find({
-      projectId: new mongoose.Types.ObjectId(projectId),
-      timestamp: { $gte: cutoffTime }
-    })
-    .populate('userId', 'firstName lastName email')
-    .sort({ timestamp: -1 })
-    .limit(20)
-    .lean();
+    return ActivityLog.aggregate([
+      {
+        $match: {
+          projectId: new mongoose.Types.ObjectId(projectId),
+          timestamp: { $gte: cutoffTime }
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'userInfo'
+        }
+      },
+      {
+        $unwind: {
+          path: '$userInfo',
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $addFields: {
+          userId: {
+            _id: '$userInfo._id',
+            firstName: '$userInfo.firstName',
+            lastName: '$userInfo.lastName',
+            email: '$userInfo.email'
+          }
+        }
+      },
+      {
+        $project: {
+          userInfo: 0
+        }
+      },
+      { $sort: { timestamp: -1 } },
+      { $limit: 20 }
+    ]);
   }
 
   // Helper methods for common activity types

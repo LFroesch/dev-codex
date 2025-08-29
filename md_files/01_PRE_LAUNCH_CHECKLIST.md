@@ -1,5 +1,5 @@
 # Pre-Launch Changes
-- [ ] TTL Analysis / MondoDB Optimizations
+- [x] TTL Analysis / MongoDB Optimizations
 
 ## Tomorrow
 - [ ] Unit Tests

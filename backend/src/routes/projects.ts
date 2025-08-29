@@ -81,9 +81,11 @@ router.get('/', async (req: AuthRequest, res) => {
     .populate('todos.updatedBy', 'firstName lastName')
     .sort({ createdAt: -1 });
 
-    // Get projects where user is a team member
-    const teamMemberships = await TeamMember.find({ userId }).select('projectId');
-    const teamProjectIds = teamMemberships.map(tm => tm.projectId);
+    // Get projects where user is a team member (optimized: single query with lean())
+    const teamProjectIds = await TeamMember.find({ userId })
+      .select('projectId')
+      .lean()
+      .then(memberships => memberships.map(tm => tm.projectId));
     
     const teamProjects = teamProjectIds.length > 0 
       ? await Project.find({ 
@@ -489,12 +491,15 @@ router.put('/:id/notes/:noteId', requireProjectAccess('edit'), async (req: AuthR
     }
 
     // Send broadcast event to all team members (we'll add this notification for real-time updates)
-    const teamMembers = await TeamMember.find({ projectId: new mongoose.Types.ObjectId(projectId) }).populate('userId');
-    for (const member of teamMembers) {
-      if (member.userId._id.toString() !== userId.toString()) {
+    const teamMemberIds = await TeamMember.find({ projectId: new mongoose.Types.ObjectId(projectId) })
+      .select('userId')
+      .lean();
+    
+    for (const member of teamMemberIds) {
+      if (member.userId.toString() !== userId.toString()) {
         // Create a notification for other team members about the note update
         await Notification.create({
-          userId: member.userId._id,
+          userId: member.userId,
           type: 'project_shared',
           title: 'Note Updated',
           message: `"${note.title}" was updated in ${project.name}`,
@@ -1196,14 +1201,64 @@ router.get('/:id/members', requireAuth, requireProjectAccess('view'), async (req
   try {
     const { id: projectId } = req.params;
 
-    const members = await TeamMember.find({ projectId })
-      .populate('userId', 'firstName lastName email')
-      .populate('invitedBy', 'firstName lastName email')
-      .sort({ joinedAt: -1 });
+    // Optimized: Single aggregation query instead of populate calls
+    const members = await TeamMember.aggregate([
+      {
+        $match: {
+          projectId: new mongoose.Types.ObjectId(projectId)
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'userInfo'
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'invitedBy',
+          foreignField: '_id',
+          as: 'inviterInfo'
+        }
+      },
+      {
+        $unwind: '$userInfo'
+      },
+      {
+        $unwind: '$inviterInfo'
+      },
+      {
+        $project: {
+          _id: 1,
+          userId: {
+            _id: '$userInfo._id',
+            firstName: '$userInfo.firstName',
+            lastName: '$userInfo.lastName',
+            email: '$userInfo.email'
+          },
+          role: 1,
+          joinedAt: 1,
+          invitedBy: {
+            _id: '$inviterInfo._id',
+            firstName: '$inviterInfo.firstName',
+            lastName: '$inviterInfo.lastName',
+            email: '$inviterInfo.email'
+          }
+        }
+      },
+      {
+        $sort: { joinedAt: -1 }
+      }
+    ]);
 
-    // Also include the project owner
+    // Get project owner info
     const project = await Project.findById(projectId)
-      .populate('ownerId', 'firstName lastName email');
+      .select('ownerId createdAt')
+      .populate('ownerId', 'firstName lastName email')
+      .lean();
 
     const owner = project?.ownerId ? {
       _id: project.ownerId._id,

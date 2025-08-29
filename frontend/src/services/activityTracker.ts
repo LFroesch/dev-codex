@@ -1,5 +1,4 @@
 import { activityLogsAPI } from '../api/activityLogs';
-import analyticsService from './analytics';
 
 class ActivityTracker {
   private static instance: ActivityTracker;

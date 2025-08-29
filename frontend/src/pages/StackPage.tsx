@@ -1,7 +1,7 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Project, projectAPI } from '../api';
-import { STACK_CATEGORIES, TechOption } from '../data/techStackData';
+import type { TechOption, TechCategory } from '../data/techStackData';
 
 type PlatformType = 'web' | 'mobile' | 'desktop';
 
@@ -21,6 +21,20 @@ const StackPage: React.FC = () => {
   const [selectedPlatforms, setSelectedPlatforms] = useState<Set<PlatformType>>(() => new Set(['web', 'mobile', 'desktop']));
   const [error, setError] = useState('');
   const [loadingStates, setLoadingStates] = useState<{ [key: string]: boolean }>({});
+  const [stackCategories, setStackCategories] = useState<TechCategory[]>([]);
+  const [dataLoaded, setDataLoaded] = useState(false);
+
+  // Lazy load tech stack data
+  useEffect(() => {
+    const loadData = async () => {
+      if (!dataLoaded) {
+        const { STACK_CATEGORIES } = await import('../data/techStackData');
+        setStackCategories(STACK_CATEGORIES);
+        setDataLoaded(true);
+      }
+    };
+    loadData();
+  }, [dataLoaded]);
 
   // Map frontend categories to valid backend categories
   const getBackendCategory = (frontendCategory: string): { techCategory: string, packageCategory: string } => {
@@ -156,7 +170,7 @@ const StackPage: React.FC = () => {
 
   // Filter categories based on selected platforms
   const filteredCategories = useMemo(() => {
-    return STACK_CATEGORIES.map(category => ({
+    return stackCategories.map(category => ({
       ...category,
       options: category.options.filter(option => 
         !option.platforms || option.platforms.some(platform => selectedPlatforms.has(platform))
@@ -435,7 +449,7 @@ const StackPage: React.FC = () => {
                 {Object.entries(selectedTechsByCategory).map(([categoryId, techs]) => {
                   if (!techs?.length) return null;
                   // Find category by ID or fall back to a default for unknown backend categories
-                  const category = STACK_CATEGORIES.find(c => c.id === categoryId) || {
+                  const category = stackCategories.find(c => c.id === categoryId) || {
                     id: categoryId,
                     name: categoryId.charAt(0).toUpperCase() + categoryId.slice(1),
                     emoji: '🔧',
@@ -496,7 +510,7 @@ const StackPage: React.FC = () => {
                 {Object.entries(selectedPackagesByCategory).map(([categoryId, packages]) => {
                   if (!packages?.length) return null;
                   // Find category by ID or fall back to a default for unknown backend categories
-                  const category = STACK_CATEGORIES.find(c => c.id === categoryId) || {
+                  const category = stackCategories.find(c => c.id === categoryId) || {
                     id: categoryId,
                     name: categoryId.charAt(0).toUpperCase() + categoryId.slice(1),
                     emoji: '📦',

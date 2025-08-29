@@ -1,25 +1,9 @@
 # Pre-Launch Changes
-- [ ] Debloat Analytics (Ask any questions you need)
-- [ ] Strip down the optimizedanalyticspage to go with the debloated analytics
 - [ ] TTL Analysis / MondoDB Optimizations
 - [ ] Code Cleanup Scan
 
-- Remove bloated analytics tracking both in backend and frontend
-
-Feature Usage
-Navigation
-Page Views
-Field Edits
-Project Opens
-Actions
-Performance
-Errors
-
-DO NOT TOUCH user sessions or activity logs or top projects or time tracking or top users etc
-
-(ASK QUESTIONS BE SAFER THAN SORRY)
-
 ## Tomorrow
+- [ ] Clean console.logs
 - [ ] Overhaul of Notes section / To Dos / Feature Plans
         make more UX friendly and usable
 

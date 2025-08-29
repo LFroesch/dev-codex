@@ -11,6 +11,7 @@ import Notification from '../models/Notification';
 import ProjectInvitation from '../models/ProjectInvitation';
 import RateLimit from '../models/RateLimit';
 import NoteLock from '../models/NoteLock';
+import TeamMember from '../models/TeamMember';
 
 const setupIndexes = async () => {
   try {
@@ -96,15 +97,33 @@ const setupIndexes = async () => {
     // Compound indexes for common query patterns
     console.log('🔗 Creating compound indexes...');
     
-    // Analytics compound indexes
+    // Analytics compound indexes - optimized for performance
     await Analytics.collection.createIndex({ userId: 1, eventType: 1, timestamp: -1 });
     await Analytics.collection.createIndex({ "eventData.projectId": 1, timestamp: -1 });
+    await Analytics.collection.createIndex({ userId: 1, planTier: 1, timestamp: -1 });
+    await Analytics.collection.createIndex({ planTier: 1, eventType: 1, timestamp: -1 });
+    await Analytics.collection.createIndex({ sessionId: 1, timestamp: -1 });
+    await Analytics.collection.createIndex({ userId: 1, "eventData.projectId": 1, timestamp: -1 });
     
     // Project compound indexes
     await Project.collection.createIndex({ userId: 1, category: 1, updatedAt: -1 });
+    await Project.collection.createIndex({ ownerId: 1, isShared: 1, updatedAt: -1 });
+    await Project.collection.createIndex({ ownerId: 1, isArchived: 1, updatedAt: -1 });
     
     // UserSession compound indexes
     await UserSession.collection.createIndex({ userId: 1, isActive: 1, startTime: -1 });
+    await UserSession.collection.createIndex({ currentProjectId: 1, isActive: 1, lastActivity: -1 });
+    await UserSession.collection.createIndex({ userId: 1, sessionId: 1 });
+    
+    // TeamMember compound indexes for efficient queries
+    await TeamMember.collection.createIndex({ projectId: 1, role: 1 });
+    await TeamMember.collection.createIndex({ userId: 1, role: 1 });
+    await TeamMember.collection.createIndex({ projectId: 1, joinedAt: -1 });
+    
+    // ActivityLog compound indexes
+    await ActivityLog.collection.createIndex({ projectId: 1, action: 1, timestamp: -1 });
+    await ActivityLog.collection.createIndex({ userId: 1, action: 1, timestamp: -1 });
+    await ActivityLog.collection.createIndex({ projectId: 1, resourceType: 1, timestamp: -1 });
     
     console.log('✅ Compound indexes created');
 
@@ -122,7 +141,8 @@ const setupIndexes = async () => {
       { name: 'Notifications', model: Notification },
       { name: 'ProjectInvitations', model: ProjectInvitation },
       { name: 'RateLimits', model: RateLimit },
-      { name: 'NoteLocks', model: NoteLock }
+      { name: 'NoteLocks', model: NoteLock },
+      { name: 'TeamMembers', model: TeamMember }
     ];
 
     for (const { name, model } of collections) {

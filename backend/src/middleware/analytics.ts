@@ -634,7 +634,9 @@ export class AnalyticsService {
         // Check for current active session with this project
         const activeSession = activeSessions.find(s => s.userId.toString() === userId);
         if (activeSession && activeSession.currentProjectId === projectId && activeSession.currentProjectStartTime) {
-          const currentSessionTime = Date.now() - activeSession.currentProjectStartTime.getTime();
+          // Use lastActivity instead of current time to avoid including sleep periods
+          const endTime = activeSession.lastActivity ? activeSession.lastActivity.getTime() : Date.now();
+          const currentSessionTime = endTime - activeSession.currentProjectStartTime.getTime();
           totalTime += currentSessionTime;
           lastUsed = new Date();
         }

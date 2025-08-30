@@ -233,6 +233,7 @@ const NoteModal: React.FC<NoteModalProps> = ({
   useEffect(() => {
     return () => {
       unsavedChangesManager.setUnsavedChanges(componentId, false);
+      clearAutoSave(); // Clear auto-save timeout on unmount
     };
   }, [componentId]);
 
@@ -287,9 +288,13 @@ const NoteModal: React.FC<NoteModalProps> = ({
       startHeartbeat();
     } else {
       stopHeartbeat();
+      clearAutoSave(); // Clear auto-save timeout when leaving edit mode
     }
     
-    return () => stopHeartbeat();
+    return () => {
+      stopHeartbeat();
+      clearAutoSave();
+    };
   }, [mode, lockedBy?.isCurrentUser]);
 
   const checkLockStatus = async () => {
@@ -365,6 +370,14 @@ const NoteModal: React.FC<NoteModalProps> = ({
     }
   };
 
+  // Clear auto-save timeout
+  const clearAutoSave = () => {
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+      autoSaveTimeoutRef.current = null;
+    }
+  };
+
   if (!isOpen || !note) return null;
 
   // Auto-save functionality
@@ -374,7 +387,13 @@ const NoteModal: React.FC<NoteModalProps> = ({
     }
     
     autoSaveTimeoutRef.current = window.setTimeout(() => {
-      if (mode === 'edit' && (editTitle.trim() !== note.title || editDescription.trim() !== (note.description || '') || editContent.trim() !== note.content)) {
+      // Additional safety checks to prevent stale auto-saves
+      if (mode === 'edit' && 
+          isOpen && 
+          note && 
+          !isSavingRef.current && 
+          !isCancelingRef.current &&
+          (editTitle.trim() !== note.title || editDescription.trim() !== (note.description || '') || editContent.trim() !== note.content)) {
         handleSave();
       }
     }, 30000); // 30 seconds
@@ -489,6 +508,7 @@ const NoteModal: React.FC<NoteModalProps> = ({
       }
     } finally {
       setLoading(false);
+      clearAutoSave(); // Clear auto-save timeout after manual save
       setTimeout(() => {
         isSavingRef.current = false;
       }, 0);
@@ -527,6 +547,7 @@ const NoteModal: React.FC<NoteModalProps> = ({
     }
     
     isCancelingRef.current = true;
+    clearAutoSave(); // Clear auto-save timeout when canceling
     setEditTitle(note.title);
     setEditDescription(note.description || '');
     setEditContent(note.content);

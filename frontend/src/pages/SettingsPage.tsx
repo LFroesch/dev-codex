@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
-import { teamAPI } from '../api';
 import type { BaseProject } from '../../../shared/types';
 import ExportSection from '../components/ExportSection';
-import TeamManagement from '../components/TeamManagement';
 import ConfirmationModal from '../components/ConfirmationModal';
 
 interface ContextType {
@@ -36,7 +34,6 @@ const SettingsPage: React.FC = () => {
   const [savingMetadata, setSavingMetadata] = useState(false);
   const [archiveLoading, setArchiveLoading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
-  const [makePrivateConfirm, setMakePrivateConfirm] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -137,30 +134,6 @@ const SettingsPage: React.FC = () => {
     }
   };
 
-  const handleMakePrivate = async () => {
-    if (!selectedProject) return;
-
-    try {
-      // First, get all team members to remove non-owner users
-      const response = await teamAPI.getMembers(selectedProject.id);
-      
-      // Remove all non-owner members
-      for (const member of response.members) {
-        if (!member.isOwner) {
-          await teamAPI.removeMember(selectedProject.id, member.userId._id);
-        }
-      }
-
-      // Then set the project to not shared
-      await onProjectUpdate(selectedProject.id, { isShared: false });
-      await onProjectRefresh();
-      setMakePrivateConfirm(false);
-    } catch (err) {
-      console.error('Failed to make project private:', err);
-      setError('Failed to make project private');
-      setMakePrivateConfirm(false);
-    }
-  };
 
   const handleCancel = (section: string) => {
     if (section === 'basic') {
@@ -492,10 +465,8 @@ const SettingsPage: React.FC = () => {
 
           {/* Project Status Section */}
           <div>
-            <h3 className="text-base font-semibold mb-3">Project Status</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <h4 className="font-medium text-sm mb-2">Current Status</h4>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-sm">Archive Status:</span>
@@ -517,17 +488,10 @@ const SettingsPage: React.FC = () => {
                       {selectedProject.isShared ? 'Shared' : 'Private'}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Deployment Status:</span>
-                    <span className="badge badge-ghost badge-sm">
-                      Coming Soon
-                    </span>
-                  </div>
                 </div>
               </div>
 
               <div>
-                <h4 className="font-medium text-sm mb-2">Timestamps</h4>
                 <div className="space-y-2 text-sm">
                   <div>
                     <span className="font-medium">Created:</span> {new Date(selectedProject.createdAt).toLocaleDateString()}
@@ -546,78 +510,6 @@ const SettingsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Project Sharing */}
-      {selectedProject && (
-        <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10">
-          <input type="checkbox" />
-          <div className="collapse-title text-xl font-semibold bg-base-200 border-b border-base-content/10">
-            👥 Project Sharing & Team Management
-          </div>
-          <div className="collapse-content">
-            <div className="pt-4">
-              <div className="space-y-4">
-                {/* Compact Sharing Status */}
-                <div className="flex items-center justify-between p-3 bg-base-200 rounded-lg border">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                      selectedProject.isShared ? 'bg-success/20' : 'bg-base-300'
-                    }`}>
-                      <svg className={`w-4 h-4 ${selectedProject.isShared ? 'text-success' : 'text-base-content/60'}`} 
-                           fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                              d={selectedProject.isShared 
-                                ? "M17 20h5v-2a3 3 0 00-5.196-2.121M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.196-2.121M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                                : "M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"} />
-                      </svg>
-                    </div>
-                    <div>
-                      <div className={`font-medium text-sm ${selectedProject.isShared ? 'text-success' : 'text-base-content'}`}>
-                        {selectedProject.isShared ? 'Sharing Enabled' : 'Private Project'}
-                      </div>
-                      <div className="text-xs text-base-content/60">
-                        {selectedProject.isShared 
-                          ? 'Team members can access this project' 
-                          : 'Only you can access this project'}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {(selectedProject.canManageTeam !== false) && (
-                    <label className="label cursor-pointer gap-2">
-                      <span className="label-text text-xs">Enable</span>
-                      <input 
-                        type="checkbox" 
-                        className="toggle toggle-success toggle-sm" 
-                        checked={selectedProject.isShared}
-                        onChange={() => {
-                          // If toggling off (making private), show confirmation
-                          if (selectedProject.isShared) {
-                            setMakePrivateConfirm(true);
-                          } else {
-                            // If toggling on (making shared), just do it directly
-                            onProjectUpdate(selectedProject.id, { isShared: true }).then(() => {
-                              onProjectRefresh();
-                            });
-                          }
-                        }}
-                      />
-                    </label>
-                  )}
-                </div>
-
-                {/* Team Management - Only show if sharing is enabled */}
-                {selectedProject.isShared && (
-                  <TeamManagement 
-                    projectId={selectedProject.id} 
-                    canManageTeam={selectedProject.canManageTeam ?? selectedProject.isOwner ?? false}
-                    currentUserId={undefined} // TODO: Get current user ID from auth context
-                  />
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
 
       {/* Export Data */}
@@ -684,15 +576,6 @@ const SettingsPage: React.FC = () => {
         variant="error"
       />
 
-      <ConfirmationModal
-        isOpen={makePrivateConfirm}
-        onConfirm={handleMakePrivate}
-        onCancel={() => setMakePrivateConfirm(false)}
-        title="Make Project Private"
-        message={`Are you sure you want to make "<strong>${selectedProject?.name}</strong>" private? This will remove all team members except the owner from the project.`}
-        confirmText="Make Private"
-        variant="warning"
-      />
     </div>
   );
 };

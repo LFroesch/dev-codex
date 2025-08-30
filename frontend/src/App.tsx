@@ -18,6 +18,7 @@ const StackPage = lazy(() => import('./pages/StackPage'));
 const DocsPage = lazy(() => import('./pages/DocsPage'));
 const DeploymentPage = lazy(() => import('./pages/DeploymentPage'));
 const PublicPage = lazy(() => import('./pages/PublicPage'));
+const SharingPage = lazy(() => import('./pages/SharingPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const DiscoverPage = lazy(() => import('./pages/DiscoverPage'));
 const AccountSettingsPage = lazy(() => import('./pages/AccountSettingsPage'));
@@ -91,6 +92,7 @@ const App: React.FC = () => {
               <Route path="docs" element={<DocsPage />} />
               <Route path="deployment" element={<DeploymentPage />} />
               <Route path="public" element={<PublicPage />} />
+              <Route path="sharing" element={<SharingPage />} />
               <Route path="settings" element={<SettingsPage />} />
               <Route path="discover" element={<DiscoverPage />} />
               <Route path="discover/project/:identifier" element={<PublicProjectPage />} />

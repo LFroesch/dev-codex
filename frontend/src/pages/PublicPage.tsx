@@ -577,63 +577,6 @@ const PublicPage: React.FC = () => {
           </div>
         </div>
       )}
-
-      {/* Call to Action */}
-      {!isPublic && (
-        <div className="bg-base-200 shadow-lg border border-base-content/10 rounded-lg mb-4">
-          <div className="p-4">
-            {/* Header with title and controls */}
-            <div className="flex flex-col gap-2">
-              <button
-                onClick={() => setIsShareWorkExpanded(!isShareWorkExpanded)}
-                className="flex items-center gap-3 flex-1 text-left hover:bg-base-200 p-2 -m-2 rounded-lg transition-colors"
-              >
-                <div className={`transform transition-transform duration-200 ${isShareWorkExpanded ? 'rotate-90' : ''}`}>
-                  <svg className="w-5 h-5 text-base-content/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-lg">🌐 Share Your Work with the World</h3>
-                  <p className="text-sm text-base-content/70">
-                    Make your project discoverable by the community
-                  </p>
-                </div>
-              </button>
-              
-              <div className="flex justify-center">
-                <button 
-                  onClick={() => setIsPublic(true)}
-                  className="btn btn-primary btn-sm"
-                >
-                  Enable Public Sharing
-                </button>
-              </div>
-            </div>
-
-            {/* Collapsible content */}
-            {isShareWorkExpanded && (
-              <div className="mt-4 border-t border-primary/20 pt-4 text-center bg-base-100 rounded-b-lg p-4 -mx-4 -mb-4">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/20 flex items-center justify-center">
-              <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0 9c-1.657 0-3-4.03-3-9s1.343-9 3-9m0 18c1.657 0 3-4.03 3-9s-1.343-9-3-9m-9 9a9 9 0 019-9" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-bold mb-2">Ready to Go Public?</h3>
-            <p className="text-base-content/70 mb-4 max-w-md mx-auto">
-              Make your project discoverable by the community. Get feedback, inspire others, and showcase your skills.
-            </p>
-            <button 
-              onClick={() => setIsPublic(true)}
-              className="btn btn-primary"
-            >
-              Enable Public Sharing
-            </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 };

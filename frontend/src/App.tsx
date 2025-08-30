@@ -25,6 +25,7 @@ const AccountSettingsPage = lazy(() => import('./pages/AccountSettingsPage'));
 const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage'));
 const SupportPage = lazy(() => import('./pages/SupportPage'));
 const HelpPage = lazy(() => import('./pages/HelpPage'));
+const NewsPage = lazy(() => import('./pages/NewsPage'));
 const PublicProjectPage = lazy(() => import('./pages/PublicProjectPage'));
 const PublicProfilePage = lazy(() => import('./pages/PublicProfilePage'));
 
@@ -104,6 +105,7 @@ const App: React.FC = () => {
               <Route path="admin" element={<AdminDashboardPage />} />
               <Route path="support" element={<SupportPage />} />
               <Route path="help" element={<HelpPage />} />
+              <Route path="news" element={<NewsPage />} />
             </Route>
             <Route path="*" element={<Navigate to="/login" />} />
             </Routes>

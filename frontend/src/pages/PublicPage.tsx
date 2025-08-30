@@ -190,15 +190,26 @@ const PublicPage: React.FC = () => {
             
             <div className="flex flex-wrap gap-2 ml-0 sm:ml-4 mt-2 sm:mt-0">
               {isPublic && (
+              <>
                 <button
-                  onClick={copyPublicUrl}
-                  className="btn btn-outline btn-sm gap-2"
+                onClick={copyPublicUrl}
+                className="btn btn-outline btn-sm gap-2"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
-                  Copy URL
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                Copy URL
                 </button>
+                <Link
+                to={`/project/${publicSlug || selectedProject.id}`}
+                className="btn btn-outline btn-sm gap-2"
+                >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                </svg>
+                {publicSlug ? `/project/${publicSlug}` : `/project/${selectedProject.id}`}
+                </Link>
+              </>
               )}
               <button
                 onClick={handleSave}

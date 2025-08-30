@@ -95,96 +95,98 @@ const DiscoverPage: React.FC = () => {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="flex-1 w-full max-w-7xl mx-auto p-2 sm:p-4 bg-base-100 flex flex-col mb-4 min-h-0">
+      <div className="space-y-6">
       {/* Error State */}
       {error && (
-        <div className="alert alert-error shadow-md">
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-          </svg>
-          <span>{error}</span>
-          <button onClick={loadProjects} className="btn btn-sm">
-            Retry
-          </button>
+        <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
+          <div className="flex items-center gap-3 text-error">
+            <svg className="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+            </svg>
+            <span className="flex-1">{error}</span>
+            <button onClick={loadProjects} className="btn btn-primary btn-sm">
+              Retry
+            </button>
+          </div>
         </div>
       )}
 
       {/* Search and Filters */}
-      <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10">
-        <input type="checkbox" defaultChecked />
-        <div className="collapse-title text-lg font-semibold bg-base-200 border-b border-base-content/10 flex items-center justify-between">
-          <span>🔍 Search & Filter Projects</span>
-          <div className="flex items-center gap-2 text-sm text-base-content/60" onClick={(e) => e.stopPropagation()}>
-            
+      <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200">
+        <div className="p-4">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+              <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <h2 className="font-semibold text-lg px-2 py-1 rounded-md bg-base-300 inline-block w-fit">Search & Filter Projects</h2>
+            {pagination && (
+              <span className="text-sm text-base-content/60 ml-auto">
+                {pagination.total} projects found
+              </span>
+            )}
           </div>
-        </div>
-        <div className="collapse-content">
-          <div className="pt-4">
-            <form onSubmit={handleSearch} className="space-y-4">
-              {/* Search Bar */}
-              <div className="form-control">
-                <div className="relative">
-                  <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-base-content/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                  <input
-                    type="text"
-                    placeholder="Search projects, users, technologies, or descriptions..."
-                    className="input input-bordered w-full pl-10"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                  {searchTerm && (
-                    <button
-                      type="button"
-                      onClick={() => setSearchTerm('')}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-base-content/50 hover:text-base-content"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Filters Row */}
-              <div className="flex flex-wrap gap-3">
-                {/* Category Filter */}
-                <select
-                  className="select select-bordered select-sm"
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                >
-                  <option value="all">All Categories</option>
-                  {categories.map((category) => (
-                    <option key={category} value={category}>
-                      {category.charAt(0).toUpperCase() + category.slice(1)}
-                    </option>
-                  ))}
-                </select>
-
-                {/* Tag Filter */}
-                <select
-                  className="select select-bordered select-sm"
-                  value={selectedTag}
-                  onChange={(e) => setSelectedTag(e.target.value)}
-                >
-                  <option value="">All Tags</option>
-                  {tags.slice(0, 20).map((tag) => (
-                    <option key={tag} value={tag}>
-                      {tag}
-                    </option>
-                  ))}
-                </select>
-                {pagination && (
-                  <span className='translate-y-1'>
-                    {pagination.total} projects found
-                  </span>
+          <form onSubmit={handleSearch} className="space-y-4">
+            {/* Search Bar */}
+            <div className="form-control">
+              <div className="relative">
+                <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-base-content/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input
+                  type="text"
+                  placeholder="Search projects, users, technologies, or descriptions..."
+                  className="input input-bordered w-full pl-10"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                {searchTerm && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchTerm('')}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-base-content/50 hover:text-base-content transition-colors"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
                 )}
               </div>
-            </form>
-          </div>
+            </div>
+
+            {/* Filters Row */}
+            <div className="flex flex-wrap gap-3">
+              {/* Category Filter */}
+              <select
+                className="select select-bordered select-sm"
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+              >
+                <option value="all">All Categories</option>
+                {categories.map((category) => (
+                  <option key={category} value={category}>
+                    {category.charAt(0).toUpperCase() + category.slice(1)}
+                  </option>
+                ))}
+              </select>
+
+              {/* Tag Filter */}
+              <select
+                className="select select-bordered select-sm"
+                value={selectedTag}
+                onChange={(e) => setSelectedTag(e.target.value)}
+              >
+                <option value="">All Tags</option>
+                {tags.slice(0, 20).map((tag) => (
+                  <option key={tag} value={tag}>
+                    {tag}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </form>
         </div>
       </div>
 
@@ -227,107 +229,105 @@ const DiscoverPage: React.FC = () => {
                 )}
               </div>
             ) : projects.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {projects.map((project) => (
                   <Link
                     key={project.id}
                     to={`/discover/project/${project.publicSlug || project.id}`}
-                    className="card bg-base-100 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-[1.02] border border-base-content/10 h-full"
+                    className="p-4 rounded-lg border-2 transition-all duration-200 text-left group shadow-md hover:shadow-lg flex flex-col border-base-300/50 bg-base-100 hover:border-primary/30"
                   >
-                    <div className="card-body p-5 flex flex-col h-full">
-                      {/* Project Header */}
-                      <div className="flex items-start gap-3 mb-4">
-                        <div 
-                          className="w-12 h-12 rounded-lg flex items-center justify-center text-lg font-bold text-white flex-shrink-0"
-                          style={{ backgroundColor: project.color }}
-                        >
-                          {project.name.charAt(0).toUpperCase()}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="card-title text-lg truncate mb-2">{project.name}</h3>
-                          <div className="flex items-center gap-2">
-                            <span className="badge badge-outline badge-sm">
-                              {project.category}
+                    {/* Project Header */}
+                    <div className="flex items-center gap-3 mb-3">
+                      <div 
+                        className="w-4 h-4 rounded-full flex-shrink-0 border-2 border-white/50 shadow-sm"
+                        style={{ backgroundColor: project.color }}
+                      ></div>
+                      <h3 className="font-semibold text-base truncate px-2 py-1 rounded-md bg-base-300 text-base-content group-hover:text-primary transition-colors">
+                        {project.name}
+                      </h3>
+                    </div>
+                    
+                    {/* Category and Date */}
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="badge badge-primary badge-sm">
+                        {project.category}
+                      </span>
+                      <span className="text-xs text-base-content/60">
+                        {new Date(project.updatedAt).toLocaleDateString()}
+                      </span>
+                    </div>
+
+                    {/* Description - Fixed height */}
+                    <div className="mb-3 h-[3rem] flex-shrink-0">
+                      {(project.publicDescription || project.description) && (
+                        <p className="text-sm text-base-content/70 line-clamp-2">
+                          {project.publicDescription || project.description}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Tags - Fixed height */}
+                    <div className="mb-3 h-[1.5rem] flex-shrink-0">
+                      {project.tags && project.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {project.tags.slice(0, 3).map((tag: string, index: number) => (
+                            <span
+                              key={index}
+                              className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-base-200 text-base-content/80 border border-base-300/50"
+                            >
+                              {tag}
                             </span>
-                            <span className="text-xs text-base-content/60">
-                              {new Date(project.updatedAt).toLocaleDateString()}
+                          ))}
+                          {project.tags.length > 3 && (
+                            <span className="text-xs text-base-content/50 font-medium flex items-center">
+                              +{project.tags.length - 3}
                             </span>
-                          </div>
+                          )}
                         </div>
-                      </div>
+                      )}
+                    </div>
+                    
+                    {/* Technologies - Fixed height */}
+                    <div className="mb-3 h-[1.5rem] flex-shrink-0">
+                      {project.technologies && project.technologies.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {project.technologies.slice(0, 4).map((tech: any, index: number) => (
+                            <span key={index} className="badge badge-outline badge-sm h-4">
+                              {tech.name}
+                            </span>
+                          ))}
+                          {project.technologies.length > 4 && (
+                            <span className="badge badge-ghost badge-sm h-4">
+                              +{project.technologies.length - 4}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
 
-                      {/* Description */}
-                      <p className="text-sm text-base-content/70 line-clamp-3 mb-4 flex-grow">
-                        {project.publicDescription || project.description}
-                      </p>
-
-                      {/* Tags & Technologies Section */}
-                      <div className="space-y-3 mb-4">
-                        {/* Tags */}
-                        {project.tags && project.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-1">
-                            {project.tags.slice(0, 4).map((tag: string, index: number) => (
-                              <span key={index} className="badge badge-ghost badge-sm">
-                                {tag}
-                              </span>
-                            ))}
-                            {project.tags.length > 4 && (
-                              <span className="badge badge-ghost badge-sm">
-                                +{project.tags.length - 4}
-                              </span>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Technologies */}
-                        {project.technologies && project.technologies.length > 0 && (
-                          <div className="flex flex-wrap gap-1">
-                            {project.technologies.slice(0, 6).map((tech: any, index: number) => (
-                              <span key={index} className="badge badge-primary badge-sm">
-                                {tech.name}
-                              </span>
-                            ))}
-                            {project.technologies.length > 6 && (
-                              <span className="badge badge-primary badge-sm">
-                                +{project.technologies.length - 6}
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Footer */}
-                      <div className="flex justify-between items-center mt-auto pt-3 border-t border-base-content/10">
+                    {/* Footer - Always at bottom */}
+                    <div className="flex items-center justify-between text-sm pt-2 border-t border-base-200 mt-auto">
+                      <div className="flex items-center gap-1">
                         {project.owner ? (
-                          <div className="text-sm text-base-content/60">
-                            {project.owner.isPublic || project.owner.publicSlug ? (
-                              <span 
-                                className="font-medium text-primary hover:text-primary-focus transition-colors cursor-pointer"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  navigate(`/discover/user/${project.owner.publicSlug || project.owner.id}`);
-                                }}
-                              >
-                                @{project.owner.publicSlug || `${project.owner.firstName}${project.owner.lastName}`.toLowerCase()}
-                              </span>
-                            ) : (
-                              <span className="font-medium text-base-content/80">
-                                @{`${project.owner.firstName}${project.owner.lastName}`.toLowerCase()}
-                              </span>
-                            )}
-                          </div>
+                          project.owner.isPublic || project.owner.publicSlug ? (
+                            <span 
+                              className="font-medium text-primary hover:text-primary-focus transition-colors cursor-pointer"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                navigate(`/discover/user/${project.owner.publicSlug || project.owner.id}`);
+                              }}
+                            >
+                              @{project.owner.publicSlug || `${project.owner.firstName}${project.owner.lastName}`.toLowerCase()}
+                            </span>
+                          ) : (
+                            <span className="font-medium text-base-content/60">
+                              @{`${project.owner.firstName}${project.owner.lastName}`.toLowerCase()}
+                            </span>
+                          )
                         ) : (
-                          <div className="text-sm text-base-content/60">
-                            @anonymous
-                          </div>
+                          <span className="text-base-content/60">@anonymous</span>
                         )}
-                        
-                        <div className="flex items-center gap-2">
-                          <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                          </svg>
-                        </div>
                       </div>
                     </div>
                   </Link>
@@ -397,6 +397,7 @@ const DiscoverPage: React.FC = () => {
             )}
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

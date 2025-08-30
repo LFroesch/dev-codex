@@ -609,6 +609,40 @@ router.delete('/:id/technologies/:category/:name', requireProjectAccess('edit'),
   }
 });
 
+router.put('/:id/technologies/:category/:name', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
+  try {
+    const { category, name } = req.params;
+    const { version } = req.body;
+
+    const project = await Project.findById(req.params.id);
+
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    const technology = project.selectedTechnologies.find(
+      tech => tech.category === category && tech.name === decodeURIComponent(name)
+    );
+
+    if (!technology) {
+      return res.status(404).json({ message: 'Technology not found' });
+    }
+
+    // Update the technology version
+    if (version !== undefined) technology.version = version;
+
+    await project.save();
+
+    res.json({ 
+      message: 'Technology updated successfully',
+      technology: technology
+    });
+  } catch (error) {
+    console.error('Update technology error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // PACKAGES MANAGEMENT
 router.post('/:id/packages', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
@@ -675,6 +709,40 @@ router.delete('/:id/packages/:category/:name', requireProjectAccess('edit'), asy
     res.json({ message: 'Package removed successfully' });
   } catch (error) {
     console.error('Remove package error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+router.put('/:id/packages/:category/:name', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
+  try {
+    const { category, name } = req.params;
+    const { version } = req.body;
+
+    const project = await Project.findById(req.params.id);
+
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    const packageItem = project.selectedPackages.find(
+      pkg => pkg.category === category && pkg.name === decodeURIComponent(name)
+    );
+
+    if (!packageItem) {
+      return res.status(404).json({ message: 'Package not found' });
+    }
+
+    // Update the package version
+    if (version !== undefined) packageItem.version = version;
+
+    await project.save();
+
+    res.json({ 
+      message: 'Package updated successfully',
+      package: packageItem
+    });
+  } catch (error) {
+    console.error('Update package error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

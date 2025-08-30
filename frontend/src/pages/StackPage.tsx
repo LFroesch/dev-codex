@@ -2,6 +2,9 @@ import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Project, projectAPI } from '../api';
 import type { TechOption, TechCategory } from '../data/techStackData';
+import { STACK_CATEGORIES } from '../data/techStackData';
+import { handleAPIError } from '../services/errorService';
+import activityTracker from '../services/activityTracker';
 
 type PlatformType = 'web' | 'mobile' | 'desktop';
 
@@ -13,28 +16,34 @@ const PLATFORMS: { id: PlatformType; name: string; emoji: string; color: string 
 
 interface ContextType {
   selectedProject: Project | null;
+  user: any;
   onProjectRefresh: () => Promise<void>;
 }
 
 const StackPage: React.FC = () => {
-  const { selectedProject, onProjectRefresh } = useOutletContext<ContextType>();
+  const { selectedProject, user, onProjectRefresh } = useOutletContext<ContextType>();
   const [selectedPlatforms, setSelectedPlatforms] = useState<Set<PlatformType>>(() => new Set(['web', 'mobile', 'desktop']));
   const [error, setError] = useState('');
   const [loadingStates, setLoadingStates] = useState<{ [key: string]: boolean }>({});
   const [stackCategories, setStackCategories] = useState<TechCategory[]>([]);
   const [dataLoaded, setDataLoaded] = useState(false);
+  const [activeSection, setActiveSection] = useState<'current' | 'add'>('current');
+  const [selectedGroup, setSelectedGroup] = useState<string>('Frontend');
+  const [activeCategory, setActiveCategory] = useState<string>('');
+  const [editingVersion, setEditingVersion] = useState<{type: 'tech' | 'package', category: string, name: string, version: string} | null>(null);
 
-  // Lazy load tech stack data
+  // Load tech stack data and set up activity tracking
   useEffect(() => {
-    const loadData = async () => {
-      if (!dataLoaded) {
-        const { STACK_CATEGORIES } = await import('../data/techStackData');
-        setStackCategories(STACK_CATEGORIES);
-        setDataLoaded(true);
-      }
-    };
-    loadData();
-  }, [dataLoaded]);
+    if (!dataLoaded) {
+      setStackCategories(STACK_CATEGORIES);
+      setDataLoaded(true);
+    }
+    
+    // Set activity tracker context when project changes
+    if (selectedProject && user) {
+      activityTracker.setContext(selectedProject.id, user.id);
+    }
+  }, [dataLoaded, selectedProject, user]);
 
   // Map frontend categories to valid backend categories
   const getBackendCategory = (frontendCategory: string): { techCategory: string, packageCategory: string } => {
@@ -97,8 +106,23 @@ const StackPage: React.FC = () => {
           description: tech.description
         });
       }
+      
+      // Track activity
+      await activityTracker.trackCreate(
+        'tech',
+        'add-technology',
+        tech.name,
+        undefined,
+        { category: techCategory, packageCategory }
+      );
+      
       onProjectRefresh();
     } catch (err: any) {
+      handleAPIError(err, {
+        component: 'StackPage',
+        action: 'add_technology',
+        projectId: selectedProject.id
+      });
       setError(err.response?.data?.message || 'Failed to add item');
     } finally {
       setLoadingStates(prev => ({ ...prev, [loadingKey]: false }));
@@ -116,6 +140,43 @@ const StackPage: React.FC = () => {
     
     return isInTech || isInPackages;
   }, [selectedProject]);
+
+  const handleUpdateVersion = useCallback(async (type: 'tech' | 'package', category: string, name: string, newVersion: string) => {
+    if (!selectedProject) return;
+    
+    const loadingKey = `update-${category}-${name}`;
+    setLoadingStates(prev => ({ ...prev, [loadingKey]: true }));
+    setError('');
+
+    try {
+      if (type === 'tech') {
+        await projectAPI.updateTechnology(selectedProject.id, category, name, { version: newVersion });
+      } else {
+        await projectAPI.updatePackage(selectedProject.id, category, name, { version: newVersion });
+      }
+      
+      // Track activity
+      await activityTracker.trackUpdate(
+        type,
+        'update-version',
+        name,
+        undefined,
+        { category, oldVersion: editingVersion?.version, newVersion }
+      );
+      
+      onProjectRefresh();
+      setEditingVersion(null);
+    } catch (err: any) {
+      handleAPIError(err, {
+        component: 'StackPage',
+        action: 'update_version',
+        projectId: selectedProject.id
+      });
+      setError('Failed to update version');
+    } finally {
+      setLoadingStates(prev => ({ ...prev, [loadingKey]: false }));
+    }
+  }, [selectedProject, onProjectRefresh, editingVersion]);
 
   const handleRemoveTechnology = useCallback(async (category: string, name: string) => {
     if (!selectedProject) return;
@@ -135,7 +196,12 @@ const StackPage: React.FC = () => {
         await projectAPI.removePackage(selectedProject.id, packageItem.category, name);
       }
       onProjectRefresh();
-    } catch (err) {
+    } catch (err: any) {
+      handleAPIError(err, {
+        component: 'StackPage',
+        action: 'remove_technology',
+        projectId: selectedProject.id
+      });
       setError('Failed to remove item');
     } finally {
       setLoadingStates(prev => ({ ...prev, [loadingKey]: false }));
@@ -176,7 +242,7 @@ const StackPage: React.FC = () => {
         !option.platforms || option.platforms.some(platform => selectedPlatforms.has(platform))
       )
     })).filter(category => category.options.length > 0);
-  }, [selectedPlatforms]);
+  }, [stackCategories, selectedPlatforms]);
 
   // Create a lookup map for quick tech option access
   const techOptionsLookup = useMemo(() => {
@@ -200,6 +266,56 @@ const StackPage: React.FC = () => {
       return newSet;
     });
   }, []);
+
+  const VersionBadge: React.FC<{ 
+    type: 'tech' | 'package', 
+    category: string, 
+    name: string, 
+    version?: string 
+  }> = React.memo(({ type, category, name, version }) => {
+    if (!version) return null;
+
+    const isEditing = editingVersion?.type === type && editingVersion?.category === category && editingVersion?.name === name;
+    const loadingKey = `update-${category}-${name}`;
+    const isLoading = loadingStates[loadingKey];
+
+    if (isEditing) {
+      return (
+        <input
+          type="text"
+          className="badge badge-xs badge-ghost px-2 py-1 text-xs font-mono bg-base-200 border border-primary/30 outline-none focus:ring-1 focus:ring-primary w-16 min-w-0"
+          value={editingVersion.version}
+          onChange={(e) => setEditingVersion(prev => prev ? { ...prev, version: e.target.value } : null)}
+          onBlur={() => {
+            if (editingVersion.version.trim() !== version) {
+              handleUpdateVersion(type, category, name, editingVersion.version.trim());
+            } else {
+              setEditingVersion(null);
+            }
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.currentTarget.blur();
+            } else if (e.key === 'Escape') {
+              setEditingVersion(null);
+            }
+          }}
+          autoFocus
+          disabled={isLoading}
+        />
+      );
+    }
+
+    return (
+      <span 
+        className="badge badge-xs badge-ghost cursor-pointer hover:bg-base-300 transition-colors"
+        onDoubleClick={() => setEditingVersion({ type, category, name, version })}
+        title="Double-click to edit version"
+      >
+        v{version}
+      </span>
+    );
+  });
 
   const PlatformBadge: React.FC<{ platforms?: PlatformType[] }> = React.memo(({ platforms }) => {
     if (!platforms || platforms.length === 0) return null;
@@ -251,155 +367,137 @@ const StackPage: React.FC = () => {
       }
     };
 
-    return Object.entries(groups).map(([groupName, groupData]) => ({
+    const result = Object.entries(groups).map(([groupName, groupData]) => ({
       name: groupName,
       description: groupData.description,
       categories: filteredCategories.filter(cat => groupData.categories.includes(cat.id))
     })).filter(group => group.categories.length > 0);
+    
+    return result;
   }, [filteredCategories]);
 
-  const [selectedGroup, setSelectedGroup] = useState<string>('Frontend');
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
+  const TechOptionsDisplay: React.FC = React.memo(() => {
+    const group = categoryGroups.find(g => g.name === selectedGroup);
+    if (!group) return null;
 
-  const TechSelector: React.FC = React.memo(() => (
-    <div className="space-y-6">
-      {/* Group Selection Dropdown */}
-      <div className="max-w-md">
-        <select 
-          value={selectedGroup}
-          onChange={(e) => setSelectedGroup(e.target.value)}
-          className="select select-bordered w-full"
-        >
-          <option value="">Choose a category group...</option>
-          {categoryGroups.map((group) => (
-            <option key={group.name} value={group.name}>
-              {group.name} - {group.description}
-            </option>
-          ))}
-        </select>
-      </div>
+    // Auto-select first category if none selected
+    if (!activeCategory && group.categories.length > 0) {
+      setActiveCategory(group.categories[0].id);
+    }
 
-      {/* Collapsible Sections for Selected Group */}
-      {selectedGroup && (
-        <div className="space-y-3">
-          {(() => {
-            const group = categoryGroups.find(g => g.name === selectedGroup);
-            if (!group) return null;
+    const activeTab = group.categories.find(cat => cat.id === activeCategory);
+    if (!activeTab) return null;
 
-            return group.categories.map((category) => {
-              const isExpanded = expandedSections.has(category.id);
+    return (
+      <div className="space-y-4">
+        {/* Category Navigation */}
+        <div className="flex justify-center">
+          <div className="tabs tabs-boxed border-subtle shadow-sm opacity-90 max-w-full overflow-x-auto">
+            {group.categories.map((category) => (
+              <button
+                key={category.id}
+                onClick={() => setActiveCategory(category.id)}
+                className={`tab tab-sm min-h-10 font-bold text-sm whitespace-nowrap ${
+                  activeCategory === category.id ? 'tab-active' : ''
+                }`}
+              >
+                <span>{category.emoji}</span>
+                <span className="ml-2">{category.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Active Category Options */}
+        <div className="bg-base-100 rounded-lg border-subtle shadow-md p-4">
+          <div className="mb-4">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <span className="text-xl">{activeTab.emoji}</span>
+              {activeTab.name}
+            </h3>
+            <p className="text-sm text-base-content/60 mt-1">{activeTab.description}</p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {activeTab.options.map((option) => {
+              const selected = isSelected(option.name);
+              const loadingKey = selected 
+                ? `remove-${activeTab.id}-${option.name}`
+                : `add-${activeTab.id}-${option.name}`;
+              const isLoading = loadingStates[loadingKey];
+
               return (
-                <div key={category.id} className="collapse collapse-arrow bg-base-200">
-                  <input 
-                    type="checkbox" 
-                    checked={isExpanded}
-                    onChange={() => {
-                      setExpandedSections(prev => {
-                        const newSet = new Set(prev);
-                        if (newSet.has(category.id)) {
-                          newSet.delete(category.id);
-                        } else {
-                          newSet.add(category.id);
-                        }
-                        return newSet;
-                      });
-                    }}
-                  />
-                <div className="collapse-title font-medium flex items-center gap-3">
-                  <span className="text-xl">{category.emoji}</span>
-                  <div>
-                    <span className="text-lg">{category.name}</span>
-                    <p className="text-sm text-base-content/60 font-normal">{category.description}</p>
-                  </div>
-                </div>
-                <div className="collapse-content">
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 pt-4">
-                    {category.options.map((option) => {
-                      const selected = isSelected(option.name);
-                      const loadingKey = selected 
-                        ? `remove-${category.id}-${option.name}`
-                        : `add-${category.id}-${option.name}`;
-                      const isLoading = loadingStates[loadingKey];
-
-                      return (
-                        <div
-                          key={option.name}
-                          className={`card bg-base-100 shadow-sm border cursor-pointer transition-all hover:shadow-md ${
-                            selected 
-                              ? 'border-primary bg-primary/5' 
-                              : 'border-base-200 hover:border-primary/30'
-                          } ${isLoading ? 'opacity-60 pointer-events-none' : ''}`}
-                          onClick={() => {
-                            if (isLoading) return;
-                            if (selected) {
-                              handleRemoveTechnology(category.id, option.name);
-                            } else {
-                              handleAddTechnology(category.id, option);
-                            }
-                          }}
+                <div
+                  key={option.name}
+                  className={`bg-base-50 rounded-lg border-subtle shadow-sm hover:shadow-md hover:border-primary/30 transition-all duration-200 cursor-pointer p-4 group ${
+                    selected 
+                      ? 'border-primary bg-primary/5 shadow-lg' 
+                      : ''
+                  } ${isLoading ? 'opacity-60 pointer-events-none' : ''}`}
+                  onClick={() => {
+                    if (isLoading) return;
+                    if (selected) {
+                      handleRemoveTechnology(activeTab.id, option.name);
+                    } else {
+                      handleAddTechnology(activeTab.id, option);
+                    }
+                  }}
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-semibold text-sm group-hover:text-primary transition-colors duration-200 px-2 py-1 rounded-md bg-base-300">{option.name}</h4>
+                      {option.url && (
+                        <a
+                          href={option.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary hover:text-primary/80 text-sm"
+                          onClick={(e) => e.stopPropagation()}
+                          title="View documentation"
                         >
-                          <div className="card-body p-4">
-                            <div className="flex justify-between items-start mb-2">
-                              <div className="flex items-center gap-2">
-                                <h4 className="font-semibold text-sm">{option.name}</h4>
-                                {option.url && (
-                                  <a
-                                    href={option.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-primary hover:text-primary/80 text-sm"
-                                    onClick={(e) => e.stopPropagation()}
-                                    title="View documentation"
-                                  >
-                                    ↗️
-                                  </a>
-                                )}
-                              </div>
-                              <div>
-                                {isLoading ? (
-                                  <div className="loading loading-spinner loading-sm"></div>
-                                ) : selected ? (
-                                  <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                                    <svg className="w-3 h-3 text-primary-content" fill="currentColor" viewBox="0 0 20 20">
-                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                    </svg>
-                                  </div>
-                                ) : (
-                                  <div className="w-5 h-5 rounded border-2 border-base-300 flex items-center justify-center hover:border-primary transition-colors">
-                                    <svg className="w-3 h-3 text-base-content/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                    </svg>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                            
-                            <p className="text-xs text-base-content/70 leading-relaxed mb-3">
-                              {option.description}
-                            </p>
-                            
-                            <div className="flex items-center justify-between mt-4">
-                              <PlatformBadge platforms={option.platforms} />
-                              {option.latestVersion && (
-                                <div className="badge badge-sm badge-outline px-3 py-2">
-                                  v{option.latestVersion}
-                                </div>
-                              )}
-                            </div>
-                          </div>
+                          🔗
+                        </a>
+                      )}
+                    </div>
+                    <div>
+                      {isLoading ? (
+                        <div className="loading loading-spinner loading-sm"></div>
+                      ) : selected ? (
+                        <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                          <svg className="w-3 h-3 text-primary-content" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
                         </div>
-                      );
-                    })}
+                      ) : (
+                        <div className="w-5 h-5 rounded border-2 border-base-300 flex items-center justify-center hover:border-primary transition-colors">
+                          <svg className="w-3 h-3 text-base-content/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
+                  
+                  <p className="text-xs text-base-content/70 leading-relaxed mb-3">
+                    {option.description}
+                  </p>
+                  
+                  <div className="flex items-center justify-between mt-4">
+                    <PlatformBadge platforms={option.platforms} />
+                    {option.latestVersion && (
+                      <div className="badge badge-sm badge-outline px-3 py-2">
+                        v{option.latestVersion}
+                      </div>
+                    )}
+                  </div>
                 </div>
               );
-            });
-          })()}
+            })}
+          </div>
         </div>
-      )}
-    </div>
-  ));
+      </div>
+    );
+  });
 
   if (!selectedProject) {
     return (
@@ -414,7 +512,7 @@ const StackPage: React.FC = () => {
   }
 
   return (
-    <div className="p-6 space-y-8">
+    <div className="space-y-4">
       {error && (
         <div className="alert alert-error shadow-md">
           <svg className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
@@ -425,196 +523,261 @@ const StackPage: React.FC = () => {
         </div>
       )}
 
-      {/* Current Stack - Only show if there are technologies or packages */}
-      {totalSelectedCount > 0 && (
-        <div className="card bg-base-100 shadow-lg border border-base-content/10">
-          <div className="card-header bg-base-200 border-b border-base-content/10 p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-success/20 flex items-center justify-center">
-                  <span className="text-xl">✨</span>
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold">Current Stack</h2>
-                  <p className="text-base-content/60 text-sm">{totalSelectedCount} technologies selected</p>
-                </div>
+      {/* Section Navigation */}
+      <div className="flex justify-center">
+        <div className="tabs tabs-boxed border-subtle shadow-sm opacity-90">
+          <button 
+            className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'current' ? 'tab-active' : ''}`}
+            onClick={() => setActiveSection('current')}
+          >
+            <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>Current Stack <span className="text-xs opacity-70">({totalSelectedCount})</span></span>
+          </button>
+          <button 
+            className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'add' ? 'tab-active' : ''}`}
+            onClick={() => setActiveSection('add')}
+          >
+            <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            <span>Add Technologies</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Current Stack Section */}
+      {activeSection === 'current' && (
+        <div className="space-y-6">
+          {totalSelectedCount === 0 ? (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 mx-auto mb-4 bg-base-200 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-base-content/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
               </div>
+              <h3 className="text-lg font-medium mb-2 text-base-content/80">No technologies selected</h3>
+              <p className="text-sm text-base-content/60">Add technologies to your stack to get started</p>
             </div>
-          </div>
-          <div className="card-body p-6">
-            <div className="space-y-4">
-              {/* All selected items in one clean list */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {/* Technologies */}
-                {Object.entries(selectedTechsByCategory).map(([categoryId, techs]) => {
-                  if (!techs?.length) return null;
-                  // Find category by ID or fall back to a default for unknown backend categories
-                  const category = stackCategories.find(c => c.id === categoryId) || {
-                    id: categoryId,
-                    name: categoryId.charAt(0).toUpperCase() + categoryId.slice(1),
-                    emoji: '🔧',
-                    color: '#6B7280',
-                    description: '',
-                    options: []
-                  };
-                  
-                  return techs.map((tech) => {
-                    const loadingKey = `remove-${tech.category}-${tech.name}`;
-                    const isLoading = loadingStates[loadingKey];
-                    // Quick lookup instead of searching through all categories
-                    const techOption = techOptionsLookup.get(tech.name);
-                    
-                    return (
-                      <div
-                        key={`${categoryId}-${tech.name}`}
-                        className="flex items-center justify-between p-3 bg-base-200 rounded-lg hover:bg-base-300 transition-colors"
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm">{category.emoji}</span>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-sm">{tech.name}</span>
-                              {tech.version && (
-                                <span className="badge badge-xs badge-ghost">
-                                  v{tech.version}
-                                </span>
-                              )}
-                              {techOption?.url && (
-                                <a
-                                  href={techOption.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-primary hover:text-primary/80 text-xs"
-                                  title="View documentation"
-                                >
-                                  ↗️
-                                </a>
-                              )}
-                            </div>
-                            <span className="text-xs text-base-content/60">{category.name}</span>
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => handleRemoveTechnology(tech.category, tech.name)}
-                          className={`btn btn-ghost btn-sm text-error hover:bg-error/10 ${isLoading ? 'loading' : ''}`}
-                          disabled={isLoading}
-                        >
-                          {isLoading ? '' : '×'}
-                        </button>
-                      </div>
-                    );
-                  });
-                })}
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {/* Technologies */}
+              {Object.entries(selectedTechsByCategory).map(([categoryId, techs]) => {
+                if (!techs?.length) return null;
+                const category = stackCategories.find(c => c.id === categoryId) || {
+                  id: categoryId,
+                  name: categoryId.charAt(0).toUpperCase() + categoryId.slice(1),
+                  emoji: '🔧',
+                  color: '#6B7280',
+                  description: '',
+                  options: []
+                };
                 
-                {/* Packages */}
-                {Object.entries(selectedPackagesByCategory).map(([categoryId, packages]) => {
-                  if (!packages?.length) return null;
-                  // Find category by ID or fall back to a default for unknown backend categories
-                  const category = stackCategories.find(c => c.id === categoryId) || {
-                    id: categoryId,
-                    name: categoryId.charAt(0).toUpperCase() + categoryId.slice(1),
-                    emoji: '📦',
-                    color: '#6B7280',
-                    description: '',
-                    options: []
-                  };
+                return techs.map((tech) => {
+                  const loadingKey = `remove-${tech.category}-${tech.name}`;
+                  const isLoading = loadingStates[loadingKey];
+                  const techOption = techOptionsLookup.get(tech.name);
                   
-                  return packages.map((pkg) => {
-                    const loadingKey = `remove-${pkg.category}-${pkg.name}`;
-                    const isLoading = loadingStates[loadingKey];
-                    // Quick lookup instead of searching through all categories
-                    const pkgOption = techOptionsLookup.get(pkg.name);
-                    
-                    return (
-                      <div
-                        key={`${categoryId}-${pkg.name}`}
-                        className="flex items-center justify-between p-3 bg-base-200 rounded-lg hover:bg-base-300 transition-colors"
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm">{category.emoji}</span>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-sm">{pkg.name}</span>
-                              {pkg.version && (
-                                <span className="badge badge-xs badge-ghost">
-                                  v{pkg.version}
-                                </span>
-                              )}
-                              {pkgOption?.url && (
-                                <a
-                                  href={pkgOption.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-primary hover:text-primary/80 text-xs"
-                                  title="View documentation"
-                                >
-                                  ↗️
-                                </a>
-                              )}
-                            </div>
-                            <span className="text-xs text-base-content/60">{category.name}</span>
+                  return (
+                    <div
+                      key={`${categoryId}-${tech.name}`}
+                      className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4 cursor-default group"
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h3 className="font-semibold text-base-content group-hover:text-primary transition-colors duration-200 px-2 py-1 rounded-md bg-base-300 inline-block">
+                              {tech.name}
+                            </h3>
+                            <VersionBadge 
+                              type="tech" 
+                              category={tech.category} 
+                              name={tech.name} 
+                              version={tech.version} 
+                            />
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="text-sm">{category.emoji}</span>
+                            <p className="text-xs text-base-content/60">{category.name}</p>
                           </div>
                         </div>
-                        <button
-                          onClick={() => handleRemoveTechnology(pkg.category, pkg.name)}
-                          className={`btn btn-ghost btn-sm text-error hover:bg-error/10 ${isLoading ? 'loading' : ''}`}
-                          disabled={isLoading}
-                        >
-                          {isLoading ? '' : '×'}
-                        </button>
+                        <div className="flex items-center gap-2">
+                          {techOption?.url && (
+                            <a
+                              href={techOption.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary hover:text-primary/80 text-sm group-hover:opacity-100 transition-opacity"
+                              title="View documentation"
+                            >
+                              🔗
+                            </a>
+                          )}
+                          <button
+                            onClick={() => handleRemoveTechnology(tech.category, tech.name)}
+                            className={`btn btn-ghost btn-sm text-error hover:bg-error/10 group-hover:opacity-100 transition-opacity ${isLoading ? 'loading' : ''}`}
+                            title='Remove technology'
+                            disabled={isLoading}
+                          >
+                            {isLoading ? '' : '×'}
+                          </button>
+                        </div>
                       </div>
-                    );
-                  });
-                })}
-              </div>
+                      {techOption?.description && (
+                        <p className="text-sm text-base-content/70">
+                          {techOption.description}
+                        </p>
+                      )}
+                    </div>
+                  );
+                });
+              })}
+              
+              {/* Packages */}
+              {Object.entries(selectedPackagesByCategory).map(([categoryId, packages]) => {
+                if (!packages?.length) return null;
+                const category = stackCategories.find(c => c.id === categoryId) || {
+                  id: categoryId,
+                  name: categoryId.charAt(0).toUpperCase() + categoryId.slice(1),
+                  emoji: '📦',
+                  color: '#6B7280',
+                  description: '',
+                  options: []
+                };
+                
+                return packages.map((pkg) => {
+                  const loadingKey = `remove-${pkg.category}-${pkg.name}`;
+                  const isLoading = loadingStates[loadingKey];
+                  const pkgOption = techOptionsLookup.get(pkg.name);
+                  
+                  return (
+                    <div
+                      key={`${categoryId}-${pkg.name}`}
+                      className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4 cursor-default group"
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h3 className="font-semibold text-base-content group-hover:text-primary transition-colors duration-200 px-2 py-1 rounded-md bg-base-300 inline-block">
+                              {pkg.name}
+                            </h3>
+                            <VersionBadge 
+                              type="package" 
+                              category={pkg.category} 
+                              name={pkg.name} 
+                              version={pkg.version} 
+                            />
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="text-sm">{category.emoji}</span>
+                            <p className="text-xs text-base-content/60">{category.name}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {pkgOption?.url && (
+                            <a
+                              href={pkgOption.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary hover:text-primary/80 text-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                              title="View documentation"
+                            >
+                              🔗
+                            </a>
+                          )}
+                          <button
+                            onClick={() => handleRemoveTechnology(pkg.category, pkg.name)}
+                            className={`btn btn-ghost btn-sm text-error hover:bg-error/10 opacity-0 group-hover:opacity-100 transition-opacity ${isLoading ? 'loading' : ''}`}
+                            disabled={isLoading}
+                          >
+                            {isLoading ? '' : '×'}
+                          </button>
+                        </div>
+                      </div>
+                      {pkgOption?.description && (
+                        <p className="text-sm text-base-content/70">
+                          {pkgOption.description}
+                        </p>
+                      )}
+                    </div>
+                  );
+                });
+              })}
             </div>
-          </div>
+          )}
         </div>
       )}
 
-      {/* Add to Stack */}
-      <div className="card bg-base-100 shadow-lg border border-base-content/10">
-        <div className="card-header bg-base-200 border-b border-base-content/10 p-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-              <span className="text-xl">🛠️</span>
+      {/* Add Technologies Section */}
+      {activeSection === 'add' && (
+        <div className="space-y-6">
+          {/* Combined Selection Panel */}
+          <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Platform Selection */}
+              <div>
+                <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                  <span className="text-xl">🎯</span>
+                  Target Platforms
+                </h3>
+                <div className="grid grid-cols-3 gap-2">
+                  {PLATFORMS.map(platform => (
+                    <button
+                      key={platform.id}
+                      onClick={() => handlePlatformToggle(platform.id)}
+                      className={`text-left p-2 rounded-md border transition-all duration-200 hover:shadow-md ${
+                        selectedPlatforms.has(platform.id)
+                          ? 'border-primary bg-primary shadow-sm'
+                          : 'border-base-300 hover:border-primary/30 bg-base-200'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>{platform.emoji}</span>
+                        <span className="font-medium text-xs">{platform.name}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Technology Categories Selection */}
+              <div>
+                <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                  <span className="text-xl">⚙️</span>
+                  Category Groups
+                </h3>
+                <div className="grid grid-cols-3 gap-2">
+                  {categoryGroups.map((group) => (
+                    <button
+                      key={group.name}
+                      onClick={() => {
+                        setSelectedGroup(group.name);
+                        setActiveCategory(''); // Reset active category when group changes
+                      }}
+                      className={`text-left p-2 rounded-md border transition-all duration-200 hover:shadow-md ${
+                        selectedGroup === group.name
+                          ? 'border-primary bg-primary shadow-sm'
+                          : 'border-base-300 hover:border-primary/30 bg-base-200'
+                      }`}
+                    >
+                      <div className="font-medium text-xs">{group.name}</div>
+                      <div className="text-xs text-base-content/60 mt-0.5 leading-tight">{group.description}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
+          </div>
+
+          {/* Technology Options */}
+          {selectedGroup && (
             <div>
-              <h2 className="text-xl font-bold">Add to Stack</h2>
-              <p className="text-base-content/60 text-sm">Choose technologies for your project</p>
+              <TechOptionsDisplay />
             </div>
-          </div>
+          )}
         </div>
-        <div className="card-body p-6 space-y-3">
-          {/* Target Platforms */}
-          <div>
-            <h3 className="text-lg font-semibold mb-3">Target Platforms</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
-              {PLATFORMS.map(platform => (
-                <button
-                  key={platform.id}
-                  onClick={() => handlePlatformToggle(platform.id)}
-                  className={`btn btn-sm gap-2 w-full ${
-                    selectedPlatforms.has(platform.id)
-                      ? 'btn-primary'
-                      : 'btn-outline'
-                  }`}
-                >
-                  <span>{platform.emoji}</span>
-                  <span>{platform.name}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="divider"></div>
-
-          {/* Tech Stack Categories */}
-          <div>
-            <TechSelector />
-          </div>
-        </div>
-      </div>
+      )}
     </div>
   );
 };

@@ -118,6 +118,10 @@ class ProjectService extends BaseApiService {
     return this.delete(`/${projectId}/technologies/${category}/${encodeURIComponent(name)}`);
   }
 
+  async updateTechnology(projectId: string, category: string, name: string, data: { version: string }): Promise<{ message: string; technology: BaseSelectedTechnology }> {
+    return this.put(`/${projectId}/technologies/${category}/${encodeURIComponent(name)}`, data);
+  }
+
   // Packages management
   async addPackage(projectId: string, data: CreatePackageData): Promise<{ message: string; package: BaseSelectedPackage }> {
     return this.post(`/${projectId}/packages`, data);
@@ -125,6 +129,10 @@ class ProjectService extends BaseApiService {
 
   async removePackage(projectId: string, category: string, name: string): Promise<{ message: string }> {
     return this.delete(`/${projectId}/packages/${category}/${encodeURIComponent(name)}`);
+  }
+
+  async updatePackage(projectId: string, category: string, name: string, data: { version: string }): Promise<{ message: string; package: BaseSelectedPackage }> {
+    return this.put(`/${projectId}/packages/${category}/${encodeURIComponent(name)}`, data);
   }
 
   // Import/Export functionality

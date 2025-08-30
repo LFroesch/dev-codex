@@ -619,7 +619,6 @@ const Layout: React.FC = () => {
                             (p.category && p.category.toLowerCase().includes(newSearchTerm.toLowerCase())) ||
                             (p.tags && p.tags.some((tag: string) => tag.toLowerCase().includes(newSearchTerm.toLowerCase())))
                           ).length;
-                          console.log('Filtered projects count:', filteredCount);
                                                     
                           if (searchParams.get('view') !== 'projects') {
                             navigate('/notes?view=projects');

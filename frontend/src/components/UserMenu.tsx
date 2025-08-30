@@ -79,12 +79,15 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout }) => {
             Contact Support
           </div>
           {user?.isAdmin && (
+            <>
+            <hr className="my-2 border-base-300" />
             <div 
               className="p-2 rounded cursor-pointer hover:bg-base-200"
               onClick={() => handleNavigation('/admin')}
             >
               Admin Dashboard
             </div>
+            </>
           )}
           <hr className="my-2 border-base-300" />
           <div 

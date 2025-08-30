@@ -134,9 +134,23 @@ class AnalyticsService {
       if (document.hidden) {
         this.stopHeartbeat();
       } else {
+        // When coming back from hidden (potential sleep/wake), reset activity
         this.recordActivity();
         this.startHeartbeat();
         this.sendHeartbeatNow();
+        
+        // Check for potential sleep period and reset lastActivity if needed
+        if (this.session) {
+          const now = Date.now();
+          const timeSinceLastActivity = now - this.session.lastActivity;
+          const SLEEP_THRESHOLD = 5 * 60 * 1000; // 5 minutes
+          
+          if (timeSinceLastActivity > SLEEP_THRESHOLD) {
+            // Likely woke from sleep, update lastActivity to current time
+            this.session.lastActivity = now;
+            this.updateStorage();
+          }
+        }
       }
     });
 
@@ -377,8 +391,22 @@ class AnalyticsService {
     if (!this.session) return null;
 
     const now = Date.now();
-    const duration = now - this.session.startTime;
     const timeSinceLastActivity = now - this.session.lastActivity;
+    
+    // Detect if system was asleep (gap > 5 minutes since last activity)
+    const SLEEP_THRESHOLD = 5 * 60 * 1000; // 5 minutes
+    let adjustedDuration = now - this.session.startTime;
+    
+    if (timeSinceLastActivity > SLEEP_THRESHOLD) {
+      // System was likely asleep, adjust the session start time to exclude sleep period
+      const sleepTime = timeSinceLastActivity - SLEEP_THRESHOLD;
+      adjustedDuration = adjustedDuration - sleepTime;
+      
+      // Update session start time to reflect the adjustment (only for display)
+      // Don't modify the actual session.startTime to avoid affecting backend tracking
+    }
+    
+    const duration = Math.max(adjustedDuration, 0); // Ensure duration is never negative
 
     return {
       sessionId: this.session.sessionId,

@@ -19,6 +19,7 @@ import invitationRoutes from './routes/invitations';
 import notificationRoutes from './routes/notifications';
 import publicRoutes from './routes/public';
 import ideasRoutes from './routes/ideas';
+import newsRoutes from './routes/news';
 import { normalRateLimit, authRateLimit, devRateLimit } from './middleware/rateLimit';
 import { sessionMiddleware, AnalyticsService } from './middleware/analytics';
 import ReminderService from './services/reminderService';
@@ -89,6 +90,7 @@ app.use('/api/tickets', rateLimitMiddleware, ticketRoutes);
 app.use('/api/analytics', rateLimitMiddleware, sessionMiddleware, analyticsRoutes);
 app.use('/api/activity-logs', rateLimitMiddleware, activityLogRoutes);
 app.use('/api/ideas', rateLimitMiddleware, ideasRoutes);
+app.use('/api/news', rateLimitMiddleware, newsRoutes);
 
 // Debug routes (only in development)
 if (isDevelopment) {

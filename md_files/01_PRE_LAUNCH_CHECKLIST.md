@@ -1,9 +1,11 @@
-# Tomorrow
+# 8/30/25 Checklist
 - [ ] Unit Tests
 - [ ] Clean console.logs
-- [ ] Prep for Prod
-- [ ] Clean Rest of pages - matching UI/UX/buttons
+- [ ] Clean Rest of pages - matching UI/UX/buttons (Human Manual check and fix)
 - [ ] Clean Up Menus / Pages / Panels etc for better UX (Human Manual check and fix)
+
+## Night
+- [ ] Prep for Prod
 
 ## ??? IMPORTANT
 - [ ] AI Integration at a basic level?

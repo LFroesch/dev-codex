@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
-import { analyticsAPI } from '../api';
+import { analyticsAPI, newsAPI } from '../api';
 import OptimizedAnalytics from '../components/OptimizedAnalytics';
 import ConfirmationModal from '../components/ConfirmationModal';
 
@@ -56,9 +56,22 @@ interface TicketStats {
   closed: number;
 }
 
+interface NewsPost {
+  _id: string;
+  title: string;
+  content: string;
+  summary?: string;
+  type: 'news' | 'update' | 'dev_log' | 'announcement';
+  isPublished: boolean;
+  publishedAt?: string;
+  authorId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 const AdminDashboardPage: React.FC = () => {
   const navigate = useNavigate();
-  const context = useOutletContext<{ activeAdminTab?: 'users' | 'tickets' | 'analytics' }>();
+  const context = useOutletContext<{ activeAdminTab?: 'users' | 'tickets' | 'analytics' | 'news' }>();
   const activeTab = context?.activeAdminTab || 'users';
   const [ticketStatusTab, setTicketStatusTab] = useState<'open' | 'in_progress' | 'resolved' | 'closed'>('open');
   const [users, setUsers] = useState<User[]>([]);
@@ -77,7 +90,18 @@ const AdminDashboardPage: React.FC = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showAnalyticsResetConfirm, setShowAnalyticsResetConfirm] = useState(false);
   const [resettingAnalytics, setResettingAnalytics] = useState(false);
-
+  const [newsPosts, setNewsPosts] = useState<NewsPost[]>([]);
+  const [showNewsForm, setShowNewsForm] = useState(false);
+  const [editingPost, setEditingPost] = useState<NewsPost | null>(null);
+  const [newsForm, setNewsForm] = useState({
+    title: '',
+    content: '',
+    summary: '',
+    type: 'news' as 'news' | 'update' | 'dev_log' | 'announcement',
+    isPublished: false
+  });
+  const [postToDelete, setPostToDelete] = useState<NewsPost | null>(null);
+  
   const fetchUsers = async (pageNum: number = 1) => {
     try {
       const response = await fetch(`/api/admin/users?page=${pageNum}&limit=10`, {
@@ -267,6 +291,142 @@ const AdminDashboardPage: React.FC = () => {
     }
   };
 
+  const fetchNewsPosts = async () => {
+    try {
+      const response = await newsAPI.getAll();
+      setNewsPosts(response.posts);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
+  const handleNewsSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      if (editingPost) {
+        await newsAPI.update(editingPost._id, newsForm);
+      } else {
+        await newsAPI.create(newsForm);
+      }
+      
+      await fetchNewsPosts();
+      setShowNewsForm(false);
+      setEditingPost(null);
+      setNewsForm({
+        title: '',
+        content: '',
+        summary: '',
+        type: 'news',
+        isPublished: false
+      });
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
+  const handleEditPost = (post: NewsPost) => {
+    setEditingPost(post);
+    setNewsForm({
+      title: post.title,
+      content: post.content,
+      summary: post.summary || '',
+      type: post.type,
+      isPublished: post.isPublished
+    });
+    setShowNewsForm(true);
+  };
+
+  const handleDeletePost = (post: NewsPost) => {
+    setPostToDelete(post);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDeletePost = async () => {
+    if (!postToDelete) return;
+    
+    try {
+      await newsAPI.delete(postToDelete._id);
+      await fetchNewsPosts();
+      setShowDeleteConfirm(false);
+      setPostToDelete(null);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
+  const handleTogglePublish = async (post: NewsPost) => {
+    try {
+      await newsAPI.update(post._id, { isPublished: !post.isPublished });
+      await fetchNewsPosts();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
+  // Enhanced markdown to HTML converter (same as EnhancedTextEditor)
+  const renderMarkdown = (text: string, isPreview = false): string => {
+    if (!text) return '<p class="text-base-content/60 italic">Nothing to preview yet...</p>';
+    
+    let processedText = text;
+    
+    // Helper function to ensure URL has protocol
+    const ensureProtocol = (url: string): string => {
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        return url;
+      }
+      return 'https://' + url;
+    };
+    
+    // Process in order to avoid conflicts
+    
+    // 1. Headers - remove top margin for previews
+    const headerMargin = isPreview ? 'mt-1' : 'mt-4';
+    processedText = processedText
+      .replace(/^### (.*$)/gim, `<h3 class="text-lg font-semibold ${headerMargin} mb-2">$1</h3>`)
+      .replace(/^## (.*$)/gim, `<h2 class="text-xl font-semibold ${headerMargin} mb-2">$1</h2>`)
+      .replace(/^# (.*$)/gim, `<h1 class="text-2xl font-bold ${headerMargin} mb-2">$1</h1>`);
+    
+    // 2. Code blocks (must come before inline code and links)
+    processedText = processedText
+      .replace(/```([\s\S]*?)```/gim, '<pre class="bg-base-200 rounded p-3 my-2 overflow-x-auto"><code class="text-sm font-mono">$1</code></pre>')
+      .replace(/`([^`]+)`/gim, '<code class="bg-base-200 px-2 py-1 rounded text-sm font-mono">$1</code>');
+    
+    // 3. Markdown-style links [text](url) - process before auto-linking
+    processedText = processedText.replace(/\[([^\]]+)\]\(([^)]+)\)/gim, (_, text, url) => {
+      const fullUrl = ensureProtocol(url);
+      return `<a href="${fullUrl}" class="link link-primary" target="_blank" rel="noopener noreferrer">${text}</a>`;
+    });
+    
+    // 4. Auto-detect plain URLs
+    const urlRegex = /(?<!href=["'])(https?:\/\/[^\s<>"']+)/gi;
+    processedText = processedText.replace(urlRegex, '<a href="$1" class="link link-primary" target="_blank" rel="noopener noreferrer">$1</a>');
+    
+    // 5. Bold and italic (must come after links to avoid conflicts)
+    processedText = processedText
+      .replace(/\*\*\*(.*?)\*\*\*/gim, '<strong><em class="font-bold italic">$1</em></strong>')
+      .replace(/\*\*(.*?)\*\*/gim, '<strong class="font-bold">$1</strong>')
+      .replace(/(?<!\*)\*([^\*\n]+)\*(?!\*)/gim, '<em class="italic">$1</em>');
+    
+    // 6. Lists
+    processedText = processedText
+      .replace(/^\* (.*$)/gim, '<li class="ml-4">• $1</li>')
+      .replace(/^- (.*$)/gim, '<li class="ml-4">• $1</li>')
+      .replace(/^\d+\. (.*$)/gim, '<li class="ml-4 list-decimal">$1</li>');
+    
+    // 7. Line breaks and paragraphs
+    processedText = processedText
+      .replace(/\n\n/g, '</p><p class="mb-2">')
+      .replace(/\n/g, '<br/>');
+    
+    // 8. Wrap in paragraph tags if not already wrapped
+    if (!processedText.includes('<p') && !processedText.includes('<h') && !processedText.includes('<pre')) {
+      processedText = `<p class="mb-2">${processedText}</p>`;
+    }
+    
+    return processedText;
+  };
+
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
@@ -274,6 +434,8 @@ const AdminDashboardPage: React.FC = () => {
       try {
         if (activeTab === 'users') {
           await Promise.all([fetchUsers(1), fetchStats()]);
+        } else if (activeTab === 'news') {
+          await fetchNewsPosts();
         } else {
           await fetchTickets(1);
         }
@@ -992,6 +1154,224 @@ const AdminDashboardPage: React.FC = () => {
           />
         )}
 
+        {/* News Tab */}
+        {activeTab === 'news' && (
+          <div className="space-y-6">
+            {/* Header with Create Button */}
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-bold">News & Updates Management</h2>
+              <button
+                className="btn btn-primary"
+                onClick={() => {
+                  setEditingPost(null);
+                  setNewsForm({
+                    title: '',
+                    content: '',
+                    summary: '',
+                    type: 'news',
+                    isPublished: false
+                  });
+                  setShowNewsForm(true);
+                }}
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Create Post
+              </button>
+            </div>
+
+            {/* Compact Create News Form */}
+            <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200">
+              {!showNewsForm ? (
+                <button
+                  onClick={() => setShowNewsForm(true)}
+                  className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-base-200/40 transition-colors rounded-lg"
+                >
+                  <div className="w-8 h-8 bg-info/10 rounded-full flex items-center justify-center">
+                    <svg className="w-4 h-4 text-info" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                  </div>
+                  <span className="text-base-content/60">Create a new post...</span>
+                </button>
+              ) : (
+                <form onSubmit={handleNewsSubmit} className="p-4 space-y-3">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-medium text-sm text-base-content/70">
+                      {editingPost ? 'Edit Post' : 'New Post'}
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowNewsForm(false);
+                        setEditingPost(null);
+                        setNewsForm({
+                          title: '',
+                          content: '',
+                          summary: '',
+                          type: 'news',
+                          isPublished: false
+                        });
+                      }}
+                      className="text-base-content/40 hover:text-base-content/60 transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-3">
+                    <input
+                      type="text"
+                      value={newsForm.title}
+                      onChange={(e) => setNewsForm(prev => ({ ...prev, title: e.target.value }))}
+                      className="input input-bordered input-sm w-full"
+                      placeholder="Post title..."
+                      required
+                      autoFocus
+                    />
+                    
+                    <select
+                      className="select select-bordered select-sm w-full"
+                      value={newsForm.type}
+                      onChange={(e) => setNewsForm(prev => ({ ...prev, type: e.target.value as any }))}
+                    >
+                      <option value="news">📰 News</option>
+                      <option value="update">🔄 Update</option>
+                      <option value="dev_log">👩‍💻 Dev Log</option>
+                      <option value="announcement">📢 Announcement</option>
+                    </select>
+                  </div>
+                  
+                  <textarea
+                    value={newsForm.summary}
+                    onChange={(e) => setNewsForm(prev => ({ ...prev, summary: e.target.value }))}
+                    className="textarea textarea-bordered textarea-sm w-full"
+                    placeholder="Brief summary (optional)..."
+                    rows={2}
+                  />
+                  
+                  <textarea
+                    value={newsForm.content}
+                    onChange={(e) => setNewsForm(prev => ({ ...prev, content: e.target.value }))}
+                    className="textarea textarea-bordered textarea-sm w-full"
+                    placeholder="Write your post content..."
+                    rows={4}
+                    required
+                  />
+                  
+                  <div className="flex items-center gap-2 pt-2">
+                    <label className="cursor-pointer label gap-2">
+                      <input
+                        type="checkbox"
+                        className="checkbox checkbox-primary checkbox-sm"
+                        checked={newsForm.isPublished}
+                        onChange={(e) => setNewsForm(prev => ({ ...prev, isPublished: e.target.checked }))}
+                      />
+                      <span className="label-text text-sm">Publish immediately</span>
+                    </label>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 pt-2">
+                    <button
+                      type="submit"
+                      className="btn btn-primary btn-sm"
+                    >
+                      {editingPost ? 'Update' : 'Create Post'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowNewsForm(false);
+                        setEditingPost(null);
+                        setNewsForm({
+                          title: '',
+                          content: '',
+                          summary: '',
+                          type: 'news',
+                          isPublished: false
+                        });
+                      }}
+                      className="btn btn-ghost btn-sm"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+
+            {newsPosts.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 mx-auto mb-4 bg-base-200 rounded-full flex items-center justify-center">
+                  <svg className="w-8 h-8 text-base-content/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9.5a2.5 2.5 0 00-2.5-2.5H15" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-medium mb-2 text-base-content/80">No posts yet</h3>
+                <p className="text-sm text-base-content/60">Create your first news post to get started</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {newsPosts.map((post) => (
+                  <div key={post._id} className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 h-48 flex flex-col">
+                    <div className="p-4 flex flex-col flex-1">
+                      <div className="flex items-start justify-between mb-3">
+                        <h3 className="font-semibold text-base-content truncate px-2 py-1 rounded-md bg-base-300 inline-block w-fit">
+                          {post.type === 'news' ? '📰' : post.type === 'update' ? '🔄' : post.type === 'dev_log' ? '👩‍💻' : '📢'} {post.title}
+                        </h3>
+                        <span className={`badge badge-xs ${post.isPublished ? 'badge-success' : 'badge-ghost'}`}>
+                          {post.isPublished ? '✓' : '○'}
+                        </span>
+                      </div>
+                      
+                      {post.summary && (
+                        <p className="text-sm text-base-content/60 mb-2 line-clamp-1">
+                          {post.summary}
+                        </p>
+                      )}
+                      
+                      <div 
+                        className="text-sm text-base-content/70 mb-3 line-clamp-3 flex-1 prose prose-sm max-w-none"
+                        dangerouslySetInnerHTML={{ __html: renderMarkdown(post.content.substring(0, 150) + '...', true) }}
+                      />
+                      
+                      <div className="flex items-center justify-between text-xs text-base-content/50 pt-3 mt-auto border-t border-base-200">
+                        <span>{new Date(post.createdAt).toLocaleDateString()}</span>
+                        <div className="flex gap-1">
+                          <button
+                            className={`btn btn-xs ${post.isPublished ? 'btn-warning' : 'btn-success'}`}
+                            onClick={() => handleTogglePublish(post)}
+                            title={post.isPublished ? 'Unpublish' : 'Publish'}
+                          >
+                            {post.isPublished ? '👁️‍🗨️' : '👁️'}
+                          </button>
+                          <button
+                            className="btn btn-xs btn-ghost"
+                            onClick={() => handleEditPost(post)}
+                            title="Edit"
+                          >
+                            ✏️
+                          </button>
+                          <button
+                            className="btn btn-xs btn-error btn-outline"
+                            onClick={() => handleDeletePost(post)}
+                            title="Delete"
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
 
         {/* User Details Modal */}
         {selectedUser && (
@@ -1130,6 +1510,27 @@ const AdminDashboardPage: React.FC = () => {
               </ul>
             </div>`}
           confirmText={resettingAnalytics ? "Resetting..." : "Reset Analytics"}
+          variant="error"
+        />
+
+        <ConfirmationModal
+          isOpen={showDeleteConfirm && !!postToDelete}
+          onConfirm={confirmDeletePost}
+          onCancel={() => {
+            setShowDeleteConfirm(false);
+            setPostToDelete(null);
+          }}
+          title="Delete News Post"
+          message={`Are you sure you want to delete the post <strong>"${postToDelete?.title}"</strong>?<br/><br/>
+            <div style="background: rgb(248 113 113 / 0.1); padding: 1rem; border-radius: 0.5rem; margin: 1rem 0;">
+              <p style="color: rgb(248 113 113); font-weight: 600; margin-bottom: 0.5rem;">⚠️ This action cannot be undone!</p>
+              <ul style="color: rgb(138 138 138); font-size: 0.875rem; margin: 0; padding-left: 1rem;">
+                <li>• The post will be permanently deleted</li>
+                <li>• It will be removed from the public news page</li>
+                <li>• Post content cannot be recovered</li>
+              </ul>
+            </div>`}
+          confirmText="Delete Post"
           variant="error"
         />
     </div>

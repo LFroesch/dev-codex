@@ -5,6 +5,7 @@ export { teamAPI, invitationAPI } from './team';
 export { notificationAPI } from './notifications';
 export { analyticsAPI, publicAPI } from './analytics';
 export { ideasAPI } from './ideas';
+export { newsAPI } from './news';
 export { apiClient } from './base';
 
 // Re-export types for backward compatibility

@@ -168,7 +168,7 @@ const EnhancedTextEditor: React.FC<EnhancedTextEditorProps> = ({
   ];
 
   return (
-    <div className="border border-base-300 rounded-lg bg-base-100 shadow-sm">
+    <div className="border border-base-300 rounded-lg bg-base-100 shadow-sm flex flex-col h-full">
       {/* Toolbar */}
       <div className="flex items-center justify-between p-3 bg-base-200 border-b border-base-300 rounded-t-lg">
         <div className="flex items-center gap-1">
@@ -233,9 +233,9 @@ const EnhancedTextEditor: React.FC<EnhancedTextEditorProps> = ({
       </div>
 
       {/* Content Area */}
-      <div className="relative">
+      <div className="relative flex-1 flex flex-col">
         {isPreview ? (
-          <div className="p-6 min-h-[300px] sm:min-h-[400px] lg:min-h-[500px] xl:min-h-[600px] bg-base-100">
+          <div className="p-6 flex-1 overflow-auto bg-base-100">
             <div 
               className="prose prose-sm max-w-none text-base-content"
               dangerouslySetInnerHTML={{ __html: renderMarkdown(value) }}
@@ -243,7 +243,7 @@ const EnhancedTextEditor: React.FC<EnhancedTextEditorProps> = ({
           </div>
         ) : (
           <textarea
-            className="enhanced-textarea w-full min-h-[300px] sm:min-h-[500px] lg:min-h-[600px] xl:min-h-[700px] p-6 resize-none border-0 focus:outline-none bg-base-100 text-base-content font-mono text-sm leading-relaxed rounded-b-lg"
+            className="enhanced-textarea w-full flex-1 p-6 resize-none border-0 focus:outline-none bg-base-100 text-base-content font-mono text-sm leading-relaxed rounded-b-lg"
             value={value}
             onChange={(e) => onChange(e.target.value)}
             onSelect={(e) => {

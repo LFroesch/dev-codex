@@ -449,7 +449,8 @@ const Layout: React.FC = () => {
     { id: 'docs', label: 'Docs', path: '/docs' },
     { id: 'deployment', label: 'Deployment', path: '/deployment' },
     { id: 'public', label: 'Public', path: '/public' },
-    { id: 'settings', label: 'Info/Sharing', path: '/settings' }
+    { id: 'sharing', label: 'Sharing', path: '/sharing' },
+    { id: 'settings', label: 'Settings', path: '/settings' }
   ];
 
   const currentTab = location.pathname.slice(1) || 'notes';
@@ -672,7 +673,7 @@ const Layout: React.FC = () => {
                   <span>Projects</span>
                 </button>
                 <button 
-                  className={`tab tab-sm ${(location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/settings') && searchParams.get('view') !== 'projects' ? 'tab-active' : ''} gap-2 font-bold whitespace-nowrap min-h-10 px-4`}
+                  className={`tab tab-sm ${(location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && searchParams.get('view') !== 'projects' ? 'tab-active' : ''} gap-2 font-bold whitespace-nowrap min-h-10 px-4`}
                   onClick={() => handleNavigateWithCheck('/notes')}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -734,7 +735,7 @@ const Layout: React.FC = () => {
             )}
 
             {/* Project Details Submenu - Mobile */}
-            {selectedProject && (location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/settings') && searchParams.get('view') !== 'projects' && (
+            {selectedProject && (location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && searchParams.get('view') !== 'projects' && (
             <div className="flex justify-center px-2 py-1">
               <div className="tabs tabs-boxed border-subtle shadow-sm overflow-x-auto scrollbar-hide">
                 {tabs.map((tab) => (
@@ -749,6 +750,7 @@ const Layout: React.FC = () => {
                        tab.id === 'docs' ? 'Docs' : 
                        tab.id === 'deployment' ? 'Deploy' : 
                        tab.id === 'public' ? 'Public' : 
+                       tab.id === 'sharing' ? 'Sharing' :
                        tab.id === 'settings' ? 'Settings' : tab.label}
                     </span>
                   </button>
@@ -850,7 +852,7 @@ const Layout: React.FC = () => {
                 My Projects
               </button>
               <button 
-                className={`tab tab-sm min-h-10 font-bold text-sm ${(location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/settings') && searchParams.get('view') !== 'projects' ? 'tab-active' : ''} gap-2`}
+                className={`tab tab-sm min-h-10 font-bold text-sm ${(location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && searchParams.get('view') !== 'projects' ? 'tab-active' : ''} gap-2`}
                 onClick={() => handleNavigateWithCheck('/notes')}
               >
                 <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -957,7 +959,7 @@ const Layout: React.FC = () => {
             )}
 
             {/* Project Details Submenu - Desktop */}
-            {selectedProject && (location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/settings') && searchParams.get('view') !== 'projects' && (
+            {selectedProject && (location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && searchParams.get('view') !== 'projects' && (
             <div className="flex justify-center">
               <div className="tabs tabs-boxed border-subtle shadow-sm overflow-x-auto scrollbar-hide">
                 {tabs.map((tab) => (
@@ -972,6 +974,7 @@ const Layout: React.FC = () => {
                        tab.id === 'docs' ? 'Docs' : 
                        tab.id === 'deployment' ? 'Deploy' : 
                        tab.id === 'public' ? 'Public' : 
+                       tab.id === 'sharing' ? 'Sharing' :
                        tab.id === 'settings' ? 'Settings' : tab.label}
                     </span>
                   </button>

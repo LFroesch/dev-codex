@@ -1,15 +1,19 @@
-# Pre-Launch Changes
-- [x] TTL Analysis / MongoDB Optimizations
-
-## Tomorrow
+# Tomorrow
 - [ ] Unit Tests
 - [ ] Clean console.logs
-- [ ] Overhaul of Notes section / To Dos / Feature Plans
-        make more UX friendly and usable
 - [ ] Prep for Prod
+- [ ] Clean Rest of pages - matching UI/UX/buttons
+- [ ] Clean Up Menus / Pages / Panels etc for better UX (Human Manual check and fix)
+
+## ??? IMPORTANT
+- [ ] AI Integration at a basic level?
 
 ## Human Manual Checkovers -> Refixes
-- [ ] Clean Up Menus / Pages / Panels etc for better UX (Human Manual check and fix)
-- [ ] Mobile Test - All pages on 320px to 768px
-- [ ] Tablet Test - 768px to 1024px breakpoints
-- [ ] Mid Size Test / Desktop
+- [ ] Mobile Test
+- [ ] Tablet Test
+- [ ] Mid Size Test
+- [ ] Desktop Test
+- [ ] Help / Info Page
+
+## Future
+- [ ] Better Theming / Colors / Custom

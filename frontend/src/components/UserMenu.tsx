@@ -70,7 +70,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout }) => {
             className="p-2 rounded cursor-pointer hover:bg-base-200"
             onClick={() => handleNavigation('/news')}
           >
-            📰 What's New?
+            What's New?
           </div>
           <div 
             className="p-2 rounded cursor-pointer hover:bg-base-200"

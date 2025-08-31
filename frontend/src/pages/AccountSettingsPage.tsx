@@ -441,12 +441,11 @@ const AccountSettingsPage: React.FC = () => {
                   <>
                     {/* Personal Information */}
                     <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200">
-                      <input type="checkbox" defaultChecked />
-                      <div className="collapse-title text-lg font-semibold bg-base-200 border-b border-base-content/10">
+                      
+                      <div className=" text-lg font-semibold bg-base-200 border-b border-base-content/10">
                         👤 Personal Information
                       </div>
-                      <div className="collapse-content">
-                        <div className="pt-4 space-y-4">
+                        <div className="p-4 space-y-4">
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                             <div>
                               <h3 className="font-semibold text-base mb-3">Account Details</h3>
@@ -497,7 +496,6 @@ const AccountSettingsPage: React.FC = () => {
                             </div>
                           </div>
                         </div>
-                      </div>
                     </div>
 
                     {/* Bio Section */}
@@ -823,12 +821,10 @@ const AccountSettingsPage: React.FC = () => {
 
                     {/* Privacy Information */}
                     <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200">
-                      <input type="checkbox" />
                       <div className="collapse-title text-lg font-semibold bg-base-200 border-b border-base-content/10">
                         📋 Privacy Information
                       </div>
-                      <div className="collapse-content">
-                        <div className="pt-4">
+                        <div className="p-4">
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-3">
                               <h4 className="font-medium text-success">✅ Included</h4>
@@ -902,7 +898,6 @@ const AccountSettingsPage: React.FC = () => {
                             </div>
                           </div>
                         </div>
-                      </div>
                     </div>
                   </>
                 )}

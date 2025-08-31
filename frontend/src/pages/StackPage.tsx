@@ -603,20 +603,20 @@ const StackPage: React.FC = () => {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          {techOption?.url && (
+                            {techOption?.url && (
                             <a
                               href={techOption.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-primary hover:text-primary/80 text-sm group-hover:opacity-100 transition-opacity"
+                              className="text-primary hover:bg-error/10 text-sm group-hover:opacity-100 transition-opacity px-2 py-1 rounded-md bg-base-200"
                               title="View documentation"
                             >
                               🔗
                             </a>
-                          )}
+                            )}
                           <button
                             onClick={() => handleRemoveTechnology(tech.category, tech.name)}
-                            className={`btn btn-ghost btn-sm text-error hover:bg-error/10 group-hover:opacity-100 transition-opacity ${isLoading ? 'loading' : ''}`}
+                            className={`btn btn-ghost btn-sm text-error hover:bg-error/10 rounded-md bg-base-200 group-hover:opacity-100 transition-opacity ${isLoading ? 'loading' : ''}`}
                             title='Remove technology'
                             disabled={isLoading}
                           >

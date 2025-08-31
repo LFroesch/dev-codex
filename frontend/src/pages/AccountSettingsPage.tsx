@@ -237,7 +237,7 @@ const AccountSettingsPage: React.FC = () => {
 
         {/* Tabs */}
         <div className="flex justify-center mb-6 sm:mb-8 px-2">
-          <div className="tabs tabs-boxed tabs-lg bg-base-200 shadow-lg border border-base-content/10 w-full max-w-4xl overflow-x-auto">
+          <div className="tabs tabs-boxed border-subtle shadow-sm opacity-90 w-full max-w-4xl overflow-x-auto">
           <button 
             className={`tab tab-sm sm:tab-lg font-medium sm:font-bold text-xs sm:text-base whitespace-nowrap ${activeTab === 'theme' ? 'tab-active' : ''}`}
             onClick={() => setActiveTab('theme')}
@@ -440,7 +440,7 @@ const AccountSettingsPage: React.FC = () => {
                 {user && (
                   <>
                     {/* Personal Information */}
-                    <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10">
+                    <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200">
                       <input type="checkbox" defaultChecked />
                       <div className="collapse-title text-lg font-semibold bg-base-200 border-b border-base-content/10">
                         👤 Personal Information
@@ -501,7 +501,7 @@ const AccountSettingsPage: React.FC = () => {
                     </div>
 
                     {/* Bio Section */}
-                    <div className="bg-base-200 shadow-lg border border-base-content/10 rounded-lg mb-4">
+                    <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 rounded-lg mb-4">
                       <div className="p-4">
                         {/* Header with title and controls */}
                         <div className="flex items-center justify-between">
@@ -584,7 +584,7 @@ const AccountSettingsPage: React.FC = () => {
                     </div>
 
                     {/* Public Profile Settings */}
-                    <div className="bg-base-200 shadow-lg border border-base-content/10 rounded-lg mb-4">
+                    <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 rounded-lg mb-4">
                       <div className="p-4">
                         {/* Header with title and controls */}
                         <div className="flex items-center justify-between">
@@ -822,7 +822,7 @@ const AccountSettingsPage: React.FC = () => {
                     </div>
 
                     {/* Privacy Information */}
-                    <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10">
+                    <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200">
                       <input type="checkbox" />
                       <div className="collapse-title text-lg font-semibold bg-base-200 border-b border-base-content/10">
                         📋 Privacy Information

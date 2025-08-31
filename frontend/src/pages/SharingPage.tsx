@@ -48,7 +48,7 @@ const SharingPage: React.FC = () => {
       <div className="h-full flex items-center justify-center">
         <div className="text-center">
           <div className="text-6xl mb-4">👥</div>
-          <h2 className="text-2xl font-bold mb-2">Select a project</h2>
+          <h2 className="text-lg font-semibold mb-2">Select a project</h2>
           <p className="text-base-content/60">Choose a project from the sidebar to view sharing settings</p>
         </div>
       </div>
@@ -56,7 +56,7 @@ const SharingPage: React.FC = () => {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-4">
       {error && (
         <div className="alert alert-error shadow-md">
           <svg className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
@@ -68,13 +68,11 @@ const SharingPage: React.FC = () => {
       )}
 
       {/* Project Sharing */}
-      <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10">
-        <input type="checkbox" defaultChecked />
-        <div className="collapse-title text-xl font-semibold bg-base-200 border-b border-base-content/10">
-          👥 Project Sharing & Team Management
-        </div>
-        <div className="collapse-content">
-          <div className="pt-4">
+      <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <span className="text-xl">👥</span>
+          Project Sharing & Team Management
+        </h2>
             <div className="space-y-4">
               {/* Compact Sharing Status */}
               <div className="flex items-center justify-between p-3 bg-base-200 rounded-lg border">
@@ -137,33 +135,19 @@ const SharingPage: React.FC = () => {
               {/* Activity Log - Always show since activity is tracked regardless of sharing status */}
               {!selectedProject.isShared && (
                 <div className="mt-4">
-                  <div className="border border-base-300 rounded-lg bg-base-100">
-                    <div className="p-4 border-b border-base-300">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-info/20 rounded-full flex items-center justify-center">
-                          <svg className="w-4 h-4 text-info" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2V5a2 2 0 00-2-2H9z" />
-                            <polyline points="9,11 12,14 22,4" />
-                          </svg>
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-base">Activity Log</h3>
-                          <p className="text-sm text-base-content/60">Your project activity is being tracked</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="p-4">
-                      <ActivityLog 
-                        projectId={selectedProject.id}
-                        showControls={selectedProject.canManageTeam ?? selectedProject.isOwner ?? false}
-                      />
-                    </div>
+                  <div className="bg-base-100 rounded-lg border-subtle shadow-md p-4 mt-4">
+                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                      <span className="text-xl">📊</span>
+                      Activity Log
+                    </h3>
+                    <p className="text-sm text-base-content/60 mb-4">Your project activity is being tracked</p>
+                    <ActivityLog 
+                      projectId={selectedProject.id}
+                    />
                   </div>
                 </div>
               )}
             </div>
-          </div>
-        </div>
       </div>
 
       <ConfirmationModal

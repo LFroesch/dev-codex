@@ -35,6 +35,7 @@ const SettingsPage: React.FC = () => {
   const [archiveLoading, setArchiveLoading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [error, setError] = useState('');
+  const [activeSection, setActiveSection] = useState<'overview' | 'info' | 'export' | 'danger'>('overview');
 
   useEffect(() => {
     if (selectedProject) {
@@ -168,9 +169,38 @@ const SettingsPage: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-4">
+    <div className="p-6">
+      {/* Navigation Tabs */}
+      <div className="tabs tabs-boxed border-subtle shadow-sm opacity-90 mb-6">
+        <button 
+          className={`tab ${activeSection === 'overview' ? 'tab-active' : ''}`}
+          onClick={() => setActiveSection('overview')}
+        >
+          Overview
+        </button>
+        <button 
+          className={`tab ${activeSection === 'info' ? 'tab-active' : ''}`}
+          onClick={() => setActiveSection('info')}
+        >
+          Project Info
+        </button>
+        <button 
+          className={`tab ${activeSection === 'export' ? 'tab-active' : ''}`}
+          onClick={() => setActiveSection('export')}
+        >
+          Export & Import
+        </button>
+        <button 
+          className={`tab ${activeSection === 'danger' ? 'tab-active' : ''}`}
+          onClick={() => setActiveSection('danger')}
+        >
+          Danger Zone
+        </button>
+      </div>
+
+      {/* Error Messages */}
       {error && (
-        <div className="alert alert-error shadow-md">
+        <div className="alert alert-error shadow-md mb-6">
           <svg className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
@@ -179,12 +209,96 @@ const SettingsPage: React.FC = () => {
         </div>
       )}
 
-      {/* Project Information */}
-      <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
-        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <span className="text-xl">⚙️</span>
-          Project Information
-        </h2>
+      {/* Overview Section */}
+      {activeSection === 'overview' && (
+        <div className="space-y-4">
+          <div className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">
+            <h2 className="text-xl font-bold mb-0">⚙️ Project Overview</h2>
+          </div>
+          
+          <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
+            <div className="flex items-center gap-4 mb-4">
+              <div 
+                className="w-16 h-16 rounded-lg flex items-center justify-center text-2xl font-bold text-white"
+                style={{ backgroundColor: selectedProject.color }}
+              >
+                {selectedProject.name.charAt(0).toUpperCase()}
+              </div>
+              <div className="flex-1">
+                <h3 className="text-2xl font-semibold">{selectedProject.name}</h3>
+                <p className="text-base-content/70 mb-2">{selectedProject.description}</p>
+                <div className="flex items-center gap-3">
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    selectedProject.isArchived 
+                      ? 'bg-gray-200 text-gray-800' 
+                      : 'bg-success/20 text-success'
+                  }`}>
+                    {selectedProject.isArchived ? '📦 Archived' : '✨ Active'}
+                  </span>
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    selectedProject.isShared
+                      ? 'bg-info/20 text-info'
+                      : 'bg-warning/20 text-warning'
+                  }`}>
+                    {selectedProject.isShared ? '👥 Shared' : '🔒 Private'}
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2 text-sm">
+                <div>
+                  <span className="font-medium">Created:</span> {new Date(selectedProject.createdAt).toLocaleDateString()}
+                </div>
+                <div>
+                  <span className="font-medium">Updated:</span> {new Date(selectedProject.updatedAt).toLocaleDateString()}
+                </div>
+                <div>
+                  <span className="font-medium">Category:</span> {selectedProject.category}
+                </div>
+              </div>
+              <div className="space-y-2 text-sm">
+                <div>
+                  <span className="font-medium">Environment:</span>
+                  <span className={`ml-2 px-2 py-1 rounded text-xs ${
+                    selectedProject.stagingEnvironment === 'production' ? 'bg-error/20 text-error' :
+                    selectedProject.stagingEnvironment === 'staging' ? 'bg-warning/20 text-warning' :
+                    'bg-success/20 text-success'
+                  }`}>
+                    {selectedProject.stagingEnvironment?.charAt(0).toUpperCase() + selectedProject.stagingEnvironment?.slice(1)}
+                  </span>
+                </div>
+                <div>
+                  <span className="font-medium">Tags:</span> 
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {selectedProject.tags && selectedProject.tags.length > 0 ? (
+                      selectedProject.tags.map((tag, index) => (
+                        <span key={index} className="badge badge-info badge-sm">{tag}</span>
+                      ))
+                    ) : (
+                      <span className="text-base-content/60 italic">No tags</span>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <span className="font-medium">Project ID:</span> 
+                  <span className="font-mono text-xs ml-2">{selectedProject.id}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Project Info Section */}
+      {activeSection === 'info' && (
+        <div className="space-y-4">
+          <div className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">
+            <h2 className="text-xl font-bold mb-0">⚙️ Project Information</h2>
+          </div>
+          
+          <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
           {/* Basic Info Section */}
           <div className="pt-4">
             <div className="flex justify-between items-center mb-3">
@@ -506,59 +620,67 @@ const SettingsPage: React.FC = () => {
               </div>
             </div>
           </div>
-      </div>
-
-
-
-      {/* Export Data */}
-      <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
-        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <span className="text-xl">📤</span>
-          Export & Import Project Data
-        </h2>
-        <ExportSection selectedProject={selectedProject} onProjectRefresh={onProjectRefresh} />
-      </div>
-
-      {/* Danger Zone */}
-      <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
-        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-error">
-          <span className="text-xl">⚠️</span>
-          Danger Zone
-        </h2>
-        <div className="space-y-4">
-            <div className={`p-4 ${!selectedProject.isArchived ? 'bg-warning/10 border-warning/20' : 'bg-info/10 border-info/20'} rounded-lg border`}>
-              <h4 className={`font-semibold ${!selectedProject.isArchived ? 'text-warning' : 'text-info'} mb-2`}>{selectedProject.isArchived ? 'Unarchive Project' : 'Archive Project'}</h4>
-              <p className={`${!selectedProject.isArchived ? 'text-warning/80' : 'text-info/80'} text-sm mb-4`}>
-                {selectedProject.isArchived ? 'Make this project active again' : 'Move this project to archived section'}
-              </p>
-              <button
-                onClick={handleArchiveToggle}
-                className={`btn ${
-                  selectedProject.isArchived 
-                    ? 'btn-info' 
-                    : 'btn-warning'
-                }`}
-                disabled={archiveLoading}
-              >
-                {archiveLoading ? 'Processing...' : selectedProject.isArchived ? 'Make Active' : 'Archive Project'}
-              </button>
-            </div>
-
-            <div className="p-4 bg-error/10 rounded-lg border border-error/20">
-              <h4 className="font-semibold text-error mb-2">Delete Project</h4>
-              <p className="text-error/80 text-sm mb-4">
-                This action cannot be undone. This will permanently delete the project and all of its data.
-              </p>
-              
-              <button
-                onClick={() => setDeleteConfirm(true)}
-                className="btn btn-error"
-              >
-                Delete Project
-              </button>
-            </div>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Export & Import Section */}
+      {activeSection === 'export' && (
+        <div className="space-y-4">
+          <div className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">
+            <h2 className="text-xl font-bold mb-0">📤 Export & Import</h2>
+          </div>
+          
+          <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
+            <ExportSection selectedProject={selectedProject} onProjectRefresh={onProjectRefresh} />
+          </div>
+        </div>
+      )}
+
+      {/* Danger Zone Section */}
+      {activeSection === 'danger' && (
+        <div className="space-y-4">
+          <div className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">
+            <h2 className="text-xl font-bold mb-0 text-error">⚠️ Danger Zone</h2>
+          </div>
+          
+          <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
+            <div className="space-y-4">
+              <div className={`p-4 ${!selectedProject.isArchived ? 'bg-warning/10 border-warning/20' : 'bg-info/10 border-info/20'} rounded-lg border`}>
+                <h4 className={`font-semibold ${!selectedProject.isArchived ? 'text-warning' : 'text-info'} mb-2`}>{selectedProject.isArchived ? 'Unarchive Project' : 'Archive Project'}</h4>
+                <p className={`${!selectedProject.isArchived ? 'text-warning/80' : 'text-info/80'} text-sm mb-4`}>
+                  {selectedProject.isArchived ? 'Make this project active again' : 'Move this project to archived section'}
+                </p>
+                <button
+                  onClick={handleArchiveToggle}
+                  className={`btn ${
+                    selectedProject.isArchived 
+                      ? 'btn-info' 
+                      : 'btn-warning'
+                  }`}
+                  disabled={archiveLoading}
+                >
+                  {archiveLoading ? 'Processing...' : selectedProject.isArchived ? 'Make Active' : 'Archive Project'}
+                </button>
+              </div>
+
+              <div className="p-4 bg-error/10 rounded-lg border border-error/20">
+                <h4 className="font-semibold text-error mb-2">Delete Project</h4>
+                <p className="text-error/80 text-sm mb-4">
+                  This action cannot be undone. This will permanently delete the project and all of its data.
+                </p>
+                
+                <button
+                  onClick={() => setDeleteConfirm(true)}
+                  className="btn btn-error"
+                >
+                  Delete Project
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <ConfirmationModal
         isOpen={deleteConfirm}

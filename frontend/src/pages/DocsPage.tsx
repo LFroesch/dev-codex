@@ -20,6 +20,8 @@ const DocsPage: React.FC = () => {
   const [editData, setEditData] = useState({ type: 'Model' as Doc['type'], title: '', content: '' });
   const [expandedDocs, setExpandedDocs] = useState<Set<string>>(new Set());
   const [error, setError] = useState('');
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [activeTemplateCategory, setActiveTemplateCategory] = useState<string>('all');
 
   const toggleDocExpanded = (docId: string) => {
     const newExpanded = new Set(expandedDocs);
@@ -52,6 +54,7 @@ const DocsPage: React.FC = () => {
     try {
       await projectAPI.createDoc(selectedProject.id, newDoc);
       setNewDoc({ type: 'Model', title: '', content: '' });
+      setShowCreateForm(false);
       await onProjectRefresh();
     } catch (err) {
       setError('Failed to add documentation template');
@@ -249,7 +252,7 @@ React App:
   const hasAnyDocs = selectedProject.docs.length > 0;
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-4">
       {error && (
         <div className="alert alert-error shadow-md">
           <svg className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
@@ -259,105 +262,162 @@ React App:
         </div>
       )}
 
-      {/* Create New Template */}
-      <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10 mb-4">
-        <input type="checkbox" defaultChecked={!hasAnyDocs} />
-        <div className="collapse-title text-lg font-semibold bg-base-200 border-b border-base-content/10">
-          Create New Documentation Template
+      {/* Template Categories Navigation */}
+      {categoriesWithDocs.length > 0 && (
+        <div className="tabs tabs-boxed border-subtle shadow-sm opacity-90 overflow-x-auto">
+          <button 
+            className={`tab tab-sm min-h-10 font-bold text-sm ${activeTemplateCategory === 'all' ? 'tab-active' : ''}`}
+            onClick={() => setActiveTemplateCategory('all')}
+          >
+            📚 All Templates ({selectedProject.docs?.length || 0})
+          </button>
+          {categoriesWithDocs.map(typeInfo => (
+            <button 
+              key={typeInfo.value}
+              className={`tab tab-sm min-h-10 font-bold text-sm ${activeTemplateCategory === typeInfo.value ? 'tab-active' : ''}`}
+              onClick={() => setActiveTemplateCategory(typeInfo.value)}
+            >
+              {typeInfo.emoji} {typeInfo.label} ({docsByType[typeInfo.value]?.length || 0})
+            </button>
+          ))}
         </div>
-        <div className="collapse-content">
-          <div className="space-y-4 pt-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-medium">Template Type</span>
-                </label>
-                <select
-                  value={newDoc.type}
-                  onChange={(e) => setNewDoc({...newDoc, type: e.target.value as Doc['type']})}
-                  className="select select-bordered border-base-300"
-                >
-                  {docTypes.map(type => (
-                    <option key={type.value} value={type.value}>
-                      {type.emoji} {type.label} - {type.description}
-                    </option>
-                  ))}
-                </select>
-              </div>
+      )}
 
-              <div className="form-control md:col-span-2">
-                <label className="label">
-                  <span className="label-text font-medium">Template Title</span>
-                </label>
-                <input
-                  type="text"
-                  value={newDoc.title}
-                  onChange={(e) => setNewDoc({...newDoc, title: e.target.value})}
-                  className="input input-bordered border-base-300"
-                  placeholder="Enter template title..."
-                />
-              </div>
+      {/* Create New Template */}
+      <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
+        {!showCreateForm ? (
+          <button
+            onClick={() => setShowCreateForm(true)}
+            className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-base-200/40 transition-colors rounded-lg"
+          >
+            <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+              <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
             </div>
-
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text font-medium">Template Content</span>
-                <button
-                  type="button"
-                  onClick={() => setNewDoc({...newDoc, content: getTemplateExample(newDoc.type)})}
-                  className="btn btn-xs btn-outline"
-                >
-                  Use Example
-                </button>
-              </label>
-              <textarea
-                value={newDoc.content}
-                onChange={(e) => setNewDoc({...newDoc, content: e.target.value})}
-                className="textarea textarea-bordered border-base-300 h-[400px]"
-                placeholder="Enter your pseudocode/planning template..."
-              />
-            </div>
-
-            <div className="flex justify-end">
+            <span className="text-base-content/60">Create new documentation template...</span>
+          </button>
+        ) : (
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <span className="text-xl">📝</span>
+                Create New Documentation Template
+              </h2>
               <button
-                onClick={handleAddDoc}
-                disabled={addingDoc || !newDoc.title.trim() || !newDoc.content.trim()}
-                className="btn btn-primary"
+                type="button"
+                onClick={() => {
+                  setShowCreateForm(false);
+                  setNewDoc({ type: 'Model', title: '', content: '' });
+                }}
+                className="text-base-content/40 hover:text-base-content/60 transition-colors"
               >
-                {addingDoc ? 'Adding...' : 'Add Template'}
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
             </div>
+            <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="form-control">
+                    <label className="label">
+                      <span className="label-text font-medium">Template Type</span>
+                    </label>
+                    <select
+                      value={newDoc.type}
+                      onChange={(e) => setNewDoc({...newDoc, type: e.target.value as Doc['type']})}
+                      className="select select-bordered border-base-300"
+                    >
+                      {docTypes.map(type => (
+                        <option key={type.value} value={type.value}>
+                          {type.emoji} {type.label} - {type.description}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-control md:col-span-2">
+                    <label className="label">
+                      <span className="label-text font-medium">Template Title</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={newDoc.title}
+                      onChange={(e) => setNewDoc({...newDoc, title: e.target.value})}
+                      className="input input-bordered border-base-300"
+                      placeholder="Enter template title..."
+                    />
+                  </div>
+                </div>
+
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-medium">Template Content</span>
+                    <button
+                      type="button"
+                      onClick={() => setNewDoc({...newDoc, content: getTemplateExample(newDoc.type)})}
+                      className="btn btn-xs btn-outline"
+                    >
+                      Use Example
+                    </button>
+                  </label>
+                  <textarea
+                    value={newDoc.content}
+                    onChange={(e) => setNewDoc({...newDoc, content: e.target.value})}
+                    className="textarea textarea-bordered border-base-300 h-[400px]"
+                    placeholder="Enter your pseudocode/planning template..."
+                  />
+                </div>
+
+                <div className="flex justify-end">
+                  <button
+                    onClick={handleAddDoc}
+                    disabled={addingDoc || !newDoc.title.trim() || !newDoc.content.trim()}
+                    className="btn btn-primary"
+                  >
+                    {addingDoc ? 'Adding...' : 'Add Template'}
+                  </button>
+                </div>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Show message if no docs exist */}
       {!hasAnyDocs && (
         <div className="text-center py-12">
-          <div className="text-6xl mb-4">📚</div>
-          <h3 className="text-xl font-semibold mb-2">No documentation templates yet</h3>
-          <p className="text-base-content/60">Create your first template above to get started documenting your project</p>
+          <div className="w-16 h-16 mx-auto mb-4 bg-base-200 rounded-full flex items-center justify-center">
+            <span className="text-2xl">📚</span>
+          </div>
+          <h3 className="text-lg font-medium mb-2 text-base-content/80">No documentation templates yet</h3>
+          <p className="text-sm text-base-content/60">Create your first template above to get started documenting your project</p>
         </div>
       )}
 
-      {/* Template Categories - Only show categories with docs */}
-      {categoriesWithDocs.map(typeInfo => {
-        const docs = docsByType[typeInfo.value] || [];
-        return (
-          <div key={typeInfo.value} className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10">
-            <input type="checkbox" defaultChecked={true} />
-            <div className="collapse-title text-lg font-semibold bg-base-200 border-b border-base-content/10">
-              {typeInfo.label} Templates ({docs.length})
-            </div>
-            <div className="collapse-content">
-              <div className="pt-4">
-                <div className="space-y-4">
-                  {docs.map(doc => {
+      {/* Template Categories Content */}
+      {categoriesWithDocs.length > 0 && (
+        <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <span className="text-xl">
+                {activeTemplateCategory === 'all' ? '📚' : categoriesWithDocs.find(c => c.value === activeTemplateCategory)?.emoji}
+              </span>
+              <span className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">
+                {activeTemplateCategory === 'all' 
+                  ? 'All Documentation Templates' 
+                  : `${categoriesWithDocs.find(c => c.value === activeTemplateCategory)?.label} Templates`
+                }
+              </span>
+            </h3>
+            <div className="space-y-3">
+                  {(activeTemplateCategory === 'all' 
+                    ? selectedProject.docs || []
+                    : docsByType[activeTemplateCategory as Doc['type']] || []
+                  ).map((doc: any) => {
                     const isExpanded = expandedDocs.has(doc.id);
                     const isEditing = editingDoc === doc.id;
+                    const docType = docTypes.find(t => t.value === doc.type);
                     return (
-                      <div key={doc.id} className="bg-base-100 shadow-lg border border-base-content/10 rounded-lg mb-4">
-                        <div className="p-4">
+                      <div key={doc.id} className="bg-base-100 rounded-lg border border-base-300 hover:border-primary/30 transition-all duration-200 p-3">
                           {/* Header with title and controls */}
                           <div className="flex items-center justify-between">
                             <button
@@ -371,8 +431,15 @@ React App:
                                 </svg>
                               </div>
                               <div className="flex-1">
-                                <h3 className="font-semibold text-lg">{doc.title}</h3>
-                                <div className="text-xs text-base-content/50 mt-1">
+                                <div className="flex items-center gap-3 mb-1">
+                                  <h3 className="font-semibold text-base">{doc.title}</h3>
+                                  {activeTemplateCategory === 'all' && docType && (
+                                    <span className="px-2 py-1 rounded-md bg-base-300 text-xs font-medium">
+                                      {docType.emoji} {docType.label}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-xs text-base-content/50">
                                   Created: {new Date(doc.createdAt).toLocaleDateString()}
                                   {doc.updatedAt !== doc.createdAt && (
                                     <> • Updated: {new Date(doc.updatedAt).toLocaleDateString()}</>
@@ -498,15 +565,11 @@ React App:
                             </div>
                           )}
                         </div>
-                      </div>
-                    );
+                      );
                   })}
-                </div>
-              </div>
             </div>
-          </div>
-        );
-      })}
+        </div>
+      )}
     </div>
   );
 };

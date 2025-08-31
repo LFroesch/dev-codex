@@ -155,7 +155,7 @@ const SettingsPage: React.FC = () => {
       <div className="h-full flex items-center justify-center">
         <div className="text-center">
           <div className="text-6xl mb-4">⚙️</div>
-          <h2 className="text-2xl font-bold mb-2">Select a project</h2>
+          <h2 className="text-lg font-semibold mb-2">Select a project</h2>
           <p className="text-base-content/60">Choose a project from the sidebar to view settings</p>
         </div>
       </div>
@@ -168,7 +168,7 @@ const SettingsPage: React.FC = () => {
   ];
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-4">
       {error && (
         <div className="alert alert-error shadow-md">
           <svg className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
@@ -180,12 +180,11 @@ const SettingsPage: React.FC = () => {
       )}
 
       {/* Project Information */}
-      <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10">
-        <input type="checkbox" defaultChecked />
-        <div className="collapse-title text-xl font-semibold bg-base-200 border-b border-base-content/10">
-        ⚙️ Project Information
-        </div>
-        <div className="collapse-content">
+      <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <span className="text-xl">⚙️</span>
+          Project Information
+        </h2>
           {/* Basic Info Section */}
           <div className="pt-4">
             <div className="flex justify-between items-center mb-3">
@@ -507,30 +506,26 @@ const SettingsPage: React.FC = () => {
               </div>
             </div>
           </div>
-        </div>
       </div>
 
 
 
       {/* Export Data */}
-      <div className="collapse collapse-arrow bg-base-200 shadow-lg border border-base-content/10">
-        <input type="checkbox" />
-        <div className="collapse-title text-xl font-medium">
-          📤 Export & Import Project Data
-        </div>
-        <div className="collapse-content">
-          <ExportSection selectedProject={selectedProject} onProjectRefresh={onProjectRefresh} />
-        </div>
+      <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <span className="text-xl">📤</span>
+          Export & Import Project Data
+        </h2>
+        <ExportSection selectedProject={selectedProject} onProjectRefresh={onProjectRefresh} />
       </div>
 
       {/* Danger Zone */}
-      <div className="collapse collapse-arrow bg-base-200 shadow-lg border border-base-content/10">
-        <input type="checkbox" />
-        <div className="collapse-title text-xl font-medium text-error">
-          ⚠️ Danger Zone
-        </div>
-        <div className="collapse-content">
-          <div className="space-y-4">
+      <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-error">
+          <span className="text-xl">⚠️</span>
+          Danger Zone
+        </h2>
+        <div className="space-y-4">
             <div className={`p-4 ${!selectedProject.isArchived ? 'bg-warning/10 border-warning/20' : 'bg-info/10 border-info/20'} rounded-lg border`}>
               <h4 className={`font-semibold ${!selectedProject.isArchived ? 'text-warning' : 'text-info'} mb-2`}>{selectedProject.isArchived ? 'Unarchive Project' : 'Archive Project'}</h4>
               <p className={`${!selectedProject.isArchived ? 'text-warning/80' : 'text-info/80'} text-sm mb-4`}>
@@ -562,7 +557,6 @@ const SettingsPage: React.FC = () => {
                 Delete Project
               </button>
             </div>
-          </div>
         </div>
       </div>
 

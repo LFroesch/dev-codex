@@ -31,12 +31,9 @@ const PublicPage: React.FC = () => {
     timestamps: true,
   });
 
-  // Collapsible states
-  const [isPublicSharingExpanded, setIsPublicSharingExpanded] = useState(false);
-  const [isPublicUrlExpanded, setIsPublicUrlExpanded] = useState(false);
-  const [isVisibilityControlsExpanded, setIsVisibilityControlsExpanded] = useState(false);
-  const [isPrivacyInfoExpanded, setIsPrivacyInfoExpanded] = useState(false);
-  const [isShareWorkExpanded, setIsShareWorkExpanded] = useState(false);
+  
+  // Section navigation state
+  const [activeSection, setActiveSection] = useState<'overview' | 'sharing' | 'url' | 'visibility' | 'privacy'>('overview');
 
   useEffect(() => {
     if (selectedProject) {
@@ -146,10 +143,48 @@ const PublicPage: React.FC = () => {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6">
+      {/* Navigation Tabs */}
+      <div className="tabs tabs-boxed border-subtle shadow-sm opacity-90 mb-6">
+        <button 
+          className={`tab ${activeSection === 'overview' ? 'tab-active' : ''}`}
+          onClick={() => setActiveSection('overview')}
+        >
+          Overview
+        </button>
+        <button 
+          className={`tab ${activeSection === 'sharing' ? 'tab-active' : ''}`}
+          onClick={() => setActiveSection('sharing')}
+        >
+          Public Settings
+        </button>
+        {isPublic && (
+          <>
+            <button 
+              className={`tab ${activeSection === 'url' ? 'tab-active' : ''}`}
+              onClick={() => setActiveSection('url')}
+            >
+              URL & Preview
+            </button>
+            <button 
+              className={`tab ${activeSection === 'visibility' ? 'tab-active' : ''}`}
+              onClick={() => setActiveSection('visibility')}
+            >
+              Visibility Controls
+            </button>
+            <button 
+              className={`tab ${activeSection === 'privacy' ? 'tab-active' : ''}`}
+              onClick={() => setActiveSection('privacy')}
+            >
+              Privacy Info
+            </button>
+          </>
+        )}
+      </div>
+
       {/* Success/Error Messages */}
       {success && (
-        <div className="alert alert-success shadow-md">
+        <div className="alert alert-success shadow-md mb-6">
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
@@ -158,7 +193,7 @@ const PublicPage: React.FC = () => {
       )}
 
       {error && (
-        <div className="alert alert-error shadow-md">
+        <div className="alert alert-error shadow-md mb-6">
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
           </svg>
@@ -166,148 +201,159 @@ const PublicPage: React.FC = () => {
         </div>
       )}
 
-      {/* Public Sharing Settings */}
-      <div className="bg-base-200 shadow-lg border border-base-content/10 rounded-lg mb-4">
-        <div className="p-4">
-          {/* Header with title and controls */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
+      {/* Overview Section */}
+      {activeSection === 'overview' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">
+              <h2 className="text-xl font-bold mb-0">Public Sharing Overview</h2>
+            </div>
             <button
-              onClick={() => setIsPublicSharingExpanded(!isPublicSharingExpanded)}
-              className="flex items-center gap-3 flex-1 text-left hover:bg-base-200 p-2 -m-2 rounded-lg transition-colors"
+              onClick={handleSave}
+              disabled={loading || !hasChanges()}
+              className={`btn ${hasChanges() ? 'btn-primary' : 'btn-ghost'}`}
             >
-              <div className={`transform transition-transform duration-200 ${isPublicSharingExpanded ? 'rotate-90' : ''}`}>
-                <svg className="w-5 h-5 text-base-content/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
+              {loading ? (
+                <>
+                  <span className="loading loading-spinner loading-sm"></span>
+                  Saving...
+                </>
+              ) : hasChanges() ? (
+                'Save Changes'
+              ) : (
+                'Saved'
+              )}
+            </button>
+          </div>
+          
+          <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
+            <div className="flex items-center gap-4 mb-4">
+              <div 
+                className="w-16 h-16 rounded-lg flex items-center justify-center text-2xl font-bold text-white"
+                style={{ backgroundColor: selectedProject.color }}
+              >
+                {selectedProject.name.charAt(0).toUpperCase()}
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold text-lg">🌐 Public Sharing Settings</h3>
-                <p className="text-sm text-base-content/70">
-                  {isPublic ? 'Project is public' : 'Project is private'}
-                </p>
+                <h3 className="text-2xl font-semibold">{selectedProject.name}</h3>
+                <p className="text-base-content/70 mb-2">{selectedProject.description}</p>
+                <div className="flex items-center gap-3">
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${isPublic ? 'bg-success/20 text-success' : 'bg-warning/20 text-warning'}`}>
+                    {isPublic ? '🌐 Public' : '🔒 Private'}
+                  </span>
+                  {isPublic && (
+                    <span className="text-sm text-base-content/60">
+                      Accessible at: /project/{publicSlug || selectedProject.id}
+                    </span>
+                  )}
+                </div>
               </div>
-            </button>
+            </div>
             
-            <div className="flex flex-wrap gap-2 ml-0 sm:ml-4 mt-2 sm:mt-0">
-              {isPublic && (
-              <>
+            {isPublic && (
+              <div className="flex flex-wrap gap-2">
                 <button
-                onClick={copyPublicUrl}
-                className="btn btn-outline btn-sm gap-2"
+                  onClick={copyPublicUrl}
+                  className="btn btn-outline btn-sm gap-2"
                 >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-                Copy URL
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  Copy URL
                 </button>
                 <Link
-                to={`/project/${publicSlug || selectedProject.id}`}
-                className="btn btn-outline btn-sm gap-2"
+                  to={`/project/${publicSlug || selectedProject.id}`}
+                  className="btn btn-outline btn-sm gap-2"
                 >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                </svg>
-                {publicSlug ? `/project/${publicSlug}` : `/project/${selectedProject.id}`}
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                  </svg>
+                  View Public Page
                 </Link>
-              </>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Sharing Settings Section */}
+      {activeSection === 'sharing' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">
+              <h2 className="text-xl font-bold mb-0">🌐 Sharing + Settings</h2>
+            </div>
+            <button
+              onClick={handleSave}
+              disabled={loading || !hasChanges()}
+              className={`btn ${hasChanges() ? 'btn-primary' : 'btn-ghost'}`}
+            >
+              {loading ? (
+                <>
+                  <span className="loading loading-spinner loading-sm"></span>
+                  Saving...
+                </>
+              ) : hasChanges() ? (
+                'Save Changes'
+              ) : (
+                'Saved'
               )}
-              <button
-                onClick={handleSave}
-                disabled={loading || !hasChanges()}
-                className={`btn btn-sm ${hasChanges() ? 'btn-primary' : 'btn-ghost'}`}
-              >
-                {loading ? (
-                  <>
-                    <span className="loading loading-spinner loading-sm"></span>
-                    Saving...
-                  </>
-                ) : hasChanges() ? (
-                  'Save Changes'
-                ) : (
-                  'Saved'
-                )}
-              </button>
+            </button>
+          </div>
+          
+          <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
+            <div className="form-control">
+              <label className="label cursor-pointer">
+                <div className="flex-1">
+                  <span className="label-text text-lg font-semibold">🔓 Make Project Public</span>
+                  <p className="text-sm text-base-content/60 mt-1">
+                    Enable this to make your project discoverable in the community discover page. 
+                    Others will be able to view your project details, tech stack, and documentation.
+                  </p>
+                  {isPublic && (
+                    <p className="text-sm text-success font-medium mt-2">
+                      ✅ Your project is publicly accessible
+                    </p>
+                  )}
+                </div>
+                <input
+                  type="checkbox"
+                  className="toggle toggle-primary toggle-lg"
+                  checked={isPublic}
+                  onChange={(e) => setIsPublic(e.target.checked)}
+                />
+              </label>
             </div>
           </div>
-
-          {/* Collapsible content */}
-          {isPublicSharingExpanded && (
-            <div className="mt-4 border-t border-base-300 pt-4 bg-base-100 rounded-b-lg p-4 -mx-4 -mb-4">
-              {/* Public Status Toggle */}
-              <div className="form-control">
-                <label className="label cursor-pointer">
-                  <div className="flex-1">
-                    <span className="label-text text-lg font-semibold">🔓 Make Project Public</span>
-                    <p className="text-sm text-base-content/60 mt-1">
-                      Enable this to make your project discoverable in the community discover page. 
-                      Others will be able to view your project details, tech stack, and documentation.
-                    </p>
-                    {isPublic && (
-                      <p className="text-sm text-success font-medium mt-2">
-                        ✅ Your project is publicly accessible
-                      </p>
-                    )}
-                  </div>
-                  <input
-                    type="checkbox"
-                    className="toggle toggle-primary toggle-lg"
-                    checked={isPublic}
-                    onChange={(e) => setIsPublic(e.target.checked)}
-                  />
-                </label>
-              </div>
-            </div>
-          )}
         </div>
-      </div>
+      )}
 
-      {/* Public URL Configuration */}
-      {isPublic && (
-        <div className="bg-base-200 shadow-lg border border-base-content/10 rounded-lg mb-4">
-          <div className="p-4">
-            {/* Header with title and controls */}
-            <div className="flex items-center justify-between">
-              <button
-                onClick={() => setIsPublicUrlExpanded(!isPublicUrlExpanded)}
-                className="flex items-center gap-3 flex-1 text-left hover:bg-base-200 p-2 -m-2 rounded-lg transition-colors"
-              >
-                <div className={`transform transition-transform duration-200 ${isPublicUrlExpanded ? 'rotate-90' : ''}`}>
-                  <svg className="w-5 h-5 text-base-content/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-lg">🔗 Public URL Settings</h3>
-                  <p className="text-sm text-base-content/70">
-                    Customize your project's public URL
-                  </p>
-                </div>
-              </button>
-              
-              <div className="flex gap-2 ml-4">
-                <button
-                  onClick={handleSave}
-                  disabled={loading || !hasChanges()}
-                  className={`btn btn-sm ${hasChanges() ? 'btn-primary' : 'btn-ghost'}`}
-                >
-                  {loading ? (
-                    <>
-                      <span className="loading loading-spinner loading-sm"></span>
-                      Saving...
-                    </>
-                  ) : hasChanges() ? (
-                    'Save Changes'
-                  ) : (
-                    'Saved'
-                  )}
-                </button>
-              </div>
+      {/* URL & Preview Section */}
+      {activeSection === 'url' && isPublic && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">
+              <h2 className="text-xl font-bold mb-0">🔗 URL & Preview</h2>
             </div>
-
-            {/* Collapsible content */}
-            {isPublicUrlExpanded && (
-              <div className="mt-4 border-t border-base-300 pt-4 space-y-4 bg-base-100 rounded-b-lg p-4 -mx-4 -mb-4">
-            
+            <button
+              onClick={handleSave}
+              disabled={loading || !hasChanges()}
+              className={`btn ${hasChanges() ? 'btn-primary' : 'btn-ghost'}`}
+            >
+              {loading ? (
+                <>
+                  <span className="loading loading-spinner loading-sm"></span>
+                  Saving...
+                </>
+              ) : hasChanges() ? (
+                'Save Changes'
+              ) : (
+                'Saved'
+              )}
+            </button>
+          </div>
+          
+          <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4 space-y-4">
             {/* Custom Slug */}
             <div className="form-control">
               <label className="label">
@@ -408,58 +454,36 @@ const PublicPage: React.FC = () => {
                 </div>
               </div>
             </div>
-              </div>
-            )}
           </div>
         </div>
       )}
 
-      {/* Visibility Controls */}
-      {isPublic && (
-        <div className="bg-base-200 shadow-lg border border-base-content/10 rounded-lg mb-4">
-          <div className="p-4">
-            {/* Header with title and controls */}
-            <div className="flex items-center justify-between">
-              <button
-                onClick={() => setIsVisibilityControlsExpanded(!isVisibilityControlsExpanded)}
-                className="flex items-center gap-3 flex-1 text-left hover:bg-base-200 p-2 -m-2 rounded-lg transition-colors"
-              >
-                <div className={`transform transition-transform duration-200 ${isVisibilityControlsExpanded ? 'rotate-90' : ''}`}>
-                  <svg className="w-5 h-5 text-base-content/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-lg">🔧 Visibility Controls</h3>
-                  <p className="text-sm text-base-content/70">
-                    Choose what information to include
-                  </p>
-                </div>
-              </button>
-              
-              <div className="flex gap-2 ml-4">
-                <button
-                  onClick={handleSave}
-                  disabled={loading || !hasChanges()}
-                  className={`btn btn-sm ${hasChanges() ? 'btn-primary' : 'btn-ghost'}`}
-                >
-                  {loading ? (
-                    <>
-                      <span className="loading loading-spinner loading-sm"></span>
-                      Saving...
-                    </>
-                  ) : hasChanges() ? (
-                    'Save Changes'
-                  ) : (
-                    'Saved'
-                  )}
-                </button>
-              </div>
+      {/* Visibility Controls Section */}
+      {activeSection === 'visibility' && isPublic && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">
+              <h2 className="text-xl font-bold mb-0">🔧 Visibility Controls</h2>
             </div>
-
-            {/* Collapsible content */}
-            {isVisibilityControlsExpanded && (
-              <div className="mt-4 border-t border-base-300 pt-4 space-y-4 bg-base-100 rounded-b-lg p-4 -mx-4 -mb-4">
+            <button
+              onClick={handleSave}
+              disabled={loading || !hasChanges()}
+              className={`btn ${hasChanges() ? 'btn-primary' : 'btn-ghost'}`}
+            >
+              {loading ? (
+                <>
+                  <span className="loading loading-spinner loading-sm"></span>
+                  Saving...
+                </>
+              ) : hasChanges() ? (
+                'Save Changes'
+              ) : (
+                'Saved'
+              )}
+            </button>
+          </div>
+          
+          <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
             <p className="text-sm text-base-content/60 mb-4">
               Choose what information to include on your public project page.
             </p>
@@ -492,41 +516,19 @@ const PublicPage: React.FC = () => {
                   </span>
                 </label>
               ))}
-              </div>
-              </div>
-            )}
+            </div>
           </div>
         </div>
       )}
 
-      {/* What Gets Shared */}
-      {isPublic && (
-        <div className="bg-base-200 shadow-lg border border-base-content/10 rounded-lg mb-4">
-          <div className="p-4">
-            {/* Header with title and controls */}
-            <div className="flex items-center justify-between">
-              <button
-                onClick={() => setIsPrivacyInfoExpanded(!isPrivacyInfoExpanded)}
-                className="flex items-center gap-3 flex-1 text-left hover:bg-base-200 p-2 -m-2 rounded-lg transition-colors"
-              >
-                <div className={`transform transition-transform duration-200 ${isPrivacyInfoExpanded ? 'rotate-90' : ''}`}>
-                  <svg className="w-5 h-5 text-base-content/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-lg">📋 Privacy Information</h3>
-                  <p className="text-sm text-base-content/70">
-                    What information is shared publicly
-                  </p>
-                </div>
-              </button>
-            </div>
-
-            {/* Collapsible content */}
-            {isPrivacyInfoExpanded && (
-              <div className="mt-4 border-t border-base-300 pt-4 space-y-4 bg-base-100 rounded-b-lg p-4 -mx-4 -mb-4">
-            
+      {/* Privacy Info Section */}
+      {activeSection === 'privacy' && isPublic && (
+        <div className="space-y-4">
+          <div className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">
+            <h2 className="text-xl font-bold mb-0">📋 Privacy Information</h2>
+          </div>
+          
+          <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-3">
                 <h4 className="font-medium text-success">✅ Always Included</h4>
@@ -583,8 +585,6 @@ const PublicPage: React.FC = () => {
                 </div>
               </div>
             </div>
-              </div>
-            )}
           </div>
         </div>
       )}

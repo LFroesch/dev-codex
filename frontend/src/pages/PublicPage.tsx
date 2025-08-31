@@ -281,7 +281,7 @@ const PublicPage: React.FC = () => {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">
-              <h2 className="text-xl font-bold mb-0">🌐 Sharing + Settings</h2>
+              <h2 className="text-xl font-bold mb-0">🌐 Public Settings</h2>
             </div>
             <button
               onClick={handleSave}

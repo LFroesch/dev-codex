@@ -104,89 +104,59 @@ const PublicProfilePage: React.FC = () => {
               </button>
             </div>
             
-            {/* Profile Content */}
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-4 mb-6">
-                <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center border-2 border-primary/10">
-                  <span className="text-2xl font-bold text-primary">
-                    {user.firstName?.charAt(0)}{user.lastName?.charAt(0)}
-                  </span>
+            {/* Compact Profile Layout */}
+            <div className="flex flex-col lg:flex-row gap-6 items-start">
+              {/* Left side - Profile info & Bio */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center border-2 border-primary/10 flex-shrink-0">
+                    <span className="text-2xl font-bold text-primary">
+                      {user.firstName?.charAt(0)}{user.lastName?.charAt(0)}
+                    </span>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h1 className="text-2xl font-bold text-base-content mb-1">
+                      {user.firstName} {user.lastName}
+                    </h1>
+                    {user.publicSlug && (
+                      <p className="text-primary font-medium mb-2">@{user.publicSlug}</p>
+                    )}
+                    <div className="flex items-center gap-2 text-base-content/60 text-sm">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span>Member since {new Date(user.createdAt).toLocaleDateString('en-US', { 
+                        year: 'numeric', 
+                        month: 'long'
+                      })}</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="text-left">
-                  <h1 className="text-3xl font-bold px-2 py-1 rounded-md bg-base-300 inline-block w-fit">
-                    {user.firstName} {user.lastName}
-                  </h1>
-                  {user.publicSlug && (
-                    <p className="text-lg text-primary font-semibold mt-2">@{user.publicSlug}</p>
-                  )}
-                </div>
+                
+                {/* Bio */}
+                {user.bio && (
+                  <div className="bg-base-200 p-4 rounded-lg">
+                    <p className="text-base leading-relaxed text-base-content/80">{user.bio}</p>
+                  </div>
+                )}
               </div>
-              
-              <div className="flex items-center justify-center gap-2 text-base-content/60 text-sm">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>Member since {new Date(user.createdAt).toLocaleDateString('en-US', { 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
-                })}</span>
-              </div>
-            </div>
-          </div>
-        </div>
 
-        {/* Bio */}
-        {user.bio && (
-          <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200">
-            <div className="p-4">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                  <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
+              {/* Right side - Stats */}
+              <div className="flex-shrink-0 w-full lg:w-auto">
+                <div className="flex flex-row lg:flex-col gap-4 justify-center lg:justify-start">
+                  <div className="text-center bg-primary/5 rounded-lg border border-primary/10 p-4 min-w-[120px]">
+                    <div className="text-2xl font-bold text-primary mb-1">{user.projects?.length || 0}</div>
+                    <div className="text-xs text-base-content/60">Projects</div>
+                  </div>
+                  
+                  <div className="text-center bg-secondary/5 rounded-lg border border-secondary/10 p-4 min-w-[120px]">
+                    <div className="text-2xl font-bold text-secondary mb-1">
+                      {user.projects?.reduce((total: number, project: any) => 
+                        total + (project.technologies?.length || 0), 0) || 0}
+                    </div>
+                    <div className="text-xs text-base-content/60">Technologies</div>
+                  </div>
                 </div>
-                <h2 className="font-semibold text-lg px-2 py-1 rounded-md bg-base-300 inline-block w-fit">About</h2>
-              </div>
-              <p className="text-base leading-relaxed text-base-content/80">{user.bio}</p>
-            </div>
-          </div>
-        )}
-
-        {/* Stats */}
-        <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200">
-          <div className="p-4">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              </div>
-              <h2 className="font-semibold text-lg px-2 py-1 rounded-md bg-base-300 inline-block w-fit">Profile Stats</h2>
-            </div>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="text-center p-4 bg-primary/5 rounded-lg border border-primary/10">
-                <div className="flex justify-center mb-2">
-                  <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                  </svg>
-                </div>
-                <div className="text-2xl font-bold text-primary mb-1">{user.projects?.length || 0}</div>
-                <div className="text-sm text-base-content/60">Public Projects</div>
-              </div>
-              
-              <div className="text-center p-4 bg-secondary/5 rounded-lg border border-secondary/10">
-                <div className="flex justify-center mb-2">
-                  <svg className="w-8 h-8 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <div className="text-2xl font-bold text-secondary mb-1">
-                  {user.projects?.reduce((total: number, project: any) => 
-                    total + (project.technologies?.length || 0), 0) || 0}
-                </div>
-                <div className="text-sm text-base-content/60">Technologies Used</div>
               </div>
             </div>
           </div>

@@ -99,7 +99,8 @@ const DeploymentPage: React.FC = () => {
   return (
     <div className="space-y-4">
       {/* Section Navigation */}
-      <div className="tabs tabs-boxed border-subtle shadow-sm opacity-90">
+      <div className="flex justify-center px-2">
+        <div className="tabs tabs-boxed border-subtle shadow-sm">
         <button 
           className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'overview' ? 'tab-active' : ''}`}
           onClick={() => setActiveSection('overview')}
@@ -146,6 +147,7 @@ const DeploymentPage: React.FC = () => {
           </svg>
           Notes
         </button>
+        </div>
       </div>
 
       {/* Section Content */}

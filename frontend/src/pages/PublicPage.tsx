@@ -223,9 +223,10 @@ const PublicPage: React.FC = () => {
       {activeSection === 'overview' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <div className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">
-              <h2 className="text-xl font-bold mb-0">Public Sharing Overview</h2>
-            </div>
+            <h2 className="text-xl font-bold mb-0 flex items-center gap-2">
+              <span className="text-xl">📊</span>
+              <span className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">Public Sharing Overview</span>
+            </h2>
           </div>
           
           <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 p-4">
@@ -277,9 +278,10 @@ const PublicPage: React.FC = () => {
       {activeSection === 'sharing' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <div className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">
-              <h2 className="text-xl font-bold mb-0">🌐 Public Settings</h2>
-            </div>
+            <h2 className="text-xl font-bold mb-0 flex items-center gap-2">
+              <span className="text-xl">🌐</span>
+              <span className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">Public Settings</span>
+            </h2>
             <button
               onClick={handleSave}
               disabled={loading || !hasChanges()}
@@ -329,9 +331,10 @@ const PublicPage: React.FC = () => {
       {activeSection === 'url' && isPublic && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <div className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">
-              <h2 className="text-xl font-bold mb-0">🔗 URL & Preview</h2>
-            </div>
+            <h2 className="text-xl font-bold mb-0 flex items-center gap-2">
+              <span className="text-xl">🔗</span>
+              <span className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">URL & Preview</span>
+            </h2>
             <button
               onClick={handleSave}
               disabled={loading || !hasChanges()}
@@ -459,9 +462,10 @@ const PublicPage: React.FC = () => {
       {activeSection === 'visibility' && isPublic && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <div className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">
-              <h2 className="text-xl font-bold mb-0">🔧 Visibility Controls</h2>
-            </div>
+            <h2 className="text-xl font-bold mb-0 flex items-center gap-2">
+              <span className="text-xl">🔧</span>
+              <span className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">Visibility Controls</span>
+            </h2>
             <button
               onClick={handleSave}
               disabled={loading || !hasChanges()}
@@ -521,9 +525,10 @@ const PublicPage: React.FC = () => {
       {/* Privacy Info Section */}
       {activeSection === 'privacy' && isPublic && (
         <div className="space-y-4">
-          <div className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">
-            <h2 className="text-xl font-bold mb-0">📋 Privacy Information</h2>
-          </div>
+          <h2 className="text-xl font-bold mb-0 flex items-center gap-2">
+            <span className="text-xl">📋</span>
+            <span className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">Privacy Information</span>
+          </h2>
           
           <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

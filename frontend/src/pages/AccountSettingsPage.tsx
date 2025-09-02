@@ -16,6 +16,7 @@ const AccountSettingsPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<'theme' | 'connections' | 'profile' | 'analytics'>('theme');
+  const [profileSubTab, setProfileSubTab] = useState<'personal' | 'bio' | 'public' | 'privacy'>('personal');
   const [currentTheme, setCurrentTheme] = useState('retro');
   const [user, setUser] = useState<any>(null);
   
@@ -203,109 +204,86 @@ const AccountSettingsPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-base-100 to-base-200">
-      <div className="max-w-7xl mx-auto px-2 sm:px-4 py-4 sm:py-8">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
-          <button
-            onClick={() => navigate('/')}
-            className="btn btn-primary gap-2 self-start"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            <span className="hidden sm:inline">Back to Projects</span>
-            <span className="sm:hidden">Back</span>
-          </button>
-          
-          <div className="text-center sm:flex-1">
-            <h1 className="text-2xl sm:text-4xl font-bold text-base-content">
-              Account Settings
-            </h1>
-            <p className="text-sm sm:text-lg text-base-content/70 mt-1 sm:mt-2">
-              Customize your account preferences and connections
-            </p>
-            {user && (
-              <p className="text-sm sm:text-base text-base-content/80 mt-1">
-                Welcome, {user.firstName} {user.lastName}!
-              </p>
-            )}
-          </div>
-          
-          <div className="hidden sm:block w-32"></div> {/* Spacer for centering */}
+    <div className="space-y-6 p-2">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <button
+          onClick={() => navigate('/')}
+          className="btn btn-primary gap-2"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          Back to Projects
+        </button>
+        
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-base-content">
+            Account Settings
+          </h1>
+          <p className="text-base-content/70 mt-1">
+            Customize your account preferences and connections
+          </p>
         </div>
+        
+        <div className="w-32"></div>
+      </div>
 
-        {/* Tabs */}
-        <div className="flex justify-center mb-6 sm:mb-8 px-2">
-          <div className="tabs tabs-boxed border-subtle shadow-sm opacity-90 w-full max-w-4xl overflow-x-auto">
+      {/* Tabs */}
+      <div className="flex justify-center">
+        <div className="tabs tabs-boxed border-subtle shadow-sm">
           <button 
-            className={`tab tab-sm sm:tab-lg font-medium sm:font-bold text-xs sm:text-base whitespace-nowrap ${activeTab === 'theme' ? 'tab-active' : ''}`}
+            className={`tab tab-sm min-h-10 font-bold text-sm ${activeTab === 'theme' ? 'tab-active' : ''}`}
             onClick={() => setActiveTab('theme')}
           >
-            <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4 4 4 0 004-4V5z" />
-            </svg>
-            <span className="hidden sm:inline">Theme Preferences</span>
-            <span className="sm:hidden">Theme</span>
+            Theme
           </button>
           <button 
-            className={`tab tab-sm sm:tab-lg font-medium sm:font-bold text-xs sm:text-base whitespace-nowrap ${activeTab === 'connections' ? 'tab-active' : ''}`}
+            className={`tab tab-sm min-h-10 font-bold text-sm ${activeTab === 'connections' ? 'tab-active' : ''}`}
             onClick={() => setActiveTab('connections')}
           >
-            <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-            </svg>
-            <span className="hidden sm:inline">Account Connections</span>
-            <span className="sm:hidden">Connections</span>
+            Connections
           </button>
           <button 
-            className={`tab tab-sm sm:tab-lg font-medium sm:font-bold text-xs sm:text-base whitespace-nowrap ${activeTab === 'profile' ? 'tab-active' : ''}`}
+            className={`tab tab-sm min-h-10 font-bold text-sm ${activeTab === 'profile' ? 'tab-active' : ''}`}
             onClick={() => setActiveTab('profile')}
           >
-            <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-            <span className="hidden sm:inline">Profile & Public Settings</span>
-            <span className="sm:hidden">Profile</span>
+            Profile
           </button>
           <button 
-            className={`tab tab-sm sm:tab-lg font-medium sm:font-bold text-xs sm:text-base whitespace-nowrap ${activeTab === 'analytics' ? 'tab-active' : ''}`}
+            className={`tab tab-sm min-h-10 font-bold text-sm ${activeTab === 'analytics' ? 'tab-active' : ''}`}
             onClick={() => setActiveTab('analytics')}
           >
-            <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-            <span className="hidden sm:inline">Usage Analytics</span>
-            <span className="sm:hidden">Analytics</span>
+            Analytics
           </button>
-          </div>
         </div>
+      </div>
 
-        {/* Success Display */}
-        {success && (
-          <div className="alert alert-success mb-6">
-            <svg className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span>{success}</span>
-            <button onClick={() => setSuccess('')} className="btn btn-ghost btn-sm">×</button>
-          </div>
-        )}
+      {/* Success Display */}
+      {success && (
+        <div className="alert alert-success">
+          <svg className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>{success}</span>
+          <button onClick={() => setSuccess('')} className="btn btn-ghost btn-sm">×</button>
+        </div>
+      )}
 
-        {/* Error Display */}
-        {error && (
-          <div className="alert alert-error mb-6">
-            <svg className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span>{error}</span>
-            <button onClick={() => setError('')} className="btn btn-ghost btn-sm">×</button>
-          </div>
-        )}
+      {/* Error Display */}
+      {error && (
+        <div className="alert alert-error">
+          <svg className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>{error}</span>
+          <button onClick={() => setError('')} className="btn btn-ghost btn-sm">×</button>
+        </div>
+      )}
 
-        {/* Tab Content */}
-        <div className="card bg-base-100 shadow-xl">
-          <div className="card-body p-4 sm:p-6">
+      {/* Tab Content */}
+      <div>
+        <div className="card-body p-6">
             {/* Theme Tab */}
             {activeTab === 'theme' && (
               <div className="space-y-6">
@@ -437,12 +415,42 @@ const AccountSettingsPage: React.FC = () => {
             {/* Profile Tab */}
             {activeTab === 'profile' && (
               <div className="space-y-6">
+                {/* Sub-navigation for Profile sections */}
+                <div className="flex justify-center">
+                  <div className="tabs tabs-boxed border-subtle shadow-sm">
+                    <button 
+                      className={`tab tab-sm min-h-10 font-bold text-sm ${profileSubTab === 'personal' ? 'tab-active' : ''}`}
+                      onClick={() => setProfileSubTab('personal')}
+                    >
+                      Personal Information
+                    </button>
+                    <button 
+                      className={`tab tab-sm min-h-10 font-bold text-sm ${profileSubTab === 'bio' ? 'tab-active' : ''}`}
+                      onClick={() => setProfileSubTab('bio')}
+                    >
+                      Profile Bio
+                    </button>
+                    <button 
+                      className={`tab tab-sm min-h-10 font-bold text-sm ${profileSubTab === 'public' ? 'tab-active' : ''}`}
+                      onClick={() => setProfileSubTab('public')}
+                    >
+                      Public Profile Settings
+                    </button>
+                    <button 
+                      className={`tab tab-sm min-h-10 font-bold text-sm ${profileSubTab === 'privacy' ? 'tab-active' : ''}`}
+                      onClick={() => setProfileSubTab('privacy')}
+                    >
+                      Public Information
+                    </button>
+                  </div>
+                </div>
+
                 {user && (
                   <>
                     {/* Personal Information */}
+                    {profileSubTab === 'personal' && (
                     <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200">
-                      
-                      <div className=" text-lg font-semibold bg-base-200 border-b border-base-content/10">
+                      <div className="text-lg font-semibold bg-base-200 border-b border-base-content/10 p-4">
                         👤 Personal Information
                       </div>
                         <div className="p-4 space-y-4">
@@ -497,30 +505,24 @@ const AccountSettingsPage: React.FC = () => {
                           </div>
                         </div>
                     </div>
+                    )}
 
                     {/* Bio Section */}
-                    <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 rounded-lg mb-4">
+                    {profileSubTab === 'bio' && (
+                    <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200">
+                      <div className="text-lg font-semibold bg-base-200 border-b border-base-content/10 p-4">
+                        📝 Profile Bio
+                      </div>
                       <div className="p-4">
                         {/* Header with title and controls */}
-                        <div className="flex items-center justify-between">
-                          <button
-                            onClick={() => setIsBioExpanded(!isBioExpanded)}
-                            className="flex items-center gap-3 flex-1 text-left hover:bg-base-200 p-2 -m-2 rounded-lg transition-colors"
-                          >
-                            <div className={`transform transition-transform duration-200 ${isBioExpanded ? 'rotate-90' : ''}`}>
-                              <svg className="w-5 h-5 text-base-content/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                              </svg>
-                            </div>
-                            <div className="flex-1">
-                              <h3 className="font-semibold text-lg">📝 Profile Bio</h3>
-                              <p className="text-sm text-base-content/70">
-                                {bio ? 'Bio added' : 'No bio added yet'}
-                              </p>
-                            </div>
-                          </button>
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex-1">
+                            <p className="text-sm text-base-content/70">
+                              {bio ? 'Bio added' : 'No bio added yet'}
+                            </p>
+                          </div>
                           
-                          <div className="flex gap-2 ml-4">
+                          <div className="flex gap-2">
                             {isEditingProfile ? (
                               <>
                                 <button
@@ -549,61 +551,53 @@ const AccountSettingsPage: React.FC = () => {
                           </div>
                         </div>
 
-                        {/* Collapsible content */}
-                        {isBioExpanded && (
-                          <div className="mt-4 border-t border-base-300 pt-4 bg-base-100 rounded-b-lg p-4 -mx-4 -mb-4">
-                            {isEditingProfile ? (
-                              <div className="space-y-4">
-                                <textarea
-                                  value={bio}
-                                  onChange={(e) => setBio(e.target.value)}
-                                  className="textarea textarea-bordered w-full h-32 resize-none"
-                                  placeholder="Tell others about yourself, your interests, and what you're working on..."
-                                  maxLength={500}
-                                />
-                                <div className="text-right">
-                                  <span className="text-xs text-base-content/60">
-                                    {bio.length}/500 characters
-                                  </span>
-                                </div>
+                        {/* Content */}
+                        <div>
+                          {isEditingProfile ? (
+                            <div className="space-y-4">
+                              <textarea
+                                value={bio}
+                                onChange={(e) => setBio(e.target.value)}
+                                className="textarea textarea-bordered w-full h-32 resize-none"
+                                placeholder="Tell others about yourself, your interests, and what you're working on..."
+                                maxLength={500}
+                              />
+                              <div className="text-right">
+                                <span className="text-xs text-base-content/60">
+                                  {bio.length}/500 characters
+                                </span>
                               </div>
-                            ) : (
-                              <div className="bg-base-200 rounded-lg p-4 border border-base-300">
-                                {bio ? (
-                                  <p className="text-base-content whitespace-pre-wrap">{bio}</p>
-                                ) : (
-                                  <p className="text-base-content/60 italic">No bio added yet. Click edit to add one.</p>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        )}
+                            </div>
+                          ) : (
+                            <div className="bg-base-200 rounded-lg p-4 border border-base-300">
+                              {bio ? (
+                                <p className="text-base-content whitespace-pre-wrap">{bio}</p>
+                              ) : (
+                                <p className="text-base-content/60 italic">No bio added yet. Click edit to add one.</p>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
+                    )}
 
                     {/* Public Profile Settings */}
-                    <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 rounded-lg mb-4">
+                    {profileSubTab === 'public' && (
+                    <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200">
+                      <div className="text-lg font-semibold bg-base-200 border-b border-base-content/10 p-4">
+                        🌐 Public Profile Settings
+                      </div>
                       <div className="p-4">
                         {/* Header with title and controls */}
-                        <div className="flex items-center justify-between">
-                          <button
-                            onClick={() => setIsPublicProfileExpanded(!isPublicProfileExpanded)}
-                            className="flex items-center gap-3 flex-1 text-left hover:bg-base-200 p-2 -m-2 rounded-lg transition-colors"
-                          >
-                            <div className={`transform transition-transform duration-200 ${isPublicProfileExpanded ? 'rotate-90' : ''}`}>
-                              <svg className="w-5 h-5 text-base-content/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                              </svg>
-                            </div>
-                            <div className="flex-1">
-                              <h3 className="font-semibold text-lg">🌐 Public Profile Settings</h3>
-                              <p className="text-sm text-base-content/70">
-                                {isPublicProfile ? 'Profile is public' : 'Profile is private'}
-                              </p>
-                            </div>
-                          </button>
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex-1">
+                            <p className="text-sm text-base-content/70">
+                              {isPublicProfile ? 'Profile is public' : 'Profile is private'}
+                            </p>
+                          </div>
                           
-                          <div className="flex gap-2 ml-4">
+                          <div className="flex gap-2">
                             {isPublicProfile && (
                               <>
                                 <button
@@ -645,9 +639,8 @@ const AccountSettingsPage: React.FC = () => {
                           </div>
                         </div>
 
-                        {/* Collapsible content */}
-                        {isPublicProfileExpanded && (
-                          <div className="mt-4 border-t border-base-300 pt-4 bg-base-100 rounded-b-lg p-4 -mx-4 -mb-4">
+                        {/* Content */}
+                        <div>
                             <div className="space-y-4">
                               {/* Public Profile Toggle */}
                               <div className="form-control">
@@ -814,17 +807,18 @@ const AccountSettingsPage: React.FC = () => {
                                 </div>
                               )}
                             </div>
-                          </div>
-                        )}
+                        </div>
                       </div>
                     </div>
+                    )}
 
                     {/* Privacy Information */}
+                    {profileSubTab === 'privacy' && (
                     <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200">
-                      <div className="collapse-title text-lg font-semibold bg-base-200 border-b border-base-content/10">
+                      <div className="text-lg font-semibold bg-base-200 border-b border-base-content/10 p-4">
                         📋 Privacy Information
                       </div>
-                        <div className="p-4">
+                      <div className="p-4">
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-3">
                               <h4 className="font-medium text-success">✅ Included</h4>
@@ -899,6 +893,7 @@ const AccountSettingsPage: React.FC = () => {
                           </div>
                         </div>
                     </div>
+                    )}
                   </>
                 )}
               </div>
@@ -913,7 +908,6 @@ const AccountSettingsPage: React.FC = () => {
                 <AnalyticsDashboard />
               </div>
             )}
-          </div>
         </div>
       </div>
     </div>

@@ -79,7 +79,7 @@ const PublicProfilePage: React.FC = () => {
     <div className="flex-1 w-full max-w-7xl mx-auto p-2 sm:p-4 bg-base-100 flex flex-col mb-4 min-h-0">
       <div className="space-y-6">
         {/* Profile Header */}
-        <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200">
+        <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30">
           <div className="p-6">
             {/* Header buttons */}
             <div className="flex items-center justify-between mb-6">

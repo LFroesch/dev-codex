@@ -311,7 +311,7 @@ const ActivityLog: React.FC<ActivityLogProps> = ({
         {activities.map((activity) => (
           <div
             key={activity._id}
-            className="flex items-start gap-3 p-3 bg-base-100 rounded-lg border border-base-content/5 hover:bg-base-200/50 transition-colors"
+            className="flex items-start gap-3 p-3 bg-base-100 rounded-lg border border-base-content/5 hover:bg-base-200/50"
           >
             <div className="flex-shrink-0 flex items-center gap-1">
               {getActionIcon(activity.action)}

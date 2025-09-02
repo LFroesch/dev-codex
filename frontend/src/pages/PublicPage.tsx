@@ -208,25 +208,9 @@ const PublicPage: React.FC = () => {
             <div className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">
               <h2 className="text-xl font-bold mb-0">Public Sharing Overview</h2>
             </div>
-            <button
-              onClick={handleSave}
-              disabled={loading || !hasChanges()}
-              className={`btn ${hasChanges() ? 'btn-primary' : 'btn-ghost'}`}
-            >
-              {loading ? (
-                <>
-                  <span className="loading loading-spinner loading-sm"></span>
-                  Saving...
-                </>
-              ) : hasChanges() ? (
-                'Save Changes'
-              ) : (
-                'Saved'
-              )}
-            </button>
           </div>
           
-          <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
+          <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 p-4">
             <div className="flex items-center gap-4 mb-4">
               <div 
                 className="w-16 h-16 rounded-lg flex items-center justify-center text-2xl font-bold text-white"

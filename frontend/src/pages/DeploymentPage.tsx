@@ -156,13 +156,7 @@ const DeploymentPage: React.FC = () => {
               <span className="text-xl">📊</span>
               <span className='px-2 py-1 rounded-md bg-base-300 inline-block w-fit'>Deployment Overview</span>
             </h2>
-            <button
-              onClick={handleSave}
-              disabled={loading || !hasUnsavedChanges}
-              className={`btn btn-sm ${hasUnsavedChanges ? 'btn-primary' : 'btn-ghost'} ${loading ? 'loading' : ''}`}
-            >
-              {loading ? 'Saving...' : hasUnsavedChanges ? 'Save Changes' : 'Saved'}
-            </button>
+
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

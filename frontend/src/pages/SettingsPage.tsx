@@ -169,33 +169,47 @@ const SettingsPage: React.FC = () => {
   ];
 
   return (
-    <div className="p-6">
+    <div className="space-y-4">
       {/* Navigation Tabs */}
-      <div className="tabs tabs-boxed border-subtle shadow-sm opacity-90 mb-6">
-        <button 
-          className={`tab ${activeSection === 'overview' ? 'tab-active' : ''}`}
-          onClick={() => setActiveSection('overview')}
-        >
-          Overview
-        </button>
-        <button 
-          className={`tab ${activeSection === 'info' ? 'tab-active' : ''}`}
-          onClick={() => setActiveSection('info')}
-        >
-          Project Info
-        </button>
-        <button 
-          className={`tab ${activeSection === 'export' ? 'tab-active' : ''}`}
-          onClick={() => setActiveSection('export')}
-        >
-          Export & Import
-        </button>
-        <button 
-          className={`tab ${activeSection === 'danger' ? 'tab-active' : ''}`}
-          onClick={() => setActiveSection('danger')}
-        >
-          Danger Zone
-        </button>
+      <div className="flex justify-center px-2">
+        <div className="tabs tabs-boxed border-subtle shadow-sm">
+          <button 
+            className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'overview' ? 'tab-active' : ''}`}
+            onClick={() => setActiveSection('overview')}
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            Overview
+          </button>
+          <button 
+            className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'info' ? 'tab-active' : ''}`}
+            onClick={() => setActiveSection('info')}
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Project Info
+          </button>
+          <button 
+            className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'export' ? 'tab-active' : ''}`}
+            onClick={() => setActiveSection('export')}
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Export & Import
+          </button>
+          <button 
+            className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'danger' ? 'tab-active' : ''}`}
+            onClick={() => setActiveSection('danger')}
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            Danger Zone
+          </button>
+        </div>
       </div>
 
       {/* Error Messages */}
@@ -269,9 +283,9 @@ const SettingsPage: React.FC = () => {
                     {selectedProject.stagingEnvironment?.charAt(0).toUpperCase() + selectedProject.stagingEnvironment?.slice(1)}
                   </span>
                 </div>
-                <div>
+                <div className="flex items-center gap-2">
                   <span className="font-medium">Tags:</span> 
-                  <div className="flex flex-wrap gap-1 mt-1">
+                  <div className="flex flex-wrap gap-1">
                     {selectedProject.tags && selectedProject.tags.length > 0 ? (
                       selectedProject.tags.map((tag, index) => (
                         <span key={index} className="badge badge-info badge-sm">{tag}</span>

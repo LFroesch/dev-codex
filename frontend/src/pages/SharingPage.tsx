@@ -57,29 +57,40 @@ const SharingPage: React.FC = () => {
   }
 
   return (
-    <div className="p-6">
+    <div className="space-y-4">
       {/* Navigation Tabs */}
-      <div className="tabs tabs-boxed border-subtle shadow-sm opacity-90 mb-6">
-        <button 
-          className={`tab ${activeSection === 'overview' ? 'tab-active' : ''}`}
-          onClick={() => setActiveSection('overview')}
-        >
-          Overview
-        </button>
-        {selectedProject.isShared && (
+      <div className="flex justify-center px-2">
+        <div className="tabs tabs-boxed border-subtle shadow-sm">
           <button 
-            className={`tab ${activeSection === 'team' ? 'tab-active' : ''}`}
-            onClick={() => setActiveSection('team')}
+            className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'overview' ? 'tab-active' : ''}`}
+            onClick={() => setActiveSection('overview')}
           >
-            Team Management
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            Overview
           </button>
-        )}
-        <button 
-          className={`tab ${activeSection === 'activity' ? 'tab-active' : ''}`}
-          onClick={() => setActiveSection('activity')}
-        >
-          Activity Log
-        </button>
+          {selectedProject.isShared && (
+            <button 
+              className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'team' ? 'tab-active' : ''}`}
+              onClick={() => setActiveSection('team')}
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              Team Management
+            </button>
+          )}
+          <button 
+            className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'activity' ? 'tab-active' : ''}`}
+            onClick={() => setActiveSection('activity')}
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Activity Log
+          </button>
+        </div>
       </div>
 
       {/* Error Messages */}

@@ -146,42 +146,30 @@ const PublicProjectPage: React.FC = () => {
                 className="btn btn-outline gap-2"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 712-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                 </svg>
                 Share
               </button>
             </div>
             
-            {/* Project Content */}
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-4 mb-6">
-                <div 
-                  className="w-16 h-16 rounded-xl flex items-center justify-center text-2xl font-bold text-white border-2 border-white/20 shadow-lg"
-                  style={{ backgroundColor: project.color }}
-                >
-                  {project.name.charAt(0).toUpperCase()}
-                </div>
-                <div className="text-left">
-                  <h1 className="text-3xl font-bold px-2 py-1 rounded-md bg-base-300 inline-block w-fit">{project.name}</h1>
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className="badge badge-primary">
-                      {project.category}
-                    </span>
-                  </div>
-                </div>
+            {/* Compact Project Layout */}
+            <div className="flex items-start gap-4 mb-4">
+              <div 
+                className="w-16 h-16 rounded-xl flex items-center justify-center text-2xl font-bold text-white border-2 border-white/20 shadow-lg flex-shrink-0"
+                style={{ backgroundColor: project.color }}
+              >
+                {project.name.charAt(0).toUpperCase()}
               </div>
-              
-              {visibility.description && (
-                <div className="bg-base-200/50 rounded-lg p-4 mb-6">
-                  <p className="text-base text-base-content/80 leading-relaxed max-w-3xl mx-auto">
-                    {project.publicDescription || project.description}
-                  </p>
+              <div className="min-w-0 flex-1">
+                <h1 className="text-2xl font-bold text-base-content mb-1">
+                  {project.name}
+                </h1>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="badge badge-primary">
+                    {project.category}
+                  </span>
                 </div>
-              )}
-              
-              {/* Meta info and tags */}
-              <div className="space-y-4">
-                <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-base-content/60">
+                <div className="flex flex-wrap items-center gap-4 text-sm text-base-content/60">
                   {project.owner && (
                     <div className="flex items-center gap-2">
                       <span>by</span>
@@ -208,26 +196,34 @@ const PublicProjectPage: React.FC = () => {
                       <span>
                         Updated {new Date(project.updatedAt).toLocaleDateString('en-US', { 
                           year: 'numeric', 
-                          month: 'long', 
-                          day: 'numeric' 
+                          month: 'long'
                         })}
                       </span>
                     </div>
                   )}
                 </div>
-                
-                {/* Tags */}
-                {visibility.tags && project.tags && project.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2 justify-center">
-                    {project.tags.map((tag: string, index: number) => (
-                      <span key={index} className="inline-flex items-center px-2 py-1 rounded-md text-sm font-medium bg-base-200 text-base-content/80 border border-base-300/50">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
               </div>
             </div>
+            
+            {/* Description */}
+            {visibility.description && (
+              <div className="bg-base-200 p-4 rounded-lg mb-4">
+                <p className="text-base leading-relaxed text-base-content/80">
+                  {project.publicDescription || project.description}
+                </p>
+              </div>
+            )}
+
+            {/* Tags */}
+            {visibility.tags && project.tags && project.tags.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {project.tags.map((tag: string, index: number) => (
+                  <span key={index} className="inline-flex items-center px-2 py-1 rounded-md text-sm font-medium bg-base-200 text-base-content/80 border border-base-300/50">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

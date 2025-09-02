@@ -338,7 +338,7 @@ const NotesPage: React.FC = () => {
             onClick={() => setActiveSection('todos')}
           >
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
             <span>Todos <span className="text-xs opacity-70">({selectedProject.todos?.filter(todo => !todo.parentTodoId).length || 0})</span></span>
           </button>
@@ -451,7 +451,7 @@ const NotesPage: React.FC = () => {
                 ?.map((note) => (
                   <div 
                     key={note.id}
-                    className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 cursor-pointer group h-48 flex flex-col"
+                    className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 cursor-pointer group flex flex-col"
                     onClick={() => handleNoteClick(note)}
                   >
                     <div className="p-4 flex flex-col flex-1">
@@ -472,7 +472,7 @@ const NotesPage: React.FC = () => {
                         </p>
                       )}
                       
-                      <p className="text-sm text-base-content/70 mb-3 line-clamp-3 flex-1">
+                      <p className="text-sm text-base-content/70 mb-3 line-clamp-3 flex-1 whitespace-pre-wrap leading-5">
                         {note.content}
                       </p>
                       

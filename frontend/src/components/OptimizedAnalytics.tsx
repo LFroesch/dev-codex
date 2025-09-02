@@ -143,9 +143,9 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
         return (
           <div className="space-y-6">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div className="bg-base-100/80 backdrop-blur-sm border border-subtle rounded-lg p-4 hover:shadow-lg hover:border-primary/20 transition-all duration-200 cursor-pointer group">
+              <div className="bg-base-100/80 backdrop-blur-sm border border-subtle rounded-lg p-4 hover:shadow-lg hover:border-primary/20 cursor-pointer group">
                 <div className="flex flex-col items-center text-center space-y-2">
-                  <div className="text-2xl group-hover:scale-110 transition-transform duration-200">📊</div>
+                  <div className="text-2xl group-hover:scale-110">📊</div>
                   <div className="text-2xl font-bold text-primary">
                     {data?.summary?.totalEvents?.toLocaleString() || '0'}
                   </div>
@@ -153,9 +153,9 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
                 </div>
               </div>
               
-              <div className="bg-base-100/80 backdrop-blur-sm border border-subtle rounded-lg p-4 hover:shadow-lg hover:border-success/20 transition-all duration-200 cursor-pointer group">
+              <div className="bg-base-100/80 backdrop-blur-sm border border-subtle rounded-lg p-4 hover:shadow-lg hover:border-success/20 cursor-pointer group">
                 <div className="flex flex-col items-center text-center space-y-2">
-                  <div className="text-2xl group-hover:scale-110 transition-transform duration-200">👥</div>
+                  <div className="text-2xl group-hover:scale-110">👥</div>
                   <div className="text-2xl font-bold text-success">
                     {data?.summary?.totalUsers?.toLocaleString() || '0'}
                   </div>
@@ -163,9 +163,9 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
                 </div>
               </div>
               
-              <div className="bg-base-100/80 backdrop-blur-sm border border-subtle rounded-lg p-4 hover:shadow-lg hover:border-info/20 transition-all duration-200 cursor-pointer group">
+              <div className="bg-base-100/80 backdrop-blur-sm border border-subtle rounded-lg p-4 hover:shadow-lg hover:border-info/20 cursor-pointer group">
                 <div className="flex flex-col items-center text-center space-y-2">
-                  <div className="text-2xl group-hover:scale-110 transition-transform duration-200">🚀</div>
+                  <div className="text-2xl group-hover:scale-110">🚀</div>
                   <div className="text-2xl font-bold text-info">
                     {data?.summary?.totalProjects?.toLocaleString() || '0'}
                   </div>
@@ -173,9 +173,9 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
                 </div>
               </div>
               
-              <div className="bg-base-100/80 backdrop-blur-sm border border-subtle rounded-lg p-4 hover:shadow-lg hover:border-accent/20 transition-all duration-200 cursor-pointer group">
+              <div className="bg-base-100/80 backdrop-blur-sm border border-subtle rounded-lg p-4 hover:shadow-lg hover:border-accent/20 cursor-pointer group">
                 <div className="flex flex-col items-center text-center space-y-2">
-                  <div className="text-2xl group-hover:scale-110 transition-transform duration-200">⏱️</div>
+                  <div className="text-2xl group-hover:scale-110">⏱️</div>
                   <div className="text-2xl font-bold text-accent">
                     {data?.summary?.avgSessionDuration ? formatTime(data.summary.avgSessionDuration) : '0s'}
                   </div>
@@ -195,7 +195,7 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
                   <h3 className="text-lg font-semibold text-base-content">Recent Activity Timeline</h3>
                 </div>
                 <button 
-                  className="btn btn-outline btn-sm bg-base-100/80 backdrop-blur-sm border-subtle shadow-sm hover:shadow-md transition-all"
+                  className="btn btn-outline btn-sm bg-base-100/80 backdrop-blur-sm border-subtle shadow-sm hover:shadow-md"
                   onClick={() => fetchAnalytics(selectedPeriod, true)}
                   disabled={loading}
                 >
@@ -208,7 +208,7 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
               <div className="space-y-3 max-h-64 overflow-y-auto">
                 {(data?.timeline?.length ?? 0) > 0 ? (
                   data?.timeline?.slice(0, 10).map((event: any, index: number) => (
-                    <div key={index} className="flex items-center gap-3 p-3 bg-base-200/30 backdrop-blur-sm border border-subtle rounded-lg hover:bg-base-200/50 transition-all duration-200">
+                    <div key={index} className="flex items-center gap-3 p-3 bg-base-200/30 backdrop-blur-sm border border-subtle rounded-lg hover:bg-base-200/50">
                       <div className="text-2xl">{
                         event.event_type === 'feature_usage' ? '🚀' :
                         event.event_type === 'navigation' ? '🧭' :
@@ -261,7 +261,7 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
                 <tbody>
                   {(data?.topUsers?.length ?? 0) > 0 ? (
                     data?.topUsers?.map((user: any, index: number) => (
-                      <tr key={index} className={`border-subtle hover:bg-base-200/20 transition-colors duration-200 ${index < 3 ? 'bg-success/5' : ''}`}>
+                      <tr key={index} className={`border-subtle hover:bg-base-200/20 ${index < 3 ? 'bg-success/5' : ''}`}>
                         <td>
                           <div className="flex items-center gap-2">
                             {index < 3 && <span className="text-lg">🏆</span>}
@@ -323,7 +323,7 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
                 <tbody>
                   {(data?.topProjects?.length ?? 0) > 0 ? (
                     data?.topProjects?.map((project: any, index: number) => (
-                      <tr key={index} className={`border-subtle hover:bg-base-200/20 transition-colors duration-200 ${index < 3 ? 'bg-success/5' : ''}`}>
+                      <tr key={index} className={`border-subtle hover:bg-base-200/20 ${index < 3 ? 'bg-success/5' : ''}`}>
                         <td>
                           <div className="flex items-center gap-2">
                             {index < 3 && <span className="text-lg">🏆</span>}
@@ -427,7 +427,7 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
               
               <div className="flex gap-2">
                 <button 
-                  className="btn btn-outline btn-sm bg-base-100/80 backdrop-blur-sm border-subtle shadow-sm hover:shadow-md transition-all"
+                  className="btn btn-outline btn-sm bg-base-100/80 backdrop-blur-sm border-subtle shadow-sm hover:shadow-md"
                   onClick={() => fetchAnalytics(selectedPeriod, true)}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -437,7 +437,7 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
                 </button>
                 {onResetAnalytics && (
                   <button 
-                    className="btn btn-error btn-sm shadow-sm hover:shadow-md transition-all"
+                    className="btn btn-error btn-sm shadow-sm hover:shadow-md"
                     onClick={onResetAnalytics}
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

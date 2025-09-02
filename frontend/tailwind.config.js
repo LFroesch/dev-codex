@@ -10,7 +10,7 @@ export default {
     extend: {
       screens: {
         'tablet': '1024px',
-        'desktop': '1350px',
+        'desktop': '1380px',
       },
     },
   },

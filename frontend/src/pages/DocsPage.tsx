@@ -20,8 +20,7 @@ const DocsPage: React.FC = () => {
   const [editData, setEditData] = useState({ type: 'Model' as Doc['type'], title: '', content: '' });
   const [expandedDocs, setExpandedDocs] = useState<Set<string>>(new Set());
   const [error, setError] = useState('');
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [activeTemplateCategory, setActiveTemplateCategory] = useState<string>('all');
+  const [activeTemplateCategory, setActiveTemplateCategory] = useState<string>('create-new');
 
   const toggleDocExpanded = (docId: string) => {
     const newExpanded = new Set(expandedDocs);
@@ -54,7 +53,7 @@ const DocsPage: React.FC = () => {
     try {
       await projectAPI.createDoc(selectedProject.id, newDoc);
       setNewDoc({ type: 'Model', title: '', content: '' });
-      setShowCreateForm(false);
+      setActiveTemplateCategory('all');
       await onProjectRefresh();
     } catch (err) {
       setError('Failed to add documentation template');
@@ -263,9 +262,18 @@ React App:
       )}
 
       {/* Template Categories Navigation */}
-      {categoriesWithDocs.length > 0 && (
-        <div className="flex justify-center px-2">
-          <div className="tabs tabs-boxed border-subtle shadow-sm overflow-x-auto">
+      <div className="flex justify-center px-2">
+        <div className="tabs tabs-boxed border-subtle shadow-sm overflow-x-auto">
+          <button 
+            className={`tab tab-sm min-h-10 font-bold text-sm ${activeTemplateCategory === 'create-new' ? 'tab-active' : ''}`}
+            onClick={() => setActiveTemplateCategory('create-new')}
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            Create New
+          </button>
+          {categoriesWithDocs.length > 0 && (
             <button 
               className={`tab tab-sm min-h-10 font-bold text-sm ${activeTemplateCategory === 'all' ? 'tab-active' : ''}`}
               onClick={() => setActiveTemplateCategory('all')}
@@ -275,6 +283,7 @@ React App:
               </svg>
               All Templates ({selectedProject.docs?.length || 0})
             </button>
+          )}
           {categoriesWithDocs.map(typeInfo => (
             <button 
               key={typeInfo.value}
@@ -313,296 +322,273 @@ React App:
               {typeInfo.label} ({docsByType[typeInfo.value]?.length || 0})
             </button>
           ))}
-          </div>
         </div>
-      )}
-
-      {/* Create New Template */}
-      <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
-        {!showCreateForm ? (
-          <button
-            onClick={() => setShowCreateForm(true)}
-            className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-base-200/40 transition-colors rounded-lg"
-          >
-            <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-              <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-            </div>
-            <span className="text-base-content/60">Create new documentation template...</span>
-          </button>
-        ) : (
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <span className="text-xl">📝</span>
-                Create New Documentation Template
-              </h2>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowCreateForm(false);
-                  setNewDoc({ type: 'Model', title: '', content: '' });
-                }}
-                className="text-base-content/40 hover:text-base-content/60 transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="form-control">
-                    <label className="label">
-                      <span className="label-text font-medium">Template Type</span>
-                    </label>
-                    <select
-                      value={newDoc.type}
-                      onChange={(e) => setNewDoc({...newDoc, type: e.target.value as Doc['type']})}
-                      className="select select-bordered border-base-300"
-                    >
-                      {docTypes.map(type => (
-                        <option key={type.value} value={type.value}>
-                          {type.emoji} {type.label} - {type.description}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="form-control md:col-span-2">
-                    <label className="label">
-                      <span className="label-text font-medium">Template Title</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={newDoc.title}
-                      onChange={(e) => setNewDoc({...newDoc, title: e.target.value})}
-                      className="input input-bordered border-base-300"
-                      placeholder="Enter template title..."
-                    />
-                  </div>
-                </div>
-
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text font-medium">Template Content</span>
-                    <button
-                      type="button"
-                      onClick={() => setNewDoc({...newDoc, content: getTemplateExample(newDoc.type)})}
-                      className="btn btn-xs btn-outline"
-                    >
-                      Use Example
-                    </button>
-                  </label>
-                  <textarea
-                    value={newDoc.content}
-                    onChange={(e) => setNewDoc({...newDoc, content: e.target.value})}
-                    className="textarea textarea-bordered border-base-300 h-[400px]"
-                    placeholder="Enter your pseudocode/planning template..."
-                  />
-                </div>
-
-                <div className="flex justify-end">
-                  <button
-                    onClick={handleAddDoc}
-                    disabled={addingDoc || !newDoc.title.trim() || !newDoc.content.trim()}
-                    className="btn btn-primary"
-                  >
-                    {addingDoc ? 'Adding...' : 'Add Template'}
-                  </button>
-                </div>
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* Show message if no docs exist */}
-      {!hasAnyDocs && (
-        <div className="text-center py-12">
-          <div className="w-16 h-16 mx-auto mb-4 bg-base-200 rounded-full flex items-center justify-center">
-            <span className="text-2xl">📚</span>
-          </div>
-          <h3 className="text-lg font-medium mb-2 text-base-content/80">No documentation templates yet</h3>
-          <p className="text-sm text-base-content/60">Create your first template above to get started documenting your project</p>
-        </div>
-      )}
-
-      {/* Template Categories Content */}
-      {categoriesWithDocs.length > 0 && (
+      {/* Tab Content */}
+      {activeTemplateCategory === 'create-new' ? (
+        // Create New Template Content
         <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <span className="text-xl">
-                {activeTemplateCategory === 'all' ? '📚' : categoriesWithDocs.find(c => c.value === activeTemplateCategory)?.emoji}
-              </span>
-              <span className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">
-                {activeTemplateCategory === 'all' 
-                  ? 'All Documentation Templates' 
-                  : `${categoriesWithDocs.find(c => c.value === activeTemplateCategory)?.label} Templates`
-                }
-              </span>
-            </h3>
-            <div className="space-y-3">
-                  {(activeTemplateCategory === 'all' 
-                    ? selectedProject.docs || []
-                    : docsByType[activeTemplateCategory as Doc['type']] || []
-                  ).map((doc: any) => {
-                    const isExpanded = expandedDocs.has(doc.id);
-                    const isEditing = editingDoc === doc.id;
-                    const docType = docTypes.find(t => t.value === doc.type);
-                    return (
-                      <div key={doc.id} className="bg-base-100 rounded-lg border border-base-300 hover:border-primary/30 transition-all duration-200 p-3">
-                          {/* Header with title and controls */}
-                          <div className="flex items-center justify-between">
-                            <button
-                              onClick={() => toggleDocExpanded(doc.id)}
-                              className="flex items-center gap-3 flex-1 text-left hover:bg-base-200 p-2 -m-2 rounded-lg transition-colors"
-                              disabled={isEditing}
-                            >
-                              <div className={`transform transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}>
-                                <svg className="w-5 h-5 text-base-content/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                </svg>
-                              </div>
-                              <div className="flex-1">
-                                <div className="flex items-center gap-3 mb-1">
-                                  <h3 className="font-semibold text-base">{doc.title}</h3>
-                                  {activeTemplateCategory === 'all' && docType && (
-                                    <span className="px-2 py-1 rounded-md bg-base-300 text-xs font-medium">
-                                      {docType.emoji} {docType.label}
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="text-xs text-base-content/50">
-                                  Created: {new Date(doc.createdAt).toLocaleDateString()}
-                                  {doc.updatedAt !== doc.createdAt && (
-                                    <> • Updated: {new Date(doc.updatedAt).toLocaleDateString()}</>
-                                  )}
-                                </div>
-                              </div>
-                            </button>
-                            
-                            <div className="flex gap-2 ml-4">
-                              {isEditing ? (
-                                <>
-                                  <button
-                                    onClick={handleSaveEdit}
-                                    className="btn btn-sm btn-primary"
-                                    disabled={!editData.title.trim() || !editData.content.trim()}
-                                  >
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                    </svg>
-                                    Save
-                                  </button>
-                                  <button
-                                    onClick={handleCancelEdit}
-                                    className="btn btn-sm btn-ghost"
-                                  >
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                    Cancel
-                                  </button>
-                                </>
-                              ) : (
-                                <>
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleEditDoc(doc);
-                                    }}
-                                    className="btn btn-sm btn-ghost"
-                                  >
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                    </svg>
-                                    Edit
-                                  </button>
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleDeleteDoc(doc.id);
-                                    }}
-                                    className="btn btn-sm btn-error btn-outline"
-                                  >
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                    </svg>
-                                    Delete
-                                  </button>
-                                </>
-                              )}
-                            </div>
-                          </div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <span className="text-xl">📝</span>
+              <span className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">Create New Documentation Template</span>
+            </h2>
+          </div>
+          <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-medium">Template Type</span>
+                  </label>
+                  <select
+                    value={newDoc.type}
+                    onChange={(e) => setNewDoc({...newDoc, type: e.target.value as Doc['type']})}
+                    className="select select-bordered border-base-300"
+                  >
+                    {docTypes.map(type => (
+                      <option key={type.value} value={type.value}>
+                        {type.emoji} {type.label} - {type.description}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-                          {/* Collapsible content */}
-                          {isExpanded && (
-                            <div className="mt-4 border-t border-base-300 pt-4">
-                              {isEditing ? (
-                                <div className="space-y-4">
-                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div className="form-control">
-                                      <label className="label">
-                                        <span className="label-text font-medium">Type</span>
-                                      </label>
-                                      <select
-                                        value={editData.type}
-                                        onChange={(e) => setEditData({...editData, type: e.target.value as Doc['type']})}
-                                        className="select select-bordered select-sm"
+                <div className="form-control md:col-span-2">
+                  <label className="label">
+                    <span className="label-text font-medium">Template Title</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={newDoc.title}
+                    onChange={(e) => setNewDoc({...newDoc, title: e.target.value})}
+                    className="input input-bordered border-base-300"
+                    placeholder="Enter template title..."
+                  />
+                </div>
+              </div>
+
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-medium">Template Content</span>
+                  <button
+                    type="button"
+                    onClick={() => setNewDoc({...newDoc, content: getTemplateExample(newDoc.type)})}
+                    className="btn btn-xs btn-outline"
+                  >
+                    Use Example
+                  </button>
+                </label>
+                <textarea
+                  value={newDoc.content}
+                  onChange={(e) => setNewDoc({...newDoc, content: e.target.value})}
+                  className="textarea textarea-bordered border-base-300 h-[300px]"
+                  placeholder="Enter your pseudocode/planning template..."
+                />
+              </div>
+
+              <div className="flex justify-end">
+                <button
+                  onClick={handleAddDoc}
+                  disabled={addingDoc || !newDoc.title.trim() || !newDoc.content.trim()}
+                  className="btn btn-primary"
+                >
+                  {addingDoc ? 'Adding...' : 'Add Template'}
+                </button>
+              </div>
+          </div>
+        </div>
+      ) : (
+        // Existing Templates Content
+        <>
+          {/* Show message if no docs exist */}
+          {!hasAnyDocs && (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 mx-auto mb-4 bg-base-200 rounded-full flex items-center justify-center">
+                <span className="text-2xl">📚</span>
+              </div>
+              <h3 className="text-lg font-medium mb-2 text-base-content/80">No documentation templates yet</h3>
+              <p className="text-sm text-base-content/60">Create your first template using the "Create New" tab above</p>
+            </div>
+          )}
+
+          {/* Template Categories Content */}
+          {categoriesWithDocs.length > 0 && (
+            <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
+                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <span className="text-xl">
+                    {activeTemplateCategory === 'all' ? '📚' : categoriesWithDocs.find(c => c.value === activeTemplateCategory)?.emoji}
+                  </span>
+                  <span className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">
+                    {activeTemplateCategory === 'all' 
+                      ? 'All Documentation Templates' 
+                      : `${categoriesWithDocs.find(c => c.value === activeTemplateCategory)?.label} Templates`
+                    }
+                  </span>
+                </h3>
+                <div className="space-y-3">
+                      {(activeTemplateCategory === 'all' 
+                        ? selectedProject.docs || []
+                        : docsByType[activeTemplateCategory as Doc['type']] || []
+                      ).map((doc: any) => {
+                        const isExpanded = expandedDocs.has(doc.id);
+                        const isEditing = editingDoc === doc.id;
+                        const docType = docTypes.find(t => t.value === doc.type);
+                        return (
+                          <div key={doc.id} className="bg-base-100 rounded-lg border border-base-300 hover:border-primary/30 transition-all duration-200 p-3">
+                              {/* Header with title and controls */}
+                              <div className="flex items-center justify-between">
+                                <button
+                                  onClick={() => toggleDocExpanded(doc.id)}
+                                  className="flex items-center gap-3 flex-1 text-left hover:bg-base-200 p-2 -m-2 rounded-lg transition-colors"
+                                  disabled={isEditing}
+                                >
+                                  <div className={`transform transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}>
+                                    <svg className="w-5 h-5 text-base-content/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                    </svg>
+                                  </div>
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-3 mb-1">
+                                      <h3 className="font-semibold text-base">{doc.title}</h3>
+                                      {activeTemplateCategory === 'all' && docType && (
+                                        <span className="px-2 py-1 rounded-md bg-base-300 text-xs font-medium">
+                                          {docType.emoji} {docType.label}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="text-xs text-base-content/50">
+                                      Created: {new Date(doc.createdAt).toLocaleDateString()}
+                                      {doc.updatedAt !== doc.createdAt && (
+                                        <> • Updated: {new Date(doc.updatedAt).toLocaleDateString()}</>
+                                      )}
+                                    </div>
+                                  </div>
+                                </button>
+                                
+                                <div className="flex gap-2 ml-4">
+                                  {isEditing ? (
+                                    <>
+                                      <button
+                                        onClick={handleSaveEdit}
+                                        className="btn btn-sm btn-primary"
+                                        disabled={!editData.title.trim() || !editData.content.trim()}
                                       >
-                                        {docTypes.map(type => (
-                                          <option key={type.value} value={type.value}>
-                                            {type.emoji} {type.label}
-                                          </option>
-                                        ))}
-                                      </select>
-                                    </div>
-                                    <div className="form-control md:col-span-2">
-                                      <label className="label">
-                                        <span className="label-text font-medium">Title</span>
-                                      </label>
-                                      <input
-                                        type="text"
-                                        value={editData.title}
-                                        onChange={(e) => setEditData({...editData, title: e.target.value})}
-                                        className="input input-bordered input-sm"
-                                      />
-                                    </div>
-                                  </div>
-                                  <div className="form-control">
-                                    <label className="label">
-                                      <span className="label-text font-medium">Content</span>
-                                    </label>
-                                    <textarea
-                                      value={editData.content}
-                                      onChange={(e) => setEditData({...editData, content: e.target.value})}
-                                      className="textarea textarea-bordered h-[500px]"
-                                    />
-                                  </div>
-                                  <div className="flex justify-end gap-2">
-                                    <button onClick={handleCancelEdit} className="btn btn-ghost btn-sm">
-                                      Cancel
-                                    </button>
-                                    <button onClick={handleSaveEdit} className="btn btn-primary btn-sm">
-                                      Save
-                                    </button>
-                                  </div>
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        Save
+                                      </button>
+                                      <button
+                                        onClick={handleCancelEdit}
+                                        className="btn btn-sm btn-ghost"
+                                      >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                        Cancel
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleEditDoc(doc);
+                                        }}
+                                        className="btn btn-sm btn-ghost"
+                                      >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
+                                        Edit
+                                      </button>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleDeleteDoc(doc.id);
+                                        }}
+                                        className="btn btn-sm btn-error btn-outline"
+                                      >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                        Delete
+                                      </button>
+                                    </>
+                                  )}
                                 </div>
-                              ) : (
-                                <div className="bg-base-200 rounded-lg p-4 border border-base-300">
-                                  <pre className="whitespace-pre-wrap text-sm font-mono leading-relaxed">
-                                    {doc.content}
-                                  </pre>
+                              </div>
+
+                              {/* Collapsible content */}
+                              {isExpanded && (
+                                <div className="mt-4 border-t border-base-300 pt-4">
+                                  {isEditing ? (
+                                    <div className="space-y-4">
+                                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div className="form-control">
+                                          <label className="label">
+                                            <span className="label-text font-medium">Type</span>
+                                          </label>
+                                          <select
+                                            value={editData.type}
+                                            onChange={(e) => setEditData({...editData, type: e.target.value as Doc['type']})}
+                                            className="select select-bordered select-sm"
+                                          >
+                                            {docTypes.map(type => (
+                                              <option key={type.value} value={type.value}>
+                                                {type.emoji} {type.label}
+                                              </option>
+                                            ))}
+                                          </select>
+                                        </div>
+                                        <div className="form-control md:col-span-2">
+                                          <label className="label">
+                                            <span className="label-text font-medium">Title</span>
+                                          </label>
+                                          <input
+                                            type="text"
+                                            value={editData.title}
+                                            onChange={(e) => setEditData({...editData, title: e.target.value})}
+                                            className="input input-bordered input-sm"
+                                          />
+                                        </div>
+                                      </div>
+                                      <div className="form-control">
+                                        <label className="label">
+                                          <span className="label-text font-medium">Content</span>
+                                        </label>
+                                        <textarea
+                                          value={editData.content}
+                                          onChange={(e) => setEditData({...editData, content: e.target.value})}
+                                          className="textarea textarea-bordered h-[500px]"
+                                        />
+                                      </div>
+                                      <div className="flex justify-end gap-2">
+                                        <button onClick={handleCancelEdit} className="btn btn-ghost btn-sm">
+                                          Cancel
+                                        </button>
+                                        <button onClick={handleSaveEdit} className="btn btn-primary btn-sm">
+                                          Save
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="bg-base-200 rounded-lg p-4 border border-base-300">
+                                      <pre className="whitespace-pre-wrap text-sm font-mono leading-relaxed">
+                                        {doc.content}
+                                      </pre>
+                                    </div>
+                                  )}
                                 </div>
                               )}
                             </div>
-                          )}
-                        </div>
-                      );
-                  })}
+                          );
+                      })}
+                </div>
             </div>
-        </div>
+          )}
+        </>
       )}
     </div>
   );

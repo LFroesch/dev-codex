@@ -226,9 +226,10 @@ const SettingsPage: React.FC = () => {
       {/* Overview Section */}
       {activeSection === 'overview' && (
         <div className="space-y-4">
-          <div className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">
-            <h2 className="text-xl font-bold mb-0">⚙️ Project Overview</h2>
-          </div>
+          <h2 className="text-xl font-bold mb-0 flex items-center gap-2">
+            <span className="text-xl">⚙️</span>
+            <span className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">Project Overview</span>
+          </h2>
           
           <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
             <div className="flex items-center gap-4 mb-4">
@@ -308,9 +309,10 @@ const SettingsPage: React.FC = () => {
       {/* Project Info Section */}
       {activeSection === 'info' && (
         <div className="space-y-4">
-          <div className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">
-            <h2 className="text-xl font-bold mb-0">⚙️ Project Information</h2>
-          </div>
+          <h2 className="text-xl font-bold mb-0 flex items-center gap-2">
+            <span className="text-xl">⚙️</span>
+            <span className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">Project Information</span>
+          </h2>
           
           <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
           {/* Basic Info Section */}
@@ -641,9 +643,10 @@ const SettingsPage: React.FC = () => {
       {/* Export & Import Section */}
       {activeSection === 'export' && (
         <div className="space-y-4">
-          <div className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">
-            <h2 className="text-xl font-bold mb-0">📤 Export & Import</h2>
-          </div>
+          <h2 className="text-xl font-bold mb-0 flex items-center gap-2">
+            <span className="text-xl">📤</span>
+            <span className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">Export & Import</span>
+          </h2>
           
           <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
             <ExportSection selectedProject={selectedProject} onProjectRefresh={onProjectRefresh} />
@@ -654,9 +657,10 @@ const SettingsPage: React.FC = () => {
       {/* Danger Zone Section */}
       {activeSection === 'danger' && (
         <div className="space-y-4">
-          <div className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">
-            <h2 className="text-xl font-bold mb-0 text-error">⚠️ Danger Zone</h2>
-          </div>
+          <h2 className="text-xl font-bold mb-0 flex items-center gap-2">
+            <span className="text-xl">⚠️</span>
+            <span className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">Danger Zone</span>
+          </h2>
           
           <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
             <div className="space-y-4">

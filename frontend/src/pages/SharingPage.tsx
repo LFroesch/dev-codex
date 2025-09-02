@@ -107,9 +107,10 @@ const SharingPage: React.FC = () => {
       {/* Overview Section */}
       {activeSection === 'overview' && (
         <div className="space-y-4">
-          <div className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">
-            <h2 className="text-xl font-bold mb-0">👥 Sharing Overview</h2>
-          </div>
+          <h2 className="text-xl font-bold mb-0 flex items-center gap-2">
+            <span className="text-xl">👥</span>
+            <span className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">Sharing Overview</span>
+          </h2>
           
           <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
             <div className="flex items-center justify-between p-3 bg-base-200 rounded-lg border">
@@ -166,9 +167,10 @@ const SharingPage: React.FC = () => {
       {/* Team Management Section */}
       {activeSection === 'team' && selectedProject.isShared && (
         <div className="space-y-4">
-          <div className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">
-            <h2 className="text-xl font-bold mb-0">👥 Team Management</h2>
-          </div>
+          <h2 className="text-xl font-bold mb-0 flex items-center gap-2">
+            <span className="text-xl">👥</span>
+            <span className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">Team Management</span>
+          </h2>
           
           <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
             <TeamManagement 
@@ -183,9 +185,10 @@ const SharingPage: React.FC = () => {
       {/* Activity Log Section */}
       {activeSection === 'activity' && (
         <div className="space-y-4">
-          <div className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">
-            <h2 className="text-xl font-bold mb-0">📊 Activity Log</h2>
-          </div>
+          <h2 className="text-xl font-bold mb-0 flex items-center gap-2">
+            <span className="text-xl">📊</span>
+            <span className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">Activity Log</span>
+          </h2>
           
           <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
             <p className="text-sm text-base-content/60 mb-4">Your project activity is being tracked</p>

@@ -116,6 +116,18 @@ body {
   .icon-md {
     @apply w-5 h-5;
   }
+
+  /* Animation Utilities */
+  .no-animate {
+    animation: none !important;
+    transform: none !important;
+  }
+}
+
+/* Global button animation disable */
+.btn, button, input[type="button"], input[type="submit"], input[type="reset"] {
+  animation: none !important;
+  transform: none !important;
 }
 
 /* Line clamp for consistent text truncation */

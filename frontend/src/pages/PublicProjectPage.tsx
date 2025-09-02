@@ -127,7 +127,7 @@ const PublicProjectPage: React.FC = () => {
     <div className="flex-1 w-full max-w-7xl mx-auto p-2 sm:p-4 bg-base-100 flex flex-col mb-4 min-h-0">
       <div className="space-y-6">
         {/* Project Header */}
-        <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200">
+        <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30">
           <div className="p-6">
             {/* Header buttons */}
             <div className="flex items-center justify-between mb-6">
@@ -332,7 +332,7 @@ const PublicProjectPage: React.FC = () => {
 
         {/* Documentation */}
         {hasAnyDocs && (
-          <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200">
+          <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30">
             <div className="p-4">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
@@ -360,7 +360,7 @@ const PublicProjectPage: React.FC = () => {
                     
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                       {docs.map((doc: any) => (
-                        <div key={doc.id} className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200">
+                        <div key={doc.id} className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30">
                           <div className="p-4">
                             <h4 className="font-semibold text-base mb-3 px-2 py-1 rounded-md bg-base-300 inline-block w-fit">{doc.title}</h4>
                             <div className="mockup-code bg-base-200 text-xs">

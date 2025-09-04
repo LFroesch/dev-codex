@@ -3,31 +3,69 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { authAPI } from '../api';
 import { useLoadingState } from '../hooks/useLoadingState';
 import AnalyticsDashboard from '../components/AnalyticsDashboard';
-// Simple hex to OKLCH conversion
+// Better hex to OKLCH conversion 
 const hexToOklch = (hex: string) => {
-  // Convert hex to RGB
-  const r = parseInt(hex.slice(1, 3), 16) / 255;
-  const g = parseInt(hex.slice(3, 5), 16) / 255;
-  const b = parseInt(hex.slice(5, 7), 16) / 255;
-  
-  // Simple approximation for OKLCH
-  const lightness = Math.sqrt(0.2126 * r * r + 0.7152 * g * g + 0.0722 * b * b) * 100;
-  const chroma = Math.sqrt((r - lightness/100) ** 2 + (g - lightness/100) ** 2 + (b - lightness/100) ** 2) * 0.4;
-  
-  // Calculate hue
-  let hue = 0;
-  if (chroma > 0.01) {
-    const a = r - lightness/100;
-    const b_val = g - lightness/100;
-    hue = Math.atan2(b_val, a) * 180 / Math.PI;
-    if (hue < 0) hue += 360;
+  // Validate hex format
+  if (!hex || !hex.startsWith('#') || hex.length !== 7) {
+    return { l: 50, c: 0, h: 0 };
   }
+  
+  // Convert hex to RGB
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  
+  if (isNaN(r) || isNaN(g) || isNaN(b)) {
+    return { l: 50, c: 0, h: 0 };
+  }
+  
+  // Convert RGB to linear RGB
+  const toLinear = (c: number) => {
+    c = c / 255;
+    return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  };
+  
+  const rLin = toLinear(r);
+  const gLin = toLinear(g);
+  const bLin = toLinear(b);
+  
+  // Convert to OKLab (simplified matrix transformation)
+  const l = 0.4122214708 * rLin + 0.5363325363 * gLin + 0.0514459929 * bLin;
+  const m = 0.2119034982 * rLin + 0.6806995451 * gLin + 0.1073969566 * bLin;
+  const s = 0.0883024619 * rLin + 0.2817188376 * gLin + 0.6299787005 * bLin;
+  
+  const l_ = Math.pow(Math.abs(l), 1/3) * Math.sign(l);
+  const m_ = Math.pow(Math.abs(m), 1/3) * Math.sign(m);
+  const s_ = Math.pow(Math.abs(s), 1/3) * Math.sign(s);
+  
+  const L = 0.2104542553 * l_ + 0.7936177850 * m_ - 0.0040720468 * s_;
+  const a = 1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_;
+  const b_lab = 0.0259040371 * l_ + 0.7827717662 * m_ - 0.8086757660 * s_;
+  
+  // Convert to OKLCH
+  const lightness = L * 100;
+  const chroma = Math.sqrt(a * a + b_lab * b_lab);
+  let hue = Math.atan2(b_lab, a) * 180 / Math.PI;
+  if (hue < 0) hue += 360;
   
   return {
     l: Math.round(lightness * 100) / 100,
     c: Math.round(chroma * 1000) / 1000,
     h: Math.round(hue * 100) / 100
   };
+};
+
+// Better contrast detection using relative luminance
+const getContrastColor = (hex: string) => {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  
+  // Calculate relative luminance
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  
+  // Use a more nuanced threshold for better contrast
+  return luminance > 0.6 ? '13.138% 0.0392 275.75' : '89.824% 0.04364 275.75';
 };
 
 const THEMES = [
@@ -149,23 +187,44 @@ const AccountSettingsPage: React.FC = () => {
   const [publicDescription, setPublicDescription] = useState('');
   const [savingPublicSettings, setSavingPublicSettings] = useState(false);
 
-  // Load custom themes from localStorage
-  const loadCustomThemes = () => {
-    const saved = localStorage.getItem('customThemes');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setCustomThemes(parsed);
-      } catch (err) {
-        console.error('Failed to parse custom themes:', err);
+  // Load custom themes from database or localStorage
+  const loadCustomThemes = async () => {
+    try {
+      // Try to load from database first
+      const response = await authAPI.getCustomThemes();
+      const dbThemes = response.customThemes || [];
+      setCustomThemes(dbThemes);
+      // Sync with localStorage
+      localStorage.setItem('customThemes', JSON.stringify(dbThemes));
+    } catch (error) {
+      // Fallback to localStorage if database fails
+      const saved = localStorage.getItem('customThemes');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          setCustomThemes(parsed);
+        } catch (err) {
+          console.error('Failed to parse custom themes:', err);
+        }
       }
     }
   };
 
-  // Save custom themes to localStorage
-  const saveCustomThemes = (themes: CustomTheme[]) => {
-    localStorage.setItem('customThemes', JSON.stringify(themes));
-    setCustomThemes(themes);
+  // Save custom themes to database and localStorage
+  const saveCustomThemes = async (themes: CustomTheme[]) => {
+    try {
+      // Save to database
+      await authAPI.saveCustomThemes(themes);
+      // Also save to localStorage as backup
+      localStorage.setItem('customThemes', JSON.stringify(themes));
+      setCustomThemes(themes);
+    } catch (error) {
+      console.error('Error saving custom themes:', error);
+      // Fallback to localStorage only
+      localStorage.setItem('customThemes', JSON.stringify(themes));
+      setCustomThemes(themes);
+      setError('Failed to sync custom themes to your account. They are saved locally.');
+    }
   };
 
   // Apply custom theme by updating tailwind config dynamically
@@ -249,7 +308,7 @@ const AccountSettingsPage: React.FC = () => {
         --b1: ${base100Oklch.l}% ${base100Oklch.c} ${base100Oklch.h};
         --b2: ${base200Oklch.l}% ${base200Oklch.c} ${base200Oklch.h};
         --b3: ${base300Oklch.l}% ${base300Oklch.c} ${base300Oklch.h};
-        --bc: ${base100Oklch.l > 60 ? '13.138% 0.0392 275.75' : '89.824% 0.04364 275.75'};
+        --bc: ${getContrastColor(theme.colors['base-100'])};
         --in: ${infoOklch.l}% ${infoOklch.c} ${infoOklch.h};
         --inc: ${infoOklch.l > 60 ? '13.138% 0.0392 275.75' : '89.824% 0.04364 275.75'};
         --su: ${successOklch.l}% ${successOklch.c} ${successOklch.h};
@@ -817,38 +876,143 @@ const AccountSettingsPage: React.FC = () => {
                           </div>
                         )}
 
-                        {/* Color Pickers Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {Object.entries(customColors).map(([colorKey, colorValue]) => (
-                            <div key={colorKey} className="form-control">
-                              <label className="label">
-                                <span className="label-text font-medium capitalize">
-                                  {colorKey.replace(/([A-Z-])/g, ' $1').toLowerCase().replace(/^\s/, '')}
-                                </span>
-                              </label>
-                              <div className="join">
-                                <input
-                                  type="color"
-                                  className="join-item w-16 h-12 border-0 rounded-l-lg cursor-pointer"
-                                  value={colorValue}
-                                  onChange={(e) => setCustomColors(prev => ({
-                                    ...prev,
-                                    [colorKey]: e.target.value
-                                  }))}
-                                />
-                                <input
-                                  type="text"
-                                  className="input input-bordered join-item flex-1"
-                                  value={colorValue}
-                                  onChange={(e) => setCustomColors(prev => ({
-                                    ...prev,
-                                    [colorKey]: e.target.value
-                                  }))}
-                                  pattern="^#[0-9A-Fa-f]{6}$"
-                                />
-                              </div>
+                        {/* Theme Color Guide */}
+                        <div className="text-sm bg-base-200 rounded p-3 mb-4">
+                          <p><strong>Tip:</strong> Base colors (Base-100 to Base-300) should be similar shades. Primary/Secondary/Accent are your main theme colors.</p>
+                        </div>
+
+                        {/* Color Pickers - Compact Layout */}
+                        <div className="space-y-4">
+                          {/* Main Colors */}
+                          <div>
+                            <h4 className="font-semibold mb-2">Main Colors</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                              {['primary', 'secondary', 'accent'].map((colorKey) => (
+                                <div key={colorKey} className="form-control">
+                                  <label className="label py-1">
+                                    <span className="label-text text-sm font-medium capitalize">{colorKey}</span>
+                                    <span className="label-text-alt text-xs opacity-60">
+                                      {colorKey === 'primary' && 'buttons'}
+                                      {colorKey === 'secondary' && 'alt buttons'}
+                                      {colorKey === 'accent' && 'highlights'}
+                                    </span>
+                                  </label>
+                                  <div className="join">
+                                    <input
+                                      type="color"
+                                      className="join-item w-12 h-10 border-0 rounded-l-lg cursor-pointer"
+                                      value={customColors[colorKey as keyof typeof customColors]}
+                                      onChange={(e) => setCustomColors(prev => ({
+                                        ...prev,
+                                        [colorKey]: e.target.value
+                                      }))}
+                                    />
+                                    <input
+                                      type="text"
+                                      className="input input-bordered join-item flex-1 input-sm"
+                                      value={customColors[colorKey as keyof typeof customColors]}
+                                      onChange={(e) => {
+                                        const value = e.target.value;
+                                        if (value.startsWith('#') && value.length <= 7) {
+                                          setCustomColors(prev => ({
+                                            ...prev,
+                                            [colorKey]: value
+                                          }));
+                                        }
+                                      }}
+                                      placeholder="#000000"
+                                    />
+                                  </div>
+                                </div>
+                              ))}
                             </div>
-                          ))}
+                          </div>
+
+                          {/* Background Colors */}
+                          <div>
+                            <h4 className="font-semibold mb-2">Background Colors</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                              {['neutral', 'base-100', 'base-200', 'base-300'].map((colorKey) => (
+                                <div key={colorKey} className="form-control">
+                                  <label className="label py-1">
+                                    <span className="label-text text-sm font-medium">{colorKey}</span>
+                                    <span className="label-text-alt text-xs opacity-60">
+                                      {colorKey === 'neutral' && 'text/borders'}
+                                      {colorKey === 'base-100' && 'main bg'}
+                                      {colorKey === 'base-200' && 'cards'}
+                                      {colorKey === 'base-300' && 'dividers'}
+                                    </span>
+                                  </label>
+                                  <div className="join">
+                                    <input
+                                      type="color"
+                                      className="join-item w-12 h-10 border-0 rounded-l-lg cursor-pointer"
+                                      value={customColors[colorKey as keyof typeof customColors]}
+                                      onChange={(e) => setCustomColors(prev => ({
+                                        ...prev,
+                                        [colorKey]: e.target.value
+                                      }))}
+                                    />
+                                    <input
+                                      type="text"
+                                      className="input input-bordered join-item flex-1 input-sm"
+                                      value={customColors[colorKey as keyof typeof customColors]}
+                                      onChange={(e) => {
+                                        const value = e.target.value;
+                                        if (value.startsWith('#') && value.length <= 7) {
+                                          setCustomColors(prev => ({
+                                            ...prev,
+                                            [colorKey]: value
+                                          }));
+                                        }
+                                      }}
+                                      placeholder="#000000"
+                                    />
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Status Colors */}
+                          <div>
+                            <h4 className="font-semibold mb-2">Status Colors</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                              {['info', 'success', 'warning', 'error'].map((colorKey) => (
+                                <div key={colorKey} className="form-control">
+                                  <label className="label py-1">
+                                    <span className="label-text text-sm font-medium capitalize">{colorKey}</span>
+                                  </label>
+                                  <div className="join">
+                                    <input
+                                      type="color"
+                                      className="join-item w-12 h-10 border-0 rounded-l-lg cursor-pointer"
+                                      value={customColors[colorKey as keyof typeof customColors]}
+                                      onChange={(e) => setCustomColors(prev => ({
+                                        ...prev,
+                                        [colorKey]: e.target.value
+                                      }))}
+                                    />
+                                    <input
+                                      type="text"
+                                      className="input input-bordered join-item flex-1 input-sm"
+                                      value={customColors[colorKey as keyof typeof customColors]}
+                                      onChange={(e) => {
+                                        const value = e.target.value;
+                                        if (value.startsWith('#') && value.length <= 7) {
+                                          setCustomColors(prev => ({
+                                            ...prev,
+                                            [colorKey]: value
+                                          }));
+                                        }
+                                      }}
+                                      placeholder="#000000"
+                                    />
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
                         </div>
 
                         {/* Color Preview */}

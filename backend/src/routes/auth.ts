@@ -353,7 +353,9 @@ router.patch('/theme', requireAuth, async (req: AuthRequest, res) => {
       "lemonade", "night", "coffee", "winter", "nord"
     ];
 
-    if (!validThemes.includes(theme)) {
+    // Allow custom themes (format: "custom-{id}") in addition to preset themes
+    const isCustomTheme = typeof theme === 'string' && theme.startsWith('custom-');
+    if (!validThemes.includes(theme) && !isCustomTheme) {
       return res.status(400).json({ message: 'Invalid theme' });
     }
 

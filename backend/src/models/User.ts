@@ -63,13 +63,20 @@ const userSchema = new Schema<IUser>({
   theme: {
     type: String,
     default: 'retro',
-    enum: [
-      "dim", "light", "dark", "cupcake", "bumblebee", "emerald", "corporate",
-      "synthwave", "retro", "cyberpunk", "valentine", "halloween", "garden",
-      "forest", "aqua", "sunset", "lofi", "pastel", "fantasy", "wireframe",
-      "black", "luxury", "dracula", "cmyk", "autumn", "business", "acid",
-      "lemonade", "night", "coffee", "winter", "nord"
-    ]
+    validate: {
+      validator: function(v: string) {
+        const validThemes = [
+          "dim", "light", "dark", "cupcake", "bumblebee", "emerald", "corporate",
+          "synthwave", "retro", "cyberpunk", "valentine", "halloween", "garden",
+          "forest", "aqua", "sunset", "lofi", "pastel", "fantasy", "wireframe",
+          "black", "luxury", "dracula", "cmyk", "autumn", "business", "acid",
+          "lemonade", "night", "coffee", "winter", "nord"
+        ];
+        // Allow preset themes or custom themes (format: "custom-{id}")
+        return validThemes.includes(v) || (typeof v === 'string' && v.startsWith('custom-'));
+      },
+      message: 'Invalid theme value'
+    }
   },
   planTier: {
     type: String,

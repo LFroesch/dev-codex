@@ -3,6 +3,32 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { authAPI } from '../api';
 import { useLoadingState } from '../hooks/useLoadingState';
 import AnalyticsDashboard from '../components/AnalyticsDashboard';
+// Simple hex to OKLCH conversion
+const hexToOklch = (hex: string) => {
+  // Convert hex to RGB
+  const r = parseInt(hex.slice(1, 3), 16) / 255;
+  const g = parseInt(hex.slice(3, 5), 16) / 255;
+  const b = parseInt(hex.slice(5, 7), 16) / 255;
+  
+  // Simple approximation for OKLCH
+  const lightness = Math.sqrt(0.2126 * r * r + 0.7152 * g * g + 0.0722 * b * b) * 100;
+  const chroma = Math.sqrt((r - lightness/100) ** 2 + (g - lightness/100) ** 2 + (b - lightness/100) ** 2) * 0.4;
+  
+  // Calculate hue
+  let hue = 0;
+  if (chroma > 0.01) {
+    const a = r - lightness/100;
+    const b_val = g - lightness/100;
+    hue = Math.atan2(b_val, a) * 180 / Math.PI;
+    if (hue < 0) hue += 360;
+  }
+  
+  return {
+    l: Math.round(lightness * 100) / 100,
+    c: Math.round(chroma * 1000) / 1000,
+    h: Math.round(hue * 100) / 100
+  };
+};
 
 const THEMES = [
   "dim", "light", "dark", "cupcake", "bumblebee", "emerald", "corporate",
@@ -12,13 +38,100 @@ const THEMES = [
       "lemonade", "night", "coffee", "winter", "nord"
 ];
 
+interface CustomTheme {
+  id: string;
+  name: string;
+  colors: {
+    primary: string;
+    secondary: string;
+    accent: string;
+    neutral: string;
+    'base-100': string;
+    'base-200': string;
+    'base-300': string;
+    info: string;
+    success: string;
+    warning: string;
+    error: string;
+  };
+  createdAt: string;
+}
+
+const DEFAULT_CUSTOM_COLORS = {
+  primary: '#570df8',
+  secondary: '#f000b8',
+  accent: '#37cdbe',
+  neutral: '#3d4451',
+  'base-100': '#ffffff',
+  'base-200': '#f2f2f2',
+  'base-300': '#e5e6e6',
+  info: '#3abff8',
+  success: '#36d399',
+  warning: '#fbbd23',
+  error: '#f87272'
+};
+
+// Helper function to convert hex to RGB for DaisyUI
+const hexToRgb = (hex: string) => {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return { r, g, b };
+};
+
+// Convert RGB to HSL for contrast calculation
+const rgbToHsl = (r: number, g: number, b: number) => {
+  r /= 255;
+  g /= 255;
+  b /= 255;
+  
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h, s, l;
+
+  l = (max + min) / 2;
+
+  if (max === min) {
+    h = s = 0;
+  } else {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+      default: h = 0;
+    }
+    h /= 6;
+  }
+
+  return { h: h * 360, s: s * 100, l: l * 100 };
+};
+
+// Generate contrasting text color (simple light/dark logic)
+const getContrastColor = (hex: string) => {
+  const { r, g, b } = hexToRgb(hex);
+  // Use luminance formula to determine if color is light or dark
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.5 ? '#000000' : '#ffffff';
+};
+
 const AccountSettingsPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<'theme' | 'connections' | 'profile' | 'analytics'>('theme');
   const [profileSubTab, setProfileSubTab] = useState<'personal' | 'bio' | 'public' | 'privacy'>('personal');
+  const [themeSubTab, setThemeSubTab] = useState<'preset' | 'custom'>('preset');
   const [currentTheme, setCurrentTheme] = useState('retro');
   const [user, setUser] = useState<any>(null);
+  
+  // Custom theme state
+  const [customThemes, setCustomThemes] = useState<CustomTheme[]>([]);
+  const [isCreatingTheme, setIsCreatingTheme] = useState(false);
+  const [editingThemeId, setEditingThemeId] = useState<string | null>(null);
+  const [newThemeName, setNewThemeName] = useState('');
+  const [customColors, setCustomColors] = useState<CustomTheme['colors']>(DEFAULT_CUSTOM_COLORS);
+  const [previewTheme, setPreviewTheme] = useState<CustomTheme | null>(null);
   
   const { loading, setLoading } = useLoadingState(true);
   const { loading: saving, withLoading: withSaving } = useLoadingState();
@@ -35,8 +148,140 @@ const AccountSettingsPage: React.FC = () => {
   const [publicSlug, setPublicSlug] = useState('');
   const [publicDescription, setPublicDescription] = useState('');
   const [savingPublicSettings, setSavingPublicSettings] = useState(false);
-  const [isPublicProfileExpanded, setIsPublicProfileExpanded] = useState(false);
-  const [isBioExpanded, setIsBioExpanded] = useState(false);
+
+  // Load custom themes from localStorage
+  const loadCustomThemes = () => {
+    const saved = localStorage.getItem('customThemes');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setCustomThemes(parsed);
+      } catch (err) {
+        console.error('Failed to parse custom themes:', err);
+      }
+    }
+  };
+
+  // Save custom themes to localStorage
+  const saveCustomThemes = (themes: CustomTheme[]) => {
+    localStorage.setItem('customThemes', JSON.stringify(themes));
+    setCustomThemes(themes);
+  };
+
+  // Apply custom theme by updating tailwind config dynamically
+  const applyCustomTheme = (theme: CustomTheme) => {
+    // Remove existing custom theme styles
+    const existingStyle = document.getElementById('custom-theme-style');
+    if (existingStyle) {
+      existingStyle.remove();
+    }
+
+    // Add custom theme to DaisyUI themes dynamically
+    const style = document.createElement('style');
+    style.id = 'custom-theme-style';
+    
+    // Convert user's hex colors to HSL format for DaisyUI
+    const primaryRgb = hexToRgb(theme.colors.primary);
+    const primaryHsl = rgbToHsl(primaryRgb.r, primaryRgb.g, primaryRgb.b);
+    
+    const secondaryRgb = hexToRgb(theme.colors.secondary);
+    const secondaryHsl = rgbToHsl(secondaryRgb.r, secondaryRgb.g, secondaryRgb.b);
+    
+    const accentRgb = hexToRgb(theme.colors.accent);
+    const accentHsl = rgbToHsl(accentRgb.r, accentRgb.g, accentRgb.b);
+    
+    const neutralRgb = hexToRgb(theme.colors.neutral);
+    const neutralHsl = rgbToHsl(neutralRgb.r, neutralRgb.g, neutralRgb.b);
+    
+    const base100Rgb = hexToRgb(theme.colors['base-100']);
+    const base100Hsl = rgbToHsl(base100Rgb.r, base100Rgb.g, base100Rgb.b);
+    
+    const base200Rgb = hexToRgb(theme.colors['base-200']);
+    const base200Hsl = rgbToHsl(base200Rgb.r, base200Rgb.g, base200Rgb.b);
+    
+    const base300Rgb = hexToRgb(theme.colors['base-300']);
+    const base300Hsl = rgbToHsl(base300Rgb.r, base300Rgb.g, base300Rgb.b);
+    
+    const infoRgb = hexToRgb(theme.colors.info);
+    const infoHsl = rgbToHsl(infoRgb.r, infoRgb.g, infoRgb.b);
+    
+    const successRgb = hexToRgb(theme.colors.success);
+    const successHsl = rgbToHsl(successRgb.r, successRgb.g, successRgb.b);
+    
+    const warningRgb = hexToRgb(theme.colors.warning);
+    const warningHsl = rgbToHsl(warningRgb.r, warningRgb.g, warningRgb.b);
+    
+    const errorRgb = hexToRgb(theme.colors.error);
+    const errorHsl = rgbToHsl(errorRgb.r, errorRgb.g, errorRgb.b);
+    
+    // Debug logging
+    console.log('Theme colors:', theme.colors);
+    console.log('Primary HSL:', primaryHsl);
+
+    // Convert user colors to OKLCH format
+    const primaryOklch = hexToOklch(theme.colors.primary);
+    const secondaryOklch = hexToOklch(theme.colors.secondary);
+    const accentOklch = hexToOklch(theme.colors.accent);
+    const neutralOklch = hexToOklch(theme.colors.neutral);
+    const base100Oklch = hexToOklch(theme.colors['base-100']);
+    const base200Oklch = hexToOklch(theme.colors['base-200']);
+    const base300Oklch = hexToOklch(theme.colors['base-300']);
+    const infoOklch = hexToOklch(theme.colors.info);
+    const successOklch = hexToOklch(theme.colors.success);
+    const warningOklch = hexToOklch(theme.colors.warning);
+    const errorOklch = hexToOklch(theme.colors.error);
+
+    const css = `
+      [data-theme="custom-${theme.id}"] {
+        color-scheme: light;
+        --p: ${primaryOklch.l}% ${primaryOklch.c} ${primaryOklch.h};
+        --pf: ${Math.max(0, primaryOklch.l - 10)}% ${primaryOklch.c * 0.8} ${primaryOklch.h};
+        --pc: ${primaryOklch.l > 60 ? '13.138% 0.0392 275.75' : '89.824% 0.04364 275.75'};
+        --s: ${secondaryOklch.l}% ${secondaryOklch.c} ${secondaryOklch.h};
+        --sf: ${Math.max(0, secondaryOklch.l - 10)}% ${secondaryOklch.c * 0.8} ${secondaryOklch.h};
+        --sc: ${secondaryOklch.l > 60 ? '13.138% 0.0392 275.75' : '89.824% 0.04364 275.75'};
+        --a: ${accentOklch.l}% ${accentOklch.c} ${accentOklch.h};
+        --af: ${Math.max(0, accentOklch.l - 10)}% ${accentOklch.c * 0.8} ${accentOklch.h};
+        --ac: ${accentOklch.l > 60 ? '13.138% 0.0392 275.75' : '89.824% 0.04364 275.75'};
+        --n: ${neutralOklch.l}% ${neutralOklch.c} ${neutralOklch.h};
+        --nf: ${Math.max(0, neutralOklch.l - 10)}% ${neutralOklch.c * 0.8} ${neutralOklch.h};
+        --nc: ${neutralOklch.l > 60 ? '13.138% 0.0392 275.75' : '89.824% 0.04364 275.75'};
+        --b1: ${base100Oklch.l}% ${base100Oklch.c} ${base100Oklch.h};
+        --b2: ${base200Oklch.l}% ${base200Oklch.c} ${base200Oklch.h};
+        --b3: ${base300Oklch.l}% ${base300Oklch.c} ${base300Oklch.h};
+        --bc: ${base100Oklch.l > 60 ? '13.138% 0.0392 275.75' : '89.824% 0.04364 275.75'};
+        --in: ${infoOklch.l}% ${infoOklch.c} ${infoOklch.h};
+        --inc: ${infoOklch.l > 60 ? '13.138% 0.0392 275.75' : '89.824% 0.04364 275.75'};
+        --su: ${successOklch.l}% ${successOklch.c} ${successOklch.h};
+        --suc: ${successOklch.l > 60 ? '13.138% 0.0392 275.75' : '89.824% 0.04364 275.75'};
+        --wa: ${warningOklch.l}% ${warningOklch.c} ${warningOklch.h};
+        --wac: ${warningOklch.l > 60 ? '13.138% 0.0392 275.75' : '89.824% 0.04364 275.75'};
+        --er: ${errorOklch.l}% ${errorOklch.c} ${errorOklch.h};
+        --erc: ${errorOklch.l > 60 ? '13.138% 0.0392 275.75' : '89.824% 0.04364 275.75'};
+      }
+    `;
+    
+    console.log('Generated CSS:', css);
+    
+    style.textContent = css;
+    document.head.appendChild(style);
+    
+    // Set the theme attribute
+    document.documentElement.setAttribute('data-theme', `custom-${theme.id}`);
+  };
+
+  // Clear custom theme styles and apply standard theme
+  const clearCustomTheme = (standardTheme: string) => {
+    // Always remove any existing custom theme CSS
+    const existingStyle = document.getElementById('custom-theme-style');
+    if (existingStyle) {
+      existingStyle.remove();
+      console.log('Removed custom theme CSS'); // Debug log
+    }
+    // Set the theme attribute to the standard theme
+    document.documentElement.setAttribute('data-theme', standardTheme);
+    console.log('Applied standard theme:', standardTheme); // Debug log
+  };
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -48,13 +293,51 @@ const AccountSettingsPage: React.FC = () => {
         setIsPublicProfile(response.user.isPublic || false);
         setPublicSlug(response.user.publicSlug || '');
         setPublicDescription(response.user.publicDescription || '');
+        
+        // Load custom themes
+        loadCustomThemes();
+        
         // Apply theme from database
-        document.documentElement.setAttribute('data-theme', response.user.theme || 'retro');
+        const userTheme = response.user.theme || 'retro';
+        if (userTheme.startsWith('custom-')) {
+          // It's a custom theme, find and apply it
+          const themeId = userTheme.replace('custom-', '');
+          const saved = localStorage.getItem('customThemes');
+          if (saved) {
+            const customThemes = JSON.parse(saved);
+            const customTheme = customThemes.find((t: CustomTheme) => t.id === themeId);
+            if (customTheme) {
+              applyCustomTheme(customTheme);
+            } else {
+              // Custom theme not found, fallback to retro
+              document.documentElement.setAttribute('data-theme', 'retro');
+              setCurrentTheme('retro');
+            }
+          }
+        } else {
+          // Standard theme
+          clearCustomTheme(userTheme);
+        }
       } catch (err) {
         // Fallback to localStorage if not authenticated
         const savedTheme = localStorage.getItem('theme') || 'retro';
         setCurrentTheme(savedTheme);
-        document.documentElement.setAttribute('data-theme', savedTheme);
+        loadCustomThemes();
+        if (savedTheme.startsWith('custom-')) {
+          const themeId = savedTheme.replace('custom-', '');
+          const saved = localStorage.getItem('customThemes');
+          if (saved) {
+            const customThemes = JSON.parse(saved);
+            const customTheme = customThemes.find((t: CustomTheme) => t.id === themeId);
+            if (customTheme) {
+              applyCustomTheme(customTheme);
+            } else {
+              clearCustomTheme('retro');
+            }
+          }
+        } else {
+          clearCustomTheme(savedTheme);
+        }
         navigate('/login');
       } finally {
         setLoading(false);
@@ -86,6 +369,9 @@ const AccountSettingsPage: React.FC = () => {
     await withSaving(async () => {
       setError('');
       
+      // ALWAYS clear any existing custom theme CSS first
+      clearCustomTheme(newTheme);
+      
       // Update theme in database if user is authenticated
       if (user) {
         const response = await authAPI.updateTheme(newTheme);
@@ -94,7 +380,15 @@ const AccountSettingsPage: React.FC = () => {
       
       // Update local state and apply theme
       setCurrentTheme(newTheme);
-      document.documentElement.setAttribute('data-theme', newTheme);
+      
+      if (newTheme.startsWith('custom-')) {
+        // Apply custom theme AFTER clearing
+        const themeId = newTheme.replace('custom-', '');
+        const customTheme = customThemes.find(t => t.id === themeId);
+        if (customTheme) {
+          applyCustomTheme(customTheme);
+        }
+      }
       
       // Keep localStorage as fallback
       localStorage.setItem('theme', newTheme);
@@ -103,8 +397,114 @@ const AccountSettingsPage: React.FC = () => {
       // Revert theme on error
       const previousTheme = user?.theme || localStorage.getItem('theme') || 'retro';
       setCurrentTheme(previousTheme);
-      document.documentElement.setAttribute('data-theme', previousTheme);
+      clearCustomTheme(previousTheme);
+      if (previousTheme.startsWith('custom-')) {
+        const themeId = previousTheme.replace('custom-', '');
+        const customTheme = customThemes.find(t => t.id === themeId);
+        if (customTheme) {
+          applyCustomTheme(customTheme);
+        }
+      }
     });
+  };
+
+  // Custom theme management functions
+  const createCustomTheme = () => {
+    if (!newThemeName.trim()) {
+      setError('Theme name is required');
+      return;
+    }
+    
+    const newTheme: CustomTheme = {
+      id: Date.now().toString(),
+      name: newThemeName.trim(),
+      colors: { ...customColors },
+      createdAt: new Date().toISOString()
+    };
+    
+    const updatedThemes = [...customThemes, newTheme];
+    saveCustomThemes(updatedThemes);
+    
+    setNewThemeName('');
+    setCustomColors(DEFAULT_CUSTOM_COLORS);
+    setIsCreatingTheme(false);
+    setSuccess(`Custom theme "${newTheme.name}" created successfully!`);
+  };
+
+  const updateCustomTheme = (themeId: string) => {
+    const updatedThemes = customThemes.map(theme => 
+      theme.id === themeId 
+        ? { ...theme, colors: { ...customColors } }
+        : theme
+    );
+    saveCustomThemes(updatedThemes);
+    
+    // If currently using this theme, reapply it
+    if (currentTheme === `custom-${themeId}`) {
+      const updatedTheme = updatedThemes.find(t => t.id === themeId);
+      if (updatedTheme) {
+        applyCustomTheme(updatedTheme);
+      }
+    }
+    
+    setEditingThemeId(null);
+    setSuccess('Custom theme updated successfully!');
+  };
+
+  const deleteCustomTheme = (themeId: string) => {
+    const themeToDelete = customThemes.find(t => t.id === themeId);
+    const updatedThemes = customThemes.filter(theme => theme.id !== themeId);
+    saveCustomThemes(updatedThemes);
+    
+    // If currently using this theme, switch to retro
+    if (currentTheme === `custom-${themeId}`) {
+      handleThemeChange('retro');
+    }
+    
+    setSuccess(`Custom theme "${themeToDelete?.name}" deleted successfully!`);
+  };
+
+  const startEditing = (theme: CustomTheme) => {
+    setEditingThemeId(theme.id);
+    setCustomColors(theme.colors);
+  };
+
+  const cancelEditing = () => {
+    setEditingThemeId(null);
+    setCustomColors(DEFAULT_CUSTOM_COLORS);
+  };
+
+  const previewCustomTheme = (theme: CustomTheme) => {
+    setPreviewTheme(theme);
+    clearCustomTheme(`custom-${theme.id}`);
+    applyCustomTheme(theme);
+  };
+
+  const stopPreview = () => {
+    setPreviewTheme(null);
+    // Always clear custom CSS first
+    clearCustomTheme(currentTheme);
+    // Then reapply current theme if it's custom
+    if (currentTheme.startsWith('custom-')) {
+      const themeId = currentTheme.replace('custom-', '');
+      const customTheme = customThemes.find(t => t.id === themeId);
+      if (customTheme) {
+        applyCustomTheme(customTheme);
+      }
+    }
+  };
+
+  const duplicateTheme = (theme: CustomTheme) => {
+    const newTheme: CustomTheme = {
+      id: Date.now().toString(),
+      name: `${theme.name} Copy`,
+      colors: { ...theme.colors },
+      createdAt: new Date().toISOString()
+    };
+    
+    const updatedThemes = [...customThemes, newTheme];
+    saveCustomThemes(updatedThemes);
+    setSuccess(`Theme "${newTheme.name}" created successfully!`);
   };
 
   const handleLinkGoogle = () => {
@@ -290,9 +690,27 @@ const AccountSettingsPage: React.FC = () => {
                 <div>
                   <h2 className="text-2xl font-bold mb-2">Theme Preferences</h2>
                   <p className="text-base-content/60">
-                    Choose a theme that suits your style. 
+                    Choose from preset themes or create your own custom themes with personalized colors.
                     {user ? ' Your preference will be saved to your account.' : ' Sign in to save your theme preference.'}
                   </p>
+                </div>
+
+                {/* Theme Sub-tabs */}
+                <div className="flex justify-center">
+                  <div className="tabs tabs-boxed border-subtle shadow-sm">
+                    <button 
+                      className={`tab tab-sm min-h-10 font-bold text-sm ${themeSubTab === 'preset' ? 'tab-active' : ''}`}
+                      onClick={() => setThemeSubTab('preset')}
+                    >
+                      Preset Themes
+                    </button>
+                    <button 
+                      className={`tab tab-sm min-h-10 font-bold text-sm ${themeSubTab === 'custom' ? 'tab-active' : ''}`}
+                      onClick={() => setThemeSubTab('custom')}
+                    >
+                      Custom Themes ({customThemes.length})
+                    </button>
+                  </div>
                 </div>
 
                 {saving && (
@@ -302,41 +720,264 @@ const AccountSettingsPage: React.FC = () => {
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 sm:gap-3">
-                  {THEMES.map((theme) => (
-                    <button
-                      key={theme}
-                      className={`group flex flex-col items-center gap-1 sm:gap-2 p-2 sm:p-3 rounded-lg transition-all hover:scale-105 ${
-                        currentTheme === theme 
-                          ? "bg-primary/20 ring-2 ring-primary" 
-                          : "hover:bg-base-200"
-                      }`}
-                      onClick={() => handleThemeChange(theme)}
-                      disabled={saving}
-                    >
-                      <div className="h-8 sm:h-12 w-full rounded-lg overflow-hidden shadow-sm" data-theme={theme}>
-                        <div className="h-full grid grid-cols-4 gap-px p-1">
-                          <div className="rounded bg-primary"></div>
-                          <div className="rounded bg-secondary"></div>
-                          <div className="rounded bg-accent"></div>
-                          <div className="rounded bg-neutral"></div>
+                {previewTheme && (
+                  <div className="alert alert-warning">
+                    <span>Previewing: {previewTheme.name}</span>
+                    <button onClick={stopPreview} className="btn btn-sm btn-ghost">Stop Preview</button>
+                  </div>
+                )}
+
+                {/* Preset Themes */}
+                {themeSubTab === 'preset' && (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 sm:gap-3">
+                      {THEMES.map((theme) => (
+                        <button
+                          key={theme}
+                          className={`group flex flex-col items-center gap-1 sm:gap-2 p-2 sm:p-3 rounded-lg transition-all hover:scale-105 ${
+                            currentTheme === theme 
+                              ? "bg-primary/20 ring-2 ring-primary" 
+                              : "hover:bg-base-200"
+                          }`}
+                          onClick={() => handleThemeChange(theme)}
+                          disabled={saving}
+                        >
+                          <div className="h-8 sm:h-12 w-full rounded-lg overflow-hidden shadow-sm" data-theme={theme}>
+                            <div className="h-full grid grid-cols-4 gap-px p-1">
+                              <div className="rounded bg-primary"></div>
+                              <div className="rounded bg-secondary"></div>
+                              <div className="rounded bg-accent"></div>
+                              <div className="rounded bg-neutral"></div>
+                            </div>
+                          </div>
+                          <span className="text-xs sm:text-sm font-medium text-center capitalize">
+                            {theme}
+                          </span>
+                          {currentTheme === theme && (
+                            <div className="w-2 h-2 bg-primary rounded-full"></div>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Custom Themes */}
+                {themeSubTab === 'custom' && (
+                  <div className="space-y-6">
+                    {/* Create New Theme Button */}
+                    <div className="flex justify-center">
+                      <button
+                        onClick={() => {
+                          setIsCreatingTheme(true);
+                          setNewThemeName('');
+                          setCustomColors(DEFAULT_CUSTOM_COLORS);
+                        }}
+                        className="btn btn-primary gap-2"
+                        disabled={isCreatingTheme}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        Create Custom Theme
+                      </button>
+                    </div>
+
+                    {/* Theme Creation/Editing Form */}
+                    {(isCreatingTheme || editingThemeId) && (
+                      <div className="bg-base-200 rounded-lg p-6 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-lg font-semibold">
+                            {isCreatingTheme ? 'Create New Theme' : 'Edit Theme'}
+                          </h3>
+                          <button
+                            onClick={() => {
+                              setIsCreatingTheme(false);
+                              cancelEditing();
+                            }}
+                            className="btn btn-sm btn-ghost"
+                          >
+                            ✕
+                          </button>
+                        </div>
+
+                        {/* Theme Name */}
+                        {isCreatingTheme && (
+                          <div className="form-control">
+                            <label className="label">
+                              <span className="label-text font-medium">Theme Name</span>
+                            </label>
+                            <input
+                              type="text"
+                              className="input input-bordered"
+                              placeholder="My Awesome Theme"
+                              value={newThemeName}
+                              onChange={(e) => setNewThemeName(e.target.value)}
+                            />
+                          </div>
+                        )}
+
+                        {/* Color Pickers Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {Object.entries(customColors).map(([colorKey, colorValue]) => (
+                            <div key={colorKey} className="form-control">
+                              <label className="label">
+                                <span className="label-text font-medium capitalize">
+                                  {colorKey.replace(/([A-Z-])/g, ' $1').toLowerCase().replace(/^\s/, '')}
+                                </span>
+                              </label>
+                              <div className="join">
+                                <input
+                                  type="color"
+                                  className="join-item w-16 h-12 border-0 rounded-l-lg cursor-pointer"
+                                  value={colorValue}
+                                  onChange={(e) => setCustomColors(prev => ({
+                                    ...prev,
+                                    [colorKey]: e.target.value
+                                  }))}
+                                />
+                                <input
+                                  type="text"
+                                  className="input input-bordered join-item flex-1"
+                                  value={colorValue}
+                                  onChange={(e) => setCustomColors(prev => ({
+                                    ...prev,
+                                    [colorKey]: e.target.value
+                                  }))}
+                                  pattern="^#[0-9A-Fa-f]{6}$"
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Color Preview */}
+                        <div className="bg-base-100 rounded-lg p-4">
+                          <h4 className="font-medium mb-2">Color Preview</h4>
+                          <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-11 gap-2">
+                            {Object.entries(customColors).map(([key, color]) => (
+                              <div key={key} className="text-center">
+                                <div 
+                                  className="w-full h-8 rounded border border-base-300 shadow-sm"
+                                  style={{ backgroundColor: color }}
+                                ></div>
+                                <span className="text-xs text-base-content/60 mt-1 block capitalize">
+                                  {key.replace(/([A-Z-])/g, ' $1').toLowerCase().replace(/^\s/, '')}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex gap-2 justify-end">
+                          <button
+                            onClick={() => {
+                              setIsCreatingTheme(false);
+                              cancelEditing();
+                            }}
+                            className="btn btn-ghost"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={() => isCreatingTheme ? createCustomTheme() : updateCustomTheme(editingThemeId!)}
+                            className="btn btn-primary"
+                          >
+                            {isCreatingTheme ? 'Create Theme' : 'Update Theme'}
+                          </button>
                         </div>
                       </div>
-                      <span className="text-xs sm:text-sm font-medium text-center capitalize">
-                        {theme}
-                      </span>
-                      {currentTheme === theme && (
-                        <div className="w-2 h-2 bg-primary rounded-full"></div>
-                      )}
-                    </button>
-                  ))}
-                </div>
+                    )}
 
-                {/* Theme Info */}
-                <div className="bg-base-200 rounded-lg p-4 mt-6">
-                    <h3 className="font-semibold mb-2">Current Theme: {currentTheme.charAt(0).toUpperCase() + currentTheme.slice(1)}</h3>
+                    {/* Custom Themes List */}
+                    {customThemes.length > 0 ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {customThemes.map((theme) => (
+                          <div key={theme.id} className="bg-base-100 rounded-lg p-4 border border-base-300 hover:border-primary/30 transition-all">
+                            <div className="flex items-center justify-between mb-3">
+                              <h4 className="font-semibold truncate">{theme.name}</h4>
+                              <div className="dropdown dropdown-end">
+                                <label tabIndex={0} className="btn btn-ghost btn-sm btn-circle">
+                                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                                  </svg>
+                                </label>
+                                <ul tabIndex={0} className="dropdown-content menu p-2 shadow bg-base-200 rounded-box w-52">
+                                  <li><button onClick={() => previewCustomTheme(theme)}>Preview</button></li>
+                                  <li><button onClick={() => startEditing(theme)}>Edit</button></li>
+                                  <li><button onClick={() => duplicateTheme(theme)}>Duplicate</button></li>
+                                  <li><button onClick={() => deleteCustomTheme(theme.id)} className="text-error">Delete</button></li>
+                                </ul>
+                              </div>
+                            </div>
+                            
+                            {/* Color Swatches */}
+                            <div className="grid grid-cols-4 gap-1 mb-3">
+                              <div className="w-full h-6 rounded" style={{ backgroundColor: theme.colors.primary }}></div>
+                              <div className="w-full h-6 rounded" style={{ backgroundColor: theme.colors.secondary }}></div>
+                              <div className="w-full h-6 rounded" style={{ backgroundColor: theme.colors.accent }}></div>
+                              <div className="w-full h-6 rounded" style={{ backgroundColor: theme.colors.neutral }}></div>
+                            </div>
+                            
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleThemeChange(`custom-${theme.id}`)}
+                                className={`btn btn-sm flex-1 ${
+                                  currentTheme === `custom-${theme.id}` 
+                                    ? 'btn-primary' 
+                                    : 'btn-outline'
+                                }`}
+                                disabled={saving}
+                              >
+                                {currentTheme === `custom-${theme.id}` ? 'Active' : 'Apply'}
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      !isCreatingTheme && (
+                        <div className="text-center py-12">
+                          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-base-200 flex items-center justify-center">
+                            <svg className="w-8 h-8 text-base-content/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4h4a2 2 0 002-2V5z" />
+                            </svg>
+                          </div>
+                          <h3 className="text-xl font-bold mb-2">No Custom Themes Yet</h3>
+                          <p className="text-base-content/60 mb-4">Create your own personalized themes with custom colors</p>
+                          <button
+                            onClick={() => {
+                              setIsCreatingTheme(true);
+                              setNewThemeName('');
+                              setCustomColors(DEFAULT_CUSTOM_COLORS);
+                            }}
+                            className="btn btn-primary gap-2"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            </svg>
+                            Create Your First Theme
+                          </button>
+                        </div>
+                      )
+                    )}
+                  </div>
+                )}
+
+                {/* Current Theme Info */}
+                <div className="bg-base-200 rounded-lg p-4">
+                  <h3 className="font-semibold mb-2">
+                    Current Theme: {currentTheme.startsWith('custom-') 
+                      ? customThemes.find(t => t.id === currentTheme.replace('custom-', ''))?.name || 'Unknown Custom Theme'
+                      : currentTheme.charAt(0).toUpperCase() + currentTheme.slice(1)
+                    }
+                  </h3>
                   <div className="text-sm text-base-content/60">
                     <p>Theme preference is saved to your account and will be applied across all devices.</p>
+                    {currentTheme.startsWith('custom-') && (
+                      <p className="mt-1">Custom themes are stored locally and may not sync across different browsers or devices.</p>
+                    )}
                   </div>
                 </div>
               </div>

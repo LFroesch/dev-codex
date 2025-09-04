@@ -619,4 +619,41 @@ if (process.env.NODE_ENV !== 'production') {
   });
 }
 
+// Custom themes routes
+router.post('/custom-themes', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const { customThemes } = req.body;
+
+    const user = await User.findByIdAndUpdate(
+      req.userId,
+      { customThemes },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({ customThemes: user.customThemes });
+  } catch (error) {
+    console.error('Error saving custom themes:', error);
+    res.status(500).json({ error: 'Failed to save custom themes' });
+  }
+});
+
+router.get('/custom-themes', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const user = await User.findById(req.userId);
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({ customThemes: user.customThemes || [] });
+  } catch (error) {
+    console.error('Error fetching custom themes:', error);
+    res.status(500).json({ error: 'Failed to fetch custom themes' });
+  }
+});
+
 export default router;

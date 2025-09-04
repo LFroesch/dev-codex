@@ -11,6 +11,25 @@ export interface IIdea {
   updatedAt: Date;
 }
 
+export interface ICustomTheme {
+  id: string;
+  name: string;
+  colors: {
+    primary: string;
+    secondary: string;
+    accent: string;
+    neutral: string;
+    'base-100': string;
+    'base-200': string;
+    'base-300': string;
+    info: string;
+    success: string;
+    warning: string;
+    error: string;
+  };
+  createdAt: Date;
+}
+
 export interface IUser extends Document {
   email: string;
   password: string;
@@ -32,6 +51,7 @@ export interface IUser extends Document {
   publicSlug?: string;
   publicDescription?: string;
   ideas: IIdea[];
+  customThemes: ICustomTheme[];
   createdAt: Date;
   updatedAt: Date;
   comparePassword(password: string): Promise<boolean>;
@@ -170,6 +190,35 @@ const userSchema = new Schema<IUser>({
       default: Date.now
     },
     updatedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
+  customThemes: [{
+    id: {
+      type: String,
+      required: true
+    },
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 100
+    },
+    colors: {
+      primary: { type: String, required: true, match: /^#[0-9A-Fa-f]{6}$/ },
+      secondary: { type: String, required: true, match: /^#[0-9A-Fa-f]{6}$/ },
+      accent: { type: String, required: true, match: /^#[0-9A-Fa-f]{6}$/ },
+      neutral: { type: String, required: true, match: /^#[0-9A-Fa-f]{6}$/ },
+      'base-100': { type: String, required: true, match: /^#[0-9A-Fa-f]{6}$/ },
+      'base-200': { type: String, required: true, match: /^#[0-9A-Fa-f]{6}$/ },
+      'base-300': { type: String, required: true, match: /^#[0-9A-Fa-f]{6}$/ },
+      info: { type: String, required: true, match: /^#[0-9A-Fa-f]{6}$/ },
+      success: { type: String, required: true, match: /^#[0-9A-Fa-f]{6}$/ },
+      warning: { type: String, required: true, match: /^#[0-9A-Fa-f]{6}$/ },
+      error: { type: String, required: true, match: /^#[0-9A-Fa-f]{6}$/ }
+    },
+    createdAt: {
       type: Date,
       default: Date.now
     }

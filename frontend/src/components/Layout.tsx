@@ -635,7 +635,7 @@ const Layout: React.FC = () => {
           <div className="flex flex-col gap-3">
             {/* Top row: Logo + Search (tablet), Project indicator (tablet), Session Tracker, and User Menu */}
             <div className="flex items-center justify-between min-w-0 gap-3">
-              <div className="flex items-center gap-3 bg-base-200/50 backdrop-blur-none border border-base-content/10 rounded-xl px-3 py-2 h-12 shadow-sm hover:shadow-md transition-all cursor-pointer min-w-0" onClick={() => navigate('/notes?view=projects')}>
+              <div className="flex items-center gap-3 bg-base-200 backdrop-blur-none border border-base-content/10 rounded-xl px-3 py-2 h-12 shadow-sm hover:shadow-md transition-all cursor-pointer min-w-0" onClick={() => navigate('/notes?view=projects')}>
                 <div className="tablet:w-8 tablet:h-8 w-7 h-7 bg-primary rounded-lg flex items-center justify-center shadow-sm flex-shrink-0">
                   <svg className="tablet:w-4 tablet:h-4 w-3.5 h-3.5 text-primary-content" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
@@ -693,7 +693,7 @@ const Layout: React.FC = () => {
               
               {/* Project indicator and user section - styled background for all sizes */}
               {user ? (
-                <div className="flex items-center gap-0 bg-base-200/50 backdrop-blur-none border border-base-content/10 rounded-xl px-1 py-2 h-12 shadow-sm relative z-30 flex-shrink-0">
+                <div className="flex items-center gap-0 bg-base-200 backdrop-blur-none border border-base-content/10 rounded-xl px-1 py-2 h-12 shadow-sm relative z-30 flex-shrink-0">
                   {selectedProject && (
                     <div 
                       className="hidden tablet:flex items-center gap-2 px-3 py-1.5 bg-base-100/80 rounded-lg border border-base-content/10 shadow-sm mr-2 cursor-pointer hover:bg-base-200/70 transition-all duration-200 h-8"
@@ -729,7 +729,7 @@ const Layout: React.FC = () => {
                   <UserMenu user={user} onLogout={handleLogout} />
                 </div>
               ) : (
-                <div className="flex items-center bg-base-200/50 backdrop-blur-none border border-base-content/10 rounded-xl px-2 py-2 h-12 shadow-sm flex-shrink-0">
+                <div className="flex items-center bg-base-200 backdrop-blur-none border border-base-content/10 rounded-xl px-2 py-2 h-12 shadow-sm flex-shrink-0">
                   <button 
                     onClick={() => navigate('/login')}
                     className="btn btn-primary btn-sm"
@@ -744,7 +744,7 @@ const Layout: React.FC = () => {
             {user && selectedProject && (
               <div className="flex tablet:hidden items-center gap-3">
                 <div 
-                  className="flex items-center gap-2 px-3 py-2 bg-base-200/50 backdrop-blur-none rounded-lg border border-base-content/10 shadow-sm hover:bg-base-200/70 transition-all duration-200 cursor-pointer min-w-0 flex-shrink-0 h-10"
+                  className="flex items-center gap-2 px-3 py-2 bg-base-200 backdrop-blur-none rounded-lg border border-base-content/10 shadow-sm hover:bg-base-200/70 transition-all duration-200 cursor-pointer min-w-0 flex-shrink-0 h-10"
                   onClick={() => handleNavigateWithCheck('/notes')}
                   title={`Current project: ${selectedProject.name}`}
                 >
@@ -940,7 +940,7 @@ const Layout: React.FC = () => {
         {/* Desktop Layout */}
         <div className="hidden desktop:block px-6 py-2">
           <div className="relative flex-between-center">
-            <div className="flex items-center gap-3 bg-base-200/50 backdrop-blur-none border-subtle rounded-xl px-4 py-2 h-12 shadow-sm hover:shadow-md transition-all cursor-pointer" onClick={() => navigate('/notes?view=projects')}>
+            <div className="flex items-center gap-3 bg-base-200 backdrop-blur-none border-subtle rounded-xl px-4 py-2 h-12 shadow-sm hover:shadow-md transition-all cursor-pointer" onClick={() => navigate('/notes?view=projects')}>
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-sm">
                 <svg className="icon-md text-primary-content" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
@@ -1028,7 +1028,7 @@ const Layout: React.FC = () => {
             </div>
             
             {user ? (
-              <div className="flex items-center gap-0 bg-base-200/50 backdrop-blur-none border-subtle rounded-xl px-2 py-2 h-12 shadow-sm relative z-30">
+              <div className="flex items-center gap-0 bg-base-200 backdrop-blur-none border-subtle rounded-xl px-2 py-2 h-12 shadow-sm relative z-30">
                 {selectedProject && (
                   <div 
                     className="flex-center-gap-2 px-3 py-1.5 bg-base-100/80 rounded-lg border-subtle shadow-sm mr-2 cursor-pointer hover:bg-base-200/70 transition-all duration-200 h-8"
@@ -1061,7 +1061,7 @@ const Layout: React.FC = () => {
                 <UserMenu user={user} onLogout={handleLogout} />
               </div>
             ) : (
-              <div className="flex items-center gap-3 bg-base-200/50 backdrop-blur-none border-subtle rounded-xl px-4 py-2 h-12 shadow-sm">
+              <div className="flex items-center gap-3 bg-base-200 backdrop-blur-none border-subtle rounded-xl px-4 py-2 h-12 shadow-sm">
                 <button 
                   onClick={() => navigate('/login')}
                   className="btn-primary-sm"

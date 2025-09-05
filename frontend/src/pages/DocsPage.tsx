@@ -550,7 +550,7 @@ React App:
                                             type="text"
                                             value={editData.title}
                                             onChange={(e) => setEditData({...editData, title: e.target.value})}
-                                            className="input input-bordered input-sm"
+                                            className="input input-bordered input-sm text-base-content/40"
                                           />
                                         </div>
                                       </div>

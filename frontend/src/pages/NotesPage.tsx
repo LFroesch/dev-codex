@@ -394,7 +394,7 @@ const NotesPage: React.FC = () => {
                   type="text"
                   value={newNoteTitle}
                   onChange={(e) => setNewNoteTitle(e.target.value)}
-                  className="input input-bordered input-sm w-full"
+                  className="input input-bordered input-sm text-base-content/40 w-full"
                   placeholder="Note title..."
                   required
                   autoFocus
@@ -533,7 +533,7 @@ const NotesPage: React.FC = () => {
                   type="text"
                   value={newTodoText}
                   onChange={(e) => setNewTodoText(e.target.value)}
-                  className="input input-bordered input-sm w-full"
+                  className="input input-bordered input-sm text-base-content/40 w-full"
                   placeholder="Todo title..."
                   required
                   autoFocus
@@ -681,7 +681,7 @@ const NotesPage: React.FC = () => {
                   type="text"
                   value={newDevLogTitle}
                   onChange={(e) => setNewDevLogTitle(e.target.value)}
-                  className="input input-bordered input-sm w-full"
+                  className="input input-bordered input-sm text-base-content/40 w-full"
                   placeholder="Dev log title..."
                   required
                   autoFocus

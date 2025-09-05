@@ -406,7 +406,7 @@ const QuickAddForm: React.FC<QuickAddFormProps> = ({
         type="text"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
-        className="input input-bordered input-sm flex-1"
+        className="input input-bordered input-sm text-base-content/40 flex-1 text-base-content/40"
         placeholder={placeholder}
         autoFocus
         disabled={loading}

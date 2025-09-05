@@ -635,7 +635,7 @@ const Layout: React.FC = () => {
           <div className="flex flex-col gap-3">
             {/* Top row: Logo + Search (tablet), Project indicator (tablet), Session Tracker, and User Menu */}
             <div className="flex items-center justify-between min-w-0 gap-3">
-              <div className="flex items-center gap-3 bg-base-200/50 backdrop-blur-sm border border-base-content/10 rounded-xl px-3 py-2 h-12 shadow-sm hover:shadow-md transition-all cursor-pointer min-w-0" onClick={() => navigate('/notes?view=projects')}>
+              <div className="flex items-center gap-3 bg-base-200/50 backdrop-blur-none border border-base-content/10 rounded-xl px-3 py-2 h-12 shadow-sm hover:shadow-md transition-all cursor-pointer min-w-0" onClick={() => navigate('/notes?view=projects')}>
                 <div className="tablet:w-8 tablet:h-8 w-7 h-7 bg-primary rounded-lg flex items-center justify-center shadow-sm flex-shrink-0">
                   <svg className="tablet:w-4 tablet:h-4 w-3.5 h-3.5 text-primary-content" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
@@ -647,7 +647,7 @@ const Layout: React.FC = () => {
                 {user && selectedProject && (
                   <div className="hidden tablet:flex relative ml-4 flex-center-gap-2">
                     <div className="relative">
-                      <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-base-content/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-base-content/70 z-50 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                       </svg>
                       <input
@@ -660,12 +660,12 @@ const Layout: React.FC = () => {
                             navigate('/notes?view=projects');
                           }
                         }}
-                        className="input input-sm pl-10 pr-10 w-48 h-9 bg-base-100/80 backdrop-blur-sm shadow-sm border border-base-content/10 rounded-lg focus:border-primary"
+                        className="input input-sm pl-10 pr-10 w-48 h-9 bg-base-100/80 backdrop-blur-none shadow-sm border border-base-content/10 rounded-lg focus:border-primary text-base-content/40"
                       />
                       {searchTerm && (
                         <button
                           onClick={() => setSearchTerm('')}
-                          className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-base-content/50 hover:text-base-content/80 transition-colors"
+                          className="absolute right-3 top-3 w-4 h-4 text-base-content/70 hover:text-base-content/80 transition-colors"
                         >
                           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -679,7 +679,7 @@ const Layout: React.FC = () => {
                         e.stopPropagation();
                         navigate('/create-project');
                       }}
-                      className="btn btn-primary btn-sm btn-circle h-9 w-9 shadow-sm relative z-10"
+                      className="btn btn-primary btn-sm btn-circle h-9 w-9 shadow-sm relative z-50"
                       title="New Project"
                       style={{ pointerEvents: 'auto' }}
                     >
@@ -693,7 +693,7 @@ const Layout: React.FC = () => {
               
               {/* Project indicator and user section - styled background for all sizes */}
               {user ? (
-                <div className="flex items-center gap-0 bg-base-200/50 backdrop-blur-sm border border-base-content/10 rounded-xl px-1 py-2 h-12 shadow-sm relative z-30 flex-shrink-0">
+                <div className="flex items-center gap-0 bg-base-200/50 backdrop-blur-none border border-base-content/10 rounded-xl px-1 py-2 h-12 shadow-sm relative z-30 flex-shrink-0">
                   {selectedProject && (
                     <div 
                       className="hidden tablet:flex items-center gap-2 px-3 py-1.5 bg-base-100/80 rounded-lg border border-base-content/10 shadow-sm mr-2 cursor-pointer hover:bg-base-200/70 transition-all duration-200 h-8"
@@ -729,7 +729,7 @@ const Layout: React.FC = () => {
                   <UserMenu user={user} onLogout={handleLogout} />
                 </div>
               ) : (
-                <div className="flex items-center bg-base-200/50 backdrop-blur-sm border border-base-content/10 rounded-xl px-2 py-2 h-12 shadow-sm flex-shrink-0">
+                <div className="flex items-center bg-base-200/50 backdrop-blur-none border border-base-content/10 rounded-xl px-2 py-2 h-12 shadow-sm flex-shrink-0">
                   <button 
                     onClick={() => navigate('/login')}
                     className="btn btn-primary btn-sm"
@@ -744,7 +744,7 @@ const Layout: React.FC = () => {
             {user && selectedProject && (
               <div className="flex tablet:hidden items-center gap-3">
                 <div 
-                  className="flex items-center gap-2 px-3 py-2 bg-base-200/50 backdrop-blur-sm rounded-lg border border-base-content/10 shadow-sm hover:bg-base-200/70 transition-all duration-200 cursor-pointer min-w-0 flex-shrink-0 h-10"
+                  className="flex items-center gap-2 px-3 py-2 bg-base-200/50 backdrop-blur-none rounded-lg border border-base-content/10 shadow-sm hover:bg-base-200/70 transition-all duration-200 cursor-pointer min-w-0 flex-shrink-0 h-10"
                   onClick={() => handleNavigateWithCheck('/notes')}
                   title={`Current project: ${selectedProject.name}`}
                 >
@@ -758,7 +758,7 @@ const Layout: React.FC = () => {
                 {/* Search bar and create button */}
                 <div className="flex items-center gap-2 flex-1">
                   <div className="relative flex-1">
-                    <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-base-content/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-base-content/70 z-50 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                     <input
@@ -783,12 +783,12 @@ const Layout: React.FC = () => {
                           // Track search clear
                         }
                       }}
-                      className="input input-sm pl-10 pr-10 w-full h-10 bg-base-100/80 backdrop-blur-sm border border-base-content/10 rounded-lg focus:border-primary"
+                      className="input input-sm pl-10 pr-10 w-full h-10 bg-base-100/80 backdrop-blur-none border border-base-content/10 rounded-lg focus:border-primary text-base-content/40"
                     />
                     {searchTerm && (
                       <button
                         onClick={() => setSearchTerm('')}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-base-content/50 hover:text-base-content/80 transition-colors"
+                        className="absolute right-3 top-3 w-4 h-4 text-base-content/70 hover:text-base-content/80 transition-colors"
                       >
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -802,7 +802,7 @@ const Layout: React.FC = () => {
                       e.stopPropagation();
                       navigate('/create-project');
                     }}
-                    className="btn btn-primary btn-sm btn-circle h-10 w-10 shadow-sm relative z-10"
+                    className="btn btn-primary btn-sm btn-circle h-10 w-10 shadow-sm relative z-50"
                     title="New Project"
                     style={{ pointerEvents: 'auto' }}
                   >
@@ -940,7 +940,7 @@ const Layout: React.FC = () => {
         {/* Desktop Layout */}
         <div className="hidden desktop:block px-6 py-2">
           <div className="relative flex-between-center">
-            <div className="flex items-center gap-3 bg-base-200/50 backdrop-blur-sm border-subtle rounded-xl px-4 py-2 h-12 shadow-sm hover:shadow-md transition-all cursor-pointer" onClick={() => navigate('/notes?view=projects')}>
+            <div className="flex items-center gap-3 bg-base-200/50 backdrop-blur-none border-subtle rounded-xl px-4 py-2 h-12 shadow-sm hover:shadow-md transition-all cursor-pointer" onClick={() => navigate('/notes?view=projects')}>
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-sm">
                 <svg className="icon-md text-primary-content" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
@@ -952,7 +952,7 @@ const Layout: React.FC = () => {
               <div className="relative ml-4 flex-center-gap-2">
                 
                 <div className="relative">
-                  <svg className="absolute left-2.5 top-1/2 transform -translate-y-1/2 icon-sm text-base-content/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="absolute left-2.5 top-1/2 transform -translate-y-1/2 icon-sm text-base-content/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                   <input
@@ -965,12 +965,12 @@ const Layout: React.FC = () => {
                         navigate('/notes?view=projects');
                       }
                     }}
-                    className="input-field input-sm pl-9 pr-8 w-48 h-8 bg-base-100/80 backdrop-blur-sm shadow-sm"
+                    className="input-field input-sm pl-9 pr-8 w-48 h-8 bg-base-100/80 backdrop-blur-none shadow-sm"
                   />
                   {searchTerm && (
                     <button
                       onClick={() => setSearchTerm('')}
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 icon-sm text-base-content/50 hover:text-base-content/80 transition-colors"
+                      className="absolute right-2 top-3 icon-sm text-base-content/70 hover:text-base-content/80 transition-colors"
                     >
                       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -984,7 +984,7 @@ const Layout: React.FC = () => {
                     e.stopPropagation();
                     navigate('/create-project');
                   }}
-                  className="btn btn-primary btn-sm btn-circle shadow-sm relative z-10"
+                  className="btn btn-primary btn-sm btn-circle shadow-sm relative z-50"
                   title="New Project"
                   style={{ pointerEvents: 'auto' }}
                 >
@@ -1028,7 +1028,7 @@ const Layout: React.FC = () => {
             </div>
             
             {user ? (
-              <div className="flex items-center gap-0 bg-base-200/50 backdrop-blur-sm border-subtle rounded-xl px-2 py-2 h-12 shadow-sm relative z-30">
+              <div className="flex items-center gap-0 bg-base-200/50 backdrop-blur-none border-subtle rounded-xl px-2 py-2 h-12 shadow-sm relative z-30">
                 {selectedProject && (
                   <div 
                     className="flex-center-gap-2 px-3 py-1.5 bg-base-100/80 rounded-lg border-subtle shadow-sm mr-2 cursor-pointer hover:bg-base-200/70 transition-all duration-200 h-8"
@@ -1061,7 +1061,7 @@ const Layout: React.FC = () => {
                 <UserMenu user={user} onLogout={handleLogout} />
               </div>
             ) : (
-              <div className="flex items-center gap-3 bg-base-200/50 backdrop-blur-sm border-subtle rounded-xl px-4 py-2 h-12 shadow-sm">
+              <div className="flex items-center gap-3 bg-base-200/50 backdrop-blur-none border-subtle rounded-xl px-4 py-2 h-12 shadow-sm">
                 <button 
                   onClick={() => navigate('/login')}
                   className="btn-primary-sm"
@@ -1171,7 +1171,7 @@ const Layout: React.FC = () => {
 
 
             {/* Tab Content */}
-            <div className="flex-1 overflow-auto border-subtle bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-sm container-height-fix">
+            <div className="flex-1 overflow-auto border-subtle bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-none container-height-fix">
               <div className="p-4 sm:p-4">
                 <div className="space-y-4">
                 {activeProjectTab === 'active' && (
@@ -1286,7 +1286,7 @@ const Layout: React.FC = () => {
                                       </span>
                                     ))}
                                     {project.tags.length > 3 && (
-                                      <span className="text-xs text-base-content/50 font-medium flex items-center">
+                                      <span className="text-xs text-base-content/70 font-medium flex items-center">
                                         +{project.tags.length - 3}
                                       </span>
                                     )}
@@ -1302,7 +1302,7 @@ const Layout: React.FC = () => {
                                   </svg>
                                   <span>{formatProjectTime(project.id)}</span>
                                 </div>
-                                <span className="text-base-content/50 font-mono">
+                                <span className="text-base-content/70 font-mono">
                                   {new Date(project.updatedAt).toLocaleDateString()}
                                 </span>
                               </div>
@@ -1427,7 +1427,7 @@ const Layout: React.FC = () => {
                                   </svg>
                                   <span>{formatProjectTime(project.id)}</span>
                                 </div>
-                                <span className="text-base-content/50 font-mono">
+                                <span className="text-base-content/70 font-mono">
                                   {new Date(project.updatedAt).toLocaleDateString()}
                                 </span>
                               </div>
@@ -1540,7 +1540,7 @@ const Layout: React.FC = () => {
                                       </span>
                                     ))}
                                     {project.tags.length > 3 && (
-                                      <span className="text-xs text-base-content/50 font-medium flex items-center">
+                                      <span className="text-xs text-base-content/70 font-medium flex items-center">
                                         +{project.tags.length - 3}
                                       </span>
                                     )}
@@ -1556,7 +1556,7 @@ const Layout: React.FC = () => {
                                   </svg>
                                   <span>{formatProjectTime(project.id)}</span>
                                 </div>
-                                <span className="text-base-content/50 font-mono">
+                                <span className="text-base-content/70 font-mono">
                                   {new Date(project.updatedAt).toLocaleDateString()}
                                 </span>
                               </div>
@@ -1582,7 +1582,7 @@ const Layout: React.FC = () => {
           /* Discover Tab - With sub-tabs */
           <>
             
-            <div className="flex-1 overflow-auto border-subtle bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-sm container-height-fix">
+            <div className="flex-1 overflow-auto border-subtle bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-none container-height-fix">
               <div className="p-2 sm:p-4 lg:p-4">
                 <Outlet />
               </div>
@@ -1590,7 +1590,7 @@ const Layout: React.FC = () => {
           </>
         ) : location.pathname.startsWith('/project/') || location.pathname.startsWith('/user/') ? (
           /* Public Pages - Same styling as discover */
-          <div className="flex-1 overflow-auto border-subtle bg-gradient-to-br from-base-50 to-base-100/50 mx-4 my-4 rounded-2xl shadow-2xl backdrop-blur-sm container-height-fix">
+          <div className="flex-1 overflow-auto border-subtle bg-gradient-to-br from-base-50 to-base-100/50 mx-4 my-4 rounded-2xl shadow-2xl backdrop-blur-none container-height-fix">
             <div className="p-1">
               <Outlet />
             </div>
@@ -1644,7 +1644,7 @@ const Layout: React.FC = () => {
               </div>
             </div>
             
-            <div className="flex-1 overflow-auto border-subtle bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-sm container-height-fix">
+            <div className="flex-1 overflow-auto border-subtle bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-none container-height-fix">
               <div className="p-1">
                 <Outlet context={{ 
                   selectedProject, 
@@ -1660,7 +1660,7 @@ const Layout: React.FC = () => {
           </>
         ) : location.pathname === '/billing' || location.pathname === '/account-settings' ? (
           /* Billing and Account Settings - No sub-menu */
-          <div className="flex-1 overflow-auto border-subtle bg-gradient-to-br from-base-50 to-base-100/50 mx-4 my-4 rounded-2xl shadow-2xl backdrop-blur-sm container-height-fix">
+          <div className="flex-1 overflow-auto border-subtle bg-gradient-to-br from-base-50 to-base-100/50 mx-4 my-4 rounded-2xl shadow-2xl backdrop-blur-none container-height-fix">
             <div className="p-1">
               <Outlet />
             </div>
@@ -1669,7 +1669,7 @@ const Layout: React.FC = () => {
           /* Project Details Tab - Show project content with tabs */
           <>
             {/* Page Content */}
-            <div className={`flex-1 overflow-auto border-subtle bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-sm container-height-fix ${location.pathname === '/support' ? 'mt-4' : ''}`}>
+            <div className={`flex-1 overflow-auto border-subtle bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-none container-height-fix ${location.pathname === '/support' ? 'mt-4' : ''}`}>
               {selectedProject ? (
                 <div className="p-2 sm:p-4 lg:p-4">
                   <Outlet context={{ 

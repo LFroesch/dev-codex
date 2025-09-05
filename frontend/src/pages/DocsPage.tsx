@@ -344,7 +344,7 @@ React App:
                   <select
                     value={newDoc.type}
                     onChange={(e) => setNewDoc({...newDoc, type: e.target.value as Doc['type']})}
-                    className="select select-bordered border-base-300"
+                    className="select select-bordered"
                   >
                     {docTypes.map(type => (
                       <option key={type.value} value={type.value}>
@@ -362,7 +362,7 @@ React App:
                     type="text"
                     value={newDoc.title}
                     onChange={(e) => setNewDoc({...newDoc, title: e.target.value})}
-                    className="input input-bordered border-base-300"
+                    className="input input-bordered"
                     placeholder="Enter template title..."
                   />
                 </div>
@@ -382,7 +382,7 @@ React App:
                 <textarea
                   value={newDoc.content}
                   onChange={(e) => setNewDoc({...newDoc, content: e.target.value})}
-                  className="textarea textarea-bordered border-base-300 h-[300px]"
+                  className="textarea textarea-bordered h-[300px]"
                   placeholder="Enter your pseudocode/planning template..."
                 />
               </div>
@@ -435,7 +435,7 @@ React App:
                         const isEditing = editingDoc === doc.id;
                         const docType = docTypes.find(t => t.value === doc.type);
                         return (
-                          <div key={doc.id} className="bg-base-100 rounded-lg border border-base-300 hover:border-primary/30 transition-all duration-200 p-3">
+                          <div key={doc.id} className="bg-base-100 rounded-lg border border-base-content/20 hover:border-primary/30 transition-all duration-200 p-3">
                               {/* Header with title and controls */}
                               <div className="flex items-center justify-between">
                                 <button
@@ -522,7 +522,7 @@ React App:
 
                               {/* Collapsible content */}
                               {isExpanded && (
-                                <div className="mt-4 border-t border-base-300 pt-4">
+                                <div className="mt-4 border-t border-base-content/20 pt-4">
                                   {isEditing ? (
                                     <div className="space-y-4">
                                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -574,7 +574,7 @@ React App:
                                       </div>
                                     </div>
                                   ) : (
-                                    <div className="bg-base-200 rounded-lg p-4 border border-base-300">
+                                    <div className="bg-base-200 rounded-lg p-4 border border-base-content/20">
                                       <pre className="whitespace-pre-wrap text-sm font-mono leading-relaxed">
                                         {doc.content}
                                       </pre>

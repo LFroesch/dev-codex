@@ -146,13 +146,6 @@ const rgbToHsl = (r: number, g: number, b: number) => {
   return { h: h * 360, s: s * 100, l: l * 100 };
 };
 
-// Generate contrasting text color (simple light/dark logic)
-const getContrastColor = (hex: string) => {
-  const { r, g, b } = hexToRgb(hex);
-  // Use luminance formula to determine if color is light or dark
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  return luminance > 0.5 ? '#000000' : '#ffffff';
-};
 
 const AccountSettingsPage: React.FC = () => {
   const navigate = useNavigate();

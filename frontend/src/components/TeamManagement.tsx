@@ -219,7 +219,7 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
                 placeholder="colleague@company.com"
                 value={inviteEmail}
                 onChange={(e) => setInviteEmail(e.target.value)}
-                className="input input-bordered input-sm flex-1"
+                className="input input-bordered input-sm text-base-content/40 flex-1 text-base-content/40"
                 required
               />
               <select

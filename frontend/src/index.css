@@ -88,7 +88,12 @@ body {
   }
   
   .input-field-sm {
-    @apply input input-bordered input-sm;
+    @apply input input-bordered input-sm text-base-content/40;
+  }
+  
+  /* Fix text color for all input-sm elements */
+  .input-sm {
+    @apply text-base-content/40 !important;
   }
   
   .form-field {
@@ -143,4 +148,52 @@ body {
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* NUCLEAR OPTION: Force ALL inputs AND textareas to have consistent text color */
+input.input,
+.input,
+input.input-bordered,
+.input-bordered,
+input.input-sm,
+.input.input-sm,
+input[class*="input"],
+.input[class*="input"],
+textarea.textarea,
+.textarea,
+textarea.textarea-bordered,
+.textarea-bordered,
+textarea.textarea-sm,
+.textarea.textarea-sm,
+textarea[class*="textarea"],
+.textarea[class*="textarea"],
+input.input::placeholder,
+.input::placeholder,
+input.input-bordered::placeholder,
+.input-bordered::placeholder,
+input.input-sm::placeholder,
+.input.input-sm::placeholder,
+textarea.textarea::placeholder,
+.textarea::placeholder,
+textarea.textarea-bordered::placeholder,
+.textarea-bordered::placeholder,
+textarea.textarea-sm::placeholder,
+.textarea.textarea-sm::placeholder {
+  color: oklch(var(--bc) / 0.7) !important;
+}
+
+/* Override DaisyUI defaults */
+.input,
+.input-bordered,
+.input-sm,
+.textarea,
+.textarea-bordered,
+.textarea-sm {
+  --tw-text-opacity: 0.7 !important;
+  color: rgb(var(--base-content) / var(--tw-text-opacity)) !important;
+}
+
+/* Force search bar SVG icons to match input text color */
+.text-base-content\/70 {
+  color: oklch(var(--bc) / 0.7) !important;
 }

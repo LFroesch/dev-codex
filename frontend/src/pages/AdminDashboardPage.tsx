@@ -1227,7 +1227,7 @@ const AdminDashboardPage: React.FC = () => {
                       type="text"
                       value={newsForm.title}
                       onChange={(e) => setNewsForm(prev => ({ ...prev, title: e.target.value }))}
-                      className="input input-bordered input-sm w-full"
+                      className="input input-bordered input-sm text-base-content/40 w-full"
                       placeholder="Post title..."
                       required
                       autoFocus

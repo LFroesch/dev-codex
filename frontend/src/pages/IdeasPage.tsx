@@ -244,7 +244,7 @@ const NewIdeaForm: React.FC<NewIdeaFormProps> = ({ onAdd }) => {
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="input input-bordered input-sm w-full"
+            className="input input-bordered input-sm text-base-content/40 w-full"
             placeholder="What's your idea?"
             required
             autoFocus
@@ -254,7 +254,7 @@ const NewIdeaForm: React.FC<NewIdeaFormProps> = ({ onAdd }) => {
             type="text"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="input input-bordered input-sm w-full"
+            className="input input-bordered input-sm text-base-content/40 w-full"
             placeholder="Brief description (optional)..."
           />
 

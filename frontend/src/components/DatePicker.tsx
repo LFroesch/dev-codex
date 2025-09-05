@@ -62,7 +62,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
         value={formatDateForInput(value)}
         onChange={handleDateChange}
         min={minDate ? formatDateForInput(minDate) : undefined}
-        className="input input-bordered input-sm"
+        className="input input-bordered input-sm text-base-content/40 text-base-content/40"
         placeholder={placeholder}
         required={required}
       />

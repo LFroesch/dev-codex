@@ -358,7 +358,7 @@ const SettingsPage: React.FC = () => {
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="input input-bordered input-sm w-full"
+                    className="input input-bordered input-sm text-base-content/40 w-full"
                     placeholder="Enter project name..."
                     required
                   />
@@ -378,7 +378,7 @@ const SettingsPage: React.FC = () => {
                     type="text"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    className="input input-bordered input-sm w-full"
+                    className="input input-bordered input-sm text-base-content/40 w-full"
                     placeholder="Enter project description..."
                     required
                   />
@@ -443,7 +443,7 @@ const SettingsPage: React.FC = () => {
                       type="text"
                       value={color}
                       onChange={(e) => setColor(e.target.value)}
-                      className="input input-bordered input-sm flex-1 font-mono text-xs"
+                      className="input input-bordered input-sm text-base-content/40 flex-1 font-mono text-xs text-base-content/40"
                       placeholder="#3B82F6"
                     />
                   </div>
@@ -469,7 +469,7 @@ const SettingsPage: React.FC = () => {
                     type="text"
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
-                    className="input input-bordered input-sm w-full h-8"
+                    className="input input-bordered input-sm text-base-content/40 w-full h-8"
                     placeholder="Enter category..."
                   />
                 ) : (
@@ -517,7 +517,7 @@ const SettingsPage: React.FC = () => {
                         type="text"
                         value={newTag}
                         onChange={(e) => setNewTag(e.target.value)}
-                        className="input input-bordered input-sm flex-1"
+                        className="input input-bordered input-sm text-base-content/40 flex-1"
                         placeholder="Add tag..."
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {

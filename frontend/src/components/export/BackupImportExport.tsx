@@ -104,7 +104,7 @@ const BackupImportExport: React.FC<BackupImportExportProps> = ({
   };
 
   return (
-    <div className="bg-base-200/30 rounded-lg space-y-4">
+    <div className="rounded-lg space-y-4">
       <div className="flex flex-wrap gap-2">
         <button
           onClick={handleBackendExport}

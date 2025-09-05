@@ -1253,7 +1253,7 @@ const Layout: React.FC = () => {
                                   className="w-4 h-4 rounded-full flex-shrink-0 border-2 border-white/50 shadow-sm"
                                   style={{ backgroundColor: project.color }}
                                 ></div>
-                                <h3 className={`font-semibold text-base truncate px-2 py-1 rounded-md ${
+                                <h3 className={`font-semibold text-base truncate px-2 py-1 rounded-md group-hover:text-primary ${
                                   selectedProject?.id === project.id ? 'bg-primary text-primary-content' : 'bg-base-300 text-base-content'
                                 }`}>
                                   {project.name}
@@ -1379,7 +1379,7 @@ const Layout: React.FC = () => {
                                   className="w-4 h-4 rounded-full flex-shrink-0 border-2 border-white/50 shadow-sm"
                                   style={{ backgroundColor: project.color }}
                                 ></div>
-                                <h3 className={`font-semibold text-base truncate px-2 py-1 rounded-md ${
+                                <h3 className={`font-semibold group-hover:text-primary text-base truncate px-2 py-1 rounded-md ${
                                   selectedProject?.id === project.id ? 'bg-primary text-primary-content' : 'bg-base-300 text-base-content'
                                 }`}>
                                   {project.name}
@@ -1504,7 +1504,7 @@ const Layout: React.FC = () => {
                                   className="w-4 h-4 rounded-full flex-shrink-0 border-2 border-white/50 shadow-sm"
                                   style={{ backgroundColor: project.color }}
                                 ></div>
-                                <h3 className={`font-semibold text-base truncate px-2 py-1 rounded-md ${
+                                <h3 className={`font-semibold group-hover:text-primary text-base truncate px-2 py-1 rounded-md ${
                                   selectedProject?.id === project.id ? 'bg-primary text-primary-content' : 'bg-base-300 text-base-content'
                                 }`}>
                                   {project.name}

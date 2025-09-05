@@ -685,6 +685,12 @@ const AccountSettingsPage: React.FC = () => {
       <div className="flex justify-center">
         <div className="tabs tabs-boxed border-subtle shadow-sm">
           <button 
+            className={`tab tab-sm min-h-10 font-bold text-sm ${activeTab === 'profile' ? 'tab-active' : ''}`}
+            onClick={() => setActiveTab('profile')}
+          >
+            Profile
+          </button>
+          <button 
             className={`tab tab-sm min-h-10 font-bold text-sm ${activeTab === 'theme' ? 'tab-active' : ''}`}
             onClick={() => setActiveTab('theme')}
           >
@@ -695,12 +701,6 @@ const AccountSettingsPage: React.FC = () => {
             onClick={() => setActiveTab('connections')}
           >
             Connections
-          </button>
-          <button 
-            className={`tab tab-sm min-h-10 font-bold text-sm ${activeTab === 'profile' ? 'tab-active' : ''}`}
-            onClick={() => setActiveTab('profile')}
-          >
-            Profile
           </button>
           <button 
             className={`tab tab-sm min-h-10 font-bold text-sm ${activeTab === 'analytics' ? 'tab-active' : ''}`}
@@ -1072,7 +1072,7 @@ const AccountSettingsPage: React.FC = () => {
                     {customThemes.length > 0 ? (
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {customThemes.map((theme) => (
-                          <div key={theme.id} className="bg-base-100 rounded-lg p-4 border border-base-300 hover:border-primary/30 transition-all">
+                          <div key={theme.id} className="bg-base-100 rounded-lg p-4 border border-base-content/20 hover:border-primary/30 transition-all">
                             <div className="flex items-center justify-between mb-3">
                               <h4 className="font-semibold truncate">{theme.name}</h4>
                               <div className="dropdown dropdown-end">
@@ -1081,11 +1081,11 @@ const AccountSettingsPage: React.FC = () => {
                                     <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
                                   </svg>
                                 </label>
-                                <ul tabIndex={0} className="dropdown-content menu p-2 shadow bg-base-200 rounded-box w-52">
+                                <ul tabIndex={0} className="dropdown-content menu p-2 shadow bg-base-200 rounded-box w-52 border border-base-content/20">
                                   <li><button onClick={() => previewCustomTheme(theme)}>Preview</button></li>
                                   <li><button onClick={() => startEditing(theme)}>Edit</button></li>
                                   <li><button onClick={() => duplicateTheme(theme)}>Duplicate</button></li>
-                                  <li><button onClick={() => deleteCustomTheme(theme.id)} className="text-error">Delete</button></li>
+                                  <li><button onClick={() => deleteCustomTheme(theme.id)}>Delete</button></li>
                                 </ul>
                               </div>
                             </div>
@@ -1362,7 +1362,7 @@ const AccountSettingsPage: React.FC = () => {
                             ) : (
                               <button
                                 onClick={() => setIsEditingProfile(true)}
-                                className="btn btn-sm btn-ghost"
+                                className="btn btn-sm btn-ghost border-b border-base-content/20"
                               >
                                 Edit Bio
                               </button>
@@ -1388,7 +1388,7 @@ const AccountSettingsPage: React.FC = () => {
                               </div>
                             </div>
                           ) : (
-                            <div className="bg-base-200 rounded-lg p-4 border border-base-300">
+                            <div className="bg-base-100 rounded-lg p-4 border border-base-content/20">
                               {bio ? (
                                 <p className="text-base-content whitespace-pre-wrap">{bio}</p>
                               ) : (
@@ -1565,7 +1565,7 @@ const AccountSettingsPage: React.FC = () => {
 
                                   {/* Profile Preview */}
                                   <div className="divider">Preview</div>
-                                  <div className="mockup-browser border bg-base-300">
+                                  <div className="mockup-browser border border-base-content/10 bg-base-300">
                                     <div className="mockup-browser-toolbar">
                                       <div className="input">
                                         {window.location.origin}/user/{publicSlug || user?.id}

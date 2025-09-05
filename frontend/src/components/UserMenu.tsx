@@ -97,7 +97,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout }) => {
           )}
           <hr className="my-2 border-base-content/20" />
           <div 
-            className="p-2 rounded cursor-pointer hover:bg-base-200 text-error"
+            className="p-2 rounded cursor-pointer hover:bg-base-200"
             onClick={() => {
               onLogout();
               setIsOpen(false);

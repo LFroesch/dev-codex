@@ -125,9 +125,9 @@ const rgbToHsl = (r: number, g: number, b: number) => {
   
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
-  let h, s, l;
-
-  l = (max + min) / 2;
+  let h = 0, s;
+  
+  const l = (max + min) / 2;
 
   if (max === min) {
     h = s = 0;
@@ -837,212 +837,233 @@ const AccountSettingsPage: React.FC = () => {
 
                     {/* Theme Creation/Editing Form */}
                     {(isCreatingTheme || editingThemeId) && (
-                      <div className="bg-base-200 rounded-lg p-6 space-y-4">
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-lg font-semibold">
-                            {isCreatingTheme ? 'Create New Theme' : 'Edit Theme'}
-                          </h3>
-                          <button
-                            onClick={() => {
-                              setIsCreatingTheme(false);
-                              cancelEditing();
-                            }}
-                            className="btn btn-sm btn-ghost"
-                          >
-                            ✕
-                          </button>
-                        </div>
-
-                        {/* Theme Name */}
-                        {isCreatingTheme && (
-                          <div className="form-control">
-                            <label className="label">
-                              <span className="label-text font-medium">Theme Name</span>
-                            </label>
-                            <input
-                              type="text"
-                              className="input input-bordered"
-                              placeholder="My Awesome Theme"
-                              value={newThemeName}
-                              onChange={(e) => setNewThemeName(e.target.value)}
-                            />
+                      <div className="card bg-base-100 shadow-xl border border-base-300">
+                        <div className="card-header bg-base-200 px-6 py-4 border-b border-base-300">
+                          <div className="flex items-center justify-between">
+                            <h3 className="text-lg font-semibold text-base-content">
+                              {isCreatingTheme ? 'Create New Theme' : 'Edit Theme'}
+                            </h3>
+                            <button
+                              onClick={() => {
+                                setIsCreatingTheme(false);
+                                cancelEditing();
+                              }}
+                              className="btn btn-sm btn-circle btn-ghost hover:bg-base-300"
+                            >
+                              ✕
+                            </button>
                           </div>
-                        )}
-
-                        {/* Theme Color Guide */}
-                        <div className="text-sm bg-base-200 rounded p-3 mb-4">
-                          <p><strong>Tip:</strong> Base colors (Base-100 to Base-300) should be similar shades. Primary/Secondary/Accent are your main theme colors.</p>
                         </div>
+                        <div className="card-body p-6 space-y-6">
 
-                        {/* Color Pickers - Compact Layout */}
-                        <div className="space-y-4">
-                          {/* Main Colors */}
-                          <div>
-                            <h4 className="font-semibold mb-2">Main Colors</h4>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                              {['primary', 'secondary', 'accent'].map((colorKey) => (
-                                <div key={colorKey} className="form-control">
-                                  <label className="label py-1">
-                                    <span className="label-text text-sm font-medium capitalize">{colorKey}</span>
-                                    <span className="label-text-alt text-xs opacity-60">
-                                      {colorKey === 'primary' && 'buttons'}
-                                      {colorKey === 'secondary' && 'alt buttons'}
-                                      {colorKey === 'accent' && 'highlights'}
-                                    </span>
-                                  </label>
-                                  <div className="join">
-                                    <input
-                                      type="color"
-                                      className="join-item w-12 h-10 border-0 rounded-l-lg cursor-pointer"
-                                      value={customColors[colorKey as keyof typeof customColors]}
-                                      onChange={(e) => setCustomColors(prev => ({
-                                        ...prev,
-                                        [colorKey]: e.target.value
-                                      }))}
-                                    />
-                                    <input
-                                      type="text"
-                                      className="input input-bordered join-item flex-1 input-sm"
-                                      value={customColors[colorKey as keyof typeof customColors]}
-                                      onChange={(e) => {
-                                        const value = e.target.value;
-                                        if (value.startsWith('#') && value.length <= 7) {
-                                          setCustomColors(prev => ({
-                                            ...prev,
-                                            [colorKey]: value
-                                          }));
-                                        }
-                                      }}
-                                      placeholder="#000000"
-                                    />
-                                  </div>
-                                </div>
-                              ))}
+                          {/* Theme Name */}
+                          {isCreatingTheme && (
+                            <div className="form-control">
+                              <label className="label">
+                                <span className="label-text font-medium">Theme Name</span>
+                                <span className="label-text-alt text-sm opacity-70">Required</span>
+                              </label>
+                              <input
+                                type="text"
+                                className="input input-bordered w-full"
+                                placeholder="My Awesome Theme"
+                                value={newThemeName}
+                                onChange={(e) => setNewThemeName(e.target.value)}
+                              />
+                            </div>
+                          )}
+
+                          {/* Theme Color Guide */}
+                          <div className="alert alert-info">
+                            <svg className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <div>
+                              <h4 className="font-bold">Color Guide</h4>
+                              <p className="text-sm">Base colors should be similar shades for backgrounds. Primary/Secondary/Accent are your main brand colors.</p>
                             </div>
                           </div>
 
-                          {/* Background Colors */}
-                          <div>
-                            <h4 className="font-semibold mb-2">Background Colors</h4>
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                              {['neutral', 'base-100', 'base-200', 'base-300'].map((colorKey) => (
-                                <div key={colorKey} className="form-control">
-                                  <label className="label py-1">
-                                    <span className="label-text text-sm font-medium">{colorKey}</span>
-                                    <span className="label-text-alt text-xs opacity-60">
-                                      {colorKey === 'neutral' && 'text/borders'}
-                                      {colorKey === 'base-100' && 'main bg'}
-                                      {colorKey === 'base-200' && 'cards'}
-                                      {colorKey === 'base-300' && 'dividers'}
-                                    </span>
-                                  </label>
-                                  <div className="join">
-                                    <input
-                                      type="color"
-                                      className="join-item w-12 h-10 border-0 rounded-l-lg cursor-pointer"
-                                      value={customColors[colorKey as keyof typeof customColors]}
-                                      onChange={(e) => setCustomColors(prev => ({
-                                        ...prev,
-                                        [colorKey]: e.target.value
-                                      }))}
-                                    />
-                                    <input
-                                      type="text"
-                                      className="input input-bordered join-item flex-1 input-sm"
-                                      value={customColors[colorKey as keyof typeof customColors]}
-                                      onChange={(e) => {
-                                        const value = e.target.value;
-                                        if (value.startsWith('#') && value.length <= 7) {
-                                          setCustomColors(prev => ({
-                                            ...prev,
-                                            [colorKey]: value
-                                          }));
-                                        }
-                                      }}
-                                      placeholder="#000000"
-                                    />
+                          {/* Color Pickers - Improved Layout */}
+                          <div className="space-y-6">
+                            {/* Main Colors */}
+                            <div className="bg-base-100 rounded-lg p-4 border border-base-300">
+                              <h4 className="font-semibold mb-3">
+                                Main Colors
+                              </h4>
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                {['primary', 'secondary', 'accent'].map((colorKey) => (
+                                  <div key={colorKey} className="form-control">
+                                    <label className="label py-1">
+                                      <span className="label-text font-medium capitalize">{colorKey}</span>
+                                      <span className="label-text-alt text-xs opacity-60">
+                                        {colorKey === 'primary' && 'buttons'}
+                                        {colorKey === 'secondary' && 'alt buttons'}
+                                        {colorKey === 'accent' && 'highlights'}
+                                      </span>
+                                    </label>
+                                    <div className="join">
+                                      <input
+                                        type="color"
+                                        className="join-item w-10 h-8 border-0 rounded-l-lg cursor-pointer"
+                                        value={customColors[colorKey as keyof typeof customColors]}
+                                        onChange={(e) => setCustomColors(prev => ({
+                                          ...prev,
+                                          [colorKey]: e.target.value
+                                        }))}
+                                      />
+                                      <input
+                                        type="text"
+                                        className="input input-bordered join-item flex-1 input-sm"
+                                        value={customColors[colorKey as keyof typeof customColors]}
+                                        onChange={(e) => {
+                                          const value = e.target.value;
+                                          if (value.startsWith('#') && value.length <= 7) {
+                                            setCustomColors(prev => ({
+                                              ...prev,
+                                              [colorKey]: value
+                                            }));
+                                          }
+                                        }}
+                                        placeholder="#000000"
+                                      />
+                                    </div>
                                   </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Status Colors */}
-                          <div>
-                            <h4 className="font-semibold mb-2">Status Colors</h4>
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                              {['info', 'success', 'warning', 'error'].map((colorKey) => (
-                                <div key={colorKey} className="form-control">
-                                  <label className="label py-1">
-                                    <span className="label-text text-sm font-medium capitalize">{colorKey}</span>
-                                  </label>
-                                  <div className="join">
-                                    <input
-                                      type="color"
-                                      className="join-item w-12 h-10 border-0 rounded-l-lg cursor-pointer"
-                                      value={customColors[colorKey as keyof typeof customColors]}
-                                      onChange={(e) => setCustomColors(prev => ({
-                                        ...prev,
-                                        [colorKey]: e.target.value
-                                      }))}
-                                    />
-                                    <input
-                                      type="text"
-                                      className="input input-bordered join-item flex-1 input-sm"
-                                      value={customColors[colorKey as keyof typeof customColors]}
-                                      onChange={(e) => {
-                                        const value = e.target.value;
-                                        if (value.startsWith('#') && value.length <= 7) {
-                                          setCustomColors(prev => ({
-                                            ...prev,
-                                            [colorKey]: value
-                                          }));
-                                        }
-                                      }}
-                                      placeholder="#000000"
-                                    />
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Color Preview */}
-                        <div className="bg-base-100 rounded-lg p-4">
-                          <h4 className="font-medium mb-2">Color Preview</h4>
-                          <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-11 gap-2">
-                            {Object.entries(customColors).map(([key, color]) => (
-                              <div key={key} className="text-center">
-                                <div 
-                                  className="w-full h-8 rounded border border-base-300 shadow-sm"
-                                  style={{ backgroundColor: color }}
-                                ></div>
-                                <span className="text-xs text-base-content/60 mt-1 block capitalize">
-                                  {key.replace(/([A-Z-])/g, ' $1').toLowerCase().replace(/^\s/, '')}
-                                </span>
+                                ))}
                               </div>
-                            ))}
-                          </div>
-                        </div>
+                            </div>
 
-                        {/* Action Buttons */}
-                        <div className="flex gap-2 justify-end">
-                          <button
-                            onClick={() => {
-                              setIsCreatingTheme(false);
-                              cancelEditing();
-                            }}
-                            className="btn btn-ghost"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            onClick={() => isCreatingTheme ? createCustomTheme() : updateCustomTheme(editingThemeId!)}
-                            className="btn btn-primary"
-                          >
-                            {isCreatingTheme ? 'Create Theme' : 'Update Theme'}
-                          </button>
+                            {/* Background Colors */}
+                            <div className="bg-base-100 rounded-lg p-4 border border-base-300">
+                              <h4 className="font-semibold mb-3">
+                                Background Colors
+                              </h4>
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                                {['neutral', 'base-100', 'base-200', 'base-300'].map((colorKey) => (
+                                  <div key={colorKey} className="form-control">
+                                    <label className="label py-1">
+                                      <span className="label-text font-medium">{colorKey}</span>
+                                      <span className="label-text-alt text-xs opacity-60">
+                                        {colorKey === 'neutral' && 'text/borders'}
+                                        {colorKey === 'base-100' && 'main bg'}
+                                        {colorKey === 'base-200' && 'cards'}
+                                        {colorKey === 'base-300' && 'dividers'}
+                                      </span>
+                                    </label>
+                                    <div className="join">
+                                      <input
+                                        type="color"
+                                        className="join-item w-10 h-8 border-0 rounded-l-lg cursor-pointer"
+                                        value={customColors[colorKey as keyof typeof customColors]}
+                                        onChange={(e) => setCustomColors(prev => ({
+                                          ...prev,
+                                          [colorKey]: e.target.value
+                                        }))}
+                                      />
+                                      <input
+                                        type="text"
+                                        className="input input-bordered join-item flex-1 input-sm"
+                                        value={customColors[colorKey as keyof typeof customColors]}
+                                        onChange={(e) => {
+                                          const value = e.target.value;
+                                          if (value.startsWith('#') && value.length <= 7) {
+                                            setCustomColors(prev => ({
+                                              ...prev,
+                                              [colorKey]: value
+                                            }));
+                                          }
+                                        }}
+                                        placeholder="#000000"
+                                      />
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Status Colors */}
+                            <div className="bg-base-100 rounded-lg p-4 border border-base-300">
+                              <h4 className="font-semibold mb-3">
+                                Status Colors
+                              </h4>
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                                {['info', 'success', 'warning', 'error'].map((colorKey) => (
+                                  <div key={colorKey} className="form-control">
+                                    <label className="label py-1">
+                                      <span className="label-text font-medium capitalize">{colorKey}</span>
+                                    </label>
+                                    <div className="join">
+                                      <input
+                                        type="color"
+                                        className="join-item w-10 h-8 border-0 rounded-l-lg cursor-pointer"
+                                        value={customColors[colorKey as keyof typeof customColors]}
+                                        onChange={(e) => setCustomColors(prev => ({
+                                          ...prev,
+                                          [colorKey]: e.target.value
+                                        }))}
+                                      />
+                                      <input
+                                        type="text"
+                                        className="input input-bordered join-item flex-1 input-sm"
+                                        value={customColors[colorKey as keyof typeof customColors]}
+                                        onChange={(e) => {
+                                          const value = e.target.value;
+                                          if (value.startsWith('#') && value.length <= 7) {
+                                            setCustomColors(prev => ({
+                                              ...prev,
+                                              [colorKey]: value
+                                            }));
+                                          }
+                                        }}
+                                        placeholder="#000000"
+                                      />
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Color Preview */}
+                          <div className="bg-base-100 rounded-lg p-4 border border-base-300">
+                            <h4 className="font-semibold mb-3">
+                              Color Preview
+                            </h4>
+                            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-11 gap-2">
+                              {Object.entries(customColors).map(([key, color]) => (
+                                <div key={key} className="text-center">
+                                  <div 
+                                    className="w-full h-8 rounded border border-base-300 shadow-sm"
+                                    style={{ backgroundColor: color }}
+                                    title={`${key}: ${color}`}
+                                  ></div>
+                                  <span className="text-xs text-base-content/60 mt-1 block capitalize">
+                                    {key.replace(/([A-Z-])/g, ' $1').toLowerCase().replace(/^\s/, '')}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="flex gap-2 justify-end pt-4 border-t border-base-300">
+                            <button
+                              onClick={() => {
+                                setIsCreatingTheme(false);
+                                cancelEditing();
+                              }}
+                              className="btn btn-ghost"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              onClick={() => isCreatingTheme ? createCustomTheme() : updateCustomTheme(editingThemeId!)}
+                              className="btn btn-primary"
+                              disabled={isCreatingTheme && !newThemeName.trim()}
+                            >
+                              {isCreatingTheme ? 'Create Theme' : 'Update Theme'}
+                            </button>
+                          </div>
                         </div>
                       </div>
                     )}

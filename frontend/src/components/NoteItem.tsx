@@ -24,6 +24,7 @@ interface NoteModalProps {
   mode: 'view' | 'edit';
   onModeChange: (mode: 'view' | 'edit') => void;
   project?: any; // Project with permission info
+  type?: 'note' | 'devlog'; // Add type to distinguish between notes and dev logs
 }
 
 const NoteItem: React.FC<NoteItemProps> = ({ 
@@ -141,7 +142,8 @@ const NoteModal: React.FC<NoteModalProps> = ({
   onUpdate, 
   mode, 
   onModeChange,
-  project
+  project,
+  type = 'note'
 }) => {
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
@@ -242,45 +244,48 @@ const NoteModal: React.FC<NoteModalProps> = ({
     if (isOpen && note) {
       checkLockStatus();
       
-      // Connect to lock signaling and join project
-      lockSignaling.connect();
-      lockSignaling.joinProject(projectId);
-      
-      // Set up WebSocket event listeners for this specific note
-      const handleNoteLocked = (data: { noteId: string; lockedBy: { email: string; name: string } }) => {
-        if (data.noteId === note.id) {
-          setIsLocked(true);
-          setLockedBy({ ...data.lockedBy, isCurrentUser: false });
-          setLockError(`Note is being edited by ${data.lockedBy.name}`);
-        }
-      };
-      
-      const handleNoteUnlocked = (data: { noteId: string }) => {
-        if (data.noteId === note.id) {
-          setIsLocked(false);
-          setLockedBy(null);
-          setLockError('');
-        }
-      };
-      
-      const handleNoteUpdated = (data: { noteId: string; note: any }) => {
-        if (data.noteId === note.id && mode === 'view') {
-          // Trigger a refresh of the project data to get the updated note
-          window.dispatchEvent(new CustomEvent('refreshProject'));
-        }
-      };
-      
-      lockSignaling.on('note-locked', handleNoteLocked);
-      lockSignaling.on('note-unlocked', handleNoteUnlocked);
-      lockSignaling.on('note-updated', handleNoteUpdated);
-      
-      return () => {
-        lockSignaling.off('note-locked', handleNoteLocked);
-        lockSignaling.off('note-unlocked', handleNoteUnlocked);
-        lockSignaling.off('note-updated', handleNoteUpdated);
-      };
+      // Only set up WebSocket for notes, not dev logs
+      if (type === 'note') {
+        // Connect to lock signaling and join project
+        lockSignaling.connect();
+        lockSignaling.joinProject(projectId);
+        
+        // Set up WebSocket event listeners for this specific note
+        const handleNoteLocked = (data: { noteId: string; lockedBy: { email: string; name: string } }) => {
+          if (data.noteId === note.id) {
+            setIsLocked(true);
+            setLockedBy({ ...data.lockedBy, isCurrentUser: false });
+            setLockError(`Note is being edited by ${data.lockedBy.name}`);
+          }
+        };
+        
+        const handleNoteUnlocked = (data: { noteId: string }) => {
+          if (data.noteId === note.id) {
+            setIsLocked(false);
+            setLockedBy(null);
+            setLockError('');
+          }
+        };
+        
+        const handleNoteUpdated = (data: { noteId: string; note: any }) => {
+          if (data.noteId === note.id && mode === 'view') {
+            // Trigger a refresh of the project data to get the updated note
+            window.dispatchEvent(new CustomEvent('refreshProject'));
+          }
+        };
+        
+        lockSignaling.on('note-locked', handleNoteLocked);
+        lockSignaling.on('note-unlocked', handleNoteUnlocked);
+        lockSignaling.on('note-updated', handleNoteUpdated);
+        
+        return () => {
+          lockSignaling.off('note-locked', handleNoteLocked);
+          lockSignaling.off('note-unlocked', handleNoteUnlocked);
+          lockSignaling.off('note-updated', handleNoteUpdated);
+        };
+      }
     }
-  }, [isOpen, note?.id, mode, projectId]);
+  }, [isOpen, note?.id, mode, projectId, type]);
 
   // Start heartbeat when entering edit mode
   useEffect(() => {
@@ -298,7 +303,7 @@ const NoteModal: React.FC<NoteModalProps> = ({
   }, [mode, lockedBy?.isCurrentUser]);
 
   const checkLockStatus = async () => {
-    if (!note) return;
+    if (!note || type === 'devlog') return; // Skip locking for dev logs for now
     
     try {
       const lockStatus = await projectAPI.checkNoteLock(projectId, note.id);
@@ -312,6 +317,14 @@ const NoteModal: React.FC<NoteModalProps> = ({
   const acquireLock = async () => {
     if (!note) return false;
     
+    // Skip locking for dev logs for now
+    if (type === 'devlog') {
+      setIsLocked(false);
+      setLockedBy(null);
+      setLockError('');
+      return true;
+    }
+    
     try {
       await projectAPI.lockNote(projectId, note.id);
       setIsLocked(true);
@@ -319,6 +332,7 @@ const NoteModal: React.FC<NoteModalProps> = ({
       setLockError('');
       return true;
     } catch (error: any) {
+      // At this point, type can only be 'note' since we returned early for 'devlog'
       if (error.response?.status === 423) {
         setLockError(`Note is being edited by ${error.response.data.lockedBy?.name || 'another user'}`);
         setIsLocked(true);
@@ -337,7 +351,7 @@ const NoteModal: React.FC<NoteModalProps> = ({
   };
 
   const releaseLock = async () => {
-    if (!note) return;
+    if (!note || type === 'devlog') return; // Skip locking for dev logs for now
     
     try {
       await projectAPI.unlockNote(projectId, note.id);
@@ -350,10 +364,10 @@ const NoteModal: React.FC<NoteModalProps> = ({
   };
 
   const startHeartbeat = () => {
-    if (heartbeatIntervalRef.current) return;
+    if (heartbeatIntervalRef.current || type === 'devlog') return; // Skip heartbeat for dev logs
     
     heartbeatIntervalRef.current = window.setInterval(async () => {
-      if (note && mode === 'edit') {
+      if (note && mode === 'edit' && type === 'note') {
         try {
           await projectAPI.heartbeatNoteLock(projectId, note.id);
         } catch (error) {
@@ -413,15 +427,15 @@ const NoteModal: React.FC<NoteModalProps> = ({
     // Check permissions first
     if (project && project.canEdit === false) {
       if (project.userRole === 'viewer') {
-        toast.error('You need editor access to edit notes in this project', 5000);
+        toast.error(`You need editor access to edit ${type}s in this project`, 5000);
       } else {
-        toast.error('You do not have permission to edit this note', 5000);
+        toast.error(`You do not have permission to edit this ${type}`, 5000);
       }
       return;
     }
     
     if (isLocked && !lockedBy?.isCurrentUser) {
-      setLockError(`Note is being edited by ${lockedBy?.name || 'another user'}`);
+      setLockError(`${type === 'devlog' ? 'Dev log entry' : 'Note'} is being edited by ${lockedBy?.name || 'another user'}`);
       return;
     }
     
@@ -437,9 +451,9 @@ const NoteModal: React.FC<NoteModalProps> = ({
     // Check permissions before saving
     if (project && project.canEdit === false) {
       if (project.userRole === 'viewer') {
-        toast.error('You need editor access to save changes to notes', 5000);
+        toast.error(`You need editor access to save changes to ${type}s`, 5000);
       } else {
-        toast.error('You do not have permission to save changes to this note', 5000);
+        toast.error(`You do not have permission to save changes to this ${type}`, 5000);
       }
       return;
     }
@@ -447,26 +461,34 @@ const NoteModal: React.FC<NoteModalProps> = ({
     isSavingRef.current = true;
     setLoading(true);
     try {
-      await projectAPI.updateNote(projectId, note.id, {
-        title: editTitle.trim(),
-        description: editDescription.trim(),
-        content: editContent.trim()
-      });
+      if (type === 'devlog') {
+        await projectAPI.updateDevLogEntry(projectId, note.id, {
+          title: editTitle.trim(),
+          description: editContent.trim(), // For dev logs, content goes to description field
+          entry: editTitle.trim() // Keep backward compatibility
+        });
+      } else {
+        await projectAPI.updateNote(projectId, note.id, {
+          title: editTitle.trim(),
+          description: editDescription.trim(),
+          content: editContent.trim()
+        });
+      }
       
       // Track the activity for different field changes
       if (editTitle.trim() !== note.title) {
         await activityTracker.trackUpdate(
-          'note',
+          type,
           note.id,
           'title',
           note.title,
           editTitle.trim(),
           note.title, // resourceName is the old title
-          undefined // no fileName for notes
+          undefined // no fileName for notes/devlogs
         );
       }
       
-      if (editDescription.trim() !== (note.description || '')) {
+      if (type === 'note' && editDescription.trim() !== (note.description || '')) {
         await activityTracker.trackUpdate(
           'note',
           note.id,
@@ -480,9 +502,9 @@ const NoteModal: React.FC<NoteModalProps> = ({
       
       if (editContent.trim() !== note.content) {
         await activityTracker.trackUpdate(
-          'note',
+          type,
           note.id,
-          'content',
+          type === 'devlog' ? 'description' : 'content',
           note.content,
           editContent.trim(),
           note.title, // resourceName
@@ -494,17 +516,17 @@ const NoteModal: React.FC<NoteModalProps> = ({
       await releaseLock();
       onModeChange('view');
       onUpdate();
-      toast.success('Note saved successfully!');
+      toast.success(`${type === 'devlog' ? 'Dev log entry' : 'Note'} saved successfully!`);
     } catch (error: any) {
       if (error.response?.status === 423) {
-        setLockError(`Note is being edited by ${error.response.data.lockedBy?.name || 'another user'}`);
+        setLockError(`${type === 'devlog' ? 'Dev log entry' : 'Note'} is being edited by ${error.response.data.lockedBy?.name || 'another user'}`);
       } else if (error.response?.status === 403) {
-        toast.error('You do not have permission to edit this note', 5000);
+        toast.error(`You do not have permission to edit this ${type}`, 5000);
       } else if (error.response?.status === 401) {
-        toast.error('You need to be logged in to edit notes', 5000);
+        toast.error(`You need to be logged in to edit ${type}s`, 5000);
       } else {
-        console.error('Failed to update note:', error);
-        toast.error('Failed to save note. Please try again.', 5000);
+        console.error(`Failed to update ${type}:`, error);
+        toast.error(`Failed to save ${type}. Please try again.`, 5000);
       }
     } finally {
       setLoading(false);
@@ -517,23 +539,29 @@ const NoteModal: React.FC<NoteModalProps> = ({
 
   const handleDelete = async () => {
     try {
-      await projectAPI.deleteNote(projectId, note.id);
+      if (type === 'devlog') {
+        await projectAPI.deleteDevLogEntry(projectId, note.id);
+      } else {
+        await projectAPI.deleteNote(projectId, note.id);
+      }
       
-      // Track note deletion
+      // Track deletion
       await activityTracker.trackDelete(
-        'note',
+        type,
         note.id,
         note.title, // resourceName
-        undefined, // no fileName for notes
+        undefined, // no fileName for notes/devlogs
         { originalTitle: note.title } // metadata
       );
       
       onUpdate();
       onClose();
       setShowDeleteConfirm(false);
+      toast.success(`${type === 'devlog' ? 'Dev log entry' : 'Note'} deleted successfully!`);
     } catch (error) {
-      console.error('Failed to delete note:', error);
+      console.error(`Failed to delete ${type}:`, error);
       setShowDeleteConfirm(false);
+      toast.error(`Failed to delete ${type}. Please try again.`);
     }
   };
 
@@ -781,10 +809,10 @@ const NoteModal: React.FC<NoteModalProps> = ({
                   }`}
                   title={
                     project && project.canEdit === false 
-                      ? (project.userRole === 'viewer' ? 'You need editor access to edit notes' : 'No edit permission')
+                      ? (project.userRole === 'viewer' ? `You need editor access to edit ${type}s` : 'No edit permission')
                       : isLocked && !lockedBy?.isCurrentUser 
                         ? `Being edited by ${lockedBy?.name}` 
-                        : "Edit note (E)"
+                        : `Edit ${type} (E)`
                   }
                   disabled={(isLocked && !lockedBy?.isCurrentUser) || (project && project.canEdit === false)}
                 >
@@ -857,7 +885,7 @@ const NoteModal: React.FC<NoteModalProps> = ({
           {mode === 'edit' ? (
             <div className="h-full p-3 sm:p-4">
               <div className="space-y-2 h-full flex flex-col">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-shrink-0">
+                <div className={`grid gap-4 flex-shrink-0 ${type === 'devlog' ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2'}`}>
                   <div className="form-control">
                     <label className="label">
                       <span className="label-text font-medium">Title</span>
@@ -867,33 +895,35 @@ const NoteModal: React.FC<NoteModalProps> = ({
                       value={editTitle}
                       onChange={(e) => handleInputChange('title', e.target.value)}
                       className="input-field"
-                      placeholder="Note title..."
+                      placeholder={`${type === 'devlog' ? 'Dev log entry' : 'Note'} title...`}
                       required
                     />
                   </div>
-                  <div className="form-control">
-                    <label className="label">
-                      <span className="label-text font-medium">Description</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={editDescription}
-                      onChange={(e) => handleInputChange('description', e.target.value)}
-                      className="input-field"
-                      placeholder="Brief description (optional)..."
-                    />
-                  </div>
+                  {type === 'note' && (
+                    <div className="form-control">
+                      <label className="label">
+                        <span className="label-text font-medium">Description</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={editDescription}
+                        onChange={(e) => handleInputChange('description', e.target.value)}
+                        className="input-field"
+                        placeholder="Brief description (optional)..."
+                      />
+                    </div>
+                  )}
                 </div>
                 
                 <div className="form-control flex-1 flex flex-col">
                   <label className="label">
-                    <span className="label-text font-medium">Content</span>
+                    <span className="label-text font-medium">{type === 'devlog' ? 'Description' : 'Content'}</span>
                   </label>
                   <div className="flex-1">
                     <EnhancedTextEditor
                       value={editContent}
                       onChange={(value) => handleInputChange('content', value)}
-                      placeholder="Enter your note content here... (Markdown supported)"
+                      placeholder={`${type === 'devlog' ? 'Describe your development progress...' : 'Enter your note content here...'} (Markdown supported)`}
                     />
                   </div>
                 </div>
@@ -916,9 +946,9 @@ const NoteModal: React.FC<NoteModalProps> = ({
         isOpen={showDeleteConfirm}
         onConfirm={handleDelete}
         onCancel={() => setShowDeleteConfirm(false)}
-        title="Delete Note"
+        title={`Delete ${type === 'devlog' ? 'Dev Log Entry' : 'Note'}`}
         message={`Are you sure you want to delete "<strong>${note.title}</strong>"? This action cannot be undone.`}
-        confirmText="Delete Note"
+        confirmText={`Delete ${type === 'devlog' ? 'Entry' : 'Note'}`}
         variant="error"
       />
 

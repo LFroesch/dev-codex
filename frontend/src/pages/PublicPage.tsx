@@ -425,7 +425,7 @@ const PublicPage: React.FC = () => {
 
             {/* Preview */}
             <div className="divider">Preview</div>
-            <div className="mockup-browser border bg-base-300">
+            <div className="mockup-browser border border-base-content/10 bg-base-300">
               <div className="mockup-browser-toolbar">
                 <div className="input">
                   {window.location.origin}/project/{publicSlug || selectedProject.id}

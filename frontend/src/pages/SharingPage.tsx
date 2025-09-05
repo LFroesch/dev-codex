@@ -113,7 +113,7 @@ const SharingPage: React.FC = () => {
           </h2>
           
           <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
-            <div className="flex items-center justify-between p-3 bg-base-200 rounded-lg border">
+            <div className="flex items-center justify-between p-3 bg-base-200 rounded-lg border border-base-content/20">
               <div className="flex items-center gap-3">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
                   selectedProject.isShared ? 'bg-success/20' : 'bg-base-300'
@@ -191,7 +191,6 @@ const SharingPage: React.FC = () => {
           </h2>
           
           <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
-            <p className="text-sm text-base-content/60 mb-4">Your project activity is being tracked</p>
             <ActivityLog 
               projectId={selectedProject.id}
             />

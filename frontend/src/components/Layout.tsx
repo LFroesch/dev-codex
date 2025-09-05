@@ -641,7 +641,7 @@ const Layout: React.FC = () => {
                     <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
                   </svg>
                 </div>
-                <h1 className="tablet:text-xl text-base font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent whitespace-nowrap">Dev Codex</h1>
+                <h1 className="tablet:text-xl text-base font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text whitespace-nowrap">Dev Codex</h1>
                 
                 {/* Search bar on tablet - hidden on mobile */}
                 {user && selectedProject && (
@@ -946,7 +946,7 @@ const Layout: React.FC = () => {
                   <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
                 </svg>
               </div>
-              <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">Dev Codex</h1>
+              <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text">Dev Codex</h1>
               
               {/* Search bar */}
               <div className="relative ml-4 flex-center-gap-2">
@@ -1295,7 +1295,7 @@ const Layout: React.FC = () => {
                               </div>
                               
                               {/* Footer - Always at bottom */}
-                              <div className="flex items-center justify-between text-xs pt-2 border-t border-base-200 mt-auto">
+                              <div className="flex items-center justify-between text-xs pt-2 border-t border-base-content/20 mt-auto">
                                 <div className="flex items-center gap-1 px-2 py-1 rounded-md font-medium bg-secondary text-secondary-content">
                                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -1420,7 +1420,7 @@ const Layout: React.FC = () => {
                               </div>
                               
                               {/* Footer - Always at bottom */}
-                              <div className="flex items-center justify-between text-xs pt-2 border-t border-base-200 mt-auto">
+                              <div className="flex items-center justify-between text-xs pt-2 border-t border-base-content/20 mt-auto">
                                 <div className="flex items-center gap-1 px-2 py-1 rounded-md font-medium bg-secondary text-secondary-content">
                                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -1549,7 +1549,7 @@ const Layout: React.FC = () => {
                               </div>
                               
                               {/* Footer - Always at bottom */}
-                              <div className="flex items-center justify-between text-xs pt-2 border-t border-base-200 mt-auto">
+                              <div className="flex items-center justify-between text-xs pt-2 border-t border-base-content/20 mt-auto">
                                 <div className="flex items-center gap-1 px-2 py-1 rounded-md font-medium bg-secondary text-secondary-content">
                                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />

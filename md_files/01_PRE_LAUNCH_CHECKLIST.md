@@ -1,21 +1,15 @@
-# 8/30/25 Checklist
-- [ ] Unit Tests
+# 9/6/25 Checklist
+- [ ] Finish UI Sweep
 - [ ] Clean console.logs
-- [ ] Clean Rest of pages - matching UI/UX/buttons (Human Manual check and fix)
-- [ ] Clean Up Menus / Pages / Panels etc for better UX (Human Manual check and fix)
+- [ ] Code Consolidation
+- [ ] Unit Tests
 
 ## Night
 - [ ] Prep for Prod
-
-## ??? IMPORTANT
-- [ ] AI Integration at a basic level?
+- [ ] Any Remaining Overhauls (Better Import/Export, Notes -> ToDos Actions, Basic AI Querying in Pro Plan?)
 
 ## Human Manual Checkovers -> Refixes
 - [ ] Mobile Test
 - [ ] Tablet Test
 - [ ] Mid Size Test
 - [ ] Desktop Test
-- [ ] Help / Info Page
-
-## Future
-- [ ] Better Theming / Colors / Custom

@@ -527,15 +527,6 @@ const StackPage: React.FC = () => {
       <div className="flex justify-center px-2">
         <div className="tabs tabs-boxed border-subtle shadow-sm">
           <button 
-            className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'current' ? 'tab-active' : ''}`}
-            onClick={() => setActiveSection('current')}
-          >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span>Current Stack <span className="text-xs opacity-70">({totalSelectedCount})</span></span>
-          </button>
-          <button 
             className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'add' ? 'tab-active' : ''}`}
             onClick={() => setActiveSection('add')}
           >
@@ -543,6 +534,15 @@ const StackPage: React.FC = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
             <span>Add Technologies</span>
+          </button>
+          <button 
+            className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'current' ? 'tab-active' : ''}`}
+            onClick={() => setActiveSection('current')}
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>Current Stack <span className="text-xs opacity-70">({totalSelectedCount})</span></span>
           </button>
         </div>
       </div>

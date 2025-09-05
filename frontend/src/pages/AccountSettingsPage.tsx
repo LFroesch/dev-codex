@@ -4,6 +4,7 @@ import { authAPI } from '../api';
 import { useLoadingState } from '../hooks/useLoadingState';
 import AnalyticsDashboard from '../components/AnalyticsDashboard';
 import ThemePreview from '../components/ThemePreview';
+import { toast } from '../services/toast';
 // Better hex to OKLCH conversion 
 const hexToOklch = (hex: string) => {
   // Validate hex format
@@ -102,8 +103,8 @@ const DEFAULT_CUSTOM_COLORS = {
   accent: '#477998',
   neutral: '#9a6a6a',
   'base-100': '#baa1a1',
-  'base-200': '#b98d8d',
-  'base-300': '#986161',
+  'base-200': '#b48888',
+  'base-300': '#a27676',
   info: '#146a90',
   success: '#8BBF9F',
   warning: '#FFF07C',
@@ -152,7 +153,7 @@ const AccountSettingsPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<'theme' | 'connections' | 'profile' | 'analytics'>('theme');
-  const [profileSubTab, setProfileSubTab] = useState<'personal' | 'bio' | 'public' | 'privacy'>('personal');
+  const [profileSubTab, setProfileSubTab] = useState<'personal' | 'public' | 'privacy'>('personal');
   const [themeSubTab, setThemeSubTab] = useState<'preset' | 'custom'>('preset');
   const [currentTheme, setCurrentTheme] = useState('retro');
   const [user, setUser] = useState<any>(null);
@@ -162,6 +163,7 @@ const AccountSettingsPage: React.FC = () => {
   const [isCreatingTheme, setIsCreatingTheme] = useState(false);
   const [editingThemeId, setEditingThemeId] = useState<string | null>(null);
   const [newThemeName, setNewThemeName] = useState('');
+  const [editingThemeName, setEditingThemeName] = useState('');
   const [customColors, setCustomColors] = useState<CustomTheme['colors']>(DEFAULT_CUSTOM_COLORS);
   const [previewTheme, setPreviewTheme] = useState<CustomTheme | null>(null);
   
@@ -170,15 +172,12 @@ const AccountSettingsPage: React.FC = () => {
   const { loading: unlinkingGoogle, withLoading: withUnlinking } = useLoadingState();
   const { loading: savingProfile, withLoading: withSavingProfile } = useLoadingState();
   
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [bio, setBio] = useState('');
   
   // Public profile settings
   const [isPublicProfile, setIsPublicProfile] = useState(false);
   const [publicSlug, setPublicSlug] = useState('');
-  const [publicDescription, setPublicDescription] = useState('');
   const [savingPublicSettings, setSavingPublicSettings] = useState(false);
 
   // Load custom themes from database or localStorage
@@ -217,7 +216,7 @@ const AccountSettingsPage: React.FC = () => {
       // Fallback to localStorage only
       localStorage.setItem('customThemes', JSON.stringify(themes));
       setCustomThemes(themes);
-      setError('Failed to sync custom themes to your account. They are saved locally.');
+      toast.warning('Failed to sync custom themes to your account. They are saved locally.');
     }
   };
 
@@ -336,6 +335,13 @@ const AccountSettingsPage: React.FC = () => {
     console.log('Applied standard theme:', standardTheme); // Debug log
   };
 
+  // Stop preview when leaving custom theme section
+  useEffect(() => {
+    if (themeSubTab !== 'custom' && previewTheme) {
+      stopPreview();
+    }
+  }, [themeSubTab, previewTheme]);
+
   useEffect(() => {
     const loadUserData = async () => {
       try {
@@ -345,7 +351,6 @@ const AccountSettingsPage: React.FC = () => {
         setBio(response.user.bio || '');
         setIsPublicProfile(response.user.isPublic || false);
         setPublicSlug(response.user.publicSlug || '');
-        setPublicDescription(response.user.publicDescription || '');
         
         // Load custom themes
         loadCustomThemes();
@@ -406,13 +411,13 @@ const AccountSettingsPage: React.FC = () => {
     const message = searchParams.get('message');
 
     if (googleLinked === 'success') {
-      setSuccess('Google account linked successfully!');
+      toast.success('Google account linked successfully!');
       // Refresh user data to show updated state
       authAPI.getMe().then(response => setUser(response.user)).catch(() => {});
       // Clean up URL using React Router
       setSearchParams({});
     } else if (googleLinked === 'error') {
-      setError(message ? decodeURIComponent(message) : 'Failed to link Google account');
+      toast.error(message ? decodeURIComponent(message) : 'Failed to link Google account');
       // Clean up URL using React Router
       setSearchParams({});
     }
@@ -420,7 +425,6 @@ const AccountSettingsPage: React.FC = () => {
 
   const handleThemeChange = async (newTheme: string) => {
     await withSaving(async () => {
-      setError('');
       
       // ALWAYS clear any existing custom theme CSS first
       clearCustomTheme(newTheme);
@@ -446,7 +450,7 @@ const AccountSettingsPage: React.FC = () => {
       // Keep localStorage as fallback
       localStorage.setItem('theme', newTheme);
     }).catch((err: any) => {
-      setError(err.response?.data?.message || 'Failed to update theme');
+      toast.error(err.response?.data?.message || 'Failed to update theme');
       // Revert theme on error
       const previousTheme = user?.theme || localStorage.getItem('theme') || 'retro';
       setCurrentTheme(previousTheme);
@@ -464,7 +468,7 @@ const AccountSettingsPage: React.FC = () => {
   // Custom theme management functions
   const createCustomTheme = () => {
     if (!newThemeName.trim()) {
-      setError('Theme name is required');
+      toast.error('Theme name is required');
       return;
     }
     
@@ -481,13 +485,18 @@ const AccountSettingsPage: React.FC = () => {
     setNewThemeName('');
     setCustomColors(DEFAULT_CUSTOM_COLORS);
     setIsCreatingTheme(false);
-    setSuccess(`Custom theme "${newTheme.name}" created successfully!`);
+    toast.success(`Custom theme "${newTheme.name}" created successfully!`);
   };
 
   const updateCustomTheme = (themeId: string) => {
+    if (!editingThemeName.trim()) {
+      toast.error('Theme name is required');
+      return;
+    }
+
     const updatedThemes = customThemes.map(theme => 
       theme.id === themeId 
-        ? { ...theme, colors: { ...customColors } }
+        ? { ...theme, name: editingThemeName.trim(), colors: { ...customColors } }
         : theme
     );
     saveCustomThemes(updatedThemes);
@@ -501,7 +510,8 @@ const AccountSettingsPage: React.FC = () => {
     }
     
     setEditingThemeId(null);
-    setSuccess('Custom theme updated successfully!');
+    setEditingThemeName('');
+    toast.success('Custom theme updated successfully!');
   };
 
   const deleteCustomTheme = (themeId: string) => {
@@ -514,16 +524,18 @@ const AccountSettingsPage: React.FC = () => {
       handleThemeChange('retro');
     }
     
-    setSuccess(`Custom theme "${themeToDelete?.name}" deleted successfully!`);
+    toast.success(`Custom theme "${themeToDelete?.name}" deleted successfully!`);
   };
 
   const startEditing = (theme: CustomTheme) => {
     setEditingThemeId(theme.id);
+    setEditingThemeName(theme.name);
     setCustomColors(theme.colors);
   };
 
   const cancelEditing = () => {
     setEditingThemeId(null);
+    setEditingThemeName('');
     setCustomColors(DEFAULT_CUSTOM_COLORS);
   };
 
@@ -557,48 +569,39 @@ const AccountSettingsPage: React.FC = () => {
     
     const updatedThemes = [...customThemes, newTheme];
     saveCustomThemes(updatedThemes);
-    setSuccess(`Theme "${newTheme.name}" created successfully!`);
+    toast.success(`Theme "${newTheme.name}" created successfully!`);
   };
 
   const handleLinkGoogle = () => {
-    setError('');
-    setSuccess('');
     authAPI.linkGoogle();
   };
 
   const handleUnlinkGoogle = async () => {
     await withUnlinking(async () => {
-      setError('');
-      setSuccess('');
-
       await authAPI.unlinkGoogle();
-      setSuccess('Google account unlinked successfully!');
+      toast.success('Google account unlinked successfully!');
       // Refresh user data to show updated state
       const response = await authAPI.getMe();
       setUser(response.user);
     }).catch((err: any) => {
-      setError(err.response?.data?.message || 'Failed to unlink Google account');
+      toast.error(err.response?.data?.message || 'Failed to unlink Google account');
     });
   };
 
   const handleSaveProfile = async () => {
     await withSavingProfile(async () => {
-      setError('');
-      setSuccess('');
-
       const response = await authAPI.updateProfile({ bio });
       setUser(response.user);
       setIsEditingProfile(false);
-      setSuccess('Profile updated successfully!');
+      toast.success('Profile updated successfully!');
     }).catch((err: any) => {
-      setError(err.response?.data?.message || 'Failed to update profile');
+      toast.error(err.response?.data?.message || 'Failed to update profile');
     });
   };
 
   const handleCancelProfileEdit = () => {
     setBio(user?.bio || '');
     setIsEditingProfile(false);
-    setError('');
   };
 
   const generateSlugFromName = () => {
@@ -615,19 +618,16 @@ const AccountSettingsPage: React.FC = () => {
 
   const handleSavePublicSettings = async () => {
     setSavingPublicSettings(true);
-    setError('');
-    setSuccess('');
 
     try {
       const response = await authAPI.updateProfile({
         isPublic: isPublicProfile,
-        publicSlug: publicSlug.trim() || undefined,
-        publicDescription: publicDescription.trim() || undefined
+        publicSlug: publicSlug.trim() || undefined
       });
       setUser(response.user);
-      setSuccess('Public profile settings updated successfully!');
+      toast.success('Public profile settings updated successfully!');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to update public profile settings');
+      toast.error(err.response?.data?.message || 'Failed to update public profile settings');
     } finally {
       setSavingPublicSettings(false);
     }
@@ -636,15 +636,14 @@ const AccountSettingsPage: React.FC = () => {
   const copyPublicProfileUrl = () => {
     const url = `${window.location.origin}/user/${publicSlug || user?.id}`;
     navigator.clipboard.writeText(url);
-    setSuccess('Public profile URL copied to clipboard!');
+    toast.success('Public profile URL copied to clipboard!');
   };
 
   const hasPublicChanges = () => {
     if (!user) return false;
     return (
       isPublicProfile !== (user.isPublic || false) ||
-      publicSlug !== (user.publicSlug || '') ||
-      publicDescription !== (user.publicDescription || '')
+      publicSlug !== (user.publicSlug || '')
     );
   };
 
@@ -712,27 +711,6 @@ const AccountSettingsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Success Display */}
-      {success && (
-        <div className="alert alert-success">
-          <svg className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <span>{success}</span>
-          <button onClick={() => setSuccess('')} className="btn btn-ghost btn-sm">×</button>
-        </div>
-      )}
-
-      {/* Error Display */}
-      {error && (
-        <div className="alert alert-error">
-          <svg className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <span>{error}</span>
-          <button onClick={() => setError('')} className="btn btn-ghost btn-sm">×</button>
-        </div>
-      )}
 
       {/* Tab Content */}
       <div>
@@ -766,17 +744,38 @@ const AccountSettingsPage: React.FC = () => {
                   </div>
                 </div>
 
-                {saving && (
-                  <div className="alert alert-info">
-                    <span className="loading loading-spinner loading-sm"></span>
-                    <span>Saving theme preference...</span>
-                  </div>
-                )}
 
                 {previewTheme && (
-                  <div className="alert alert-warning">
-                    <span>Previewing: {previewTheme.name}</span>
-                    <button onClick={stopPreview} className="btn btn-sm btn-ghost">Stop Preview</button>
+                  <div className="alert alert-warning shadow-md border border-warning/30">
+                    <svg className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    <span className="font-medium">Previewing: {previewTheme.name}</span>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={async () => {
+                          try {
+                            await handleThemeChange(`custom-${previewTheme.id}`);
+                            // Only stop preview if theme change was successful
+                            setPreviewTheme(null);
+                          } catch (error) {
+                            // Don't stop preview if there was an error
+                            console.error('Failed to apply theme:', error);
+                          }
+                        }} 
+                        className="btn btn-sm btn-success border-2 border-success/50 hover:border-success shadow-sm"
+                        disabled={saving}
+                      >
+                        {saving ? 'Applying...' : 'Apply Theme'}
+                      </button>
+                      <button 
+                        onClick={stopPreview} 
+                        className="btn btn-sm btn-ghost border-2 border-base-content/20 hover:border-base-content/40"
+                      >
+                        Stop Preview
+                      </button>
+                    </div>
                   </div>
                 )}
 
@@ -838,8 +837,8 @@ const AccountSettingsPage: React.FC = () => {
 
                     {/* Theme Creation/Editing Form */}
                     {(isCreatingTheme || editingThemeId) && (
-                      <div className="card bg-base-100 shadow-xl border border-base-300 rounded-lg">
-                        <div className="card-header bg-base-200 px-6 py-4 border-b border-base-300 rounded-lg">
+                      <div className="card bg-base-100 shadow-xl border border-base-300">
+                        <div className="bg-base-200 px-6 py-4 border-b border-base-300 rounded-t-2xl">
                           <div className="flex items-center justify-between">
                             <h3 className="text-lg font-semibold text-base-content">
                               {isCreatingTheme ? 'Create New Theme' : 'Edit Theme'}
@@ -870,6 +869,23 @@ const AccountSettingsPage: React.FC = () => {
                                 placeholder="My Awesome Theme"
                                 value={newThemeName}
                                 onChange={(e) => setNewThemeName(e.target.value)}
+                              />
+                            </div>
+                          )}
+
+                          {/* Theme Name for Editing */}
+                          {editingThemeId && (
+                            <div className="form-control">
+                              <label className="label">
+                                <span className="label-text font-medium">Theme Name</span>
+                                <span className="label-text-alt text-sm opacity-70">Required</span>
+                              </label>
+                              <input
+                                type="text"
+                                className="input input-bordered w-full"
+                                placeholder="My Awesome Theme"
+                                value={editingThemeName}
+                                onChange={(e) => setEditingThemeName(e.target.value)}
                               />
                             </div>
                           )}
@@ -1059,7 +1075,7 @@ const AccountSettingsPage: React.FC = () => {
                             <button
                               onClick={() => isCreatingTheme ? createCustomTheme() : updateCustomTheme(editingThemeId!)}
                               className="btn btn-primary"
-                              disabled={isCreatingTheme && !newThemeName.trim()}
+                              disabled={isCreatingTheme ? !newThemeName.trim() : !editingThemeName.trim()}
                             >
                               {isCreatingTheme ? 'Create Theme' : 'Update Theme'}
                             </button>
@@ -1241,25 +1257,19 @@ const AccountSettingsPage: React.FC = () => {
                       className={`tab tab-sm min-h-10 font-bold text-sm ${profileSubTab === 'personal' ? 'tab-active' : ''}`}
                       onClick={() => setProfileSubTab('personal')}
                     >
-                      Personal Information
-                    </button>
-                    <button 
-                      className={`tab tab-sm min-h-10 font-bold text-sm ${profileSubTab === 'bio' ? 'tab-active' : ''}`}
-                      onClick={() => setProfileSubTab('bio')}
-                    >
-                      Profile Bio
+                      Personal Info
                     </button>
                     <button 
                       className={`tab tab-sm min-h-10 font-bold text-sm ${profileSubTab === 'public' ? 'tab-active' : ''}`}
                       onClick={() => setProfileSubTab('public')}
                     >
-                      Public Profile Settings
+                      Public Profile
                     </button>
                     <button 
                       className={`tab tab-sm min-h-10 font-bold text-sm ${profileSubTab === 'privacy' ? 'tab-active' : ''}`}
                       onClick={() => setProfileSubTab('privacy')}
                     >
-                      Public Information
+                      Privacy Info
                     </button>
                   </div>
                 </div>
@@ -1326,80 +1336,6 @@ const AccountSettingsPage: React.FC = () => {
                     </div>
                     )}
 
-                    {/* Bio Section */}
-                    {profileSubTab === 'bio' && (
-                    <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200">
-                      <div className="text-lg font-semibold bg-base-200 border-b border-base-content/10 p-4">
-                        📝 Profile Bio
-                      </div>
-                      <div className="p-4">
-                        {/* Header with title and controls */}
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex-1">
-                            <p className="text-sm text-base-content/70">
-                              {bio ? 'Bio added' : 'No bio added yet'}
-                            </p>
-                          </div>
-                          
-                          <div className="flex gap-2">
-                            {isEditingProfile ? (
-                              <>
-                                <button
-                                  onClick={handleSaveProfile}
-                                  className="btn btn-sm btn-primary"
-                                  disabled={savingProfile}
-                                >
-                                  {savingProfile ? 'Saving...' : 'Save'}
-                                </button>
-                                <button
-                                  onClick={handleCancelProfileEdit}
-                                  className="btn btn-sm btn-ghost"
-                                  disabled={savingProfile}
-                                >
-                                  Cancel
-                                </button>
-                              </>
-                            ) : (
-                              <button
-                                onClick={() => setIsEditingProfile(true)}
-                                className="btn btn-sm btn-ghost border-b border-base-content/20"
-                              >
-                                Edit Bio
-                              </button>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Content */}
-                        <div>
-                          {isEditingProfile ? (
-                            <div className="space-y-4">
-                              <textarea
-                                value={bio}
-                                onChange={(e) => setBio(e.target.value)}
-                                className="textarea textarea-bordered w-full h-32 resize-none"
-                                placeholder="Tell others about yourself, your interests, and what you're working on..."
-                                maxLength={500}
-                              />
-                              <div className="text-right">
-                                <span className="text-xs text-base-content/60">
-                                  {bio.length}/500 characters
-                                </span>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="bg-base-100 rounded-lg p-4 border border-base-content/20">
-                              {bio ? (
-                                <p className="text-base-content whitespace-pre-wrap">{bio}</p>
-                              ) : (
-                                <p className="text-base-content/60 italic">No bio added yet. Click edit to add one.</p>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    )}
 
                     {/* Public Profile Settings */}
                     {profileSubTab === 'public' && (
@@ -1547,20 +1483,61 @@ const AccountSettingsPage: React.FC = () => {
                                     </div>
                                   </div>
 
-                                  {/* Public Description */}
+                                  {/* Profile Bio */}
                                   <div className="form-control">
                                     <label className="label">
-                                      <span className="label-text font-medium">Public Profile Description (Optional)</span>
+                                      <span className="label-text font-medium">Profile Bio</span>
                                       <span className="label-text-alt">
-                                        {publicDescription.length}/200 characters
+                                        {bio.length}/500 characters
                                       </span>
                                     </label>
-                                    <textarea
-                                      className="textarea textarea-bordered h-24 resize-none"
-                                      placeholder="Describe yourself professionally for public viewers (will show at the top of your profile)"
-                                      value={publicDescription}
-                                      onChange={(e) => setPublicDescription(e.target.value.slice(0, 200))}
-                                    />
+                                    <div className="space-y-4">
+                                      {isEditingProfile ? (
+                                        <div className="space-y-4">
+                                          <textarea
+                                            value={bio}
+                                            onChange={(e) => setBio(e.target.value)}
+                                            className="textarea textarea-bordered w-full h-32 resize-none"
+                                            placeholder="Tell others about yourself, your interests, and what you're working on..."
+                                            maxLength={500}
+                                          />
+                                          <div className="flex gap-2">
+                                            <button
+                                              onClick={handleSaveProfile}
+                                              className="btn btn-sm btn-primary"
+                                              disabled={savingProfile}
+                                            >
+                                              {savingProfile ? 'Saving...' : 'Save Bio'}
+                                            </button>
+                                            <button
+                                              onClick={handleCancelProfileEdit}
+                                              className="btn btn-sm btn-ghost"
+                                              disabled={savingProfile}
+                                            >
+                                              Cancel
+                                            </button>
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <>
+                                          <div className="bg-base-100 rounded-lg p-4 border border-base-content/20">
+                                            {bio ? (
+                                              <p className="text-base-content whitespace-pre-wrap">{bio}</p>
+                                            ) : (
+                                              <p className="text-base-content/60 italic">No bio added yet. Click edit to add one.</p>
+                                            )}
+                                          </div>
+                                          <div className="flex gap-2">
+                                            <button
+                                              onClick={() => setIsEditingProfile(true)}
+                                              className="btn btn-sm btn-primary"
+                                            >
+                                              {bio ? 'Edit Bio' : 'Add Bio'}
+                                            </button>
+                                          </div>
+                                        </>
+                                      )}
+                                    </div>
                                   </div>
 
                                   {/* Profile Preview */}
@@ -1585,9 +1562,9 @@ const AccountSettingsPage: React.FC = () => {
                                               @{publicSlug}
                                             </span>
                                           )}
-                                          {publicDescription && (
+                                          {bio && (
                                             <p className="text-sm text-base-content/70 mt-1">
-                                              {publicDescription}
+                                              {bio}
                                             </p>
                                           )}
                                         </div>
@@ -1644,11 +1621,7 @@ const AccountSettingsPage: React.FC = () => {
                               <ul className="space-y-2 text-sm">
                                 <li className="flex items-center gap-2">
                                   <div className="w-2 h-2 rounded-full bg-success"></div>
-                                  Your name and profile description
-                                </li>
-                                <li className="flex items-center gap-2">
-                                  <div className="w-2 h-2 rounded-full bg-success"></div>
-                                  Your bio (from above section)
+                                  Your name and profile bio
                                 </li>
                                 <li className="flex items-center gap-2">
                                   <div className="w-2 h-2 rounded-full bg-success"></div>

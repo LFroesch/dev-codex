@@ -197,3 +197,68 @@ textarea.textarea-sm::placeholder,
 .text-base-content\/70 {
   color: oklch(var(--bc) / 0.7) !important;
 }
+
+/* Theme Consistency Overrides - Force consistent styling across all DaisyUI themes */
+:root {
+  /* Force consistent border radius across all themes */
+  --rounded-box: 1rem !important;
+  --rounded-btn: 0.5rem !important;
+  --rounded-badge: 1.9rem !important;
+  
+  /* Force consistent animations across all themes */
+  --animation-btn: 0.25s !important;
+  --animation-input: 0.2s !important;
+  
+  /* Force consistent button styling across all themes */
+  --btn-focus-scale: 0.95 !important;
+  --border-btn: 1px !important;
+  
+  /* Force consistent tab styling across all themes */
+  --tab-border: 1px !important;
+  --tab-radius: 0.5rem !important;
+  
+  /* Force consistent shadow values across all themes */
+  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1) !important;
+  
+  /* Override any theme-specific font weights or sizing */
+  --btn-text-case: none !important;
+  --navbar-padding: 0.5rem !important;
+  
+  /* Ensure consistent glass effects are disabled */
+  --glass-opacity: 0 !important;
+  --glass-border-opacity: 0 !important;
+  --glass-reflex-degree: 0deg !important;
+  --glass-reflex-opacity: 0 !important;
+  --glass-blur: 0px !important;
+  --glass-text-shadow-opacity: 0 !important;
+}
+
+/* Additional overrides for specific problematic theme elements */
+[data-theme] .btn {
+  text-transform: none !important;
+  font-weight: 500 !important;
+}
+
+[data-theme] .card {
+  border-radius: 1rem !important;
+}
+
+[data-theme] .input, [data-theme] .textarea, [data-theme] .select {
+  border-radius: 0.5rem !important;
+}
+
+[data-theme] .badge {
+  border-radius: 1.9rem !important;
+}
+
+/* Override wireframe theme's aggressive border changes */
+[data-theme="wireframe"] * {
+  border-color: oklch(var(--bc) / 0.2) !important;
+}
+
+/* Override cyberpunk theme's glow effects */
+[data-theme="cyberpunk"] .btn:focus,
+[data-theme="cyberpunk"] .input:focus,
+[data-theme="cyberpunk"] .textarea:focus {
+  box-shadow: 0 0 0 2px oklch(var(--p)) !important;
+}

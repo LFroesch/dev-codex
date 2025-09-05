@@ -97,17 +97,17 @@ interface CustomTheme {
 }
 
 const DEFAULT_CUSTOM_COLORS = {
-  primary: '#570df8',
-  secondary: '#f000b8',
-  accent: '#37cdbe',
-  neutral: '#3d4451',
-  'base-100': '#ffffff',
-  'base-200': '#f2f2f2',
-  'base-300': '#e5e6e6',
-  info: '#3abff8',
-  success: '#36d399',
-  warning: '#fbbd23',
-  error: '#f87272'
+  primary: '#5e576b',
+  secondary: '#a56f98',
+  accent: '#477998',
+  neutral: '#9a6a6a',
+  'base-100': '#baa1a1',
+  'base-200': '#b98d8d',
+  'base-300': '#986161',
+  info: '#146a90',
+  success: '#8BBF9F',
+  warning: '#FFF07C',
+  error: '#B02E0C'
 };
 
 // Helper function to convert hex to RGB for DaisyUI
@@ -838,8 +838,8 @@ const AccountSettingsPage: React.FC = () => {
 
                     {/* Theme Creation/Editing Form */}
                     {(isCreatingTheme || editingThemeId) && (
-                      <div className="card bg-base-100 shadow-xl border border-base-300">
-                        <div className="card-header bg-base-200 px-6 py-4 border-b border-base-300">
+                      <div className="card bg-base-100 shadow-xl border border-base-300 rounded-lg">
+                        <div className="card-header bg-base-200 px-6 py-4 border-b border-base-300 rounded-lg">
                           <div className="flex items-center justify-between">
                             <h3 className="text-lg font-semibold text-base-content">
                               {isCreatingTheme ? 'Create New Theme' : 'Edit Theme'}
@@ -875,13 +875,30 @@ const AccountSettingsPage: React.FC = () => {
                           )}
 
                           {/* Theme Color Guide */}
-                          <div className="alert alert-info">
-                            <svg className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <div>
-                              <h4 className="font-bold">Color Guide</h4>
-                              <p className="text-sm">Base colors should be similar shades for backgrounds. Primary/Secondary/Accent are your main brand colors.</p>
+                          <div className="bg-base-100 rounded-xl p-6 border border-base-300 shadow-sm">
+                            <div className="flex items-start gap-4">
+                              <div className="flex-1">
+                                <h4 className="text-xl font-semibold text-base-content mb-2">Color Guide</h4>
+                                <p className="text-md text-base-content/70 mb-2">
+                                  Base colors should be similar shades for backgrounds. Primary/Secondary/Accent are your main UI colors.
+                                </p>
+                                <p className="text-md text-base-content/70 mb-4">
+                                  For color inspiration, coolors.co is a great color scheme generator that you can use to generate a palette from your primary color.
+                                </p>
+                                <div className="flex flex-col sm:flex-row gap-3">
+                                  <a 
+                                    href="https://coolors.co/generate" 
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    className="btn btn-primary btn-sm gap-2 shadow-md hover:shadow-lg transition-all"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                    </svg>
+                                    Browse Coolors.co
+                                  </a>
+                                </div>
+                              </div>
                             </div>
                           </div>
 

@@ -799,6 +799,7 @@ const NotesPage: React.FC = () => {
           mode={devLogModalMode}
           onModeChange={setDevLogModalMode}
           project={selectedProject}
+          type="devlog"
         />
       )}
     </div>

@@ -885,6 +885,21 @@ const Layout: React.FC = () => {
                 >
                   <span>Ideas</span>
                 </button>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    navigate('/create-project');
+                  }}
+                  className="tab tab-sm min-h-10 font-bold text-sm hover:bg-primary/80 relative z-50"
+                  title="Create New Project"
+                  style={{ pointerEvents: 'auto' }}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  <span className="hidden sm:inline">Create New</span>
+                </button>
               </div>
             </div>
             )}
@@ -1108,6 +1123,21 @@ const Layout: React.FC = () => {
                   className={`tab tab-sm min-h-10 font-bold text-sm ${activeProjectTab === 'ideas' ? 'tab-active' : ''}`}
                 >
                   <span>Ideas</span>
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    navigate('/create-project');
+                  }}
+                  className="tab tab-sm min-h-10 font-bold text-sm relative z-50"
+                  title="Create New Project"
+                  style={{ pointerEvents: 'auto' }}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  <span>Create New</span>
                 </button>
               </div>
             </div>

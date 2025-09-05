@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { authAPI } from '../api';
 import { useLoadingState } from '../hooks/useLoadingState';
 import AnalyticsDashboard from '../components/AnalyticsDashboard';
+import ThemePreview from '../components/ThemePreview';
 // Better hex to OKLCH conversion 
 const hexToOklch = (hex: string) => {
   // Validate hex format
@@ -1024,26 +1025,8 @@ const AccountSettingsPage: React.FC = () => {
                             </div>
                           </div>
 
-                          {/* Color Preview */}
-                          <div className="bg-base-100 rounded-lg p-4 border border-base-300">
-                            <h4 className="font-semibold mb-3">
-                              Color Preview
-                            </h4>
-                            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-11 gap-2">
-                              {Object.entries(customColors).map(([key, color]) => (
-                                <div key={key} className="text-center">
-                                  <div 
-                                    className="w-full h-8 rounded border border-base-300 shadow-sm"
-                                    style={{ backgroundColor: color }}
-                                    title={`${key}: ${color}`}
-                                  ></div>
-                                  <span className="text-xs text-base-content/60 mt-1 block capitalize">
-                                    {key.replace(/([A-Z-])/g, ' $1').toLowerCase().replace(/^\s/, '')}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
+                          {/* Theme Preview */}
+                          <ThemePreview colors={customColors} />
 
                           {/* Action Buttons */}
                           <div className="flex gap-2 justify-end pt-4 border-t border-base-300">

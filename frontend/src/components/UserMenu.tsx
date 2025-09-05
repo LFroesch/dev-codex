@@ -49,7 +49,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout }) => {
       </button>
       
       {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-48 bg-base-100 rounded-box z-[10000] p-2 shadow-lg border border-base-300">
+        <div className="absolute right-0 top-full mt-2 w-48 bg-base-100 rounded-box z-[10000] p-2 shadow-lg border border-base-content/20">
         <div className="flex justify-between items-center p-2">
           <h3 className="font-semibold">User Menu</h3>
         </div>
@@ -86,7 +86,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout }) => {
           </div>
           {user?.isAdmin && (
             <>
-            <hr className="my-2 border-base-300" />
+            <hr className="my-2 border-base-content/20" />
             <div 
               className="p-2 rounded cursor-pointer hover:bg-base-200"
               onClick={() => handleNavigation('/admin')}
@@ -95,7 +95,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout }) => {
             </div>
             </>
           )}
-          <hr className="my-2 border-base-300" />
+          <hr className="my-2 border-base-content/20" />
           <div 
             className="p-2 rounded cursor-pointer hover:bg-base-200 text-error"
             onClick={() => {

@@ -140,7 +140,7 @@ const BillingPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-base-100 to-base-200">
+    <div className="min-h-screen bg-base-100">
       <div className="max-w-7xl mx-auto px-2 sm:px-4 py-4 sm:py-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
@@ -198,7 +198,7 @@ const BillingPage: React.FC = () => {
 
         {/* Current Plan Status */}
         {billingInfo && (
-          <div className="card-default mb-8 border border-base-300">
+          <div className="card-default mb-8 border border-base-content/40">
             <div className="card-body">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex-center-gap-2">

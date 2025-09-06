@@ -242,20 +242,20 @@ const SettingsPage: React.FC = () => {
               <div className="flex-1">
                 <h3 className="text-2xl font-semibold">{selectedProject.name}</h3>
                 <p className="text-base-content/70 mb-2">{selectedProject.description}</p>
-                <div className="flex items-center gap-3">
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                <div className="flex items-center gap-2">
+                  <span className={`px-3 py-1 h-7 rounded-full text-sm font-medium text-base-content ${
                     selectedProject.isArchived 
-                      ? 'bg-gray-200 text-gray-800' 
-                      : 'bg-success/20 text-success'
+                      ? 'bg-accent/50' 
+                      : 'bg-success/70'
                   }`}>
-                    {selectedProject.isArchived ? '📦 Archived' : '✨ Active'}
+                    {selectedProject.isArchived ? 'Archived' : 'Active'}
                   </span>
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                  <span className={`px-3 py-1 h-7 rounded-full text-sm font-medium text-base-content ${
                     selectedProject.isShared
-                      ? 'bg-info/20 text-info'
-                      : 'bg-warning/20 text-warning'
+                      ? 'bg-info/50'
+                      : 'bg-warning/50'
                   }`}>
-                    {selectedProject.isShared ? '👥 Shared' : '🔒 Private'}
+                    {selectedProject.isShared ? 'Shared' : 'Private'}
                   </span>
                 </div>
               </div>
@@ -276,10 +276,10 @@ const SettingsPage: React.FC = () => {
               <div className="space-y-2 text-sm">
                 <div>
                   <span className="font-medium">Environment:</span>
-                  <span className={`ml-2 px-2 py-1 rounded text-xs ${
-                    selectedProject.stagingEnvironment === 'production' ? 'bg-error/20 text-error' :
-                    selectedProject.stagingEnvironment === 'staging' ? 'bg-warning/20 text-warning' :
-                    'bg-success/20 text-success'
+                  <span className={`ml-2 px-2 py-1 rounded-lg text-xs font-semibold text-base-content ${
+                    selectedProject.stagingEnvironment === 'production' ? 'bg-error' :
+                    selectedProject.stagingEnvironment === 'staging' ? 'bg-warning' :
+                    'bg-success'
                   }`}>
                     {selectedProject.stagingEnvironment?.charAt(0).toUpperCase() + selectedProject.stagingEnvironment?.slice(1)}
                   </span>
@@ -289,7 +289,7 @@ const SettingsPage: React.FC = () => {
                   <div className="flex flex-wrap gap-1">
                     {selectedProject.tags && selectedProject.tags.length > 0 ? (
                       selectedProject.tags.map((tag, index) => (
-                        <span key={index} className="badge badge-info badge-sm">{tag}</span>
+                        <span key={index} className="badge badge-info badge-sm font-semibold h-6">{tag}</span>
                       ))
                     ) : (
                       <span className="text-base-content/60 italic">No tags</span>
@@ -612,7 +612,7 @@ const SettingsPage: React.FC = () => {
                     <span className={`badge badge-sm ${
                       selectedProject.isShared
                         ? 'badge-info'
-                        : 'badge-ghost'
+                        : 'bg-warning'
                     }`}>
                       {selectedProject.isShared ? 'Shared' : 'Private'}
                     </span>
@@ -664,17 +664,17 @@ const SettingsPage: React.FC = () => {
           
           <div className="border-2 border-base-content/20 rounded-lg mb-4 p-4">
             <div className="space-y-4">
-              <div className={`p-4 ${!selectedProject.isArchived ? 'bg-warning/10 border-warning/20' : 'bg-info/10 border-info/20'} rounded-lg border`}>
-                <h4 className={`font-semibold ${!selectedProject.isArchived ? 'text-warning' : 'text-info'} mb-2`}>{selectedProject.isArchived ? 'Unarchive Project' : 'Archive Project'}</h4>
-                <p className={`${!selectedProject.isArchived ? 'text-warning/80' : 'text-info/80'} text-sm mb-4`}>
-                  {selectedProject.isArchived ? 'Make this project active again' : 'Move this project to archived section'}
+              <div className={`p-4 ${!selectedProject.isArchived ? 'bg-warning/20' : 'bg-info/10'} rounded-lg border-thick`}>
+                <h4 className={`font-bold ${!selectedProject.isArchived ? 'text-warning' : 'text-info'} mb-2`}>{selectedProject.isArchived ? 'Unarchive Project' : 'Archive Project'}</h4>
+                <p className={`${!selectedProject.isArchived ? 'text-warning/80' : 'text-info/80'} font-bold text-sm mb-4`}>
+                  {selectedProject.isArchived ? 'Make this project active again.' : 'Move this project to archived section.'}
                 </p>
                 <button
                   onClick={handleArchiveToggle}
                   className={`btn ${
                     selectedProject.isArchived 
-                      ? 'btn-info' 
-                      : 'btn-warning'
+                      ? 'btn-info border-thick' 
+                      : 'btn-warning border-thick'
                   }`}
                   disabled={archiveLoading}
                 >
@@ -682,15 +682,15 @@ const SettingsPage: React.FC = () => {
                 </button>
               </div>
 
-              <div className="p-4 bg-error/10 rounded-lg border border-error/20">
-                <h4 className="font-semibold text-error mb-2">Delete Project</h4>
-                <p className="text-error/80 text-sm mb-4">
+              <div className="p-4 bg-error/10 rounded-lg border-thick">
+                <h4 className="font-bold text-error mb-2">Delete Project</h4>
+                <p className="text-error/80 font-bold text-sm mb-4">
                   This action cannot be undone. This will permanently delete the project and all of its data.
                 </p>
                 
                 <button
                   onClick={() => setDeleteConfirm(true)}
-                  className="btn btn-error"
+                  className="btn btn-error border-thick"
                 >
                   Delete Project
                 </button>

@@ -112,11 +112,11 @@ const SharingPage: React.FC = () => {
             <span className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">Sharing Overview</span>
           </h2>
           
-          <div className="border-2 border-base-content/20 rounded-lg mb-4 p-4">
-            <div className="flex items-center justify-between p-3 bg-base-200 rounded-lg border border-base-content/20">
+          <div className="border-thick rounded-lg mb-4 p-4">
+            <div className="flex items-center justify-between p-3 bg-base-200 rounded-lg border-thick">
               <div className="flex items-center gap-3">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                  selectedProject.isShared ? 'bg-success/20' : 'bg-base-300'
+                <div className={`w-8 h-8 rounded-full flex items-center border-thick justify-center ${
+                  selectedProject.isShared ? 'bg-success/20 ' : 'bg-base-300'
                 }`}>
                   <svg className={`w-4 h-4 ${selectedProject.isShared ? 'text-success' : 'text-base-content/60'}`} 
                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -127,7 +127,7 @@ const SharingPage: React.FC = () => {
                   </svg>
                 </div>
                 <div>
-                  <div className={`font-medium text-sm ${selectedProject.isShared ? 'text-success' : 'text-base-content'}`}>
+                  <div className={`font-medium text-sm ${selectedProject.isShared ? 'text-base-content' : 'text-base-content'}`}>
                     {selectedProject.isShared ? 'Sharing Enabled' : 'Private Project'}
                   </div>
                   <div className="text-xs text-base-content/60">
@@ -143,7 +143,7 @@ const SharingPage: React.FC = () => {
                   <span className="label-text text-xs">Enable</span>
                   <input 
                     type="checkbox" 
-                    className="toggle toggle-success toggle-sm" 
+                    className="toggle toggle-sm" 
                     checked={selectedProject.isShared}
                     onChange={() => {
                       // If toggling off (making private), show confirmation
@@ -172,7 +172,7 @@ const SharingPage: React.FC = () => {
             <span className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">Team Management</span>
           </h2>
           
-          <div className="border-2 border-base-content/20 rounded-lg mb-4 p-4">
+          <div className="border-thick rounded-lg mb-4 p-4">
             <TeamManagement 
               projectId={selectedProject.id} 
               canManageTeam={selectedProject.canManageTeam ?? selectedProject.isOwner ?? false}

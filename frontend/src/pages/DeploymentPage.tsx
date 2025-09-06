@@ -162,42 +162,39 @@ const DeploymentPage: React.FC = () => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-base-200 rounded-lg p-4">
+            <div className="bg-base-200 border-thick rounded-lg p-4">
               <div className="flex items-center gap-3 mb-2">
-                <div className={`w-3 h-3 rounded-full ${
-                  deploymentData.deploymentStatus === 'active' ? 'bg-success' :
-                  deploymentData.deploymentStatus === 'error' ? 'bg-error' : 'bg-warning'
-                }`}></div>
+                <span className="text-sm badge-neutral badge badge-md">📶</span>
                 <span className="font-medium text-sm">Status</span>
               </div>
-              <p className="text-sm">
+              <p className="text-sm badge-primary badge badge-md">
                 {deploymentData.deploymentStatus === 'active' ? '🟢 Active' :
                  deploymentData.deploymentStatus === 'error' ? '🔴 Error' : '🟡 Inactive'}
               </p>
             </div>
             
-            <div className="bg-base-200 rounded-lg p-4">
+            <div className="bg-base-200 border-thick rounded-lg p-4">
               <div className="flex items-center gap-3 mb-2">
-                <span className="text-sm">🌐</span>
+                <span className="text-sm badge-neutral badge badge-md">🌐</span>
                 <span className="font-medium text-sm">Platform</span>
               </div>
-              <p className="text-sm">{deploymentData.deploymentPlatform || 'Not configured'}</p>
+              <p className="text-sm badge-primary badge badge-md">{deploymentData.deploymentPlatform || 'Not configured'}</p>
             </div>
             
-            <div className="bg-base-200 rounded-lg p-4">
+            <div className="bg-base-200 border-thick rounded-lg p-4">
               <div className="flex items-center gap-3 mb-2">
-                <span className="text-sm">🔗</span>
+                <span className="text-sm badge-neutral badge badge-md">🔗</span>
                 <span className="font-medium text-sm">Live URL</span>
               </div>
-              <p className="text-sm truncate">{deploymentData.liveUrl || 'Not configured'}</p>
+              <p className="text-sm truncate badge-primary badge badge-md">{deploymentData.liveUrl || 'Not configured'}</p>
             </div>
             
-            <div className="bg-base-200 rounded-lg p-4">
+            <div className="bg-base-200 border-thick rounded-lg p-4">
               <div className="flex items-center gap-3 mb-2">
-                <span className="text-sm">📅</span>
+                <span className="text-sm badge-neutral badge badge-md">📅</span>
                 <span className="font-medium text-sm">Last Deploy</span>
               </div>
-              <p className="text-sm">
+              <p className="text-sm badge-primary badge badge-md">
                 {deploymentData.lastDeployDate ? 
                   new Date(deploymentData.lastDeployDate).toLocaleDateString() : 
                   'Never deployed'}

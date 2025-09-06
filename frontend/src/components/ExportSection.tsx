@@ -125,8 +125,8 @@ const ExportSection: React.FC<ExportSectionProps> = ({ selectedProject, onProjec
             <option value="markdown">Markdown</option>
           </select>
         </div>
-        <p className="text-xs text-base-content/60">
-          💡 JSON for data backup, AI Prompt to help with assistance, Markdown for documentation
+        <p className="text-sm font-semibold text-base-content/60">
+        JSON for data backup, AI Prompt to help with assistance, Markdown for documentation
         </p>
       </div>
 

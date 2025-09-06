@@ -629,13 +629,13 @@ const Layout: React.FC = () => {
   return (
     <div className="min-h-screen bg-base-100 flex flex-col">
       {/* Header */}
-      <header className="bg-base-100 border-b border-base-content/10 shadow-sm sticky top-0 z-40 w-full">
+      <header className="bg-base-100 border-b-2 border-base-content/20 shadow-sm sticky top-0 z-40 w-full">
         {/* Mobile and Tablet Layout */}
         <div className="block desktop:hidden px-3 py-4">
           <div className="flex flex-col gap-3">
             {/* Top row: Logo + Search (tablet), Project indicator (tablet), Session Tracker, and User Menu */}
             <div className="flex items-center justify-between min-w-0 gap-3">
-              <div className="flex items-center gap-3 bg-base-200 backdrop-blur-none border border-base-content/10 rounded-xl px-3 py-2 h-12 shadow-sm hover:shadow-md transition-all cursor-pointer min-w-0" onClick={() => navigate('/notes?view=projects')}>
+              <div className="flex items-center gap-3 bg-base-200 backdrop-blur-none border-2 border-base-content/20 rounded-xl px-3 py-2 h-12 shadow-sm hover:shadow-md transition-all cursor-pointer min-w-0" onClick={() => navigate('/notes?view=projects')}>
                 <div className="tablet:w-8 tablet:h-8 w-7 h-7 bg-primary rounded-lg flex items-center justify-center shadow-sm flex-shrink-0">
                   <svg className="tablet:w-4 tablet:h-4 w-3.5 h-3.5 text-primary-content" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
@@ -660,7 +660,7 @@ const Layout: React.FC = () => {
                             navigate('/notes?view=projects');
                           }
                         }}
-                        className="input input-sm pl-10 pr-10 w-48 h-9 bg-base-100/80 backdrop-blur-none shadow-sm border border-base-content/10 rounded-lg focus:border-primary text-base-content/40"
+                        className="input input-sm pl-10 pr-10 w-48 h-9 bg-base-100/80 backdrop-blur-none shadow-sm border border-base-content/20 rounded-lg focus:border-primary text-base-content/40"
                       />
                       {searchTerm && (
                         <button
@@ -693,7 +693,7 @@ const Layout: React.FC = () => {
               
               {/* Project indicator and user section - styled background for all sizes */}
               {user ? (
-                <div className="flex items-center gap-0 bg-base-200 backdrop-blur-none border border-base-content/10 rounded-xl px-1 py-2 h-12 shadow-sm relative z-30 flex-shrink-0">
+                <div className="flex items-center gap-0 bg-base-200 backdrop-blur-none border-2 border-base-content/20 rounded-xl px-1 py-2 h-12 shadow-sm relative z-30 flex-shrink-0">
                   {selectedProject && (
                     <div 
                       className="hidden tablet:flex items-center gap-2 px-3 py-1.5 bg-base-100/80 rounded-lg border border-base-content/10 shadow-sm mr-2 cursor-pointer hover:bg-base-200/70 transition-all duration-200 h-8"
@@ -744,7 +744,7 @@ const Layout: React.FC = () => {
             {user && selectedProject && (
               <div className="flex tablet:hidden items-center gap-3">
                 <div 
-                  className="flex items-center gap-2 px-3 py-2 bg-base-200 backdrop-blur-none rounded-lg border border-base-content/10 shadow-sm hover:bg-base-200/70 transition-all duration-200 cursor-pointer min-w-0 flex-shrink-0 h-10"
+                  className="flex items-center gap-2 px-3 py-2 bg-base-200 backdrop-blur-none rounded-lg border-2 border-base-content/20 shadow-sm hover:bg-base-200/70 transition-all duration-200 cursor-pointer min-w-0 flex-shrink-0 h-10"
                   onClick={() => handleNavigateWithCheck('/notes')}
                   title={`Current project: ${selectedProject.name}`}
                 >
@@ -783,7 +783,7 @@ const Layout: React.FC = () => {
                           // Track search clear
                         }
                       }}
-                      className="input input-sm pl-10 pr-10 w-full h-10 bg-base-100/80 backdrop-blur-none border border-base-content/10 rounded-lg focus:border-primary text-base-content/40"
+                      className="input input-sm pl-10 pr-10 w-full h-10 bg-base-100/80 backdrop-blur-none border-2 border-base-content/20 rounded-lg focus:border-primary text-base-content/40"
                     />
                     {searchTerm && (
                       <button
@@ -817,7 +817,7 @@ const Layout: React.FC = () => {
             {/* Navigation buttons */}
             {location.pathname !== '/support' && (
             <div className="flex justify-center px-2">
-              <div className="tabs tabs-boxed border-subtle shadow-sm">
+              <div className="tabs tabs-boxed border-2 border-base-content/20 shadow-sm">
                 <button 
                   className={`tab tab-sm ${searchParams.get('view') === 'projects' ? 'tab-active' : ''} gap-2 font-bold whitespace-nowrap min-h-10 px-4`}
                   onClick={() => handleNavigateWithCheck('/notes?view=projects')}
@@ -854,7 +854,7 @@ const Layout: React.FC = () => {
             {/* Project Views Submenu - Mobile */}
             {searchParams.get('view') === 'projects' && (
             <div className="flex justify-center px-2 py-1">
-              <div className="tabs tabs-boxed border-subtle shadow-sm">
+              <div className="tabs tabs-boxed border-2 border-base-content/20 shadow-sm">
                 <button
                   onClick={() => {
                     setActiveProjectTab('active');
@@ -891,14 +891,11 @@ const Layout: React.FC = () => {
                     e.stopPropagation();
                     navigate('/create-project');
                   }}
-                  className="tab tab-sm min-h-10 font-bold text-sm hover:bg-primary/80 relative z-50"
+                  className="tab tab-sm min-h-10 font-bold text-sm hover:bg-primary/80 relative z-20"
                   title="Create New Project"
                   style={{ pointerEvents: 'auto' }}
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
-                  <span className="hidden sm:inline">Create New</span>
+                  <span>New</span>
                 </button>
               </div>
             </div>
@@ -907,7 +904,7 @@ const Layout: React.FC = () => {
             {/* Project Details Submenu - Mobile */}
             {selectedProject && (location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && searchParams.get('view') !== 'projects' && (
             <div className="flex justify-center px-2 py-1">
-              <div className="tabs tabs-boxed border-subtle shadow-sm overflow-x-auto scrollbar-hide">
+              <div className="tabs tabs-boxed border-2 border-base-content/20 shadow-sm overflow-x-auto scrollbar-hide">
                 {tabs.map((tab) => (
                   <button
                     key={tab.id}
@@ -932,7 +929,7 @@ const Layout: React.FC = () => {
             {/* Discover Submenu - Mobile */}
             {(location.pathname === '/discover' || location.pathname.startsWith('/discover/')) && (
             <div className="flex justify-center px-2 py-1">
-              <div className="tabs tabs-boxed border-subtle shadow-sm">
+              <div className="tabs tabs-boxed border-2 border-base-content/20 shadow-sm">
                 <button
                   onClick={() => handleNavigateWithCheck('/discover')}
                   className={`tab tab-sm min-h-10 font-bold text-sm ${location.pathname === '/discover' ? 'tab-active' : ''}`}
@@ -955,7 +952,7 @@ const Layout: React.FC = () => {
         {/* Desktop Layout */}
         <div className="hidden desktop:block px-6 py-2">
           <div className="relative flex-between-center">
-            <div className="flex items-center gap-3 bg-base-200 backdrop-blur-none border-subtle rounded-xl px-4 py-2 h-12 shadow-sm hover:shadow-md transition-all cursor-pointer" onClick={() => navigate('/notes?view=projects')}>
+            <div className="flex items-center gap-3 bg-base-200 backdrop-blur-none border-2 border-base-content/20 rounded-xl px-4 py-2 h-12 shadow-sm hover:shadow-md transition-all cursor-pointer" onClick={() => navigate('/notes?view=projects')}>
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-sm">
                 <svg className="icon-md text-primary-content" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
@@ -1011,7 +1008,7 @@ const Layout: React.FC = () => {
             </div>
             
             <div className="absolute left-1/2 transform -translate-x-1/2">
-              <div className="tabs tabs-boxed border-subtle shadow-sm">
+              <div className="tabs tabs-boxed border-2 border-base-content/20 shadow-sm">
               <button 
                 className={`tab tab-sm min-h-10 font-bold text-sm ${searchParams.get('view') === 'projects' ? 'tab-active' : ''} gap-2`}
                 onClick={() => handleNavigateWithCheck('/notes?view=projects')}
@@ -1043,7 +1040,7 @@ const Layout: React.FC = () => {
             </div>
             
             {user ? (
-              <div className="flex items-center gap-0 bg-base-200 backdrop-blur-none border-subtle rounded-xl px-2 py-2 h-12 shadow-sm relative z-30">
+              <div className="flex items-center gap-0 bg-base-200 backdrop-blur-none border-2 border-base-content/20 rounded-xl px-2 py-2 h-12 shadow-sm relative z-30">
                 {selectedProject && (
                   <div 
                     className="flex-center-gap-2 px-3 py-1.5 bg-base-100/80 rounded-lg border-subtle shadow-sm mr-2 cursor-pointer hover:bg-base-200/70 transition-all duration-200 h-8"
@@ -1093,7 +1090,7 @@ const Layout: React.FC = () => {
             {/* Project Views Submenu - Desktop */}
             {searchParams.get('view') === 'projects' && (
             <div className="flex justify-center">
-              <div className="tabs tabs-boxed border-subtle shadow-sm">
+              <div className="tabs tabs-boxed border-2 border-base-content/20 shadow-sm">
                 <button
                   onClick={() => {
                     setActiveProjectTab('active');
@@ -1146,7 +1143,7 @@ const Layout: React.FC = () => {
             {/* Project Details Submenu - Desktop */}
             {selectedProject && (location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && searchParams.get('view') !== 'projects' && (
             <div className="flex justify-center">
-              <div className="tabs tabs-boxed border-subtle shadow-sm overflow-x-auto scrollbar-hide">
+              <div className="tabs tabs-boxed border-2 border-base-content/20 shadow-sm overflow-x-auto scrollbar-hide">
                 {tabs.map((tab) => (
                   <button
                     key={tab.id}
@@ -1171,7 +1168,7 @@ const Layout: React.FC = () => {
             {/* Discover Submenu - Desktop */}
             {(location.pathname === '/discover' || location.pathname.startsWith('/discover/')) && (
             <div className="flex justify-center">
-              <div className="tabs tabs-boxed border-subtle shadow-sm">
+              <div className="tabs tabs-boxed border-2 border-base-content/20 shadow-sm">
                 <button
                   onClick={() => handleNavigateWithCheck('/discover')}
                   className={`tab tab-sm min-h-10 font-bold text-sm ${location.pathname === '/discover' ? 'tab-active' : ''}`}
@@ -1199,9 +1196,8 @@ const Layout: React.FC = () => {
           /* My Projects Tab - Modern Style */
           <>
 
-
             {/* Tab Content */}
-            <div className="flex-1 overflow-auto border-subtle bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-none container-height-fix">
+            <div className="flex-1 overflow-auto border-2 border-base-content/20 bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-none container-height-fix">
               <div className="p-4 sm:p-4">
                 <div className="space-y-4">
                 {activeProjectTab === 'active' && (
@@ -1236,7 +1232,7 @@ const Layout: React.FC = () => {
                       <>
                         {/* Category Selector */}
                         <div className="flex justify-center">
-                          <div className="tabs tabs-boxed border-subtle shadow-sm opacity-90">
+                          <div className="tabs tabs-boxed border-2 border-base-content/20 shadow-sm opacity-90">
                             <button
                               onClick={() => setSelectedCategory(null)}
                               className={`tab tab-sm min-h-10 font-bold text-sm ${
@@ -1348,7 +1344,7 @@ const Layout: React.FC = () => {
                   <div className="space-y-4">
                     {Object.keys(groupedArchivedProjects).length === 0 ? (
                       <div className="flex items-center justify-center min-h-[50vh] py-16">
-                        <div className="text-center bg-base-100 rounded-xl p-12 border-subtle shadow-lg max-w-md mx-auto">
+                        <div className="text-center bg-base-100 rounded-xl p-12 border-2 border-base-content/20 shadow-lg max-w-md mx-auto">
                           <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-base-300/50 to-base-400/50 rounded-full flex items-center justify-center">
                             <svg className="w-10 h-10 text-base-content/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 8l6 6 6-6" />
@@ -1362,7 +1358,7 @@ const Layout: React.FC = () => {
                       <>
                         {/* Category Selector */}
                         <div className="flex justify-center mb-8">
-                          <div className="tabs tabs-boxed border-subtle shadow-sm opacity-90">
+                          <div className="tabs tabs-boxed border-2 border-base-content/20 shadow-sm opacity-90">
                             <button
                               onClick={() => setSelectedArchivedCategory(null)}
                               className={`tab tab-sm min-h-10 font-bold text-sm ${
@@ -1473,7 +1469,7 @@ const Layout: React.FC = () => {
                   <div className="space-y-4">
                     {Object.keys(groupedSharedProjects).length === 0 ? (
                       <div className="flex items-center justify-center min-h-[50vh] py-16">
-                        <div className="text-center bg-base-100 rounded-xl p-12 border-subtle shadow-lg max-w-md mx-auto">
+                        <div className="text-center bg-base-100 rounded-xl p-12 border-2 border-base-content/20 shadow-lg max-w-md mx-auto">
                           <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-secondary/20 to-secondary/30 rounded-full flex items-center justify-center">
                             <svg className="w-10 h-10 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -1487,7 +1483,7 @@ const Layout: React.FC = () => {
                       <>
                         {/* Category Selector */}
                         <div className="flex justify-center mb-8">
-                          <div className="tabs tabs-boxed border-subtle shadow-sm opacity-90">
+                          <div className="tabs tabs-boxed border-2 border-base-content/20 shadow-sm opacity-90">
                             <button
                               onClick={() => setSelectedSharedCategory(null)}
                               className={`tab tab-sm min-h-10 font-bold text-sm ${
@@ -1612,7 +1608,7 @@ const Layout: React.FC = () => {
           /* Discover Tab - With sub-tabs */
           <>
             
-            <div className="flex-1 overflow-auto border-subtle bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-none container-height-fix">
+            <div className="flex-1 overflow-auto border-2 border-base-content/20 bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-none container-height-fix">
               <div className="p-2 sm:p-4 lg:p-4">
                 <Outlet />
               </div>
@@ -1620,7 +1616,7 @@ const Layout: React.FC = () => {
           </>
         ) : location.pathname.startsWith('/project/') || location.pathname.startsWith('/user/') ? (
           /* Public Pages - Same styling as discover */
-          <div className="flex-1 overflow-auto border-subtle bg-gradient-to-br from-base-50 to-base-100/50 mx-4 my-4 rounded-2xl shadow-2xl backdrop-blur-none container-height-fix">
+          <div className="flex-1 overflow-auto border-2 border-base-content/20 bg-gradient-to-br from-base-50 to-base-100/50 mx-4 my-4 rounded-2xl shadow-2xl backdrop-blur-none container-height-fix">
             <div className="p-1">
               <Outlet />
             </div>
@@ -1630,7 +1626,7 @@ const Layout: React.FC = () => {
           <>
             {/* Admin Dashboard Tab Navigation */}
             <div className="flex justify-center px-2 sm:px-4 py-4 sm:py-6">
-              <div className="tabs tabs-boxed tabs-lg border-subtle shadow-sm bg-base-200 w-full max-w-4xl overflow-x-auto">
+              <div className="tabs tabs-boxed tabs-lg border-2 border-base-content/20 shadow-sm bg-base-200 w-full max-w-4xl overflow-x-auto">
                 <button 
                   className={`tab tab-sm sm:tab-lg min-h-14 sm:min-h-16 font-bold text-xs sm:text-base px-3 sm:px-4 whitespace-nowrap ${activeAdminTab === 'users' ? 'tab-active' : ''}`}
                   onClick={() => setActiveAdminTab('users')}
@@ -1674,7 +1670,7 @@ const Layout: React.FC = () => {
               </div>
             </div>
             
-            <div className="flex-1 overflow-auto border-subtle bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-none container-height-fix">
+            <div className="flex-1 overflow-auto border-2 border-base-content/20 bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-none container-height-fix">
               <div className="p-1">
                 <Outlet context={{ 
                   selectedProject, 
@@ -1690,7 +1686,7 @@ const Layout: React.FC = () => {
           </>
         ) : location.pathname === '/billing' || location.pathname === '/account-settings' ? (
           /* Billing and Account Settings - No sub-menu */
-          <div className="flex-1 overflow-auto border-subtle bg-gradient-to-br from-base-50 to-base-100/50 mx-4 my-4 rounded-2xl shadow-2xl backdrop-blur-none container-height-fix">
+          <div className="flex-1 overflow-auto border-2 border-base-content/20 bg-gradient-to-br from-base-50 to-base-100/50 mx-4 my-4 rounded-2xl shadow-2xl backdrop-blur-none container-height-fix">
             <div className="p-1">
               <Outlet />
             </div>
@@ -1699,7 +1695,7 @@ const Layout: React.FC = () => {
           /* Project Details Tab - Show project content with tabs */
           <>
             {/* Page Content */}
-            <div className={`flex-1 overflow-auto border-subtle bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-none container-height-fix ${location.pathname === '/support' ? 'mt-4' : ''}`}>
+            <div className={`flex-1 overflow-auto border-2 border-base-content/20 bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-none container-height-fix ${location.pathname === '/support' ? 'mt-4' : ''}`}>
               {selectedProject ? (
                 <div className="p-2 sm:p-4 lg:p-4">
                   <Outlet context={{ 
@@ -1713,7 +1709,7 @@ const Layout: React.FC = () => {
                 </div>
               ) : (
                 <div className="flex items-center justify-center min-h-[50vh] h-full">
-                  <div className="text-center bg-base-100 rounded-xl p-12 border-subtle shadow-lg max-w-md mx-auto">
+                  <div className="text-center bg-base-100 rounded-xl p-12 border-2 border-base-content/20 shadow-lg max-w-md mx-auto">
                     <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-full flex items-center justify-center">
                       <svg className="w-10 h-10 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />

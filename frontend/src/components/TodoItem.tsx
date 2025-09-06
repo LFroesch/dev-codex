@@ -213,7 +213,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
   }
 
   return (
-    <div className={`group bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-3 mb-3 ${
+    <div className={`group card-interactive bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-3 mb-3 ${
       todo.completed ? 'opacity-70' : ''
     }`}>
       <div className="flex items-start gap-3">

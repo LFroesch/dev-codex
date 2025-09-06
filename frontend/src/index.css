@@ -127,6 +127,15 @@ body {
     animation: none !important;
     transform: none !important;
   }
+
+  /* Card Utilities - Consistent styling across the app */
+  .card-interactive {
+    @apply border-2 transition-all duration-200 text-left shadow-md hover:shadow-lg bg-base-100 rounded-lg border-base-300/50 hover:border-primary/30;
+  }
+  
+  .card-interactive-selected {
+    @apply border-2 transition-all duration-200 text-left shadow-md hover:shadow-lg bg-base-100 rounded-lg border-primary bg-primary/5;
+  }
 }
 
 /* Global button animation disable */

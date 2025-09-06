@@ -125,7 +125,7 @@ const IdeasPage: React.FC<IdeasPageProps> = ({ onIdeasCountChange }) => {
             .map((idea) => (
               <div
                 key={idea.id}
-                className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 cursor-pointer group h-36 flex flex-col"
+                className="card-interactive group cursor-pointer h-36 flex flex-col"
                 onClick={() => handleIdeaClick(idea)}
               >
                 <div className="p-3 flex flex-col flex-1">
@@ -133,11 +133,6 @@ const IdeasPage: React.FC<IdeasPageProps> = ({ onIdeasCountChange }) => {
                     <h3 className="font-semibold text-base-content group-hover:text-primary transition-colors duration-200 truncate px-2 py-1 rounded-md bg-base-300 inline-block w-fit">
                       {idea.title}
                     </h3>
-                    <div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <svg className="w-4 h-4 text-base-content/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
-                    </div>
                   </div>
 
                   {idea.description && (
@@ -207,7 +202,7 @@ const NewIdeaForm: React.FC<NewIdeaFormProps> = ({ onAdd }) => {
   };
 
   return (
-    <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 mb-4">
+    <div className="border-2 border-base-content/20 rounded-lg mb-4">
       {!showCreateForm ? (
         <button
           onClick={() => setShowCreateForm(true)}

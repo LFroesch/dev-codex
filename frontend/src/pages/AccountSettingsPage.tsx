@@ -683,7 +683,7 @@ const AccountSettingsPage: React.FC = () => {
 
       {/* Tabs */}
       <div className="flex justify-center">
-        <div className="tabs tabs-boxed border-subtle shadow-sm">
+        <div className="tabs tabs-boxed border-2 border-base-content/20 shadow-sm">
           <button 
             className={`tab tab-sm min-h-10 font-bold text-sm ${activeTab === 'profile' ? 'tab-active' : ''}`}
             onClick={() => setActiveTab('profile')}
@@ -728,7 +728,7 @@ const AccountSettingsPage: React.FC = () => {
 
                 {/* Theme Sub-tabs */}
                 <div className="flex justify-center">
-                  <div className="tabs tabs-boxed border-subtle shadow-sm">
+                  <div className="tabs tabs-boxed border-2 border-base-content/20 shadow-sm">
                     <button 
                       className={`tab tab-sm min-h-10 font-bold text-sm ${themeSubTab === 'preset' ? 'tab-active' : ''}`}
                       onClick={() => setThemeSubTab('preset')}
@@ -1252,7 +1252,7 @@ const AccountSettingsPage: React.FC = () => {
               <div className="space-y-6">
                 {/* Sub-navigation for Profile sections */}
                 <div className="flex justify-center">
-                  <div className="tabs tabs-boxed border-subtle shadow-sm">
+                  <div className="tabs tabs-boxed border-2 border-base-content/20 shadow-sm">
                     <button 
                       className={`tab tab-sm min-h-10 font-bold text-sm ${profileSubTab === 'personal' ? 'tab-active' : ''}`}
                       onClick={() => setProfileSubTab('personal')}

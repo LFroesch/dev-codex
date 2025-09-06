@@ -21,9 +21,11 @@ export default defineConfig({
           router: ['react-router-dom'],
           query: ['@tanstack/react-query'],
           socket: ['socket.io-client'],
-          http: ['axios']
+          http: ['axios'],
+          analytics: ['./src/services/analytics', './src/services/toast', './src/services/errorService']
         }
       }
-    }
+    },
+    chunkSizeWarningLimit: 1000
   }
 }) 

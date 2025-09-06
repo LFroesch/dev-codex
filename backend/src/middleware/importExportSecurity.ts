@@ -41,7 +41,6 @@ export function sanitizeObject(obj: any, depth = 0): any {
   for (const key in obj) {
     // Prevent prototype pollution
     if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
-      console.warn(`Blocked potentially dangerous key: ${key}`);
       continue;
     }
     
@@ -91,7 +90,6 @@ export function sanitizeString(input: any): string {
   
   for (const pattern of dangerousPatterns) {
     if (pattern.test(sanitized)) {
-      console.warn(`Blocked potentially dangerous content: ${pattern.source}`);
       return sanitized.replace(pattern, '');
     }
   }

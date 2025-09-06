@@ -3,7 +3,7 @@
 ## 🚀 **Project Overview**
 
 **Dev Codex** - MERN stack project management platform  
-- **Frontend**: React 18 + TypeScript + Vite (765KB bundle)  
+- **Frontend**: React 18 + TypeScript + Vite (200KB gzipped, 32 themes included)  
 - **Backend**: Express + MongoDB + Socket.io  
 - **Features**: Projects, team collaboration, analytics, billing (Stripe)
 

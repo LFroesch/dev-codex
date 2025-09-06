@@ -20,7 +20,6 @@ export const sendProjectInvitationEmail = async (
   role: string
 ) => {
   if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    console.warn('SMTP credentials not configured, skipping email');
     return;
   }
 
@@ -142,7 +141,6 @@ Project Manager Team
       html: htmlContent,
     });
     
-    console.log(`Invitation email sent to ${inviteeEmail}`);
   } catch (error) {
     console.error('Failed to send invitation email:', error);
     throw new Error('Failed to send invitation email');

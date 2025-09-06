@@ -119,25 +119,21 @@ app.get('/health', (_, res) => {
 
 // Graceful shutdown handler
 const gracefulShutdown = async (signal: string) => {
-  console.log(`\n${signal} received. Starting graceful shutdown...`);
   
   try {
     // End all active sessions
     const activeSessions = await UserSession.find({ isActive: true });
-    console.log(`Ending ${activeSessions.length} active sessions...`);
     
     const endPromises = activeSessions.map(session => 
       AnalyticsService.endSession(session.sessionId, session.userId)
     );
     
     await Promise.allSettled(endPromises);
-    console.log('All sessions ended successfully');
     
     // Close database connections
     await new Promise<void>((resolve) => {
       // Give time for final database operations
       setTimeout(() => {
-        console.log('Graceful shutdown complete');
         resolve();
       }, 1000);
     });
@@ -174,34 +170,28 @@ const startServer = async () => {
 
     // Socket.IO for real-time updates (lock signaling and notifications)
     io.on('connection', (socket) => {
-      console.log('Client connected:', socket.id);
 
       // Join project room for lock updates
       socket.on('join-project', (projectId: string) => {
         socket.join(`project-${projectId}`);
-        console.log(`Socket ${socket.id} joined project-${projectId}`);
       });
 
       // Leave project room
       socket.on('leave-project', (projectId: string) => {
         socket.leave(`project-${projectId}`);
-        console.log(`Socket ${socket.id} left project-${projectId}`);
       });
 
       // Join user notification room
       socket.on('join-user-notifications', (userId: string) => {
         socket.join(`user-${userId}`);
-        console.log(`Socket ${socket.id} joined user-${userId} notifications`);
       });
 
       // Leave user notification room
       socket.on('leave-user-notifications', (userId: string) => {
         socket.leave(`user-${userId}`);
-        console.log(`Socket ${socket.id} left user-${userId} notifications`);
       });
 
       socket.on('disconnect', () => {
-        console.log('Client disconnected:', socket.id);
       });
     });
 
@@ -209,7 +199,6 @@ const startServer = async () => {
     (global as any).io = io;
     
     server.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
     });
     
     // Handle uncaught exceptions

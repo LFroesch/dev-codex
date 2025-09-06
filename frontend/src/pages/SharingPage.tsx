@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { teamAPI } from '../api';
-import type { BaseProject } from '../../../shared/types';
+import type { Project } from '../api/types';
 import TeamManagement from '../components/TeamManagement';
 import ActivityLog from '../components/ActivityLog';
 import ConfirmationModal from '../components/ConfirmationModal';
 
 interface ContextType {
-  selectedProject: BaseProject | null;
+  selectedProject: Project | null;
   onProjectUpdate: (projectId: string, updatedData: any) => Promise<any>;
   onProjectRefresh: () => Promise<void>;
 }

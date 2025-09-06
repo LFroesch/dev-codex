@@ -7,7 +7,7 @@ import type {
   CreateDocData, UpdateDocData, BaseDoc,
   CreateTechnologyData, BaseSelectedTechnology,
   CreatePackageData, BaseSelectedPackage
-} from '../../../shared/types';
+} from './types';
 
 class ProjectService extends BaseApiService {
   constructor() {

@@ -215,7 +215,6 @@ class AnalyticsService {
               restoredSession = true;
             }
           } catch (e) {
-            console.warn('Analytics: Failed to restore session from storage');
           }
         }
         
@@ -315,7 +314,6 @@ class AnalyticsService {
     if (!this.session) {
       await this.startSession();
       if (!this.session) {
-        console.warn('Analytics: Failed to start session, event ignored');
         return;
       }
     }
@@ -343,7 +341,6 @@ class AnalyticsService {
 
   async trackProjectOpen(projectId: string, projectName: string) {
     if (!projectId || !projectName) {
-      console.warn('Analytics: Invalid project data provided');
       return;
     }
     
@@ -518,7 +515,6 @@ class AnalyticsService {
             return;
           }
         } catch (error) {
-          console.warn('Failed to record project switch:', error);
         }
       }
       
@@ -562,7 +558,6 @@ class AnalyticsService {
         throw new Error(`Analytics API error: ${response.status}`);
       }
     } catch (error) {
-      console.warn('Analytics: Failed to send event, adding to pending queue:', error);
       this.pendingEvents.push(event);
     }
   }
@@ -666,13 +661,11 @@ class AnalyticsService {
 
       if (!response.ok) {
         if (response.status === 401 || response.status === 403) {
-          console.warn('Analytics: Session unauthorized, ending session and stopping heartbeat');
           this.isAuthenticated = false;
           this.session = null;
           localStorage.removeItem('analytics_session');
           this.stopHeartbeat();
         } else {
-          console.warn(`Analytics: Heartbeat failed with status ${response.status}`);
         }
       }
     } catch (error) {

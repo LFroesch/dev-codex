@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
+import analyticsService from './services/analytics';
 
 // Lazy load pages
 const LoginPage = lazy(() => import('./pages/LoginPage'));
@@ -64,11 +65,9 @@ const App: React.FC = () => {
         });
         
         // Cleanup analytics service
-        import('./services/analytics').then(({ analyticsService }) => {
-          if (analyticsService && typeof analyticsService.endSession === 'function') {
-            analyticsService.endSession();
-          }
-        });
+        if (analyticsService && typeof analyticsService.endSession === 'function') {
+          analyticsService.endSession();
+        }
       }
     };
   }, []);

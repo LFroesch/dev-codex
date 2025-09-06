@@ -2,10 +2,10 @@ import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { projectAPI } from '../../api/projects';
 import ConfirmationModal from '../ConfirmationModal';
-import type { BaseProject } from '../../../../shared/types';
+import type { Project } from '../../api/types';
 
 interface BackupImportExportProps {
-  selectedProject: BaseProject;
+  selectedProject: Project;
   onProjectRefresh?: () => void;
 }
 

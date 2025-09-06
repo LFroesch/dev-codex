@@ -1,12 +1,12 @@
 import { BaseApiService } from './base';
-import type { BaseTeamMember, BaseProjectInvitation, InviteUserData } from '../../../shared/types';
+import type { TeamMember, ProjectInvitation, InviteUserData } from './types';
 
 class TeamService extends BaseApiService {
   constructor() {
     super('/projects');
   }
 
-  async getMembers(projectId: string): Promise<{ success: boolean; members: BaseTeamMember[] }> {
+  async getMembers(projectId: string): Promise<{ success: boolean; members: TeamMember[] }> {
     return this.get(`/${projectId}/members`);
   }
 
@@ -18,7 +18,7 @@ class TeamService extends BaseApiService {
     return this.delete(`/${projectId}/members/${userId}`);
   }
 
-  async updateMemberRole(projectId: string, userId: string, role: 'editor' | 'viewer'): Promise<{ success: boolean; message: string; member: BaseTeamMember }> {
+  async updateMemberRole(projectId: string, userId: string, role: 'editor' | 'viewer'): Promise<{ success: boolean; message: string; member: TeamMember }> {
     return this.patch(`/${projectId}/members/${userId}`, { role });
   }
 }
@@ -28,7 +28,7 @@ class InvitationService extends BaseApiService {
     super('/invitations');
   }
 
-  async getPending(): Promise<{ success: boolean; invitations: BaseProjectInvitation[] }> {
+  async getPending(): Promise<{ success: boolean; invitations: ProjectInvitation[] }> {
     return this.get('/pending');
   }
 

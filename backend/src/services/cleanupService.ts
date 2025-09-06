@@ -183,7 +183,6 @@ export class CleanupService {
    * Run complete cleanup
    */
   static async runCompleteCleanup() {
-    console.log('Starting database cleanup...');
     
     const results = {
       timestamp: new Date().toISOString(),
@@ -198,7 +197,6 @@ export class CleanupService {
       .filter(r => typeof r === 'object' && r !== null)
       .reduce((sum, r: any) => sum + (r.deleted || 0), 0);
 
-    console.log(`Cleanup completed. Total documents deleted: ${totalDeleted}`);
     
     return {
       ...results,
@@ -447,7 +445,6 @@ export class CleanupService {
    */
   static async emergencyCleanup() {
     try {
-      console.log('Starting emergency cleanup...');
       
       const results = {
         timestamp: new Date().toISOString(),
@@ -467,7 +464,6 @@ export class CleanupService {
         .filter(r => r && typeof r === 'object' && 'deletedCount' in r)
         .reduce((sum, r: any) => sum + r.deletedCount, 0);
 
-      console.log(`Emergency cleanup completed. Total documents deleted: ${totalDeleted}`);
       
       return {
         ...results,

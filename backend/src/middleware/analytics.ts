@@ -80,7 +80,6 @@ export class AnalyticsService {
       // Check daily event limits for plan tier
       const canTrack = await this.checkDailyLimit(userId, planTier);
       if (!canTrack) {
-        console.log(`Daily event limit reached for user ${userId} (${planTier} plan)`);
         return null;
       }
 
@@ -215,7 +214,6 @@ export class AnalyticsService {
           }
         );
         
-        console.log(`Updated analytics retention for user ${userId} (${newPlanTier}) - expires ${expiresAt}`);
       } else {
         // Unlimited retention - remove expiration dates
         await Analytics.updateMany(
@@ -226,7 +224,6 @@ export class AnalyticsService {
           }
         );
         
-        console.log(`Updated analytics retention for user ${userId} (${newPlanTier}) - unlimited`);
       }
     } catch (error) {
       console.error('Error updating user analytics retention:', error);
@@ -237,7 +234,6 @@ export class AnalyticsService {
   static async handleSubscriptionCancellation(userId: string): Promise<void> {
     try {
       await this.updateUserAnalyticsRetention(userId, 'free', 'canceled');
-      console.log(`Converted analytics to free tier for cancelled user: ${userId}`);
     } catch (error) {
       console.error('Error handling subscription cancellation:', error);
     }
@@ -352,7 +348,6 @@ export class AnalyticsService {
           });
         }
         
-        console.log(`Analytics: Saved ${Math.round(timeSpent / 1000)}s for project ${session.currentProjectId} before ending session`);
       }
 
       // Update session with final data
@@ -460,7 +455,6 @@ export class AnalyticsService {
       // Set project start time - always use current time to avoid double counting
       if (newProjectId) {
         session.currentProjectStartTime = now;
-        console.log(`Analytics: Setting project start time to now for session: ${session.sessionId}`);
       } else {
         session.currentProjectStartTime = undefined;
       }

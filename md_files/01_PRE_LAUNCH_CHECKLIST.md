@@ -7,8 +7,8 @@
 - [x] **Optimize deep import paths** - centralized all shared type imports through `frontend/src/api/types.ts`
 
 ### Code Consolidation (DRY Principle)
-- [ ] **Clean index.css** - its a mess
-- [ ] **Extract duplicate color utilities** - `hexToOklch` function duplicated in Layout.tsx and AccountSettingsPage.tsx
+- [x] **Clean index.css** - consolidated from 295→162 lines, organized into sections
+- [x] **Extract duplicate color utilities** - created shared `colorUtils.ts`, removed 150+ lines of duplication
 - [ ] **Create compound API hook** - consolidate `useErrorHandler` + `useLoadingState` patterns
 - [ ] **Standardize button components** - 43 files with repeated `btn btn-*` patterns
 - [ ] **Create route factory** - eliminate boilerplate across 11 backend route files
@@ -81,7 +81,6 @@
 ### System Administration
 - [ ] **Outage notification banner** - system maintenance communication
 - [ ] **Force update mechanism** - critical patch deployment
-- [ ] **Theme cleanup** - remove unused neutral colors (replace with bg-base-300)
 
 ## 🤖 **Phase 6: AI Integration Planning (POST-LAUNCH)**
 

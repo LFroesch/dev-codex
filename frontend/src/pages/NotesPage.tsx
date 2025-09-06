@@ -323,7 +323,7 @@ const NotesPage: React.FC = () => {
 
       {/* Category Navigation */}
       <div className="flex justify-center px-2">
-        <div className="tabs tabs-boxed border-subtle shadow-sm">
+        <div className="tabs tabs-boxed border-2 border-base-content/20 shadow-sm">
           <button 
             className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'notes' ? 'tab-active' : ''}`}
             onClick={() => setActiveSection('notes')}
@@ -358,7 +358,7 @@ const NotesPage: React.FC = () => {
       {activeSection === 'notes' && (
         <div className="space-y-6">
           {/* Compact Create Note Form */}
-          <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200">
+          <div className="border-2 border-base-content/20 rounded-lg mb-4">
             {!showCreateForm ? (
               <button
                 onClick={() => setShowCreateForm(true)}
@@ -451,7 +451,7 @@ const NotesPage: React.FC = () => {
                 ?.map((note) => (
                   <div 
                     key={note.id}
-                    className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 cursor-pointer group flex flex-col"
+                    className="card-interactive group cursor-pointer flex flex-col"
                     onClick={() => handleNoteClick(note)}
                   >
                     <div className="p-4 flex flex-col flex-1">
@@ -497,7 +497,7 @@ const NotesPage: React.FC = () => {
       {activeSection === 'todos' && (
         <div className="space-y-6">
           {/* Compact Create Todo Form */}
-          <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200">
+          <div className="border-2 border-base-content/20 rounded-lg mb-4">
             {!showCreateTodoForm ? (
               <button
                 onClick={() => setShowCreateTodoForm(true)}
@@ -574,7 +574,7 @@ const NotesPage: React.FC = () => {
 
           {/* Todo Filter and Sort Controls */}
           {selectedProject.todos && selectedProject.todos.filter(todo => !todo.parentTodoId).length > 0 && (
-            <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
+            <div className="border-2 border-base-content/20 rounded-lg mb-4 p-4">
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-base-content/80">Sort by:</span>
@@ -645,7 +645,7 @@ const NotesPage: React.FC = () => {
       {activeSection === 'devlog' && (
         <div className="space-y-6">
           {/* Compact Create Dev Log Form */}
-          <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200">
+          <div className="border-2 border-base-content/20 rounded-lg mb-4">
             {!showCreateDevLogForm ? (
               <button
                 onClick={() => setShowCreateDevLogForm(true)}
@@ -737,7 +737,7 @@ const NotesPage: React.FC = () => {
                 ?.map((entry) => (
                   <div 
                     key={entry.id} 
-                    className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 cursor-pointer group h-48 flex flex-col"
+                    className="card-interactive group cursor-pointer h-48 flex flex-col"
                     onClick={() => handleDevLogClick(entry)}
                   >
                     <div className="p-4 flex flex-col flex-1">

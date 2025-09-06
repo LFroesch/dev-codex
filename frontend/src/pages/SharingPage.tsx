@@ -60,7 +60,7 @@ const SharingPage: React.FC = () => {
     <div className="space-y-4">
       {/* Navigation Tabs */}
       <div className="flex justify-center px-2">
-        <div className="tabs tabs-boxed border-subtle shadow-sm">
+        <div className="tabs tabs-boxed border-2 border-base-content/20 shadow-sm">
           <button 
             className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'overview' ? 'tab-active' : ''}`}
             onClick={() => setActiveSection('overview')}

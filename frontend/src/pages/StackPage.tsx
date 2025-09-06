@@ -392,7 +392,7 @@ const StackPage: React.FC = () => {
       <div className="space-y-4">
         {/* Category Navigation */}
         <div className="flex justify-center px-2">
-          <div className="tabs tabs-boxed border-subtle shadow-sm max-w-full overflow-x-auto">
+          <div className="tabs tabs-boxed border-2 border-base-content/20 shadow-sm max-w-full overflow-x-auto">
             {group.categories.map((category) => (
               <button
                 key={category.id}
@@ -525,7 +525,7 @@ const StackPage: React.FC = () => {
 
       {/* Section Navigation */}
       <div className="flex justify-center px-2">
-        <div className="tabs tabs-boxed border-subtle shadow-sm">
+        <div className="tabs tabs-boxed border-2 border-base-content/20 shadow-sm">
           <button 
             className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'add' ? 'tab-active' : ''}`}
             onClick={() => setActiveSection('add')}

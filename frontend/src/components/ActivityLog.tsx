@@ -254,9 +254,9 @@ const ActivityLog: React.FC<ActivityLogProps> = ({
     <div className="space-y-3">
       {showTitle && (
         <div className="flex items-center justify-between">
-          <h3 className="font-semibold">Recent Activity</h3>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-base-content/60">{total} total</span>
+          <h3 className="font-semibold border-thick rounded-lg p-2">Recent Activity</h3>
+          <div className="flex items-center gap-2 border-thick rounded-lg p-2">
+            <span className="text-xs text-base-content/60 bg-success/50 border-thick h-7 rounded-lg p-1">{total} total</span>
             {autoRefresh && (
               <div className="flex items-center gap-1">
                 <div className="w-2 h-2 bg-success rounded-full animate-pulse"></div>
@@ -265,7 +265,7 @@ const ActivityLog: React.FC<ActivityLogProps> = ({
             )}
             <button
               onClick={() => loadActivities(1, false)}
-              className="btn btn-ghost btn-xs"
+              className="btn btn-xs h-7 border-thick bg-warning/50"
               disabled={loading}
             >
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -276,7 +276,7 @@ const ActivityLog: React.FC<ActivityLogProps> = ({
               <>
                 <button
                   onClick={handleClearActivities}
-                  className={`btn btn-xs ${showClearConfirm ? 'btn-error' : 'btn-ghost'}`}
+                  className={`btn btn-xs bg-error/60 border-thick h-7 ${showClearConfirm ? 'btn-error' : 'btn-ghost'}`}
                   disabled={clearing}
                 >
                   {clearing ? (

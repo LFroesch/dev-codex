@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { projectAPI } from '../api';
-import { useLoadingState } from '../hooks/useLoadingState';
-import { useErrorHandler } from '../hooks/useErrorHandler';
 import { toast } from '../services/toast';
 
 const CreateProject: React.FC = () => {
@@ -15,8 +13,8 @@ const CreateProject: React.FC = () => {
     tags: [] as string[],
     stagingEnvironment: 'development' as 'development' | 'staging' | 'production'
   });
-  const { loading, withLoading } = useLoadingState();
-  const { error, handleError, clearError } = useErrorHandler();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Apply theme on mount
   useEffect(() => {
@@ -27,23 +25,30 @@ const CreateProject: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    clearError();
+    setError(null);
+    setLoading(true);
 
     try {
-      await withLoading(async () => {
-        await projectAPI.create({
-          name: formData.name,
-          description: formData.description,
-          category: formData.category,
-          color: formData.color,
-          tags: formData.tags,
-          stagingEnvironment: formData.stagingEnvironment,
-        });
+      await projectAPI.create({
+        name: formData.name,
+        description: formData.description,
+        category: formData.category,
+        color: formData.color,
+        tags: formData.tags,
+        stagingEnvironment: formData.stagingEnvironment,
       });
       toast.success(`Project "${formData.name}" created successfully!`);
       navigate('/');
     } catch (err: any) {
-      handleError(err);
+      let errorMessage = 'An unexpected error occurred';
+      if (err?.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err?.message) {
+        errorMessage = err.message;
+      }
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 

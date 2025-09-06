@@ -241,8 +241,8 @@ const PublicPage: React.FC = () => {
                 <h3 className="text-2xl font-semibold">{selectedProject.name}</h3>
                 <p className="text-base-content/70 mb-2">{selectedProject.description}</p>
                 <div className="flex items-center gap-3">
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${isPublic ? 'bg-success/20 text-success' : 'bg-warning/20 text-warning'}`}>
-                    {isPublic ? '🌐 Public' : '🔒 Private'}
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium text-base-content ${isPublic ? 'bg-success/50' : 'bg-warning/50'}`}>
+                    {isPublic ? 'Public' : 'Private'}
                   </span>
                 </div>
               </div>
@@ -304,25 +304,35 @@ const PublicPage: React.FC = () => {
             <div className="form-control">
               <label className="label cursor-pointer">
                 <div className="flex-1">
-                  <span className="label-text text-lg font-semibold">🔓 Make Project Public</span>
-                  <p className="text-sm text-base-content/60 mt-1">
-                    Enable this to make your project discoverable in the community discover page. 
+                  <p className="text-sm font-semibold text-base-content/60 mt-1">
+                    Toggle your project's visibility in the community discover page.
+                    <br />
                     Others will be able to view your project details, tech stack, and documentation.
                   </p>
-                  {isPublic && (
-                    <p className="text-sm text-success font-medium mt-2">
-                      ✅ Your project is publicly accessible
-                    </p>
-                  )}
                 </div>
-                <input
+                <div className="flex items-center gap-3 h-10 bg-base-200 border-thick rounded-lg p-1">
+                  <input
                   type="checkbox"
-                  className="toggle toggle-primary toggle-lg"
+                  className="toggle toggle-success toggle-lg"
                   checked={isPublic}
                   onChange={(e) => setIsPublic(e.target.checked)}
-                />
+                  id="public-toggle"
+                  />
+                  <label htmlFor="public-toggle" className="font-semibold text-base-content cursor-pointer select-none">
+                  {isPublic ? (
+                    <span className="text-base-content">Public</span>
+                  ) : (
+                    <span className="text-base-content">Private</span>
+                  )}
+                  </label>
+                </div>
               </label>
             </div>
+                  {isPublic && (
+                    <p className="text-sm text-base-content bg-success/50 inline-block rounded-lg p-2 font-medium mt-2">
+                      ☑️ Your project is publicly accessible
+                    </p>
+                  )}
           </div>
         </div>
       )}
@@ -533,40 +543,40 @@ const PublicPage: React.FC = () => {
           <div className="border-2 border-base-content/20 rounded-lg mb-4 p-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-3">
-                <h4 className="font-medium text-success">✅ Always Included</h4>
+                <h4 className="font-medium text-base-content border-thick inline-block p-1 rounded-lg bg-base-200">✅ Always Included</h4>
                 <ul className="space-y-2 text-sm">
                   <li className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-success"></div>
+                    <div className="w-2 h-2 rounded-full bg-base-content"></div>
                     Project name and category
                   </li>
                   <li className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-success"></div>
+                    <div className="w-2 h-2 rounded-full bg-base-content"></div>
                     Project color/theme
                   </li>
                   <li className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-success"></div>
+                    <div className="w-2 h-2 rounded-full bg-base-content"></div>
                     Your name (if profile public)
                   </li>
                 </ul>
               </div>
               
               <div className="space-y-3">
-                <h4 className="font-medium text-error">❌ Never Included</h4>
+                <h4 className="font-medium text-base-content border-thick inline-block p-1 rounded-lg bg-base-200">❌ Never Included</h4>
                 <ul className="space-y-2 text-sm">
                   <li className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-error"></div>
+                    <div className="w-2 h-2 rounded-full bg-base-content"></div>
                     Notes and todos
                   </li>
                   <li className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-error"></div>
+                    <div className="w-2 h-2 rounded-full bg-base-content"></div>
                     Development log entries
                   </li>
                   <li className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-error"></div>
+                    <div className="w-2 h-2 rounded-full bg-base-content"></div>
                     Team member information
                   </li>
                   <li className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-error"></div>
+                    <div className="w-2 h-2 rounded-full bg-base-content"></div>
                     Internal project data
                   </li>
                 </ul>
@@ -578,10 +588,11 @@ const PublicPage: React.FC = () => {
                 <svg className="w-5 h-5 text-info mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <div>
+                <div className="">
                   <h5 className="font-medium text-info mb-1">Privacy & Control</h5>
                   <p className="text-sm text-base-content/70">
-                    Use the visibility controls above to customize what appears on your public page. 
+                    Use the visibility controls above to customize what appears on your public page.
+                    < br />
                     You can disable public sharing at any time. Your private information always remains secure.
                   </p>
                 </div>

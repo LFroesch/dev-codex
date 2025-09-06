@@ -112,7 +112,7 @@ const SharingPage: React.FC = () => {
             <span className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">Sharing Overview</span>
           </h2>
           
-          <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
+          <div className="border-2 border-base-content/20 rounded-lg mb-4 p-4">
             <div className="flex items-center justify-between p-3 bg-base-200 rounded-lg border border-base-content/20">
               <div className="flex items-center gap-3">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
@@ -172,7 +172,7 @@ const SharingPage: React.FC = () => {
             <span className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">Team Management</span>
           </h2>
           
-          <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
+          <div className="border-2 border-base-content/20 rounded-lg mb-4 p-4">
             <TeamManagement 
               projectId={selectedProject.id} 
               canManageTeam={selectedProject.canManageTeam ?? selectedProject.isOwner ?? false}
@@ -190,7 +190,7 @@ const SharingPage: React.FC = () => {
             <span className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">Activity Log</span>
           </h2>
           
-          <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
+          <div className="border-2 border-base-content/20 rounded-lg mb-4 p-4">
             <ActivityLog 
               projectId={selectedProject.id}
             />

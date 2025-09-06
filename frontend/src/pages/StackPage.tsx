@@ -409,7 +409,7 @@ const StackPage: React.FC = () => {
         </div>
 
         {/* Active Category Options */}
-        <div className="bg-base-100 rounded-lg border-subtle shadow-md p-4">
+        <div className="border-2 border-base-content/20 rounded-lg mb-4 p-4">
           <div className="mb-4">
             <h3 className="text-lg font-semibold flex items-center gap-2">
               <span className="text-xl">{activeTab.emoji}</span>
@@ -429,7 +429,7 @@ const StackPage: React.FC = () => {
               return (
                 <div
                   key={option.name}
-                  className={`bg-base-50 rounded-lg border-subtle shadow-sm hover:shadow-md hover:border-primary/30 transition-all duration-200 cursor-pointer p-4 group ${
+                  className={`card-interactive group cursor-pointer p-4 ${
                     selected 
                       ? 'border-primary bg-primary/5 shadow-lg' 
                       : ''
@@ -582,7 +582,7 @@ const StackPage: React.FC = () => {
                   return (
                     <div
                       key={`${categoryId}-${tech.name}`}
-                      className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4 cursor-default group"
+                      className="card-interactive group cursor-default p-4"
                     >
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1">
@@ -608,7 +608,7 @@ const StackPage: React.FC = () => {
                               href={techOption.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-primary hover:bg-error/10 text-sm group-hover:opacity-100 transition-opacity px-2 py-1 rounded-md bg-base-200"
+                              className="btn btn-ghost w-8 btn-sm text-primary hover:bg-primary/10 border border-base-content/20 group-hover:opacity-100 transition-opacity"
                               title="View documentation"
                             >
                               🔗
@@ -616,7 +616,7 @@ const StackPage: React.FC = () => {
                             )}
                           <button
                             onClick={() => handleRemoveTechnology(tech.category, tech.name)}
-                            className={`btn btn-ghost btn-sm text-error hover:bg-error/10 rounded-md bg-base-200 group-hover:opacity-100 transition-opacity ${isLoading ? 'loading' : ''}`}
+                            className={`btn w-8 btn-ghost btn-sm text-error hover:bg-error/10 border border-base-content/20 group-hover:opacity-100 transition-opacity ${isLoading ? 'loading' : ''}`}
                             title='Remove technology'
                             disabled={isLoading}
                           >
@@ -654,7 +654,7 @@ const StackPage: React.FC = () => {
                   return (
                     <div
                       key={`${categoryId}-${pkg.name}`}
-                      className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4 cursor-default group"
+                      className="card-interactive group cursor-default p-4"
                     >
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1">
@@ -680,7 +680,7 @@ const StackPage: React.FC = () => {
                               href={pkgOption.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-primary hover:text-primary/80 text-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                              className="btn btn-ghost btn-sm text-primary hover:bg-primary/10 border border-base-content/20 opacity-0 group-hover:opacity-100 transition-opacity"
                               title="View documentation"
                             >
                               🔗
@@ -688,7 +688,7 @@ const StackPage: React.FC = () => {
                           )}
                           <button
                             onClick={() => handleRemoveTechnology(pkg.category, pkg.name)}
-                            className={`btn btn-ghost btn-sm text-error hover:bg-error/10 opacity-0 group-hover:opacity-100 transition-opacity ${isLoading ? 'loading' : ''}`}
+                            className={`btn btn-ghost btn-sm text-error hover:bg-error/10 border border-base-content/20 opacity-0 group-hover:opacity-100 transition-opacity ${isLoading ? 'loading' : ''}`}
                             disabled={isLoading}
                           >
                             {isLoading ? '' : '×'}
@@ -713,7 +713,7 @@ const StackPage: React.FC = () => {
       {activeSection === 'add' && (
         <div className="space-y-6">
           {/* Combined Selection Panel */}
-          <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-6">
+          <div className="border-2 border-base-content/20 rounded-lg mb-4 p-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Platform Selection */}
               <div>

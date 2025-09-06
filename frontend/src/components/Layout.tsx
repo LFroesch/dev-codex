@@ -1279,8 +1279,8 @@ const Layout: React.FC = () => {
                                   className="w-4 h-4 rounded-full flex-shrink-0 border-2 border-white/50 shadow-sm"
                                   style={{ backgroundColor: project.color }}
                                 ></div>
-                                <h3 className={`font-semibold text-base truncate px-2 py-1 rounded-md group-hover:text-primary ${
-                                  selectedProject?.id === project.id ? 'bg-primary text-primary-content' : 'bg-base-300 text-base-content'
+                                <h3 className={`font-semibold text-base truncate px-2 py-1 rounded-md ${
+                                  selectedProject?.id === project.id ? 'group-hover:text-secondary bg-primary text-primary-content' : 'group-hover:text-primary bg-base-300 text-base-content'
                                 }`}>
                                   {project.name}
                                 </h3>
@@ -1406,7 +1406,7 @@ const Layout: React.FC = () => {
                                   style={{ backgroundColor: project.color }}
                                 ></div>
                                 <h3 className={`font-semibold group-hover:text-primary text-base truncate px-2 py-1 rounded-md ${
-                                  selectedProject?.id === project.id ? 'bg-primary text-primary-content' : 'bg-base-300 text-base-content'
+                                  selectedProject?.id === project.id ? 'group-hover:text-secondary bg-primary text-primary-content' : 'group-hover:text-primary bg-base-300 text-base-content'
                                 }`}>
                                   {project.name}
                                 </h3>
@@ -1531,7 +1531,7 @@ const Layout: React.FC = () => {
                                   style={{ backgroundColor: project.color }}
                                 ></div>
                                 <h3 className={`font-semibold group-hover:text-primary text-base truncate px-2 py-1 rounded-md ${
-                                  selectedProject?.id === project.id ? 'bg-primary text-primary-content' : 'bg-base-300 text-base-content'
+                                  selectedProject?.id === project.id ? 'group-hover:text-secondary bg-primary text-primary-content' : 'group-hover:text-primary bg-base-300 text-base-content'
                                 }`}>
                                   {project.name}
                                 </h3>
@@ -1709,7 +1709,7 @@ const Layout: React.FC = () => {
                 </div>
               ) : (
                 <div className="flex items-center justify-center min-h-[50vh] h-full">
-                  <div className="text-center bg-base-100 rounded-xl p-12 border-2 border-base-content/20 shadow-lg max-w-md mx-auto">
+                  <div className="text-center bg-base-100 rounded-xl p-12 border-thick shadow-lg max-w-md mx-auto">
                     <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-full flex items-center justify-center">
                       <svg className="w-10 h-10 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />

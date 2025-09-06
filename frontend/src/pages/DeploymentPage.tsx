@@ -152,7 +152,7 @@ const DeploymentPage: React.FC = () => {
 
       {/* Section Content */}
       {activeSection === 'overview' && (
-        <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
+        <div className="border-2 border-base-content/20 rounded-lg mb-4 p-4">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <span className="text-xl">📊</span>
@@ -232,7 +232,7 @@ const DeploymentPage: React.FC = () => {
       )}
 
       {activeSection === 'basic' && (
-        <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
+        <div className="border-2 border-base-content/20 rounded-lg mb-4 p-4">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <span className="text-xl">📋</span>
@@ -306,7 +306,7 @@ const DeploymentPage: React.FC = () => {
       )}
 
       {activeSection === 'build' && (
-        <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
+        <div className="border-2 border-base-content/20 rounded-lg mb-4 p-4">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <span className="text-xl">⚙️</span>
@@ -383,7 +383,7 @@ const DeploymentPage: React.FC = () => {
       )}
 
       {activeSection === 'env' && (
-        <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
+        <div className="border-2 border-base-content/20 rounded-lg mb-4 p-4">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <span className="text-xl">🔐</span>
@@ -454,7 +454,7 @@ const DeploymentPage: React.FC = () => {
       )}
 
       {activeSection === 'notes' && (
-        <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
+        <div className="border-2 border-base-content/20 rounded-lg mb-4 p-4">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <span className="text-xl">📝</span>

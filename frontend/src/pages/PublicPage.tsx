@@ -229,7 +229,7 @@ const PublicPage: React.FC = () => {
             </h2>
           </div>
           
-          <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 p-4">
+          <div className="border-2 border-base-content/20 rounded-lg mb-4 p-4">
             <div className="flex items-center gap-4 mb-4">
               <div 
                 className="w-16 h-16 rounded-lg flex items-center justify-center text-2xl font-bold text-white"
@@ -300,7 +300,7 @@ const PublicPage: React.FC = () => {
             </button>
           </div>
           
-          <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
+          <div className="border-2 border-base-content/20 rounded-lg mb-4 p-4">
             <div className="form-control">
               <label className="label cursor-pointer">
                 <div className="flex-1">
@@ -353,7 +353,7 @@ const PublicPage: React.FC = () => {
             </button>
           </div>
           
-          <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4 space-y-4">
+          <div className="bg-base-100 rounded-lg border-thick shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4 space-y-4">
             {/* Custom Slug */}
             <div className="form-control">
               <label className="label">
@@ -484,7 +484,7 @@ const PublicPage: React.FC = () => {
             </button>
           </div>
           
-          <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
+          <div className="border-2 border-base-content/20 rounded-lg mb-4 p-4">
             <p className="text-sm text-base-content/60 mb-4">
               Choose what information to include on your public project page.
             </p>
@@ -505,7 +505,7 @@ const PublicPage: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
               {Object.entries(visibilityOptions).map(([key, checked]) => (
-                <label key={key} className="label cursor-pointer justify-start p-2 border border-base-content/10 rounded-lg hover:bg-base-200/50">
+                <label key={key} className="label cursor-pointer justify-start p-2 card-interactive">
                   <input
                     type="checkbox"
                     className="checkbox checkbox-primary checkbox-sm mr-3"
@@ -530,7 +530,7 @@ const PublicPage: React.FC = () => {
             <span className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">Privacy Information</span>
           </h2>
           
-          <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
+          <div className="border-2 border-base-content/20 rounded-lg mb-4 p-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-3">
                 <h4 className="font-medium text-success">✅ Always Included</h4>

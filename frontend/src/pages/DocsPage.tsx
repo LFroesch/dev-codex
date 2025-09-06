@@ -328,7 +328,7 @@ React App:
       {/* Tab Content */}
       {activeTemplateCategory === 'create-new' ? (
         // Create New Template Content
-        <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
+        <div className="border-2 border-base-content/20 rounded-lg mb-4 p-4">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <span className="text-xl">📝</span>
@@ -414,7 +414,7 @@ React App:
 
           {/* Template Categories Content */}
           {categoriesWithDocs.length > 0 && (
-            <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
+            <div className="border-2 border-base-content/20 rounded-lg mb-4 p-4">
                 <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                   <span className="text-xl">
                     {activeTemplateCategory === 'all' ? '📚' : categoriesWithDocs.find(c => c.value === activeTemplateCategory)?.emoji}
@@ -435,7 +435,7 @@ React App:
                         const isEditing = editingDoc === doc.id;
                         const docType = docTypes.find(t => t.value === doc.type);
                         return (
-                          <div key={doc.id} className="bg-base-100 rounded-lg border border-base-content/20 hover:border-primary/30 transition-all duration-200 p-3">
+                          <div key={doc.id} className="card-interactive group p-3">
                               {/* Header with title and controls */}
                               <div className="flex items-center justify-between">
                                 <button

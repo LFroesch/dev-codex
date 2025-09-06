@@ -231,7 +231,7 @@ const SettingsPage: React.FC = () => {
             <span className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">Project Overview</span>
           </h2>
           
-          <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
+          <div className="border-2 border-base-content/20 rounded-lg mb-4 p-4">
             <div className="flex items-center gap-4 mb-4">
               <div 
                 className="w-16 h-16 rounded-lg flex items-center justify-center text-2xl font-bold text-white"
@@ -314,7 +314,7 @@ const SettingsPage: React.FC = () => {
             <span className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">Project Information</span>
           </h2>
           
-          <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
+          <div className="border-2 border-base-content/20 rounded-lg mb-4 p-4">
           {/* Basic Info Section */}
           <div className="pt-4">
             <div className="flex justify-between items-center mb-3">
@@ -358,12 +358,12 @@ const SettingsPage: React.FC = () => {
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="input input-bordered input-sm text-base-content/40 w-full"
+                    className="input input-bordered input-sm text-base-content/40 w-full h-10"
                     placeholder="Enter project name..."
                     required
                   />
                 ) : (
-                  <div className="p-2 bg-base-200 rounded border border-base-300">
+                  <div className="p-2 border-thick rounded-lg h-10">
                     <p className="font-medium text-sm">{name}</p>
                   </div>
                 )}
@@ -378,13 +378,13 @@ const SettingsPage: React.FC = () => {
                     type="text"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    className="input input-bordered input-sm text-base-content/40 w-full"
+                    className="input input-bordered input-sm text-base-content/40 w-full h-10"
                     placeholder="Enter project description..."
                     required
                   />
                 ) : (
-                  <div className="p-2 bg-base-200 rounded border border-base-300">
-                    <p className="text-sm">{description}</p>
+                  <div className="p-2 rounded-lg border-thick">
+                    <p className="font-medium text-sm">{description}</p>
                   </div>
                 )}
               </div>
@@ -432,23 +432,23 @@ const SettingsPage: React.FC = () => {
                   <span className="label-text font-medium text-sm">Project Color</span>
                 </label>
                 {isEditingMetadata ? (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center h-10 gap-1">
                     <input
                       type="color"
                       value={color}
                       onChange={(e) => setColor(e.target.value)}
-                      className="w-8 h-8 border border-base-300 rounded cursor-pointer flex-shrink-0"
+                      className="w-10 h-10 border-2 border-base-content/20 rounded cursor-pointer flex-shrink-0"
                     />
                     <input
                       type="text"
                       value={color}
                       onChange={(e) => setColor(e.target.value)}
-                      className="input input-bordered input-sm text-base-content/40 flex-1 font-mono text-xs text-base-content/40"
+                      className="input input-bordered input-sm w-28 font-mono text-xs text-base-content/40 h-10"
                       placeholder="#3B82F6"
                     />
                   </div>
                 ) : (
-                  <div className="p-2 bg-base-200 rounded border border-base-300">
+                  <div className="p-2 border-thick rounded-lg h-10 flex items-center">
                     <div className="flex items-center gap-2">
                       <div 
                         className="w-6 h-6 rounded border border-base-300 flex-shrink-0"
@@ -469,12 +469,12 @@ const SettingsPage: React.FC = () => {
                     type="text"
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
-                    className="input input-bordered input-sm text-base-content/40 w-full h-8"
+                    className="input input-bordered input-sm text-base-content/40 w-full h-10"
                     placeholder="Enter category..."
                   />
                 ) : (
-                  <div className="p-2 bg-base-200 rounded border border-base-300">
-                    <p className="text-sm translate-y-0.5 h-6">{category}</p>
+                  <div className="p-2 border-thick rounded-lg h-10 flex items-center">
+                    <p className="text-sm">{category}</p>
                   </div>
                 )}
               </div>
@@ -487,14 +487,14 @@ const SettingsPage: React.FC = () => {
                   <select
                     value={stagingEnvironment}
                     onChange={(e) => setStagingEnvironment(e.target.value as 'development' | 'staging' | 'production')}
-                    className="select select-bordered select-sm w-full"
+                    className="select select-bordered select-sm w-full h-10"
                   >
                     <option value="development">Development</option>
                     <option value="staging">Staging</option>
                     <option value="production">Production</option>
                   </select>
                 ) : (
-                  <div className="p-2 bg-base-200 rounded border border-base-300">
+                  <div className="p-2 border-thick rounded-lg h-10 flex items-center">
                     <span className={`badge badge-sm h-6 ${
                       stagingEnvironment === 'production' ? 'badge-error' :
                       stagingEnvironment === 'staging' ? 'badge-warning' :
@@ -517,7 +517,7 @@ const SettingsPage: React.FC = () => {
                         type="text"
                         value={newTag}
                         onChange={(e) => setNewTag(e.target.value)}
-                        className="input input-bordered input-sm text-base-content/40 flex-1"
+                        className="input input-bordered input-sm text-base-content/40 flex-1 h-10"
                         placeholder="Add tag..."
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
@@ -550,7 +550,7 @@ const SettingsPage: React.FC = () => {
                     </div>
                   </div>
                 ) : (
-                  <div className="p-2 bg-base-200 rounded border border-base-300 min-h-[2rem]">
+                  <div className="p-2 border-thick rounded-lg h-10 flex items-start overflow-y-auto">
                     <div className="flex flex-wrap gap-1">
                       {tags.length === 0 ? (
                         <span className="text-base-content/60 italic text-xs translate-y-1 h-6">No tags</span>
@@ -648,7 +648,7 @@ const SettingsPage: React.FC = () => {
             <span className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">Export & Import</span>
           </h2>
           
-          <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
+          <div className="border-2 border-base-content/20 rounded-lg mb-4 p-4">
             <ExportSection selectedProject={selectedProject} onProjectRefresh={onProjectRefresh} />
           </div>
         </div>
@@ -662,7 +662,7 @@ const SettingsPage: React.FC = () => {
             <span className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">Danger Zone</span>
           </h2>
           
-          <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
+          <div className="border-2 border-base-content/20 rounded-lg mb-4 p-4">
             <div className="space-y-4">
               <div className={`p-4 ${!selectedProject.isArchived ? 'bg-warning/10 border-warning/20' : 'bg-info/10 border-info/20'} rounded-lg border`}>
                 <h4 className={`font-semibold ${!selectedProject.isArchived ? 'text-warning' : 'text-info'} mb-2`}>{selectedProject.isArchived ? 'Unarchive Project' : 'Archive Project'}</h4>

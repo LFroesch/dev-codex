@@ -104,6 +104,10 @@ body {
   .border-subtle {
     @apply border border-base-content/10;
   }
+
+  .border-thick {
+    @apply border-2 border-base-content/20;
+  }
   
   .card-default {
     @apply card bg-base-100 shadow;
@@ -135,6 +139,24 @@ body {
   
   .card-interactive-selected {
     @apply border-2 transition-all duration-200 text-left shadow-md hover:shadow-lg bg-base-100 rounded-lg border-primary bg-primary/5;
+  }
+
+  /* URL & Preview Section Styling */
+  .url-preview-section {
+    @apply border-2 border-base-content/20 rounded-lg mb-4 p-4 bg-base-50;
+  }
+
+  /* Form Input Styling - Override DaisyUI defaults */
+  .input-thick-border, 
+  .textarea-thick-border {
+    @apply border-2 border-base-content/20;
+  }
+
+  /* Apply thick borders to all inputs and textareas by default */
+  .input-bordered,
+  .textarea-bordered,
+  .select-bordered {
+    @apply border-2 border-base-content/20;
   }
 }
 

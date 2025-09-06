@@ -1,5 +1,5 @@
 import { BaseApiService } from './base';
-import type { BaseNotification } from '../../../shared/types';
+import type { Notification } from './types';
 
 class NotificationService extends BaseApiService {
   constructor() {
@@ -8,7 +8,7 @@ class NotificationService extends BaseApiService {
 
   async getNotifications(params?: { limit?: number; skip?: number; unread_only?: boolean }): Promise<{ 
     success: boolean; 
-    notifications: BaseNotification[]; 
+    notifications: Notification[]; 
     unreadCount: number; 
     total: number; 
   }> {
@@ -21,7 +21,7 @@ class NotificationService extends BaseApiService {
     return this.get(queryString ? `?${queryString}` : '');
   }
 
-  async markAsRead(notificationId: string): Promise<{ success: boolean; notification: BaseNotification }> {
+  async markAsRead(notificationId: string): Promise<{ success: boolean; notification: Notification }> {
     return this.patch(`/${notificationId}/read`);
   }
 
@@ -39,7 +39,7 @@ class NotificationService extends BaseApiService {
 
   async getInvitationNotification(invitationId: string): Promise<{ 
     success: boolean; 
-    notification: BaseNotification; 
+    notification: Notification; 
     invitation: any; 
     project: any; 
   }> {

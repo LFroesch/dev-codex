@@ -211,7 +211,6 @@ const DeploymentPage: React.FC = () => {
                 className="btn btn-primary btn-sm gap-2"
                 onClick={(e) => {
                   const url = deploymentData.liveUrl?.startsWith('http') ? deploymentData.liveUrl : `https://${deploymentData.liveUrl}`;
-                  console.log('Opening URL:', url);
                   if (!url || url === 'https://') {
                     e.preventDefault();
                     alert('Please enter a valid URL first');

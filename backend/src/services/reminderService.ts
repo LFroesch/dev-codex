@@ -17,21 +17,17 @@ class ReminderService {
 
   public initialize(): void {
     if (this.isInitialized) {
-      console.log('Reminder service already initialized');
       return;
     }
 
-    console.log('Initializing reminder service...');
 
     // Check for due/overdue todos every 15 minutes
     cron.schedule('*/15 * * * *', () => {
-      console.log('Running checkDueTodos cron job...');
       this.checkDueTodos();
     });
 
     // Check for reminder notifications every 5 minutes
     cron.schedule('*/5 * * * *', () => {
-      console.log('Running checkReminderNotifications cron job...');
       this.checkReminderNotifications();
     });
 
@@ -41,7 +37,6 @@ class ReminderService {
     });
 
     this.isInitialized = true;
-    console.log('Reminder service initialized with cron jobs');
   }
 
   private async checkDueTodos(): Promise<void> {
@@ -77,7 +72,6 @@ class ReminderService {
               relatedTodoId: todo.id,
               actionUrl: `/projects/${project._id}`
             });
-            console.log(`Created overdue notification for todo "${todo.text}"`);
           }
 
           // Send due soon notification
@@ -91,7 +85,6 @@ class ReminderService {
               relatedTodoId: todo.id,
               actionUrl: `/projects/${project._id}`
             });
-            console.log(`Created due soon notification for todo "${todo.text}"`);
           }
         }
       }
@@ -133,7 +126,6 @@ class ReminderService {
                   relatedTodoId: todo.id,
                   actionUrl: `/projects/${project._id}`
                 });
-                console.log(`Created reminder notification for todo "${todo.text}"`);
               }
             }
           }
@@ -159,7 +151,6 @@ class ReminderService {
                   relatedTodoId: todo.id,
                   actionUrl: `/projects/${project._id}`
                 });
-                console.log(`Created due soon notification for todo "${todo.text}"`);
               }
             }
           }
@@ -225,7 +216,6 @@ class ReminderService {
             message: message.trim(),
             actionUrl: '/projects'
           });
-          console.log(`Created daily summary notification for user ${user._id}`);
         }
       }
 
@@ -255,7 +245,6 @@ class ReminderService {
 
   // Public method to manually trigger checks (for testing)
   public async triggerChecks(): Promise<void> {
-    console.log('Manually triggering notification checks...');
     await this.checkDueTodos();
     await this.checkReminderNotifications();
   }
@@ -263,7 +252,6 @@ class ReminderService {
   public stop(): void {
     // Note: node-cron doesn't provide a direct way to stop specific tasks
     // This would need to be implemented if needed
-    console.log('Reminder service stopping...');
     this.isInitialized = false;
   }
 }

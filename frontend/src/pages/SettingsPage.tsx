@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
-import type { BaseProject } from '../../../shared/types';
+import type { Project } from '../api/types';
 import ExportSection from '../components/ExportSection';
 import ConfirmationModal from '../components/ConfirmationModal';
 
 interface ContextType {
-  selectedProject: BaseProject | null;
+  selectedProject: Project | null;
   onProjectUpdate: (projectId: string, updatedData: any) => Promise<any>;
   onProjectArchive: (projectId: string, isArchived: boolean) => Promise<void>;
   onProjectDelete: (projectId: string) => Promise<void>;

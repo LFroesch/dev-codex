@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { BaseProject } from '../../../shared/types';
+import type { Project } from '../api/types';
 import BackupImportExport from './export/BackupImportExport';
 import ExportOptionsSelector from './export/ExportOptionsSelector';
 import ExportResult from './export/ExportResult';
@@ -11,7 +11,7 @@ import {
 } from '../utils/exportGenerators';
 
 interface ExportSectionProps {
-  selectedProject: BaseProject;
+  selectedProject: Project;
   onProjectRefresh?: () => void;
 }
 

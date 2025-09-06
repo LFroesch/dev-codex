@@ -1,5 +1,5 @@
 import { BaseApiService } from './base';
-import type { AuthResponse, LoginData, RegisterData, BaseUser } from '../../../shared/types';
+import type { AuthResponse, LoginData, RegisterData, User } from './types';
 
 class AuthService extends BaseApiService {
   constructor() {
@@ -18,11 +18,11 @@ class AuthService extends BaseApiService {
     return this.post('/logout');
   }
 
-  async getMe(): Promise<{ user: BaseUser }> {
+  async getMe(): Promise<{ user: User }> {
     return this.get('/me');
   }
 
-  async updateTheme(theme: string): Promise<{ message: string; user: BaseUser }> {
+  async updateTheme(theme: string): Promise<{ message: string; user: User }> {
     return this.patch('/theme', { theme });
   }
 
@@ -34,7 +34,7 @@ class AuthService extends BaseApiService {
     return this.delete('/google/unlink');
   }
 
-  async updateProfile(data: { bio?: string; [key: string]: any }): Promise<{ message: string; user: BaseUser }> {
+  async updateProfile(data: { bio?: string; [key: string]: any }): Promise<{ message: string; user: User }> {
     return this.patch('/profile', data);
   }
 

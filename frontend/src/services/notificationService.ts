@@ -37,7 +37,6 @@ class NotificationService {
 
   private connect() {
     if (this.socket?.connected) {
-      console.log('Notification service already connected');
       return;
     }
 
@@ -121,7 +120,6 @@ class NotificationService {
   // Public method to initialize the service with user authentication
   public async initialize(userId?: string): Promise<void> {
     if (this.isInitialized) {
-      console.log('Notification service already initialized');
       return;
     }
     
@@ -135,7 +133,6 @@ class NotificationService {
       }
       
       if (!userId) {
-        console.warn('Cannot initialize notification service: no user ID available');
         return;
       }
       
@@ -152,7 +149,6 @@ class NotificationService {
 
   private async fetchNotifications() {
     if (!this.isInitialized || !this.currentUserId) {
-      console.warn('Cannot fetch notifications: service not initialized');
       return;
     }
     

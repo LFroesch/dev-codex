@@ -41,7 +41,6 @@ class NotificationService {
       // Emit real-time event to user's notification room
       this.emitNotificationEvent('notification-created', data.userId.toString(), populatedNotification);
 
-      console.log(`Created ${data.type} notification for user ${data.userId}`);
       return notification;
     } catch (error) {
       console.error('Error creating notification:', error);
@@ -196,9 +195,7 @@ class NotificationService {
       const io = (global as any).io;
       if (io) {
         io.to(`user-${userId}`).emit(event, data);
-        console.log(`Emitted ${event} to user-${userId}`);
       } else {
-        console.warn('Socket.IO instance not available for notification event');
       }
     } catch (error) {
       console.error('Error emitting notification event:', error);
@@ -226,7 +223,6 @@ class NotificationService {
         this.emitNotificationEvent('notification-created', originalData.userId.toString(), populatedNotification);
       }
 
-      console.log(`Created ${createdNotifications.length} bulk notifications`);
       return createdNotifications as INotification[];
     } catch (error) {
       console.error('Error creating bulk notifications:', error);

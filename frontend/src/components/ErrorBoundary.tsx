@@ -1,4 +1,5 @@
 import { Component, ReactNode, ErrorInfo } from 'react';
+import analyticsService from '../services/analytics';
 
 interface Props {
   children: ReactNode;
@@ -31,17 +32,15 @@ class ErrorBoundary extends Component<Props, State> {
 
     // Log to analytics service if available
     try {
-      import('../services/analytics').then(({ analyticsService }) => {
-        if (analyticsService && typeof analyticsService.trackError === 'function') {
-          analyticsService.trackError({
-            name: error.name,
-            message: error.message,
-            stack: error.stack || undefined,
-            componentStack: errorInfo.componentStack || undefined,
-            errorBoundary: true
-          });
-        }
-      });
+      if (analyticsService && typeof analyticsService.trackError === 'function') {
+        analyticsService.trackError({
+          name: error.name,
+          message: error.message,
+          stack: error.stack || undefined,
+          componentStack: errorInfo.componentStack || undefined,
+          errorBoundary: true
+        });
+      }
     } catch (e) {
       // Fail silently if analytics service is not available
     }

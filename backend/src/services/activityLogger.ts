@@ -350,7 +350,6 @@ class ActivityLogger {
 
       // If they already joined in this session, don't log again
       if (existingJoin) {
-        console.log(`User ${userId} already joined project ${projectId} in session ${sessionId}, skipping duplicate log`);
         return null;
       }
 

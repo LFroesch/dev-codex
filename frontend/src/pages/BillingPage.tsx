@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../api';
 import ConfirmationModal from '../components/ConfirmationModal';
+import { toast } from '../services/toast';
 
 interface BillingInfo {
   planTier: 'free' | 'pro' | 'enterprise';
@@ -20,8 +21,6 @@ const BillingPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [cancelLoading, setCancelLoading] = useState(false);
   const [resumeLoading, setResumeLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   const { data: billingInfo, refetch } = useQuery({
@@ -82,8 +81,6 @@ const BillingPage: React.FC = () => {
 
   const handleUpgrade = async (planTier: 'pro' | 'enterprise') => {
     setLoading(true);
-    setError(null);
-    setSuccess(null);
     
     try {
       const response = await apiClient.post('/billing/create-checkout-session', {
@@ -96,7 +93,7 @@ const BillingPage: React.FC = () => {
     } catch (error: any) {
       console.error('Failed to create checkout session:', error);
       const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Failed to start checkout process. Please try again.';
-      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -104,18 +101,16 @@ const BillingPage: React.FC = () => {
 
   const handleCancelSubscription = async () => {
     setCancelLoading(true);
-    setError(null);
-    setSuccess(null);
     setShowCancelConfirm(false);
     
     try {
       const response = await apiClient.post('/billing/cancel-subscription');
-      setSuccess(response.data.message || 'Subscription canceled. You will retain access until the end of your billing period.');
+      toast.success(response.data.message || 'Subscription canceled. You will retain access until the end of your billing period.');
       refetch();
     } catch (error: any) {
       console.error('Failed to cancel subscription:', error);
       const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Failed to cancel subscription. Please try again.';
-      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setCancelLoading(false);
     }
@@ -123,17 +118,15 @@ const BillingPage: React.FC = () => {
 
   const handleResumeSubscription = async () => {
     setResumeLoading(true);
-    setError(null);
-    setSuccess(null);
     
     try {
       const response = await apiClient.post('/billing/resume-subscription');
-      setSuccess(response.data.message || 'Subscription resumed successfully!');
+      toast.success(response.data.message || 'Subscription resumed successfully!');
       refetch();
     } catch (error: any) {
       console.error('Failed to resume subscription:', error);
       const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Failed to resume subscription. Please try again.';
-      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setResumeLoading(false);
     }
@@ -167,34 +160,6 @@ const BillingPage: React.FC = () => {
           <div className="hidden sm:block w-32"></div> {/* Spacer for centering */}
         </div>
 
-        {/* Error/Success Notifications */}
-        {error && (
-          <div className="alert alert-error mb-6 shadow-lg">
-            <svg className="icon-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
-            <span>{error}</span>
-            <button onClick={() => setError(null)} className="btn btn-ghost btn-sm">
-              <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        )}
-
-        {success && (
-          <div className="alert alert-success mb-6 shadow-lg">
-            <svg className="icon-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span>{success}</span>
-            <button onClick={() => setSuccess(null)} className="btn btn-ghost btn-sm">
-              <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        )}
 
         {/* Current Plan Status */}
         {billingInfo && (
@@ -219,8 +184,8 @@ const BillingPage: React.FC = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div className="stat bg-base-200 rounded-lg">
-                  <div className="stat-title">Project Limit</div>
-                  <div className="stat-value text-2xl">
+                  <div className="stat-title mb-1">Project Limit</div>
+                  <div className="stat-value mb-2 text-2xl">
                     {billingInfo.projectLimit === -1 ? '∞' : billingInfo.projectLimit}
                   </div>
                   <div className="stat-desc">
@@ -229,20 +194,20 @@ const BillingPage: React.FC = () => {
                 </div>
 
                 <div className="stat bg-base-200 rounded-lg">
-                  <div className="stat-title">Status</div>
-                  <div className="stat-value text-2xl capitalize">
+                  <div className="stat-title mb-2">Status</div>
+                  <div className="stat-value text-xl capitalize">
                     {billingInfo.subscriptionStatus === 'active' ? (
-                      <span className="text-success">Active</span>
+                      <span className="text-base-content border-thick rounded-lg p-1 bg-success/70">Active</span>
                     ) : (
-                      <span className="text-warning">{billingInfo.subscriptionStatus}</span>
+                      <span className="text-base-content border-thick rounded-lg p-1 bg-warning/50">{billingInfo.subscriptionStatus}</span>
                     )}
                   </div>
-                  <div className="stat-desc">Subscription status</div>
+                  <div className="stat-desc mt-2">Subscription status</div>
                 </div>
 
                 {billingInfo.nextBillingDate && (
                   <div className="stat bg-base-200 rounded-lg">
-                    <div className="stat-title">
+                    <div className="stat-title mb-2">
                       {billingInfo.cancelAtPeriodEnd ? 'Access Ends' : 'Renewal Date'}
                     </div>
                     <div className="stat-value text-lg">
@@ -252,7 +217,7 @@ const BillingPage: React.FC = () => {
                         year: 'numeric'
                       })}
                     </div>
-                    <div className="stat-desc">
+                    <div className="stat-desc mt-2">
                       {billingInfo.cancelAtPeriodEnd ? 'Plan expires on this date' : 'Next renewal & charge date'}
                     </div>
                   </div>
@@ -265,7 +230,7 @@ const BillingPage: React.FC = () => {
                       <button 
                         onClick={() => setShowCancelConfirm(true)}
                         disabled={cancelLoading}
-                        className="btn btn-outline btn-error btn-sm"
+                        className="-mt-2 btn btn-outline btn-error btn-sm"
                       >
                         {cancelLoading ? (
                           <>
@@ -324,11 +289,8 @@ const BillingPage: React.FC = () => {
               {!billingInfo.cancelAtPeriodEnd && billingInfo.hasActiveSubscription && billingInfo.nextBillingDate && (
                 <div className="mt-6 p-4 bg-base-200 border border-base-content/20 rounded-lg">
                   <div className="flex items-start gap-3">
-                    <svg className="icon-md text-success mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
                     <div>
-                      <h4 className="font-semibold text-success mb-1">Active Subscription</h4>
+                      <h4 className="text-lg font-bold text-base-content mb-2 bg-success/70 border-thick rounded-lg inline-block p-1">Active Subscription</h4>
                       <p className="text-sm text-base-content/80">
                         Your {billingInfo.planTier} plan will automatically renew on{' '}
                         <strong>

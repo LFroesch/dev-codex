@@ -87,7 +87,6 @@ router.post('/session/start', requireAuth, async (req: AuthRequest, res) => {
         timestamp: new Date()
       });
       
-      console.log(`Restored existing session for user ${req.userId}: ${existingSession.sessionId}`);
       res.json({ sessionId: existingSession.sessionId });
     } else {
       // Create new session
@@ -204,7 +203,6 @@ router.post('/project/switch', requireAuth, async (req: AuthRequest, res) => {
       if (!session.currentProjectStartTime) {
         // This is the first project set for this session, use session start time
         session.currentProjectStartTime = session.startTime;
-        console.log(`Analytics: Setting project start time to session start for new session: ${session.sessionId}`);
       } else {
         // This is a project switch, use current time
         session.currentProjectStartTime = now;

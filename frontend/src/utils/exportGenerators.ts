@@ -1,4 +1,4 @@
-import type { BaseProject } from '../../../shared/types';
+import type { Project } from '../api/types';
 
 export interface ExportOptions {
   basicInfo: boolean;
@@ -17,7 +17,7 @@ export interface ExportOptions {
 
 export type ExportFormat = 'json' | 'prompt' | 'markdown';
 
-export function generateExportData(selectedProject: BaseProject, exportOptions: ExportOptions): any {
+export function generateExportData(selectedProject: Project, exportOptions: ExportOptions): any {
   const data: any = {};
 
   if (exportOptions.basicInfo) {
@@ -92,7 +92,7 @@ export function generateJsonFormat(data: any): string {
   }
 }
 
-export function generatePromptFormat(data: any, selectedProject: BaseProject, customAiRequest: string = ''): string {
+export function generatePromptFormat(data: any, selectedProject: Project, customAiRequest: string = ''): string {
   const requestSection = customAiRequest.trim() 
     ? customAiRequest 
     : `[Please replace this text with what you need help with regarding this project. For example:
@@ -286,7 +286,7 @@ ${noteContent}`;
   return prompt;
 }
 
-export function generateMarkdownFormat(data: any, selectedProject: BaseProject): string {
+export function generateMarkdownFormat(data: any, selectedProject: Project): string {
   let markdown = `# ${selectedProject.name}\n\n`;
 
   if (data.basicInfo) {
@@ -373,7 +373,7 @@ export function generateMarkdownFormat(data: any, selectedProject: BaseProject):
   return markdown;
 }
 
-export function formatExportData(data: any, format: ExportFormat, selectedProject: BaseProject, customAiRequest?: string): string {
+export function formatExportData(data: any, format: ExportFormat, selectedProject: Project, customAiRequest?: string): string {
   switch (format) {
     case 'json':
       return generateJsonFormat(data);

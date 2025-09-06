@@ -1,3 +1,6 @@
+import analyticsService from './analytics';
+import { toast } from './toast';
+
 interface ErrorContext {
   component?: string;
   action?: string;
@@ -56,36 +59,29 @@ class ErrorService {
       console.group(`🚨 Error [${severity.toUpperCase()}]: ${errorReport.name}`);
       console.error('Message:', errorReport.message);
       if (errorReport.stack) console.error('Stack:', errorReport.stack);
-      console.info('Context:', errorReport.context);
       console.groupEnd();
     }
 
     // Send to analytics service if available
     try {
-      import('./analytics').then(({ analyticsService }) => {
-        if (analyticsService && typeof analyticsService.trackError === 'function') {
-          analyticsService.trackError({
-            name: errorReport.name,
-            message: errorReport.message,
-            stack: errorReport.stack,
-            context: errorReport.context,
-            severity: errorReport.severity
-          });
-        }
-      });
+      if (analyticsService && typeof analyticsService.trackError === 'function') {
+        analyticsService.trackError({
+          name: errorReport.name,
+          message: errorReport.message,
+          stack: errorReport.stack,
+          context: errorReport.context,
+          severity: errorReport.severity
+        });
+      }
     } catch (e) {
       // Fail silently
     }
 
     // Show user-friendly toast for critical errors
     if (severity === 'critical') {
-      import('./toast').then(({ toast }) => {
-        toast.error('A critical error occurred. Please refresh the page.');
-      });
+      toast.error('A critical error occurred. Please refresh the page.');
     } else if (severity === 'high') {
-      import('./toast').then(({ toast }) => {
-        toast.error('Something went wrong. Please try again.');
-      });
+      toast.error('Something went wrong. Please try again.');
     }
   }
 
@@ -130,9 +126,7 @@ class ErrorService {
     }, severity);
 
     if (showToast) {
-      import('./toast').then(({ toast }) => {
-        toast.error(message);
-      });
+      toast.error(message);
     }
   }
 
@@ -147,9 +141,7 @@ class ErrorService {
       action: 'async_operation'
     }, 'medium');
 
-    import('./toast').then(({ toast }) => {
-      toast.error(fallbackMessage);
-    });
+    toast.error(fallbackMessage);
   }
 
   // Get error history (for debugging)

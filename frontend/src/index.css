@@ -17,6 +17,54 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* ===== CORE UTILITIES ===== */
+@layer components {
+  /* Button Utilities */
+  .btn-primary-sm { @apply btn btn-primary btn-sm; }
+  .btn-ghost-sm { @apply btn btn-ghost btn-sm; }
+  .btn-outline-sm { @apply btn btn-outline btn-sm; }
+  .btn-primary-xs { @apply btn btn-primary btn-xs; }
+  .btn-ghost-xs { @apply btn btn-ghost btn-xs; }
+  
+  /* Layout Utilities */
+  .flex-center-gap-2 { @apply flex items-center gap-2; }
+  .flex-between-center { @apply flex justify-between items-center; }
+  
+  /* Form Utilities */
+  .input-field { @apply input input-bordered; }
+  .form-field { @apply form-control w-full; }
+  
+  /* Border and Container Utilities */
+  .border-subtle { @apply border border-base-content/10; }
+  .border-thick { @apply border-2 border-base-content/20; }
+  .card-default { @apply card bg-base-100 shadow; }
+  .container-default { @apply bg-base-100 border-subtle rounded-lg; }
+  
+  /* Icon Utilities */
+  .icon-sm { @apply w-4 h-4; }
+  .icon-md { @apply w-5 h-5; }
+
+  /* Card Interactive Utilities */
+  .card-interactive {
+    @apply border-2 transition-all duration-200 text-left shadow-md hover:shadow-lg 
+           bg-base-100 rounded-lg border-base-300/50 hover:border-primary/30;
+  }
+  
+  .card-interactive-selected {
+    @apply border-2 transition-all duration-200 text-left shadow-md hover:shadow-lg 
+           bg-base-100 rounded-lg border-primary bg-primary/5;
+  }
+
+  /* Apply consistent thick borders to form elements */
+  .input-bordered,
+  .textarea-bordered,
+  .select-bordered {
+    @apply border-2 border-base-content/20;
+  }
+}
+
+/* ===== SPECIALIZED UTILITIES ===== */
+
 /* Custom scrollbar styles */
 .scrollbar-hide {
   -ms-overflow-style: none;
@@ -26,12 +74,7 @@ body {
   display: none;
 }
 
-/* Fix flexbox height issues */
-.min-h-0 {
-  min-height: 0;
-}
-
-/* Improved container height management */
+/* Container height management */
 .container-height-fix {
   height: calc(100vh - 180px);
   min-height: 300px;
@@ -44,129 +87,13 @@ body {
   }
 }
 
-/* Virtual scrolling optimization for large lists */
+/* Virtual scrolling optimization */
 .virtual-scroll-container {
   contain: layout style paint;
   will-change: transform;
 }
 
-/* Custom Utility Classes - High Priority */
-@layer components {
-  /* Button Utilities */
-  .btn-primary-sm {
-    @apply btn btn-primary btn-sm;
-  }
-  
-  .btn-ghost-sm {
-    @apply btn btn-ghost btn-sm;
-  }
-  
-  .btn-primary-xs {
-    @apply btn btn-primary btn-xs;
-  }
-  
-  .btn-ghost-xs {
-    @apply btn btn-ghost btn-xs;
-  }
-  
-  .btn-outline-sm {
-    @apply btn btn-outline btn-sm;
-  }
-  
-  /* Layout Utilities */
-  .flex-center-gap-2 {
-    @apply flex items-center gap-2;
-  }
-  
-  .flex-between-center {
-    @apply flex justify-between items-center;
-  }
-  
-  /* Form Utilities */
-  .input-field {
-    @apply input input-bordered;
-  }
-  
-  .input-field-sm {
-    @apply input input-bordered input-sm text-base-content/40;
-  }
-  
-  /* Fix text color for all input-sm elements */
-  .input-sm {
-    @apply text-base-content/40 !important;
-  }
-  
-  .form-field {
-    @apply form-control w-full;
-  }
-  
-  /* Border and Container Utilities */
-  .border-subtle {
-    @apply border border-base-content/10;
-  }
-
-  .border-thick {
-    @apply border-2 border-base-content/20;
-  }
-  
-  .card-default {
-    @apply card bg-base-100 shadow;
-  }
-  
-  .container-default {
-    @apply bg-base-100 border-subtle rounded-lg;
-  }
-  
-  /* Icon Utilities */
-  .icon-sm {
-    @apply w-4 h-4;
-  }
-  
-  .icon-md {
-    @apply w-5 h-5;
-  }
-
-  /* Animation Utilities */
-  .no-animate {
-    animation: none !important;
-    transform: none !important;
-  }
-
-  /* Card Utilities - Consistent styling across the app */
-  .card-interactive {
-    @apply border-2 transition-all duration-200 text-left shadow-md hover:shadow-lg bg-base-100 rounded-lg border-base-300/50 hover:border-primary/30;
-  }
-  
-  .card-interactive-selected {
-    @apply border-2 transition-all duration-200 text-left shadow-md hover:shadow-lg bg-base-100 rounded-lg border-primary bg-primary/5;
-  }
-
-  /* URL & Preview Section Styling */
-  .url-preview-section {
-    @apply border-2 border-base-content/20 rounded-lg mb-4 p-4 bg-base-50;
-  }
-
-  /* Form Input Styling - Override DaisyUI defaults */
-  .input-thick-border, 
-  .textarea-thick-border {
-    @apply border-2 border-base-content/20;
-  }
-
-  /* Apply thick borders to all inputs and textareas by default */
-  .input-bordered,
-  .textarea-bordered,
-  .select-bordered {
-    @apply border-2 border-base-content/20;
-  }
-}
-
-/* Global button animation disable */
-.btn, button, input[type="button"], input[type="submit"], input[type="reset"] {
-  animation: none !important;
-  transform: none !important;
-}
-
-/* Line clamp for consistent text truncation */
+/* Line clamp utilities */
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -181,113 +108,53 @@ body {
   overflow: hidden;
 }
 
-/* NUCLEAR OPTION: Force ALL inputs AND textareas to have consistent text color */
-input.input,
-.input,
-input.input-bordered,
-.input-bordered,
-input.input-sm,
-.input.input-sm,
-input[class*="input"],
-.input[class*="input"],
-textarea.textarea,
-.textarea,
-textarea.textarea-bordered,
-.textarea-bordered,
-textarea.textarea-sm,
-.textarea.textarea-sm,
-textarea[class*="textarea"],
-.textarea[class*="textarea"],
-input.input::placeholder,
-.input::placeholder,
-input.input-bordered::placeholder,
-.input-bordered::placeholder,
-input.input-sm::placeholder,
-.input.input-sm::placeholder,
-textarea.textarea::placeholder,
-.textarea::placeholder,
-textarea.textarea-bordered::placeholder,
-.textarea-bordered::placeholder,
-textarea.textarea-sm::placeholder,
-.textarea.textarea-sm::placeholder {
+/* ===== THEME CONSISTENCY OVERRIDES ===== */
+
+/* Global form text color consistency */
+.input, .textarea, .select,
+input[class*="input"], textarea[class*="textarea"] {
   color: oklch(var(--bc) / 0.7) !important;
 }
 
-/* Override DaisyUI defaults */
-.input,
-.input-bordered,
-.input-sm,
-.textarea,
-.textarea-bordered,
-.textarea-sm {
-  --tw-text-opacity: 0.7 !important;
-  color: rgb(var(--base-content) / var(--tw-text-opacity)) !important;
+.input::placeholder, .textarea::placeholder,
+input[class*="input"]::placeholder, textarea[class*="textarea"]::placeholder {
+  color: oklch(var(--bc) / 0.5) !important;
 }
 
-/* Force search bar SVG icons to match input text color */
-.text-base-content\/70 {
-  color: oklch(var(--bc) / 0.7) !important;
+/* Disable animations globally */
+.btn, button, input[type="button"], input[type="submit"], input[type="reset"] {
+  animation: none !important;
+  transform: none !important;
 }
 
-/* Theme Consistency Overrides - Force consistent styling across all DaisyUI themes */
+/* Theme consistency variables */
 :root {
-  /* Force consistent border radius across all themes */
   --rounded-box: 1rem !important;
   --rounded-btn: 0.5rem !important;
   --rounded-badge: 1.9rem !important;
-  
-  /* Force consistent animations across all themes */
   --animation-btn: 0.25s !important;
   --animation-input: 0.2s !important;
-  
-  /* Force consistent button styling across all themes */
   --btn-focus-scale: 0.95 !important;
   --border-btn: 1px !important;
-  
-  /* Force consistent tab styling across all themes */
   --tab-border: 1px !important;
   --tab-radius: 0.5rem !important;
-  
-  /* Force consistent shadow values across all themes */
   --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1) !important;
-  
-  /* Override any theme-specific font weights or sizing */
   --btn-text-case: none !important;
   --navbar-padding: 0.5rem !important;
-  
-  /* Ensure consistent glass effects are disabled */
-  --glass-opacity: 0 !important;
-  --glass-border-opacity: 0 !important;
-  --glass-reflex-degree: 0deg !important;
-  --glass-reflex-opacity: 0 !important;
-  --glass-blur: 0px !important;
-  --glass-text-shadow-opacity: 0 !important;
 }
 
-/* Additional overrides for specific problematic theme elements */
+/* Theme-specific overrides */
 [data-theme] .btn {
   text-transform: none !important;
   font-weight: 500 !important;
 }
 
-[data-theme] .card {
-  border-radius: 1rem !important;
-}
+[data-theme] .card { border-radius: 1rem !important; }
+[data-theme] .input, [data-theme] .textarea, [data-theme] .select { border-radius: 0.5rem !important; }
+[data-theme] .badge { border-radius: 1.9rem !important; }
 
-[data-theme] .input, [data-theme] .textarea, [data-theme] .select {
-  border-radius: 0.5rem !important;
-}
-
-[data-theme] .badge {
-  border-radius: 1.9rem !important;
-}
-
-/* Override wireframe theme's aggressive border changes */
-[data-theme="wireframe"] * {
-  border-color: oklch(var(--bc) / 0.2) !important;
-}
-
-/* Override cyberpunk theme's glow effects */
+/* Fix problematic themes */
+[data-theme="wireframe"] * { border-color: oklch(var(--bc) / 0.2) !important; }
 [data-theme="cyberpunk"] .btn:focus,
 [data-theme="cyberpunk"] .input:focus,
 [data-theme="cyberpunk"] .textarea:focus {

@@ -1,85 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { authAPI, projectAPI, analyticsAPI, ideasAPI } from '../api';
-import type { BaseProject } from '../../../shared/types';
+import type { Project } from '../api/types';
 import SessionTracker from './SessionTracker';
 import NotificationBell from './NotificationBell';
 import UserMenu from './UserMenu';
 import ConfirmationModal from './ConfirmationModal';
 import { useAnalytics } from '../hooks/useAnalytics';
 import { unsavedChangesManager } from '../utils/unsavedChanges';
+import { hexToOklch, oklchToCssValue, generateFocusVariant, generateContrastingTextColor } from '../utils/colorUtils';
 import ToastContainer from './Toast';
 import IdeasPage from '../pages/IdeasPage';
 import { toast } from '../services/toast';
 import { handleAPIError } from '../services/errorService';
-
-// Helper functions for theme handling (copied from AccountSettingsPage)
-const hexToOklch = (hex: string) => {
-  if (!hex || !hex.startsWith('#') || hex.length !== 7) {
-    return { l: 50, c: 0, h: 0 };
-  }
-  
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  
-  if (isNaN(r) || isNaN(g) || isNaN(b)) {
-    return { l: 50, c: 0, h: 0 };
-  }
-  
-  const toLinear = (c: number) => {
-    c = c / 255;
-    return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
-  };
-  
-  const rLin = toLinear(r);
-  const gLin = toLinear(g);
-  const bLin = toLinear(b);
-  
-  const l = 0.4122214708 * rLin + 0.5363325363 * gLin + 0.0514459929 * bLin;
-  const m = 0.2119034982 * rLin + 0.6806995451 * gLin + 0.1073969566 * bLin;
-  const s = 0.0883024619 * rLin + 0.2817188376 * gLin + 0.6299787005 * bLin;
-  
-  const l_ = Math.pow(Math.abs(l), 1/3) * Math.sign(l);
-  const m_ = Math.pow(Math.abs(m), 1/3) * Math.sign(m);
-  const s_ = Math.pow(Math.abs(s), 1/3) * Math.sign(s);
-  
-  const L = 0.2104542553 * l_ + 0.7936177850 * m_ - 0.0040720468 * s_;
-  const a = 1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_;
-  const b_lab = 0.0259040371 * l_ + 0.7827717662 * m_ - 0.8086757660 * s_;
-  
-  const lightness = L * 100;
-  const chroma = Math.sqrt(a * a + b_lab * b_lab);
-  let hue = Math.atan2(b_lab, a) * 180 / Math.PI;
-  if (hue < 0) hue += 360;
-  
-  return {
-    l: Math.round(lightness * 100) / 100,
-    c: Math.round(chroma * 1000) / 1000,
-    h: Math.round(hue * 100) / 100
-  };
-};
-
-// Better contrast detection using relative luminance
-const getContrastColor = (hex: string) => {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  
-  // Calculate relative luminance
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  
-  // Use a more nuanced threshold for better contrast
-  return luminance > 0.6 ? '13.138% 0.0392 275.75' : '89.824% 0.04364 275.75';
-};
 
 const Layout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const [user, setUser] = useState<any>(null);
-  const [projects, setProjects] = useState<BaseProject[]>([]);
-  const [selectedProject, setSelectedProject] = useState<BaseProject | null>(null);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeProjectTab, setActiveProjectTab] = useState('active');
@@ -139,30 +80,30 @@ const Layout: React.FC = () => {
         const css = `
           [data-theme="${themeName}"] {
             color-scheme: light;
-            --p: ${primaryOklch.l}% ${primaryOklch.c} ${primaryOklch.h};
-            --pf: ${Math.max(0, primaryOklch.l - 10)}% ${primaryOklch.c * 0.8} ${primaryOklch.h};
-            --pc: ${primaryOklch.l > 60 ? '13.138% 0.0392 275.75' : '89.824% 0.04364 275.75'};
-            --s: ${secondaryOklch.l}% ${secondaryOklch.c} ${secondaryOklch.h};
-            --sf: ${Math.max(0, secondaryOklch.l - 10)}% ${secondaryOklch.c * 0.8} ${secondaryOklch.h};
-            --sc: ${secondaryOklch.l > 60 ? '13.138% 0.0392 275.75' : '89.824% 0.04364 275.75'};
-            --a: ${accentOklch.l}% ${accentOklch.c} ${accentOklch.h};
-            --af: ${Math.max(0, accentOklch.l - 10)}% ${accentOklch.c * 0.8} ${accentOklch.h};
-            --ac: ${accentOklch.l > 60 ? '13.138% 0.0392 275.75' : '89.824% 0.04364 275.75'};
-            --n: ${neutralOklch.l}% ${neutralOklch.c} ${neutralOklch.h};
-            --nf: ${Math.max(0, neutralOklch.l - 10)}% ${neutralOklch.c * 0.8} ${neutralOklch.h};
-            --nc: ${neutralOklch.l > 60 ? '13.138% 0.0392 275.75' : '89.824% 0.04364 275.75'};
-            --b1: ${base100Oklch.l}% ${base100Oklch.c} ${base100Oklch.h};
-            --b2: ${base200Oklch.l}% ${base200Oklch.c} ${base200Oklch.h};
-            --b3: ${base300Oklch.l}% ${base300Oklch.c} ${base300Oklch.h};
-            --bc: ${getContrastColor(customTheme.colors['base-100'])};
-            --in: ${infoOklch.l}% ${infoOklch.c} ${infoOklch.h};
-            --inc: ${infoOklch.l > 60 ? '13.138% 0.0392 275.75' : '89.824% 0.04364 275.75'};
-            --su: ${successOklch.l}% ${successOklch.c} ${successOklch.h};
-            --suc: ${successOklch.l > 60 ? '13.138% 0.0392 275.75' : '89.824% 0.04364 275.75'};
-            --wa: ${warningOklch.l}% ${warningOklch.c} ${warningOklch.h};
-            --wac: ${warningOklch.l > 60 ? '13.138% 0.0392 275.75' : '89.824% 0.04364 275.75'};
-            --er: ${errorOklch.l}% ${errorOklch.c} ${errorOklch.h};
-            --erc: ${errorOklch.l > 60 ? '13.138% 0.0392 275.75' : '89.824% 0.04364 275.75'};
+            --p: ${oklchToCssValue(primaryOklch)};
+            --pf: ${oklchToCssValue(generateFocusVariant(primaryOklch))};
+            --pc: ${generateContrastingTextColor(primaryOklch)};
+            --s: ${oklchToCssValue(secondaryOklch)};
+            --sf: ${oklchToCssValue(generateFocusVariant(secondaryOklch))};
+            --sc: ${generateContrastingTextColor(secondaryOklch)};
+            --a: ${oklchToCssValue(accentOklch)};
+            --af: ${oklchToCssValue(generateFocusVariant(accentOklch))};
+            --ac: ${generateContrastingTextColor(accentOklch)};
+            --n: ${oklchToCssValue(neutralOklch)};
+            --nf: ${oklchToCssValue(generateFocusVariant(neutralOklch))};
+            --nc: ${generateContrastingTextColor(neutralOklch)};
+            --b1: ${oklchToCssValue(base100Oklch)};
+            --b2: ${oklchToCssValue(base200Oklch)};
+            --b3: ${oklchToCssValue(base300Oklch)};
+            --bc: ${generateContrastingTextColor(base100Oklch)};
+            --in: ${oklchToCssValue(infoOklch)};
+            --inc: ${generateContrastingTextColor(infoOklch)};
+            --su: ${oklchToCssValue(successOklch)};
+            --suc: ${generateContrastingTextColor(successOklch)};
+            --wa: ${oklchToCssValue(warningOklch)};
+            --wac: ${generateContrastingTextColor(warningOklch)};
+            --er: ${oklchToCssValue(errorOklch)};
+            --erc: ${generateContrastingTextColor(errorOklch)};
           }
         `;
 
@@ -171,7 +112,6 @@ const Layout: React.FC = () => {
         document.documentElement.setAttribute('data-theme', themeName);
       } else {
         // Custom theme not found, fall back to retro
-        console.warn(`Custom theme ${themeName} not found, falling back to retro`);
         document.documentElement.setAttribute('data-theme', 'retro');
         setCurrentTheme('retro');
       }
@@ -192,7 +132,7 @@ const Layout: React.FC = () => {
   const [currentTheme, setCurrentTheme] = useState(() => {
     return localStorage.getItem('theme') || 'retro';
   });
-  const [collapsedSections, setCollapsedSections] = useState<{
+  const [collapsedSections] = useState<{
     [key: string]: boolean;
   }>(() => {
     const saved = localStorage.getItem('collapsedSections');
@@ -250,7 +190,7 @@ const Layout: React.FC = () => {
   };
 
   // Helper function to select and persist project
-  const handleProjectSelect = async (project: BaseProject) => {
+  const handleProjectSelect = async (project: Project) => {
     setSelectedProject(project);
     localStorage.setItem('selectedProjectId', project.id);
     setSearchTerm(''); // Clear search when selecting a project
@@ -259,13 +199,11 @@ const Layout: React.FC = () => {
     try {
       await analytics.setCurrentProject(project.id);
     } catch (error) {
-      console.warn('Failed to update analytics current project:', error);
       
       // Fallback to direct API call if analytics service fails
       const sessionInfo = analytics.getSessionInfo();
       if (sessionInfo?.sessionId) {
         analyticsAPI.switchProject(sessionInfo.sessionId, project.id).catch(err => {
-          console.warn('Failed to record project switch via fallback:', err);
         });
       }
     }
@@ -280,17 +218,16 @@ const Layout: React.FC = () => {
   };
 
   // Toggle section collapse
-  const toggleSection = (section: string) => {
-    setCollapsedSections(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }));
-  
-  };
+  // const toggleSection = (section: string) => {
+  //   setCollapsedSections(prev => ({
+  //     ...prev,
+  //     [section]: !prev[section]
+  //   }));
+  // };
 
   // Group projects by category
-  const groupProjectsByCategory = (projects: BaseProject[]) => {
-    const grouped: { [category: string]: BaseProject[] } = {};
+  const groupProjectsByCategory = (projects: Project[]) => {
+    const grouped: { [category: string]: Project[] } = {};
     
     projects.forEach(project => {
       const category = project.category || 'General';
@@ -770,11 +707,11 @@ const Layout: React.FC = () => {
                         setSearchTerm(newSearchTerm);
                         
                         if (newSearchTerm.trim()) {
-                          const filteredCount = projects.filter(p => 
-                            p.name.toLowerCase().includes(newSearchTerm.toLowerCase()) ||
-                            (p.category && p.category.toLowerCase().includes(newSearchTerm.toLowerCase())) ||
-                            (p.tags && p.tags.some((tag: string) => tag.toLowerCase().includes(newSearchTerm.toLowerCase())))
-                          ).length;
+                          // const filteredCount = projects.filter(p => 
+                          //   p.name.toLowerCase().includes(newSearchTerm.toLowerCase()) ||
+                          //   (p.category && p.category.toLowerCase().includes(newSearchTerm.toLowerCase())) ||
+                          //   (p.tags && p.tags.some((tag: string) => tag.toLowerCase().includes(newSearchTerm.toLowerCase())))
+                          // ).length;
                                                     
                           if (searchParams.get('view') !== 'projects') {
                             navigate('/notes?view=projects');

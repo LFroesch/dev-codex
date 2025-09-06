@@ -116,7 +116,6 @@ if (process.env.NODE_ENV !== 'production') {
     try {
       // Get all distinct event types
       const eventTypes = await Analytics.distinct('eventType');
-      console.log('Available event types:', eventTypes);
       
       const results: any = {
         eventTypes,
@@ -132,7 +131,6 @@ if (process.env.NODE_ENV !== 'production') {
         results.samples[eventType] = samples;
         results.counts[eventType] = count;
         
-        console.log(`\n${eventType} (${count} total):`, JSON.stringify(samples[0], null, 2));
       }
       
       res.json(results);

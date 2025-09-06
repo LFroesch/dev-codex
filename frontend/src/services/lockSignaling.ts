@@ -7,7 +7,6 @@ class LockSignalingService {
 
   connect() {
     if (this.socket?.connected) {
-      console.log('Lock signaling already connected');
       return;
     }
 
@@ -26,7 +25,6 @@ class LockSignalingService {
     });
 
     this.socket.on('connect', () => {
-      console.log('Lock signaling connected');
       // Rejoin current project if we were in one
       if (this.currentProjectId) {
         this.joinProjectRoom(this.currentProjectId);
@@ -34,7 +32,6 @@ class LockSignalingService {
     });
 
     this.socket.on('disconnect', (reason) => {
-      console.log('Lock signaling disconnected:', reason);
       // Clear listeners on unexpected disconnect to prevent memory leaks
       if (reason === 'transport close' || reason === 'transport error') {
         this.listeners.clear();
@@ -97,7 +94,6 @@ class LockSignalingService {
     
     this.currentProjectId = projectId;
     this.socket?.emit('join-project', projectId);
-    console.log(`Joined project room: ${projectId}`);
   }
 
   leaveProject() {

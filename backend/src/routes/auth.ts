@@ -77,7 +77,6 @@ const createLoginNotifications = async (userId: string) => {
           actionUrl: '/notes'
         });
 
-        console.log(`Created login notification for user ${userId}: ${dueTodayCount} tasks due today`);
       }
     }
   } catch (error) {

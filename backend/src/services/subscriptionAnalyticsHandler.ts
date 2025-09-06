@@ -19,7 +19,6 @@ export class SubscriptionAnalyticsHandler {
    */
   static async handlePlanChange(event: SubscriptionChangeEvent): Promise<void> {
     try {
-      console.log(`🔄 Processing plan change for user ${event.userId}: ${event.oldPlanTier} → ${event.newPlanTier} (${event.eventType})`);
 
       switch (event.eventType) {
         case 'upgrade':
@@ -39,10 +38,8 @@ export class SubscriptionAnalyticsHandler {
           break;
         
         default:
-          console.warn(`Unknown subscription event type: ${event.eventType}`);
       }
 
-      console.log(`✅ Successfully processed ${event.eventType} for user ${event.userId}`);
     } catch (error) {
       console.error(`❌ Error handling subscription change for user ${event.userId}:`, error);
       throw error;
@@ -53,7 +50,6 @@ export class SubscriptionAnalyticsHandler {
    * Handle plan upgrades (free → pro/enterprise, pro → enterprise)
    */
   private static async handlePlanUpgrade(event: SubscriptionChangeEvent): Promise<void> {
-    console.log(`📈 Upgrading analytics for user ${event.userId} to ${event.newPlanTier}`);
     
     // Upgrade to unlimited retention
     await AnalyticsService.updateUserAnalyticsRetention(
@@ -77,7 +73,6 @@ export class SubscriptionAnalyticsHandler {
    * Handle plan downgrades (enterprise → pro/free, pro → free)
    */
   private static async handlePlanDowngrade(event: SubscriptionChangeEvent): Promise<void> {
-    console.log(`📉 Downgrading analytics for user ${event.userId} to ${event.newPlanTier}`);
     
     // Apply new retention limits
     await AnalyticsService.updateUserAnalyticsRetention(
@@ -101,7 +96,6 @@ export class SubscriptionAnalyticsHandler {
    * Handle subscription cancellations
    */
   private static async handleSubscriptionCancellation(event: SubscriptionChangeEvent): Promise<void> {
-    console.log(`❌ Handling cancellation for user ${event.userId}`);
     
     // Revert to free tier retention
     await AnalyticsService.handleSubscriptionCancellation(event.userId);
@@ -120,7 +114,6 @@ export class SubscriptionAnalyticsHandler {
    * Handle subscription reactivations
    */
   private static async handleSubscriptionReactivation(event: SubscriptionChangeEvent): Promise<void> {
-    console.log(`🔄 Reactivating subscription for user ${event.userId}`);
     
     // Restore plan-based retention
     await AnalyticsService.updateUserAnalyticsRetention(

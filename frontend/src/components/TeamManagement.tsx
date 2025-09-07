@@ -210,9 +210,9 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
     <div className="space-y-4">
       {/* Invite Team Member */}
       {canManageTeam && (
-        <div className="card bg-base-200 shadow-sm">
-          <div className="card-body p-4">
-            <h3 className="card-title text-base mb-3">Invite Team Member</h3>
+        <div className="bg-base-200/40 border-2 border-base-content/20 rounded-lg p-4">
+          <div>
+            <h3 className="text-base font-semibold mb-3">Invite Team Member</h3>
             <form onSubmit={handleInvite} className="flex gap-3">
               <input
                 type="email"
@@ -240,19 +240,17 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
       )}
 
       {/* Team Members */}
-      <div className="card bg-base-100 shadow-sm">
-        <div className="card-body p-4">
+      <div className="bg-base-100 border-2 border-base-content/20 rounded-lg p-4">
+        <div>
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
-              <h3 className="card-title text-base">Team Members</h3>
+              <h3 className="text-base font-semibold">Team Members</h3>
               <div className="flex items-center gap-2">
-                <span className="badge badge-primary badge-sm">{members.length}</span>
+                <span className="badge badge-success border-thick h-6 text-sm font-semibold badge-sm">{members.length}</span>
                 <span className="text-sm text-base-content/60">•</span>
                 <div className="flex items-center gap-1">
-                  <svg className="w-3 h-3 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span className="text-sm font-medium text-success">{getTotalProjectTime()}</span>
+                  <span className="text-sm text-base-content/60">Total Time (30d):</span>
+                  <span className="text-sm font-medium bg-success border-thick rounded px-2 py-1 text-base-content">{getTotalProjectTime()}</span>
                 </div>
               </div>
             </div>
@@ -270,7 +268,7 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
               {members.map((member) => (
-                <div key={member._id} className="bg-base-200/50 border border-base-content/10 rounded-lg p-3">
+                <div key={member._id} className="bg-base-200/50 border-thick rounded-lg p-3">
                   <div className="flex items-start gap-3">
                     {/* Avatar */}
                     <div className="avatar placeholder flex-shrink-0">
@@ -316,10 +314,7 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
                       <div className="flex items-center justify-between">
                         {/* Time Display */}
                         <div className="flex items-center gap-1.5">
-                          <svg className="w-3 h-3 text-success flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          <span className="text-xs text-success font-medium">
+                          <span className="text-xs font-medium bg-success border-thick rounded px-1 py-0.5 text-base-content">
                             {formatProjectTime(member.userId._id)}
                           </span>
                         </div>
@@ -347,8 +342,8 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
       </div>
 
       {/* Active Users Section */}
-      <div className="card bg-base-100 shadow-sm">
-        <div className="card-body p-4">
+      <div className="bg-base-100 border-2 border-base-content/20 rounded-lg p-4">
+        <div>
           <ActiveUsers 
             projectId={projectId} 
             currentUserId={currentUserId}
@@ -359,98 +354,67 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
       </div>
 
       {/* Activity Log Section */}
-      <div className="card bg-base-100 shadow-sm">
-        <div className="card-body p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setActivityCollapsed(!activityCollapsed)}
-                className="btn btn-ghost btn-sm btn-circle bg-base-300 hover:bg-base-200"
-                title={activityCollapsed ? 'Expand' : 'Collapse'}
-              >
-                <svg 
-                  className={`w-4 h-4 transition-transform duration-200 ${activityCollapsed ? 'rotate-180' : ''}`} 
-                  fill="none" 
-                  stroke="currentColor" 
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold text-xl p-2">Recent Activity</h3>
+          <div className="flex items-center gap-2 border-thick rounded-lg p-2">
+            <button
+              onClick={() => {
+                setRefreshingActivity(true);
+                setActivityRefreshKey(prev => prev + 1);
+                setTimeout(() => setRefreshingActivity(false), 1000);
+              }}
+              disabled={refreshingActivity}
+              className="btn btn-xs h-7 border-thick bg-warning/50"
+            >
+              {refreshingActivity ? (
+                <div className="loading loading-spinner loading-xs"></div>
+              ) : (
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
-              </button>
-              <h3 className="card-title text-base">Recent Activity</h3>
-            </div>
-            
-            {/* Activity Controls */}
-            {!activityCollapsed && (
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 bg-success rounded-full animate-pulse"></div>
-                  <span className="text-xs text-base-content/60">Live</span>
-                </div>
-                <button
-                  onClick={() => {
-                    setRefreshingActivity(true);
-                    // Force ActivityLog to refresh by changing its key
-                    setActivityRefreshKey(prev => prev + 1);
-                    setTimeout(() => setRefreshingActivity(false), 1000);
-                  }}
-                  className="btn btn-ghost btn-xs"
-                  disabled={refreshingActivity}
-                  title="Refresh"
-                >
+              )}
+            </button>
+            <button
+              onClick={handleClearActivity}
+              disabled={clearingActivity || !canManageTeam}
+              className={`btn btn-xs bg-error/60 border-thick h-7 ${showClearConfirm ? 'btn-error' : 'btn-ghost'}`}
+            >
+              {clearingActivity ? (
+                <div className="loading loading-spinner loading-xs"></div>
+              ) : showClearConfirm ? (
+                'Confirm Clear'
+              ) : (
+                <>
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                   </svg>
-                </button>
-                
-                {/* Clear button for team managers */}
-                {canManageTeam && (
-                  <>
-                    <button
-                      onClick={handleClearActivity}
-                      className={`btn btn-xs ${showClearConfirm ? 'btn-error' : 'btn-ghost'}`}
-                      disabled={clearingActivity}
-                      title="Clear activity log"
-                    >
-                      {clearingActivity ? (
-                        <div className="loading loading-spinner loading-xs"></div>
-                      ) : showClearConfirm ? (
-                        'Confirm'
-                      ) : (
-                        <>
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </>
-                      )}
-                    </button>
-                    {showClearConfirm && (
-                      <button
-                        onClick={() => setShowClearConfirm(false)}
-                        className="btn btn-ghost btn-xs"
-                        disabled={clearingActivity}
-                        title="Cancel"
-                      >
-                        ✕
-                      </button>
-                    )}
-                  </>
-                )}
-              </div>
+                  Clear
+                </>
+              )}
+            </button>
+            {showClearConfirm && (
+              <button
+                onClick={() => setShowClearConfirm(false)}
+                className="btn btn-ghost btn-xs"
+                disabled={clearingActivity}
+              >
+                Cancel
+              </button>
             )}
           </div>
-          
-          {!activityCollapsed && (
-            <ActivityLog 
-              key={activityRefreshKey}
-              projectId={projectId}
-              showTitle={false}
-              limit={10}
-              autoRefresh={true}
-              refreshInterval={30000}
-              showClearButton={false}
-            />
-          )}
+        </div>
+        
+        <div className="border-2 border-base-content/20 rounded-lg mb-4 p-4">
+          <ActivityLog 
+            key={activityRefreshKey}
+            projectId={projectId}
+            showTitle={false}
+            limit={10}
+            autoRefresh={true}
+            refreshInterval={30000}
+            showClearButton={false}
+          />
         </div>
       </div>
 

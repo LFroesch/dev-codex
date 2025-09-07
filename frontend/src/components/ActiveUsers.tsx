@@ -109,8 +109,8 @@ const ActiveUsers: React.FC<ActiveUsersProps> = ({
       {showTitle && (
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
-            <h3 className="card-title text-base">Active Team Members</h3>
-            <span className="badge badge-success badge-sm">{activeUsers.length}</span>
+            <h3 className="card-title text-base">Currently Online</h3>
+            <span className="badge badge-success border-thick h-6 text-sm font-semibold badge-sm">{activeUsers.length}</span>
           </div>
         </div>
       )}
@@ -123,7 +123,7 @@ const ActiveUsers: React.FC<ActiveUsersProps> = ({
           return (
             <div
               key={user.sessionId}
-              className="bg-base-200/50 border border-base-content/10 rounded-lg p-3"
+              className="bg-base-200/50 border-thick rounded-lg p-3"
             >
               <div className="flex items-center gap-2">
                 {/* Status indicator */}
@@ -144,13 +144,13 @@ const ActiveUsers: React.FC<ActiveUsersProps> = ({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-medium text-xs truncate">
+                      <h4 className="ml-2.5 font-medium text-sm truncate">
                         {user.user.firstName} {user.user.lastName}
                       </h4>
                     </div>
                     
                     <div className="text-right">
-                      <span className={`badge badge-xs ${status === 'active' ? 'badge-success' : status === 'recent' ? 'badge-warning' : 'badge-ghost'}`}>
+                      <span className={`badge badge-xs h-6 border-thick font-semibold ${status === 'active' ? 'badge-success' : status === 'recent' ? 'badge-warning' : 'badge-ghost'}`}>
                         {status === 'active' ? 'Active' : status === 'recent' ? 'Recent' : 'Away'}
                       </span>
                     </div>

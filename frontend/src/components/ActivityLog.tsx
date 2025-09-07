@@ -254,9 +254,9 @@ const ActivityLog: React.FC<ActivityLogProps> = ({
     <div className="space-y-3">
       {showTitle && (
         <div className="flex items-center justify-between">
-          <h3 className="font-semibold border-thick rounded-lg p-2">Recent Activity</h3>
+          <h3 className="font-semibold text-xl p-2">Recent Activity</h3>
           <div className="flex items-center gap-2 border-thick rounded-lg p-2">
-            <span className="text-xs text-base-content/60 bg-success/50 border-thick h-7 rounded-lg p-1">{total} total</span>
+            <span className="text-xs text-base-content/60 bg-success/50 border-thick h-7 rounded-lg p-1">{total} Total</span>
             {autoRefresh && (
               <div className="flex items-center gap-1">
                 <div className="w-2 h-2 bg-success rounded-full animate-pulse"></div>
@@ -311,16 +311,16 @@ const ActivityLog: React.FC<ActivityLogProps> = ({
         {activities.map((activity) => (
           <div
             key={activity._id}
-            className="flex items-start gap-3 p-3 bg-base-100 rounded-lg border border-base-content/20 hover:bg-base-200/50"
+            className="flex gap-3 p-3 bg-base-200/50 min-h-[70px] rounded-lg border-thick hover:bg-base-200/50 items-center"
           >
-            <div className="flex-shrink-0 flex items-center gap-1">
+            <div className="flex-shrink-0 flex items-center gap-1 border-thick rounded-lg p-2 bg-base-content/20 w-14 h-10 justify-center text-lg">
               {getActionIcon(activity.action)}
               <span className="text-xs">{getResourceTypeIcon(activity.resourceType)}</span>
             </div>
             
             <div className="flex-1 min-w-0">
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex-1">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex-1 flex flex-col justify-center">
                   <p className="text-sm text-base-content">
                     {formatActivityMessage(activity)}
                   </p>
@@ -339,7 +339,7 @@ const ActivityLog: React.FC<ActivityLogProps> = ({
                             <span> → </span>
                           )}
                           {activity.details?.newValue !== undefined && (
-                            <span className="text-success">
+                            <span className="text-base-content bg-success/50 border-thick rounded p-1">
                               "{formatFieldValue(activity.details?.field, activity.details?.newValue).slice(0, 40)}"
                             </span>
                           )}
@@ -349,7 +349,7 @@ const ActivityLog: React.FC<ActivityLogProps> = ({
                   )}
                 </div>
                 
-                <div className="flex items-center gap-2 text-xs text-base-content/50">
+                <div className="flex items-center border-thick rounded-lg p-1 bg-primary gap-2 font-semibold text-sm text-neutral-content">
                   <span title={new Date(activity.timestamp).toLocaleString()}>
                     {getRelativeTime(activity.timestamp)}
                   </span>

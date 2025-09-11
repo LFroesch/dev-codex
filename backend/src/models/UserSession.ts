@@ -16,13 +16,16 @@ export interface IUserSession extends Document {
   ipAddress?: string;
   isActive: boolean;
   isVisible?: boolean;
-  // Project time tracking
+  // Project time tracking with gap detection
   projectTimeBreakdown?: Array<{
     projectId: string;
-    timeSpent: number; // in milliseconds
+    timeSpent: number; // in milliseconds (excluding gaps)
     lastSwitchTime: Date;
+    heartbeatTimestamps?: Date[]; // Track heartbeat timestamps for gap detection
+    activeTime?: number; // Time spent actively (excluding detected gaps)
   }>;
   currentProjectStartTime?: Date; // When current project was started
+  heartbeatTimestamps?: Date[]; // Track all heartbeat timestamps for gap detection
   createdAt: Date;
   updatedAt: Date;
 }
@@ -83,7 +86,7 @@ const userSessionSchema: Schema = new Schema({
     type: Boolean,
     default: true
   },
-  // Project time tracking
+  // Project time tracking with gap detection
   projectTimeBreakdown: [{
     projectId: {
       type: String,
@@ -91,16 +94,26 @@ const userSessionSchema: Schema = new Schema({
     },
     timeSpent: {
       type: Number,
-      default: 0 // in milliseconds
+      default: 0 // in milliseconds (excluding gaps)
     },
     lastSwitchTime: {
       type: Date,
       default: Date.now
+    },
+    heartbeatTimestamps: [{
+      type: Date
+    }],
+    activeTime: {
+      type: Number,
+      default: 0 // Time spent actively (excluding detected gaps)
     }
   }],
   currentProjectStartTime: {
     type: Date
-  }
+  },
+  heartbeatTimestamps: [{
+    type: Date
+  }]
 }, {
   timestamps: true
 });

@@ -1,1 +1,0 @@
-publicpage / what is shown on user / project public pages could be better

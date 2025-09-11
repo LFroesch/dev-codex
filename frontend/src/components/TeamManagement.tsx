@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { teamAPI, TeamMember, analyticsAPI } from '../api';
+import { activityLogsAPI, ActiveUser } from '../api/activityLogs';
 import ActivityLog from './ActivityLog';
-import ActiveUsers from './ActiveUsers';
 import ConfirmationModal from './ConfirmationModal';
 import InfoModal from './InfoModal';
 import { toast } from '../services/toast';
@@ -21,6 +21,9 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
   
   // Simple team time tracking like Layout.tsx
   const [teamTimeData, setTeamTimeData] = useState<{ [userId: string]: number }>({});
+  
+  // Active users state
+  const [activeUsers, setActiveUsers] = useState<ActiveUser[]>([]);
   
   // Activity log state
   const [activityCollapsed, setActivityCollapsed] = useState(false);
@@ -56,6 +59,14 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
     return () => clearInterval(interval);
   }, [projectId]);
 
+  // Load and auto-update active users
+  useEffect(() => {
+    loadActiveUsers();
+    
+    const interval = setInterval(loadActiveUsers, 5000); // 5 seconds for responsive feel
+    return () => clearInterval(interval);
+  }, [projectId, currentUserId]);
+
   const fetchMembers = async () => {
     try {
       const response = await teamAPI.getMembers(projectId);
@@ -80,6 +91,39 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
       }
     } catch (err) {
       console.error('Failed to load team time data:', err);
+    }
+  };
+
+  const loadActiveUsers = async () => {
+    try {
+      const response = await activityLogsAPI.getActiveUsers(projectId, 3); // Consider active if seen in last 3 minutes
+      setActiveUsers(response.activeUsers);
+    } catch (err) {
+      console.error('Failed to load active users:', err);
+    }
+  };
+
+  const getActivityStatus = (userId: string): 'active' | 'recent' | 'away' => {
+    const user = activeUsers.find(u => u.userId === userId);
+    if (!user) return 'away';
+
+    const now = new Date();
+    const lastActivity = new Date(user.lastActivity);
+    const diffInSeconds = Math.floor((now.getTime() - lastActivity.getTime()) / 1000);
+
+    if (diffInSeconds < 60) return 'active'; // Active in last minute
+    if (diffInSeconds < 180) return 'recent'; // Recent in last 3 minutes
+    return 'away';
+  };
+
+  const getStatusColor = (status: 'active' | 'recent' | 'away'): string => {
+    switch (status) {
+      case 'active':
+        return 'bg-success';
+      case 'recent':
+        return 'bg-warning';
+      case 'away':
+        return 'bg-base-content/30';
     }
   };
 
@@ -243,15 +287,15 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
       <div className="bg-base-100 border-2 border-base-content/20 rounded-lg p-4">
         <div>
           <div className="flex items-center justify-between mb-3">
+            <h3 className="text-base font-semibold">Team Members</h3>
             <div className="flex items-center gap-3">
-              <h3 className="text-base font-semibold">Team Members</h3>
-              <div className="flex items-center gap-2">
-                <span className="badge badge-success border-thick h-6 text-sm font-semibold badge-sm">{members.length}</span>
-                <span className="text-sm text-base-content/60">•</span>
-                <div className="flex items-center gap-1">
-                  <span className="text-sm text-base-content/60">Total Time (30d):</span>
-                  <span className="text-sm font-medium bg-success border-thick rounded px-2 py-1 text-base-content">{getTotalProjectTime()}</span>
-                </div>
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-base-content/60">Members:</span>
+                <span className="badge badge-primary border-thick font-semibold">{members.length}</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-base-content/60">Total Time (30d):</span>
+                <span className="badge badge-success border-thick font-semibold">{getTotalProjectTime()}</span>
               </div>
             </div>
           </div>
@@ -267,17 +311,30 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
-              {members.map((member) => (
-                <div key={member._id} className="bg-base-200/50 border-thick rounded-lg p-3">
-                  <div className="flex items-start gap-3">
-                    {/* Avatar */}
-                    <div className="avatar placeholder flex-shrink-0">
-                      <div className="bg-primary text-primary-content rounded-full w-10 h-10">
-                        <span className="text-sm font-medium">
-                          {member.userId.firstName[0]}{member.userId.lastName[0]}
-                        </span>
+              {members.map((member) => {
+                const activityStatus = getActivityStatus(member.userId._id);
+                const statusColor = getStatusColor(activityStatus);
+                
+                return (
+                  <div key={member._id} className="bg-base-200/50 border-thick rounded-lg p-3">
+                    <div className="flex items-start gap-3">
+                      {/* Avatar with status indicator */}
+                      <div className="avatar placeholder flex-shrink-0 relative">
+                        <div className="bg-primary text-primary-content rounded-full w-10 h-10">
+                          <span className="text-sm font-medium">
+                            {member.userId.firstName[0]}{member.userId.lastName[0]}
+                          </span>
+                        </div>
+                        {/* Online status indicator */}
+                        <div 
+                          className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-base-200 ${statusColor}`}
+                          title={activityStatus === 'active' ? 'Active now' : activityStatus === 'recent' ? 'Recently active' : 'Offline'}
+                        >
+                          {activityStatus === 'active' && (
+                            <div className={`w-full h-full rounded-full ${statusColor} animate-pulse`}></div>
+                          )}
+                        </div>
                       </div>
-                    </div>
                     
                     {/* Content */}
                     <div className="flex-1 min-w-0">
@@ -332,26 +389,16 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
                           </button>
                         )}
                       </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
       </div>
 
-      {/* Active Users Section */}
-      <div className="bg-base-100 border-2 border-base-content/20 rounded-lg p-4">
-        <div>
-          <ActiveUsers 
-            projectId={projectId} 
-            currentUserId={currentUserId}
-            showTitle={true}
-            showDetails={true}
-          />
-        </div>
-      </div>
 
       {/* Activity Log Section */}
       <div className="space-y-4">

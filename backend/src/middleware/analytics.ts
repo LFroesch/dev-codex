@@ -23,6 +23,55 @@ const eventThrottleCache = new Map<string, number>();
 const projectAccessCache = new Map<string, number>();
 const dailyEventCounts = new Map<string, number>();
 
+// Gap detection utility
+export function calculateActiveTime(startTime: Date, endTime: Date, heartbeatTimestamps: Date[] = []): number {
+  const GAP_THRESHOLD = 15 * 60 * 1000; // 15 minutes in milliseconds - allows for coffee breaks, phone calls, etc.
+  const MAX_ACTIVE_SEGMENT = 30 * 60 * 1000; // 30 minutes max for any single segment
+  
+  if (heartbeatTimestamps.length === 0) {
+    // No heartbeats recorded, cap the duration to prevent counting long idle periods
+    const duration = endTime.getTime() - startTime.getTime();
+    return Math.min(duration, GAP_THRESHOLD);
+  }
+
+  // Sort heartbeat timestamps and filter to only those within our time range
+  const sortedHeartbeats = [...heartbeatTimestamps]
+    .filter(ts => ts.getTime() >= startTime.getTime() && ts.getTime() <= endTime.getTime())
+    .sort((a, b) => a.getTime() - b.getTime());
+  
+  if (sortedHeartbeats.length === 0) {
+    // No valid heartbeats in range
+    const duration = endTime.getTime() - startTime.getTime();
+    return Math.min(duration, GAP_THRESHOLD);
+  }
+
+  let activeTime = 0;
+  let lastTimestamp = startTime;
+
+  for (const heartbeat of sortedHeartbeats) {
+    const segmentDuration = heartbeat.getTime() - lastTimestamp.getTime();
+    
+    if (segmentDuration <= GAP_THRESHOLD) {
+      // Normal activity segment, count it all
+      activeTime += segmentDuration;
+    } else {
+      // Large gap detected, don't count this segment as active time
+      // This is where sleep/AFK periods get excluded
+    }
+    
+    lastTimestamp = heartbeat;
+  }
+
+  // Handle time from last heartbeat to end time
+  const finalSegmentDuration = endTime.getTime() - lastTimestamp.getTime();
+  if (finalSegmentDuration <= GAP_THRESHOLD) {
+    activeTime += finalSegmentDuration;
+  }
+  // If final segment is too long, don't count it (likely inactive period)
+
+  return Math.max(0, activeTime);
+}
+
 // Consolidated and optimized Analytics service class with Plan-aware TTL
 export class AnalyticsService {
   // Get user's current plan tier and subscription status
@@ -325,44 +374,69 @@ export class AnalyticsService {
       const endTime = new Date();
       const duration = endTime.getTime() - session.startTime.getTime();
 
-      // Save time spent on current project before ending session
+      // Save time spent on current project before ending session using gap-aware calculation
       if (session.currentProjectId && session.currentProjectStartTime) {
-        const timeSpent = endTime.getTime() - session.currentProjectStartTime.getTime();
-        
         // Find existing project time entry or create new one
         let existingProject = session.projectTimeBreakdown?.find(
           p => p.projectId === session.currentProjectId
         );
         
         if (existingProject) {
-          existingProject.timeSpent += timeSpent;
+          // Calculate active time using heartbeat gap detection
+          const activeTime = calculateActiveTime(
+            session.currentProjectStartTime,
+            endTime,
+            existingProject.heartbeatTimestamps || []
+          );
+          
+          existingProject.activeTime = (existingProject.activeTime || 0) + activeTime;
+          existingProject.timeSpent = existingProject.activeTime; // Use active time as the main metric
           existingProject.lastSwitchTime = endTime;
         } else {
+          // Create new project entry
+          const activeTime = calculateActiveTime(
+            session.currentProjectStartTime,
+            endTime,
+            []
+          );
+          
           if (!session.projectTimeBreakdown) {
             session.projectTimeBreakdown = [];
           }
           session.projectTimeBreakdown.push({
             projectId: session.currentProjectId,
-            timeSpent,
-            lastSwitchTime: endTime
+            timeSpent: activeTime,
+            activeTime: activeTime,
+            lastSwitchTime: endTime,
+            heartbeatTimestamps: []
           });
         }
-        
       }
+
+      // Calculate total active session duration using gap detection
+      const activeDuration = calculateActiveTime(
+        session.startTime,
+        endTime,
+        session.heartbeatTimestamps || []
+      );
 
       // Update session with final data
       session.endTime = endTime;
-      session.duration = duration;
+      session.duration = activeDuration; // Use active duration instead of raw duration
       session.isActive = false;
       await session.save();
 
       // Track session end event
       if (userId) {
+        const currentProject = session.projectTimeBreakdown?.find(
+          p => p.projectId === session.currentProjectId
+        );
+        
         await this.trackEvent(userId, 'session_end', { 
           sessionId, 
-          duration: Math.round(duration / 1000), // duration in seconds
-          currentProjectTime: session.currentProjectId && session.currentProjectStartTime ? 
-            Math.round((endTime.getTime() - session.currentProjectStartTime.getTime()) / 1000) : 0
+          duration: Math.round(activeDuration / 1000), // active duration in seconds
+          rawDuration: Math.round(duration / 1000), // raw duration for comparison
+          currentProjectTime: currentProject ? Math.round(currentProject.activeTime! / 1000) : 0
         });
       }
     } catch (error) {
@@ -372,16 +446,35 @@ export class AnalyticsService {
 
   static async updateSession(sessionId: string, eventData: any) {
     try {
+      const session = await UserSession.findOne({ sessionId });
+      if (!session) return;
+
+      const now = new Date();
       const updateData: any = {
-        lastActivity: new Date(),
+        lastActivity: now,
         $inc: { totalEvents: 1 }
       };
 
       // Handle heartbeat updates differently
       if (eventData.heartbeat) {
-        updateData.lastActivity = eventData.timestamp || new Date();
+        updateData.lastActivity = eventData.timestamp || now;
         // Don't increment totalEvents for heartbeats
         delete updateData.$inc;
+        
+        // Track heartbeat timestamp for gap detection
+        if (!session.heartbeatTimestamps) {
+          session.heartbeatTimestamps = [];
+        }
+        session.heartbeatTimestamps.push(now);
+        
+        // Keep only last 100 heartbeats to prevent memory bloat
+        if (session.heartbeatTimestamps.length > 100) {
+          session.heartbeatTimestamps = session.heartbeatTimestamps.slice(-100);
+        }
+
+        // Gap detection is handled automatically by calculateActiveTime() 
+        // when project switching or session ending occurs
+        // No special wake-up processing needed
         
         // Track visibility state if provided
         if (typeof eventData.isVisible === 'boolean') {
@@ -394,6 +487,25 @@ export class AnalyticsService {
         }
         if (eventData.currentPage) {
           updateData.currentPage = eventData.currentPage;
+        }
+
+        // Add heartbeat timestamp to current project if active
+        if (session.currentProjectId) {
+          let currentProject = session.projectTimeBreakdown?.find(
+            p => p.projectId === session.currentProjectId
+          );
+          
+          if (currentProject) {
+            if (!currentProject.heartbeatTimestamps) {
+              currentProject.heartbeatTimestamps = [];
+            }
+            currentProject.heartbeatTimestamps.push(now);
+            
+            // Keep only last 50 heartbeats per project to prevent memory bloat
+            if (currentProject.heartbeatTimestamps.length > 50) {
+              currentProject.heartbeatTimestamps = currentProject.heartbeatTimestamps.slice(-50);
+            }
+          }
         }
       } else {
         // Regular event updates
@@ -409,13 +521,15 @@ export class AnalyticsService {
         }
       }
 
-      await UserSession.updateOne({ sessionId }, updateData);
+      // Update the session with the new data
+      Object.assign(session, updateData);
+      await session.save();
     } catch (error) {
       console.error('Error updating session:', error);
     }
   }
 
-  // New consolidated method for project switching with time tracking
+  // New consolidated method for project switching with gap-aware time tracking
   static async switchProject(userId: string, sessionId: string, newProjectId: string) {
     try {
       const session = await UserSession.findOne({ sessionId, userId, isActive: true });
@@ -425,26 +539,41 @@ export class AnalyticsService {
 
       const now = new Date();
       
-      // If switching FROM a project, record time spent
+      // If switching FROM a project, record time spent using gap-aware calculation
       if (session.currentProjectId && session.currentProjectStartTime) {
-        const timeSpent = now.getTime() - session.currentProjectStartTime.getTime();
-        
         // Find existing project time entry or create new one
         let existingProject = session.projectTimeBreakdown?.find(
           p => p.projectId === session.currentProjectId
         );
         
         if (existingProject) {
-          existingProject.timeSpent += timeSpent;
+          // Calculate active time using heartbeat gap detection
+          const activeTime = calculateActiveTime(
+            session.currentProjectStartTime,
+            now,
+            existingProject.heartbeatTimestamps || []
+          );
+          
+          existingProject.activeTime = (existingProject.activeTime || 0) + activeTime;
+          existingProject.timeSpent = existingProject.activeTime; // Use active time as the main metric
           existingProject.lastSwitchTime = now;
         } else {
+          // Create new project entry
+          const activeTime = calculateActiveTime(
+            session.currentProjectStartTime,
+            now,
+            []
+          );
+          
           if (!session.projectTimeBreakdown) {
             session.projectTimeBreakdown = [];
           }
           session.projectTimeBreakdown.push({
             projectId: session.currentProjectId,
-            timeSpent,
-            lastSwitchTime: now
+            timeSpent: activeTime,
+            activeTime: activeTime,
+            lastSwitchTime: now,
+            heartbeatTimestamps: []
           });
         }
       }
@@ -455,6 +584,24 @@ export class AnalyticsService {
       // Set project start time - always use current time to avoid double counting
       if (newProjectId) {
         session.currentProjectStartTime = now;
+        
+        // Initialize or find project entry for the new project
+        let newProject = session.projectTimeBreakdown?.find(
+          p => p.projectId === newProjectId
+        );
+        
+        if (!newProject) {
+          if (!session.projectTimeBreakdown) {
+            session.projectTimeBreakdown = [];
+          }
+          session.projectTimeBreakdown.push({
+            projectId: newProjectId,
+            timeSpent: 0,
+            activeTime: 0,
+            lastSwitchTime: now,
+            heartbeatTimestamps: []
+          });
+        }
       } else {
         session.currentProjectStartTime = undefined;
       }

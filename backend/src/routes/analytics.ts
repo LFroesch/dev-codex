@@ -76,11 +76,11 @@ router.post('/session/start', requireAuth, async (req: AuthRequest, res) => {
   try {
     const { restoreSession } = req.body;
     
-    // Check for existing active session within last 10 minutes
-    const fifteenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+    // Check for existing active session within last 30 minutes
+    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
     const existingSession = await AnalyticsService.getActiveSession(req.userId!);
     
-    if (existingSession && existingSession.lastActivity > fifteenMinutesAgo) {
+    if (existingSession && existingSession.lastActivity > thirtyMinutesAgo) {
       // Update the existing session's last activity
       await AnalyticsService.updateSession(existingSession.sessionId, {
         resumed: true,
@@ -136,7 +136,7 @@ router.post('/heartbeat', requireAuth, async (req: AuthRequest, res) => {
       return res.status(400).json({ error: 'sessionId is required' });
     }
 
-    // Update session activity
+    // Update session activity - gap detection happens automatically via calculateActiveTime()
     await AnalyticsService.updateSession(sessionId, {
       heartbeat: true,
       isVisible,
@@ -154,7 +154,7 @@ router.post('/heartbeat', requireAuth, async (req: AuthRequest, res) => {
 
 // Project Time Tracking Routes
 
-// Switch to a new project (records time spent on previous project)
+// Switch to a new project (records time spent on previous project using gap-aware calculation)
 router.post('/project/switch', requireAuth, async (req: AuthRequest, res) => {
   try {
     const { sessionId, newProjectId } = req.body;
@@ -163,63 +163,14 @@ router.post('/project/switch', requireAuth, async (req: AuthRequest, res) => {
       return res.status(400).json({ error: 'sessionId is required' });
     }
 
-    const session = await UserSession.findOne({ sessionId, userId: req.userId!, isActive: true });
-    if (!session) {
-      return res.status(404).json({ error: 'Active session not found' });
-    }
-
-    const now = new Date();
+    // Use the improved switchProject method from AnalyticsService
+    const result = await AnalyticsService.switchProject(req.userId!, sessionId, newProjectId);
     
-    // If switching FROM a project, record time spent
-    if (session.currentProjectId && session.currentProjectStartTime) {
-      const timeSpent = now.getTime() - session.currentProjectStartTime.getTime();
-      
-      // Find existing project time entry or create new one
-      let existingProject = session.projectTimeBreakdown?.find(
-        p => p.projectId === session.currentProjectId
-      );
-      
-      if (existingProject) {
-        existingProject.timeSpent += timeSpent;
-        existingProject.lastSwitchTime = now;
-      } else {
-        if (!session.projectTimeBreakdown) {
-          session.projectTimeBreakdown = [];
-        }
-        session.projectTimeBreakdown.push({
-          projectId: session.currentProjectId,
-          timeSpent,
-          lastSwitchTime: now
-        });
-      }
-    }
-
-    // Switch to new project
-    session.currentProjectId = newProjectId;
-    
-    // Set project start time - if this is a brand new session (no previous project),
-    // use the session start time instead of now to capture all time since session began
-    if (newProjectId) {
-      if (!session.currentProjectStartTime) {
-        // This is the first project set for this session, use session start time
-        session.currentProjectStartTime = session.startTime;
-      } else {
-        // This is a project switch, use current time
-        session.currentProjectStartTime = now;
-      }
+    if (result.success) {
+      res.json({ success: true });
     } else {
-      session.currentProjectStartTime = undefined;
+      res.status(400).json({ error: result.error });
     }
-    
-    session.lastActivity = now;
-    
-    // Add to projectsViewed if not already there
-    if (newProjectId && !session.projectsViewed.includes(newProjectId)) {
-      session.projectsViewed.push(newProjectId);
-    }
-
-    await session.save();
-    res.json({ success: true });
   } catch (error) {
     console.error('Error switching project:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -249,7 +200,11 @@ router.get('/projects/time', requireAuth, async (req: AuthRequest, res) => {
       {
         $group: {
           _id: '$projectTimeBreakdown.projectId',
-          totalTime: { $sum: '$projectTimeBreakdown.timeSpent' },
+          totalTime: { 
+            $sum: { 
+              $ifNull: ['$projectTimeBreakdown.activeTime', '$projectTimeBreakdown.timeSpent'] 
+            } 
+          },
           sessions: { $sum: 1 },
           lastUsed: { $max: '$projectTimeBreakdown.lastSwitchTime' }
         }
@@ -266,9 +221,19 @@ router.get('/projects/time', requireAuth, async (req: AuthRequest, res) => {
     });
 
     if (activeSession && activeSession.currentProjectId && activeSession.currentProjectStartTime) {
-      // Use lastActivity instead of current time to avoid including sleep periods
-      const endTime = activeSession.lastActivity ? activeSession.lastActivity.getTime() : Date.now();
-      const currentSessionTime = endTime - activeSession.currentProjectStartTime.getTime();
+      // Calculate active time using gap detection instead of raw time
+      const currentProject = activeSession.projectTimeBreakdown?.find(
+        p => p.projectId === activeSession.currentProjectId
+      );
+      
+      // Import the gap detection function from analytics middleware
+      const { calculateActiveTime } = await import('../middleware/analytics');
+      
+      const currentSessionTime = calculateActiveTime(
+        activeSession.currentProjectStartTime,
+        new Date(),
+        currentProject?.heartbeatTimestamps || []
+      );
       
       // Find existing project in results
       let existingProject = sessions.find(s => s._id === activeSession.currentProjectId);
@@ -411,7 +376,9 @@ router.get('/project/:projectId/team-time', requireAuth, async (req: AuthRequest
           p.projectId === projectId || p.projectId?.toString() === projectId
         );
         if (projectEntry) {
-          totalTime += projectEntry.timeSpent || 0;
+          // Use activeTime if available, otherwise fall back to timeSpent
+          const timeToAdd = projectEntry.activeTime || projectEntry.timeSpent || 0;
+          totalTime += timeToAdd;
           if (!lastUsed || projectEntry.lastSwitchTime > lastUsed) {
             lastUsed = projectEntry.lastSwitchTime;
           }
@@ -421,9 +388,20 @@ router.get('/project/:projectId/team-time', requireAuth, async (req: AuthRequest
       // Check for current active session with this project
       const activeSession = activeSessions.find(s => s.userId.toString() === userId);
       if (activeSession && activeSession.currentProjectId === projectId && activeSession.currentProjectStartTime) {
-        // Use lastActivity instead of current time to avoid including sleep periods
-        const endTime = activeSession.lastActivity ? activeSession.lastActivity.getTime() : Date.now();
-        const currentSessionTime = endTime - activeSession.currentProjectStartTime.getTime();
+        // Calculate active time using gap detection instead of raw time
+        const currentProject = activeSession.projectTimeBreakdown?.find(
+          p => p.projectId === projectId || p.projectId?.toString() === projectId
+        );
+        
+        // Import the gap detection function from analytics middleware
+        const { calculateActiveTime } = await import('../middleware/analytics');
+        
+        const currentSessionTime = calculateActiveTime(
+          activeSession.currentProjectStartTime,
+          new Date(),
+          currentProject?.heartbeatTimestamps || []
+        );
+        
         totalTime += currentSessionTime;
         lastUsed = new Date();
       }

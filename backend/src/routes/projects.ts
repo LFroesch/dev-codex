@@ -2,6 +2,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import { Project } from '../models/Project';
 import { requireAuth, requireProjectAccess, AuthRequest } from '../middleware/auth';
+import { validateProjectData, validateObjectId } from '../middleware/validation';
 import TeamMember from '../models/TeamMember';
 import ProjectInvitation from '../models/ProjectInvitation';
 import Notification from '../models/Notification';

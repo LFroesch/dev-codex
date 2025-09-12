@@ -4,6 +4,7 @@ import mongoose from 'mongoose';
 import { Project } from '../models/Project';
 import TeamMember from '../models/TeamMember';
 import { logError } from '../config/logger';
+import { setSentryUser } from '../config/sentry';
 
 export interface AuthRequest extends Request {
   userId?: string;
@@ -35,6 +36,17 @@ export const requireAuth = (req: AuthRequest, res: Response, next: NextFunction)
     
     const decoded = jwt.verify(token, process.env.JWT_SECRET) as any;
     req.userId = decoded.userId;
+    
+    // Set user context for Sentry
+    try {
+      setSentryUser({ 
+        id: decoded.userId,
+        email: decoded.email,
+        planTier: decoded.planTier 
+      });
+    } catch (error) {
+      // Fail silently
+    }
     
     next();
   } catch (error) {

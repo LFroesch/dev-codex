@@ -1,5 +1,6 @@
 import winston from 'winston';
 import path from 'path';
+import { captureErrorWithContext } from './sentry';
 
 // Custom log format
 const logFormat = winston.format.combine(
@@ -92,11 +93,25 @@ export { logger };
 
 // Convenience methods
 export const logError = (message: string, error?: Error, context?: Record<string, any>) => {
-  logger.error(message, createLogContext({ 
+  const logContext = createLogContext({ 
     error: error?.message, 
     stack: error?.stack,
     ...context 
-  }));
+  });
+  
+  logger.error(message, logContext);
+  
+  // Send critical errors to Sentry
+  if (error && (context?.severity === 'critical' || context?.severity === 'high')) {
+    try {
+      captureErrorWithContext(error, {
+        message,
+        ...context
+      });
+    } catch (sentryError) {
+      // Fail silently to avoid infinite loops
+    }
+  }
 };
 
 export const logInfo = (message: string, context?: Record<string, any>) => {

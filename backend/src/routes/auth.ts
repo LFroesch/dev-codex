@@ -197,9 +197,14 @@ router.post('/register', authRateLimit, async (req, res) => {
     await user.save();
 
     // Create JWT token
+    if (!process.env.JWT_SECRET) {
+      console.error('CRITICAL: JWT_SECRET environment variable is not set');
+      return res.status(500).json({ message: 'Server configuration error' });
+    }
+    
     const token = jwt.sign(
       { userId: user._id, email: user.email },
-      process.env.JWT_SECRET || 'fallback-secret',
+      process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
 
@@ -245,9 +250,14 @@ router.post('/login', authRateLimit, async (req, res) => {
     }
 
     // Create JWT token
+    if (!process.env.JWT_SECRET) {
+      console.error('CRITICAL: JWT_SECRET environment variable is not set');
+      return res.status(500).json({ message: 'Server configuration error' });
+    }
+    
     const token = jwt.sign(
       { userId: user._id, email: user.email },
-      process.env.JWT_SECRET || 'fallback-secret',
+      process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
 
@@ -308,7 +318,12 @@ router.get('/me', async (req, res) => {
       return res.status(401).json({ message: 'Not authenticated' });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret') as any;
+    if (!process.env.JWT_SECRET) {
+      console.error('CRITICAL: JWT_SECRET environment variable is not set');
+      return res.status(500).json({ message: 'Server configuration error' });
+    }
+    
+    const decoded = jwt.verify(token, process.env.JWT_SECRET) as any;
     const user = await User.findById(decoded.userId).select('-password');
     
     if (!user) {
@@ -485,9 +500,14 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
           res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5002'}/account-settings?google_linked=success`);
         } else {
           // Regular OAuth login flow
+          if (!process.env.JWT_SECRET) {
+            console.error('CRITICAL: JWT_SECRET environment variable is not set');
+            return res.status(500).json({ message: 'Server configuration error' });
+          }
+          
           const token = jwt.sign(
             { userId: user._id, email: user.email },
-            process.env.JWT_SECRET || 'fallback-secret',
+            process.env.JWT_SECRET,
             { expiresIn: '7d' }
           );
 

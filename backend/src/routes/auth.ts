@@ -13,6 +13,7 @@ import { AnalyticsService } from '../middleware/analytics';
 import { Project } from '../models/Project';
 import Notification from '../models/Notification';
 import { authRateLimit, createRateLimit } from '../middleware/rateLimit';
+import { validateUserRegistration, validateUserLogin, validatePasswordReset } from '../middleware/validation';
 
 dotenv.config();
 
@@ -175,7 +176,7 @@ if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
 }
 
 // Register route
-router.post('/register', authRateLimit, async (req, res) => {
+router.post('/register', authRateLimit, validateUserRegistration, async (req, res) => {
   try {
     const { email, password, firstName, lastName, theme } = req.body;
 
@@ -233,7 +234,7 @@ router.post('/register', authRateLimit, async (req, res) => {
 });
 
 // Login route
-router.post('/login', authRateLimit, async (req, res) => {
+router.post('/login', authRateLimit, validateUserLogin, async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -557,7 +558,7 @@ const passwordResetRateLimit = createRateLimit({
   message: 'Too many password reset attempts. Please try again in 15 minutes.'
 });
 
-router.post('/forgot-password', passwordResetRateLimit, async (req, res) => {
+router.post('/forgot-password', passwordResetRateLimit, validatePasswordReset, async (req, res) => {
   try {
     if (!transporter) {
       return res.status(501).json({ message: 'Email service not configured' });
@@ -597,7 +598,7 @@ router.post('/forgot-password', passwordResetRateLimit, async (req, res) => {
 });
 
 // Password reset
-router.post('/reset-password', passwordResetRateLimit, async (req, res) => {
+router.post('/reset-password', passwordResetRateLimit, validatePasswordReset, async (req, res) => {
   try {
     const { token, password } = req.body;
     

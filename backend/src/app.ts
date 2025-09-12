@@ -20,7 +20,7 @@ import notificationRoutes from './routes/notifications';
 import publicRoutes from './routes/public';
 import ideasRoutes from './routes/ideas';
 import newsRoutes from './routes/news';
-import { normalRateLimit, authRateLimit, devRateLimit } from './middleware/rateLimit';
+import { normalRateLimit, authRateLimit, devRateLimit, publicRateLimit } from './middleware/rateLimit';
 import { sessionMiddleware, AnalyticsService } from './middleware/analytics';
 import ReminderService from './services/reminderService';
 import UserSession from './models/UserSession';
@@ -90,7 +90,7 @@ app.use(passport.initialize());
 app.use('/api/auth', authRoutes);
 
 // Public routes - NO authentication required, light rate limiting
-app.use('/api/public', normalRateLimit, publicRoutes);
+app.use('/api/public', publicRateLimit, publicRoutes);
 
 // Apply rate limiting to all OTHER routes
 const rateLimitMiddleware = isDevelopment ? devRateLimit : normalRateLimit;

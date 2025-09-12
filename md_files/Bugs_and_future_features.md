@@ -22,6 +22,7 @@
 - [ ] **Improved back button handling** across navigation flows
 
 ## Enhanced Features (Post-Launch)
+- [ ] **TUI companion app**
 - [ ] **Public page showcase** - highlight featured projects
 - [ ] **Star system** - user rating and favoriting
 - [ ] **Comment system** - community feedback on public projects

@@ -113,35 +113,108 @@ export const createRateLimit = (options: RateLimitOptions) => {
   };
 };
 
-// Pre-configured rate limiters
+// Production-calibrated rate limiters
+// Based on expected user behavior and abuse prevention
+
+// Strict rate limiter for sensitive operations
 export const strictRateLimit = createRateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  maxRequests: 500,
-  endpoint: 'strict'
+  maxRequests: 100, // Reduced for stricter control
+  endpoint: 'strict',
+  message: 'Rate limit exceeded. Please wait 15 minutes before trying again.'
 });
 
+// Normal rate limiter for general API usage
 export const normalRateLimit = createRateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
-  maxRequests: 200, // More generous for normal usage
-  endpoint: 'normal'
+  maxRequests: process.env.NODE_ENV === 'production' ? 60 : 200, // Production: 60/min, Dev: 200/min
+  endpoint: 'normal',
+  message: 'Too many requests. Please wait a moment before trying again.'
 });
 
+// Auth rate limiter - very conservative for security
 export const authRateLimit = createRateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  maxRequests: 20, // More generous for auth attempts
+  maxRequests: process.env.NODE_ENV === 'production' ? 10 : 20, // Production: 10/15min, Dev: 20/15min
   endpoint: 'auth',
-  message: 'Too many authentication attempts, please try again in 15 minutes.'
+  message: 'Too many authentication attempts. Please wait 15 minutes before trying again.'
 });
 
+// API rate limiter for general endpoints
 export const apiRateLimit = createRateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
-  maxRequests: 120, // Double the previous limit
-  endpoint: 'api'
+  maxRequests: process.env.NODE_ENV === 'production' ? 100 : 120, // Slightly reduced for production
+  endpoint: 'api',
+  message: 'API rate limit exceeded. Please slow down your requests.'
 });
 
-// Development-friendly rate limiter
+// Development-friendly rate limiter (unchanged)
 export const devRateLimit = createRateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
   maxRequests: 1000, // Very generous for development
   endpoint: 'dev'
 });
+
+// Premium user rate limiter - higher limits for paid users
+export const premiumRateLimit = createRateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  maxRequests: process.env.NODE_ENV === 'production' ? 200 : 300, // Higher limits for premium
+  endpoint: 'premium',
+  message: 'Premium rate limit exceeded. Please contact support if you need higher limits.'
+});
+
+// Public routes rate limiter - more restrictive for unauthenticated users
+export const publicRateLimit = createRateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  maxRequests: process.env.NODE_ENV === 'production' ? 30 : 60, // Lower for public access
+  endpoint: 'public',
+  message: 'Public API rate limit exceeded. Please register for higher limits.'
+});
+
+// Smart rate limiter that adjusts based on user plan tier
+export const createSmartRateLimit = (baseOptions: RateLimitOptions & { maxRequests: number }) => {
+  return async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      // Determine rate limit based on user plan
+      let maxRequests = baseOptions.maxRequests || 60; // Default
+      
+      if (req.userId && req.user) {
+        const planTier = req.user.planTier || 'free';
+        
+        switch (planTier) {
+          case 'premium':
+            maxRequests = Math.floor(maxRequests * 3); // 3x limit for premium
+            break;
+          case 'pro':
+            maxRequests = Math.floor(maxRequests * 5); // 5x limit for pro
+            break;
+          case 'enterprise':
+            maxRequests = Math.floor(maxRequests * 10); // 10x limit for enterprise
+            break;
+          default: // 'free'
+            maxRequests = Math.floor(maxRequests * 0.8); // 20% reduction for free users
+        }
+      } else {
+        // Unauthenticated users get stricter limits
+        maxRequests = Math.floor(maxRequests * 0.5);
+      }
+      
+      // Create dynamic rate limiter with calculated limit
+      const dynamicRateLimit = createRateLimit({
+        ...baseOptions,
+        maxRequests,
+        endpoint: `${baseOptions.endpoint}_${req.user?.planTier || 'anonymous'}`
+      });
+      
+      return dynamicRateLimit(req, res, next);
+    } catch (error) {
+      console.error('Smart rate limiting error:', error);
+      // Fall back to base rate limiter
+      const fallbackRateLimit = createRateLimit({
+        ...baseOptions,
+        maxRequests: baseOptions.maxRequests || 60
+      });
+      return fallbackRateLimit(req, res, next);
+    }
+  };
+};

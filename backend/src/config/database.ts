@@ -15,7 +15,15 @@ export const connectDatabase = async (): Promise<void> => {
     }
     
     
-    await mongoose.connect(mongoUri);
+    await mongoose.connect(mongoUri, {
+      maxPoolSize: 10, // Maximum number of connections in the pool
+      serverSelectionTimeoutMS: 5000, // How long to wait for server selection
+      socketTimeoutMS: 45000, // Socket timeout
+      family: 4, // Use IPv4, skip trying IPv6
+      // Connection optimizations
+      bufferCommands: false,
+      bufferMaxEntries: 0,
+    });
     
   } catch (error) {
     console.error('MongoDB connection error:', error);

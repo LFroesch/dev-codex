@@ -227,6 +227,18 @@ const userSchema = new Schema<IUser>({
   timestamps: true
 });
 
+// Critical indexes for authentication and user lookup
+userSchema.index({ googleId: 1 }, { sparse: true });
+userSchema.index({ stripeCustomerId: 1 }, { sparse: true });
+userSchema.index({ resetPasswordToken: 1 }, { sparse: true });
+userSchema.index({ 'ideas.id': 1 });
+userSchema.index({ 'customThemes.id': 1 });
+
+// Compound indexes for common query patterns
+userSchema.index({ planTier: 1, subscriptionStatus: 1 });
+userSchema.index({ isPublic: 1, publicSlug: 1 });
+userSchema.index({ subscriptionStatus: 1, lastBillingUpdate: 1 });
+
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
   

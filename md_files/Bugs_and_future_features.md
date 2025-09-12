@@ -1,5 +1,8 @@
 # Post-Launch Development & Future Features
 
+## brain dump
+search notes
+
 ## Non-Critical Issues (Post-Launch)
 - Public page display could be improved
 - Time tracking accuracy issues

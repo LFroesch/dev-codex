@@ -319,4 +319,44 @@ const projectSchema = new Schema<IProject>({
   timestamps: true
 });
 
+// Essential indexes for project queries
+projectSchema.index({ userId: 1, isArchived: 1 });
+projectSchema.index({ ownerId: 1, isArchived: 1 });
+projectSchema.index({ isPublic: 1, isArchived: 1 });
+projectSchema.index({ 'todos.assignedTo': 1 });
+projectSchema.index({ 'todos.status': 1 });
+projectSchema.index({ 'todos.dueDate': 1 });
+projectSchema.index({ tags: 1 });
+projectSchema.index({ category: 1 });
+projectSchema.index({ stagingEnvironment: 1 });
+
+// Nested document indexes for efficient queries
+projectSchema.index({ 'notes.id': 1 });
+projectSchema.index({ 'docs.id': 1 });
+projectSchema.index({ 'docs.type': 1 });
+
+// Compound indexes for common filter patterns
+projectSchema.index({ userId: 1, category: 1, isArchived: 1 });
+projectSchema.index({ ownerId: 1, tags: 1, isArchived: 1 });
+projectSchema.index({ isShared: 1, isArchived: 1 });
+
+// Text index for search functionality
+projectSchema.index({ 
+  name: 'text', 
+  description: 'text',
+  'notes.title': 'text',
+  'notes.content': 'text',
+  'docs.title': 'text',
+  'docs.content': 'text'
+}, {
+  weights: {
+    name: 10,
+    description: 5,
+    'notes.title': 3,
+    'notes.content': 1,
+    'docs.title': 3,
+    'docs.content': 1
+  }
+});
+
 export const Project = mongoose.model<IProject>('Project', projectSchema);

@@ -11,4 +11,3 @@
 
 ### Critical Bugs to Fix
 - [ ] **Session timeout issue** - requires rejoining project for active users list
-- [ ] **Import/export validation** - strengthen security and error handling

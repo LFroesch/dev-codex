@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import { Project } from '../models/Project';
 import TeamMember from '../models/TeamMember';
+import { logError } from '../config/logger';
 
 export interface AuthRequest extends Request {
   userId?: string;
@@ -24,7 +25,11 @@ export const requireAuth = (req: AuthRequest, res: Response, next: NextFunction)
     }
 
     if (!process.env.JWT_SECRET) {
-      console.error('CRITICAL: JWT_SECRET environment variable is not set');
+      logError('CRITICAL: JWT_SECRET environment variable is not set', undefined, {
+        severity: 'critical',
+        component: 'auth',
+        action: 'token_verification'
+      });
       return res.status(500).json({ message: 'Server configuration error' });
     }
     
@@ -40,9 +45,10 @@ export const requireAuth = (req: AuthRequest, res: Response, next: NextFunction)
 // Check if user has access to a specific project
 export const requireProjectAccess = (requiredPermission: 'view' | 'edit' | 'manage' = 'view') => {
   return async (req: AuthRequest, res: Response, next: NextFunction) => {
+    const { id: projectId } = req.params;
+    const userId = req.userId;
+    
     try {
-      const { id: projectId } = req.params;
-      const userId = req.userId;
 
       if (!userId || !projectId) {
         return res.status(401).json({ message: 'Missing authentication or project ID' });
@@ -99,7 +105,13 @@ export const requireProjectAccess = (requiredPermission: 'view' | 'edit' | 'mana
 
       next();
     } catch (error) {
-      console.error('Project access check error:', error);
+      logError('Project access check failed', error as Error, {
+        component: 'auth',
+        action: 'project_access_check',
+        userId: userId,
+        projectId: projectId,
+        requiredPermission: requiredPermission
+      });
       res.status(500).json({ message: 'Server error checking project access' });
     }
   };

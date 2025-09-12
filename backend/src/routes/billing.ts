@@ -33,15 +33,6 @@ const PLAN_LIMITS = {
   enterprise: -1 // unlimited
 };
 
-// Log configuration on startup
-console.log('=== BILLING CONFIGURATION ===');
-console.log('Stripe configured:', !!stripe);
-console.log('Pro price ID:', PLAN_PRICES.pro ? 'SET' : 'MISSING');
-console.log('Enterprise price ID:', PLAN_PRICES.enterprise ? 'SET' : 'MISSING');
-console.log('Frontend URL:', process.env.FRONTEND_URL);
-console.log('Webhook secret:', process.env.STRIPE_WEBHOOK_SECRET ? 'SET' : 'MISSING');
-console.log('=============================');
-
 // Create checkout session
 router.post('/create-checkout-session', billingRateLimit, requireAuth, async (req: AuthRequest, res) => {
   try {

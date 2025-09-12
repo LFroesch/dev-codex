@@ -435,9 +435,15 @@ router.put('/tickets/:ticketId', async (req: AuthRequest, res) => {
         }
 
         // Email to support team (for all updates)
+        const supportEmail = process.env.SUPPORT_EMAIL;
+        if (!supportEmail) {
+          console.error('CRITICAL: SUPPORT_EMAIL environment variable is not set');
+          return res.status(500).json({ error: 'Server configuration error' });
+        }
+        
         const supportMailOptions = {
           from: process.env.SMTP_FROM || process.env.SMTP_USER,
-          to: 'dev.codex.contact@gmail.com',
+          to: supportEmail,
           subject: `🔄 Ticket Updated - ${ticketId}`,
           html: `
             <h2>🔄 Support Ticket Updated</h2>

@@ -7,6 +7,8 @@ import path from 'path';
 import { Server } from 'socket.io';
 import { createServer } from 'http';
 import { connectDatabase } from './config/database';
+import { logInfo, logError } from './config/logger';
+import { requestLogger } from './middleware/requestLogger';
 import authRoutes from './routes/auth';
 import projectRoutes from './routes/projects';
 import billingRoutes from './routes/billing';
@@ -43,7 +45,7 @@ const getAllowedOrigins = () => {
   // Production: require CORS_ORIGINS environment variable
   const corsOrigins = process.env.CORS_ORIGINS;
   if (!corsOrigins) {
-    console.error('CRITICAL: CORS_ORIGINS environment variable is required for production');
+    logError('CRITICAL: CORS_ORIGINS environment variable is required for production', undefined, { severity: 'critical', component: 'app', action: 'cors_setup' });
     process.exit(1);
   }
   
@@ -85,6 +87,9 @@ app.use(cookieParser());
 app.use('/api/billing/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
 app.use(passport.initialize());
+
+// Request logging middleware
+app.use(requestLogger as any);
 
 // Auth routes FIRST - NO rate limiting on authentication
 app.use('/api/auth', authRoutes);
@@ -153,7 +158,7 @@ const gracefulShutdown = async (signal: string) => {
     
     process.exit(0);
   } catch (error) {
-    console.error('Error during graceful shutdown:', error);
+    logError('Error during graceful shutdown', error as Error, { component: 'app', action: 'graceful_shutdown' });
     process.exit(1);
   }
 };
@@ -212,21 +217,27 @@ const startServer = async () => {
     (global as any).io = io;
     
     server.listen(PORT, () => {
+      logInfo('Server started successfully', {
+        port: PORT,
+        environment: process.env.NODE_ENV || 'development',
+        cors: allowedOrigins,
+        pid: process.pid
+      });
     });
     
     // Handle uncaught exceptions
     process.on('uncaughtException', (error) => {
-      console.error('Uncaught Exception:', error);
+      logError('Uncaught Exception', error as Error, { severity: 'critical', component: 'app', action: 'uncaught_exception' });
       gracefulShutdown('UNCAUGHT_EXCEPTION');
     });
     
     process.on('unhandledRejection', (reason, promise) => {
-      console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+      logError('Unhandled Promise Rejection', new Error(String(reason)), { severity: 'critical', component: 'app', action: 'unhandled_rejection', promise: String(promise) });
       gracefulShutdown('UNHANDLED_REJECTION');
     });
     
   } catch (error) {
-    console.error('Failed to start server:', error);
+    logError('Server startup failed', error as Error, { severity: 'critical', component: 'app', action: 'server_start' });
     process.exit(1);
   }
 };

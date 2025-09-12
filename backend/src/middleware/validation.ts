@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import DOMPurify from 'isomorphic-dompurify';
+import { logError } from '../config/logger';
 
 // Email validation regex
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -85,7 +86,7 @@ export const validateUserRegistration = (req: Request, res: Response, next: Next
     
     next();
   } catch (error) {
-    console.error('Registration validation error:', error);
+    logError('Registration validation failed', error as Error, { component: 'validation', action: 'register' });
     res.status(500).json({ message: 'Validation error' });
   }
 };
@@ -115,7 +116,7 @@ export const validateUserLogin = (req: Request, res: Response, next: NextFunctio
     
     next();
   } catch (error) {
-    console.error('Login validation error:', error);
+    logError('Login validation failed', error as Error, { component: 'validation', action: 'login' });
     res.status(500).json({ message: 'Validation error' });
   }
 };
@@ -153,7 +154,7 @@ export const validatePasswordReset = (req: Request, res: Response, next: NextFun
     
     next();
   } catch (error) {
-    console.error('Password reset validation error:', error);
+    logError('Password reset validation failed', error as Error, { component: 'validation', action: 'password_reset' });
     res.status(500).json({ message: 'Validation error' });
   }
 };
@@ -174,7 +175,7 @@ export const validateObjectId = (paramName: string = 'id') => {
       
       next();
     } catch (error) {
-      console.error('ObjectId validation error:', error);
+      logError('ObjectId validation failed', error as Error, { component: 'validation', action: 'objectid_check' });
       res.status(500).json({ message: 'Validation error' });
     }
   };
@@ -219,7 +220,7 @@ export const validateProjectData = (req: Request, res: Response, next: NextFunct
     
     next();
   } catch (error) {
-    console.error('Project validation error:', error);
+    logError('Project validation failed', error as Error, { component: 'validation', action: 'project_validation' });
     res.status(500).json({ message: 'Validation error' });
   }
 };
@@ -236,7 +237,7 @@ export const sanitizeBody = (req: Request, res: Response, next: NextFunction) =>
     }
     next();
   } catch (error) {
-    console.error('Body sanitization error:', error);
+    logError('Body sanitization failed', error as Error, { component: 'validation', action: 'sanitize_body' });
     res.status(500).json({ message: 'Input sanitization error' });
   }
 };

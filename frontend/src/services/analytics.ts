@@ -135,7 +135,7 @@ class AnalyticsService {
 
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
-        this.stopHeartbeat();
+        // Keep heartbeat running even when hidden - only stop on true inactivity
         // Record when we go hidden to preserve real activity time
         if (this.session) {
           this.session.lastActivity = Date.now();
@@ -407,7 +407,7 @@ class AnalyticsService {
       projectsViewed: this.session.projectsViewed.length,
       events: this.session.events.length,
       pendingEvents: this.pendingEvents.length,
-      isActive: this.session !== null && !document.hidden && timeSinceLastActivity < this.SESSION_TIMEOUT,
+      isActive: this.session !== null && timeSinceLastActivity < this.SESSION_TIMEOUT,
       isOnline: this.isOnline,
       startTime: new Date(this.session.startTime).toISOString(),
       lastActivity: new Date(this.session.lastActivity).toISOString(),
@@ -614,11 +614,10 @@ class AnalyticsService {
     }
   }
 
-  private recordActivity() {
+  private async recordActivity() {
     // Only start sessions if user is authenticated
     if (!this.session && this.isAuthenticated) {
-      this.startSession().catch(console.error);
-      return;
+      await this.startSession().catch(console.error);
     }
 
     if (this.session) {
@@ -668,7 +667,7 @@ class AnalyticsService {
     if (!this.session || !this.isOnline || !this.isAuthenticated) return;
 
     try {
-      this.session.lastActivity = Date.now();
+      // Don't update lastActivity in heartbeat - only track real user activity
       this.updateStorage();
 
       const response = await fetch('/api/analytics/heartbeat', {

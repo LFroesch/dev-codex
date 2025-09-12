@@ -2,10 +2,6 @@
 
 ## 🚨 **Critical Pre-Deployment Items ONLY**
 
-### Security & Environment
-- [ ] **Rate limiting calibration** - adjust for production traffic
-- [ ] **Authentication hardening** - session timeout and refresh logic
-
 ### Deployment Preparation
 - [ ] **Database optimization** - indexes and query performance
 - [ ] **Monitoring integration** - error tracking and performance metrics

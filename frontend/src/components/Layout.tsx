@@ -421,12 +421,36 @@ const Layout: React.FC = () => {
       }
     };
 
+    const handleProjectSync = (event: CustomEvent) => {
+      const { newProjectId } = event.detail;
+      console.log('[Layout] Cross-tab project sync received:', newProjectId);
+      
+      if (projects.length > 0 && newProjectId) {
+        const project = projects.find(p => p.id === newProjectId);
+        if (project) {
+          console.log('[Layout] Updating UI to synced project:', project.name);
+          setSelectedProject(project);
+          localStorage.setItem('selectedProjectId', project.id);
+          
+          // Show subtle feedback
+          toast.success(`Switched to ${project.name}`);
+          
+          // Update project time data
+          setTimeout(() => {
+            loadProjectTimeData();
+          }, 500);
+        }
+      }
+    };
+
     window.addEventListener('selectProject', handleSelectProject as EventListener);
     window.addEventListener('refreshProject', handleRefreshProject as EventListener);
+    window.addEventListener('projectSync', handleProjectSync as EventListener);
     
     return () => {
       window.removeEventListener('selectProject', handleSelectProject as EventListener);
       window.removeEventListener('refreshProject', handleRefreshProject as EventListener);
+      window.removeEventListener('projectSync', handleProjectSync as EventListener);
     };
   }, [projects, user]);
 

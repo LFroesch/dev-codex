@@ -58,7 +58,7 @@ class AnalyticsService {
   private isOnline = navigator.onLine;
   private pendingEvents: AnalyticsEvent[] = [];
   private readonly HEARTBEAT_INTERVAL = 30 * 1000;
-  private readonly SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes - allows for longer thinking/reading periods
+  private readonly SESSION_TIMEOUT = 15 * 60 * 1000; // 15 minutes - allows for longer thinking/reading periods
   private readonly MAX_PENDING_EVENTS = 100;
   private readonly RETRY_ATTEMPTS = 3;
   private readonly RETRY_DELAY = 1000;
@@ -69,6 +69,9 @@ class AnalyticsService {
     
     // Check if user is already authenticated (has cookie)
     this.checkAuthenticationStatus();
+    
+    // Initialize project sync on startup
+    this.initializeProjectSync();
     
     // Try to restore existing session only if authenticated
     const stored = localStorage.getItem('analytics_session');
@@ -146,6 +149,17 @@ class AnalyticsService {
       }
     });
 
+    // Handle cross-tab project synchronization
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'current_project_sync') {
+        const newProjectId = e.newValue;
+        
+        if (this.session && this.session.currentProjectId !== newProjectId) {
+          this.syncToProject(newProjectId);
+        }
+      }
+    });
+
     // Session persists through page refreshes
     // Only cleared on explicit logout via clearUserSession()
 
@@ -207,6 +221,7 @@ class AnalyticsService {
               restoredSession = true;
             }
           } catch (e) {
+            console.error('Failed to parse stored analytics session:', e);
           }
         }
         
@@ -493,15 +508,50 @@ class AnalyticsService {
             return;
           }
         } catch (error) {
+          console.error('Analytics: Failed to switch project:', error);
         }
       }
       
       this.session.currentProjectId = projectId || undefined;
       this.updateStorage();
       
+      // Broadcast project change to all other tabs
+      localStorage.setItem('current_project_sync', projectId || '');
+      
       if (projectId && this.isOnline && this.isAuthenticated) {
         await this.sendHeartbeatNow();
       }
+    }
+  }
+
+  // Initialize project sync - check if another tab has already set a project
+  private initializeProjectSync() {
+    const syncedProject = localStorage.getItem('current_project_sync');
+    if (syncedProject) {
+      // This will be handled when the session is restored
+    }
+  }
+
+  // Handle project sync from other tabs
+  private async syncToProject(projectId: string | null) {
+    if (!this.session || !this.isAuthenticated) return;
+    
+    const previousProjectId = this.session.currentProjectId;
+    
+    if (previousProjectId !== projectId) {
+      
+      // Update session without calling backend (the originating tab already did that)
+      this.session.currentProjectId = projectId || undefined;
+      this.updateStorage();
+      
+      // Trigger UI update by dispatching a custom event
+      window.dispatchEvent(new CustomEvent('projectSync', { 
+        detail: { 
+          previousProjectId, 
+          newProjectId: projectId 
+        } 
+      }));
+      
     }
   }
 
@@ -644,6 +694,7 @@ class AnalyticsService {
           localStorage.removeItem('analytics_session');
           this.stopHeartbeat();
         } else {
+          throw new Error(`Analytics heartbeat error: ${response.status}`);
         }
       }
     } catch (error) {

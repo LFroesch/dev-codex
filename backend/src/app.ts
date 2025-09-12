@@ -29,6 +29,10 @@ import UserSession from './models/UserSession';
 
 dotenv.config();
 
+// Initialize Sentry EARLY to catch startup errors
+import { initSentry } from './config/sentry';
+initSentry();
+
 
 const app = express();
 const PORT = process.env.PORT || 5003;
@@ -88,6 +92,8 @@ app.use('/api/billing/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
 app.use(passport.initialize());
 
+// Sentry will automatically capture errors via our logger integration
+
 // Request logging middleware
 app.use(requestLogger as any);
 
@@ -130,13 +136,16 @@ if (!isDevelopment) {
   });
 }
 
+// Sentry error tracking handled via logError() calls throughout the app
+
 // Health check
 app.get('/health', (_, res) => {
   res.json({ status: 'OK' });
 });
 
+
 // Graceful shutdown handler
-const gracefulShutdown = async (signal: string) => {
+const gracefulShutdown = async (_signal: string) => {
   
   try {
     // End all active sessions

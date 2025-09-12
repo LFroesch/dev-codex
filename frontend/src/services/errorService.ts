@@ -1,5 +1,6 @@
 import analyticsService from './analytics';
 import { toast } from './toast';
+import * as Sentry from '@sentry/react';
 
 interface ErrorContext {
   component?: string;
@@ -60,6 +61,31 @@ class ErrorService {
       console.error('Message:', errorReport.message);
       if (errorReport.stack) console.error('Stack:', errorReport.stack);
       console.groupEnd();
+    }
+
+    // Send to Sentry for error tracking
+    try {
+      Sentry.withScope((scope) => {
+        scope.setLevel(severity === 'critical' ? 'fatal' : severity === 'high' ? 'error' : 'warning');
+        scope.setContext('errorDetails', {
+          name: errorReport.name,
+          message: errorReport.message,
+          context: errorReport.context
+        });
+        
+        if (context.userId) scope.setUser({ id: context.userId });
+        if (context.component) scope.setTag('component', context.component);
+        if (context.action) scope.setTag('action', context.action);
+        if (context.projectId) scope.setTag('projectId', context.projectId);
+        
+        if (typeof error === 'string') {
+          Sentry.captureMessage(error);
+        } else {
+          Sentry.captureException(error);
+        }
+      });
+    } catch (e) {
+      // Fail silently
     }
 
     // Send to analytics service if available

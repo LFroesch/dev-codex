@@ -1,0 +1,12 @@
+2025-09-12 14:52:09 [ERROR]: Test error via logger | {"service":"dev-codex-backend","environment":"development","error":"Cannot read properties of undefined (reading 'someProperty')","severity":"critical","component":"test","action":"sentry_test","userId":"test-user","pid":924726}
+TypeError: Cannot read properties of undefined (reading 'someProperty')
+    at /home/lucas/projects/active/daily_use/project-manager/backend/src/app.ts:164:18
+    at Layer.handle [as handle_request] (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/express/lib/router/layer.js:95:5)
+    at next (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/express/lib/router/layer.js:95:5)
+    at /home/lucas/projects/active/daily_use/project-manager/backend/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/express/lib/router/index.js:280:10)
+    at requestLogger (/home/lucas/projects/active/daily_use/project-manager/backend/src/middleware/requestLogger.ts:56:3)
+    at Layer.handle [as handle_request] (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/express/lib/router/layer.js:95:5)

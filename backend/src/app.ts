@@ -33,32 +33,45 @@ const PORT = process.env.PORT || 5003;
 
 // Middleware
 const isDevelopment = process.env.NODE_ENV !== 'production';
+
+// Get allowed origins from environment variable or use defaults for development
+const getAllowedOrigins = () => {
+  if (isDevelopment) {
+    return ['http://localhost:5002', 'http://localhost:5003'];
+  }
+  
+  // Production: require CORS_ORIGINS environment variable
+  const corsOrigins = process.env.CORS_ORIGINS;
+  if (!corsOrigins) {
+    console.error('CRITICAL: CORS_ORIGINS environment variable is required for production');
+    process.exit(1);
+  }
+  
+  return corsOrigins.split(',').map(origin => origin.trim());
+};
+
+const allowedOrigins = getAllowedOrigins();
+
 if (isDevelopment) {
   app.use(cors({
-    origin: 'http://localhost:5002',
+    origin: allowedOrigins,
     credentials: true
   }));
 } else {
-  // Production CORS - allow localhost for testing
-  const allowedOrigins = [
-    'http://localhost:5002',
-    'http://localhost:5003',
-    'https://yourdomain.com', // Replace with your actual production domain
-    'https://www.yourdomain.com', // Replace with your actual www domain
-    // Add any additional production domains here
-  ];
+  // Production CORS - strict origin checking
   
   app.use(cors({
     origin: function (origin, callback) {
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true);
+      // Allow requests with no origin (like mobile apps or curl requests) - only in development
+      if (!origin && isDevelopment) return callback(null, true);
       
-      // Allow all localhost origins for testing
-      if (origin && origin.startsWith('http://localhost:')) {
-        return callback(null, true);
+      // In production, be more strict about no-origin requests
+      if (!origin && !isDevelopment) {
+        return callback(new Error('Origin header is required'), false);
       }
       
-      if (allowedOrigins.indexOf(origin) !== -1) {
+      // At this point origin is guaranteed to exist due to checks above
+      if (origin && allowedOrigins.indexOf(origin) !== -1) {
         callback(null, true);
       } else {
         callback(new Error('Not allowed by CORS'));
@@ -163,7 +176,7 @@ const startServer = async () => {
     // Initialize Socket.IO
     const io = new Server(server, {
       cors: {
-        origin: isDevelopment ? 'http://localhost:5002' : 'http://localhost:5002',
+        origin: allowedOrigins,
         credentials: true
       }
     });

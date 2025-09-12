@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { logInfo, logError } from './logger';
 
 export const connectDatabase = async (): Promise<void> => {
   try {
@@ -20,13 +21,18 @@ export const connectDatabase = async (): Promise<void> => {
       serverSelectionTimeoutMS: 5000, // How long to wait for server selection
       socketTimeoutMS: 45000, // Socket timeout
       family: 4, // Use IPv4, skip trying IPv6
-      // Connection optimizations
-      bufferCommands: false,
-      bufferMaxEntries: 0,
+    });
+    
+    logInfo('Database connected successfully', { 
+      environment: process.env.NODE_ENV || 'development',
+      database: mongoUri.includes('localhost') ? 'local' : 'remote'
     });
     
   } catch (error) {
-    console.error('MongoDB connection error:', error);
+    logError('MongoDB connection failed', error as Error, {
+      environment: process.env.NODE_ENV || 'development',
+      mongoUri: 'connection string masked for security'
+    });
     throw error;
   }
 };

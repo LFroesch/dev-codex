@@ -59,12 +59,14 @@ const SessionTracker: React.FC<SessionTrackerProps> = ({
     }
   };
 
-  const getActivityStatus = (isActive: boolean) => {
-    return isActive ? 'Active' : 'Background';
+  const getActivityStatus = (isActive: boolean, timeSinceLastActivity: number) => {
+    if (!isActive) return 'Background';
+    return timeSinceLastActivity > 300 ? 'Idle' : 'Active';
   };
 
-  const getActivityColor = (isActive: boolean) => {
-    return isActive ? 'text-success' : 'text-info';
+  const getActivityColor = (isActive: boolean, timeSinceLastActivity: number) => {
+    if (!isActive) return 'text-info';
+    return timeSinceLastActivity > 300 ? 'text-info' : 'text-success';
   };
 
   if (!sessionInfo) {
@@ -77,9 +79,13 @@ const SessionTracker: React.FC<SessionTrackerProps> = ({
       <div className="flex items-center gap-2 px-3 py-1.5 bg-base-100/80 rounded-lg border border-base-content/10 shadow-sm hover:bg-base-200/70 transition-all duration-200 w-28 h-8">
         <div 
           className="tooltip tooltip-left"
-          data-tip={`Session: ${formatDuration(sessionInfo.duration)} | Status: ${getActivityStatus(sessionInfo.isActive)}`}
+          data-tip={`Session: ${formatDuration(sessionInfo.duration)} | Status: ${getActivityStatus(sessionInfo.isActive, sessionInfo.timeSinceLastActivity)}`}
         >
-          <div className={`w-2 h-2 rounded-full shadow-sm ${sessionInfo.isActive ? 'bg-success animate-pulse' : 'bg-info'}`}></div>
+          <div className={`w-2 h-2 rounded-full shadow-sm ${
+            sessionInfo.isActive 
+              ? (sessionInfo.timeSinceLastActivity > 300 ? 'bg-info' : 'bg-success animate-pulse')
+              : 'bg-info'
+          }`}></div>
         </div>
         
         <button
@@ -102,7 +108,7 @@ const SessionTracker: React.FC<SessionTrackerProps> = ({
 
       {/* Detailed view */}
       {(isVisible || showDetails) && (
-        <div className="absolute right-0 top-full mt-2 w-72 max-w-[calc(100vw-2rem)] bg-base-100 border border-base-content/10 rounded-lg shadow-lg p-4 z-[9999] transform translate-x-1/4">
+        <div className="absolute right-0 top-full mt-2 w-60 max-w-[calc(100vw-2rem)] bg-base-100 border border-base-content/10 rounded-lg shadow-lg p-4 z-[9999] transform translate-x-1/4">
           <div className="space-y-1">
             <div className="flex justify-between items-center">
               <h4 className="font-semibold text-sm">Session Info</h4>
@@ -117,8 +123,8 @@ const SessionTracker: React.FC<SessionTrackerProps> = ({
             <div className="space-y-2 text-xs">
               <div className="flex justify-between">
                 <span className="text-base-content/60">Status:</span>
-                <span className={getActivityColor(sessionInfo.isActive)}>
-                  {getActivityStatus(sessionInfo.isActive)}
+                <span className={getActivityColor(sessionInfo.isActive, sessionInfo.timeSinceLastActivity)}>
+                  {getActivityStatus(sessionInfo.isActive, sessionInfo.timeSinceLastActivity)}
                 </span>
               </div>
               
@@ -128,19 +134,10 @@ const SessionTracker: React.FC<SessionTrackerProps> = ({
               </div>
               
               <div className="flex justify-between">
-                <span className="text-base-content/60">Pages Viewed:</span>
-                <span>{sessionInfo.pageViews}</span>
+                <span className="text-base-content/60">Time AFK:</span>
+                <span>{formatDuration(sessionInfo.timeSinceLastActivity)}</span>
               </div>
               
-              <div className="flex justify-between">
-                <span className="text-base-content/60">Projects:</span>
-                <span>{sessionInfo.projectsViewed}</span>
-              </div>
-              
-              <div className="flex justify-between">
-                <span className="text-base-content/60">Actions:</span>
-                <span>{sessionInfo.events}</span>
-              </div>           
               <div className="flex justify-between">
                 <span className="text-base-content/60">Session ID:</span>
                 <span className="font-mono text-xs truncate max-w-24" title={sessionInfo.sessionId}>

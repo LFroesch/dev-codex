@@ -1,9 +1,30 @@
 import React from 'react';
 
-const LoadingSpinner: React.FC = () => {
+interface LoadingSpinnerProps {
+  size?: 'xs' | 'sm' | 'md' | 'lg';
+  text?: string;
+  className?: string;
+}
+
+const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ 
+  size = 'lg', 
+  text = 'Loading...', 
+  className = '' 
+}) => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-base-200">
-      <div className="loading loading-spinner loading-lg text-primary"></div>
+    <div 
+      className={`flex justify-center items-center ${className}`}
+      data-testid="loading-container"
+    >
+      <div 
+        className={`loading loading-spinner loading-${size} text-primary`}
+        role="status"
+        aria-label="Loading"
+        data-testid="loading-spinner"
+      />
+      {text && (
+        <span className="ml-2 text-base-content">{text}</span>
+      )}
     </div>
   );
 };

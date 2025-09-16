@@ -50,6 +50,9 @@ export const requireAuth = (req: AuthRequest, res: Response, next: NextFunction)
     
     next();
   } catch (error) {
+    if (error instanceof jwt.TokenExpiredError) {
+      return res.status(401).json({ message: 'Token expired' });
+    }
     res.status(401).json({ message: 'Invalid token' });
   }
 };

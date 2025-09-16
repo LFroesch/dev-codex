@@ -82,3 +82,111 @@ CastError: Cast to ObjectId failed for value "invalid-id" (type string) at path 
     at model.Query.exec (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/query.js:4447:28)
     at processTicksAndRejections (node:internal/process/task_queues:105:5)
     at /home/lucas/projects/active/daily_use/project-manager/backend/src/middleware/auth.ts:70:23
+2025-09-13 15:13:44 [ERROR]: Project access check failed | {"service":"dev-codex-backend","environment":"test","error":"Cast to ObjectId failed for value \"invalid-id\" (type string) at path \"_id\" for model \"Project\"","component":"auth","action":"project_access_check","userId":"68c5ec97b0fd49fd1638091d","projectId":"invalid-id","requiredPermission":"view","pid":80620}
+CastError: Cast to ObjectId failed for value "invalid-id" (type string) at path "_id" for model "Project"
+    at ObjectId.cast (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/schema/objectid.js:250:11)
+    at ObjectId.SchemaType.applySetters (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/schematype.js:1219:12)
+    at ObjectId.SchemaType.castForQuery (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/schematype.js:1633:15)
+    at cast (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/cast.js:389:32)
+    at model.Query.Query.cast (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/query.js:4927:12)
+    at model.Query.Query._castConditions (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/query.js:2237:10)
+    at model.Query._findOne (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/query.js:2533:8)
+    at model.Query.exec (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/query.js:4447:28)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at /home/lucas/projects/active/daily_use/project-manager/backend/src/middleware/auth.ts:70:23
+2025-09-13 15:19:17 [ERROR]: Project access check failed | {"service":"dev-codex-backend","environment":"test","error":"Cast to ObjectId failed for value \"invalid-id\" (type string) at path \"_id\" for model \"Project\"","component":"auth","action":"project_access_check","userId":"68c5ede4ddf4a381fe9e4c7b","projectId":"invalid-id","requiredPermission":"view","pid":83771}
+CastError: Cast to ObjectId failed for value "invalid-id" (type string) at path "_id" for model "Project"
+    at ObjectId.cast (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/schema/objectid.js:250:11)
+    at ObjectId.SchemaType.applySetters (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/schematype.js:1219:12)
+    at ObjectId.SchemaType.castForQuery (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/schematype.js:1633:15)
+    at cast (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/cast.js:389:32)
+    at model.Query.Query.cast (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/query.js:4927:12)
+    at model.Query.Query._castConditions (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/query.js:2237:10)
+    at model.Query._findOne (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/query.js:2533:8)
+    at model.Query.exec (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/query.js:4447:28)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at /home/lucas/projects/active/daily_use/project-manager/backend/src/middleware/auth.ts:70:23
+2025-09-13 15:22:45 [ERROR]: Project access check failed | {"service":"dev-codex-backend","environment":"test","error":"Cast to ObjectId failed for value \"invalid-id\" (type string) at path \"_id\" for model \"Project\"","component":"auth","action":"project_access_check","userId":"68c5eeb507d0608f657a1ed2","projectId":"invalid-id","requiredPermission":"view","pid":86519}
+CastError: Cast to ObjectId failed for value "invalid-id" (type string) at path "_id" for model "Project"
+    at ObjectId.cast (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/schema/objectid.js:250:11)
+    at ObjectId.SchemaType.applySetters (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/schematype.js:1219:12)
+    at ObjectId.SchemaType.castForQuery (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/schematype.js:1633:15)
+    at cast (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/cast.js:389:32)
+    at model.Query.Query.cast (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/query.js:4927:12)
+    at model.Query.Query._castConditions (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/query.js:2237:10)
+    at model.Query._findOne (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/query.js:2533:8)
+    at model.Query.exec (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/query.js:4447:28)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at /home/lucas/projects/active/daily_use/project-manager/backend/src/middleware/auth.ts:70:23
+2025-09-13 15:23:12 [ERROR]: Project access check failed | {"service":"dev-codex-backend","environment":"test","error":"Cast to ObjectId failed for value \"invalid-id\" (type string) at path \"_id\" for model \"Project\"","component":"auth","action":"project_access_check","userId":"68c5eed04a213037bab46d5b","projectId":"invalid-id","requiredPermission":"view","pid":87255}
+CastError: Cast to ObjectId failed for value "invalid-id" (type string) at path "_id" for model "Project"
+    at ObjectId.cast (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/schema/objectid.js:250:11)
+    at ObjectId.SchemaType.applySetters (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/schematype.js:1219:12)
+    at ObjectId.SchemaType.castForQuery (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/schematype.js:1633:15)
+    at cast (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/cast.js:389:32)
+    at model.Query.Query.cast (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/query.js:4927:12)
+    at model.Query.Query._castConditions (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/query.js:2237:10)
+    at model.Query._findOne (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/query.js:2533:8)
+    at model.Query.exec (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/query.js:4447:28)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at /home/lucas/projects/active/daily_use/project-manager/backend/src/middleware/auth.ts:70:23
+2025-09-13 15:23:49 [ERROR]: Project access check failed | {"service":"dev-codex-backend","environment":"test","error":"Cast to ObjectId failed for value \"invalid-id\" (type string) at path \"_id\" for model \"Project\"","component":"auth","action":"project_access_check","userId":"68c5eef59a76819ee385ed6b","projectId":"invalid-id","requiredPermission":"view","pid":87904}
+CastError: Cast to ObjectId failed for value "invalid-id" (type string) at path "_id" for model "Project"
+    at ObjectId.cast (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/schema/objectid.js:250:11)
+    at ObjectId.SchemaType.applySetters (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/schematype.js:1219:12)
+    at ObjectId.SchemaType.castForQuery (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/schematype.js:1633:15)
+    at cast (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/cast.js:389:32)
+    at model.Query.Query.cast (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/query.js:4927:12)
+    at model.Query.Query._castConditions (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/query.js:2237:10)
+    at model.Query._findOne (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/query.js:2533:8)
+    at model.Query.exec (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/query.js:4447:28)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at /home/lucas/projects/active/daily_use/project-manager/backend/src/middleware/auth.ts:70:23
+2025-09-13 15:25:20 [ERROR]: Project access check failed | {"service":"dev-codex-backend","environment":"test","error":"Cast to ObjectId failed for value \"invalid-id\" (type string) at path \"_id\" for model \"Project\"","component":"auth","action":"project_access_check","userId":"68c5ef4f58e7ffd8bce41804","projectId":"invalid-id","requiredPermission":"view","pid":89086}
+CastError: Cast to ObjectId failed for value "invalid-id" (type string) at path "_id" for model "Project"
+    at ObjectId.cast (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/schema/objectid.js:250:11)
+    at ObjectId.SchemaType.applySetters (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/schematype.js:1219:12)
+    at ObjectId.SchemaType.castForQuery (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/schematype.js:1633:15)
+    at cast (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/cast.js:389:32)
+    at model.Query.Query.cast (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/query.js:4927:12)
+    at model.Query.Query._castConditions (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/query.js:2237:10)
+    at model.Query._findOne (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/query.js:2533:8)
+    at model.Query.exec (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/query.js:4447:28)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at /home/lucas/projects/active/daily_use/project-manager/backend/src/middleware/auth.ts:70:23
+2025-09-13 15:38:21 [ERROR]: Project access check failed | {"service":"dev-codex-backend","environment":"test","error":"Cast to ObjectId failed for value \"undefined\" (type string) at path \"_id\" for model \"Project\"","component":"auth","action":"project_access_check","userId":"68c5f25c21670a8f903dfe6b","projectId":"undefined","requiredPermission":"view","pid":96303}
+CastError: Cast to ObjectId failed for value "undefined" (type string) at path "_id" for model "Project"
+    at ObjectId.cast (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/schema/objectid.js:250:11)
+    at ObjectId.SchemaType.applySetters (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/schematype.js:1219:12)
+    at ObjectId.SchemaType.castForQuery (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/schematype.js:1633:15)
+    at cast (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/cast.js:389:32)
+    at model.Query.Query.cast (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/query.js:4927:12)
+    at model.Query.Query._castConditions (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/query.js:2237:10)
+    at model.Query._findOne (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/query.js:2533:8)
+    at model.Query.exec (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/query.js:4447:28)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at /home/lucas/projects/active/daily_use/project-manager/backend/src/middleware/auth.ts:73:23
+2025-09-13 15:38:46 [ERROR]: Project access check failed | {"service":"dev-codex-backend","environment":"test","error":"Cast to ObjectId failed for value \"undefined\" (type string) at path \"_id\" for model \"Project\"","component":"auth","action":"project_access_check","userId":"68c5f276511f093a2a55ac41","projectId":"undefined","requiredPermission":"view","pid":96635}
+CastError: Cast to ObjectId failed for value "undefined" (type string) at path "_id" for model "Project"
+    at ObjectId.cast (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/schema/objectid.js:250:11)
+    at ObjectId.SchemaType.applySetters (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/schematype.js:1219:12)
+    at ObjectId.SchemaType.castForQuery (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/schematype.js:1633:15)
+    at cast (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/cast.js:389:32)
+    at model.Query.Query.cast (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/query.js:4927:12)
+    at model.Query.Query._castConditions (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/query.js:2237:10)
+    at model.Query._findOne (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/query.js:2533:8)
+    at model.Query.exec (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/query.js:4447:28)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at /home/lucas/projects/active/daily_use/project-manager/backend/src/middleware/auth.ts:73:23
+2025-09-13 15:38:52 [ERROR]: Project access check failed | {"service":"dev-codex-backend","environment":"test","error":"Cast to ObjectId failed for value \"invalid-id\" (type string) at path \"_id\" for model \"Project\"","component":"auth","action":"project_access_check","userId":"68c5f27bb60fa9b93f31b0ed","projectId":"invalid-id","requiredPermission":"view","pid":96642}
+CastError: Cast to ObjectId failed for value "invalid-id" (type string) at path "_id" for model "Project"
+    at ObjectId.cast (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/schema/objectid.js:250:11)
+    at ObjectId.SchemaType.applySetters (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/schematype.js:1219:12)
+    at ObjectId.SchemaType.castForQuery (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/schematype.js:1633:15)
+    at cast (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/cast.js:389:32)
+    at model.Query.Query.cast (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/query.js:4927:12)
+    at model.Query.Query._castConditions (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/query.js:2237:10)
+    at model.Query._findOne (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/query.js:2533:8)
+    at model.Query.exec (/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/mongoose/lib/query.js:4447:28)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at /home/lucas/projects/active/daily_use/project-manager/backend/src/middleware/auth.ts:73:23

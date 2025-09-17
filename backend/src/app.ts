@@ -22,6 +22,7 @@ import notificationRoutes from './routes/notifications';
 import publicRoutes from './routes/public';
 import ideasRoutes from './routes/ideas';
 import newsRoutes from './routes/news';
+import healthRoutes from './routes/health';
 import { normalRateLimit, authRateLimit, devRateLimit, publicRateLimit } from './middleware/rateLimit';
 import { sessionMiddleware, AnalyticsService } from './middleware/analytics';
 import ReminderService from './services/reminderService';
@@ -98,6 +99,9 @@ app.use(passport.initialize());
 app.use(requestLogger as any);
 
 // Auth routes FIRST - NO rate limiting on authentication
+// Health check routes (no rate limiting for load balancers)
+app.use('/api', healthRoutes);
+
 app.use('/api/auth', authRoutes);
 
 // Public routes - NO authentication required, light rate limiting

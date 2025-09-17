@@ -62,3 +62,16 @@ src/middleware/auth.ts(111,20): error TS2552: Cannot find name 'projectId'. Did 
     at Module.load (node:internal/modules/cjs/loader:1465:32)
     at Function._load (node:internal/modules/cjs/loader:1282:12)
     at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+2025-09-17 10:37:25 [ERROR]: uncaughtException: listen EADDRINUSE: address already in use :::5003
+Error: listen EADDRINUSE: address already in use :::5003
+    at Server.setupListenHandle [as _listen2] (node:net:1939:16)
+    at listenInCluster (node:net:1996:12)
+    at Server.listen (node:net:2101:7)
+    at startServer (/home/lucas/projects/active/daily_use/project-manager/backend/src/app.ts:228:12)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5) | {"error":{"code":"EADDRINUSE","errno":-98,"syscall":"listen","address":"::","port":5003},"exception":true,"date":"Wed Sep 17 2025 10:37:25 GMT-0700 (Pacific Daylight Time)","process":{"pid":403560,"uid":1000,"gid":1000,"cwd":"/home/lucas/projects/active/daily_use/project-manager/backend","execPath":"/usr/bin/node","version":"v22.16.0","argv":["/home/lucas/projects/active/daily_use/project-manager/backend/node_modules/.bin/ts-node","/home/lucas/projects/active/daily_use/project-manager/backend/src/app.ts"],"memoryUsage":{"rss":625127424,"heapTotal":498581504,"heapUsed":460682720,"external":26609646,"arrayBuffers":23497709}},"os":{"loadavg":[0.35,0.18,0.06],"uptime":60829.16},"trace":[{"column":16,"file":"node:net","function":"Server.setupListenHandle [as _listen2]","line":1939,"method":"setupListenHandle [as _listen2]","native":false},{"column":12,"file":"node:net","function":"listenInCluster","line":1996,"method":null,"native":false},{"column":7,"file":"node:net","function":"Server.listen","line":2101,"method":"listen","native":false},{"column":12,"file":"/home/lucas/projects/active/daily_use/project-manager/backend/src/app.ts","function":"startServer","line":228,"method":null,"native":false},{"column":5,"file":"node:internal/process/task_queues","function":"processTicksAndRejections","line":105,"method":null,"native":false}],"service":"dev-codex-backend","environment":"development"}
+Error: listen EADDRINUSE: address already in use :::5003
+    at Server.setupListenHandle [as _listen2] (node:net:1939:16)
+    at listenInCluster (node:net:1996:12)
+    at Server.listen (node:net:2101:7)
+    at startServer (/home/lucas/projects/active/daily_use/project-manager/backend/src/app.ts:228:12)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)

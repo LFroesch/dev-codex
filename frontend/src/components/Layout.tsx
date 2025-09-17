@@ -31,6 +31,7 @@ const Layout: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedArchivedCategory, setSelectedArchivedCategory] = useState<string | null>(null);
   const [selectedSharedCategory, setSelectedSharedCategory] = useState<string | null>(null);
+  const [analyticsReady, setAnalyticsReady] = useState(false);
   
   // Unsaved changes modal state
   const [showUnsavedChangesModal, setShowUnsavedChangesModal] = useState(false);
@@ -192,8 +193,19 @@ const Layout: React.FC = () => {
 
   // Helper function to select project
   const handleProjectSelect = async (project: Project) => {
+    // Prevent project selection until analytics session is ready
+    if (!analyticsReady) {
+      toast.warning('Please wait for session to initialize before selecting a project...');
+      return;
+    }
+    
     setSelectedProject(project);
     setSearchTerm(''); // Clear search when selecting a project
+    
+    // Save selected project to localStorage for refresh persistence
+    localStorage.setItem('selectedProjectId', project.id);
+    // Track when user was last active for browser close detection
+    localStorage.setItem('lastActiveTime', Date.now().toString());
 
     // Update analytics service current project (this handles backend time recording)
     try {
@@ -355,6 +367,55 @@ const Layout: React.FC = () => {
         // Set current user for analytics
         analytics.setCurrentUser(userResponse.user?.id || null);
         
+        // Initialize analytics session and wait for it to be ready
+        try {
+          await analytics.startSession();
+          setAnalyticsReady(true);
+        } catch (error) {
+          console.error('Failed to initialize analytics session:', error);
+          setAnalyticsReady(true); // Set to true anyway to avoid blocking UI
+        }
+        
+        // Check if browser was previously closed vs page refresh
+        const handleBrowserClosedPreviously = () => {
+          const savedProjectId = localStorage.getItem('selectedProjectId');
+          const lastActiveTime = localStorage.getItem('lastActiveTime');
+          
+          if (savedProjectId && lastActiveTime) {
+            const timeSinceLastActive = Date.now() - parseInt(lastActiveTime);
+            const fifteenMinutes = 15 * 60 * 1000; // 15 minutes
+            
+            if (timeSinceLastActive > fifteenMinutes) {
+              // User was away for more than 15 minutes (session would have timed out)
+              localStorage.removeItem('selectedProjectId');
+              localStorage.removeItem('lastActiveTime');
+              setSelectedProject(null);
+              toast.info('Welcome back! Your previous session expired. Please select a project to continue.');
+              return true; // Handled as browser close
+            }
+          }
+          return false; // Not a browser close scenario
+        };
+        
+        // Check if browser was closed previously, otherwise restore project selection
+        const wasBrowserClosed = handleBrowserClosedPreviously();
+        
+        if (!wasBrowserClosed) {
+          // Not a browser close scenario - restore project from localStorage if it exists
+          const savedProjectId = localStorage.getItem('selectedProjectId');
+          if (savedProjectId) {
+            const savedProject = projectsResponse.projects.find(p => p.id === savedProjectId);
+            if (savedProject) {
+              setSelectedProject(savedProject);
+              await analytics.setCurrentProject(savedProject.id);
+            } else {
+              // Project no longer exists, clear the saved data
+              localStorage.removeItem('selectedProjectId');
+              localStorage.removeItem('lastActiveTime');
+            }
+          }
+        }
+        
         // Navigate to My Projects view as default and ensure Active tab is selected
         if (location.pathname === '/' || location.pathname === '/notes') {
           setActiveProjectTab('active'); // Ensure Active tab is selected
@@ -418,6 +479,9 @@ const Layout: React.FC = () => {
       
       try {
         setSelectedProject(null);
+        // Clear selected project from localStorage on timeout
+        localStorage.removeItem('selectedProjectId');
+        localStorage.removeItem('lastActiveTime');
         
         // Refresh projects data to show updated time tracking
         await loadProjects();
@@ -426,10 +490,8 @@ const Layout: React.FC = () => {
         // Navigate to projects view
         navigate('/notes?view=projects');
         
-        // Show unique feedback to user (with ID to prevent duplicates)
-        toast.info('Session timed out due to inactivity. Time has been saved. Please select a project to continue.', {
-          toastId: 'session-timeout'
-        });
+        // Show unique feedback to user
+        toast.info('Session timed out due to inactivity. Time has been saved. Please select a project to continue.');
       } finally {
         setIsHandlingTimeout(false);
       }
@@ -481,12 +543,17 @@ const Layout: React.FC = () => {
     try {
       // Clear user session before logout
       analytics.clearUserSession();
+      // Clear selected project from localStorage
+      localStorage.removeItem('selectedProjectId');
+      localStorage.removeItem('lastActiveTime');
       await authAPI.logout();
       toast.success('Successfully logged out. See you next time!');
       navigate('/login');
     } catch (err) {
       // Clear session even if logout fails
       analytics.clearUserSession();
+      localStorage.removeItem('selectedProjectId');
+      localStorage.removeItem('lastActiveTime');
       toast.info('Logged out successfully.');
       navigate('/login');
     }
@@ -1151,7 +1218,17 @@ const Layout: React.FC = () => {
                 <div className="space-y-4">
                 {activeProjectTab === 'active' && (
                   <div className="space-y-4">
-                    {Object.keys(groupedCurrentProjects).length === 0 ? (
+                    {!analyticsReady ? (
+                      <div className="flex items-center justify-center min-h-[50vh] py-16">
+                        <div className="text-center bg-base-100 rounded-xl p-12 border-subtle shadow-lg max-w-md mx-auto">
+                          <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-full flex items-center justify-center">
+                            <div className="loading loading-spinner loading-lg text-primary"></div>
+                          </div>
+                          <h3 className="text-2xl font-bold mb-3 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">Initializing session...</h3>
+                          <p className="text-base-content/60">Please wait while we set up your workspace</p>
+                        </div>
+                      </div>
+                    ) : Object.keys(groupedCurrentProjects).length === 0 ? (
                       <div className="flex items-center justify-center min-h-[50vh] py-16">
                         <div className="text-center bg-base-100 rounded-xl p-12 border-subtle shadow-lg max-w-md mx-auto">
                           <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-full flex items-center justify-center">
@@ -1216,10 +1293,13 @@ const Layout: React.FC = () => {
                                 handleProjectSelect(project);
                                 navigate('/notes');
                               }}
+                              disabled={!analyticsReady}
                               className={`p-4 rounded-lg border-2 transition-all duration-200 text-left group shadow-md hover:shadow-lg h-[200px] flex flex-col ${
-                                selectedProject?.id === project.id 
-                                  ? 'border-primary bg-primary/5 shadow-md' 
-                                  : 'border-base-300/50 bg-base-100 hover:border-primary/30'
+                                !analyticsReady 
+                                  ? 'border-base-300/30 bg-base-100/50 opacity-60 cursor-not-allowed' 
+                                  : selectedProject?.id === project.id 
+                                    ? 'border-primary bg-primary/5 shadow-md' 
+                                    : 'border-base-300/50 bg-base-100 hover:border-primary/30'
                               }`}
                             >
                               {/* Header with color indicator and name */}
@@ -1342,10 +1422,13 @@ const Layout: React.FC = () => {
                                 handleProjectSelect(project);
                                 navigate('/notes');
                               }}
+                              disabled={!analyticsReady}
                               className={`p-4 rounded-lg border-2 transition-all duration-200 text-left group shadow-md hover:shadow-lg h-[200px] flex flex-col ${
-                                selectedProject?.id === project.id 
-                                  ? 'border-primary bg-primary/5 shadow-md' 
-                                  : 'border-base-300/50 bg-base-100 hover:border-primary/30'
+                                !analyticsReady 
+                                  ? 'border-base-300/30 bg-base-100/50 opacity-60 cursor-not-allowed' 
+                                  : selectedProject?.id === project.id 
+                                    ? 'border-primary bg-primary/5 shadow-md' 
+                                    : 'border-base-300/50 bg-base-100 hover:border-primary/30'
                               }`}
                             >
                               {/* Header with color indicator and name */}
@@ -1467,10 +1550,13 @@ const Layout: React.FC = () => {
                                 handleProjectSelect(project);
                                 navigate('/notes');
                               }}
+                              disabled={!analyticsReady}
                               className={`p-4 rounded-lg border-2 transition-all duration-200 text-left group shadow-md hover:shadow-lg h-[200px] flex flex-col ${
-                                selectedProject?.id === project.id 
-                                  ? 'border-primary bg-primary/5 shadow-md' 
-                                  : 'border-base-300/50 bg-base-100 hover:border-primary/30'
+                                !analyticsReady 
+                                  ? 'border-base-300/30 bg-base-100/50 opacity-60 cursor-not-allowed' 
+                                  : selectedProject?.id === project.id 
+                                    ? 'border-primary bg-primary/5 shadow-md' 
+                                    : 'border-base-300/50 bg-base-100 hover:border-primary/30'
                               }`}
                             >
                               {/* Header with color indicator and name */}

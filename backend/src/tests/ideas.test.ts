@@ -1,27 +1,34 @@
 import request from 'supertest';
 import express from 'express';
-import { MongoMemoryServer } from 'mongodb-memory-server';
-import mongoose from 'mongoose';
 import ideasRoutes from '../routes/ideas';
-import User from '../models/User';
+import { User } from '../models/User';
 import jwt from 'jsonwebtoken';
 
 const app = express();
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Mock the requireAuth middleware
+jest.mock('../middleware/auth', () => ({
+  requireAuth: (req: any, res: any, next: any) => {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'test-secret') as any;
+        req.userId = decoded.userId;
+        req.user = { _id: decoded.userId, email: decoded.email };
+        next();
+      } catch (error) {
+        res.status(401).json({ message: 'Invalid token' });
+      }
+    } else {
+      res.status(401).json({ message: 'Not authenticated' });
+    }
+  }
+}));
+
 app.use('/api/ideas', ideasRoutes);
-
-let mongoServer: MongoMemoryServer;
-
-beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
-  const mongoUri = mongoServer.getUri();
-  await mongoose.connect(mongoUri);
-});
-
-afterAll(async () => {
-  await mongoose.disconnect();
-  await mongoServer.stop();
-});
 
 beforeEach(async () => {
   await User.deleteMany({});
@@ -55,7 +62,7 @@ describe('Ideas Routes', () => {
         .set('Authorization', `Bearer ${userToken}`)
         .expect(200);
 
-      expect(Array.isArray(response.body)).toBe(true);
+      expect(Array.isArray(response.body.ideas)).toBe(true);
     });
 
     it('should require authentication', async () => {
@@ -70,6 +77,7 @@ describe('Ideas Routes', () => {
       const ideaData = {
         title: 'Test Idea',
         description: 'This is a test idea',
+        content: 'This is the content of the test idea',
         category: 'feature',
       };
 
@@ -79,8 +87,8 @@ describe('Ideas Routes', () => {
         .send(ideaData)
         .expect(201);
 
-      expect(response.body.title).toBe(ideaData.title);
-      expect(response.body.description).toBe(ideaData.description);
+      expect(response.body.idea.title).toBe(ideaData.title);
+      expect(response.body.idea.description).toBe(ideaData.description);
     });
 
     it('should validate required fields', async () => {

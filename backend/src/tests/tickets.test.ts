@@ -1,3 +1,7 @@
+// Set up environment variables for tests
+process.env.SUPPORT_EMAIL = 'support@test.com';
+process.env.JWT_SECRET = 'test-secret-key';
+
 // Mock nodemailer before imports
 const mockCreateTransport = jest.fn(() => ({
   sendMail: jest.fn().mockResolvedValue({ messageId: 'test-message-id' })
@@ -35,21 +39,28 @@ describe('Ticket Routes', () => {
 
   beforeAll(async () => {
     // Create test user
-    const hashedPassword = await bcrypt.hash('testpass123', 10);
-    testUser = new User({
+    testUser = await User.create({
       email: 'testuser@example.com',
-      password: hashedPassword,
+      password: 'testpass123',
       firstName: 'Test',
-      lastName: 'User'
+      lastName: 'User',
+      planTier: 'free',
+      isEmailVerified: true
     });
-    await testUser.save();
     userId = testUser._id.toString();
 
-    // Generate auth token
-    authToken = jwt.sign(
-      { userId: testUser._id },
-      process.env.JWT_SECRET || 'test_secret'
-    );
+    // Login to get real auth token
+    const loginResponse = await request(app)
+      .post('/api/auth/login')
+      .send({
+        email: 'testuser@example.com',
+        password: 'testpass123'
+      });
+
+    // Extract token from cookie
+    const cookies = loginResponse.headers['set-cookie'] as unknown as string[];
+    const tokenCookie = cookies.find((cookie: string) => cookie.startsWith('token='));
+    authToken = tokenCookie!.split('=')[1].split(';')[0];
   });
 
   afterAll(async () => {
@@ -59,6 +70,34 @@ describe('Ticket Routes', () => {
 
   beforeEach(async () => {
     await Ticket.deleteMany({});
+    
+    // Ensure user still exists for each test
+    const userExists = await User.findById(userId);
+    if (!userExists) {
+      // Recreate user if it was deleted
+      testUser = await User.create({
+        email: 'testuser@example.com',
+        password: 'testpass123',
+        firstName: 'Test',
+        lastName: 'User',
+        planTier: 'free',
+        isEmailVerified: true
+      });
+      userId = testUser._id.toString();
+
+      // Get new auth token
+      const loginResponse = await request(app)
+        .post('/api/auth/login')
+        .send({
+          email: 'testuser@example.com',
+          password: 'testpass123'
+        });
+
+      const cookies = loginResponse.headers['set-cookie'] as unknown as string[];
+      const tokenCookie = cookies.find((cookie: string) => cookie.startsWith('token='));
+      authToken = tokenCookie!.split('=')[1].split(';')[0];
+    }
+    
     jest.clearAllMocks();
   });
 
@@ -198,7 +237,7 @@ describe('Ticket Routes', () => {
 
     it('should get user tickets with pagination', async () => {
       const response = await request(app)
-        .get('/api/tickets/my-tickets')
+        .get('/api/tickets')
         .set('Cookie', `token=${authToken}`);
 
       expect(response.status).toBe(200);
@@ -247,7 +286,7 @@ describe('Ticket Routes', () => {
       });
 
       const response = await request(app)
-        .get('/api/tickets/my-tickets')
+        .get('/api/tickets')
         .set('Cookie', `token=${authToken}`);
 
       expect(response.status).toBe(200);

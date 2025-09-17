@@ -27,6 +27,7 @@ const Layout: React.FC = () => {
   const [activeAdminTab, setActiveAdminTab] = useState<'users' | 'tickets' | 'analytics' | 'news'>('users');
   const [projectTimeData, setProjectTimeData] = useState<{ [projectId: string]: number }>({});
   const [, setIdeasCount] = useState(0);
+  const [isHandlingTimeout, setIsHandlingTimeout] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedArchivedCategory, setSelectedArchivedCategory] = useState<string | null>(null);
   const [selectedSharedCategory, setSelectedSharedCategory] = useState<string | null>(null);
@@ -189,10 +190,9 @@ const Layout: React.FC = () => {
     }
   };
 
-  // Helper function to select and persist project
+  // Helper function to select project
   const handleProjectSelect = async (project: Project) => {
     setSelectedProject(project);
-    localStorage.setItem('selectedProjectId', project.id);
     setSearchTerm(''); // Clear search when selecting a project
 
     // Update analytics service current project (this handles backend time recording)
@@ -203,7 +203,7 @@ const Layout: React.FC = () => {
       // Fallback to direct API call if analytics service fails
       const sessionInfo = analytics.getSessionInfo();
       if (sessionInfo?.sessionId) {
-        analyticsAPI.switchProject(sessionInfo.sessionId, project.id).catch(err => {
+        analyticsAPI.switchProject(sessionInfo.sessionId, project.id).catch(() => {
         });
       }
     }
@@ -307,22 +307,6 @@ const Layout: React.FC = () => {
       // Load ideas count
       await loadIdeasCount();
       
-      // Try to restore previously selected project
-      const savedProjectId = localStorage.getItem('selectedProjectId');
-      if (savedProjectId) {
-        const savedProject = projectsResponse.projects.find(p => p.id === savedProjectId);
-        if (savedProject) {
-          handleProjectSelect(savedProject);
-          return;
-        }
-      }
-      
-      // Fallback to first project if no saved project found
-      if (projectsResponse.projects.length > 0) {
-        const activeProjects = projectsResponse.projects.filter(p => !p.isArchived);
-        const defaultProject = activeProjects.length > 0 ? activeProjects[0] : projectsResponse.projects[0];
-        handleProjectSelect(defaultProject);
-      }
     } catch (err) {
       console.error('Failed to load projects:', err);
     }
@@ -371,27 +355,10 @@ const Layout: React.FC = () => {
         // Set current user for analytics
         analytics.setCurrentUser(userResponse.user?.id || null);
         
-        // Try to restore previously selected project
-        const savedProjectId = localStorage.getItem('selectedProjectId');
-        if (savedProjectId) {
-          const savedProject = projectsResponse.projects.find(p => p.id === savedProjectId);
-          if (savedProject) {
-            handleProjectSelect(savedProject);
-            return;
-          }
-        }
-        
         // Navigate to My Projects view as default and ensure Active tab is selected
         if (location.pathname === '/' || location.pathname === '/notes') {
           setActiveProjectTab('active'); // Ensure Active tab is selected
           navigate('/notes?view=projects');
-        }
-        
-        // Fallback to first project if no saved project found
-        if (projectsResponse.projects.length > 0) {
-          const activeProjects = projectsResponse.projects.filter(p => !p.isArchived);
-          const defaultProject = activeProjects.length > 0 ? activeProjects[0] : projectsResponse.projects[0];
-          handleProjectSelect(defaultProject);
         }
       } catch (err) {
         navigate('/login');
@@ -430,7 +397,6 @@ const Layout: React.FC = () => {
         if (project) {
           console.log('[Layout] Updating UI to synced project:', project.name);
           setSelectedProject(project);
-          localStorage.setItem('selectedProjectId', project.id);
           
           // Show subtle feedback
           toast.success(`Switched to ${project.name}`);
@@ -443,14 +409,42 @@ const Layout: React.FC = () => {
       }
     };
 
+    const handleSessionTimeout = async () => {
+      // Prevent multiple timeout handlers from running
+      if (isHandlingTimeout) {
+        return;
+      }
+      setIsHandlingTimeout(true);
+      
+      try {
+        setSelectedProject(null);
+        
+        // Refresh projects data to show updated time tracking
+        await loadProjects();
+        await loadProjectTimeData();
+        
+        // Navigate to projects view
+        navigate('/notes?view=projects');
+        
+        // Show unique feedback to user (with ID to prevent duplicates)
+        toast.info('Session timed out due to inactivity. Time has been saved. Please select a project to continue.', {
+          toastId: 'session-timeout'
+        });
+      } finally {
+        setIsHandlingTimeout(false);
+      }
+    };
+
     window.addEventListener('selectProject', handleSelectProject as EventListener);
     window.addEventListener('refreshProject', handleRefreshProject as EventListener);
     window.addEventListener('projectSync', handleProjectSync as EventListener);
+    window.addEventListener('sessionTimeout', handleSessionTimeout as EventListener);
     
     return () => {
       window.removeEventListener('selectProject', handleSelectProject as EventListener);
       window.removeEventListener('refreshProject', handleRefreshProject as EventListener);
       window.removeEventListener('projectSync', handleProjectSync as EventListener);
+      window.removeEventListener('sessionTimeout', handleSessionTimeout as EventListener);
     };
   }, [projects, user]);
 
@@ -487,16 +481,12 @@ const Layout: React.FC = () => {
     try {
       // Clear user session before logout
       analytics.clearUserSession();
-      // Clear selected project from localStorage
-      localStorage.removeItem('selectedProjectId');
       await authAPI.logout();
       toast.success('Successfully logged out. See you next time!');
       navigate('/login');
     } catch (err) {
       // Clear session even if logout fails
       analytics.clearUserSession();
-      // Clear selected project from localStorage
-      localStorage.removeItem('selectedProjectId');
       toast.info('Logged out successfully.');
       navigate('/login');
     }
@@ -677,12 +667,10 @@ const Layout: React.FC = () => {
                       )}
                     </div>
                   )}
-                  {selectedProject && (
-                    <SessionTracker 
-                      projectId={selectedProject?.id}
-                      currentUserId={user?.id}
-                    />
-                  )}
+                  <SessionTracker 
+                    projectId={selectedProject?.id}
+                    currentUserId={user?.id}
+                  />
                   
                   <span className="hidden tablet:block text-sm font-medium text-base-content/80 ml-2">Hi, {user?.firstName}!</span>
 

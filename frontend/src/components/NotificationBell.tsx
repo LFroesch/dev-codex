@@ -86,7 +86,6 @@ const NotificationBell: React.FC = () => {
             const canNavigate = await unsavedChangesManager.checkNavigationAllowed();
             if (canNavigate) {
               const projectId = typeof notification.relatedProjectId === 'string' ? notification.relatedProjectId : notification.relatedProjectId._id;
-              localStorage.setItem('selectedProjectId', projectId);
               window.dispatchEvent(new CustomEvent('selectProject', { detail: { projectId } }));
               navigate('/notes');
             }
@@ -103,9 +102,8 @@ const NotificationBell: React.FC = () => {
       // Check for unsaved changes before navigation
       const canNavigate = await unsavedChangesManager.checkNavigationAllowed();
       if (canNavigate) {
-        // Store the project ID and trigger a custom event
+        // Trigger a custom event to select the project
         const projectId = typeof notification.relatedProjectId === 'string' ? notification.relatedProjectId : notification.relatedProjectId._id;
-        localStorage.setItem('selectedProjectId', projectId);
         
         // Dispatch custom event to notify Layout component
         window.dispatchEvent(new CustomEvent('selectProject', { detail: { projectId } }));
@@ -138,7 +136,6 @@ const NotificationBell: React.FC = () => {
             const canNavigate = await unsavedChangesManager.checkNavigationAllowed();
             if (canNavigate) {
               const projectId = typeof selectedInvitation.relatedProjectId === 'string' ? selectedInvitation.relatedProjectId : selectedInvitation.relatedProjectId._id;
-              localStorage.setItem('selectedProjectId', projectId);
               
               // Dispatch custom event to notify Layout component
               window.dispatchEvent(new CustomEvent('selectProject', { detail: { projectId } }));

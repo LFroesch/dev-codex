@@ -30,12 +30,24 @@ router.post('/', requireAuth, async (req: AuthRequest, res) => {
       return res.status(400).json({ error: 'Subject, message, and category are required' });
     }
 
+    // Validate category
+    const validCategories = ['technical', 'billing', 'feature-request', 'other'];
+    if (!validCategories.includes(category)) {
+      return res.status(400).json({ error: 'Invalid category' });
+    }
+
+    // Validate priority
+    const validPriorities = ['low', 'medium', 'high', 'critical'];
+    if (!validPriorities.includes(priority)) {
+      return res.status(400).json({ error: 'Invalid priority' });
+    }
+
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    const ticketId = `TICK-${Date.now()}-${uuidv4().substr(0, 8).toUpperCase()}`;
+    const ticketId = `TICK-${Date.now()}-${uuidv4().substring(0, 8).toUpperCase()}`;
 
     const ticket = new Ticket({
       ticketId,
@@ -140,20 +152,27 @@ router.post('/', requireAuth, async (req: AuthRequest, res) => {
 });
 
 // Get user's tickets
-router.get('/my-tickets', requireAuth, async (req: AuthRequest, res) => {
+router.get('/', requireAuth, async (req: AuthRequest, res) => {
   try {
     const userId = req.userId;
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
     const skip = (page - 1) * limit;
+    const status = req.query.status as string;
 
-    const tickets = await Ticket.find({ userId })
+    // Build query filter
+    const filter: any = { userId };
+    if (status) {
+      filter.status = status;
+    }
+
+    const tickets = await Ticket.find(filter)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
       .select('-__v');
 
-    const totalTickets = await Ticket.countDocuments({ userId });
+    const totalTickets = await Ticket.countDocuments(filter);
     const totalPages = Math.ceil(totalTickets / limit);
 
     res.json({
@@ -188,7 +207,10 @@ router.get('/:ticketId', requireAuth, async (req: AuthRequest, res) => {
       return res.status(404).json({ error: 'Ticket not found' });
     }
 
-    res.json(ticket);
+    res.json({
+      success: true,
+      ticket: ticket
+    });
 
   } catch (error) {
     console.error('Error fetching ticket:', error);

@@ -10,7 +10,7 @@
     "start:dev": "npm run dev",
     "test": "npm run test --prefix backend",
     "test:frontend": "npm run test:run --prefix frontend",
-    "test:all": "npm run test --prefix backend", 
+    "test:all": "npm run test --prefix backend && npm run test:run --prefix frontend", 
     "test:coverage": "npm run test:coverage --prefix backend"
   },
   "repository": {

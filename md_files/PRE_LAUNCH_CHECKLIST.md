@@ -2,14 +2,14 @@
 
 ## 🚨 **Critical Pre-Deployment Items ONLY**
 
-- [ ] **Session timeout issue**
-  if you timeout, it requires rejoining project for active users list in teammanagement
-- [ ] **Comprehensive test suite**
-
 - [ ] **Automated testing in CI/CD pipeline**
-- [ ] **Cross-device testing** - mobile, tablet, desktop compatibility
-- [ ] **Stripe webhook production testing** - Verify payment flows end-to-end
+- [ ] **Cross-device testing** - mobile, tablet, desktop compatibility/ui check
+- [ ] **Stripe webhook production keys testing** - Verify payment flows end-to-end
 - [ ] **Backup procedures** - automated data protection
+
+- [ ] Human Code
+- [ ] Any Last Implemented things before launch, AI? Quick Actions? Notes->Todos? Goals Page?
+- [ ] Minor UI tuneups / bgs/borders/etc
 
 ## Post-Launch (Important)
 

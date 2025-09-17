@@ -63,6 +63,7 @@ class AnalyticsService {
   private readonly RETRY_ATTEMPTS = 3;
   private readonly RETRY_DELAY = 1000;
   private isAuthenticated = false;
+  private isHandlingTimeout = false;
 
   private constructor() {
     this.setupEventListeners();
@@ -639,7 +640,27 @@ class AnalyticsService {
     // Only start timer if there's an active session
     if (this.session) {
       this.activityTimer = window.setTimeout(async () => {
-        await this.endSession();
+        // Prevent multiple timeout handlers from running
+        if (this.isHandlingTimeout) {
+          return;
+        }
+        this.isHandlingTimeout = true;
+        
+        try {
+          // First, explicitly save time for current project by "switching" to null
+          // This triggers the same logic as when switching between projects
+          if (this.session?.currentProjectId) {
+            await this.setCurrentProject(null);
+          }
+          
+          // Then end the session
+          await this.endSession();
+          
+          // Finally, clear selected project and navigate to projects view
+          window.dispatchEvent(new CustomEvent('sessionTimeout'));
+        } finally {
+          this.isHandlingTimeout = false;
+        }
       }, this.SESSION_TIMEOUT);
     }
   }

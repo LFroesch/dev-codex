@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
+import ConfirmationModal from '../components/ConfirmationModal';
 
 interface DeploymentData {
   liveUrl?: string;
@@ -22,6 +23,17 @@ const DeploymentPage: React.FC = () => {
   
   // Section visibility states
   const [activeSection, setActiveSection] = useState<'overview' | 'basic' | 'build' | 'env' | 'notes'>('overview');
+  
+  // Confirmation modal state
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{ 
+    isOpen: boolean; 
+    index: number; 
+    envKey: string 
+  }>({ 
+    isOpen: false, 
+    index: -1, 
+    envKey: '' 
+  });
 
   useEffect(() => {
     if (selectedProject) {
@@ -82,6 +94,11 @@ const DeploymentPage: React.FC = () => {
     const currentVars = [...(deploymentData.environmentVariables || [])];
     currentVars.splice(index, 1);
     updateField('environmentVariables', currentVars);
+    setDeleteConfirmation({ isOpen: false, index: -1, envKey: '' });
+  };
+
+  const confirmRemoveEnvironmentVariable = (index: number, envKey: string) => {
+    setDeleteConfirmation({ isOpen: true, index, envKey });
   };
 
   if (!selectedProject) {
@@ -429,7 +446,7 @@ const DeploymentPage: React.FC = () => {
                   onChange={(e) => updateEnvironmentVariable(index, 'value', e.target.value)}
                 />
                 <button
-                  onClick={() => removeEnvironmentVariable(index)}
+                  onClick={() => confirmRemoveEnvironmentVariable(index, envVar.key || `Variable ${index + 1}`)}
                   className="btn btn-error btn-sm"
                 >
                   Remove
@@ -472,6 +489,18 @@ const DeploymentPage: React.FC = () => {
           />
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={deleteConfirmation.isOpen}
+        onConfirm={() => removeEnvironmentVariable(deleteConfirmation.index)}
+        onCancel={() => setDeleteConfirmation({ isOpen: false, index: -1, envKey: '' })}
+        title="Remove Environment Variable"
+        message={`Are you sure you want to remove the environment variable "${deleteConfirmation.envKey}"?`}
+        confirmText="Remove"
+        cancelText="Cancel"
+        variant="warning"
+      />
     </div>
   );
 };

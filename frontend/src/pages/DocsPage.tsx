@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Project, Doc, projectAPI } from '../api';
+import ConfirmationModal from '../components/ConfirmationModal';
 
 interface ContextType {
   selectedProject: Project | null;
@@ -21,6 +22,11 @@ const DocsPage: React.FC = () => {
   const [expandedDocs, setExpandedDocs] = useState<Set<string>>(new Set());
   const [error, setError] = useState('');
   const [activeTemplateCategory, setActiveTemplateCategory] = useState<string>('create-new');
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean; docId: string; docTitle: string }>({ 
+    isOpen: false, 
+    docId: '', 
+    docTitle: '' 
+  });
 
   const toggleDocExpanded = (docId: string) => {
     const newExpanded = new Set(expandedDocs);
@@ -88,9 +94,14 @@ const DocsPage: React.FC = () => {
     try {
       await projectAPI.deleteDoc(selectedProject.id, docId);
       await onProjectRefresh();
+      setDeleteConfirmation({ isOpen: false, docId: '', docTitle: '' });
     } catch (err) {
       setError('Failed to delete documentation template');
     }
+  };
+
+  const confirmDeleteDoc = (docId: string, docTitle: string) => {
+    setDeleteConfirmation({ isOpen: true, docId, docTitle });
   };
 
   const handleCancelEdit = () => {
@@ -506,7 +517,7 @@ React App:
                                       <button
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          handleDeleteDoc(doc.id);
+                                          confirmDeleteDoc(doc.id, doc.title);
                                         }}
                                         className="btn btn-sm btn-error btn-outline"
                                       >
@@ -590,6 +601,18 @@ React App:
           )}
         </>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={deleteConfirmation.isOpen}
+        onConfirm={() => handleDeleteDoc(deleteConfirmation.docId)}
+        onCancel={() => setDeleteConfirmation({ isOpen: false, docId: '', docTitle: '' })}
+        title="Delete Documentation Template"
+        message={`Are you sure you want to delete "${deleteConfirmation.docTitle}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="error"
+      />
     </div>
   );
 };

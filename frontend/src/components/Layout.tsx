@@ -313,6 +313,14 @@ const Layout: React.FC = () => {
       const projectsResponse = await projectAPI.getAll();
       setProjects(projectsResponse.projects);
       
+      // If there's a currently selected project, update it with fresh data
+      if (selectedProject) {
+        const updatedSelectedProject = projectsResponse.projects.find(p => p.id === selectedProject.id);
+        if (updatedSelectedProject) {
+          setSelectedProject(updatedSelectedProject);
+        }
+      }
+      
       // Load project time data
       await loadProjectTimeData();
       
@@ -416,11 +424,6 @@ const Layout: React.FC = () => {
           }
         }
         
-        // Navigate to My Projects view as default and ensure Active tab is selected
-        if (location.pathname === '/' || location.pathname === '/notes') {
-          setActiveProjectTab('active'); // Ensure Active tab is selected
-          navigate('/notes?view=projects');
-        }
       } catch (err) {
         navigate('/login');
       } finally {

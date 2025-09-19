@@ -1297,12 +1297,12 @@ const Layout: React.FC = () => {
                                 navigate('/notes');
                               }}
                               disabled={!analyticsReady}
-                              className={`p-4 rounded-lg border-2 transition-all duration-200 text-left group shadow-md hover:shadow-lg h-[200px] flex flex-col ${
+                              className={`shadow-md p-4 rounded-lg border-2 transition-all duration-200 text-left group hover:shadow-lg h-[200px] flex flex-col ${
                                 !analyticsReady 
                                   ? 'border-base-300/30 bg-base-100/50 opacity-60 cursor-not-allowed' 
                                   : selectedProject?.id === project.id 
-                                    ? 'border-primary bg-primary/5 shadow-md' 
-                                    : 'border-base-300/50 bg-base-100 hover:border-primary/30'
+                                    ? 'border-base-300 bg-base-100 hover:border-primary/30' 
+                                    : 'border-base-content/20 bg-base-content/5 hover:border-base-300/50'
                               }`}
                             >
                               {/* Header with color indicator and name */}

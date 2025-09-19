@@ -164,7 +164,30 @@ export const formatActivityMessage = (activity: ActivityLogEntry): string => {
   switch (activity.action) {
     case 'created':
       if (resourceName || fileName) {
+        if (resourceType === 'tech' || resourceType === 'package') {
+          return `${userName} added ${getResourceDisplay()} to stack`;
+        } else if (resourceType === 'todo') {
+          return `${userName} added todo ${getResourceDisplay()}`;
+        } else if (resourceType === 'doc') {
+          return `${userName} added documentation ${getResourceDisplay()}`;
+        } else if (resourceType === 'note') {
+          return `${userName} added note ${getResourceDisplay()}`;
+        } else if (resourceType === 'devlog') {
+          return `${userName} added devlog ${getResourceDisplay()}`;
+        }
         return `${userName} created ${getResourceDisplay()}`;
+      }
+      // Fallback for when no name is available
+      if (resourceType === 'tech' || resourceType === 'package') {
+        return `${userName} added item to stack`;
+      } else if (resourceType === 'todo') {
+        return `${userName} added a todo`;
+      } else if (resourceType === 'doc') {
+        return `${userName} added documentation`;
+      } else if (resourceType === 'note') {
+        return `${userName} added a note`;
+      } else if (resourceType === 'devlog') {
+        return `${userName} added a devlog entry`;
       }
       return `${userName} created a ${resourceType}`;
       
@@ -180,7 +203,30 @@ export const formatActivityMessage = (activity: ActivityLogEntry): string => {
       
     case 'deleted':
       if (resourceName || fileName) {
+        if (resourceType === 'tech' || resourceType === 'package') {
+          return `${userName} removed ${getResourceDisplay()} from stack`;
+        } else if (resourceType === 'todo') {
+          return `${userName} removed todo ${getResourceDisplay()}`;
+        } else if (resourceType === 'doc') {
+          return `${userName} removed documentation ${getResourceDisplay()}`;
+        } else if (resourceType === 'note') {
+          return `${userName} removed note ${getResourceDisplay()}`;
+        } else if (resourceType === 'devlog') {
+          return `${userName} removed devlog ${getResourceDisplay()}`;
+        }
         return `${userName} deleted ${getResourceDisplay()}`;
+      }
+      // Fallback for when no name is available
+      if (resourceType === 'tech' || resourceType === 'package') {
+        return `${userName} removed item from stack`;
+      } else if (resourceType === 'todo') {
+        return `${userName} removed a todo`;
+      } else if (resourceType === 'doc') {
+        return `${userName} removed documentation`;
+      } else if (resourceType === 'note') {
+        return `${userName} removed a note`;
+      } else if (resourceType === 'devlog') {
+        return `${userName} removed a devlog entry`;
       }
       return `${userName} deleted a ${resourceType}`;
       

@@ -136,7 +136,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
 
   if (isEditing) {
     return (
-      <div className="bg-base-100 border border-base-300 rounded-lg p-4 mb-3 shadow-sm">
+      <div className="bg-base-100 border-2 border-base-content/20 rounded-lg p-4 mb-3 shadow-sm">
         <div className="space-y-3">
           <input
             type="text"
@@ -150,7 +150,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
           <textarea
             value={editDescription}
             onChange={(e) => setEditDescription(e.target.value)}
-            className="textarea textarea-bordered w-full"
+            className="textarea textarea-bordered w-full font-semibold text-md"
             placeholder="Description..."
             rows={2}
           />
@@ -213,7 +213,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
   }
 
   return (
-    <div className={`group card-interactive bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-3 mb-3 ${
+    <div className={`group card-interactive p-3 mb-3 ${
       todo.completed ? 'opacity-70' : ''
     }`}>
       <div className="flex items-start gap-3">
@@ -453,7 +453,7 @@ const NewTodoForm: React.FC<NewTodoFormProps> = ({ projectId, onAdd, parentTodoI
   }
 
   return (
-    <div className="bg-base-100 border border-base-200 rounded-lg p-4 mb-4">
+    <div className="bg-base-100 border-2 border-base-200 rounded-lg p-4 mb-4">
       <QuickAddForm
         projectId={projectId}
         onAdd={onAdd}

@@ -1219,7 +1219,7 @@ const Layout: React.FC = () => {
             <div className="flex-1 overflow-auto border-2 border-base-content/20 bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-none container-height-fix">
               <div className="p-4 sm:p-4">
                 <div className="space-y-4">
-                {activeProjectTab === 'active' && (
+                {(activeProjectTab === 'active' || activeProjectTab === 'archived' || activeProjectTab === 'shared') && (
                   <div className="space-y-4">
                     {!analyticsReady ? (
                       <div className="flex items-center justify-center min-h-[50vh] py-16">
@@ -1231,7 +1231,11 @@ const Layout: React.FC = () => {
                           <p className="text-base-content/60">Please wait while we set up your workspace</p>
                         </div>
                       </div>
-                    ) : Object.keys(groupedCurrentProjects).length === 0 ? (
+                    ) : Object.keys(
+                      activeProjectTab === 'active' ? groupedCurrentProjects :
+                      activeProjectTab === 'archived' ? groupedArchivedProjects :
+                      groupedSharedProjects
+                    ).length === 0 ? (
                       <div className="flex items-center justify-center min-h-[50vh] py-16">
                         <div className="text-center bg-base-100 rounded-xl p-12 border-subtle shadow-lg max-w-md mx-auto">
                           <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-full flex items-center justify-center">
@@ -1239,8 +1243,16 @@ const Layout: React.FC = () => {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                             </svg>
                           </div>
-                          <h3 className="text-2xl font-bold mb-3 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">No active projects</h3>
-                          <p className="text-base-content/60 mb-6">Create your first project to get started</p>
+                          <h3 className="text-2xl font-bold mb-3 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                            {activeProjectTab === 'active' ? 'No active projects' :
+                             activeProjectTab === 'archived' ? 'No archived projects' :
+                             'No shared projects'}
+                          </h3>
+                          <p className="text-base-content/60 mb-6">
+                            {activeProjectTab === 'active' ? 'Create your first project to get started' :
+                             activeProjectTab === 'archived' ? 'Your archived projects will appear here' :
+                             'Projects shared with you will appear here'}
+                          </p>
                           <button 
                             onClick={(e) => {
                               e.preventDefault();
@@ -1268,9 +1280,17 @@ const Layout: React.FC = () => {
                                 selectedCategory === null ? 'tab-active' : ''
                               }`}
                             >
-                              <span>All <span className="text-xs opacity-70">({Object.values(groupedCurrentProjects).flat().length})</span></span>
+                              <span>All <span className="text-xs opacity-70">({Object.values(
+                                activeProjectTab === 'active' ? groupedCurrentProjects :
+                                activeProjectTab === 'archived' ? groupedArchivedProjects :
+                                groupedSharedProjects
+                              ).flat().length})</span></span>
                             </button>
-                            {Object.entries(groupedCurrentProjects).map(([category, categoryProjects]) => (
+                            {Object.entries(
+                              activeProjectTab === 'active' ? groupedCurrentProjects :
+                              activeProjectTab === 'archived' ? groupedArchivedProjects :
+                              groupedSharedProjects
+                            ).map(([category, categoryProjects]) => (
                               <button
                                 key={category}
                                 onClick={() => setSelectedCategory(category)}
@@ -1287,8 +1307,14 @@ const Layout: React.FC = () => {
                         {/* Projects Grid */}
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                           {(selectedCategory 
-                            ? groupedCurrentProjects[selectedCategory] || []
-                            : Object.values(groupedCurrentProjects).flat()
+                            ? (activeProjectTab === 'active' ? groupedCurrentProjects :
+                               activeProjectTab === 'archived' ? groupedArchivedProjects :
+                               groupedSharedProjects)[selectedCategory] || []
+                            : Object.values(
+                                activeProjectTab === 'active' ? groupedCurrentProjects :
+                                activeProjectTab === 'archived' ? groupedArchivedProjects :
+                                groupedSharedProjects
+                              ).flat()
                           ).map((project) => (
                             <button
                               key={project.id}
@@ -1302,13 +1328,13 @@ const Layout: React.FC = () => {
                                   ? 'border-base-300/30 bg-base-100/50 opacity-60 cursor-not-allowed' 
                                   : selectedProject?.id === project.id 
                                     ? 'border-base-300 bg-base-100 hover:border-primary/30' 
-                                    : 'border-base-content/20 bg-base-content/5 hover:border-base-300/50'
+                                    : 'border-base-content/20 hover:border-base-300/50'
                               }`}
                             >
                               {/* Header with color indicator and name */}
                               <div className="flex items-center gap-3 mb-3">
                                 <div 
-                                  className="w-4 h-4 rounded-full flex-shrink-0 border-2 border-white/50 shadow-sm"
+                                  className="w-4 h-4 rounded-full flex-shrink-0 shadow-sm"
                                   style={{ backgroundColor: project.color }}
                                 ></div>
                                 <h3 className={`font-semibold text-base truncate px-2 py-1 rounded-md ${
@@ -1334,10 +1360,10 @@ const Layout: React.FC = () => {
                                     {project.tags.slice(0, 3).map((tag, tagIndex) => (
                                       <span
                                         key={tagIndex}
-                                        className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ${
+                                        className={`inline-flex items-center border-2 px-2 py-1 rounded-md text-xs font-medium ${
                                           selectedProject?.id === project.id 
-                                            ? 'bg-primary/15 text-primary border border-primary/20' 
-                                            : 'bg-base-200 text-base-content/80 border border-base-300/50'
+                                            ? 'bg-primary/15 text-primary border-primary/20' 
+                                            : 'bg-base-200 text-base-content/80 border-base-300/50'
                                         }`}
                                       >
                                         {tag}
@@ -1372,266 +1398,6 @@ const Layout: React.FC = () => {
                   </div>
                 )}
                 
-                {activeProjectTab === 'archived' && (
-                  <div className="space-y-4">
-                    {Object.keys(groupedArchivedProjects).length === 0 ? (
-                      <div className="flex items-center justify-center min-h-[50vh] py-16">
-                        <div className="text-center bg-base-100 rounded-xl p-12 border-2 border-base-content/20 shadow-lg max-w-md mx-auto">
-                          <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-base-300/50 to-base-400/50 rounded-full flex items-center justify-center">
-                            <svg className="w-10 h-10 text-base-content/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 8l6 6 6-6" />
-                            </svg>
-                          </div>
-                          <h3 className="text-2xl font-bold mb-3 text-base-content/80">No archived projects</h3>
-                          <p className="text-base-content/60">Archive projects to see them here</p>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        {/* Category Selector */}
-                        <div className="flex justify-center mb-8">
-                          <div className="tabs tabs-boxed border-2 border-base-content/20 shadow-sm opacity-90">
-                            <button
-                              onClick={() => setSelectedArchivedCategory(null)}
-                              className={`tab tab-sm min-h-10 font-bold text-sm ${
-                                selectedArchivedCategory === null ? 'tab-active' : ''
-                              }`}
-                            >
-                              <span>All <span className="text-xs opacity-70">({Object.values(groupedArchivedProjects).flat().length})</span></span>
-                            </button>
-                            {Object.entries(groupedArchivedProjects).map(([category, categoryProjects]) => (
-                              <button
-                                key={category}
-                                onClick={() => setSelectedArchivedCategory(category)}
-                                className={`tab tab-sm min-h-10 font-bold text-sm ${
-                                  selectedArchivedCategory === category ? 'tab-active' : ''
-                                }`}
-                              >
-                                <span>{category} <span className="text-xs opacity-70">({categoryProjects.length})</span></span>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Projects Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                          {(selectedArchivedCategory 
-                            ? groupedArchivedProjects[selectedArchivedCategory] || []
-                            : Object.values(groupedArchivedProjects).flat()
-                          ).map((project) => (
-                            <button
-                              key={project.id}
-                              onClick={() => {
-                                handleProjectSelect(project);
-                                navigate('/notes');
-                              }}
-                              disabled={!analyticsReady}
-                              className={`p-4 rounded-lg border-2 transition-all duration-200 text-left group shadow-md hover:shadow-lg h-[200px] flex flex-col ${
-                                !analyticsReady 
-                                  ? 'border-base-300/30 bg-base-100/50 opacity-60 cursor-not-allowed' 
-                                  : selectedProject?.id === project.id 
-                                    ? 'border-primary bg-primary/5 shadow-md' 
-                                    : 'border-base-300/50 bg-base-100 hover:border-primary/30'
-                              }`}
-                            >
-                              {/* Header with color indicator and name */}
-                              <div className="flex items-center gap-3 mb-3">
-                                <div 
-                                  className="w-4 h-4 rounded-full flex-shrink-0 border-2 border-white/50 shadow-sm"
-                                  style={{ backgroundColor: project.color }}
-                                ></div>
-                                <h3 className={`font-semibold group-hover:text-primary text-base truncate px-2 py-1 rounded-md ${
-                                  selectedProject?.id === project.id ? 'group-hover:text-secondary bg-primary text-primary-content' : 'group-hover:text-primary bg-base-300 text-base-content'
-                                }`}>
-                                  {project.name}
-                                </h3>
-                                <span className="text-xs bg-base-300/60 text-base-content/60 px-2 py-0.5 rounded-full ml-auto">
-                                  Archived
-                                </span>
-                              </div>
-                              
-                              {/* Description - Fixed height */}
-                              <div className="mb-3 h-[2.5rem] flex-shrink-0">
-                                {project.description && (
-                                  <p className="text-sm text-base-content/70 line-clamp-2">
-                                    {project.description}
-                                  </p>
-                                )}
-                              </div>
-                              
-                              {/* Tags - Fixed height */}
-                              <div className="mb-3 h-[1.5rem] flex-shrink-0">
-                                {project.tags && project.tags.length > 0 && (
-                                  <div className="flex flex-wrap gap-1">
-                                    {project.tags.slice(0, 3).map((tag, tagIndex) => (
-                                      <span
-                                        key={tagIndex}
-                                        className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-base-300/40 text-base-content/60 border border-base-300/50"
-                                      >
-                                        {tag}
-                                      </span>
-                                    ))}
-                                    {project.tags.length > 3 && (
-                                      <span className="text-xs text-base-content/40 font-medium flex items-center">
-                                        +{project.tags.length - 3}
-                                      </span>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                              
-                              {/* Footer - Always at bottom */}
-                              <div className="flex items-center justify-between text-xs pt-2 border-t border-base-content/20 mt-auto">
-                                <div className="flex items-center gap-1 px-2 py-1 rounded-md font-medium bg-secondary text-secondary-content">
-                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                  </svg>
-                                  <span>{formatProjectTime(project.id)}</span>
-                                </div>
-                                <span className="text-base-content/70 font-mono">
-                                  {new Date(project.updatedAt).toLocaleDateString()}
-                                </span>
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
-
-                {activeProjectTab === 'shared' && (
-                  <div className="space-y-4">
-                    {Object.keys(groupedSharedProjects).length === 0 ? (
-                      <div className="flex items-center justify-center min-h-[50vh] py-16">
-                        <div className="text-center bg-base-100 rounded-xl p-12 border-2 border-base-content/20 shadow-lg max-w-md mx-auto">
-                          <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-secondary/20 to-secondary/30 rounded-full flex items-center justify-center">
-                            <svg className="w-10 h-10 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                            </svg>
-                          </div>
-                          <h3 className="text-2xl font-bold mb-3 text-base-content/80">No shared projects</h3>
-                          <p className="text-base-content/60">Projects shared with you will appear here</p>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        {/* Category Selector */}
-                        <div className="flex justify-center mb-8">
-                          <div className="tabs tabs-boxed border-2 border-base-content/20 shadow-sm opacity-90">
-                            <button
-                              onClick={() => setSelectedSharedCategory(null)}
-                              className={`tab tab-sm min-h-10 font-bold text-sm ${
-                                selectedSharedCategory === null ? 'tab-active' : ''
-                              }`}
-                            >
-                              <span>All <span className="text-xs opacity-70">({Object.values(groupedSharedProjects).flat().length})</span></span>
-                            </button>
-                            {Object.entries(groupedSharedProjects).map(([category, categoryProjects]) => (
-                              <button
-                                key={category}
-                                onClick={() => setSelectedSharedCategory(category)}
-                                className={`tab tab-sm min-h-10 font-bold text-sm ${
-                                  selectedSharedCategory === category ? 'tab-active' : ''
-                                }`}
-                              >
-                                <span>{category} <span className="text-xs opacity-70">({categoryProjects.length})</span></span>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Projects Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                          {(selectedSharedCategory 
-                            ? groupedSharedProjects[selectedSharedCategory] || []
-                            : Object.values(groupedSharedProjects).flat()
-                          ).map((project) => (
-                            <button
-                              key={project.id}
-                              onClick={() => {
-                                handleProjectSelect(project);
-                                navigate('/notes');
-                              }}
-                              disabled={!analyticsReady}
-                              className={`p-4 rounded-lg border-2 transition-all duration-200 text-left group shadow-md hover:shadow-lg h-[200px] flex flex-col ${
-                                !analyticsReady 
-                                  ? 'border-base-300/30 bg-base-100/50 opacity-60 cursor-not-allowed' 
-                                  : selectedProject?.id === project.id 
-                                    ? 'border-primary bg-primary/5 shadow-md' 
-                                    : 'border-base-300/50 bg-base-100 hover:border-primary/30'
-                              }`}
-                            >
-                              {/* Header with color indicator and name */}
-                              <div className="flex items-center gap-3 mb-3">
-                                <div 
-                                  className="w-4 h-4 rounded-full flex-shrink-0 border-2 border-white/50 shadow-sm"
-                                  style={{ backgroundColor: project.color }}
-                                ></div>
-                                <h3 className={`font-semibold group-hover:text-primary text-base truncate px-2 py-1 rounded-md ${
-                                  selectedProject?.id === project.id ? 'group-hover:text-secondary bg-primary text-primary-content' : 'group-hover:text-primary bg-base-300 text-base-content'
-                                }`}>
-                                  {project.name}
-                                </h3>
-                                <span className="text-xs bg-secondary/10 text-secondary px-2 py-0.5 rounded-full ml-auto">
-                                  Shared
-                                </span>
-                              </div>
-                              
-                              {/* Description - Fixed height */}
-                              <div className="mb-3 h-[2.5rem] flex-shrink-0">
-                                {project.description && (
-                                  <p className="text-sm text-base-content/70 line-clamp-2">
-                                    {project.description}
-                                  </p>
-                                )}
-                              </div>
-                              
-                              {/* Tags - Fixed height */}
-                              <div className="mb-3 h-[1.5rem] flex-shrink-0">
-                                {project.tags && project.tags.length > 0 && (
-                                  <div className="flex flex-wrap gap-1">
-                                    {project.tags.slice(0, 3).map((tag, tagIndex) => (
-                                      <span
-                                        key={tagIndex}
-                                        className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ${
-                                          selectedProject?.id === project.id 
-                                            ? 'bg-primary/15 text-primary border border-primary/20' 
-                                            : 'bg-base-200 text-base-content/80 border border-base-300/50'
-                                        }`}
-                                      >
-                                        {tag}
-                                      </span>
-                                    ))}
-                                    {project.tags.length > 3 && (
-                                      <span className="text-xs text-base-content/70 font-medium flex items-center">
-                                        +{project.tags.length - 3}
-                                      </span>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                              
-                              {/* Footer - Always at bottom */}
-                              <div className="flex items-center justify-between text-xs pt-2 border-t border-base-content/20 mt-auto">
-                                <div className="flex items-center gap-1 px-2 py-1 rounded-md font-medium bg-secondary text-secondary-content">
-                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                  </svg>
-                                  <span>{formatProjectTime(project.id)}</span>
-                                </div>
-                                <span className="text-base-content/70 font-mono">
-                                  {new Date(project.updatedAt).toLocaleDateString()}
-                                </span>
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
-
                 {activeProjectTab === 'ideas' && (
                   <div className="space-y-4">
                     {/* Embed IdeasPage content here */}

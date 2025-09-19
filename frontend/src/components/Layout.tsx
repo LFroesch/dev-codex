@@ -391,7 +391,7 @@ const Layout: React.FC = () => {
           
           if (savedProjectId && lastActiveTime) {
             const timeSinceLastActive = Date.now() - parseInt(lastActiveTime);
-            const fifteenMinutes = 15 * 60 * 1000; // 15 minutes
+            const fifteenMinutes = 15 * 1000; // 15 minutes
             
             if (timeSinceLastActive > fifteenMinutes) {
               // User was away for more than 15 minutes (session would have timed out)
@@ -1327,7 +1327,7 @@ const Layout: React.FC = () => {
                                 !analyticsReady 
                                   ? 'border-base-300/30 bg-base-100/50 opacity-60 cursor-not-allowed' 
                                   : selectedProject?.id === project.id 
-                                    ? 'border-base-300 bg-base-100 hover:border-primary/30' 
+                                    ? 'border-base-300 bg-base-200/50 hover:border-primary/30' 
                                     : 'border-base-content/20 hover:border-base-300/50'
                               }`}
                             >
@@ -1360,9 +1360,9 @@ const Layout: React.FC = () => {
                                     {project.tags.slice(0, 3).map((tag, tagIndex) => (
                                       <span
                                         key={tagIndex}
-                                        className={`inline-flex items-center border-2 px-2 py-1 rounded-md text-xs font-medium ${
+                                        className={`inline-flex items-center border-2 px-2 py-1 rounded-md text-xs font-bold ${
                                           selectedProject?.id === project.id 
-                                            ? 'bg-primary/15 text-primary border-primary/20' 
+                                            ? 'bg-primary/15 text-primary border-primary/50' 
                                             : 'bg-base-200 text-base-content/80 border-base-300/50'
                                         }`}
                                       >

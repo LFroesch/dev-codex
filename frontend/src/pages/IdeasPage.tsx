@@ -208,8 +208,8 @@ const NewIdeaForm: React.FC<NewIdeaFormProps> = ({ onAdd }) => {
           onClick={() => setShowCreateForm(true)}
           className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-base-200/40 transition-colors rounded-lg"
         >
-          <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-            <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="w-8 h-8 bg-success/50 border-thick rounded-full flex items-center justify-center">
+            <svg className="w-4 h-4 text-base-content" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
           </div>

@@ -308,7 +308,7 @@ const StackPage: React.FC = () => {
 
     return (
       <span 
-        className="badge badge-xs badge-ghost cursor-pointer hover:bg-base-300 transition-colors"
+        className="badge badge-xs badge-ghost cursor-pointer hover:bg-base-300 transition-colors h-5"
         onDoubleClick={() => setEditingVersion({ type, category, name, version })}
         title="Double-click to edit version"
       >
@@ -451,7 +451,7 @@ const StackPage: React.FC = () => {
                           href={option.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-primary hover:text-primary/80 text-sm"
+                          className="btn btn-ghost w-8 btn-sm text-primary hover:bg-primary/10 border-2 border-base-content/20 group-hover:opacity-100 transition-opacity"
                           onClick={(e) => e.stopPropagation()}
                           title="View documentation"
                         >
@@ -608,7 +608,7 @@ const StackPage: React.FC = () => {
                               href={techOption.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="btn btn-ghost w-8 btn-sm text-primary hover:bg-primary/10 border border-base-content/20 group-hover:opacity-100 transition-opacity"
+                              className="btn btn-ghost w-8 btn-sm text-primary hover:bg-primary/10 border-2 border-base-content/20 group-hover:opacity-100 transition-opacity"
                               title="View documentation"
                             >
                               🔗
@@ -616,7 +616,7 @@ const StackPage: React.FC = () => {
                             )}
                           <button
                             onClick={() => handleRemoveTechnology(tech.category, tech.name)}
-                            className={`btn w-8 btn-ghost btn-sm text-error hover:bg-error/10 border border-base-content/20 group-hover:opacity-100 transition-opacity ${isLoading ? 'loading' : ''}`}
+                            className={`btn w-8 btn-ghost btn-sm text-error hover:bg-error/10 border-2 border-base-content/20 group-hover:opacity-100 transition-opacity ${isLoading ? 'loading' : ''}`}
                             title='Remove technology'
                             disabled={isLoading}
                           >
@@ -680,7 +680,7 @@ const StackPage: React.FC = () => {
                               href={pkgOption.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="btn btn-ghost btn-sm text-primary hover:bg-primary/10 border border-base-content/20 opacity-0 group-hover:opacity-100 transition-opacity"
+                              className="btn btn-ghost btn-sm text-primary hover:bg-primary/10 border-2 border-base-content/20 opacity-0 group-hover:opacity-100 transition-opacity"
                               title="View documentation"
                             >
                               🔗
@@ -726,9 +726,9 @@ const StackPage: React.FC = () => {
                     <button
                       key={platform.id}
                       onClick={() => handlePlatformToggle(platform.id)}
-                      className={`text-left p-2 rounded-md border transition-all duration-200 hover:shadow-md ${
+                      className={`text-left p-2 rounded-md border-2 transition-all duration-200 hover:shadow-md ${
                         selectedPlatforms.has(platform.id)
-                          ? 'border-primary bg-primary shadow-sm'
+                          ? 'border-primary bg-primary/50 shadow-sm'
                           : 'border-base-300 hover:border-primary/30 bg-base-200'
                       }`}
                     >
@@ -755,9 +755,9 @@ const StackPage: React.FC = () => {
                         setSelectedGroup(group.name);
                         setActiveCategory(''); // Reset active category when group changes
                       }}
-                      className={`text-left p-2 rounded-md border transition-all duration-200 hover:shadow-md ${
+                      className={`text-left p-2 rounded-md border-2 transition-all duration-200 hover:shadow-md ${
                         selectedGroup === group.name
-                          ? 'border-primary bg-primary shadow-sm'
+                          ? 'border-primary bg-primary/50 shadow-sm'
                           : 'border-base-300 hover:border-primary/30 bg-base-200'
                       }`}
                     >

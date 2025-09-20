@@ -204,8 +204,6 @@ const Layout: React.FC = () => {
     
     // Save selected project to localStorage for refresh persistence
     localStorage.setItem('selectedProjectId', project.id);
-    // Track when user was last active for browser close detection
-    localStorage.setItem('lastActiveTime', Date.now().toString());
 
     // Update analytics service current project (this handles backend time recording)
     try {
@@ -384,43 +382,16 @@ const Layout: React.FC = () => {
           setAnalyticsReady(true); // Set to true anyway to avoid blocking UI
         }
         
-        // Check if browser was previously closed vs page refresh
-        const handleBrowserClosedPreviously = () => {
-          const savedProjectId = localStorage.getItem('selectedProjectId');
-          const lastActiveTime = localStorage.getItem('lastActiveTime');
-          
-          if (savedProjectId && lastActiveTime) {
-            const timeSinceLastActive = Date.now() - parseInt(lastActiveTime);
-            const fifteenMinutes = 15 * 1000; // 15 minutes
-            
-            if (timeSinceLastActive > fifteenMinutes) {
-              // User was away for more than 15 minutes (session would have timed out)
-              localStorage.removeItem('selectedProjectId');
-              localStorage.removeItem('lastActiveTime');
-              setSelectedProject(null);
-              toast.info('Welcome back! Your previous session expired. Please select a project to continue.');
-              return true; // Handled as browser close
-            }
-          }
-          return false; // Not a browser close scenario
-        };
-        
-        // Check if browser was closed previously, otherwise restore project selection
-        const wasBrowserClosed = handleBrowserClosedPreviously();
-        
-        if (!wasBrowserClosed) {
-          // Not a browser close scenario - restore project from localStorage if it exists
-          const savedProjectId = localStorage.getItem('selectedProjectId');
-          if (savedProjectId) {
-            const savedProject = projectsResponse.projects.find(p => p.id === savedProjectId);
-            if (savedProject) {
-              setSelectedProject(savedProject);
-              await analytics.setCurrentProject(savedProject.id);
-            } else {
-              // Project no longer exists, clear the saved data
-              localStorage.removeItem('selectedProjectId');
-              localStorage.removeItem('lastActiveTime');
-            }
+        // Restore project selection from localStorage if it exists
+        const savedProjectId = localStorage.getItem('selectedProjectId');
+        if (savedProjectId) {
+          const savedProject = projectsResponse.projects.find(p => p.id === savedProjectId);
+          if (savedProject) {
+            setSelectedProject(savedProject);
+            await analytics.setCurrentProject(savedProject.id);
+          } else {
+            // Project no longer exists, clear the saved data
+            localStorage.removeItem('selectedProjectId');
           }
         }
         
@@ -473,7 +444,10 @@ const Layout: React.FC = () => {
       }
     };
 
-    const handleSessionTimeout = async () => {
+    const handleSessionTimeout = async (event?: Event) => {
+      // Check if analytics service already handled this timeout
+      const handledByAnalytics = (event as CustomEvent)?.detail?.handledByAnalytics;
+      
       // Prevent multiple timeout handlers from running
       if (isHandlingTimeout) {
         return;
@@ -481,35 +455,46 @@ const Layout: React.FC = () => {
       setIsHandlingTimeout(true);
       
       try {
+        // ALWAYS clear the selected project UI state and localStorage
         setSelectedProject(null);
-        // Clear selected project from localStorage on timeout
         localStorage.removeItem('selectedProjectId');
-        localStorage.removeItem('lastActiveTime');
         
-        // Refresh projects data to show updated time tracking
-        await loadProjects();
+        // If analytics didn't handle it, we need to end the session ourselves
+        if (!handledByAnalytics && analytics.hasActiveSession()) {
+          await analytics.endSession();
+        }
+        
+        // Don't reload projects here - we're navigating away and it might restore the selected project
+        // Force refresh of time data only
         await loadProjectTimeData();
         
         // Navigate to projects view
         navigate('/notes?view=projects');
         
         // Show unique feedback to user
-        toast.info('Session timed out due to inactivity. Time has been saved. Please select a project to continue.');
+        toast.info('Session timed out due to inactivity. Time has been saved. Please select a project to continue.', 5000, true);
       } finally {
         setIsHandlingTimeout(false);
       }
+    };
+
+    const handleForceProjectClear = () => {
+      setSelectedProject(null);
+      localStorage.removeItem('selectedProjectId');
     };
 
     window.addEventListener('selectProject', handleSelectProject as EventListener);
     window.addEventListener('refreshProject', handleRefreshProject as EventListener);
     window.addEventListener('projectSync', handleProjectSync as EventListener);
     window.addEventListener('sessionTimeout', handleSessionTimeout as EventListener);
+    window.addEventListener('forceProjectClear', handleForceProjectClear as EventListener);
     
     return () => {
       window.removeEventListener('selectProject', handleSelectProject as EventListener);
       window.removeEventListener('refreshProject', handleRefreshProject as EventListener);
       window.removeEventListener('projectSync', handleProjectSync as EventListener);
       window.removeEventListener('sessionTimeout', handleSessionTimeout as EventListener);
+      window.removeEventListener('forceProjectClear', handleForceProjectClear as EventListener);
     };
   }, [projects, user]);
 
@@ -548,7 +533,6 @@ const Layout: React.FC = () => {
       analytics.clearUserSession();
       // Clear selected project from localStorage
       localStorage.removeItem('selectedProjectId');
-      localStorage.removeItem('lastActiveTime');
       await authAPI.logout();
       toast.success('Successfully logged out. See you next time!');
       navigate('/login');
@@ -556,7 +540,6 @@ const Layout: React.FC = () => {
       // Clear session even if logout fails
       analytics.clearUserSession();
       localStorage.removeItem('selectedProjectId');
-      localStorage.removeItem('lastActiveTime');
       toast.info('Logged out successfully.');
       navigate('/login');
     }

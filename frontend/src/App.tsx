@@ -5,7 +5,7 @@ import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
 import analyticsService from './services/analytics';
 
-// Lazy load pages
+// Lazy load page components for better performance
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const RegisterPage = lazy(() => import('./pages/RegisterPage'));
 const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
@@ -30,41 +30,36 @@ const NewsPage = lazy(() => import('./pages/NewsPage'));
 const PublicProjectPage = lazy(() => import('./pages/PublicProjectPage'));
 const PublicProfilePage = lazy(() => import('./pages/PublicProfilePage'));
 
-// Import debug utils in development
+// Load debug utilities only in development mode
 if (import.meta.env.DEV) {
   import('./utils/debugUtils');
 }
 
 const queryClient = new QueryClient();
 
-// Loading component for Suspense fallback
+// Loading spinner component for lazy-loaded routes
 const LoadingSpinner = () => (
   <div className="flex justify-center items-center h-64">
     <div className="loading loading-spinner loading-lg"></div>
   </div>
 );
 
+// Main application component with routing and global providers
 const App: React.FC = () => {
   useEffect(() => {
-    // Apply saved theme on app load
     const savedTheme = localStorage.getItem('theme') || 'retro';
     document.documentElement.setAttribute('data-theme', savedTheme);
 
-    // Cleanup function for when the app unmounts
     return () => {
-      // Clean up services to prevent memory leaks
       if (typeof window !== 'undefined') {
-        // Cleanup notification service
         import('./services/notificationService').then(({ notificationService }) => {
           notificationService.cleanup();
         });
         
-        // Cleanup lock signaling service
         import('./services/lockSignaling').then(({ lockSignaling }) => {
           lockSignaling.cleanup();
         });
         
-        // Cleanup analytics service
         if (analyticsService && typeof analyticsService.endSession === 'function') {
           analyticsService.endSession();
         }

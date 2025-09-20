@@ -58,7 +58,7 @@ class AnalyticsService {
   private isOnline = navigator.onLine;
   private pendingEvents: AnalyticsEvent[] = [];
   private readonly HEARTBEAT_INTERVAL = 30 * 1000;
-  private readonly SESSION_TIMEOUT = 15 * 60 * 1000; // 15 minutes - allows for longer thinking/reading periods
+  private readonly SESSION_TIMEOUT = 15 * 60 * 1000; // 15 minutes
   private readonly MAX_PENDING_EVENTS = 100;
   private readonly RETRY_ATTEMPTS = 3;
   private readonly RETRY_DELAY = 1000;
@@ -653,11 +653,16 @@ class AnalyticsService {
             await this.setCurrentProject(null);
           }
           
-          // Then end the session
+          // Then end the session completely
           await this.endSession();
           
-          // Finally, clear selected project and navigate to projects view
-          window.dispatchEvent(new CustomEvent('sessionTimeout'));
+          // Dispatch event to notify Layout component
+          window.dispatchEvent(new CustomEvent('sessionTimeout', { 
+            detail: { handledByAnalytics: true } 
+          }));
+          
+          // Also dispatch a separate event to force project clearing
+          window.dispatchEvent(new CustomEvent('forceProjectClear'));
         } finally {
           this.isHandlingTimeout = false;
         }

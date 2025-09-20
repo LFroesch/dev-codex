@@ -260,6 +260,7 @@ const Layout: React.FC = () => {
     return grouped;
   };
 
+  // Loads project time data - called on heartbeat for real-time updates
   const loadProjectTimeData = async () => {
     try {
       const response = await analyticsAPI.getProjectsTime(30) as any;
@@ -498,15 +499,19 @@ const Layout: React.FC = () => {
     };
   }, [projects, user]);
 
-  // Auto-update project time data every 30 seconds
+  // Update project time data on analytics heartbeat for real-time updates
   useEffect(() => {
     if (!user) return;
 
-    const interval = setInterval(() => {
+    const handleHeartbeat = () => {
       loadProjectTimeData();
-    }, 30000); // Update every 30 seconds
+    };
 
-    return () => clearInterval(interval);
+    window.addEventListener('analyticsHeartbeat', handleHeartbeat);
+
+    return () => {
+      window.removeEventListener('analyticsHeartbeat', handleHeartbeat);
+    };
   }, [user]);
 
   // Update project time data when user becomes active

@@ -1,14 +1,17 @@
 import { BaseApiService } from './base';
 
+// API client for analytics-related server communication
 class AnalyticsService extends BaseApiService {
   constructor() {
     super('/analytics');
   }
 
+  // Fetches analytics data for the current user
   async getUserAnalytics(days: number = 30) {
     return this.get(`/me?days=${days}`);
   }
 
+  // Fetches analytics data for admin dashboard (specific user or current user)
   async getAdminAnalytics(userId?: string, days: number = 30) {
     const endpoint = userId ? `/user/${userId}?days=${days}` : `/me?days=${days}`;
     return this.get(endpoint);
@@ -18,20 +21,14 @@ class AnalyticsService extends BaseApiService {
     return this.get('/session/active');
   }
 
+  // Resets all analytics data (admin only)
   async resetAllAnalytics() {
-    const response = await fetch('/api/admin/analytics/reset', {
-      method: 'DELETE',
-      credentials: 'include'
-    });
-    return response.json();
+    return this.delete('/admin/analytics/reset');
   }
 
+  // Resets project time tracking data (admin only)
   async resetProjectTimeData() {
-    const response = await fetch('/api/admin/analytics/project-time/reset', {
-      method: 'DELETE',
-      credentials: 'include'
-    });
-    return response.json();
+    return this.delete('/admin/analytics/project-time/reset');
   }
 
 
@@ -53,19 +50,23 @@ class AnalyticsService extends BaseApiService {
   }
 }
 
+// API client for public project and user data
 class PublicService extends BaseApiService {
   constructor() {
     super('/public');
   }
 
+  // Fetches public project information by identifier
   async getProject(identifier: string): Promise<{ success: boolean; project: any }> {
     return this.get(`/project/${identifier}`);
   }
 
+  // Fetches public user profile by identifier
   async getUserProfile(identifier: string): Promise<{ success: boolean; user: any }> {
     return this.get(`/user/${identifier}`);
   }
 
+  // Fetches public projects with optional filtering and pagination
   async getProjects(params?: {
     page?: number;
     limit?: number;
@@ -88,6 +89,7 @@ class PublicService extends BaseApiService {
     return this.get(`/projects${queryString ? `?${queryString}` : ''}`);
   }
 
+  // Fetches available filter options for public projects
   async getFilters(): Promise<{ 
     success: boolean; 
     categories: string[]; 

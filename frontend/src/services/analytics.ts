@@ -1,8 +1,8 @@
+// Represents a user action or system event for analytics tracking
 interface AnalyticsEvent {
   eventType: 'field_edit' | 'action' | 'page_view' | 'project_open' | 'feature_usage' | 'navigation' | 'search' | 'error' | 'performance' | 'ui_interaction';
   timestamp: number;
   eventData: {
-    // Existing fields
     projectId?: string;
     projectName?: string;
     fieldName?: string;
@@ -11,8 +11,6 @@ interface AnalyticsEvent {
     newValue?: any;
     pageName?: string;
     actionName?: string;
-    
-    // New analytics fields
     featureName?: string;
     componentName?: string;
     buttonName?: string;
@@ -29,11 +27,11 @@ interface AnalyticsEvent {
     elementId?: string;
     elementText?: string;
     screenSize?: string;
-    
     metadata?: Record<string, any>;
   };
 }
 
+// Tracks user session data and activity for analytics
 interface SessionData {
   sessionId: string;
   userId?: string;
@@ -65,16 +63,12 @@ class AnalyticsService {
   private isAuthenticated = false;
   private isHandlingTimeout = false;
 
+  // Initializes the analytics service and restores any existing session
   private constructor() {
     this.setupEventListeners();
-    
-    // Check if user is already authenticated (has cookie)
     this.checkAuthenticationStatus();
-    
-    // Initialize project sync on startup
     this.initializeProjectSync();
     
-    // Try to restore existing session only if authenticated
     const stored = localStorage.getItem('analytics_session');
     if (stored && this.isAuthenticated) {
       try {
@@ -82,7 +76,6 @@ class AnalyticsService {
         const now = Date.now();
         const timeSinceLastActivity = now - (data.lastActivity || data.startTime);
         
-        // If active within session timeout, restore it
         if (timeSinceLastActivity < this.SESSION_TIMEOUT) {
           this.session = {
             sessionId: data.sessionId,
@@ -105,6 +98,7 @@ class AnalyticsService {
     }
   }
 
+  // Returns the singleton instance of the analytics service
   static getInstance(): AnalyticsService {
     if (!AnalyticsService.instance) {
       AnalyticsService.instance = new AnalyticsService();
@@ -124,6 +118,7 @@ class AnalyticsService {
     }
   }
 
+  // Sets up browser event listeners for online/offline, visibility, and activity tracking
   private setupEventListeners() {
     window.addEventListener('online', () => {
       this.isOnline = true;
@@ -170,6 +165,7 @@ class AnalyticsService {
     });
   }
 
+  // Starts a new analytics session or resumes an existing one
   async startSession(): Promise<string> {
     // Don't start session if not authenticated
     if (!this.isAuthenticated) {
@@ -183,10 +179,8 @@ class AnalyticsService {
     }
 
     try {
-      const response = await fetch('/api/analytics/session/start', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' }
+      const response = await this.makeAnalyticsRequest('/session/start', {
+        method: 'POST'
       });
 
       if (response.status === 401) {
@@ -272,6 +266,7 @@ class AnalyticsService {
     return sessionId;
   }
 
+  // Ends the current analytics session and sends final data to the server
   async endSession() {
     if (!this.session) return;
 
@@ -289,10 +284,8 @@ class AnalyticsService {
 
     try {
       // Send final session data
-      await fetch('/api/analytics/session/end', {
+      await this.makeAnalyticsRequest('/session/end', {
         method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           sessionId: this.session.sessionId,
           duration: sessionDuration,
@@ -314,6 +307,7 @@ class AnalyticsService {
     this.session = null;
   }
 
+  // Records an analytics event and sends it to the server
   async trackEvent(event: AnalyticsEvent) {
     if (!this.isAuthenticated) {
       return;
@@ -347,6 +341,7 @@ class AnalyticsService {
   }
 
 
+  // Tracks when a user opens a project and logs smart join activity
   async trackProjectOpen(projectId: string, projectName: string) {
     if (!projectId || !projectName) {
       return;
@@ -392,6 +387,7 @@ class AnalyticsService {
 
 
 
+  // Returns detailed information about the current session
   getSessionInfo() {
     if (!this.session) return null;
 
@@ -417,10 +413,12 @@ class AnalyticsService {
     };
   }
 
+  // Checks if there is an active analytics session
   hasActiveSession(): boolean {
     return this.session !== null;
   }
 
+  // Returns current analytics service status and statistics
   getAnalyticsStats() {
     return {
       hasActiveSession: this.hasActiveSession(),
@@ -432,7 +430,7 @@ class AnalyticsService {
     };
   }
 
-  // Method to manually flush events (useful for debugging)
+  // Manually sends all pending events to the server
   async flushEvents(): Promise<void> {
     await this.flushPendingEvents();
   }
@@ -448,6 +446,7 @@ class AnalyticsService {
 
 
 
+  // Updates the current user and manages session state accordingly
   setCurrentUser(userId: string | null) {
     this.currentUserId = userId;
     this.isAuthenticated = userId !== null;
@@ -463,6 +462,7 @@ class AnalyticsService {
     }
   }
 
+  // Clears user session data and ends analytics tracking
   clearUserSession() {
     this.currentUserId = null;
     this.isAuthenticated = false;
@@ -470,7 +470,7 @@ class AnalyticsService {
     localStorage.removeItem('analytics_session');
   }
 
-  // Check authentication status by trying to make a simple auth request
+  // Verifies if the user is authenticated by checking with the server
   private async checkAuthenticationStatus() {
     try {
       const response = await fetch('/api/auth/me', {
@@ -487,6 +487,7 @@ class AnalyticsService {
     }
   }
 
+  // Updates the current project and tracks time spent in previous project
   async setCurrentProject(projectId: string | null) {
     if (this.session && this.isAuthenticated) {
       const previousProjectId = this.session.currentProjectId;
@@ -494,10 +495,8 @@ class AnalyticsService {
       // Call backend to record time spent on previous project
       if (this.isOnline && (previousProjectId !== projectId)) {
         try {
-          const response = await fetch('/api/analytics/project/switch', {
+          const response = await this.makeAnalyticsRequest('/project/switch', {
             method: 'POST',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               sessionId: this.session.sessionId,
               newProjectId: projectId
@@ -571,15 +570,24 @@ class AnalyticsService {
     return this.session?.currentPage || null;
   }
 
+  // Helper method for making authenticated requests to analytics API
+  private async makeAnalyticsRequest(path: string, options: any = {}): Promise<Response> {
+    const defaultHeaders = {
+      'Content-Type': 'application/json',
+      'X-Session-ID': this.session?.sessionId || ''
+    };
+
+    return fetch(`/api/analytics${path}`, {
+      credentials: 'include',
+      headers: { ...defaultHeaders, ...options.headers },
+      ...options
+    });
+  }
+
   private async sendEvent(event: AnalyticsEvent) {
     try {
-      const response = await fetch('/api/analytics/track', {
+      const response = await this.makeAnalyticsRequest('/track', {
         method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Session-ID': this.session?.sessionId || ''
-        },
         body: JSON.stringify(event)
       });
       
@@ -696,13 +704,8 @@ class AnalyticsService {
       // Don't update lastActivity in heartbeat - only track real user activity
       this.updateStorage();
 
-      const response = await fetch('/api/analytics/heartbeat', {
+      const response = await this.makeAnalyticsRequest('/heartbeat', {
         method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Session-ID': this.session.sessionId
-        },
         body: JSON.stringify({
           sessionId: this.session.sessionId,
           lastActivity: this.session.lastActivity,
@@ -721,6 +724,11 @@ class AnalyticsService {
         } else {
           throw new Error(`Analytics heartbeat error: ${response.status}`);
         }
+      } else {
+        // Emit event when heartbeat succeeds to trigger time data updates
+        window.dispatchEvent(new CustomEvent('analyticsHeartbeat', { 
+          detail: { sessionId: this.session.sessionId } 
+        }));
       }
     } catch (error) {
       console.error('Analytics: Heartbeat network error:', error);
@@ -737,9 +745,8 @@ class AnalyticsService {
   
   async getProjectsTimeData(days: number = 30): Promise<any> {
     try {
-      const response = await fetch(`/api/analytics/projects/time?days=${days}`, {
-        method: 'GET',
-        credentials: 'include'
+      const response = await this.makeAnalyticsRequest(`/projects/time?days=${days}`, {
+        method: 'GET'
       });
 
       if (!response.ok) {
@@ -755,9 +762,8 @@ class AnalyticsService {
 
   async getProjectTimeData(projectId: string, days: number = 30): Promise<any> {
     try {
-      const response = await fetch(`/api/analytics/project/${projectId}/time?days=${days}`, {
-        method: 'GET',
-        credentials: 'include'
+      const response = await this.makeAnalyticsRequest(`/project/${projectId}/time?days=${days}`, {
+        method: 'GET'
       });
 
       if (!response.ok) {
@@ -771,7 +777,7 @@ class AnalyticsService {
     }
   }
 
-  // Error tracking method
+  // Records error events with detailed context for debugging
   async trackError(errorData: {
     name: string;
     message: string;

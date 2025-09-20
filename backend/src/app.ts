@@ -30,7 +30,6 @@ import UserSession from './models/UserSession';
 
 dotenv.config();
 
-// Initialize Sentry EARLY to catch startup errors
 import { initSentry } from './config/sentry';
 initSentry();
 
@@ -38,16 +37,14 @@ initSentry();
 const app = express();
 const PORT = process.env.PORT || 5003;
 
-// Middleware
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
-// Get allowed origins from environment variable or use defaults for development
+// Determines allowed CORS origins based on environment
 const getAllowedOrigins = () => {
   if (isDevelopment) {
     return ['http://localhost:5002', 'http://localhost:5003'];
   }
   
-  // Production: require CORS_ORIGINS environment variable
   const corsOrigins = process.env.CORS_ORIGINS;
   if (!corsOrigins) {
     logError('CRITICAL: CORS_ORIGINS environment variable is required for production', undefined, { severity: 'critical', component: 'app', action: 'cors_setup' });
@@ -65,19 +62,14 @@ if (isDevelopment) {
     credentials: true
   }));
 } else {
-  // Production CORS - strict origin checking
-  
   app.use(cors({
     origin: function (origin, callback) {
-      // Allow requests with no origin (like mobile apps or curl requests) - only in development
       if (!origin && isDevelopment) return callback(null, true);
       
-      // In production, be more strict about no-origin requests
       if (!origin && !isDevelopment) {
         return callback(new Error('Origin header is required'), false);
       }
       
-      // At this point origin is guaranteed to exist due to checks above
       if (origin && allowedOrigins.indexOf(origin) !== -1) {
         callback(null, true);
       } else {
@@ -93,21 +85,12 @@ app.use('/api/billing/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
 app.use(passport.initialize());
 
-// Sentry will automatically capture errors via our logger integration
-
 // Request logging middleware
 app.use(requestLogger as any);
 
-// Auth routes FIRST - NO rate limiting on authentication
-// Health check routes (no rate limiting for load balancers)
 app.use('/api', healthRoutes);
-
 app.use('/api/auth', authRoutes);
-
-// Public routes - NO authentication required, light rate limiting
 app.use('/api/public', publicRateLimit, publicRoutes);
-
-// Apply rate limiting to all OTHER routes
 const rateLimitMiddleware = isDevelopment ? devRateLimit : normalRateLimit;
 app.use('/api/projects', rateLimitMiddleware, sessionMiddleware, projectRoutes);
 app.use('/api/invitations', rateLimitMiddleware, invitationRoutes);
@@ -120,17 +103,14 @@ app.use('/api/activity-logs', rateLimitMiddleware, activityLogRoutes);
 app.use('/api/ideas', rateLimitMiddleware, ideasRoutes);
 app.use('/api/news', rateLimitMiddleware, newsRoutes);
 
-// Debug routes (only in development)
 if (isDevelopment) {
   app.use('/api/debug', debugRoutes);
 }
 
-// Serve static files in production
 if (!isDevelopment) {
   const frontendDistPath = path.join(__dirname, '../../frontend/dist');
   app.use(express.static(frontendDistPath));
   
-  // Handle client-side routing - serve index.html for all non-API routes
   app.get('*', (req, res) => {
     if (!req.path.startsWith('/api/')) {
       res.sendFile(path.join(frontendDistPath, 'index.html'));
@@ -139,20 +119,16 @@ if (!isDevelopment) {
     }
   });
 }
-
-// Sentry error tracking handled via logError() calls throughout the app
-
-// Health check
+// Health check endpoint
 app.get('/health', (_, res) => {
   res.json({ status: 'OK' });
 });
 
 
-// Graceful shutdown handler
+// Handles graceful server shutdown and cleanup
 const gracefulShutdown = async (_signal: string) => {
   
   try {
-    // End all active sessions
     const activeSessions = await UserSession.find({ isActive: true });
     
     const endPromises = activeSessions.map(session => 
@@ -161,9 +137,7 @@ const gracefulShutdown = async (_signal: string) => {
     
     await Promise.allSettled(endPromises);
     
-    // Close database connections
     await new Promise<void>((resolve) => {
-      // Give time for final database operations
       setTimeout(() => {
         resolve();
       }, 1000);
@@ -176,22 +150,19 @@ const gracefulShutdown = async (_signal: string) => {
   }
 };
 
-// Handle shutdown signals
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
-// Start server
+// Initializes and starts the Express server with all middleware and routes
 const startServer = async () => {
   try {
     await connectDatabase();
     
-    // Initialize reminder service
     const reminderService = ReminderService.getInstance();
     reminderService.initialize();
     
     const server = createServer(app);
     
-    // Initialize Socket.IO
     const io = new Server(server, {
       cors: {
         origin: allowedOrigins,
@@ -199,25 +170,19 @@ const startServer = async () => {
       }
     });
 
-    // Socket.IO for real-time updates (lock signaling and notifications)
     io.on('connection', (socket) => {
-
-      // Join project room for lock updates
       socket.on('join-project', (projectId: string) => {
         socket.join(`project-${projectId}`);
       });
 
-      // Leave project room
       socket.on('leave-project', (projectId: string) => {
         socket.leave(`project-${projectId}`);
       });
 
-      // Join user notification room
       socket.on('join-user-notifications', (userId: string) => {
         socket.join(`user-${userId}`);
       });
 
-      // Leave user notification room
       socket.on('leave-user-notifications', (userId: string) => {
         socket.leave(`user-${userId}`);
       });
@@ -226,7 +191,6 @@ const startServer = async () => {
       });
     });
 
-    // Make io available globally for lock signaling
     (global as any).io = io;
     
     server.listen(PORT, () => {

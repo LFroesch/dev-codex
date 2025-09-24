@@ -129,35 +129,12 @@ const PublicProjectPage: React.FC = () => {
       <div className="space-y-6">
         {/* Project Header */}
         <div className="bg-base-100 rounded-lg border-2 border-base-content/20 shadow-md hover:shadow-lg">
-          <div className="p-6">
-            {/* Header buttons */}
-            <div className="flex items-center justify-between mb-6">
-              <button
-                onClick={() => navigate('/discover')}
-                className="btn btn-primary gap-2"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                Back to Discovery
-              </button>
-              
-              <button
-                onClick={copyProjectUrl}
-                className="btn btn-outline gap-2"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-                Share
-              </button>
-            </div>
-            
-            {/* Compact Project Layout */}
-            <div className="flex items-start gap-4 mb-4">
-              <div className="flex items-center gap-3 mb-3">
+          <div className="p-4">
+            {/* Header with buttons and project info */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-4">
                 <h3 
-                  className="border-2 border-base-content/20 font-semibold text-2xl truncate px-2 py-1 rounded-md group-hover:opacity-90 transition-opacity"
+                  className="border-2 border-base-content/20 font-semibold text-xl px-3 py-1 rounded-md"
                   style={{ 
                     backgroundColor: project.color,
                     color: getContrastTextColor(project.color)
@@ -165,48 +142,72 @@ const PublicProjectPage: React.FC = () => {
                 >
                   {project.name}
                 </h3>
-                <div>
+                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-primary text-base-content/80 border-2 border-base-content/20 h-[1.5rem]"
+                style={{
+                  color: getContrastTextColor()
+                }}>
+                  {project.category}
+                </span>
+              </div>
+              
+              <div className="flex gap-2">
+                <button
+                  onClick={() => navigate('/discover')}
+                  className="btn btn-sm btn-primary gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Back
+                </button>
                 
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="badge badge-primary">
-                    {project.category}
+                <button
+                  onClick={copyProjectUrl}
+                  className="btn btn-sm btn-outline gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  Share
+                </button>
+              </div>
+            </div>
+            
+            {/* Project metadata */}
+            <div className="flex flex-wrap items-center gap-4 text-sm text-base-content/60 mb-3">
+              {project.owner && (
+                <div className="flex items-center gap-2 bg-base-200 px-2 py-1 rounded-md">
+                  <span>by</span>
+                  {project.owner.isPublic || project.owner.publicSlug ? (
+                    <Link 
+                      to={`/discover/user/${project.owner.publicSlug || project.owner.id}`}
+                      className="font-semibold"
+                      style={{ color: getContrastTextColor() }}
+                    >
+                      @{project.owner.publicSlug || `${project.owner.firstName}${project.owner.lastName}`.toLowerCase()}
+                    </Link>
+                  ) : (
+                    <span className="font-semibold text-base-content"
+                    style={{ color: getContrastTextColor() }}>
+                      @{`${project.owner.firstName}${project.owner.lastName}`.toLowerCase()}
+                    </span>
+                  )}
+                </div>
+              )}
+              
+              {visibility.timestamps && (
+                <div className="flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>
+                    Updated {new Date(project.updatedAt).toLocaleDateString('en-US', { 
+                      year: 'numeric', 
+                      month: 'long'
+                    })}
                   </span>
                 </div>
-                <div className="flex flex-wrap items-center gap-4 text-sm text-base-content/60">
-                  {project.owner && (
-                    <div className="flex items-center gap-2">
-                      <span>by</span>
-                      {project.owner.isPublic || project.owner.publicSlug ? (
-                        <Link 
-                        to={`/discover/user/${project.owner.publicSlug || project.owner.id}`}
-                        className="font-semibold text-primary hover:text-primary-focus transition-colors"
-                        >
-                          @{project.owner.publicSlug || `${project.owner.firstName}${project.owner.lastName}`.toLowerCase()}
-                        </Link>
-                      ) : (
-                        <span className="font-semibold text-base-content">
-                          @{`${project.owner.firstName}${project.owner.lastName}`.toLowerCase()}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                  </div>
-                  
-                  {visibility.timestamps && (
-                    <div className="flex items-center gap-2">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span>
-                        Updated {new Date(project.updatedAt).toLocaleDateString('en-US', { 
-                          year: 'numeric', 
-                          month: 'long'
-                        })}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
+              )}
             </div>
             
             {/* Description */}
@@ -290,17 +291,17 @@ const PublicProjectPage: React.FC = () => {
                         href={ensureHttps(project.deploymentData.liveUrl)} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="btn btn-primary btn-block gap-2"
+                        className="btn btn-primary btn-block flex-col gap-1"
                         >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                        </svg>
-                        View Live Site
-                        {project.deploymentData.liveUrl && (
-                          <div className="text-xs text-base-content/50 break-all mt-2">
-                            {project.deploymentData.liveUrl}
-                          </div>
-                        )}
+                        <div className="flex items-center gap-2">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                          View Live Site
+                        </div>
+                        <div className="text-xs opacity-70 break-all">
+                          {project.deploymentData.liveUrl}
+                        </div>
                       </a>
                     )}
                     
@@ -309,22 +310,17 @@ const PublicProjectPage: React.FC = () => {
                         href={ensureHttps(project.deploymentData.githubRepo)} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="btn btn-outline btn-block gap-2"
+                        className="btn btn-outline btn-block flex-col gap-1"
                       >
-                        <div>
-
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                        </svg>
+                        <div className="flex items-center gap-2">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                          View Source Code
                         </div>
-                        <div>
-                        View Source Code
+                        <div className="text-xs opacity-70 break-all">
+                          {project.deploymentData.githubRepo}
                         </div>
-                        {project.deploymentData.githubRepo && (
-                          <div className="text-xs text-base-content/50 break-all">
-                            {project.deploymentData.githubRepo}
-                          </div>
-                        )}
                       </a>
                     )}
                     

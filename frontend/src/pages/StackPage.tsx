@@ -5,6 +5,7 @@ import type { TechOption, TechCategory } from '../data/techStackData';
 import { STACK_CATEGORIES } from '../data/techStackData';
 import { handleAPIError } from '../services/errorService';
 import activityTracker from '../services/activityTracker';
+import { getContrastTextColor } from '../utils/contrastTextColor';
 
 type PlatformType = 'web' | 'mobile' | 'desktop';
 
@@ -450,7 +451,12 @@ const StackPage: React.FC = () => {
                 >
                   <div className="flex justify-between items-start mb-2">
                     <div className="flex items-center gap-2">
-                      <h4 className="font-semibold text-sm px-2 py-1 rounded-md bg-primary">{option.name}</h4>
+                      <h4 
+                        className="font-semibold text-sm px-2 py-1 rounded-md bg-primary"
+                        style={{ color: getContrastTextColor() }}
+                      >
+                        {option.name}
+                      </h4>
                       {option.url && (
                         <a
                           href={option.url}
@@ -593,7 +599,10 @@ const StackPage: React.FC = () => {
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
-                            <h3 className="font-semibold text-base-content px-2 py-1 rounded-md bg-primary inline-block">
+                            <h3 
+                              className="font-semibold px-2 py-1 rounded-md bg-primary inline-block"
+                              style={{ color: getContrastTextColor() }}
+                            >
                               {tech.name}
                             </h3>
                             <VersionBadge 

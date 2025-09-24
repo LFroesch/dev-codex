@@ -4,6 +4,7 @@ import DatePicker from './DatePicker';
 import TeamMemberSelect from './TeamMemberSelect';
 import SubtaskList from './SubtaskList';
 import ConfirmationModal from './ConfirmationModal';
+import { getContrastTextColor } from '../utils/contrastTextColor';
 
 interface TodoItemProps {
   todo: Todo;
@@ -226,9 +227,14 @@ const TodoItem: React.FC<TodoItemProps> = ({
         
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <h3 className={`font-semibold text-lg leading-tight px-2 py-1 rounded-md bg-primary inline-block w-fit ${
-              todo.completed ? 'line-through text-base-content/60' : ''
-            }`}>
+            <h3 
+              className={`font-semibold text-lg leading-tight px-2 py-1 rounded-md bg-primary inline-block w-fit ${
+                todo.completed ? 'line-through text-base-content/60' : ''
+              }`}
+              style={{ 
+                color: getContrastTextColor()
+              }}
+            >
               {todo.text}
             </h3>
             
@@ -406,7 +412,7 @@ const QuickAddForm: React.FC<QuickAddFormProps> = ({
         type="text"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
-        className="input input-bordered input-sm text-base-content/40 flex-1 text-base-content/40"
+        className="input input-bordered input-sm text-base-content/40 flex-1"
         placeholder={placeholder}
         autoFocus
         disabled={loading}

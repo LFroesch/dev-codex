@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useOutletContext, Link } from 'react-router-dom';
+import { getContrastTextColor } from '../utils/contrastTextColor';
 
 interface PublicVisibilityOptions {
   description: boolean;
@@ -31,22 +32,6 @@ const PublicPage: React.FC = () => {
     timestamps: true,
   });
 
-  // Function to determine if text should be white or black based on background color
-  const getContrastTextColor = (hexColor: string): string => {
-    // Remove # if present
-    const color = hexColor.replace('#', '');
-    
-    // Convert to RGB
-    const r = parseInt(color.slice(0, 2), 16);
-    const g = parseInt(color.slice(2, 4), 16);
-    const b = parseInt(color.slice(4, 6), 16);
-    
-    // Calculate luminance
-    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-    
-    // Return black for light colors, white for dark colors
-    return luminance > 0.5 ? '#000000' : '#ffffff';
-  };
   
   // Section navigation state
   const [activeSection, setActiveSection] = useState<'overview' | 'url' | 'visibility'>('overview');

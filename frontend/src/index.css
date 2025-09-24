@@ -55,11 +55,37 @@ body {
            bg-base-100 rounded-lg border-primary bg-primary/5;
   }
 
+  /* Section Container Utilities */
+  .section-container {
+    @apply bg-base-100 rounded-lg shadow-lg border-2 border-base-content/20;
+  }
+  
+  .section-header {
+    @apply text-lg font-semibold bg-base-200 border-b-2 border-base-content/20 p-4 rounded-t-lg;
+  }
+  
+  .section-content {
+    @apply p-4;
+  }
+  
+  .section-icon {
+    @apply w-8 h-8 bg-base-100 rounded-lg flex items-center justify-center;
+  }
+  
+  /* Collapsible Section Utilities */
+  .section-collapsible {
+    @apply bg-base-100 shadow-lg border-2 border-base-content/20;
+  }
+  
+  .section-collapsible-header {
+    @apply text-lg font-semibold bg-base-200 border-b-2 border-base-content/20;
+  }
+
   /* Apply consistent thick borders to form elements */
   .input-bordered,
   .textarea-bordered,
   .select-bordered {
-    @apply border-2 border-base-content/20;
+    @apply border-2 border-base-content/20 bg-base-200/40;
   }
 }
 

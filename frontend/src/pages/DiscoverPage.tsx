@@ -17,6 +17,23 @@ const DiscoverPage: React.FC = () => {
   const [categories, setCategories] = useState<string[]>([]);
   const [tags, setTags] = useState<string[]>([]);
 
+  // Function to determine if text should be white or black based on background color
+  const getContrastTextColor = (hexColor: string): string => {
+    // Remove # if present
+    const color = hexColor.replace('#', '');
+    
+    // Convert to RGB
+    const r = parseInt(color.slice(0, 2), 16);
+    const g = parseInt(color.slice(2, 4), 16);
+    const b = parseInt(color.slice(4, 6), 16);
+    
+    // Calculate luminance
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    
+    // Return black for light colors, white for dark colors
+    return luminance > 0.5 ? '#000000' : '#ffffff';
+  };
+
   // Debounce search term
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -99,7 +116,7 @@ const DiscoverPage: React.FC = () => {
       <div className="space-y-6">
       {/* Error State */}
       {error && (
-        <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4">
+        <div className="bg-base-100 rounded-lg border-2 shadow-md hover:shadow-lg border-base-content/20 transition-all duration-200 p-4">
           <div className="flex items-center gap-3 text-error">
             <svg className="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
@@ -113,21 +130,23 @@ const DiscoverPage: React.FC = () => {
       )}
 
       {/* Search and Filters */}
-      <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200">
-        <div className="p-4">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+      <div className="section-container">
+        <div className="section-header">
+          <div className="flex items-center gap-3">
+            <div className="section-icon">
               <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
-            <h2 className="font-semibold text-lg px-2 py-1 rounded-md bg-base-300 inline-block w-fit">Search & Filter Projects</h2>
+            <span>Search & Filter Projects</span>
             {pagination && (
               <span className="text-sm text-base-content/60 ml-auto">
                 {pagination.total} projects found
               </span>
             )}
           </div>
+        </div>
+        <div className="section-content">
           <form onSubmit={handleSearch} className="space-y-4">
             {/* Search Bar */}
             <div className="form-control">
@@ -191,16 +210,21 @@ const DiscoverPage: React.FC = () => {
       </div>
 
       {/* Projects Results */}
-      <div className="collapse collapse-arrow bg-base-100 shadow-lg border border-base-content/10">
+      <div className="collapse collapse-arrow section-collapsible">
         <input type="checkbox" defaultChecked />
-        <div className="collapse-title text-lg font-semibold bg-base-200 border-b border-base-content/10">
-          🚀 Community Projects {pagination && `(${pagination.total})`}
+        <div className="collapse-title section-collapsible-header">
+          <div className="flex items-center gap-3">
+            <div className="section-icon">
+              🚀
+            </div>
+            Community Projects {pagination && `(${pagination.total})`}
+          </div>
         </div>
         <div className="collapse-content">
           <div className="pt-4 space-y-6">
             {/* Results Info */}
             {pagination && (
-              <div className="flex justify-between items-center text-sm text-base-content/60 pb-2 border-b border-base-300">
+              <div className="flex justify-between items-center text-sm text-base-content/60">
                 <div>
                   Showing {((currentPage - 1) * 12) + 1}-{Math.min(currentPage * 12, pagination.total)} of {pagination.total} projects
                 </div>
@@ -234,25 +258,27 @@ const DiscoverPage: React.FC = () => {
                   <Link
                     key={project.id}
                     to={`/discover/project/${project.publicSlug || project.id}`}
-                    className="p-4 rounded-lg border-2 transition-all duration-200 text-left group shadow-md hover:shadow-lg flex flex-col border-base-300/50 bg-base-100 hover:border-primary/30"
+                    className="p-4 rounded-lg text-left flex flex-col card-interactive"
                   >
                     {/* Project Header */}
                     <div className="flex items-center gap-3 mb-3">
-                      <div 
-                        className="w-4 h-4 rounded-full flex-shrink-0 border-2 border-white/50 shadow-sm"
-                        style={{ backgroundColor: project.color }}
-                      ></div>
-                      <h3 className="font-semibold text-base truncate px-2 py-1 rounded-md bg-base-300 text-base-content group-hover:text-primary transition-colors">
+                      <h3 
+                        className="font-semibold text-base truncate px-2 py-1 rounded-md group-hover:opacity-90 transition-opacity"
+                        style={{ 
+                          backgroundColor: project.color,
+                          color: getContrastTextColor(project.color)
+                        }}
+                      >
                         {project.name}
                       </h3>
                     </div>
                     
                     {/* Category and Date */}
                     <div className="flex items-center gap-2 mb-3">
-                      <span className="badge badge-primary badge-sm">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-primary text-base-content/80 border-2 border-base-content/20 h-[1.5rem]">
                         {project.category}
                       </span>
-                      <span className="text-xs text-base-content/60">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-base-200 text-base-content/80 border-2 border-base-content/20 h-[1.5rem]">
                         {new Date(project.updatedAt).toLocaleDateString()}
                       </span>
                     </div>
@@ -273,7 +299,7 @@ const DiscoverPage: React.FC = () => {
                           {project.tags.slice(0, 3).map((tag: string, index: number) => (
                             <span
                               key={index}
-                              className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-base-200 text-base-content/80 border border-base-300/50"
+                              className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-base-100 text-base-content/80 border-2 border-base-content/20 h-[1.5rem] "
                             >
                               {tag}
                             </span>
@@ -292,12 +318,12 @@ const DiscoverPage: React.FC = () => {
                       {project.technologies && project.technologies.length > 0 && (
                         <div className="flex flex-wrap gap-1">
                           {project.technologies.slice(0, 4).map((tech: any, index: number) => (
-                            <span key={index} className="badge badge-outline badge-sm h-4">
+                            <span key={index} className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-base-200 text-base-content/80 border-2 border-base-content/20">
                               {tech.name}
                             </span>
                           ))}
                           {project.technologies.length > 4 && (
-                            <span className="badge badge-ghost badge-sm h-4">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-base-200 text-base-content/80 border-2 border-base-content/20">
                               +{project.technologies.length - 4}
                             </span>
                           )}
@@ -306,12 +332,12 @@ const DiscoverPage: React.FC = () => {
                     </div>
 
                     {/* Footer - Always at bottom */}
-                    <div className="flex items-center justify-between text-sm pt-2 border-t border-base-200 mt-auto">
+                    <div className="flex items-center justify-between text-sm pt-2 border-t-2 border-base-content/20 mt-auto">
                       <div className="flex items-center gap-1">
                         {project.owner ? (
                           project.owner.isPublic || project.owner.publicSlug ? (
                             <span 
-                              className="font-medium text-primary hover:text-primary-focus transition-colors cursor-pointer"
+                              className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-primary text-base-content/80 border border-base-300/50 hover:bg-primary hover:text-primary-content transition-colors cursor-pointer"
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
@@ -321,12 +347,12 @@ const DiscoverPage: React.FC = () => {
                               @{project.owner.publicSlug || `${project.owner.firstName}${project.owner.lastName}`.toLowerCase()}
                             </span>
                           ) : (
-                            <span className="font-medium text-base-content/60">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-primary text-base-content/80 border border-base-300/50">
                               @{`${project.owner.firstName}${project.owner.lastName}`.toLowerCase()}
                             </span>
                           )
                         ) : (
-                          <span className="text-base-content/60">@anonymous</span>
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-primary text-base-content/80 border border-base-300/50">@anonymous</span>
                         )}
                       </div>
                     </div>
@@ -359,7 +385,7 @@ const DiscoverPage: React.FC = () => {
 
             {/* Pagination */}
             {pagination && pagination.pages > 1 && (
-              <div className="flex justify-center pt-4 border-t border-base-300">
+              <div className="flex justify-center pt-4 border-2 border-base-300">
                 <div className="join">
                   <button 
                     className="join-item btn btn-sm"

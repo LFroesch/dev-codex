@@ -31,9 +31,25 @@ const PublicPage: React.FC = () => {
     timestamps: true,
   });
 
+  // Function to determine if text should be white or black based on background color
+  const getContrastTextColor = (hexColor: string): string => {
+    // Remove # if present
+    const color = hexColor.replace('#', '');
+    
+    // Convert to RGB
+    const r = parseInt(color.slice(0, 2), 16);
+    const g = parseInt(color.slice(2, 4), 16);
+    const b = parseInt(color.slice(4, 6), 16);
+    
+    // Calculate luminance
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    
+    // Return black for light colors, white for dark colors
+    return luminance > 0.5 ? '#000000' : '#ffffff';
+  };
   
   // Section navigation state
-  const [activeSection, setActiveSection] = useState<'overview' | 'sharing' | 'url' | 'visibility' | 'privacy'>('overview');
+  const [activeSection, setActiveSection] = useState<'overview' | 'url' | 'visibility'>('overview');
 
   useEffect(() => {
     if (selectedProject) {
@@ -154,16 +170,7 @@ const PublicPage: React.FC = () => {
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
-            Overview
-          </button>
-          <button 
-            className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'sharing' ? 'tab-active' : ''}`}
-            onClick={() => setActiveSection('sharing')}
-          >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            Public Settings
+            Overview & Settings
           </button>
           {isPublic && (
             <>
@@ -184,16 +191,7 @@ const PublicPage: React.FC = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                 </svg>
-                Visibility Controls
-              </button>
-              <button 
-                className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'privacy' ? 'tab-active' : ''}`}
-                onClick={() => setActiveSection('privacy')}
-              >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                </svg>
-                Privacy Info
+                Visibility & Privacy
               </button>
             </>
           )}
@@ -219,9 +217,10 @@ const PublicPage: React.FC = () => {
         </div>
       )}
 
-      {/* Overview Section */}
+      {/* Overview & Settings Section */}
       {activeSection === 'overview' && (
         <div className="space-y-4">
+          {/* Overview */}
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold mb-0 flex items-center gap-2">
               <span className="text-xl">📊</span>
@@ -231,15 +230,17 @@ const PublicPage: React.FC = () => {
           
           <div className="border-2 border-base-content/20 rounded-lg mb-4 p-4">
             <div className="flex items-center gap-4 mb-4">
-              <div 
-                className="w-16 h-16 rounded-lg flex items-center justify-center text-2xl font-bold text-white"
-                style={{ backgroundColor: selectedProject.color }}
-              >
-                {selectedProject.name.charAt(0).toUpperCase()}
-              </div>
               <div className="flex-1">
-                <h3 className="text-2xl font-semibold">{selectedProject.name}</h3>
-                <p className="text-base-content/70 mb-2">{selectedProject.description}</p>
+                <h3 
+                  className="text-2xl font-semibold px-3 py-1 rounded-md inline-block"
+                  style={{ 
+                    backgroundColor: selectedProject.color,
+                    color: getContrastTextColor(selectedProject.color)
+                  }}
+                >
+                  {selectedProject.name}
+                </h3>
+                <p className="text-base-content/70 mb-2 mt-2">{selectedProject.description}</p>
                 <div className="flex items-center gap-3">
                   <span className={`px-3 py-1 rounded-full text-sm font-medium text-base-content ${isPublic ? 'bg-success/50' : 'bg-warning/50'}`}>
                     {isPublic ? 'Public' : 'Private'}
@@ -271,12 +272,8 @@ const PublicPage: React.FC = () => {
               </div>
             )}
           </div>
-        </div>
-      )}
 
-      {/* Sharing Settings Section */}
-      {activeSection === 'sharing' && (
-        <div className="space-y-4">
+          {/* Public Settings */}
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold mb-0 flex items-center gap-2">
               <span className="text-xl">🌐</span>
@@ -363,7 +360,7 @@ const PublicPage: React.FC = () => {
             </button>
           </div>
           
-          <div className="bg-base-100 rounded-lg border-thick shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 p-4 space-y-4">
+          <div className="bg-base-100 rounded-lg border-thick shadow-md hover:shadow-lg transition-all duration-200 p-4 space-y-4">
             {/* Custom Slug */}
             <div className="form-control">
               <label className="label">
@@ -443,15 +440,17 @@ const PublicPage: React.FC = () => {
               </div>
               <div className="bg-base-100 p-4">
                 <div className="flex items-center gap-3 mb-3">
-                  <div 
-                    className="w-12 h-12 rounded-lg flex items-center justify-center text-lg font-bold text-white"
-                    style={{ backgroundColor: selectedProject.color }}
-                  >
-                    {selectedProject.name.charAt(0).toUpperCase()}
-                  </div>
                   <div>
-                    <h3 className="text-lg font-semibold">{selectedProject.name}</h3>
-                    <p className="text-sm text-base-content/70">
+                    <h3 
+                      className="text-lg font-semibold px-2 py-1 rounded-md inline-block"
+                      style={{ 
+                        backgroundColor: selectedProject.color,
+                        color: getContrastTextColor(selectedProject.color)
+                      }}
+                    >
+                      {selectedProject.name}
+                    </h3>
+                    <p className="text-sm text-base-content/70 mt-2">
                       {publicDescription || selectedProject.description}
                     </p>
                   </div>
@@ -468,9 +467,10 @@ const PublicPage: React.FC = () => {
         </div>
       )}
 
-      {/* Visibility Controls Section */}
+      {/* Visibility & Privacy Section */}
       {activeSection === 'visibility' && isPublic && (
         <div className="space-y-4">
+          {/* Visibility Controls */}
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold mb-0 flex items-center gap-2">
               <span className="text-xl">🔧</span>
@@ -529,12 +529,8 @@ const PublicPage: React.FC = () => {
               ))}
             </div>
           </div>
-        </div>
-      )}
 
-      {/* Privacy Info Section */}
-      {activeSection === 'privacy' && isPublic && (
-        <div className="space-y-4">
+          {/* Privacy Information */}
           <h2 className="text-xl font-bold mb-0 flex items-center gap-2">
             <span className="text-xl">📋</span>
             <span className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">Privacy Information</span>
@@ -555,7 +551,7 @@ const PublicPage: React.FC = () => {
                   </li>
                   <li className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-base-content"></div>
-                    Your name (if profile public)
+                    Your name/username
                   </li>
                 </ul>
               </div>

@@ -1349,14 +1349,23 @@ const Layout: React.FC = () => {
                                 >
                                   {project.name}
                                 </h3>
+                                {selectedProject?.id === project.id && (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-success/80 text-base-content/80 border-2 border-base-content/20">
+                                    Current Project
+                                  </span>
+                                )}
                               </div>
                               
                               {/* Description - Fixed height */}
-                              <div className="mb-3 bg-base-200 rounded-lg p-1 h-[3.5rem] flex-shrink-0 border-2 border-base-content/20">
+                              <div className="mb-3 h-[3.5rem] flex-shrink-0">
                                 {project.description && (
-                                  <p className="text-sm text-base-content/70 line-clamp-2 p-1">
-                                    {project.description}
-                                  </p>
+                                  <div className={`inline-flex items-start px-2 py-0.5 rounded-md text-xs font-medium text-base-content/80 border-2 border-base-content/20 h-full w-full ${
+                                    selectedProject?.id === project.id ? 'bg-base-100' : 'bg-base-200'
+                                  }`}>
+                                    <p className="text-sm text-base-content/70 line-clamp-2 leading-relaxed">
+                                      {project.description}
+                                    </p>
+                                  </div>
                                 )}
                               </div>
                               

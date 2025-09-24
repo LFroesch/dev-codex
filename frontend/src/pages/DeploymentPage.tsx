@@ -169,14 +169,16 @@ const DeploymentPage: React.FC = () => {
 
       {/* Section Content */}
       {activeSection === 'overview' && (
-        <div className="border-2 border-base-content/20 rounded-lg mb-4 p-4">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <span className="text-xl">📊</span>
-              <span className='px-2 py-1 rounded-md bg-base-300 inline-block w-fit'>Deployment Overview</span>
-            </h2>
-
+        <div className="section-container mb-4">
+          <div className="section-header">
+            <div className="flex items-center gap-3">
+              <div className="section-icon">
+                📊
+              </div>
+              <span>Deployment Overview</span>
+            </div>
           </div>
+          <div className="section-content">
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-base-200 border-thick rounded-lg p-4">
@@ -241,24 +243,26 @@ const DeploymentPage: React.FC = () => {
               </a>
             </div>
           )}
+          </div>
         </div>
       )}
 
       {activeSection === 'basic' && (
-        <div className="border-2 border-base-content/20 rounded-lg mb-4 p-4">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <span className="text-xl">📋</span>
-              <span className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">Basic Information</span>
-            </h2>
-            <button
-              onClick={handleSave}
-              disabled={loading || !hasUnsavedChanges}
-              className={`btn btn-sm ${hasUnsavedChanges ? 'btn-primary' : 'btn-ghost'} ${loading ? 'loading' : ''}`}
-            >
-              {loading ? 'Saving...' : hasUnsavedChanges ? 'Save Changes' : 'Saved'}
-            </button>
+        <div className="section-container mb-4">
+          <div className="section-header">
+            <div className="flex items-center gap-3">
+              <div className="section-icon">📋</div>
+              <span>Basic Information</span>
+              <button
+                onClick={handleSave}
+                disabled={loading || !hasUnsavedChanges}
+                className={`btn btn-sm ml-auto ${hasUnsavedChanges ? 'btn-primary' : 'btn-ghost'} ${loading ? 'loading' : ''}`}
+              >
+                {loading ? 'Saving...' : hasUnsavedChanges ? 'Save Changes' : 'Saved'}
+              </button>
+            </div>
           </div>
+          <div className="section-content">
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="form-control">
@@ -314,6 +318,7 @@ const DeploymentPage: React.FC = () => {
                 <option value="error">🔴 Error</option>
               </select>
             </div>
+          </div>
           </div>
         </div>
       )}

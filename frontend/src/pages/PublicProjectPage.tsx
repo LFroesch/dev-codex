@@ -127,7 +127,7 @@ const PublicProjectPage: React.FC = () => {
     <div className="flex-1 w-full max-w-7xl mx-auto p-2 sm:p-4 bg-base-100 flex flex-col mb-4 min-h-0">
       <div className="space-y-6">
         {/* Project Header */}
-        <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30">
+        <div className="bg-base-100 rounded-lg border-2 border-base-content/20 shadow-md hover:shadow-lg">
           <div className="p-6">
             {/* Header buttons */}
             <div className="flex items-center justify-between mb-6">
@@ -155,7 +155,7 @@ const PublicProjectPage: React.FC = () => {
             {/* Compact Project Layout */}
             <div className="flex items-start gap-4 mb-4">
               <div 
-                className="w-16 h-16 rounded-xl flex items-center justify-center text-2xl font-bold text-white border-2 border-white/20 shadow-lg flex-shrink-0"
+                className="w-16 h-16 rounded-xl flexF items-center justify-center text-2xl font-bold text-white border-2 border-white/20 shadow-lg flex-shrink-0"
                 style={{ backgroundColor: project.color }}
               >
                 {project.name.charAt(0).toUpperCase()}
@@ -233,7 +233,7 @@ const PublicProjectPage: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
             {/* Tech Stack */}
             {hasTechStack && (
-              <div className="card bg-base-100 shadow-xl border border-base-200">
+              <div className="card bg-base-100 shadow-md border-2 border-base-content/20 hover:shadow-lg">
                 <div className="card-body">
                   <h2 className="card-title text-2xl">
                     <div className="w-8 h-8 bg-primary/20 rounded-lg flex items-center justify-center">
@@ -257,7 +257,7 @@ const PublicProjectPage: React.FC = () => {
 
             {/* Deployment */}
             {hasDeploymentLinks && (
-              <div className="card bg-base-100 shadow-xl border border-base-200">
+              <div className="card bg-base-100 shadow-md border-2 border-base-content/20 hover:shadow-lg">
                 <div className="card-body">
                   <div className="flex justify-between items-start mb-4">
                     <h2 className="card-title text-2xl">

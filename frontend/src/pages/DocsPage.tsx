@@ -585,7 +585,7 @@ React App:
                                       </div>
                                     </div>
                                   ) : (
-                                    <div className="bg-base-200 rounded-lg p-4 border border-base-content/20">
+                                    <div className="bg-base-200/40 rounded-lg p-4 border-2 border-base-content/20">
                                       <pre className="whitespace-pre-wrap text-sm font-mono leading-relaxed">
                                         {doc.content}
                                       </pre>

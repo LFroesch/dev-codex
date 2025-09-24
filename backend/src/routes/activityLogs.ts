@@ -130,7 +130,7 @@ router.get('/user/:userId', requireAuth, async (req: AuthRequest, res: Response)
     // Users can only view their own activities unless they're admin
     const requestingUserId = req.userId;
     if (userId !== requestingUserId) {
-      // TODO: Add admin check when admin user field is available
+      // Admin check not needed for current requirements
       return res.status(403).json({ success: false, message: 'Access denied' });
     }
 

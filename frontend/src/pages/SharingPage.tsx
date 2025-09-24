@@ -8,12 +8,13 @@ import ConfirmationModal from '../components/ConfirmationModal';
 
 interface ContextType {
   selectedProject: Project | null;
+  user: any;
   onProjectUpdate: (projectId: string, updatedData: any) => Promise<any>;
   onProjectRefresh: () => Promise<void>;
 }
 
 const SharingPage: React.FC = () => {
-  const { selectedProject, onProjectUpdate, onProjectRefresh } = useOutletContext<ContextType>();
+  const { selectedProject, user, onProjectUpdate, onProjectRefresh } = useOutletContext<ContextType>();
   
   const [makePrivateConfirm, setMakePrivateConfirm] = useState(false);
   const [error, setError] = useState('');
@@ -189,7 +190,7 @@ const SharingPage: React.FC = () => {
             <TeamManagement 
               projectId={selectedProject.id} 
               canManageTeam={selectedProject.canManageTeam ?? selectedProject.isOwner ?? false}
-              currentUserId={undefined} // TODO: Get current user ID from auth context
+              currentUserId={user?.id}
             />
           </div>
         </div>

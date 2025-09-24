@@ -213,7 +213,6 @@ const NotesPage: React.FC = () => {
   const [newDevLogDescription, setNewDevLogDescription] = useState('');
   const [isCreatingDevLog, setIsCreatingDevLog] = useState(false);
 
-  // Todo filtering and sorting state
   const [todoSortBy, setTodoSortBy] = useState<'priority' | 'dueDate' | 'created'>('priority');
   const [todoFilterBy, setTodoFilterBy] = useState<'all' | 'high' | 'medium' | 'low' | 'overdue' | 'completed'>('all');
 
@@ -456,7 +455,7 @@ const NotesPage: React.FC = () => {
                   >
                     <div className="p-4 flex flex-col flex-1">
                       <div className="flex items-start justify-between mb-3">
-                        <h3 className="font-semibold text-base-content group-hover:text-primary transition-colors duration-200 truncate px-2 py-1 rounded-md bg-base-300 inline-block w-fit">
+                        <h3 className="font-semibold text-base-content truncate px-2 py-1 rounded-md bg-primary inline-block w-fit">
                           {note.title}
                         </h3>
                         <div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -742,7 +741,7 @@ const NotesPage: React.FC = () => {
                   >
                     <div className="p-4 flex flex-col flex-1">
                       <div className="flex items-start justify-between mb-3">
-                        <h3 className="font-semibold text-base-content group-hover:text-primary transition-colors duration-200 truncate px-2 py-1 rounded-md bg-base-300 inline-block w-fit">
+                        <h3 className="font-semibold text-base-content truncate px-2 py-1 rounded-md bg-primary inline-block w-fit">
                           {entry.title || entry.entry}
                         </h3>
                         <div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity">

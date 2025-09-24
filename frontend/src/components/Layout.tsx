@@ -686,7 +686,7 @@ const Layout: React.FC = () => {
                             navigate('/notes?view=projects');
                           }
                         }}
-                        className="input input-sm pl-10 pr-10 w-48 h-9 bg-base-100/80 backdrop-blur-none shadow-sm border border-base-content/20 rounded-lg focus:border-primary text-base-content/40"
+                        className="input input-sm pl-10 pr-10 w-48 h-9 bg-base-100/80 backdrop-blur-none shadow-sm border-2 border-base-content/20 rounded-lg focus:border-primary text-base-content/40"
                       />
                       {searchTerm && (
                         <button
@@ -722,15 +722,17 @@ const Layout: React.FC = () => {
                 <div className="flex items-center gap-0 bg-base-200 backdrop-blur-none border-2 border-base-content/20 rounded-xl px-1 py-2 h-12 shadow-sm relative z-30 flex-shrink-0">
                   {selectedProject && (
                     <div 
-                      className="hidden tablet:flex items-center gap-2 px-3 py-1.5 bg-base-100/80 rounded-lg border border-base-content/10 shadow-sm mr-2 cursor-pointer hover:bg-base-200/70 transition-all duration-200 h-8"
+                      className="hidden tablet:flex items-center gap-2 px-3 py-1.5 rounded-lg border-2 border-base-content/20 shadow-sm mr-2 cursor-pointer hover:opacity-90 transition-all duration-200 h-8"
+                      style={{ 
+                        backgroundColor: selectedProject.color,
+                        color: getContrastTextColor(selectedProject.color)
+                      }}
                       onClick={() => handleNavigateWithCheck('/notes')}
                       title={`Current project: ${selectedProject.name}`}
                     >
-                      <div 
-                        className="w-2 h-2 rounded-full shadow-sm"
-                        style={{ backgroundColor: selectedProject.color }}
-                      ></div>
-                      <span className="text-sm font-medium truncate">{selectedProject.name}</span>
+                      <span className="text-sm font-medium truncate">
+                        {selectedProject.name}
+                      </span>
                       {selectedProject.isShared && (
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                           selectedProject.isOwner ? 'bg-primary text-primary-content' :
@@ -753,7 +755,7 @@ const Layout: React.FC = () => {
                   <UserMenu user={user} onLogout={handleLogout} />
                 </div>
               ) : (
-                <div className="flex items-center bg-base-200 backdrop-blur-none border border-base-content/10 rounded-xl px-2 py-2 h-12 shadow-sm flex-shrink-0">
+                <div className="flex items-center bg-base-200 backdrop-blur-none border-2 border-base-content/20 rounded-xl px-2 py-2 h-12 shadow-sm flex-shrink-0">
                   <button 
                     onClick={() => navigate('/login')}
                     className="btn btn-primary btn-sm"
@@ -768,14 +770,14 @@ const Layout: React.FC = () => {
             {user && selectedProject && (
               <div className="flex tablet:hidden items-center gap-3">
                 <div 
-                  className="flex items-center gap-2 px-3 py-2 bg-base-200 backdrop-blur-none rounded-lg border-2 border-base-content/20 shadow-sm hover:bg-base-200/70 transition-all duration-200 cursor-pointer min-w-0 flex-shrink-0 h-10"
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg border-2 border-base-content/20 shadow-sm hover:opacity-90 transition-all duration-200 cursor-pointer min-w-0 flex-shrink-0 h-10"
+                  style={{ 
+                    backgroundColor: selectedProject.color,
+                    color: getContrastTextColor(selectedProject.color)
+                  }}
                   onClick={() => handleNavigateWithCheck('/notes')}
                   title={`Current project: ${selectedProject.name}`}
                 >
-                  <div 
-                    className="w-2.5 h-2.5 rounded-full shadow-sm flex-shrink-0"
-                    style={{ backgroundColor: selectedProject.color }}
-                  ></div>
                   <span className="text-sm font-medium truncate">{selectedProject.name}</span>
                 </div>
                 
@@ -1067,13 +1069,13 @@ const Layout: React.FC = () => {
               <div className="flex items-center gap-0 bg-base-200 backdrop-blur-none border-2 border-base-content/20 rounded-xl px-2 py-2 h-12 shadow-sm relative z-30">
                 {selectedProject && (
                   <div 
-                    className="flex-center-gap-2 px-3 py-1.5 bg-base-100/80 rounded-lg border-subtle shadow-sm mr-2 cursor-pointer hover:bg-base-200/70 transition-all duration-200 h-8"
+                    className="flex-center-gap-2 px-3 py-1.5 rounded-lg border-2 border-base-content/20 shadow-sm mr-2 cursor-pointer hover:opacity-90 transition-all duration-200 h-8"
+                    style={{ 
+                      backgroundColor: selectedProject.color,
+                      color: getContrastTextColor(selectedProject.color)
+                    }}
                     onClick={() => handleNavigateWithCheck('/notes')}
                   >
-                    <div 
-                      className="w-2 h-2 rounded-full shadow-sm"
-                      style={{ backgroundColor: selectedProject.color }}
-                    ></div>
                     <span className="text-sm font-medium">{selectedProject.name}</span>
                     {selectedProject.isShared && (
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
@@ -1097,7 +1099,7 @@ const Layout: React.FC = () => {
                 <UserMenu user={user} onLogout={handleLogout} />
               </div>
             ) : (
-              <div className="flex items-center gap-3 bg-base-200 backdrop-blur-none border-subtle rounded-xl px-4 py-2 h-12 shadow-sm">
+              <div className="flex items-center gap-3 bg-base-200 backdrop-blur-none border-2 border-base-content/20 rounded-xl px-4 py-2 h-12 shadow-sm">
                 <button 
                   onClick={() => navigate('/login')}
                   className="btn-primary-sm"
@@ -1228,7 +1230,7 @@ const Layout: React.FC = () => {
                   <div className="space-y-4">
                     {!analyticsReady ? (
                       <div className="flex items-center justify-center min-h-[50vh] py-16">
-                        <div className="text-center bg-base-100 rounded-xl p-12 border-subtle shadow-lg max-w-md mx-auto">
+                        <div className="text-center bg-base-100 rounded-xl p-12 border-2 border-base-content/20 shadow-lg max-w-md mx-auto">
                           <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-full flex items-center justify-center">
                             <div className="loading loading-spinner loading-lg text-primary"></div>
                           </div>
@@ -1242,7 +1244,7 @@ const Layout: React.FC = () => {
                       groupedSharedProjects
                     ).length === 0 ? (
                       <div className="flex items-center justify-center min-h-[50vh] py-16">
-                        <div className="text-center bg-base-100 rounded-xl p-12 border-subtle shadow-lg max-w-md mx-auto">
+                        <div className="text-center bg-base-100 rounded-xl p-12 border-2 border-base-content/20 shadow-lg max-w-md mx-auto">
                           <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-full flex items-center justify-center">
                             <svg className="w-10 h-10 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
@@ -1328,7 +1330,7 @@ const Layout: React.FC = () => {
                                 navigate('/notes');
                               }}
                               disabled={!analyticsReady}
-                              className={`shadow-md p-4 rounded-lg border-2 transition-all duration-200 text-left group hover:shadow-lg h-[200px] flex flex-col ${
+                              className={`shadow-md p-4 rounded-lg border-2 transition-all duration-200 text-left group hover:shadow-lg h-[225px] flex flex-col ${
                                 !analyticsReady 
                                   ? 'border-base-300/30 bg-base-100/50 opacity-60 cursor-not-allowed' 
                                   : selectedProject?.id === project.id 
@@ -1339,7 +1341,7 @@ const Layout: React.FC = () => {
                               {/* Header with project name */}
                               <div className="flex items-center gap-3 mb-3">
                                 <h3 
-                                  className="font-semibold text-base truncate px-2 py-1 rounded-md group-hover:opacity-90 transition-opacity"
+                                  className="border-2 border-base-content/20 font-semibold text-base truncate px-2 py-1 rounded-md group-hover:opacity-90 transition-opacity"
                                   style={{ 
                                     backgroundColor: project.color,
                                     color: getContrastTextColor(project.color)
@@ -1350,9 +1352,9 @@ const Layout: React.FC = () => {
                               </div>
                               
                               {/* Description - Fixed height */}
-                              <div className="mb-3 h-[2.5rem] flex-shrink-0">
+                              <div className="mb-3 bg-base-200 rounded-lg p-1 h-[3.5rem] flex-shrink-0 border-2 border-base-content/20">
                                 {project.description && (
-                                  <p className="text-sm text-base-content/70 line-clamp-2">
+                                  <p className="text-sm text-base-content/70 line-clamp-2 p-1">
                                     {project.description}
                                   </p>
                                 )}
@@ -1365,17 +1367,13 @@ const Layout: React.FC = () => {
                                     {project.tags.slice(0, 3).map((tag, tagIndex) => (
                                       <span
                                         key={tagIndex}
-                                        className={`inline-flex items-center border-2 px-2 py-1 rounded-md text-xs font-bold ${
-                                          selectedProject?.id === project.id 
-                                            ? 'bg-primary/15 text-base-content/80 border-primary/50' 
-                                            : 'bg-base-200 text-base-content/80 border-base-300/50'
-                                        }`}
+                                        className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-primary/70 text-base-content/80 border-2 border-base-content/20"
                                       >
                                         {tag}
                                       </span>
                                     ))}
                                     {project.tags.length > 3 && (
-                                      <span className="text-xs text-base-content/70 font-medium flex items-center">
+                                      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-primary/70 text-base-content/80 border-2 border-base-content/20">
                                         +{project.tags.length - 3}
                                       </span>
                                     )}
@@ -1384,14 +1382,14 @@ const Layout: React.FC = () => {
                               </div>
                               
                               {/* Footer - Always at bottom */}
-                              <div className="flex items-center justify-between text-xs pt-2 border-t-2 border-base-content/20 mt-auto">
-                                <div className="flex items-center gap-1 px-2 py-1 rounded-md font-medium bg-secondary text-secondary-content">
+                              <div className="flex items-center justify-between text-xs pt-3 border-t-2 border-base-content/20 mt-auto">
+                                <div className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-success/80 text-base-content/80 border-2 border-base-content/20 gap-1">
                                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                   </svg>
                                   <span>{formatProjectTime(project.id)}</span>
                                 </div>
-                                <span className="text-base-content/80 font-mono">
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-base-200 text-base-content/80 border-2 border-base-content/20 font-mono">
                                   {new Date(project.updatedAt).toLocaleDateString()}
                                 </span>
                               </div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { publicAPI } from '../api';
+import { getContrastTextColor } from '../utils/contrastTextColor';
 
 const PublicProjectPage: React.FC = () => {
   const { identifier } = useParams<{ identifier: string }>();
@@ -154,16 +155,18 @@ const PublicProjectPage: React.FC = () => {
             
             {/* Compact Project Layout */}
             <div className="flex items-start gap-4 mb-4">
-              <div 
-                className="w-16 h-16 rounded-xl flexF items-center justify-center text-2xl font-bold text-white border-2 border-white/20 shadow-lg flex-shrink-0"
-                style={{ backgroundColor: project.color }}
-              >
-                {project.name.charAt(0).toUpperCase()}
-              </div>
-              <div className="min-w-0 flex-1">
-                <h1 className="text-2xl font-bold text-base-content mb-1">
+              <div className="flex items-center gap-3 mb-3">
+                <h3 
+                  className="border-2 border-base-content/20 font-semibold text-2xl truncate px-2 py-1 rounded-md group-hover:opacity-90 transition-opacity"
+                  style={{ 
+                    backgroundColor: project.color,
+                    color: getContrastTextColor(project.color)
+                  }}
+                >
                   {project.name}
-                </h1>
+                </h3>
+                <div>
+                
                 <div className="flex items-center gap-2 mb-2">
                   <span className="badge badge-primary">
                     {project.category}
@@ -175,8 +178,8 @@ const PublicProjectPage: React.FC = () => {
                       <span>by</span>
                       {project.owner.isPublic || project.owner.publicSlug ? (
                         <Link 
-                          to={`/discover/user/${project.owner.publicSlug || project.owner.id}`}
-                          className="font-semibold text-primary hover:text-primary-focus transition-colors"
+                        to={`/discover/user/${project.owner.publicSlug || project.owner.id}`}
+                        className="font-semibold text-primary hover:text-primary-focus transition-colors"
                         >
                           @{project.owner.publicSlug || `${project.owner.firstName}${project.owner.lastName}`.toLowerCase()}
                         </Link>
@@ -187,6 +190,7 @@ const PublicProjectPage: React.FC = () => {
                       )}
                     </div>
                   )}
+                  </div>
                   
                   {visibility.timestamps && (
                     <div className="flex items-center gap-2">
@@ -287,11 +291,16 @@ const PublicProjectPage: React.FC = () => {
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="btn btn-primary btn-block gap-2"
-                      >
+                        >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                         </svg>
                         View Live Site
+                        {project.deploymentData.liveUrl && (
+                          <div className="text-xs text-base-content/50 break-all mt-2">
+                            {project.deploymentData.liveUrl}
+                          </div>
+                        )}
                       </a>
                     )}
                     
@@ -302,23 +311,23 @@ const PublicProjectPage: React.FC = () => {
                         rel="noopener noreferrer"
                         className="btn btn-outline btn-block gap-2"
                       >
+                        <div>
+
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                         </svg>
+                        </div>
+                        <div>
                         View Source Code
+                        </div>
+                        {project.deploymentData.githubRepo && (
+                          <div className="text-xs text-base-content/50 break-all">
+                            {project.deploymentData.githubRepo}
+                          </div>
+                        )}
                       </a>
                     )}
                     
-                    {project.deploymentData.liveUrl && (
-                      <div className="text-xs text-base-content/50 break-all mt-2">
-                        {project.deploymentData.liveUrl}
-                      </div>
-                    )}
-                    {project.deploymentData.githubRepo && (
-                      <div className="text-xs text-base-content/50 break-all">
-                        {project.deploymentData.githubRepo}
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>

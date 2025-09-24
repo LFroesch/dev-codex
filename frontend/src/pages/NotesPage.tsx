@@ -4,6 +4,7 @@ import { Project, projectAPI, Todo } from '../api';
 import {TodoItem} from '../components/TodoItem';
 import { NoteModal } from '../components/NoteItem';
 import activityTracker from '../services/activityTracker';
+import { getContrastTextColor } from '../utils/contrastTextColor';
 
 interface ContextType {
   selectedProject: Project | null;
@@ -455,7 +456,12 @@ const NotesPage: React.FC = () => {
                   >
                     <div className="p-4 flex flex-col flex-1">
                       <div className="flex items-start justify-between mb-3">
-                        <h3 className="font-semibold text-base-content truncate px-2 py-1 rounded-md bg-primary inline-block w-fit">
+                        <h3 
+                          className="font-semibold truncate px-2 py-1 rounded-md bg-primary inline-block w-fit"
+                          style={{ 
+                            color: getContrastTextColor()
+                          }}
+                        >
                           {note.title}
                         </h3>
                         <div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -741,7 +747,12 @@ const NotesPage: React.FC = () => {
                   >
                     <div className="p-4 flex flex-col flex-1">
                       <div className="flex items-start justify-between mb-3">
-                        <h3 className="font-semibold text-base-content truncate px-2 py-1 rounded-md bg-primary inline-block w-fit">
+                        <h3 
+                          className="font-semibold truncate px-2 py-1 rounded-md bg-primary inline-block w-fit"
+                          style={{ 
+                            color: getContrastTextColor()
+                          }}
+                        >
                           {entry.title || entry.entry}
                         </h3>
                         <div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity">

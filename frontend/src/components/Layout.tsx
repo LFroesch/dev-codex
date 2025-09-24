@@ -9,6 +9,7 @@ import ConfirmationModal from './ConfirmationModal';
 import { useAnalytics } from '../hooks/useAnalytics';
 import { unsavedChangesManager } from '../utils/unsavedChanges';
 import { hexToOklch, oklchToCssValue, generateFocusVariant, generateContrastingTextColor } from '../utils/colorUtils';
+import { getContrastTextColor } from '../utils/contrastTextColor';
 import ToastContainer from './Toast';
 import IdeasPage from '../pages/IdeasPage';
 import { toast } from '../services/toast';
@@ -33,22 +34,6 @@ const Layout: React.FC = () => {
   const [selectedSharedCategory, setSelectedSharedCategory] = useState<string | null>(null);
   const [analyticsReady, setAnalyticsReady] = useState(false);
   
-  // Function to determine if text should be white or black based on background color
-  const getContrastTextColor = (hexColor: string): string => {
-    // Remove # if present
-    const color = hexColor.replace('#', '');
-    
-    // Convert to RGB
-    const r = parseInt(color.slice(0, 2), 16);
-    const g = parseInt(color.slice(2, 4), 16);
-    const b = parseInt(color.slice(4, 6), 16);
-    
-    // Calculate luminance
-    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-    
-    // Return black for light colors, white for dark colors
-    return luminance > 0.5 ? '#000000' : '#ffffff';
-  };
   
   // Unsaved changes modal state
   const [showUnsavedChangesModal, setShowUnsavedChangesModal] = useState(false);
@@ -910,18 +895,6 @@ const Layout: React.FC = () => {
                   className={`tab tab-sm min-h-10 font-bold text-sm ${activeProjectTab === 'ideas' ? 'tab-active' : ''}`}
                 >
                   <span>Ideas</span>
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    navigate('/create-project');
-                  }}
-                  className="tab tab-sm min-h-10 font-bold text-sm hover:bg-primary/80 relative z-20"
-                  title="Create New Project"
-                  style={{ pointerEvents: 'auto' }}
-                >
-                  <span>New</span>
                 </button>
               </div>
             </div>

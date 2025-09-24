@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { ideasAPI, type Idea } from '../api/ideas';
+import { getContrastTextColor } from '../utils/contrastTextColor';
 
 interface IdeasPageProps {
   onIdeasCountChange?: (count: number) => void;
@@ -130,7 +131,8 @@ const IdeasPage: React.FC<IdeasPageProps> = ({ onIdeasCountChange }) => {
               >
                 <div className="p-3 flex flex-col flex-1">
                   <div className="flex items-start justify-between mb-2">
-                    <h3 className="font-semibold text-base-content truncate px-2 py-1 rounded-md bg-primary inline-block w-fit">
+                    <h3 className="font-semibold text-base-content truncate px-2 py-1 rounded-md bg-primary inline-block w-fit"
+                      style={{ color: getContrastTextColor() }}>
                       {idea.title}
                     </h3>
                   </div>

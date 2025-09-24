@@ -260,7 +260,9 @@ const DiscoverPage: React.FC = () => {
                     
                     {/* Category and Date */}
                     <div className="flex items-center gap-2 mb-3">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-primary text-base-content/80 border-2 border-base-content/20 h-[1.5rem]">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-primary border-2 border-base-content/20 h-[1.5rem]"
+                        style={{ color: getContrastTextColor() }}
+                      >
                         {project.category}
                       </span>
                       <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-base-200 text-base-content/80 border-2 border-base-content/20 h-[1.5rem]">
@@ -322,7 +324,8 @@ const DiscoverPage: React.FC = () => {
                         {project.owner ? (
                           project.owner.isPublic || project.owner.publicSlug ? (
                             <span 
-                              className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-primary text-base-content/80 border border-base-300/50 hover:bg-primary hover:text-primary-content transition-colors cursor-pointer"
+                              className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-primary border border-base-300/50 hover:bg-primary hover:text-primary-content transition-colors cursor-pointer"
+                              style={{ color: getContrastTextColor() }}
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();

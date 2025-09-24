@@ -79,7 +79,7 @@ const PublicProfilePage: React.FC = () => {
     <div className="flex-1 w-full max-w-7xl mx-auto p-2 sm:p-4 bg-base-100 flex flex-col mb-4 min-h-0">
       <div className="space-y-6">
         {/* Profile Header */}
-        <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30">
+        <div className="bg-base-100 rounded-md border-2 border-base-content/20 shadow-md hover:shadow-lg">
           <div className="p-6">
             {/* Header buttons */}
             <div className="flex items-center justify-between mb-6">
@@ -172,7 +172,7 @@ const PublicProfilePage: React.FC = () => {
                 <Link
                   key={project.id}
                   to={`/discover/project/${project.publicSlug || project.id}`}
-                  className="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] hover:border-primary/30 border border-base-200 h-full group"
+                  className="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] border-2 border-base-content/20 w-full group"
                 >
                   <div className="card-body p-6 flex flex-col h-full">
                     <div className="flex items-start gap-3 mb-4">

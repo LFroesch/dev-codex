@@ -409,14 +409,19 @@ const StackPage: React.FC = () => {
         </div>
 
         {/* Active Category Options */}
-        <div className="border-2 border-base-content/20 rounded-lg mb-4 p-4">
-          <div className="mb-4">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <span className="text-xl">{activeTab.emoji}</span>
-              {activeTab.name}
-            </h3>
-            <p className="text-sm text-base-content/60 mt-1">{activeTab.description}</p>
+        <div className="section-container mb-4">
+          <div className="section-header">
+            <div className="flex items-center gap-3">
+              <div className="section-icon">
+                <span className="text-xl">{activeTab.emoji}</span>
+              </div>
+              <div>
+                <h3 className="font-semibold">{activeTab.name}</h3>
+                <p className="text-sm text-base-content/60 mt-1">{activeTab.description}</p>
+              </div>
+            </div>
           </div>
+          <div className="section-content">
           
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {activeTab.options.map((option) => {
@@ -494,8 +499,9 @@ const StackPage: React.FC = () => {
               );
             })}
           </div>
+          </div>
         </div>
-      </div>
+        </div>
     );
   });
 
@@ -713,14 +719,23 @@ const StackPage: React.FC = () => {
       {activeSection === 'add' && (
         <div className="space-y-6">
           {/* Combined Selection Panel */}
-          <div className="border-2 border-base-content/20 rounded-lg mb-4 p-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Platform Selection */}
-              <div>
-                <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                  <span className="text-xl">🎯</span>
-                  Target Platforms
-                </h3>
+          <div className="section-container mb-4">
+            <div className="section-header">
+              <div className="flex items-center gap-3">
+                <div className="section-icon">
+                  🎯
+                </div>
+                <span>Target Platforms & Category Groups</span>
+              </div>
+            </div>
+            <div className="section-content">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Platform Selection */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                    <span className="text-xl">🎯</span>
+                    Target Platforms
+                  </h3>
                 <div className="grid grid-cols-3 gap-2">
                   {PLATFORMS.map(platform => (
                     <button
@@ -766,6 +781,7 @@ const StackPage: React.FC = () => {
                     </button>
                   ))}
                 </div>
+              </div>
               </div>
             </div>
           </div>

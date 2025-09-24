@@ -365,7 +365,7 @@ const SettingsPage: React.FC = () => {
                     required
                   />
                 ) : (
-                  <div className="p-2 border-thick rounded-lg h-10">
+                  <div className="input input-bordered p-2 border-thick rounded-lg h-10">
                     <p className="font-medium text-sm">{name}</p>
                   </div>
                 )}
@@ -385,7 +385,7 @@ const SettingsPage: React.FC = () => {
                     required
                   />
                 ) : (
-                  <div className="p-2 rounded-lg border-thick">
+                  <div className="input input-bordered h-10 p-2 rounded-lg border-thick">
                     <p className="font-medium text-sm">{description}</p>
                   </div>
                 )}
@@ -450,7 +450,7 @@ const SettingsPage: React.FC = () => {
                     />
                   </div>
                 ) : (
-                  <div className="p-2 border-thick rounded-lg h-10 flex items-center">
+                  <div className="input input-bordered p-2 border-thick rounded-lg h-10 flex items-center">
                     <div className="flex items-center gap-2">
                       <div 
                         className="w-6 h-6 rounded border border-base-300 flex-shrink-0"
@@ -475,7 +475,7 @@ const SettingsPage: React.FC = () => {
                     placeholder="Enter category..."
                   />
                 ) : (
-                  <div className="p-2 border-thick rounded-lg h-10 flex items-center">
+                  <div className="input input-bordered p-2 border-thick rounded-lg h-10 flex items-center">
                     <p className="text-sm">{category}</p>
                   </div>
                 )}
@@ -496,7 +496,7 @@ const SettingsPage: React.FC = () => {
                     <option value="production">Production</option>
                   </select>
                 ) : (
-                  <div className="p-2 border-thick rounded-lg h-10 flex items-center">
+                  <div className="input input-bordered p-2 border-thick rounded-lg h-10 flex items-center">
                     <span className={`badge badge-sm h-6 ${
                       stagingEnvironment === 'production' ? 'badge-error' :
                       stagingEnvironment === 'staging' ? 'badge-warning' :
@@ -552,10 +552,10 @@ const SettingsPage: React.FC = () => {
                     </div>
                   </div>
                 ) : (
-                  <div className="p-2 border-thick rounded-lg h-10 flex items-start overflow-y-auto">
+                  <div className="input input-bordered p-2 border-thick rounded-lg h-10 flex items-center">
                     <div className="flex flex-wrap gap-1">
                       {tags.length === 0 ? (
-                        <span className="text-base-content/60 italic text-xs translate-y-1 h-6">No tags</span>
+                        <span className="text-base-content/60 italic text-xs">No tags</span>
                       ) : (
                         tags.map((tag, index) => (
                           <span
@@ -670,7 +670,7 @@ const SettingsPage: React.FC = () => {
             <div className="space-y-4">
               <div className={`p-4 ${!selectedProject.isArchived ? 'bg-warning/20' : 'bg-info/10'} rounded-lg border-thick`}>
                 <h4 className={`font-bold ${!selectedProject.isArchived ? 'text-warning' : 'text-info'} mb-2`}>{selectedProject.isArchived ? 'Unarchive Project' : 'Archive Project'}</h4>
-                <p className={`${!selectedProject.isArchived ? 'text-warning/80' : 'text-info/80'} font-bold text-sm mb-4`}>
+                <p className={`${!selectedProject.isArchived ? 'text-warning' : 'text-info'} font-bold text-sm mb-4`}>
                   {selectedProject.isArchived ? 'Make this project active again.' : 'Move this project to archived section.'}
                 </p>
                 <button

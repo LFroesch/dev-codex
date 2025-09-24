@@ -130,7 +130,7 @@ const IdeasPage: React.FC<IdeasPageProps> = ({ onIdeasCountChange }) => {
               >
                 <div className="p-3 flex flex-col flex-1">
                   <div className="flex items-start justify-between mb-2">
-                    <h3 className="font-semibold text-base-content group-hover:text-primary transition-colors duration-200 truncate px-2 py-1 rounded-md bg-base-300 inline-block w-fit">
+                    <h3 className="font-semibold text-base-content truncate px-2 py-1 rounded-md bg-primary inline-block w-fit">
                       {idea.title}
                     </h3>
                   </div>

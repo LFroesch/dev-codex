@@ -450,7 +450,7 @@ const StackPage: React.FC = () => {
                 >
                   <div className="flex justify-between items-start mb-2">
                     <div className="flex items-center gap-2">
-                      <h4 className="font-semibold text-sm group-hover:text-primary transition-colors duration-200 px-2 py-1 rounded-md bg-base-300">{option.name}</h4>
+                      <h4 className="font-semibold text-sm px-2 py-1 rounded-md bg-primary">{option.name}</h4>
                       {option.url && (
                         <a
                           href={option.url}
@@ -593,7 +593,7 @@ const StackPage: React.FC = () => {
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
-                            <h3 className="font-semibold text-base-content group-hover:text-primary transition-colors duration-200 px-2 py-1 rounded-md bg-base-300 inline-block">
+                            <h3 className="font-semibold text-base-content px-2 py-1 rounded-md bg-primary inline-block">
                               {tech.name}
                             </h3>
                             <VersionBadge 

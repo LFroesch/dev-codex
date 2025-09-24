@@ -33,6 +33,23 @@ const Layout: React.FC = () => {
   const [selectedSharedCategory, setSelectedSharedCategory] = useState<string | null>(null);
   const [analyticsReady, setAnalyticsReady] = useState(false);
   
+  // Function to determine if text should be white or black based on background color
+  const getContrastTextColor = (hexColor: string): string => {
+    // Remove # if present
+    const color = hexColor.replace('#', '');
+    
+    // Convert to RGB
+    const r = parseInt(color.slice(0, 2), 16);
+    const g = parseInt(color.slice(2, 4), 16);
+    const b = parseInt(color.slice(4, 6), 16);
+    
+    // Calculate luminance
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    
+    // Return black for light colors, white for dark colors
+    return luminance > 0.5 ? '#000000' : '#ffffff';
+  };
+  
   // Unsaved changes modal state
   const [showUnsavedChangesModal, setShowUnsavedChangesModal] = useState(false);
   const [unsavedChangesResolve, setUnsavedChangesResolve] = useState<((value: boolean) => void) | null>(null);
@@ -1319,15 +1336,15 @@ const Layout: React.FC = () => {
                                     : 'border-base-content/20 hover:border-base-300/50'
                               }`}
                             >
-                              {/* Header with color indicator and name */}
+                              {/* Header with project name */}
                               <div className="flex items-center gap-3 mb-3">
-                                <div 
-                                  className="w-4 h-4 rounded-full flex-shrink-0 shadow-sm"
-                                  style={{ backgroundColor: project.color }}
-                                ></div>
-                                <h3 className={`font-semibold text-base truncate px-2 py-1 rounded-md ${
-                                  selectedProject?.id === project.id ? 'group-hover:text-secondary bg-primary text-primary-content' : 'group-hover:text-primary bg-base-300 text-base-content'
-                                }`}>
+                                <h3 
+                                  className="font-semibold text-base truncate px-2 py-1 rounded-md group-hover:opacity-90 transition-opacity"
+                                  style={{ 
+                                    backgroundColor: project.color,
+                                    color: getContrastTextColor(project.color)
+                                  }}
+                                >
                                   {project.name}
                                 </h3>
                               </div>
@@ -1350,7 +1367,7 @@ const Layout: React.FC = () => {
                                         key={tagIndex}
                                         className={`inline-flex items-center border-2 px-2 py-1 rounded-md text-xs font-bold ${
                                           selectedProject?.id === project.id 
-                                            ? 'bg-primary/15 text-primary border-primary/50' 
+                                            ? 'bg-primary/15 text-base-content/80 border-primary/50' 
                                             : 'bg-base-200 text-base-content/80 border-base-300/50'
                                         }`}
                                       >
@@ -1367,14 +1384,14 @@ const Layout: React.FC = () => {
                               </div>
                               
                               {/* Footer - Always at bottom */}
-                              <div className="flex items-center justify-between text-xs pt-2 border-t border-base-content/20 mt-auto">
+                              <div className="flex items-center justify-between text-xs pt-2 border-t-2 border-base-content/20 mt-auto">
                                 <div className="flex items-center gap-1 px-2 py-1 rounded-md font-medium bg-secondary text-secondary-content">
                                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                   </svg>
                                   <span>{formatProjectTime(project.id)}</span>
                                 </div>
-                                <span className="text-base-content/70 font-mono">
+                                <span className="text-base-content/80 font-mono">
                                   {new Date(project.updatedAt).toLocaleDateString()}
                                 </span>
                               </div>

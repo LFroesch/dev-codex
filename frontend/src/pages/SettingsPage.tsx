@@ -225,13 +225,14 @@ const SettingsPage: React.FC = () => {
 
       {/* Overview Section */}
       {activeSection === 'overview' && (
-        <div className="space-y-4">
-          <h2 className="text-xl font-bold mb-0 flex items-center gap-2">
-            <span className="text-xl">⚙️</span>
-            <span className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">Project Overview</span>
-          </h2>
-          
-          <div className="border-2 border-base-content/20 rounded-lg mb-4 p-4">
+        <div className="section-container mb-4">
+          <div className="section-header">
+            <div className="flex items-center gap-3">
+              <div className="section-icon">⚙️</div>
+              <span>Project Overview</span>
+            </div>
+          </div>
+          <div className="section-content">
             <div className="flex items-center gap-4 mb-4">
               <div 
                 className="w-16 h-16 rounded-lg flex items-center justify-center text-2xl font-bold text-white"
@@ -302,19 +303,20 @@ const SettingsPage: React.FC = () => {
                 </div>
               </div>
             </div>
+            </div>
           </div>
-        </div>
       )}
 
       {/* Project Info Section */}
       {activeSection === 'info' && (
-        <div className="space-y-4">
-          <h2 className="text-xl font-bold mb-0 flex items-center gap-2">
-            <span className="text-xl">⚙️</span>
-            <span className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">Project Information</span>
-          </h2>
-          
-          <div className="border-2 border-base-content/20 rounded-lg mb-4 p-4">
+        <div className="section-container mb-4">
+          <div className="section-header">
+            <div className="flex items-center gap-3">
+              <div className="section-icon">⚙️</div>
+              <span>Project Information</span>
+            </div>
+          </div>
+          <div className="section-content">
           {/* Basic Info Section */}
           <div className="pt-4">
             <div className="flex justify-between items-center mb-3">
@@ -635,20 +637,21 @@ const SettingsPage: React.FC = () => {
                 </div>
               </div>
             </div>
-          </div>
+            </div>
           </div>
         </div>
       )}
 
       {/* Export & Import Section */}
       {activeSection === 'export' && (
-        <div className="space-y-4">
-          <h2 className="text-xl font-bold mb-0 flex items-center gap-2">
-            <span className="text-xl">📤</span>
-            <span className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">Export & Import</span>
-          </h2>
-          
-          <div className="border-2 border-base-content/20 rounded-lg mb-4 p-4">
+        <div className="section-container mb-4">
+          <div className="section-header">
+            <div className="flex items-center gap-3">
+              <div className="section-icon">📤</div>
+              <span>Export & Import</span>
+            </div>
+          </div>
+          <div className="section-content">
             <ExportSection selectedProject={selectedProject} onProjectRefresh={onProjectRefresh} />
           </div>
         </div>
@@ -656,13 +659,14 @@ const SettingsPage: React.FC = () => {
 
       {/* Danger Zone Section */}
       {activeSection === 'danger' && (
-        <div className="space-y-4">
-          <h2 className="text-xl font-bold mb-0 flex items-center gap-2">
-            <span className="text-xl">⚠️</span>
-            <span className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">Danger Zone</span>
-          </h2>
-          
-          <div className="border-2 border-base-content/20 rounded-lg mb-4 p-4">
+        <div className="section-container mb-4">
+          <div className="section-header">
+            <div className="flex items-center gap-3">
+              <div className="section-icon">⚠️</div>
+              <span>Danger Zone</span>
+            </div>
+          </div>
+          <div className="section-content">
             <div className="space-y-4">
               <div className={`p-4 ${!selectedProject.isArchived ? 'bg-warning/20' : 'bg-info/10'} rounded-lg border-thick`}>
                 <h4 className={`font-bold ${!selectedProject.isArchived ? 'text-warning' : 'text-info'} mb-2`}>{selectedProject.isArchived ? 'Unarchive Project' : 'Archive Project'}</h4>
@@ -696,8 +700,8 @@ const SettingsPage: React.FC = () => {
                 </button>
               </div>
             </div>
+            </div>
           </div>
-        </div>
       )}
 
       <ConfirmationModal

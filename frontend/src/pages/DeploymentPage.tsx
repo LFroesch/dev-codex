@@ -181,7 +181,7 @@ const DeploymentPage: React.FC = () => {
           <div className="section-content">
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-base-200 border-thick rounded-lg p-4">
+            <div className="bg-base-200/40 border-thick rounded-lg p-4">
               <div className="flex items-center gap-3 mb-2">
                 <span className="text-sm badge-neutral badge badge-md">📶</span>
                 <span className="font-medium text-sm">Status</span>
@@ -192,7 +192,7 @@ const DeploymentPage: React.FC = () => {
               </p>
             </div>
             
-            <div className="bg-base-200 border-thick rounded-lg p-4">
+            <div className="bg-base-200/40 border-thick rounded-lg p-4">
               <div className="flex items-center gap-3 mb-2">
                 <span className="text-sm badge-neutral badge badge-md">🌐</span>
                 <span className="font-medium text-sm">Platform</span>
@@ -200,7 +200,7 @@ const DeploymentPage: React.FC = () => {
               <p className="text-sm badge-primary badge badge-md">{deploymentData.deploymentPlatform || 'Not configured'}</p>
             </div>
             
-            <div className="bg-base-200 border-thick rounded-lg p-4">
+            <div className="bg-base-200/40 border-thick rounded-lg p-4">
               <div className="flex items-center gap-3 mb-2">
                 <span className="text-sm badge-neutral badge badge-md">🔗</span>
                 <span className="font-medium text-sm">Live URL</span>
@@ -208,7 +208,7 @@ const DeploymentPage: React.FC = () => {
               <p className="text-sm truncate badge-primary badge badge-md">{deploymentData.liveUrl || 'Not configured'}</p>
             </div>
             
-            <div className="bg-base-200 border-thick rounded-lg p-4">
+            <div className="bg-base-200/40 border-thick rounded-lg p-4">
               <div className="flex items-center gap-3 mb-2">
                 <span className="text-sm badge-neutral badge badge-md">📅</span>
                 <span className="font-medium text-sm">Last Deploy</span>
@@ -324,22 +324,22 @@ const DeploymentPage: React.FC = () => {
       )}
 
       {activeSection === 'build' && (
-        <div className="border-2 border-base-content/20 rounded-lg mb-4 p-4">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <span className="text-xl">⚙️</span>
-              <span className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">Build & Deploy</span>
-            </h2>
-            <button
-              onClick={handleSave}
-              disabled={loading || !hasUnsavedChanges}
-              className={`btn btn-sm ${hasUnsavedChanges ? 'btn-primary' : 'btn-ghost'} ${loading ? 'loading' : ''}`}
-            >
-              {loading ? 'Saving...' : hasUnsavedChanges ? 'Save Changes' : 'Saved'}
-            </button>
+        <div className="section-container mb-4">
+          <div className="section-header">
+            <div className="flex items-center gap-3">
+              <div className="section-icon">⚙️</div>
+              <span>Build & Deploy</span>
+              <button
+                onClick={handleSave}
+                disabled={loading || !hasUnsavedChanges}
+                className={`btn btn-sm ml-auto ${hasUnsavedChanges ? 'btn-primary' : 'btn-ghost'} ${loading ? 'loading' : ''}`}
+              >
+                {loading ? 'Saving...' : hasUnsavedChanges ? 'Save Changes' : 'Saved'}
+              </button>
+            </div>
           </div>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="section-content">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="form-control">
               <label className="label">
                 <span className="label-text font-medium">Build Command</span>
@@ -396,35 +396,36 @@ const DeploymentPage: React.FC = () => {
                 onChange={(e) => updateField('lastDeployDate', e.target.value)}
               />
             </div>
+            </div>
           </div>
         </div>
       )}
 
       {activeSection === 'env' && (
-        <div className="border-2 border-base-content/20 rounded-lg mb-4 p-4">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <span className="text-xl">🔐</span>
-              <span className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">Environment Variables</span>
-            </h2>
-            <div className="flex gap-2">
-              <button
-                onClick={addEnvironmentVariable}
-                className="btn btn-primary btn-sm"
-              >
-                Add Variable
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={loading || !hasUnsavedChanges}
-                className={`btn btn-sm ${hasUnsavedChanges ? 'btn-primary' : 'btn-ghost'} ${loading ? 'loading' : ''}`}
-              >
-                {loading ? 'Saving...' : hasUnsavedChanges ? 'Save Changes' : 'Saved'}
-              </button>
+        <div className="section-container mb-4">
+          <div className="section-header">
+            <div className="flex items-center gap-3">
+              <div className="section-icon">🔐</div>
+              <span>Environment Variables</span>
+              <div className="flex gap-2 ml-auto">
+                <button
+                  onClick={addEnvironmentVariable}
+                  className="btn btn-primary btn-sm"
+                >
+                  Add Variable
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={loading || !hasUnsavedChanges}
+                  className={`btn btn-sm ${hasUnsavedChanges ? 'btn-primary' : 'btn-ghost'} ${loading ? 'loading' : ''}`}
+                >
+                  {loading ? 'Saving...' : hasUnsavedChanges ? 'Save Changes' : 'Saved'}
+                </button>
+              </div>
             </div>
           </div>
-          
-          <div className="alert alert-warning bg-warning/50 mb-4">
+          <div className="section-content">
+            <div className="alert alert-warning bg-warning/50 mb-4">
             <svg className="w-6 h-6 shrink-0 stroke-current" fill="none" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 15.5c-.77.833.192 2.5 1.732 2.5z" />
             </svg>
@@ -469,29 +470,32 @@ const DeploymentPage: React.FC = () => {
             )}
           </div>
         </div>
+      </div>
       )}
 
       {activeSection === 'notes' && (
-        <div className="border-2 border-base-content/20 rounded-lg mb-4 p-4">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <span className="text-xl">📝</span>
-              <span className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">Deployment Notes</span>
-            </h2>
-            <button
-              onClick={handleSave}
-              disabled={loading || !hasUnsavedChanges}
-              className={`btn btn-sm ${hasUnsavedChanges ? 'btn-primary' : 'btn-ghost'} ${loading ? 'loading' : ''}`}
-            >
-              {loading ? 'Saving...' : hasUnsavedChanges ? 'Save Changes' : 'Saved'}
-            </button>
+        <div className="section-container mb-4">
+          <div className="section-header">
+            <div className="flex items-center gap-3">
+              <div className="section-icon">📝</div>
+              <span>Deployment Notes</span>
+              <button
+                onClick={handleSave}
+                disabled={loading || !hasUnsavedChanges}
+                className={`btn btn-sm ml-auto ${hasUnsavedChanges ? 'btn-primary' : 'btn-ghost'} ${loading ? 'loading' : ''}`}
+              >
+                {loading ? 'Saving...' : hasUnsavedChanges ? 'Save Changes' : 'Saved'}
+              </button>
+            </div>
           </div>
-          <textarea
-            className="textarea textarea-bordered w-full h-64"
-            placeholder="Add notes about deployment process, issues, configurations, or any important information..."
-            value={deploymentData.notes || ''}
-            onChange={(e) => updateField('notes', e.target.value)}
-          />
+          <div className="section-content">
+            <textarea
+              className="textarea textarea-bordered w-full h-64"
+              placeholder="Add notes about deployment process, issues, configurations, or any important information..."
+              value={deploymentData.notes || ''}
+              onChange={(e) => updateField('notes', e.target.value)}
+            />
+          </div>
         </div>
       )}
 

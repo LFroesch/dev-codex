@@ -221,14 +221,14 @@ const PublicPage: React.FC = () => {
       {activeSection === 'overview' && (
         <div className="space-y-4">
           {/* Overview */}
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold mb-0 flex items-center gap-2">
-              <span className="text-xl">📊</span>
-              <span className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">Public Sharing Overview</span>
-            </h2>
-          </div>
-          
-          <div className="border-2 border-base-content/20 rounded-lg mb-4 p-4">
+          <div className="section-container mb-4">
+            <div className="section-header">
+              <div className="flex items-center gap-3">
+                <div className="section-icon">📊</div>
+                <span>Public Sharing Overview</span>
+              </div>
+            </div>
+            <div className="section-content">
             <div className="flex items-center gap-4 mb-4">
               <div className="flex-1">
                 <h3 
@@ -271,33 +271,34 @@ const PublicPage: React.FC = () => {
                 </Link>
               </div>
             )}
+            </div>
           </div>
 
           {/* Public Settings */}
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold mb-0 flex items-center gap-2">
-              <span className="text-xl">🌐</span>
-              <span className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">Public Settings</span>
-            </h2>
-            <button
-              onClick={handleSave}
-              disabled={loading || !hasChanges()}
-              className={`btn ${hasChanges() ? 'btn-primary' : 'btn-ghost'}`}
-            >
-              {loading ? (
-                <>
-                  <span className="loading loading-spinner loading-sm"></span>
-                  Saving...
-                </>
-              ) : hasChanges() ? (
-                'Save Changes'
-              ) : (
-                'Saved'
-              )}
-            </button>
-          </div>
-          
-          <div className="border-2 border-base-content/20 rounded-lg mb-4 p-4">
+          <div className="section-container mb-4">
+            <div className="section-header">
+              <div className="flex items-center gap-3">
+                <div className="section-icon">🌐</div>
+                <span>Public Settings</span>
+                <button
+                  onClick={handleSave}
+                  disabled={loading || !hasChanges()}
+                  className={`btn ml-auto ${hasChanges() ? 'btn-primary' : 'btn-ghost'}`}
+                >
+                  {loading ? (
+                    <>
+                      <span className="loading loading-spinner loading-sm"></span>
+                      Saving...
+                    </>
+                  ) : hasChanges() ? (
+                    'Save Changes'
+                  ) : (
+                    'Saved'
+                  )}
+                </button>
+              </div>
+            </div>
+            <div className="section-content">
             <div className="form-control">
               <label className="label cursor-pointer">
                 <div className="flex-1">
@@ -330,37 +331,38 @@ const PublicPage: React.FC = () => {
                       ☑️ Your project is publicly accessible
                     </p>
                   )}
+            </div>
           </div>
         </div>
       )}
 
       {/* URL & Preview Section */}
       {activeSection === 'url' && isPublic && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold mb-0 flex items-center gap-2">
-              <span className="text-xl">🔗</span>
-              <span className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">URL & Preview</span>
-            </h2>
-            <button
-              onClick={handleSave}
-              disabled={loading || !hasChanges()}
-              className={`btn ${hasChanges() ? 'btn-primary' : 'btn-ghost'}`}
-            >
-              {loading ? (
-                <>
-                  <span className="loading loading-spinner loading-sm"></span>
-                  Saving...
-                </>
-              ) : hasChanges() ? (
-                'Save Changes'
-              ) : (
-                'Saved'
-              )}
-            </button>
+        <div className="section-container mb-4">
+          <div className="section-header">
+            <div className="flex items-center gap-3">
+              <div className="section-icon">🔗</div>
+              <span>URL & Preview</span>
+              <button
+                onClick={handleSave}
+                disabled={loading || !hasChanges()}
+                className={`btn ml-auto ${hasChanges() ? 'btn-primary' : 'btn-ghost'}`}
+              >
+                {loading ? (
+                  <>
+                    <span className="loading loading-spinner loading-sm"></span>
+                    Saving...
+                  </>
+                ) : hasChanges() ? (
+                  'Save Changes'
+                ) : (
+                  'Saved'
+                )}
+              </button>
+            </div>
           </div>
-          
-          <div className="bg-base-100 rounded-lg border-thick shadow-md hover:shadow-lg transition-all duration-200 p-4 space-y-4">
+          <div className="section-content">
+            <div className="space-y-4">
             {/* Custom Slug */}
             <div className="form-control">
               <label className="label">
@@ -463,6 +465,7 @@ const PublicPage: React.FC = () => {
                 </div>
               </div>
             </div>
+            </div>
           </div>
         </div>
       )}
@@ -471,30 +474,30 @@ const PublicPage: React.FC = () => {
       {activeSection === 'visibility' && isPublic && (
         <div className="space-y-4">
           {/* Visibility Controls */}
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold mb-0 flex items-center gap-2">
-              <span className="text-xl">🔧</span>
-              <span className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">Visibility Controls</span>
-            </h2>
-            <button
-              onClick={handleSave}
-              disabled={loading || !hasChanges()}
-              className={`btn ${hasChanges() ? 'btn-primary' : 'btn-ghost'}`}
-            >
-              {loading ? (
-                <>
-                  <span className="loading loading-spinner loading-sm"></span>
-                  Saving...
-                </>
-              ) : hasChanges() ? (
-                'Save Changes'
-              ) : (
-                'Saved'
-              )}
-            </button>
-          </div>
-          
-          <div className="border-2 border-base-content/20 rounded-lg mb-4 p-4">
+          <div className="section-container mb-4">
+            <div className="section-header">
+              <div className="flex items-center gap-3">
+                <div className="section-icon">🔧</div>
+                <span>Visibility Controls</span>
+                <button
+                  onClick={handleSave}
+                  disabled={loading || !hasChanges()}
+                  className={`btn ml-auto ${hasChanges() ? 'btn-primary' : 'btn-ghost'}`}
+                >
+                  {loading ? (
+                    <>
+                      <span className="loading loading-spinner loading-sm"></span>
+                      Saving...
+                    </>
+                  ) : hasChanges() ? (
+                    'Save Changes'
+                  ) : (
+                    'Saved'
+                  )}
+                </button>
+              </div>
+            </div>
+            <div className="section-content">
             <p className="text-sm text-base-content/60 mb-4">
               Choose what information to include on your public project page.
             </p>
@@ -528,15 +531,18 @@ const PublicPage: React.FC = () => {
                 </label>
               ))}
             </div>
+            </div>
           </div>
 
           {/* Privacy Information */}
-          <h2 className="text-xl font-bold mb-0 flex items-center gap-2">
-            <span className="text-xl">📋</span>
-            <span className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">Privacy Information</span>
-          </h2>
-          
-          <div className="border-2 border-base-content/20 rounded-lg mb-4 p-4">
+          <div className="section-container mb-4">
+            <div className="section-header">
+              <div className="flex items-center gap-3">
+                <div className="section-icon">📋</div>
+                <span>Privacy Information</span>
+              </div>
+            </div>
+            <div className="section-content">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-3">
                 <h4 className="font-medium text-base-content border-thick inline-block p-1 rounded-lg bg-base-200">✅ Always Included</h4>
@@ -593,6 +599,7 @@ const PublicPage: React.FC = () => {
                   </p>
                 </div>
               </div>
+            </div>
             </div>
           </div>
         </div>

@@ -339,14 +339,15 @@ React App:
       {/* Tab Content */}
       {activeTemplateCategory === 'create-new' ? (
         // Create New Template Content
-        <div className="border-2 border-base-content/20 rounded-lg mb-4 p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <span className="text-xl">📝</span>
-              <span className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">Create New Documentation Template</span>
-            </h2>
+        <div className="section-container mb-4">
+          <div className="section-header">
+            <div className="flex items-center gap-3">
+              <div className="section-icon">📝</div>
+              <span>Create New Documentation Template</span>
+            </div>
           </div>
-          <div className="space-y-4">
+          <div className="section-content">
+            <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="form-control">
                   <label className="label">
@@ -407,6 +408,7 @@ React App:
                   {addingDoc ? 'Adding...' : 'Add Template'}
                 </button>
               </div>
+            </div>
           </div>
         </div>
       ) : (
@@ -425,18 +427,21 @@ React App:
 
           {/* Template Categories Content */}
           {categoriesWithDocs.length > 0 && (
-            <div className="border-2 border-base-content/20 rounded-lg mb-4 p-4">
-                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <span className="text-xl">
+            <div className="section-container mb-4">
+              <div className="section-header">
+                <div className="flex items-center gap-3">
+                  <div className="section-icon">
                     {activeTemplateCategory === 'all' ? '📚' : categoriesWithDocs.find(c => c.value === activeTemplateCategory)?.emoji}
-                  </span>
-                  <span className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">
+                  </div>
+                  <span>
                     {activeTemplateCategory === 'all' 
                       ? 'All Documentation Templates' 
                       : `${categoriesWithDocs.find(c => c.value === activeTemplateCategory)?.label} Templates`
                     }
                   </span>
-                </h3>
+                </div>
+              </div>
+              <div className="section-content">
                 <div className="space-y-3">
                       {(activeTemplateCategory === 'all' 
                         ? selectedProject.docs || []
@@ -597,6 +602,7 @@ React App:
                           );
                       })}
                 </div>
+              </div>
             </div>
           )}
         </>

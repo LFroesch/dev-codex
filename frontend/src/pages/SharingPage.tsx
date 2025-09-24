@@ -109,13 +109,14 @@ const SharingPage: React.FC = () => {
 
       {/* Overview Section */}
       {activeSection === 'overview' && (
-        <div className="space-y-4">
-          <h2 className="text-xl font-bold mb-0 flex items-center gap-2">
-            <span className="text-xl">👥</span>
-            <span className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">Sharing Overview</span>
-          </h2>
-          
-          <div className="border-2 border-base-content/20 rounded-lg mb-4 p-4">
+        <div className="section-container mb-4">
+          <div className="section-header">
+            <div className="flex items-center gap-3">
+              <div className="section-icon">👥</div>
+              <span>Sharing Overview</span>
+            </div>
+          </div>
+          <div className="section-content">
             <div className="flex items-center justify-between p-3 bg-base-200 rounded-lg border-thick">
               <div className="flex items-center gap-3">
                 <div className={`w-8 h-8 rounded-full flex items-center border-thick justify-center ${
@@ -180,13 +181,14 @@ const SharingPage: React.FC = () => {
 
       {/* Team Management Section */}
       {activeSection === 'team' && selectedProject.isShared && (
-        <div className="space-y-4">
-          <h2 className="text-xl font-bold mb-0 flex items-center gap-2">
-            <span className="text-xl">👥</span>
-            <span className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">Team Management</span>
-          </h2>
-          
-          <div className="border-2 border-base-content/20 rounded-lg mb-4 p-4">
+        <div className="section-container mb-4">
+          <div className="section-header">
+            <div className="flex items-center gap-3">
+              <div className="section-icon">👥</div>
+              <span>Team Management</span>
+            </div>
+          </div>
+          <div className="section-content">
             <TeamManagement 
               projectId={selectedProject.id} 
               canManageTeam={selectedProject.canManageTeam ?? selectedProject.isOwner ?? false}
@@ -198,13 +200,14 @@ const SharingPage: React.FC = () => {
 
       {/* Activity Log Section */}
       {activeSection === 'activity' && (
-        <div className="space-y-4">
-          <h2 className="text-xl font-bold mb-0 flex items-center gap-2">
-            <span className="text-xl">📊</span>
-            <span className="px-2 py-1 rounded-md bg-base-300 inline-block w-fit">Activity Log</span>
-          </h2>
-          
-          <div className="border-2 border-base-content/20 rounded-lg mb-4 p-4">
+        <div className="section-container mb-4">
+          <div className="section-header">
+            <div className="flex items-center gap-3">
+              <div className="section-icon">📊</div>
+              <span>Activity Log</span>
+            </div>
+          </div>
+          <div className="section-content">
             <ActivityLog 
               projectId={selectedProject.id}
             />

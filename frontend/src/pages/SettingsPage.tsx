@@ -16,11 +16,7 @@ const SettingsPage: React.FC = () => {
   const navigate = useNavigate();
   const { selectedProject, onProjectUpdate, onProjectArchive, onProjectDelete, onProjectRefresh } = useOutletContext<ContextType>();
   
-  // Edit states
-  const [isEditingBasic, setIsEditingBasic] = useState(false);
-  const [isEditingMetadata, setIsEditingMetadata] = useState(false);
-  
-  // Form data
+  // Form data and state
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [stagingEnvironment, setStagingEnvironment] = useState<'development' | 'staging' | 'production'>('development');
@@ -30,12 +26,12 @@ const SettingsPage: React.FC = () => {
   const [newTag, setNewTag] = useState('');
   
   // Loading states
-  const [savingBasic, setSavingBasic] = useState(false);
-  const [savingMetadata, setSavingMetadata] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [archiveLoading, setArchiveLoading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [error, setError] = useState('');
-  const [activeSection, setActiveSection] = useState<'overview' | 'info' | 'export' | 'danger'>('overview');
+  const [activeSection, setActiveSection] = useState<'info' | 'export' | 'danger'>('info');
 
   useEffect(() => {
     if (selectedProject) {
@@ -45,47 +41,56 @@ const SettingsPage: React.FC = () => {
       setColor(selectedProject.color || '#3B82F6');
       setCategory(selectedProject.category || 'general');
       setTags(selectedProject.tags || []);
+      setHasUnsavedChanges(false);
     }
   }, [selectedProject]);
 
-  const handleSaveBasic = async () => {
+  const handleSave = async () => {
     if (!selectedProject) return;
 
-    setSavingBasic(true);
+    setLoading(true);
     setError('');
 
     try {
       await onProjectUpdate(selectedProject.id, {
         name: name.trim(),
         description: description.trim(),
-      });
-      setIsEditingBasic(false);
-    } catch (err) {
-      setError('Failed to save basic settings');
-    } finally {
-      setSavingBasic(false);
-    }
-  };
-
-  const handleSaveMetadata = async () => {
-    if (!selectedProject) return;
-
-    setSavingMetadata(true);
-    setError('');
-
-    try {
-      await onProjectUpdate(selectedProject.id, {
         stagingEnvironment,
         color,
         category,
         tags
       });
-      setIsEditingMetadata(false);
-    } catch (err) {
-      setError('Failed to save metadata');
+      setHasUnsavedChanges(false);
+    } catch (error) {
+      console.error('Failed to save settings:', error);
+      setError('Failed to save settings');
     } finally {
-      setSavingMetadata(false);
+      setLoading(false);
     }
+  };
+
+  const updateField = (field: string, value: any) => {
+    switch (field) {
+      case 'name':
+        setName(value as string);
+        break;
+      case 'description':
+        setDescription(value as string);
+        break;
+      case 'stagingEnvironment':
+        setStagingEnvironment(value as 'development' | 'staging' | 'production');
+        break;
+      case 'color':
+        setColor(value as string);
+        break;
+      case 'category':
+        setCategory(value as string);
+        break;
+      case 'tags':
+        setTags(value as string[]);
+        break;
+    }
+    setHasUnsavedChanges(true);
   };
 
   const handleAddTag = (e?: React.KeyboardEvent | React.MouseEvent) => {
@@ -96,13 +101,15 @@ const SettingsPage: React.FC = () => {
     
     const trimmedTag = newTag.trim().toLowerCase();
     if (trimmedTag && !tags.map(t => t.toLowerCase()).includes(trimmedTag)) {
-      setTags([...tags, newTag.trim()]);
+      const newTags = [...tags, newTag.trim()];
+      updateField('tags', newTags);
       setNewTag('');
     }
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
-    setTags(tags.filter(tag => tag !== tagToRemove));
+    const newTags = tags.filter(tag => tag !== tagToRemove);
+    updateField('tags', newTags);
   };
 
 
@@ -115,7 +122,8 @@ const SettingsPage: React.FC = () => {
     try {
       await onProjectArchive(selectedProject.id, !selectedProject.isArchived);
       await onProjectRefresh();
-    } catch (err) {
+    } catch (error) {
+      console.error('Failed to update project archive status:', error);
       setError('Failed to update project archive status');
     } finally {
       setArchiveLoading(false);
@@ -129,27 +137,14 @@ const SettingsPage: React.FC = () => {
       await onProjectDelete(selectedProject.id);
       navigate('/');
       setDeleteConfirm(false);
-    } catch (err) {
+    } catch (error) {
+      console.error('Failed to delete project:', error);
       setError('Failed to delete project');
       setDeleteConfirm(false);
     }
   };
 
 
-  const handleCancel = (section: string) => {
-    if (section === 'basic') {
-      setName(selectedProject?.name || '');
-      setDescription(selectedProject?.description || '');
-      setIsEditingBasic(false);
-    } else if (section === 'metadata') {
-      setStagingEnvironment(selectedProject?.stagingEnvironment || 'development');
-      setColor(selectedProject?.color || '#3B82F6');
-      setCategory(selectedProject?.category || 'general');
-      setTags(selectedProject?.tags || []);
-      setIsEditingMetadata(false);
-    }
-    setError('');
-  };
 
   if (!selectedProject) {
     return (
@@ -173,15 +168,6 @@ const SettingsPage: React.FC = () => {
       {/* Navigation Tabs */}
       <div className="flex justify-center px-2">
         <div className="tabs tabs-boxed border-2 border-base-content/20 shadow-sm">
-          <button 
-            className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'overview' ? 'tab-active' : ''}`}
-            onClick={() => setActiveSection('overview')}
-          >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-            Overview
-          </button>
           <button 
             className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'info' ? 'tab-active' : ''}`}
             onClick={() => setActiveSection('info')}
@@ -223,89 +209,6 @@ const SettingsPage: React.FC = () => {
         </div>
       )}
 
-      {/* Overview Section */}
-      {activeSection === 'overview' && (
-        <div className="section-container mb-4">
-          <div className="section-header">
-            <div className="flex items-center gap-3">
-              <div className="section-icon">⚙️</div>
-              <span>Project Overview</span>
-            </div>
-          </div>
-          <div className="section-content">
-            <div className="flex items-center gap-4 mb-4">
-              <div 
-                className="w-16 h-16 rounded-lg flex items-center justify-center text-2xl font-bold text-white"
-                style={{ backgroundColor: selectedProject.color }}
-              >
-                {selectedProject.name.charAt(0).toUpperCase()}
-              </div>
-              <div className="flex-1">
-                <h3 className="text-2xl font-semibold">{selectedProject.name}</h3>
-                <p className="text-base-content/70 mb-2">{selectedProject.description}</p>
-                <div className="flex items-center gap-2">
-                  <span className={`px-3 py-1 h-7 rounded-full text-sm font-medium text-base-content ${
-                    selectedProject.isArchived 
-                      ? 'bg-accent/50' 
-                      : 'bg-success/70'
-                  }`}>
-                    {selectedProject.isArchived ? 'Archived' : 'Active'}
-                  </span>
-                  <span className={`px-3 py-1 h-7 rounded-full text-sm font-medium text-base-content ${
-                    selectedProject.isShared
-                      ? 'bg-info/50'
-                      : 'bg-warning/50'
-                  }`}>
-                    {selectedProject.isShared ? 'Shared' : 'Private'}
-                  </span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2 text-sm">
-                <div>
-                  <span className="font-medium">Created:</span> {new Date(selectedProject.createdAt).toLocaleDateString()}
-                </div>
-                <div>
-                  <span className="font-medium">Updated:</span> {new Date(selectedProject.updatedAt).toLocaleDateString()}
-                </div>
-                <div>
-                  <span className="font-medium">Category:</span> {selectedProject.category}
-                </div>
-              </div>
-              <div className="space-y-2 text-sm">
-                <div>
-                  <span className="font-medium">Environment:</span>
-                  <span className={`ml-2 px-2 py-1 rounded-lg text-xs font-semibold text-base-content ${
-                    selectedProject.stagingEnvironment === 'production' ? 'bg-error' :
-                    selectedProject.stagingEnvironment === 'staging' ? 'bg-warning' :
-                    'bg-success'
-                  }`}>
-                    {selectedProject.stagingEnvironment?.charAt(0).toUpperCase() + selectedProject.stagingEnvironment?.slice(1)}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">Tags:</span> 
-                  <div className="flex flex-wrap gap-1">
-                    {selectedProject.tags && selectedProject.tags.length > 0 ? (
-                      selectedProject.tags.map((tag, index) => (
-                        <span key={index} className="badge badge-info badge-sm font-semibold h-6">{tag}</span>
-                      ))
-                    ) : (
-                      <span className="text-base-content/60 italic">No tags</span>
-                    )}
-                  </div>
-                </div>
-                <div>
-                  <span className="font-medium">Project ID:</span> 
-                  <span className="font-mono text-xs ml-2">{selectedProject.id}</span>
-                </div>
-              </div>
-            </div>
-            </div>
-          </div>
-      )}
 
       {/* Project Info Section */}
       {activeSection === 'info' && (
@@ -314,81 +217,47 @@ const SettingsPage: React.FC = () => {
             <div className="flex items-center gap-3">
               <div className="section-icon">⚙️</div>
               <span>Project Information</span>
+              <button
+                onClick={handleSave}
+                disabled={loading || !hasUnsavedChanges}
+                className={`btn btn-sm ml-auto ${hasUnsavedChanges ? 'btn-primary' : 'btn-ghost'} ${loading ? 'loading' : ''}`}
+              >
+                {loading ? 'Saving...' : hasUnsavedChanges ? 'Save Changes' : 'Saved'}
+              </button>
             </div>
           </div>
           <div className="section-content">
           {/* Basic Info Section */}
           <div className="pt-4">
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="text-base font-semibold">Basic Info</h3>
-              <div className="flex space-x-2">
-                {isEditingBasic ? (
-                  <>
-                    <button
-                      onClick={() => handleCancel('basic')}
-                      className="btn btn-ghost btn-xs"
-                      disabled={savingBasic}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleSaveBasic}
-                      className="btn btn-primary btn-xs"
-                      disabled={savingBasic}
-                    >
-                      {savingBasic ? 'Saving...' : 'Save'}
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    onClick={() => setIsEditingBasic(true)}
-                    className="btn btn-outline btn-xs"
-                  >
-                    Edit
-                  </button>
-                )}
-              </div>
-            </div>
+            <h3 className="text-base font-semibold mb-3">Basic Info</h3>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
               <div>
                 <label className="label py-1">
                   <span className="label-text font-medium text-sm">Project Name</span>
                 </label>
-                {isEditingBasic ? (
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="input input-bordered input-sm text-base-content/40 w-full h-10"
-                    placeholder="Enter project name..."
-                    required
-                  />
-                ) : (
-                  <div className="input input-bordered p-2 border-thick rounded-lg h-10">
-                    <p className="font-medium text-sm">{name}</p>
-                  </div>
-                )}
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => updateField('name', e.target.value)}
+                  className="input input-bordered input-sm w-full h-10"
+                  placeholder="Enter project name..."
+                  required
+                />
               </div>
 
               <div>
                 <label className="label py-1">
                   <span className="label-text font-medium text-sm">Description</span>
                 </label>
-                {isEditingBasic ? (
-                  <input
-                    type="text"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    className="input input-bordered input-sm text-base-content/40 w-full h-10"
-                    placeholder="Enter project description..."
-                    required
-                  />
-                ) : (
-                  <div className="input input-bordered h-10 p-2 rounded-lg border-thick">
-                    <p className="font-medium text-sm">{description}</p>
-                  </div>
-                )}
+                <input
+                  type="text"
+                  value={description}
+                  onChange={(e) => updateField('description', e.target.value)}
+                  className="input input-bordered input-sm w-full h-10"
+                  placeholder="Enter project description..."
+                  required
+                />
               </div>
             </div>
           </div>
@@ -397,199 +266,119 @@ const SettingsPage: React.FC = () => {
 
           {/* Metadata Section */}
           <div>
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="text-base font-semibold">Metadata</h3>
-              <div className="flex space-x-2">
-                {isEditingMetadata ? (
-                  <>
-                    <button
-                      onClick={() => handleCancel('metadata')}
-                      className="btn btn-ghost btn-xs"
-                      disabled={savingMetadata}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleSaveMetadata}
-                      className="btn btn-primary btn-xs"
-                      disabled={savingMetadata}
-                    >
-                      {savingMetadata ? 'Saving...' : 'Save'}
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    onClick={() => setIsEditingMetadata(true)}
-                    className="btn btn-outline btn-xs"
-                  >
-                    Edit
-                  </button>
-                )}
-              </div>
-            </div>
+            <h3 className="text-base font-semibold mb-3">Metadata</h3>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
               <div>
                 <label className="label py-1">
                   <span className="label-text font-medium text-sm">Project Color</span>
                 </label>
-                {isEditingMetadata ? (
-                  <div className="flex items-center h-10 gap-1">
-                    <input
-                      type="color"
-                      value={color}
-                      onChange={(e) => setColor(e.target.value)}
-                      className="w-10 h-10 border-2 border-base-content/20 rounded cursor-pointer flex-shrink-0"
-                    />
-                    <input
-                      type="text"
-                      value={color}
-                      onChange={(e) => setColor(e.target.value)}
-                      className="input input-bordered input-sm w-28 font-mono text-xs text-base-content/40 h-10"
-                      placeholder="#3B82F6"
-                    />
-                  </div>
-                ) : (
-                  <div className="input input-bordered p-2 border-thick rounded-lg h-10 flex items-center">
-                    <div className="flex items-center gap-2">
-                      <div 
-                        className="w-6 h-6 rounded border border-base-300 flex-shrink-0"
-                        style={{ backgroundColor: color }}
-                      ></div>
-                      <span className="font-mono text-xs">{color}</span>
-                    </div>
-                  </div>
-                )}
+                <div className="flex items-center h-10 gap-1">
+                  <input
+                    type="color"
+                    value={color}
+                    onChange={(e) => updateField('color', e.target.value)}
+                    className="w-10 h-10 border-2 border-base-content/20 rounded cursor-pointer flex-shrink-0"
+                  />
+                  <input
+                    type="text"
+                    value={color}
+                    onChange={(e) => updateField('color', e.target.value)}
+                    className="input input-bordered input-sm w-28 font-mono text-xs h-10"
+                    placeholder="#3B82F6"
+                  />
+                </div>
               </div>
 
               <div>
                 <label className="label py-1">
                   <span className="label-text font-medium text-sm">Category</span>
                 </label>
-                {isEditingMetadata ? (
-                  <input
-                    type="text"
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="input input-bordered input-sm text-base-content/40 w-full h-10"
-                    placeholder="Enter category..."
-                  />
-                ) : (
-                  <div className="input input-bordered p-2 border-thick rounded-lg h-10 flex items-center">
-                    <p className="text-sm">{category}</p>
-                  </div>
-                )}
+                <input
+                  type="text"
+                  value={category}
+                  onChange={(e) => updateField('category', e.target.value)}
+                  className="input input-bordered input-sm w-full h-10"
+                  placeholder="Enter category..."
+                />
               </div>
 
               <div>
                 <label className="label py-1">
                   <span className="label-text font-medium text-sm">Environment</span>
                 </label>
-                {isEditingMetadata ? (
-                  <select
-                    value={stagingEnvironment}
-                    onChange={(e) => setStagingEnvironment(e.target.value as 'development' | 'staging' | 'production')}
-                    className="select select-bordered select-sm w-full h-10"
-                  >
-                    <option value="development">Development</option>
-                    <option value="staging">Staging</option>
-                    <option value="production">Production</option>
-                  </select>
-                ) : (
-                  <div className="input input-bordered p-2 border-thick rounded-lg h-10 flex items-center">
-                    <span className={`badge badge-sm h-6 ${
-                      stagingEnvironment === 'production' ? 'badge-error' :
-                      stagingEnvironment === 'staging' ? 'badge-warning' :
-                      'badge-success'
-                    }`}>
-                      {stagingEnvironment.charAt(0).toUpperCase() + stagingEnvironment.slice(1)}
-                    </span>
-                  </div>
-                )}
+                <select
+                  value={stagingEnvironment}
+                  onChange={(e) => updateField('stagingEnvironment', e.target.value as 'development' | 'staging' | 'production')}
+                  className="select select-bordered select-sm w-full h-10"
+                >
+                  <option value="development">Development</option>
+                  <option value="staging">Staging</option>
+                  <option value="production">Production</option>
+                </select>
               </div>
 
               <div>
                 <label className="label py-1">
                   <span className="label-text font-medium text-sm">Tags ({tags.length})</span>
                 </label>
-                {isEditingMetadata ? (
-                  <div className="space-y-1">
-                    <div className="flex gap-1">
-                      <input
-                        type="text"
-                        value={newTag}
-                        onChange={(e) => setNewTag(e.target.value)}
-                        className="input input-bordered input-sm text-base-content/40 flex-1 h-10"
-                        placeholder="Add tag..."
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            handleAddTag(e);
-                          }
-                        }}
-                      />
-                      <button
-                        onClick={handleAddTag}
-                        className="btn btn-primary btn-sm btn-square"
+                <div className="space-y-1">
+                  <div className="flex gap-1">
+                    <input
+                      type="text"
+                      value={newTag}
+                      onChange={(e) => setNewTag(e.target.value)}
+                      className="input input-bordered input-sm flex-1 h-10"
+                      placeholder="Add tag..."
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleAddTag(e);
+                        }
+                      }}
+                    />
+                    <button
+                      onClick={handleAddTag}
+                      className="btn btn-primary btn-sm btn-square"
+                    >
+                      +
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {tags.map((tag, index) => (
+                      <span
+                        key={`tag-${index}-${tag}`}
+                        className="badge badge-info badge-sm gap-1"
                       >
-                        +
-                      </button>
-                    </div>
-                    <div className="flex flex-wrap gap-1">
-                      {tags.map((tag, index) => (
-                        <span
-                          key={`tag-${index}-${tag}`}
-                          className="badge badge-info badge-sm gap-1"
+                        {tag}
+                        <button
+                          onClick={() => handleRemoveTag(tag)}
+                          className="text-info-content hover:text-error"
                         >
-                          {tag}
-                          <button
-                            onClick={() => handleRemoveTag(tag)}
-                            className="text-info-content hover:text-error"
-                          >
-                            ×
-                          </button>
-                        </span>
-                      ))}
-                    </div>
+                          ×
+                        </button>
+                      </span>
+                    ))}
                   </div>
-                ) : (
-                  <div className="input input-bordered p-2 border-thick rounded-lg h-10 flex items-center">
-                    <div className="flex flex-wrap gap-1">
-                      {tags.length === 0 ? (
-                        <span className="text-base-content/60 italic text-xs">No tags</span>
-                      ) : (
-                        tags.map((tag, index) => (
-                          <span
-                            key={`display-tag-${index}-${tag}`}
-                            className="badge badge-info badge-sm h-6"
-                          >
-                            {tag}
-                          </span>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                )}
+                </div>
               </div>
             </div>
 
-            {/* Color preset buttons - only show when editing */}
-            {isEditingMetadata && (
-              <div className="mt-2">
-                <div className="flex flex-wrap gap-1">
-                  {predefinedColors.map((presetColor) => (
-                    <button
-                      key={presetColor}
-                      onClick={() => setColor(presetColor)}
-                      className={`w-6 h-6 rounded border-2 ${
-                        color === presetColor ? 'border-base-content' : 'border-base-300'
-                      } hover:scale-110 transition-transform`}
-                      style={{ backgroundColor: presetColor }}
-                      title={presetColor}
-                    />
-                  ))}
-                </div>
+            {/* Color preset buttons */}
+            <div className="mt-2">
+              <div className="flex flex-wrap gap-1">
+                {predefinedColors.map((presetColor) => (
+                  <button
+                    key={presetColor}
+                    onClick={() => updateField('color', presetColor)}
+                    className={`w-6 h-6 rounded border-2 ${
+                      color === presetColor ? 'border-base-content' : 'border-base-300'
+                    } hover:scale-110 transition-transform`}
+                    style={{ backgroundColor: presetColor }}
+                    title={presetColor}
+                  />
+                ))}
               </div>
-            )}
+            </div>
           </div>
 
           <div className="divider my-4">Status</div>

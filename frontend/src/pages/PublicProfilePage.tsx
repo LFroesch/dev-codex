@@ -80,83 +80,68 @@ const PublicProfilePage: React.FC = () => {
       <div className="space-y-6">
         {/* Profile Header */}
         <div className="bg-base-100 rounded-md border-2 border-base-content/20 shadow-md hover:shadow-lg">
-          <div className="p-6">
-            {/* Header buttons */}
-            <div className="flex items-center justify-between mb-6">
-              <button
-                onClick={() => navigate('/discover')}
-                className="btn btn-primary gap-2"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                Back to Discovery
-              </button>
+          <div className="p-4">
+            {/* Header with buttons and profile info */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center border-2 border-primary/10 flex-shrink-0">
+                  <span className="text-lg font-bold text-primary">
+                    {user.firstName?.charAt(0)}{user.lastName?.charAt(0)}
+                  </span>
+                </div>
+                <div className="min-w-0">
+                  <h1 className="text-xl font-bold text-base-content">
+                    {user.firstName} {user.lastName}
+                  </h1>
+                  {user.publicSlug && (
+                    <p className="text-primary font-medium text-sm">@{user.publicSlug}</p>
+                  )}
+                </div>
+              </div>
               
-              <button
-                onClick={copyProfileUrl}
-                className="btn btn-outline gap-2"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-                Share Profile
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => navigate('/discover')}
+                  className="btn btn-sm btn-primary gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Back
+                </button>
+                
+                <button
+                  onClick={copyProfileUrl}
+                  className="btn btn-sm btn-outline gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  Share
+                </button>
+              </div>
             </div>
             
-            {/* Compact Profile Layout */}
-            <div className="flex flex-col lg:flex-row gap-6 items-start">
-              {/* Left side - Profile info & Bio */}
+            {/* Profile metadata and stats */}
+            <div className="flex flex-row gap-4 items-start">
+              {/* Left side - Member info & Bio */}
               <div className="flex-1 min-w-0">
-                <div className="flex items-start gap-4 mb-4">
-                  <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center border-2 border-primary/10 flex-shrink-0">
-                    <span className="text-2xl font-bold text-primary">
-                      {user.firstName?.charAt(0)}{user.lastName?.charAt(0)}
-                    </span>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h1 className="text-2xl font-bold text-base-content mb-1">
-                      {user.firstName} {user.lastName}
-                    </h1>
-                    {user.publicSlug && (
-                      <p className="text-primary font-medium mb-2">@{user.publicSlug}</p>
-                    )}
-                    <div className="flex items-center gap-2 text-base-content/60 text-sm">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span>Member since {new Date(user.createdAt).toLocaleDateString('en-US', { 
-                        year: 'numeric', 
-                        month: 'long'
-                      })}</span>
-                    </div>
-                  </div>
+                <div className="flex items-center gap-2 text-base-content/60 text-sm mb-3">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>Member since {new Date(user.createdAt).toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: 'long'
+                  })}</span>
                 </div>
                 
                 {/* Bio */}
                 {user.bio && (
-                  <div className="bg-base-200 p-4 rounded-lg">
-                    <p className="text-base leading-relaxed text-base-content/80">{user.bio}</p>
+                  <div className="bg-base-200 p-3 rounded-lg">
+                    <p className="text-sm leading-relaxed text-base-content/80">{user.bio}</p>
                   </div>
                 )}
-              </div>
-
-              {/* Right side - Stats */}
-              <div className="flex-shrink-0 w-full lg:w-auto">
-                <div className="flex flex-row lg:flex-col gap-4 justify-center lg:justify-start">
-                  <div className="text-center bg-primary/5 rounded-lg border border-primary/10 p-4 min-w-[120px]">
-                    <div className="text-2xl font-bold text-primary mb-1">{user.projects?.length || 0}</div>
-                    <div className="text-xs text-base-content/60">Projects</div>
-                  </div>
-                  
-                  <div className="text-center bg-secondary/5 rounded-lg border border-secondary/10 p-4 min-w-[120px]">
-                    <div className="text-2xl font-bold text-secondary mb-1">
-                      {user.projects?.reduce((total: number, project: any) => 
-                        total + (project.technologies?.length || 0), 0) || 0}
-                    </div>
-                    <div className="text-xs text-base-content/60">Technologies</div>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
@@ -187,7 +172,7 @@ const PublicProfilePage: React.FC = () => {
                           {project.name}
                         </h3>
                         <div className="flex items-center gap-2 flex-wrap">
-                          <div className="badge badge-primary badge-sm">
+                          <div className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-primary text-base-content/80 border-2 border-base-content/20 h-[1.5rem]">
                             {project.category}
                           </div>
                           <span className="text-xs text-base-content/60">

@@ -1314,16 +1314,23 @@ const Layout: React.FC = () => {
                               {/* Header with project name */}
                               <div className="flex items-center gap-3 mb-3">
                                 <h3 
-                                  className="border-2 border-base-content/20 font-semibold text-base truncate px-2 py-1 rounded-md group-hover:opacity-90 transition-opacity"
+                                  className="border-2 border-base-content/20 font-semibold truncate px-2 py-1 rounded-md group-hover:opacity-90 transition-opacity bg-primary"
                                   style={{ 
-                                    backgroundColor: project.color,
-                                    color: getContrastTextColor(project.color)
+                                    color: getContrastTextColor()
                                   }}
                                 >
                                   {project.name}
+                                  <span> </span>
+                                  {project.color && (
+                                    <span 
+                                      className="inline-block w-3 h-3 rounded-full"
+                                      style={{ backgroundColor: project.color }}
+                                    ></span>
+                                  )}
                                 </h3>
                                 {selectedProject?.id === project.id && (
-                                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-success/80 text-base-content/80 border-2 border-base-content/20">
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-success/80 text-base-content/80 border-2 border-base-content/20"
+                                  style={{ color: getContrastTextColor() }}>
                                     Current Project
                                   </span>
                                 )}
@@ -1365,7 +1372,8 @@ const Layout: React.FC = () => {
                               
                               {/* Footer - Always at bottom */}
                               <div className="flex items-center justify-between text-xs pt-3 border-t-2 border-base-content/20 mt-auto">
-                                <div className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-success/80 text-base-content/80 border-2 border-base-content/20 gap-1">
+                                <div className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-success/80 text-base-content/80 border-2 border-base-content/20 gap-1"
+                                style={{ color: getContrastTextColor() }}>
                                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                   </svg>

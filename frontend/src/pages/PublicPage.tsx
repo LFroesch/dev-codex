@@ -227,7 +227,8 @@ const PublicPage: React.FC = () => {
                 </h3>
                 <p className="text-base-content/70 mb-2 mt-2">{selectedProject.description}</p>
                 <div className="flex items-center gap-3">
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium text-base-content ${isPublic ? 'bg-success/50' : 'bg-warning/50'}`}>
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium text-base-content ${isPublic ? 'bg-success/50' : 'bg-warning/50'}`}
+                  style={{ color: isPublic ? getContrastTextColor('#28a745') : getContrastTextColor('#ffc107') }}>
                     {isPublic ? 'Public' : 'Private'}
                   </span>
                 </div>

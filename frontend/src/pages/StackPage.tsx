@@ -329,7 +329,7 @@ const StackPage: React.FC = () => {
           return (
             <div
               key={platform}
-              className="badge badge-sm badge-ghost gap-1 px-3 py-2"
+              className="badge badge-sm badge-ghost gap-1 px-3 py-2 h-[1.5rem] flex items-center border-2 border-base-content/20"
             >
               <span>{platformConfig.emoji}</span>
               {platformConfig.name}
@@ -437,7 +437,7 @@ const StackPage: React.FC = () => {
                   key={option.name}
                   className={`card-interactive group cursor-pointer p-4 ${
                     selected 
-                      ? 'border-primary bg-primary/5 shadow-lg' 
+                      ? 'border-primary bg-primary/35 shadow-lg' 
                       : ''
                   } ${isLoading ? 'opacity-60 pointer-events-none' : ''}`}
                   onClick={() => {
@@ -489,14 +489,15 @@ const StackPage: React.FC = () => {
                     </div>
                   </div>
                   
-                  <p className="text-xs text-base-content/70 leading-relaxed mb-3">
+                  <p className="text-xs text-base-content/80 leading-relaxed mb-3"
+                  style={{ color : selected ? getContrastTextColor() : undefined }}>
                     {option.description}
                   </p>
                   
                   <div className="flex items-center justify-between mt-4">
                     <PlatformBadge platforms={option.platforms} />
                     {option.latestVersion && (
-                      <div className="badge badge-sm badge-outline px-3 py-2">
+                      <div className="badge badge-sm badge-outline border-2 border-base-content/20 px-3 py-2 h-[1.5rem] flex items-center">
                         v{option.latestVersion}
                       </div>
                     )}
@@ -750,11 +751,12 @@ const StackPage: React.FC = () => {
                     <button
                       key={platform.id}
                       onClick={() => handlePlatformToggle(platform.id)}
-                      className={`text-left p-2 rounded-md border-2 transition-all duration-200 hover:shadow-md ${
+                      className={`text-left p-2 rounded-md border-2 transition-all duration-200 hover:shadow-md text-primary ${
                         selectedPlatforms.has(platform.id)
                           ? 'border-primary bg-primary/50 shadow-sm'
                           : 'border-base-300 hover:border-primary/30 bg-base-200'
                       }`}
+                      style={{ color: selectedPlatforms.has(platform.id) ? getContrastTextColor() : undefined }}
                     >
                       <div className="flex items-center gap-2">
                         <span>{platform.emoji}</span>
@@ -784,9 +786,14 @@ const StackPage: React.FC = () => {
                           ? 'border-primary bg-primary/50 shadow-sm'
                           : 'border-base-300 hover:border-primary/30 bg-base-200'
                       }`}
+                      style={{ color: selectedGroup === group.name ? getContrastTextColor() : undefined }}
                     >
                       <div className="font-medium text-xs">{group.name}</div>
-                      <div className="text-xs text-base-content/60 mt-0.5 leading-tight">{group.description}</div>
+                      <div className="text-xs text-base-content/60 mt-0.5 leading-tight"
+                      style={{ color: selectedGroup === group.name ? getContrastTextColor() : undefined }}
+                      >
+                        {group.description}
+                      </div>
                     </button>
                   ))}
                 </div>

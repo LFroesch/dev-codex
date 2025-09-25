@@ -34,7 +34,13 @@ const Layout: React.FC = () => {
   const [selectedSharedCategory, setSelectedSharedCategory] = useState<string | null>(null);
   const [analyticsReady, setAnalyticsReady] = useState(false);
   
-  
+  // when setActiveProjectTab, clear category selections
+  useEffect(() => {
+    setSelectedCategory(null);
+    setSelectedArchivedCategory(null);
+    setSelectedSharedCategory(null);
+  }, [activeProjectTab]);
+
   // Unsaved changes modal state
   const [showUnsavedChangesModal, setShowUnsavedChangesModal] = useState(false);
   const [unsavedChangesResolve, setUnsavedChangesResolve] = useState<((value: boolean) => void) | null>(null);

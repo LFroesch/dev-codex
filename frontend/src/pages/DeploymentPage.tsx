@@ -272,7 +272,7 @@ const DeploymentPage: React.FC = () => {
               <input
                 type="url"
                 placeholder="https://myapp.com"
-                className="input input-bordered w-full"
+                className="input input-bordered w-full font-mono"
                 value={deploymentData.liveUrl || ''}
                 onChange={(e) => updateField('liveUrl', e.target.value)}
               />
@@ -285,7 +285,7 @@ const DeploymentPage: React.FC = () => {
               <input
                 type="url"
                 placeholder="https://github.com/username/repo"
-                className="input input-bordered w-full"
+                className="input input-bordered w-full font-mono"
                 value={deploymentData.githubRepo || ''}
                 onChange={(e) => updateField('githubRepo', e.target.value)}
               />
@@ -298,7 +298,7 @@ const DeploymentPage: React.FC = () => {
               <input
                 type="text"
                 placeholder="Vercel, Netlify, AWS, Railway, etc."
-                className="input input-bordered w-full"
+                className="input input-bordered w-full font-mono"
                 value={deploymentData.deploymentPlatform || ''}
                 onChange={(e) => updateField('deploymentPlatform', e.target.value)}
               />
@@ -309,7 +309,7 @@ const DeploymentPage: React.FC = () => {
                 <span className="label-text font-medium">Deployment Status</span>
               </label>
               <select
-                className="select select-bordered w-full"
+                className="select select-bordered w-full font-mono"
                 value={deploymentData.deploymentStatus || 'inactive'}
                 onChange={(e) => updateField('deploymentStatus', e.target.value as 'active' | 'inactive' | 'error')}
               >
@@ -385,7 +385,7 @@ const DeploymentPage: React.FC = () => {
               </label>
               <input
                 type="datetime-local"
-                className="input input-bordered w-full"
+                className="input input-bordered w-full font-mono"
                 value={deploymentData.lastDeployDate ? (() => {
                   try {
                     return new Date(deploymentData.lastDeployDate!).toISOString().slice(0, 16);

@@ -284,7 +284,7 @@ const StackPage: React.FC = () => {
       return (
         <input
           type="text"
-          className="badge badge-xs badge-ghost px-2 py-1 text-xs font-mono bg-base-200 border border-primary/30 outline-none focus:ring-1 focus:ring-primary w-16 min-w-0"
+          className="badge badge-xs badge-ghost h-6 w-20 border-2 border-primary/20 px-2 py-1 text-xs font-mono cursor-pointer select-none"
           value={editingVersion.version}
           onChange={(e) => setEditingVersion(prev => prev ? { ...prev, version: e.target.value } : null)}
           onBlur={() => {
@@ -309,7 +309,7 @@ const StackPage: React.FC = () => {
 
     return (
       <span 
-        className="badge badge-xs badge-ghost cursor-pointer hover:bg-base-300 transition-colors h-5"
+        className="badge badge-xs badge-ghost h-6 border-2 border-base-content/20 px-2 py-1 text-xs font-mono cursor-pointer select-none"
         onDoubleClick={() => setEditingVersion({ type, category, name, version })}
         title="Double-click to edit version"
       >
@@ -497,7 +497,7 @@ const StackPage: React.FC = () => {
                   <div className="flex items-center justify-between mt-4">
                     <PlatformBadge platforms={option.platforms} />
                     {option.latestVersion && (
-                      <div className="badge badge-sm badge-outline border-2 border-base-content/20 px-3 py-2 h-[1.5rem] flex items-center">
+                      <div className="badge badge-xs badge-ghost h-6 border-2 border-base-content/20 px-2 py-1 text-xs font-mono cursor-pointer select-none">
                         v{option.latestVersion}
                       </div>
                     )}
@@ -613,7 +613,7 @@ const StackPage: React.FC = () => {
                               version={tech.version} 
                             />
                           </div>
-                          <div className="flex items-center gap-1">
+                          <div className="bg-base-200 inline-flex items-center gap-1 px-2 py-1 rounded-md border-2 border-base-content/20">
                             <span className="text-sm">{category.emoji}</span>
                             <p className="text-xs text-base-content/60">{category.name}</p>
                           </div>

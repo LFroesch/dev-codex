@@ -374,7 +374,7 @@ React App:
                     type="text"
                     value={newDoc.title}
                     onChange={(e) => setNewDoc({...newDoc, title: e.target.value})}
-                    className="input input-bordered"
+                    className="input input-bordered text-sm"
                     placeholder="Enter template title..."
                   />
                 </div>

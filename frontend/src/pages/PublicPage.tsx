@@ -228,7 +228,7 @@ const PublicPage: React.FC = () => {
                 <p className="text-base-content/70 mb-2 mt-2">{selectedProject.description}</p>
                 <div className="flex items-center gap-3">
                   <span className={`px-3 py-1 rounded-full text-sm font-medium text-base-content ${isPublic ? 'bg-success/50' : 'bg-warning/50'}`}
-                  style={{ color: isPublic ? getContrastTextColor('#28a745') : getContrastTextColor('#ffc107') }}>
+                  style={{ color: isPublic ? getContrastTextColor('success') : getContrastTextColor('warning') }}>
                     {isPublic ? 'Public' : 'Private'}
                   </span>
                 </div>
@@ -313,7 +313,8 @@ const PublicPage: React.FC = () => {
               </label>
             </div>
                   {isPublic && (
-                    <p className="text-sm text-base-content bg-success/50 inline-block rounded-lg p-2 font-medium mt-2">
+                    <p className="text-sm text-base-content bg-success/50 inline-block rounded-lg p-2 font-medium mt-2"
+                    style={{ color: getContrastTextColor('success') }}>
                       ☑️ Your project is publicly accessible
                     </p>
                   )}
@@ -420,7 +421,7 @@ const PublicPage: React.FC = () => {
 
             {/* Preview */}
             <div className="divider">Preview</div>
-            <div className="mockup-browser border border-base-content/10 bg-base-300">
+            <div className="mockup-browser border-2 border-base-content/20 bg-base-300">
               <div className="mockup-browser-toolbar">
                 <div className="input">
                   {window.location.origin}/project/{publicSlug || selectedProject.id}

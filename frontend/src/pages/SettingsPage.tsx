@@ -228,9 +228,7 @@ const SettingsPage: React.FC = () => {
           </div>
           <div className="section-content">
           {/* Basic Info Section */}
-          <div className="pt-4">
-            <h3 className="text-base font-semibold mb-3">Basic Info</h3>
-
+          <div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
               <div>
                 <label className="label py-1">
@@ -262,12 +260,8 @@ const SettingsPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="divider my-4">Metadata</div>
-
           {/* Metadata Section */}
-          <div>
-            <h3 className="text-base font-semibold mb-3">Metadata</h3>
-
+          <div className='mt-3'>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
               <div>
                 <label className="label py-1">
@@ -389,7 +383,7 @@ const SettingsPage: React.FC = () => {
               <div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm">Archive Status:</span>
+                    <span className="text-sm font-medium">Archive Status:</span>
                     <span className={`badge badge-sm ${
                       selectedProject.isArchived 
                         ? 'badge-ghost' 
@@ -399,7 +393,7 @@ const SettingsPage: React.FC = () => {
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm">Sharing Status:</span>
+                    <span className="text-sm font-medium">Sharing Status:</span>
                     <span className={`badge badge-sm ${
                       selectedProject.isShared
                         ? 'badge-info'

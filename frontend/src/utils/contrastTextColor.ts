@@ -2,9 +2,40 @@
  * Determines if text should be white or black based on background color
  * for optimal contrast and readability
  */
-export const getContrastTextColor = (hexColor?: string): string => {
+export const getContrastTextColor = (colorValue?: string): string => {
+  // Handle special DaisyUI color names
+  if (colorValue && typeof colorValue === 'string' && !colorValue.startsWith('#')) {
+    const specialColors: { [key: string]: string } = {
+      'warning': '--wa',
+      'error': '--er', 
+      'success': '--su',
+      'info': '--in',
+      'accent': '--ac',
+      'secondary': '--se'
+    };
+
+    if (specialColors[colorValue]) {
+      if (typeof window !== 'undefined' && document.documentElement) {
+        const computedStyle = getComputedStyle(document.documentElement);
+        const colorHsl = computedStyle.getPropertyValue(specialColors[colorValue]).trim();
+        
+        if (colorHsl) {
+          // Convert HSL to RGB for luminance calculation
+          const [h, s, l] = colorHsl.split(' ').map(v => parseFloat(v.replace('%', '')));
+          const lightness = l / 100;
+          
+          // Use lightness as a simple approximation for luminance
+          return lightness > 0.5 ? '#000000' : '#ffffff';
+        }
+      }
+      
+      // Fallback for special colors
+      return colorValue === 'warning' || colorValue === 'info' ? '#000000' : '#ffffff';
+    }
+  }
+  
   // If no hex color provided, check the CSS primary color
-  if (!hexColor) {
+  if (!colorValue) {
     // Get the computed primary color from CSS variables
     if (typeof window !== 'undefined' && document.documentElement) {
       const computedStyle = getComputedStyle(document.documentElement);
@@ -25,7 +56,7 @@ export const getContrastTextColor = (hexColor?: string): string => {
   }
   
   // Handle hex color (existing logic)
-  const color = hexColor.replace('#', '');
+  const color = colorValue.replace('#', '');
   
   // Convert to RGB
   const r = parseInt(color.slice(0, 2), 16);

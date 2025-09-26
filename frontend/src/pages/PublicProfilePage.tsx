@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { publicAPI } from '../api';
+import { getContrastTextColor } from '../utils/contrastTextColor';
 
 const PublicProfilePage: React.FC = () => {
   const { identifier } = useParams<{ identifier: string }>();
@@ -103,6 +104,7 @@ const PublicProfilePage: React.FC = () => {
                 <button
                   onClick={() => navigate('/discover')}
                   className="btn btn-sm btn-primary gap-2"
+                  style={{ color: getContrastTextColor('primary') }}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -162,8 +164,11 @@ const PublicProfilePage: React.FC = () => {
                   <div className="card-body p-6 flex flex-col h-full">
                     <div className="flex items-start gap-3 mb-4">
                       <div 
-                        className="w-12 h-12 rounded-xl flex items-center justify-center text-lg font-bold text-white flex-shrink-0 shadow-lg"
-                        style={{ backgroundColor: project.color }}
+                        className="w-12 h-12 rounded-xl flex items-center justify-center text-lg font-bold flex-shrink-0 shadow-lg"
+                        style={{ 
+                          backgroundColor: project.color,
+                          color: getContrastTextColor(project.color)
+                        }}
                       >
                         {project.name.charAt(0).toUpperCase()}
                       </div>

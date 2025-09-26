@@ -356,14 +356,14 @@ const PublicPage: React.FC = () => {
             <div className="space-y-4">
             {/* Custom Slug */}
             <div className="form-control">
-              <label className="label justify-start">
+              <div className="label justify-start">
                 <span className="label-text font-medium">Custom URL Slug (Optional):</span>
                 <span className="label-text-alt ml-2 flex items-center gap-1">
                   <span>Your project will be accessible at:</span>
                   {publicSlug ? (
                     <Link 
                       to={`/project/${publicSlug}`} 
-                      className="font-bold bg-primary rounded-lg px-2 py-1 border-2 border-base-content/20 hover:scale-105 transition inline-flex items-center gap-1"
+                      className="font-bold bg-primary/50 rounded-lg px-2 py-1 border-2 border-base-content/20 hover:bg-primary transition inline-flex items-center gap-1"
                       style={{ color: getContrastTextColor('primary') }}
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -374,7 +374,7 @@ const PublicPage: React.FC = () => {
                   ) : (
                     <Link 
                       to={`/project/${selectedProject.id}`} 
-                      className="font-bold bg-primary rounded-lg px-2 py-1 border-2 border-base-content/20 hover:scale-105 transition inline-flex items-center gap-1"
+                      className="font-bold bg-primary rounded-lg px-2 py-1 border-2 border-base-content/20 hover:shadow-lg transition inline-flex items-center gap-1"
                       style={{ color: getContrastTextColor('primary') }}
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -393,7 +393,7 @@ const PublicPage: React.FC = () => {
                     Generate from name
                   </button>
                 </span>
-              </label>
+              </div>
               <div className="flex flex-col sm:flex-row gap-2 sm:gap-0 border-2 border-base-content/20 rounded-lg overflow-hidden">
                 <span className="bg-base-200 px-3 py-2 text-sm text-base-content/70 rounded-lg flex items-center">
                   {window.location.origin}/project/

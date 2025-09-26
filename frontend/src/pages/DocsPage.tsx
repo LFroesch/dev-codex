@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Project, Doc, projectAPI } from '../api';
 import ConfirmationModal from '../components/ConfirmationModal';
+import { getContrastTextColor } from '../utils/contrastTextColor';
 
 interface ContextType {
   selectedProject: Project | null;
@@ -277,6 +278,7 @@ React App:
         <div className="tabs tabs-boxed border-2 border-base-content/20 shadow-sm overflow-x-auto">
           <button 
             className={`tab tab-sm min-h-10 font-bold text-sm ${activeTemplateCategory === 'create-new' ? 'tab-active' : ''}`}
+            style={activeTemplateCategory === 'create-new' ? {color: getContrastTextColor()} : {}}
             onClick={() => setActiveTemplateCategory('create-new')}
           >
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -287,6 +289,7 @@ React App:
           {categoriesWithDocs.length > 0 && (
             <button 
               className={`tab tab-sm min-h-10 font-bold text-sm ${activeTemplateCategory === 'all' ? 'tab-active' : ''}`}
+              style={activeTemplateCategory === 'all' ? {color: getContrastTextColor()} : {}}
               onClick={() => setActiveTemplateCategory('all')}
             >
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -299,6 +302,7 @@ React App:
             <button 
               key={typeInfo.value}
               className={`tab tab-sm min-h-10 font-bold text-sm ${activeTemplateCategory === typeInfo.value ? 'tab-active' : ''}`}
+              style={activeTemplateCategory === typeInfo.value ? {color: getContrastTextColor()} : {}}
               onClick={() => setActiveTemplateCategory(typeInfo.value)}
             >
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

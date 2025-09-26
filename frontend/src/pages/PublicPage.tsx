@@ -150,6 +150,7 @@ const PublicPage: React.FC = () => {
         <div className="tabs tabs-boxed border-2 border-base-content/20 shadow-sm">
           <button 
             className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'overview' ? 'tab-active' : ''}`}
+            style={activeSection === 'overview' ? {color: getContrastTextColor()} : {}}
             onClick={() => setActiveSection('overview')}
           >
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -161,6 +162,7 @@ const PublicPage: React.FC = () => {
             <>
               <button 
                 className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'url' ? 'tab-active' : ''}`}
+                style={activeSection === 'url' ? {color: getContrastTextColor()} : {}}
                 onClick={() => setActiveSection('url')}
               >
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -170,6 +172,7 @@ const PublicPage: React.FC = () => {
               </button>
               <button 
                 className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'visibility' ? 'tab-active' : ''}`}
+                style={activeSection === 'visibility' ? {color: getContrastTextColor()} : {}}
                 onClick={() => setActiveSection('visibility')}
               >
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -217,7 +220,7 @@ const PublicPage: React.FC = () => {
             <div className="flex items-center gap-4 mb-4">
               <div className="flex-1">
                 <h3 
-                  className="text-2xl font-semibold px-3 py-1 rounded-md inline-block"
+                  className="text-xl font-semibold px-3 py-1 rounded-md inline-block"
                   style={{ 
                     backgroundColor: selectedProject.color,
                     color: getContrastTextColor(selectedProject.color)
@@ -225,13 +228,14 @@ const PublicPage: React.FC = () => {
                 >
                   {selectedProject.name}
                 </h3>
-                <p className="text-base-content/70 mb-2 mt-2">{selectedProject.description}</p>
-                <div className="flex items-center gap-3">
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium text-base-content ${isPublic ? 'bg-success/50' : 'bg-warning/50'}`}
-                  style={{ color: isPublic ? getContrastTextColor('success') : getContrastTextColor('warning') }}>
-                    {isPublic ? 'Public' : 'Private'}
-                  </span>
-                </div>
+                <span> </span>
+                <span className={`px-3 py-1 rounded-full text-sm font-medium text-base-content relative -top-0.5 ${isPublic ? 'bg-success/50' : 'bg-warning/50'}`}
+                style={{ 
+                  color: isPublic ? getContrastTextColor('success') : getContrastTextColor('warning')
+                }}>
+                  {isPublic ? 'Public' : 'Private'}
+                </span>
+                <p className="text-base-content/70 -mb-1 mt-2">{selectedProject.description}</p>
               </div>
             </div>
             
@@ -352,57 +356,67 @@ const PublicPage: React.FC = () => {
             <div className="space-y-4">
             {/* Custom Slug */}
             <div className="form-control">
-              <label className="label">
-                <span className="label-text font-medium">Custom URL Slug (Optional)</span>
-                <span className="label-text-alt">
+              <label className="label justify-start">
+                <span className="label-text font-medium">Custom URL Slug (Optional):</span>
+                <span className="label-text-alt ml-2 flex items-center gap-1">
+                  <span>Your project will be accessible at:</span>
+                  {publicSlug ? (
+                    <Link 
+                      to={`/project/${publicSlug}`} 
+                      className="font-bold bg-primary rounded-lg px-2 py-1 border-2 border-base-content/20 hover:scale-105 transition inline-flex items-center gap-1"
+                      style={{ color: getContrastTextColor('primary') }}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                      </svg>
+                      /project/{publicSlug}
+                    </Link>
+                  ) : (
+                    <Link 
+                      to={`/project/${selectedProject.id}`} 
+                      className="font-bold bg-primary rounded-lg px-2 py-1 border-2 border-base-content/20 hover:scale-105 transition inline-flex items-center gap-1"
+                      style={{ color: getContrastTextColor('primary') }}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                      </svg>
+                      /project/{selectedProject.id}
+                    </Link>
+                  )}
+                </span>
+                <span className="label-text-alt ml-auto">
                   <button
                     type="button"
                     onClick={generateSlugFromName}
-                    className="btn btn-ghost btn-xs"
+                    className="btn btn-ghost btn-xs bg-base-200 border-2 border-base-content/20 hover:bg-base-300"
                   >
                     Generate from name
                   </button>
                 </span>
               </label>
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-0">
-                <span className="bg-base-200 px-3 py-2 text-sm sm:text-base text-base-content/70 rounded-lg sm:rounded-r-none sm:rounded-l-lg border border-base-300 sm:border-r-0">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-0 border-2 border-base-content/20 rounded-lg overflow-hidden">
+                <span className="bg-base-200 px-3 py-2 text-sm text-base-content/70 rounded-lg flex items-center">
                   {window.location.origin}/project/
                 </span>
                 <input
                   type="text"
-                  className="input input-bordered flex-1 rounded-lg sm:rounded-l-none sm:rounded-r-lg"
+                  className="input input-bordered flex-1 rounded-lg border-none"
                   placeholder={selectedProject.id}
                   value={publicSlug}
                   onChange={(e) => setPublicSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
                   pattern="^[a-z0-9-]+$"
                 />
               </div>
-              <div className="label">
-                <span className="label-text-alt">
-                  {publicSlug ? (
-                    <>Your project will be accessible at: <Link 
-                      to={`/project/${publicSlug}`} 
-                      className="link link-primary font-bold"
-                    >
-                      /project/{publicSlug}
-                    </Link></>
-                  ) : (
-                    <>Your project will be accessible at: <Link 
-                      to={`/project/${selectedProject.id}`} 
-                      className="link link-primary font-bold"
-                    >
-                      /project/{selectedProject.id}
-                    </Link></>
-                  )}
-                </span>
-              </div>
             </div>
 
             {/* Public Description */}
             <div className="form-control">
-              <label className="label">
-                <span className="label-text font-medium">Public Description (Optional)</span>
-                <span className="label-text-alt">
+              <label className="label justify-start">
+                <span className="label-text font-medium">Public Description (Optional):</span>
+                <span className="label-text-alt ml-1">
+                  Leave empty to use your regular project description: "{selectedProject.description}"
+                </span>
+                <span className="label-text-alt ml-auto px-2 rounded-lg py-0.5 text-xs font-semibold bg-base-200 border-2 border-base-content/20">
                   {publicDescription.length}/300 characters
                 </span>
               </label>
@@ -412,11 +426,6 @@ const PublicPage: React.FC = () => {
                 value={publicDescription}
                 onChange={(e) => setPublicDescription(e.target.value.slice(0, 300))}
               />
-              <div className="label">
-                <span className="label-text-alt">
-                  Leave empty to use your regular project description: "{selectedProject.description}"
-                </span>
-              </div>
             </div>
 
             {/* Preview */}
@@ -445,9 +454,10 @@ const PublicPage: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <span className="badge badge-primary badge-sm">{selectedProject.category}</span>
+                  <span className="badge badge-primary badge-sm h-6 border-2 border-base-content/20 font-semibold"
+                  style={{ color: getContrastTextColor("primary") }}>{selectedProject.category}</span>
                   {selectedProject.tags?.slice(0, 3).map((tag: string, index: number) => (
-                    <span key={index} className="badge badge-outline badge-sm">{tag}</span>
+                    <span key={index} className="badge badge-outline badge-sm h-6 border-2 border-base-content/20 font-semibold">{tag}</span>
                   ))}
                 </div>
               </div>

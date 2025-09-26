@@ -30,7 +30,7 @@ body {
   /* Icon Utilities */
   .icon-sm { @apply w-4 h-4; }
   .icon-md { @apply w-5 h-5; }
-  .section-icon { @apply w-8 h-8 bg-base-100 rounded-lg flex items-center justify-center; }
+  .section-icon { @apply w-10 h-10 bg-base-100 rounded-lg border-base-content/20 border-2 flex items-center justify-center; }
   
   /* Container Utilities */
   .container-default { @apply bg-base-100 border-subtle rounded-lg; }
@@ -167,6 +167,7 @@ input[class*="input"]::placeholder, textarea[class*="textarea"]::placeholder {
   text-transform: none !important;
   font-weight: 500 !important;
 }
+
 
 [data-theme] .card { border-radius: 1rem !important; }
 [data-theme] .input, [data-theme] .textarea, [data-theme] .select { border-radius: 0.5rem !important; }

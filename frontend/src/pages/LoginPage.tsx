@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { authAPI } from '../api';
 import { useApiCall } from '../hooks/useApiCall';
 import { toast } from '../services/toast';
+import { getContrastTextColor } from '../utils/contrastTextColor';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -89,6 +90,7 @@ const LoginPage: React.FC = () => {
                 type="submit"
                 disabled={loading}
                 className="btn btn-primary"
+                style={{ color: getContrastTextColor('primary') }}
               >
                 {loading ? (
                   <>

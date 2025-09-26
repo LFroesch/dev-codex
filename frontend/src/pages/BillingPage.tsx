@@ -178,7 +178,7 @@ const BillingPage: React.FC = () => {
                     <p className="text-base-content/60">Your active subscription details</p>
                   </div>
                 </div>
-                <div className="badge badge-primary badge-lg text-lg font-semibold px-4 py-3">
+                <div className="badge badge-primary badge-lg text-lg font-semibold px-4 py-3" style={{ color: getContrastTextColor('primary') }}>
                   {billingInfo.planTier.toUpperCase()}
                 </div>
               </div>
@@ -226,6 +226,7 @@ const BillingPage: React.FC = () => {
 
                 <div className="stat bg-base-200 rounded-lg">
                   <div className="stat-title">Actions</div>
+                  <br />
                   <div className="stat-value text-sm">
                     {billingInfo.hasActiveSubscription && !billingInfo.cancelAtPeriodEnd && (
                       <button 

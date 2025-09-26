@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getContrastTextColor } from '../utils/contrastTextColor';
 
 const HelpPage: React.FC = () => {
   const navigate = useNavigate();
@@ -527,6 +528,7 @@ const HelpPage: React.FC = () => {
           <button
             onClick={() => navigate('/')}
             className="btn btn-primary gap-2"
+            style={{ color: getContrastTextColor('primary') }}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -594,6 +596,7 @@ const HelpPage: React.FC = () => {
             <button 
               onClick={() => navigate('/notes')}
               className="btn btn-primary gap-2 shadow-lg hover:shadow-xl transition-shadow"
+              style={{ color: getContrastTextColor('primary') }}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -625,7 +628,7 @@ const HelpPage: React.FC = () => {
         {/* Floating Quick Actions */}
         <div className="fixed bottom-6 right-6 z-50">
           <div className="dropdown dropdown-top dropdown-end">
-            <label tabIndex={0} className="btn btn-primary btn-circle shadow-lg hover:shadow-xl transition-all">
+            <label tabIndex={0} className="btn btn-primary btn-circle shadow-lg hover:shadow-xl transition-all" style={{ color: getContrastTextColor('primary') }}>
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>

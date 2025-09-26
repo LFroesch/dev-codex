@@ -268,6 +268,7 @@ const NewIdeaForm: React.FC<NewIdeaFormProps> = ({ onAdd }) => {
             <button
               type="submit"
               className="btn btn-primary btn-sm"
+              style={{ color: getContrastTextColor('primary') }}
               disabled={loading || !title.trim() || !content.trim()}
             >
               {loading ? 'Creating...' : 'Create Idea'}
@@ -475,6 +476,7 @@ const IdeaModal: React.FC<IdeaModalProps> = ({
                 <button
                   onClick={handleSave}
                   className="btn btn-primary"
+                  style={{ color: getContrastTextColor('primary') }}
                   disabled={loading || !editTitle.trim() || !editContent.trim()}
                 >
                   {loading ? 'Saving...' : 'Save'}

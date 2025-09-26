@@ -107,7 +107,7 @@ const DiscoverPage: React.FC = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
             </svg>
             <span className="flex-1">{error}</span>
-            <button onClick={loadProjects} className="btn btn-primary btn-sm">
+            <button onClick={loadProjects} className="btn btn-primary btn-sm" style={{ color: getContrastTextColor('primary') }}>
               Retry
             </button>
           </div>
@@ -232,7 +232,7 @@ const DiscoverPage: React.FC = () => {
                     : 'No public projects available yet'}
                 </p>
                 {(debouncedSearchTerm || selectedCategory !== 'all' || selectedTag) && (
-                  <button onClick={clearFilters} className="btn btn-primary">
+                  <button onClick={clearFilters} className="btn btn-primary" style={{ color: getContrastTextColor('primary') }}>
                     Clear Filters
                   </button>
                 )}
@@ -358,6 +358,7 @@ const DiscoverPage: React.FC = () => {
                 <button 
                   onClick={() => navigate('/public')}
                   className="btn btn-primary"
+                  style={{ color: getContrastTextColor('primary') }}
                 >
                   Go to Project Public Settings
                 </button>

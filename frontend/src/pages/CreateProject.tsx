@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { projectAPI } from '../api';
 import { toast } from '../services/toast';
+import { getContrastTextColor } from '../utils/contrastTextColor';
 
 const CreateProject: React.FC = () => {
   const navigate = useNavigate();
@@ -101,6 +102,7 @@ const CreateProject: React.FC = () => {
               <button
                 onClick={() => navigate('/')}
                 className="btn btn-primary gap-2"
+                style={{ color: getContrastTextColor('primary') }}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -238,6 +240,7 @@ const CreateProject: React.FC = () => {
                         type="button"
                         onClick={handleAddTag}
                         className="btn btn-primary btn-square"
+                        style={{ color: getContrastTextColor('primary') }}
                       >
                         +
                       </button>
@@ -278,6 +281,7 @@ const CreateProject: React.FC = () => {
                   type="submit"
                   disabled={loading || !formData.name.trim() || !formData.description.trim()}
                   className="btn btn-primary gap-2"
+                  style={{ color: getContrastTextColor('primary') }}
                 >
                   {loading ? (
                     <>

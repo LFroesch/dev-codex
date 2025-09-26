@@ -4,6 +4,7 @@ import { authAPI } from '../api';
 import { useLoadingState } from '../hooks/useLoadingState';
 import { useErrorHandler } from '../hooks/useErrorHandler';
 import { toast } from '../services/toast';
+import { getContrastTextColor } from '../utils/contrastTextColor';
 
 const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
@@ -160,6 +161,7 @@ const RegisterPage: React.FC = () => {
                 type="submit"
                 disabled={loading}
                 className="btn btn-primary"
+                style={{ color: getContrastTextColor('primary') }}
               >
                 {loading ? (
                   <>

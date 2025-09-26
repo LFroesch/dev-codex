@@ -410,6 +410,7 @@ React App:
                   onClick={handleAddDoc}
                   disabled={addingDoc || !newDoc.title.trim() || !newDoc.content.trim()}
                   className="btn btn-primary"
+                  style={{ color: getContrastTextColor('primary') }}
                 >
                   {addingDoc ? 'Adding...' : 'Add Template'}
                 </button>
@@ -494,6 +495,7 @@ React App:
                                       <button
                                         onClick={handleSaveEdit}
                                         className="btn btn-sm btn-primary"
+                                        style={{ color: getContrastTextColor('primary') }}
                                         disabled={!editData.title.trim() || !editData.content.trim()}
                                       >
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -590,7 +592,7 @@ React App:
                                         <button onClick={handleCancelEdit} className="btn btn-ghost btn-sm">
                                           Cancel
                                         </button>
-                                        <button onClick={handleSaveEdit} className="btn btn-primary btn-sm">
+                                        <button onClick={handleSaveEdit} className="btn btn-primary btn-sm" style={{ color: getContrastTextColor('primary') }}>
                                           Save
                                         </button>
                                       </div>

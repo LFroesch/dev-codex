@@ -654,7 +654,7 @@ const Layout: React.FC = () => {
             <div className="flex items-center justify-between min-w-0 gap-3">
               <div className="flex items-center gap-3 bg-base-200 backdrop-blur-none border-2 border-base-content/20 rounded-xl px-3 py-2 h-12 shadow-sm hover:shadow-md transition-all cursor-pointer min-w-0" onClick={() => navigate('/notes?view=projects')}>
                 <div className="tablet:w-8 tablet:h-8 w-7 h-7 bg-primary rounded-lg flex items-center justify-center shadow-sm flex-shrink-0">
-                  <svg className="tablet:w-4 tablet:h-4 w-3.5 h-3.5 text-primary-content" fill={getContrastTextColor()} viewBox="0 0 20 20">
+                  <svg className="tablet:w-4 tablet:h-4 w-3.5 h-3.5" fill={getContrastTextColor('primary')} viewBox="0 0 20 20">
                     <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
                   </svg>
                 </div>
@@ -698,7 +698,7 @@ const Layout: React.FC = () => {
                       }}
                       className="btn btn-primary btn-sm btn-circle h-9 w-9 shadow-sm relative z-50"
                       title="New Project"
-                      style={{ pointerEvents: 'auto' }}
+                      style={{ pointerEvents: 'auto', color: getContrastTextColor('primary') }}
                     >
                       <svg className="w-4 h-4" fill="none" stroke={getContrastTextColor()} viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -750,6 +750,7 @@ const Layout: React.FC = () => {
                   <button 
                     onClick={() => navigate('/login')}
                     className="btn btn-primary btn-sm"
+                    style={{ color: getContrastTextColor('primary') }}
                   >
                     Sign In
                   </button>
@@ -821,7 +822,7 @@ const Layout: React.FC = () => {
                     }}
                     className="btn btn-primary btn-sm btn-circle h-10 w-10 shadow-sm relative z-50"
                     title="New Project"
-                    style={{ pointerEvents: 'auto' }}
+                    style={{ pointerEvents: 'auto', color: getContrastTextColor('primary') }}
                   >
                     <svg className="w-4 h-4" fill="none" stroke={getContrastTextColor()} viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />

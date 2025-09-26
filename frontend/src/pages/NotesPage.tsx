@@ -416,6 +416,7 @@ const NotesPage: React.FC = () => {
                   <button
                     type="submit"
                     className="btn btn-primary btn-sm"
+                    style={{ color: getContrastTextColor('primary') }}
                     disabled={isCreatingNote || !newNoteTitle.trim() || !newNoteContent.trim()}
                   >
                     {isCreatingNote ? 'Creating...' : 'Create Note'}

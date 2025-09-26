@@ -117,6 +117,9 @@ const AccountSettingsPage: React.FC = () => {
   const [isPublicProfile, setIsPublicProfile] = useState(false);
   const [publicSlug, setPublicSlug] = useState('');
   const [savingPublicSettings, setSavingPublicSettings] = useState(false);
+  
+  // Dropdown state
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
   // Load custom themes from database or localStorage
   const loadCustomThemes = async () => {
@@ -755,6 +758,7 @@ const AccountSettingsPage: React.FC = () => {
                           setCustomColors(DEFAULT_CUSTOM_COLORS);
                         }}
                         className="btn btn-primary gap-2"
+                        style={{ color: getContrastTextColor('primary') }}
                         disabled={isCreatingTheme}
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -836,6 +840,7 @@ const AccountSettingsPage: React.FC = () => {
                                     target="_blank" 
                                     rel="noopener noreferrer" 
                                     className="btn btn-primary btn-sm gap-2 shadow-md hover:shadow-lg transition-all"
+                                    style={{ color: getContrastTextColor('primary') }}
                                   >
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -1004,6 +1009,7 @@ const AccountSettingsPage: React.FC = () => {
                             <button
                               onClick={() => isCreatingTheme ? createCustomTheme() : updateCustomTheme(editingThemeId!)}
                               className="btn btn-primary"
+                              style={{ color: getContrastTextColor('primary') }}
                               disabled={isCreatingTheme ? !newThemeName.trim() : !editingThemeName.trim()}
                             >
                               {isCreatingTheme ? 'Create Theme' : 'Update Theme'}
@@ -1017,21 +1023,61 @@ const AccountSettingsPage: React.FC = () => {
                     {customThemes.length > 0 ? (
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {customThemes.map((theme) => (
-                          <div key={theme.id} className="bg-base-100 rounded-lg p-4 border border-base-content/20 hover:border-primary/30 transition-all">
+                          <div key={theme.id} className="bg-base-100 rounded-lg p-4 border-2 border-base-content/20 hover:border-primary/30 transition-all">
                             <div className="flex items-center justify-between mb-3">
                               <h4 className="font-semibold truncate">{theme.name}</h4>
-                              <div className="dropdown dropdown-end">
-                                <label tabIndex={0} className="btn btn-ghost btn-sm btn-circle">
+                              <div className="relative">
+                                <button 
+                                  className="btn btn-ghost btn-sm btn-circle"
+                                  onClick={() => setOpenDropdown(openDropdown === theme.id ? null : theme.id)}
+                                >
                                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                                     <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
                                   </svg>
-                                </label>
-                                <ul tabIndex={0} className="dropdown-content menu p-2 shadow bg-base-200 rounded-box w-52 border border-base-content/20">
-                                  <li><button onClick={() => previewCustomTheme(theme)}>Preview</button></li>
-                                  <li><button onClick={() => startEditing(theme)}>Edit</button></li>
-                                  <li><button onClick={() => duplicateTheme(theme)}>Duplicate</button></li>
-                                  <li><button onClick={() => deleteCustomTheme(theme.id)}>Delete</button></li>
-                                </ul>
+                                </button>
+                                
+                                {openDropdown === theme.id && (
+                                  <div className="absolute right-0 top-full mt-2 bg-base-100 rounded-box z-[10000] p-2 shadow-lg border-2 border-base-content/20 w-52">
+                                    <div className="max-h-80 overflow-y-auto">
+                                      <div 
+                                        className="p-2 rounded cursor-pointer hover:bg-base-200"
+                                        onClick={() => {
+                                          previewCustomTheme(theme);
+                                          setOpenDropdown(null);
+                                        }}
+                                      >
+                                        Preview
+                                      </div>
+                                      <div 
+                                        className="p-2 rounded cursor-pointer hover:bg-base-200"
+                                        onClick={() => {
+                                          startEditing(theme);
+                                          setOpenDropdown(null);
+                                        }}
+                                      >
+                                        Edit
+                                      </div>
+                                      <div 
+                                        className="p-2 rounded cursor-pointer hover:bg-base-200"
+                                        onClick={() => {
+                                          duplicateTheme(theme);
+                                          setOpenDropdown(null);
+                                        }}
+                                      >
+                                        Duplicate
+                                      </div>
+                                      <div 
+                                        className="p-2 rounded cursor-pointer hover:bg-base-200"
+                                        onClick={() => {
+                                          deleteCustomTheme(theme.id);
+                                          setOpenDropdown(null);
+                                        }}
+                                      >
+                                        Delete
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             </div>
                             
@@ -1048,9 +1094,9 @@ const AccountSettingsPage: React.FC = () => {
                                 onClick={() => handleThemeChange(`custom-${theme.id}`)}
                                 className={`btn btn-sm flex-1 ${
                                   currentTheme === `custom-${theme.id}` 
-                                    ? 'btn-primary' 
-                                    : 'btn-outline'
+                                    ? 'btn-primary' : 'btn-outline border-2'
                                 }`}
+                                style={{ color: getContrastTextColor('primary') }}
                                 disabled={saving}
                               >
                                 {currentTheme === `custom-${theme.id}` ? 'Active' : 'Apply'}
@@ -1076,6 +1122,7 @@ const AccountSettingsPage: React.FC = () => {
                               setCustomColors(DEFAULT_CUSTOM_COLORS);
                             }}
                             className="btn btn-primary gap-2"
+                            style={{ color: getContrastTextColor('primary') }}
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -1166,6 +1213,7 @@ const AccountSettingsPage: React.FC = () => {
                         <button
                           onClick={handleLinkGoogle}
                           className="btn btn-primary btn-sm"
+                          style={{ color: getContrastTextColor('primary') }}
                         >
                           Link Google Account
                         </button>

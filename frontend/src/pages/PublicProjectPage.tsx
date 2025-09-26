@@ -75,6 +75,7 @@ const PublicProjectPage: React.FC = () => {
             <button 
               onClick={() => navigate('/discover')} 
               className="btn btn-primary"
+              style={{ color: getContrastTextColor('primary') }}
             >
               Discover Projects
             </button>
@@ -154,6 +155,7 @@ const PublicProjectPage: React.FC = () => {
                 <button
                   onClick={() => navigate('/discover')}
                   className="btn btn-sm btn-primary gap-2"
+                  style={{ color: getContrastTextColor('primary') }}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -292,6 +294,7 @@ const PublicProjectPage: React.FC = () => {
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="btn btn-primary btn-block flex-col gap-1"
+                        style={{ color: getContrastTextColor('primary') }}
                         >
                         <div className="flex items-center gap-2">
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

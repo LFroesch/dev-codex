@@ -654,7 +654,7 @@ const Layout: React.FC = () => {
             <div className="flex items-center justify-between min-w-0 gap-3">
               <div className="flex items-center gap-3 bg-base-200 backdrop-blur-none border-2 border-base-content/20 rounded-xl px-3 py-2 h-12 shadow-sm hover:shadow-md transition-all cursor-pointer min-w-0" onClick={() => navigate('/notes?view=projects')}>
                 <div className="tablet:w-8 tablet:h-8 w-7 h-7 bg-primary rounded-lg flex items-center justify-center shadow-sm flex-shrink-0">
-                  <svg className="tablet:w-4 tablet:h-4 w-3.5 h-3.5 text-primary-content" fill={getContrastTextColor("primary")} viewBox="0 0 20 20">
+                  <svg className="tablet:w-4 tablet:h-4 w-3.5 h-3.5 text-primary-content" fill={getContrastTextColor()} viewBox="0 0 20 20">
                     <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
                   </svg>
                 </div>
@@ -700,7 +700,7 @@ const Layout: React.FC = () => {
                       title="New Project"
                       style={{ pointerEvents: 'auto' }}
                     >
-                      <svg className="w-4 h-4" fill="none" stroke={getContrastTextColor("primary")} viewBox="0 0 24 24">
+                      <svg className="w-4 h-4" fill="none" stroke={getContrastTextColor()} viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                       </svg>
                     </button>
@@ -823,7 +823,7 @@ const Layout: React.FC = () => {
                     title="New Project"
                     style={{ pointerEvents: 'auto' }}
                   >
-                    <svg className="w-4 h-4" fill="none" stroke={getContrastTextColor("primary")} viewBox="0 0 24 24">
+                    <svg className="w-4 h-4" fill="none" stroke={getContrastTextColor()} viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                     </svg>
                   </button>
@@ -969,7 +969,7 @@ const Layout: React.FC = () => {
           <div className="relative flex-between-center">
             <div className="flex items-center gap-3 bg-base-200 backdrop-blur-none border-2 border-base-content/20 rounded-xl px-4 py-2 h-12 shadow-sm hover:shadow-md transition-all cursor-pointer" onClick={() => navigate('/notes?view=projects')}>
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-sm">
-                <svg className="icon-md text-primary-content" fill={getContrastTextColor("primary")} viewBox="0 0 20 20">
+                <svg className="icon-md text-primary-content" fill={getContrastTextColor()} viewBox="0 0 20 20">
                   <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
                 </svg>
               </div>
@@ -1015,7 +1015,7 @@ const Layout: React.FC = () => {
                   title="New Project"
                   style={{ pointerEvents: 'auto' }}
                 >
-                  <svg className="icon-sm" fill="none" stroke={getContrastTextColor("primary")} viewBox="0 0 24 24">
+                  <svg className="icon-sm" fill="none" stroke={getContrastTextColor()} viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                   </svg>
                 </button>
@@ -1335,7 +1335,7 @@ const Layout: React.FC = () => {
                                 !analyticsReady 
                                   ? 'border-base-300/30 bg-base-100/50 opacity-60 cursor-not-allowed' 
                                   : selectedProject?.id === project.id 
-                                    ? 'border-base-300 bg-base-200/50 hover:border-primary/30' 
+                                    ? 'border-base-300 bg-base-200/50 hover:border-base-300/50' 
                                     : 'border-base-content/20 hover:border-base-300/50'
                               }`}
                             >
@@ -1358,7 +1358,7 @@ const Layout: React.FC = () => {
                                 </h3>
                                 {selectedProject?.id === project.id && (
                                   <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-success/80 text-base-content/80 border-2 border-base-content/20"
-                                  style={{ color: getContrastTextColor() }}>
+                                  style={{ color: getContrastTextColor("success") }}>
                                     Current Project
                                   </span>
                                 )}
@@ -1385,14 +1385,14 @@ const Layout: React.FC = () => {
                                       <span
                                         key={tagIndex}
                                         className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-primary/70  border-2 border-base-content/20"
-                                        style={{ color: getContrastTextColor("primary") }}
+                                        style={{ color: getContrastTextColor() }}
                                       >
                                         {tag}
                                       </span>
                                     ))}
                                     {project.tags.length > 3 && (
                                       <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-primary/70  border-2 border-base-content/20"
-                                      style={{ color: getContrastTextColor("primary") }}>
+                                      style={{ color: getContrastTextColor() }}>
                                         +{project.tags.length - 3}
                                       </span>
                                     )}
@@ -1403,7 +1403,7 @@ const Layout: React.FC = () => {
                               {/* Footer - Always at bottom */}
                               <div className="flex items-center justify-between text-xs pt-3 border-t-2 border-base-content/20 mt-auto">
                                 <div className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-success/80 text-base-content/80 border-2 border-base-content/20 gap-1"
-                                style={{ color: getContrastTextColor() }}>
+                                style={{ color: getContrastTextColor("success") }}>
                                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                   </svg>

@@ -3,69 +3,121 @@
  * for optimal contrast and readability
  */
 export const getContrastTextColor = (colorValue?: string): string => {
-  // Handle special DaisyUI color names
-  if (colorValue && typeof colorValue === 'string' && !colorValue.startsWith('#')) {
-    const specialColors: { [key: string]: string } = {
-      'warning': '--wa',
-      'error': '--er', 
-      'success': '--su',
-      'info': '--in',
-      'accent': '--ac',
-      'secondary': '--se'
-    };
-
-    if (specialColors[colorValue]) {
-      if (typeof window !== 'undefined' && document.documentElement) {
-        const computedStyle = getComputedStyle(document.documentElement);
-        const colorHsl = computedStyle.getPropertyValue(specialColors[colorValue]).trim();
-        
-        if (colorHsl) {
-          // Convert HSL to RGB for luminance calculation
-          const [h, s, l] = colorHsl.split(' ').map(v => parseFloat(v.replace('%', '')));
-          const lightness = l / 100;
-          
-          // Use lightness as a simple approximation for luminance
-          return lightness > 0.5 ? '#000000' : '#ffffff';
-        }
-      }
-      
-      // Fallback for special colors
-      return colorValue === 'warning' || colorValue === 'info' ? '#000000' : '#ffffff';
+  // Quick debug to see what we're actually working with
+  if (colorValue === 'error') {
+    console.log('Error color debug - checking CSS vars...');
+    if (typeof window !== 'undefined') {
+      const computed = getComputedStyle(document.documentElement);
+      console.log('--er value:', computed.getPropertyValue('--er'));
+      console.log('--error value:', computed.getPropertyValue('--error'));
+      console.log('error color:', computed.getPropertyValue('color'));
     }
   }
   
-  // If no hex color provided, check the CSS primary color
-  if (!colorValue) {
-    // Get the computed primary color from CSS variables
-    if (typeof window !== 'undefined' && document.documentElement) {
-      const computedStyle = getComputedStyle(document.documentElement);
-      const primaryHsl = computedStyle.getPropertyValue('--p').trim();
-      
-      if (primaryHsl) {
-        // Convert HSL to RGB for luminance calculation
-        const [h, s, l] = primaryHsl.split(' ').map(v => parseFloat(v.replace('%', '')));
-        const lightness = l / 100;
-        
-        // Use lightness as a simple approximation for luminance
-        return lightness > 0.5 ? '#000000' : '#ffffff';
-      }
+  const hslToRgb = (h: number, s: number, l: number): [number, number, number] => {
+    // Convert HSL to RGB
+    h = h / 360;
+    s = s / 100;
+    l = l / 100;
+    
+    const c = (1 - Math.abs(2 * l - 1)) * s;
+    const x = c * (1 - Math.abs((h * 6) % 2 - 1));
+    const m = l - c / 2;
+    
+    let r = 0, g = 0, b = 0;
+    
+    if (0 <= h && h < 1/6) {
+      r = c; g = x; b = 0;
+    } else if (1/6 <= h && h < 2/6) {
+      r = x; g = c; b = 0;
+    } else if (2/6 <= h && h < 3/6) {
+      r = 0; g = c; b = x;
+    } else if (3/6 <= h && h < 4/6) {
+      r = 0; g = x; b = c;
+    } else if (4/6 <= h && h < 5/6) {
+      r = x; g = 0; b = c;
+    } else if (5/6 <= h && h < 1) {
+      r = c; g = 0; b = x;
     }
     
-    // Fallback to checking if primary is light or dark theme
-    return 'hsl(var(--pc))';
+    return [
+      Math.round((r + m) * 255),
+      Math.round((g + m) * 255),
+      Math.round((b + m) * 255)
+    ];
+  };
+
+  const calculateLuminance = (r: number, g: number, b: number): number => {
+    // Convert to relative luminance
+    const [rs, gs, bs] = [r, g, b].map(c => {
+      c = c / 255;
+      return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    });
+    return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
+  };
+
+  // Default to primary if no color specified
+  if (!colorValue) {
+    colorValue = 'primary';
+  }
+
+  // Handle DaisyUI color names by getting their actual computed values
+  if (colorValue && typeof colorValue === 'string' && !colorValue.startsWith('#')) {
+    const colorMap: { [key: string]: string } = {
+      'primary': '--p',
+      'secondary': '--s',
+      'accent': '--a',
+      'neutral': '--n',
+      'info': '--in',
+      'success': '--su',
+      'warning': '--wa',
+      'error': '--er'
+    };
+
+    if (colorMap[colorValue] && typeof window !== 'undefined') {
+      const root = document.documentElement;
+      const styles = getComputedStyle(root);
+      const hslString = styles.getPropertyValue(colorMap[colorValue]).trim();
+      
+      if (hslString) {
+        // Parse DaisyUI format: "lightness% saturation hue" e.g. "37.45% 0.189 325.02"
+        const matches = hslString.match(/[\d.]+/g);
+        if (matches && matches.length >= 3) {
+          // DaisyUI order is: lightness%, saturation, hue
+          const l = parseFloat(matches[0]); // lightness (already in %)
+          let s = parseFloat(matches[1]); // saturation (decimal)
+          const h = parseFloat(matches[2]); // hue (degrees)
+          
+          // Convert saturation from decimal to percentage
+          if (s <= 1) s *= 100;
+          
+          const [r, g, b] = hslToRgb(h, s, l);
+          const luminance = calculateLuminance(r, g, b);
+          
+          return luminance > 0.35 ? '#000000' : '#ffffff';
+        }
+      }
+    }
   }
   
-  // Handle hex color (existing logic)
-  const color = colorValue.replace('#', '');
+  // Handle hex colors
+  if (colorValue && colorValue.startsWith('#')) {
+    const hex = colorValue.slice(1);
+    if (hex.length === 6) {
+      const r = parseInt(hex.slice(0, 2), 16);
+      const g = parseInt(hex.slice(2, 4), 16);
+      const b = parseInt(hex.slice(4, 6), 16);
+      
+      const luminance = calculateLuminance(r, g, b);
+      return luminance > 0.35 ? '#000000' : '#ffffff';
+    }
+  }
   
-  // Convert to RGB
-  const r = parseInt(color.slice(0, 2), 16);
-  const g = parseInt(color.slice(2, 4), 16);
-  const b = parseInt(color.slice(4, 6), 16);
+  // Fallback to primary if we couldn't parse the color
+  if (colorValue !== 'primary') {
+    return getContrastTextColor('primary');
+  }
   
-  // Calculate luminance using the relative luminance formula
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  
-  // Return black for light colors, white for dark colors
-  return luminance > 0.5 ? '#000000' : '#ffffff';
+  // Final fallback
+  return '#ffffff';
 };

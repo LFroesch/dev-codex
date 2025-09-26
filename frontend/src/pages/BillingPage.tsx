@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../api';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { toast } from '../services/toast';
+import { getContrastTextColor } from '../utils/contrastTextColor';
 
 interface BillingInfo {
   planTier: 'free' | 'pro' | 'enterprise';
@@ -330,7 +331,7 @@ const BillingPage: React.FC = () => {
             >
               {plan.popular && (
                 <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                  <div className="badge badge-primary badge-lg text-white font-semibold px-4 py-2">
+                  <div className="badge badge-primary badge-lg font-semibold px-4 py-2" style={{ color: getContrastTextColor('primary') }}>
                     Most Popular
                   </div>
                 </div>

@@ -392,7 +392,7 @@ const SettingsPage: React.FC = () => {
                         ? 'bg-warning/80 text-base-content/80' 
                         : 'bg-success/80 text-base-content/80'
                     }`}
-                    style={{ color: getContrastTextColor() }}>
+                    style={{ color: getContrastTextColor(selectedProject.isArchived ? "warning" : "success") }}>
                       {selectedProject.isArchived ? 'Archived' : 'Active'}
                     </span>
                   </div>

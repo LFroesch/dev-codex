@@ -384,17 +384,19 @@ React App:
                 </div>
               </div>
 
-              <div className="form-control">
-                <label className="label">
+                <div className="form-control flex justify-end mb-2">
+                <div className="label">
                   <span className="label-text font-medium">Template Content</span>
                   <button
-                    type="button"
-                    onClick={() => setNewDoc({...newDoc, content: getTemplateExample(newDoc.type)})}
-                    className="btn btn-xs btn-outline"
+                  type="button"
+                  onClick={() => setNewDoc({...newDoc, content: getTemplateExample(newDoc.type)})}
+                  className="btn btn-xs btn-outline"
                   >
-                    Use Example
+                  Use Example
                   </button>
-                </label>
+                </div>
+                  
+
                 <textarea
                   value={newDoc.content}
                   onChange={(e) => setNewDoc({...newDoc, content: e.target.value})}

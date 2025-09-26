@@ -326,6 +326,7 @@ const NotesPage: React.FC = () => {
         <div className="tabs tabs-boxed border-2 border-base-content/20 shadow-sm">
           <button 
             className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'notes' ? 'tab-active' : ''}`}
+            style={activeSection === 'notes' ? {color: getContrastTextColor()} : {}}
             onClick={() => setActiveSection('notes')}
           >
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -335,6 +336,7 @@ const NotesPage: React.FC = () => {
           </button>
           <button 
             className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'todos' ? 'tab-active' : ''}`}
+            style={activeSection === 'todos' ? {color: getContrastTextColor()} : {}}
             onClick={() => setActiveSection('todos')}
           >
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -344,6 +346,7 @@ const NotesPage: React.FC = () => {
           </button>
           <button 
             className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'devlog' ? 'tab-active' : ''}`}
+            style={activeSection === 'devlog' ? {color: getContrastTextColor()} : {}}
             onClick={() => setActiveSection('devlog')}
           >
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -654,7 +654,7 @@ const Layout: React.FC = () => {
             <div className="flex items-center justify-between min-w-0 gap-3">
               <div className="flex items-center gap-3 bg-base-200 backdrop-blur-none border-2 border-base-content/20 rounded-xl px-3 py-2 h-12 shadow-sm hover:shadow-md transition-all cursor-pointer min-w-0" onClick={() => navigate('/notes?view=projects')}>
                 <div className="tablet:w-8 tablet:h-8 w-7 h-7 bg-primary rounded-lg flex items-center justify-center shadow-sm flex-shrink-0">
-                  <svg className="tablet:w-4 tablet:h-4 w-3.5 h-3.5 text-primary-content" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="tablet:w-4 tablet:h-4 w-3.5 h-3.5 text-primary-content" fill={getContrastTextColor("primary")} viewBox="0 0 20 20">
                     <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
                   </svg>
                 </div>
@@ -700,7 +700,7 @@ const Layout: React.FC = () => {
                       title="New Project"
                       style={{ pointerEvents: 'auto' }}
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4" fill="none" stroke={getContrastTextColor("primary")} viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                       </svg>
                     </button>
@@ -823,7 +823,7 @@ const Layout: React.FC = () => {
                     title="New Project"
                     style={{ pointerEvents: 'auto' }}
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4" fill="none" stroke={getContrastTextColor("primary")} viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                     </svg>
                   </button>
@@ -837,6 +837,7 @@ const Layout: React.FC = () => {
               <div className="tabs tabs-boxed border-2 border-base-content/20 shadow-sm">
                 <button 
                   className={`tab tab-sm ${searchParams.get('view') === 'projects' ? 'tab-active' : ''} gap-2 font-bold whitespace-nowrap min-h-10 px-4`}
+                  style={searchParams.get('view') === 'projects' ? {color: getContrastTextColor()} : {}}
                   onClick={() => handleNavigateWithCheck('/notes?view=projects')}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -846,6 +847,7 @@ const Layout: React.FC = () => {
                 </button>
                 <button 
                   className={`tab tab-sm ${(location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && searchParams.get('view') !== 'projects' ? 'tab-active' : ''} gap-2 font-bold whitespace-nowrap min-h-10 px-4`}
+                  style={(location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && searchParams.get('view') !== 'projects' ? {color: getContrastTextColor()} : {}}
                   onClick={() => handleNavigateWithCheck('/notes')}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -855,6 +857,7 @@ const Layout: React.FC = () => {
                 </button>
                 <button 
                   className={`tab tab-sm ${location.pathname === '/discover' || location.pathname.startsWith('/discover/') ? 'tab-active' : ''} gap-2 font-bold whitespace-nowrap min-h-10 px-4`}
+                  style={location.pathname === '/discover' || location.pathname.startsWith('/discover/') ? {color: getContrastTextColor()} : {}}
                   onClick={() => {
                     handleNavigateWithCheck('/discover');
                   }}
@@ -877,6 +880,7 @@ const Layout: React.FC = () => {
                     setActiveProjectTab('active');
                   }}
                   className={`tab tab-sm min-h-10 font-bold text-sm ${activeProjectTab === 'active' ? 'tab-active' : ''}`}
+                  style={activeProjectTab === 'active' ? {color: getContrastTextColor()} : {}}
                 >
                   <span>Active <span className="text-xs opacity-60">({currentProjects.length})</span></span>
                 </button>
@@ -884,6 +888,7 @@ const Layout: React.FC = () => {
                   <button
                     onClick={() => setActiveProjectTab('archived')}
                     className={`tab tab-sm min-h-10 font-bold text-sm ${activeProjectTab === 'archived' ? 'tab-active' : ''}`}
+                    style={activeProjectTab === 'archived' ? {color: getContrastTextColor()} : {}}
                   >
                     <span>Archived <span className="text-xs opacity-60">({archivedProjects.length})</span></span>
                   </button>
@@ -892,6 +897,7 @@ const Layout: React.FC = () => {
                   <button
                     onClick={() => setActiveProjectTab('shared')}
                     className={`tab tab-sm min-h-10 font-bold text-sm ${activeProjectTab === 'shared' ? 'tab-active' : ''}`}
+                    style={activeProjectTab === 'shared' ? {color: getContrastTextColor()} : {}}
                   >
                     <span>Shared <span className="text-xs opacity-60">({sharedProjects.length})</span></span>
                   </button>
@@ -899,6 +905,7 @@ const Layout: React.FC = () => {
                 <button
                   onClick={() => setActiveProjectTab('ideas')}
                   className={`tab tab-sm min-h-10 font-bold text-sm ${activeProjectTab === 'ideas' ? 'tab-active' : ''}`}
+                  style={activeProjectTab === 'ideas' ? {color: getContrastTextColor()} : {}}
                 >
                   <span>Ideas</span>
                 </button>
@@ -915,6 +922,7 @@ const Layout: React.FC = () => {
                     key={tab.id}
                     onClick={() => handleNavigateWithCheck(tab.path)}
                     className={`tab tab-sm min-h-10 font-bold text-sm whitespace-nowrap ${currentTab === tab.id ? 'tab-active' : ''}`}
+                    style={currentTab === tab.id ? {color: getContrastTextColor()} : {}}
                   >
                     <span>
                       {tab.id === 'notes' ? 'Notes' : 
@@ -938,12 +946,14 @@ const Layout: React.FC = () => {
                 <button
                   onClick={() => handleNavigateWithCheck('/discover')}
                   className={`tab tab-sm min-h-10 font-bold text-sm ${location.pathname === '/discover' ? 'tab-active' : ''}`}
+                  style={location.pathname === '/discover' ? {color: getContrastTextColor()} : {}}
                 >
                   Discover
                 </button>
                 <button
                   onClick={() => handleNavigateWithCheck('/discover')}
                   className={`tab tab-sm min-h-10 font-bold text-sm ${(location.pathname.startsWith('/discover/project/') || location.pathname.startsWith('/discover/user/')) ? 'tab-active' : ''}`}
+                  style={(location.pathname.startsWith('/discover/project/') || location.pathname.startsWith('/discover/user/')) ? {color: getContrastTextColor()} : {}}
                   disabled={!(location.pathname.startsWith('/discover/project/') || location.pathname.startsWith('/discover/user/'))}
                 >
                   Details
@@ -959,7 +969,7 @@ const Layout: React.FC = () => {
           <div className="relative flex-between-center">
             <div className="flex items-center gap-3 bg-base-200 backdrop-blur-none border-2 border-base-content/20 rounded-xl px-4 py-2 h-12 shadow-sm hover:shadow-md transition-all cursor-pointer" onClick={() => navigate('/notes?view=projects')}>
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-sm">
-                <svg className="icon-md text-primary-content" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="icon-md text-primary-content" fill={getContrastTextColor("primary")} viewBox="0 0 20 20">
                   <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
                 </svg>
               </div>
@@ -1005,7 +1015,7 @@ const Layout: React.FC = () => {
                   title="New Project"
                   style={{ pointerEvents: 'auto' }}
                 >
-                  <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="icon-sm" fill="none" stroke={getContrastTextColor("primary")} viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                   </svg>
                 </button>
@@ -1016,6 +1026,7 @@ const Layout: React.FC = () => {
               <div className="tabs tabs-boxed border-2 border-base-content/20 shadow-sm">
               <button 
                 className={`tab tab-sm min-h-10 font-bold text-sm ${searchParams.get('view') === 'projects' ? 'tab-active' : ''} gap-2`}
+                style={searchParams.get('view') === 'projects' ? {color: getContrastTextColor()} : {}}
                 onClick={() => handleNavigateWithCheck('/notes?view=projects')}
               >
                 <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1025,6 +1036,7 @@ const Layout: React.FC = () => {
               </button>
               <button 
                 className={`tab tab-sm min-h-10 font-bold text-sm ${(location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && searchParams.get('view') !== 'projects' ? 'tab-active' : ''} gap-2`}
+                style={(location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && searchParams.get('view') !== 'projects' ? {color: getContrastTextColor()} : {}}
                 onClick={() => handleNavigateWithCheck('/notes')}
               >
                 <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1034,6 +1046,7 @@ const Layout: React.FC = () => {
               </button>
               <button 
                 className={`tab tab-sm min-h-10 font-bold text-sm ${location.pathname === '/discover' || location.pathname.startsWith('/discover/') ? 'tab-active' : ''} gap-2`}
+                style={location.pathname === '/discover' || location.pathname.startsWith('/discover/') ? {color: getContrastTextColor()} : {}}
                 onClick={() => handleNavigateWithCheck('/discover')}
               >
                 <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1101,6 +1114,7 @@ const Layout: React.FC = () => {
                     setActiveProjectTab('active');
                   }}
                   className={`tab tab-sm min-h-10 font-bold text-sm ${activeProjectTab === 'active' ? 'tab-active' : ''}`}
+                  style={activeProjectTab === 'active' ? {color: getContrastTextColor()} : {}}
                 >
                   <span>Active <span className="text-xs opacity-60">({currentProjects.length})</span></span>
                 </button>
@@ -1108,6 +1122,7 @@ const Layout: React.FC = () => {
                   <button
                     onClick={() => setActiveProjectTab('archived')}
                     className={`tab tab-sm min-h-10 font-bold text-sm ${activeProjectTab === 'archived' ? 'tab-active' : ''}`}
+                    style={activeProjectTab === 'archived' ? {color: getContrastTextColor()} : {}}
                   >
                     <span>Archived <span className="text-xs opacity-60">({archivedProjects.length})</span></span>
                   </button>
@@ -1116,6 +1131,7 @@ const Layout: React.FC = () => {
                   <button
                     onClick={() => setActiveProjectTab('shared')}
                     className={`tab tab-sm min-h-10 font-bold text-sm ${activeProjectTab === 'shared' ? 'tab-active' : ''}`}
+                    style={activeProjectTab === 'shared' ? {color: getContrastTextColor()} : {}}
                   >
                     <span>Shared <span className="text-xs opacity-60">({sharedProjects.length})</span></span>
                   </button>
@@ -1123,6 +1139,7 @@ const Layout: React.FC = () => {
                 <button
                   onClick={() => setActiveProjectTab('ideas')}
                   className={`tab tab-sm min-h-10 font-bold text-sm ${activeProjectTab === 'ideas' ? 'tab-active' : ''}`}
+                  style={activeProjectTab === 'ideas' ? {color: getContrastTextColor()} : {}}
                 >
                   <span>Ideas</span>
                 </button>
@@ -1154,6 +1171,7 @@ const Layout: React.FC = () => {
                     key={tab.id}
                     onClick={() => handleNavigateWithCheck(tab.path)}
                     className={`tab tab-sm min-h-10 font-bold text-sm whitespace-nowrap ${currentTab === tab.id ? 'tab-active' : ''}`}
+                    style={currentTab === tab.id ? {color: getContrastTextColor()} : {}}
                   >
                     <span>
                       {tab.id === 'notes' ? 'Notes' : 
@@ -1177,12 +1195,14 @@ const Layout: React.FC = () => {
                 <button
                   onClick={() => handleNavigateWithCheck('/discover')}
                   className={`tab tab-sm min-h-10 font-bold text-sm ${location.pathname === '/discover' ? 'tab-active' : ''}`}
+                  style={location.pathname === '/discover' ? {color: getContrastTextColor()} : {}}
                 >
                   Discover
                 </button>
                 <button
                   onClick={() => handleNavigateWithCheck('/discover')}
                   className={`tab tab-sm min-h-10 font-bold text-sm ${(location.pathname.startsWith('/discover/project/') || location.pathname.startsWith('/discover/user/')) ? 'tab-active' : ''}`}
+                  style={(location.pathname.startsWith('/discover/project/') || location.pathname.startsWith('/discover/user/')) ? {color: getContrastTextColor()} : {}}
                   disabled={!(location.pathname.startsWith('/discover/project/') || location.pathname.startsWith('/discover/user/'))}
                 >
                   Details
@@ -1265,6 +1285,7 @@ const Layout: React.FC = () => {
                               className={`tab tab-sm min-h-10 font-bold text-sm ${
                                 selectedCategory === null ? 'tab-active' : ''
                               }`}
+                              style={selectedCategory === null ? {color: getContrastTextColor()} : {}}
                             >
                               <span>All <span className="text-xs opacity-70">({Object.values(
                                 activeProjectTab === 'active' ? groupedCurrentProjects :
@@ -1283,6 +1304,7 @@ const Layout: React.FC = () => {
                                 className={`tab tab-sm min-h-10 font-bold text-sm ${
                                   selectedCategory === category ? 'tab-active' : ''
                                 }`}
+                                style={selectedCategory === category ? {color: getContrastTextColor()} : {}}
                               >
                                 <span>{category} <span className="text-xs opacity-70">({categoryProjects.length})</span></span>
                               </button>
@@ -1362,13 +1384,15 @@ const Layout: React.FC = () => {
                                     {project.tags.slice(0, 3).map((tag, tagIndex) => (
                                       <span
                                         key={tagIndex}
-                                        className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-primary/70 text-base-content/80 border-2 border-base-content/20"
+                                        className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-primary/70  border-2 border-base-content/20"
+                                        style={{ color: getContrastTextColor("primary") }}
                                       >
                                         {tag}
                                       </span>
                                     ))}
                                     {project.tags.length > 3 && (
-                                      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-primary/70 text-base-content/80 border-2 border-base-content/20">
+                                      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-primary/70  border-2 border-base-content/20"
+                                      style={{ color: getContrastTextColor("primary") }}>
                                         +{project.tags.length - 3}
                                       </span>
                                     )}
@@ -1432,6 +1456,7 @@ const Layout: React.FC = () => {
               <div className="tabs tabs-boxed tabs-lg border-2 border-base-content/20 shadow-sm bg-base-200 w-full max-w-4xl overflow-x-auto">
                 <button 
                   className={`tab tab-sm sm:tab-lg min-h-14 sm:min-h-16 font-bold text-xs sm:text-base px-3 sm:px-4 whitespace-nowrap ${activeAdminTab === 'users' ? 'tab-active' : ''}`}
+                  style={activeAdminTab === 'users' ? {color: getContrastTextColor()} : {}}
                   onClick={() => setActiveAdminTab('users')}
                 >
                   <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1442,6 +1467,7 @@ const Layout: React.FC = () => {
                 </button>
                 <button 
                   className={`tab tab-sm sm:tab-lg min-h-14 sm:min-h-16 font-bold text-xs sm:text-base px-3 sm:px-4 whitespace-nowrap ${activeAdminTab === 'tickets' ? 'tab-active' : ''}`}
+                  style={activeAdminTab === 'tickets' ? {color: getContrastTextColor()} : {}}
                   onClick={() => setActiveAdminTab('tickets')}
                 >
                   <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1452,6 +1478,7 @@ const Layout: React.FC = () => {
                 </button>
                 <button 
                   className={`tab tab-sm sm:tab-lg min-h-14 sm:min-h-16 font-bold text-xs sm:text-base px-3 sm:px-4 whitespace-nowrap ${activeAdminTab === 'analytics' ? 'tab-active' : ''}`}
+                  style={activeAdminTab === 'analytics' ? {color: getContrastTextColor()} : {}}
                   onClick={() => setActiveAdminTab('analytics')}
                 >
                   <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1462,6 +1489,7 @@ const Layout: React.FC = () => {
                 </button>
                 <button 
                   className={`tab tab-sm sm:tab-lg min-h-14 sm:min-h-16 font-bold text-xs sm:text-base px-3 sm:px-4 whitespace-nowrap ${activeAdminTab === 'news' ? 'tab-active' : ''}`}
+                  style={activeAdminTab === 'news' ? {color: getContrastTextColor()} : {}}
                   onClick={() => setActiveAdminTab('news')}
                 >
                   <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

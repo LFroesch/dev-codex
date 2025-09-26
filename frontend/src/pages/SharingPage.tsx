@@ -5,6 +5,7 @@ import type { Project } from '../api/types';
 import TeamManagement from '../components/TeamManagement';
 import ActivityLog from '../components/ActivityLog';
 import ConfirmationModal from '../components/ConfirmationModal';
+import { getContrastTextColor } from '../utils/contrastTextColor';
 
 interface ContextType {
   selectedProject: Project | null;
@@ -64,6 +65,7 @@ const SharingPage: React.FC = () => {
         <div className="tabs tabs-boxed border-2 border-base-content/20 shadow-sm">
           <button 
             className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'overview' ? 'tab-active' : ''}`}
+            style={activeSection === 'overview' ? {color: getContrastTextColor()} : {}}
             onClick={() => setActiveSection('overview')}
           >
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -74,6 +76,7 @@ const SharingPage: React.FC = () => {
           {selectedProject.isShared && (
             <button 
               className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'team' ? 'tab-active' : ''}`}
+              style={activeSection === 'team' ? {color: getContrastTextColor()} : {}}
               onClick={() => setActiveSection('team')}
             >
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -85,6 +88,7 @@ const SharingPage: React.FC = () => {
           {!selectedProject.isShared && (
             <button 
               className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'activity' ? 'tab-active' : ''}`}
+              style={activeSection === 'activity' ? {color: getContrastTextColor()} : {}}
               onClick={() => setActiveSection('activity')}
             >
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

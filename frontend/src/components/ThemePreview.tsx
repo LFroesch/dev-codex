@@ -1,5 +1,6 @@
 import React from 'react';
 import { hexToOklch, oklchToCssValue, generateFocusVariant, generateContrastingTextColor } from '../utils/colorUtils';
+import { getContrastTextColor } from '../utils/contrastTextColor';
 
 interface ThemePreviewProps {
   colors: {
@@ -86,7 +87,7 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({ colors }) => {
         {/* Buttons & Tabs */}
         <div className="space-y-2">
           <div className="tabs tabs-boxed border-subtle shadow-sm">
-            <button className="tab tab-sm tab-active text-xs font-bold">Projects</button>
+            <button className="tab tab-sm tab-active text-xs font-bold" style={{color: getContrastTextColor()}}>Projects</button>
             <button className="tab tab-sm text-xs font-bold">Details</button>
             <button className="tab tab-sm text-xs font-bold">Discover</button>
           </div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import ConfirmationModal from '../components/ConfirmationModal';
+import { getContrastTextColor } from '../utils/contrastTextColor';
 
 interface DeploymentData {
   liveUrl?: string;
@@ -22,7 +23,7 @@ const DeploymentPage: React.FC = () => {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   
   // Section visibility states
-  const [activeSection, setActiveSection] = useState<'overview' | 'basic' | 'build' | 'env' | 'notes'>('overview');
+  const [activeSection, setActiveSection] = useState<'overview' | 'deployment' | 'env' | 'notes'>('overview');
   
   // Confirmation modal state
   const [deleteConfirmation, setDeleteConfirmation] = useState<{ 
@@ -120,6 +121,7 @@ const DeploymentPage: React.FC = () => {
         <div className="tabs tabs-boxed border-2 border-base-content/20 shadow-sm">
         <button 
           className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'overview' ? 'tab-active' : ''}`}
+          style={activeSection === 'overview' ? {color: getContrastTextColor()} : {}}
           onClick={() => setActiveSection('overview')}
         >
           <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -128,26 +130,19 @@ const DeploymentPage: React.FC = () => {
           Overview
         </button>
         <button 
-          className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'basic' ? 'tab-active' : ''}`}
-          onClick={() => setActiveSection('basic')}
-        >
-          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          Basic Info
-        </button>
-        <button 
-          className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'build' ? 'tab-active' : ''}`}
-          onClick={() => setActiveSection('build')}
+          className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'deployment' ? 'tab-active' : ''}`}
+          style={activeSection === 'deployment' ? {color: getContrastTextColor()} : {}}
+          onClick={() => setActiveSection('deployment')}
         >
           <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
-          Build & Deploy
+          Deployment
         </button>
         <button 
           className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'env' ? 'tab-active' : ''}`}
+          style={activeSection === 'env' ? {color: getContrastTextColor()} : {}}
           onClick={() => setActiveSection('env')}
         >
           <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -157,6 +152,7 @@ const DeploymentPage: React.FC = () => {
         </button>
         <button 
           className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'notes' ? 'tab-active' : ''}`}
+          style={activeSection === 'notes' ? {color: getContrastTextColor()} : {}}
           onClick={() => setActiveSection('notes')}
         >
           <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -183,10 +179,11 @@ const DeploymentPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-base-200/40 border-thick rounded-lg p-4">
               <div className="flex items-center gap-3 mb-2">
-                <span className="text-sm badge-neutral badge badge-md">📶</span>
+                <span className="text-sm badge-neutral badge badge-md w-8 h-6">📶</span>
                 <span className="font-medium text-sm">Status</span>
               </div>
-              <p className="text-sm badge-primary badge badge-md">
+              <p className="text-sm badge-primary badge badge-md border-2 border-base-content/20 p-2"
+              style={{ color: getContrastTextColor("primary") }}>
                 {deploymentData.deploymentStatus === 'active' ? '🟢 Active' :
                  deploymentData.deploymentStatus === 'error' ? '🔴 Error' : '🟡 Inactive'}
               </p>
@@ -194,26 +191,33 @@ const DeploymentPage: React.FC = () => {
             
             <div className="bg-base-200/40 border-thick rounded-lg p-4">
               <div className="flex items-center gap-3 mb-2">
-                <span className="text-sm badge-neutral badge badge-md">🌐</span>
+                <span className="text-sm badge-neutral badge badge-md w-8 h-6">🌐</span>
                 <span className="font-medium text-sm">Platform</span>
               </div>
-              <p className="text-sm badge-primary badge badge-md">{deploymentData.deploymentPlatform || 'Not configured'}</p>
+              <p className="text-sm badge-primary badge badge-md border-2 border-base-content/20 p-2"
+              style={{ color: getContrastTextColor("primary") }}>
+                {deploymentData.deploymentPlatform || 'Not configured'}
+              </p>
             </div>
             
             <div className="bg-base-200/40 border-thick rounded-lg p-4">
               <div className="flex items-center gap-3 mb-2">
-                <span className="text-sm badge-neutral badge badge-md">🔗</span>
+                <span className="text-sm badge-neutral badge badge-md w-8 h-6">🔗</span>
                 <span className="font-medium text-sm">Live URL</span>
               </div>
-              <p className="text-sm truncate badge-primary badge badge-md">{deploymentData.liveUrl || 'Not configured'}</p>
+              <p className="text-sm truncate badge-primary badge badge-md border-2 border-base-content/20 p-2"
+              style={{ color: getContrastTextColor("primary") }}>
+                {deploymentData.liveUrl || 'Not configured'}
+              </p>
             </div>
             
             <div className="bg-base-200/40 border-thick rounded-lg p-4">
               <div className="flex items-center gap-3 mb-2">
-                <span className="text-sm badge-neutral badge badge-md">📅</span>
+                <span className="text-sm badge-neutral badge badge-md w-8 h-6">📅</span>
                 <span className="font-medium text-sm">Last Deploy</span>
               </div>
-              <p className="text-sm badge-primary badge badge-md">
+              <p className="text-sm badge-primary badge badge-md border-2 border-base-content/20 p-2"
+              style={{ color: getContrastTextColor("primary") }}>
                 {deploymentData.lastDeployDate ? 
                   new Date(deploymentData.lastDeployDate).toLocaleDateString() : 
                   'Never deployed'}
@@ -222,12 +226,12 @@ const DeploymentPage: React.FC = () => {
           </div>
           
           {deploymentData.liveUrl && (
-            <div className="mt-4">
+            <div className="mt-4 ">
               <a 
                 href={deploymentData.liveUrl.startsWith('http') ? deploymentData.liveUrl : `https://${deploymentData.liveUrl}`}
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="btn btn-primary btn-sm gap-2"
+                className="btn btn-primary btn-sm gap-2 border-2 border-base-content/20 p-3 h-[3rem]"
                 onClick={(e) => {
                   const url = deploymentData.liveUrl?.startsWith('http') ? deploymentData.liveUrl : `https://${deploymentData.liveUrl}`;
                   if (!url || url === 'https://') {
@@ -236,10 +240,10 @@ const DeploymentPage: React.FC = () => {
                   }
                 }}
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4" fill="none" stroke={getContrastTextColor("primary")} viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                 </svg>
-                Open Live Site
+                <span style={{ color: getContrastTextColor("primary") }}>Open Live Site</span>
               </a>
             </div>
           )}
@@ -247,12 +251,12 @@ const DeploymentPage: React.FC = () => {
         </div>
       )}
 
-      {activeSection === 'basic' && (
+      {activeSection === 'deployment' && (
         <div className="section-container mb-4">
           <div className="section-header">
             <div className="flex items-center gap-3">
-              <div className="section-icon">📋</div>
-              <span>Basic Information</span>
+              <div className="section-icon">🚀</div>
+              <span>Deployment Configuration</span>
               <button
                 onClick={handleSave}
                 disabled={loading || !hasUnsavedChanges}
@@ -263,139 +267,134 @@ const DeploymentPage: React.FC = () => {
             </div>
           </div>
           <div className="section-content">
-          
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text font-medium">Live URL</span>
-              </label>
-              <input
-                type="url"
-                placeholder="https://myapp.com"
-                className="input input-bordered w-full font-mono"
-                value={deploymentData.liveUrl || ''}
-                onChange={(e) => updateField('liveUrl', e.target.value)}
-              />
+            
+            {/* Basic Information Section */}
+            <div className="mb-8">
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <span>📋</span>
+                Basic Information
+              </h3>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-medium">Live URL</span>
+                  </label>
+                  <input
+                    type="url"
+                    placeholder="https://myapp.com"
+                    className="input input-bordered w-full font-mono"
+                    value={deploymentData.liveUrl || ''}
+                    onChange={(e) => updateField('liveUrl', e.target.value)}
+                  />
+                </div>
+
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-medium">GitHub Repository</span>
+                  </label>
+                  <input
+                    type="url"
+                    placeholder="https://github.com/username/repo"
+                    className="input input-bordered w-full font-mono"
+                    value={deploymentData.githubRepo || ''}
+                    onChange={(e) => updateField('githubRepo', e.target.value)}
+                  />
+                </div>
+
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-medium">Deployment Platform</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Vercel, Netlify, AWS, Railway, etc."
+                    className="input input-bordered w-full font-mono"
+                    value={deploymentData.deploymentPlatform || ''}
+                    onChange={(e) => updateField('deploymentPlatform', e.target.value)}
+                  />
+                </div>
+
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-medium">Deployment Status</span>
+                  </label>
+                  <select
+                    className="select select-bordered w-full font-mono"
+                    value={deploymentData.deploymentStatus || 'inactive'}
+                    onChange={(e) => updateField('deploymentStatus', e.target.value as 'active' | 'inactive' | 'error')}
+                  >
+                    <option value="active">🟢 Active</option>
+                    <option value="inactive">🟡 Inactive</option>
+                    <option value="error">🔴 Error</option>
+                  </select>
+                </div>
+              </div>
             </div>
 
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text font-medium">GitHub Repository</span>
-              </label>
-              <input
-                type="url"
-                placeholder="https://github.com/username/repo"
-                className="input input-bordered w-full font-mono"
-                value={deploymentData.githubRepo || ''}
-                onChange={(e) => updateField('githubRepo', e.target.value)}
-              />
-            </div>
+            {/* Build & Deploy Section */}
+            <div>
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <span>⚙️</span>
+                Build & Deploy Settings
+              </h3>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-medium">Build Command</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="npm run build"
+                    className="input input-bordered w-full font-mono"
+                    value={deploymentData.buildCommand || ''}
+                    onChange={(e) => updateField('buildCommand', e.target.value)}
+                  />
+                </div>
 
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text font-medium">Deployment Platform</span>
-              </label>
-              <input
-                type="text"
-                placeholder="Vercel, Netlify, AWS, Railway, etc."
-                className="input input-bordered w-full font-mono"
-                value={deploymentData.deploymentPlatform || ''}
-                onChange={(e) => updateField('deploymentPlatform', e.target.value)}
-              />
-            </div>
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-medium">Start Command</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="npm start"
+                    className="input input-bordered w-full font-mono"
+                    value={deploymentData.startCommand || ''}
+                    onChange={(e) => updateField('startCommand', e.target.value)}
+                  />
+                </div>
 
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text font-medium">Deployment Status</span>
-              </label>
-              <select
-                className="select select-bordered w-full font-mono"
-                value={deploymentData.deploymentStatus || 'inactive'}
-                onChange={(e) => updateField('deploymentStatus', e.target.value as 'active' | 'inactive' | 'error')}
-              >
-                <option value="active">🟢 Active</option>
-                <option value="inactive">🟡 Inactive</option>
-                <option value="error">🔴 Error</option>
-              </select>
-            </div>
-          </div>
-          </div>
-        </div>
-      )}
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-medium">Deployment Branch</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="main"
+                    className="input input-bordered w-full font-mono"
+                    value={deploymentData.deploymentBranch || ''}
+                    onChange={(e) => updateField('deploymentBranch', e.target.value)}
+                  />
+                </div>
 
-      {activeSection === 'build' && (
-        <div className="section-container mb-4">
-          <div className="section-header">
-            <div className="flex items-center gap-3">
-              <div className="section-icon">⚙️</div>
-              <span>Build & Deploy</span>
-              <button
-                onClick={handleSave}
-                disabled={loading || !hasUnsavedChanges}
-                className={`btn btn-sm ml-auto ${hasUnsavedChanges ? 'btn-primary' : 'btn-ghost'} ${loading ? 'loading' : ''}`}
-              >
-                {loading ? 'Saving...' : hasUnsavedChanges ? 'Save Changes' : 'Saved'}
-              </button>
-            </div>
-          </div>
-          <div className="section-content">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text font-medium">Build Command</span>
-              </label>
-              <input
-                type="text"
-                placeholder="npm run build"
-                className="input input-bordered w-full font-mono"
-                value={deploymentData.buildCommand || ''}
-                onChange={(e) => updateField('buildCommand', e.target.value)}
-              />
-            </div>
-
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text font-medium">Start Command</span>
-              </label>
-              <input
-                type="text"
-                placeholder="npm start"
-                className="input input-bordered w-full font-mono"
-                value={deploymentData.startCommand || ''}
-                onChange={(e) => updateField('startCommand', e.target.value)}
-              />
-            </div>
-
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text font-medium">Deployment Branch</span>
-              </label>
-              <input
-                type="text"
-                placeholder="main"
-                className="input input-bordered w-full font-mono"
-                value={deploymentData.deploymentBranch || ''}
-                onChange={(e) => updateField('deploymentBranch', e.target.value)}
-              />
-            </div>
-
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text font-medium">Last Deploy Date</span>
-              </label>
-              <input
-                type="datetime-local"
-                className="input input-bordered w-full font-mono"
-                value={deploymentData.lastDeployDate ? (() => {
-                  try {
-                    return new Date(deploymentData.lastDeployDate!).toISOString().slice(0, 16);
-                  } catch {
-                    return '';
-                  }
-                })() : ''}
-                onChange={(e) => updateField('lastDeployDate', e.target.value)}
-              />
-            </div>
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-medium">Last Deploy Date</span>
+                  </label>
+                  <input
+                    type="datetime-local"
+                    className="input input-bordered w-full font-mono"
+                    value={deploymentData.lastDeployDate ? (() => {
+                      try {
+                        return new Date(deploymentData.lastDeployDate!).toISOString().slice(0, 16);
+                      } catch {
+                        return '';
+                      }
+                    })() : ''}
+                    onChange={(e) => updateField('lastDeployDate', e.target.value)}
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>

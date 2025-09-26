@@ -3,6 +3,7 @@ import { useOutletContext, useNavigate } from 'react-router-dom';
 import type { Project } from '../api/types';
 import ExportSection from '../components/ExportSection';
 import ConfirmationModal from '../components/ConfirmationModal';
+import { getContrastTextColor } from '../utils/contrastTextColor';
 
 interface ContextType {
   selectedProject: Project | null;
@@ -170,6 +171,7 @@ const SettingsPage: React.FC = () => {
         <div className="tabs tabs-boxed border-2 border-base-content/20 shadow-sm">
           <button 
             className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'info' ? 'tab-active' : ''}`}
+            style={activeSection === 'info' ? {color: getContrastTextColor()} : {}}
             onClick={() => setActiveSection('info')}
           >
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -179,6 +181,7 @@ const SettingsPage: React.FC = () => {
           </button>
           <button 
             className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'export' ? 'tab-active' : ''}`}
+            style={activeSection === 'export' ? {color: getContrastTextColor()} : {}}
             onClick={() => setActiveSection('export')}
           >
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -188,6 +191,7 @@ const SettingsPage: React.FC = () => {
           </button>
           <button 
             className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'danger' ? 'tab-active' : ''}`}
+            style={activeSection === 'danger' ? {color: getContrastTextColor()} : {}}
             onClick={() => setActiveSection('danger')}
           >
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -227,9 +231,9 @@ const SettingsPage: React.FC = () => {
             </div>
           </div>
           <div className="section-content">
-          {/* Basic Info Section */}
+          {/* Basic Info and Metadata Section */}
           <div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
               <div>
                 <label className="label py-1">
                   <span className="label-text font-medium text-sm">Project Name</span>
@@ -246,41 +250,38 @@ const SettingsPage: React.FC = () => {
 
               <div>
                 <label className="label py-1">
-                  <span className="label-text font-medium text-sm">Description</span>
-                </label>
-                <input
-                  type="text"
-                  value={description}
-                  onChange={(e) => updateField('description', e.target.value)}
-                  className="input input-bordered input-sm w-full h-10"
-                  placeholder="Enter project description..."
-                  required
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Metadata Section */}
-          <div className='mt-3'>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
-              <div>
-                <label className="label py-1">
                   <span className="label-text font-medium text-sm">Project Color</span>
                 </label>
-                <div className="flex items-center h-10 gap-1">
-                  <input
-                    type="color"
-                    value={color}
-                    onChange={(e) => updateField('color', e.target.value)}
-                    className="w-10 h-10 border-2 border-base-content/20 rounded cursor-pointer flex-shrink-0"
-                  />
-                  <input
-                    type="text"
-                    value={color}
-                    onChange={(e) => updateField('color', e.target.value)}
-                    className="input input-bordered input-sm w-28 font-mono text-xs h-10"
-                    placeholder="#3B82F6"
-                  />
+                <div className="space-y-2">
+                  <div className="flex items-center h-10 gap-1">
+                    <input
+                      type="color"
+                      value={color}
+                      onChange={(e) => updateField('color', e.target.value)}
+                      className="w-10 h-10 border-2 border-base-content/20 rounded cursor-pointer flex-shrink-0"
+                    />
+                    <input
+                      type="text"
+                      value={color}
+                      onChange={(e) => updateField('color', e.target.value)}
+                      className="input input-bordered input-sm flex-1 font-mono text-xs h-10"
+                      placeholder="#3B82F6"
+                    />
+                  </div>
+                  {/* Color preset buttons */}
+                  <div className="flex flex-wrap gap-1">
+                    {predefinedColors.map((presetColor) => (
+                      <button
+                        key={presetColor}
+                        onClick={() => updateField('color', presetColor)}
+                        className={`w-6 h-6 rounded border-2 ${
+                          color === presetColor ? 'border-base-content' : 'border-base-300'
+                        } hover:scale-110 transition-transform`}
+                        style={{ backgroundColor: presetColor }}
+                        title={presetColor}
+                      />
+                    ))}
+                  </div>
                 </div>
               </div>
 
@@ -316,7 +317,7 @@ const SettingsPage: React.FC = () => {
                 <label className="label py-1">
                   <span className="label-text font-medium text-sm">Tags ({tags.length})</span>
                 </label>
-                <div className="space-y-1">
+                <div className="space-y-2">
                   <div className="flex gap-1">
                     <input
                       type="text"
@@ -332,47 +333,49 @@ const SettingsPage: React.FC = () => {
                     />
                     <button
                       onClick={handleAddTag}
-                      className="btn btn-primary btn-sm btn-square"
+                      className="btn btn-primary btn-sm h-10 w-10"
                     >
                       +
                     </button>
                   </div>
-                  <div className="flex flex-wrap gap-1">
-                    {tags.map((tag, index) => (
-                      <span
-                        key={`tag-${index}-${tag}`}
-                        className="badge badge-info badge-sm gap-1"
-                      >
-                        {tag}
-                        <button
-                          onClick={() => handleRemoveTag(tag)}
-                          className="text-info-content hover:text-error"
+                  {tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {tags.map((tag, index) => (
+                        <span
+                          key={index}
+                          className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-primary/70  border-2 border-base-content/20"
+                          style={{ color: getContrastTextColor("primary") }}
                         >
-                          ×
-                        </button>
-                      </span>
-                    ))}
-                  </div>
+                          {tag}
+                          <button
+                            onClick={() => handleRemoveTag(tag)}
+                            className="ml-1 text-info-content hover:text-error"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Color preset buttons */}
-            <div className="mt-2">
-              <div className="flex flex-wrap gap-1">
-                {predefinedColors.map((presetColor) => (
-                  <button
-                    key={presetColor}
-                    onClick={() => updateField('color', presetColor)}
-                    className={`w-6 h-6 rounded border-2 ${
-                      color === presetColor ? 'border-base-content' : 'border-base-300'
-                    } hover:scale-110 transition-transform`}
-                    style={{ backgroundColor: presetColor }}
-                    title={presetColor}
-                  />
-                ))}
-              </div>
-            </div>
+          <div className="divider my-4">Description</div>
+
+          {/* Description Section */}
+          <div>
+            <label className="label py-1">
+              <span className="label-text font-medium text-sm">Project Description</span>
+            </label>
+            <textarea
+              value={description}
+              onChange={(e) => updateField('description', e.target.value)}
+              className="textarea textarea-bordered w-full resize-none"
+              placeholder="Enter project description..."
+              rows={3}
+            />
           </div>
 
           <div className="divider my-4">Status</div>
@@ -384,21 +387,23 @@ const SettingsPage: React.FC = () => {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Archive Status:</span>
-                    <span className={`badge badge-sm ${
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold border-2 border-base-content/20 ${
                       selectedProject.isArchived 
-                        ? 'badge-ghost' 
-                        : 'badge-success'
-                    }`}>
+                        ? 'bg-warning/80 text-base-content/80' 
+                        : 'bg-success/80 text-base-content/80'
+                    }`}
+                    style={{ color: getContrastTextColor() }}>
                       {selectedProject.isArchived ? 'Archived' : 'Active'}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Sharing Status:</span>
-                    <span className={`badge badge-sm ${
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold border-2 border-base-content/20 ${
                       selectedProject.isShared
-                        ? 'badge-info'
-                        : 'bg-warning'
-                    }`}>
+                        ? 'bg-info/80 text-base-content/80'
+                        : 'bg-warning/80 text-base-content/80'
+                    }`}
+                    style={{ color: getContrastTextColor(selectedProject.isShared ? "info" : "warning") }}>
                       {selectedProject.isShared ? 'Shared' : 'Private'}
                     </span>
                   </div>
@@ -452,8 +457,10 @@ const SettingsPage: React.FC = () => {
           <div className="section-content">
             <div className="space-y-4">
               <div className={`p-4 ${!selectedProject.isArchived ? 'bg-warning/20' : 'bg-info/10'} rounded-lg border-thick`}>
-                <h4 className={`font-bold ${!selectedProject.isArchived ? 'text-warning' : 'text-info'} mb-2`}>{selectedProject.isArchived ? 'Unarchive Project' : 'Archive Project'}</h4>
-                <p className={`${!selectedProject.isArchived ? 'text-warning' : 'text-info'} font-bold text-sm mb-4`}>
+                <h4 className="font-bold mb-2" style={{ color: getContrastTextColor(!selectedProject.isArchived ? "warning" : "info") }}>
+                  {selectedProject.isArchived ? 'Unarchive Project' : 'Archive Project'}
+                </h4>
+                <p className="font-bold text-sm mb-4" style={{ color: getContrastTextColor(!selectedProject.isArchived ? "warning" : "info") }}>
                   {selectedProject.isArchived ? 'Make this project active again.' : 'Move this project to archived section.'}
                 </p>
                 <button
@@ -464,20 +471,22 @@ const SettingsPage: React.FC = () => {
                       : 'btn-warning border-thick'
                   }`}
                   disabled={archiveLoading}
+                  style={{ color: getContrastTextColor(selectedProject.isArchived ? "info" : "warning") }}
                 >
                   {archiveLoading ? 'Processing...' : selectedProject.isArchived ? 'Make Active' : 'Archive Project'}
                 </button>
               </div>
 
-              <div className="p-4 bg-error/10 rounded-lg border-thick">
-                <h4 className="font-bold text-error mb-2">Delete Project</h4>
-                <p className="text-error/80 font-bold text-sm mb-4">
+              <div className="p-4 bg-error/40 rounded-lg border-thick">
+                <h4 className="font-bold mb-2" style={{ color: getContrastTextColor("error") }}>Delete Project</h4>
+                <p className="font-bold text-sm mb-4" style={{ color: getContrastTextColor("error") }}>
                   This action cannot be undone. This will permanently delete the project and all of its data.
                 </p>
                 
                 <button
                   onClick={() => setDeleteConfirm(true)}
                   className="btn btn-error border-thick"
+                  style={{ color: getContrastTextColor("error") }}
                 >
                   Delete Project
                 </button>

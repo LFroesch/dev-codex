@@ -401,6 +401,7 @@ const StackPage: React.FC = () => {
                 className={`tab tab-sm min-h-10 font-bold text-sm whitespace-nowrap ${
                   activeCategory === category.id ? 'tab-active' : ''
                 }`}
+                style={activeCategory === category.id ? {color: getContrastTextColor()} : {}}
               >
                 <span>{category.emoji}</span>
                 <span className="ml-2">{category.name}</span>
@@ -541,6 +542,7 @@ const StackPage: React.FC = () => {
         <div className="tabs tabs-boxed border-2 border-base-content/20 shadow-sm">
           <button 
             className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'add' ? 'tab-active' : ''}`}
+            style={activeSection === 'add' ? {color: getContrastTextColor()} : {}}
             onClick={() => setActiveSection('add')}
           >
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -550,6 +552,7 @@ const StackPage: React.FC = () => {
           </button>
           <button 
             className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'current' ? 'tab-active' : ''}`}
+            style={activeSection === 'current' ? {color: getContrastTextColor()} : {}}
             onClick={() => setActiveSection('current')}
           >
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

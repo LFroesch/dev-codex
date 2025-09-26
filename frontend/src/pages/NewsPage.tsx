@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { newsAPI } from '../api';
+import { getContrastTextColor } from '../utils/contrastTextColor';
 
 interface NewsPost {
   _id: string;
@@ -164,6 +165,7 @@ const NewsPage: React.FC = () => {
         <div className="tabs tabs-boxed border-2 border-base-content/20 shadow-sm opacity-90">
           <button 
             className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'all' ? 'tab-active' : ''}`}
+            style={activeSection === 'all' ? {color: getContrastTextColor()} : {}}
             onClick={() => setActiveSection('all')}
           >
             All <span className="text-xs opacity-70">({posts.length})</span>
@@ -176,6 +178,7 @@ const NewsPage: React.FC = () => {
               <button 
                 key={type}
                 className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === type ? 'tab-active' : ''}`}
+                style={activeSection === type ? {color: getContrastTextColor()} : {}}
                 onClick={() => setActiveSection(type)}
               >
                 {getTypeIcon(type)} {getTypeLabel(type)} <span className="text-xs opacity-70">({count})</span>

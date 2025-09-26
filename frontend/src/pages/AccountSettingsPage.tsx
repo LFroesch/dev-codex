@@ -6,6 +6,7 @@ import AnalyticsDashboard from '../components/AnalyticsDashboard';
 import ThemePreview from '../components/ThemePreview';
 import { toast } from '../services/toast';
 import { hexToOklch, oklchToCssValue, generateFocusVariant, generateContrastingTextColor } from '../utils/colorUtils';
+import { getContrastTextColor } from '../utils/contrastTextColor';
 
 const THEMES = [
   "dim", "light", "dark", "cupcake", "bumblebee", "emerald", "corporate",
@@ -587,7 +588,7 @@ const AccountSettingsPage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6 p-2">
+    <div className="space-y-6 p-2 rounded-lg">
       {/* Header */}
       <div className="flex items-center justify-between">
         <button
@@ -617,24 +618,28 @@ const AccountSettingsPage: React.FC = () => {
         <div className="tabs tabs-boxed border-2 border-base-content/20 shadow-sm">
           <button 
             className={`tab tab-sm min-h-10 font-bold text-sm ${activeTab === 'profile' ? 'tab-active' : ''}`}
+            style={activeTab === 'profile' ? {color: getContrastTextColor()} : {}}
             onClick={() => setActiveTab('profile')}
           >
             Profile
           </button>
           <button 
             className={`tab tab-sm min-h-10 font-bold text-sm ${activeTab === 'theme' ? 'tab-active' : ''}`}
+            style={activeTab === 'theme' ? {color: getContrastTextColor()} : {}}
             onClick={() => setActiveTab('theme')}
           >
             Theme
           </button>
           <button 
             className={`tab tab-sm min-h-10 font-bold text-sm ${activeTab === 'connections' ? 'tab-active' : ''}`}
+            style={activeTab === 'connections' ? {color: getContrastTextColor()} : {}}
             onClick={() => setActiveTab('connections')}
           >
             Connections
           </button>
           <button 
             className={`tab tab-sm min-h-10 font-bold text-sm ${activeTab === 'analytics' ? 'tab-active' : ''}`}
+            style={activeTab === 'analytics' ? {color: getContrastTextColor()} : {}}
             onClick={() => setActiveTab('analytics')}
           >
             Analytics
@@ -662,12 +667,14 @@ const AccountSettingsPage: React.FC = () => {
                   <div className="tabs tabs-boxed border-2 border-base-content/20 shadow-sm">
                     <button 
                       className={`tab tab-sm min-h-10 font-bold text-sm ${themeSubTab === 'preset' ? 'tab-active' : ''}`}
+                      style={themeSubTab === 'preset' ? {color: getContrastTextColor()} : {}}
                       onClick={() => setThemeSubTab('preset')}
                     >
                       Preset Themes
                     </button>
                     <button 
                       className={`tab tab-sm min-h-10 font-bold text-sm ${themeSubTab === 'custom' ? 'tab-active' : ''}`}
+                      style={themeSubTab === 'custom' ? {color: getContrastTextColor()} : {}}
                       onClick={() => setThemeSubTab('custom')}
                     >
                       Custom Themes ({customThemes.length})
@@ -1186,18 +1193,21 @@ const AccountSettingsPage: React.FC = () => {
                   <div className="tabs tabs-boxed border-2 border-base-content/20 shadow-sm">
                     <button 
                       className={`tab tab-sm min-h-10 font-bold text-sm ${profileSubTab === 'personal' ? 'tab-active' : ''}`}
+                      style={profileSubTab === 'personal' ? {color: getContrastTextColor()} : {}}
                       onClick={() => setProfileSubTab('personal')}
                     >
                       Personal Info
                     </button>
                     <button 
                       className={`tab tab-sm min-h-10 font-bold text-sm ${profileSubTab === 'public' ? 'tab-active' : ''}`}
+                      style={profileSubTab === 'public' ? {color: getContrastTextColor()} : {}}
                       onClick={() => setProfileSubTab('public')}
                     >
                       Public Profile
                     </button>
                     <button 
                       className={`tab tab-sm min-h-10 font-bold text-sm ${profileSubTab === 'privacy' ? 'tab-active' : ''}`}
+                      style={profileSubTab === 'privacy' ? {color: getContrastTextColor()} : {}}
                       onClick={() => setProfileSubTab('privacy')}
                     >
                       Privacy Info
@@ -1209,11 +1219,14 @@ const AccountSettingsPage: React.FC = () => {
                   <>
                     {/* Personal Information */}
                     {profileSubTab === 'personal' && (
-                    <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200">
-                      <div className="text-lg font-semibold bg-base-200 border-b border-base-content/10 p-4">
-                        👤 Personal Information
+                    <div className="section-container mb-4">
+                      <div className="section-header">
+                        <div className="flex items-center gap-3">
+                          <div className="section-icon">👤</div>
+                          <span>Personal Information</span>
+                        </div>
                       </div>
-                        <div className="p-4 space-y-4">
+                        <div className="section-content space-y-4">
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                             <div>
                               <h3 className="font-semibold text-base mb-3">Account Details</h3>
@@ -1270,11 +1283,14 @@ const AccountSettingsPage: React.FC = () => {
 
                     {/* Public Profile Settings */}
                     {profileSubTab === 'public' && (
-                    <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200">
-                      <div className="text-lg font-semibold bg-base-200 border-b border-base-content/10 p-4">
-                        🌐 Public Profile Settings
+                    <div className="section-container mb-4">
+                      <div className="section-header">
+                        <div className="flex items-center gap-3">
+                          <div className="section-icon">🌐</div>
+                          <span>Public Profile Settings</span>
+                        </div>
                       </div>
-                      <div className="p-4">
+                      <div className="section-content">
                         {/* Header with title and controls */}
                         <div className="flex items-center justify-between mb-4">
                           <div className="flex-1">
@@ -1357,9 +1373,39 @@ const AccountSettingsPage: React.FC = () => {
                                 <div className="space-y-4 border-t border-base-300 pt-4">
                                   {/* Custom Slug */}
                                   <div className="form-control">
-                                    <label className="label">
-                                      <span className="label-text font-medium">Custom URL Slug (Optional)</span>
-                                      <span className="label-text-alt">
+                                    <label className="label justify-start">
+                                      <span className="label-text font-medium">Custom URL Slug (Optional):</span>
+                                      <span className="label-text-alt ml-2 flex items-center gap-1">
+                                        <span>Your profile will be accessible at:</span>
+                                        {publicSlug ? (
+                                          <a 
+                                            href={`${window.location.origin}/user/${publicSlug}`} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer" 
+                                            className="font-bold bg-primary rounded-lg px-2 py-1 border-2 border-base-content/20 hover:scale-105 transition inline-flex items-center gap-1"
+                                            style={{ color: getContrastTextColor('primary') }}
+                                          >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                                            </svg>
+                                            /user/{publicSlug}
+                                          </a>
+                                        ) : (
+                                          <a 
+                                            href={`${window.location.origin}/user/${user?.id}`} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer" 
+                                            className="font-bold bg-primary rounded-lg px-2 py-1 border-2 border-base-content/20 hover:scale-105 transition inline-flex items-center gap-1"
+                                            style={{ color: getContrastTextColor('primary') }}
+                                          >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                                            </svg>
+                                            /user/{user?.id}
+                                          </a>
+                                        )}
+                                      </span>
+                                      <span className="label-text-alt ml-auto">
                                         <button
                                           type="button"
                                           onClick={(e) => {
@@ -1367,50 +1413,24 @@ const AccountSettingsPage: React.FC = () => {
                                             e.preventDefault();
                                             generateSlugFromName();
                                           }}
-                                          className="btn btn-primary btn-xs gap-1"
+                                          className="btn btn-ghost btn-xs bg-base-200 border-2 border-base-content/20 hover:bg-base-300"
                                         >
-                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                          </svg>
                                           Generate from name
                                         </button>
                                       </span>
                                     </label>
-                                    <div className="join">
-                                      <span className="join-item bg-base-200 px-3 py-2 text-lg text-base-content/70 h-12">
+                                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-0 border-2 border-base-content/20 rounded-lg overflow-hidden">
+                                      <span className="bg-base-200 px-3 py-2 text-sm text-base-content/70 rounded-lg flex items-center">
                                         {window.location.origin}/user/
                                       </span>
                                       <input
                                         type="text"
-                                        className="input input-bordered join-item text-lg flex-1 h-12"
+                                        className="input input-bordered flex-1 rounded-lg border-none"
                                         placeholder={user?.id}
                                         value={publicSlug}
                                         onChange={(e) => setPublicSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
                                         pattern="^[a-z0-9-]+$"
                                       />
-                                    </div>
-                                    <div className="label">
-                                      <span className="label-text-alt">
-                                        {publicSlug ? (
-                                          <>Your profile will be accessible at: <a 
-                                            href={`${window.location.origin}/user/${publicSlug}`} 
-                                            target="_blank" 
-                                            rel="noopener noreferrer" 
-                                            className="link link-primary font-bold"
-                                          >
-                                            /user/{publicSlug}
-                                          </a></>
-                                        ) : (
-                                          <>Your profile will be accessible at: <a 
-                                            href={`${window.location.origin}/user/${user?.id}`} 
-                                            target="_blank" 
-                                            rel="noopener noreferrer" 
-                                            className="link link-primary font-bold"
-                                          >
-                                            /user/{user?.id}
-                                          </a></>
-                                        )}
-                                      </span>
                                     </div>
                                   </div>
 
@@ -1418,9 +1438,36 @@ const AccountSettingsPage: React.FC = () => {
                                   <div className="form-control">
                                     <label className="label">
                                       <span className="label-text font-medium">Profile Bio</span>
-                                      <span className="label-text-alt">
+                                      <span className="label-text-alt ml-auto px-2 rounded-lg py-0.5 text-xs font-semibold bg-base-200 border-2 border-base-content/20">
                                         {bio.length}/500 characters
                                       </span>
+                                      {isEditingProfile ? (
+                                        <div className="flex gap-2 ml-2">
+                                          <button
+                                            onClick={handleSaveProfile}
+                                            className="btn btn-xs btn-primary border-2 border-base-content/20"
+                                            style={{ color: getContrastTextColor('primary') }}
+                                            disabled={savingProfile}
+                                          >
+                                            {savingProfile ? 'Saving...' : 'Save Bio'}
+                                          </button>
+                                          <button
+                                            onClick={handleCancelProfileEdit}
+                                            className="btn btn-xs bg-base-200 border-2 border-base-content/20 hover:bg-base-300"
+                                            disabled={savingProfile}
+                                          >
+                                            Cancel
+                                          </button>
+                                        </div>
+                                      ) : (
+                                        <button
+                                          onClick={() => setIsEditingProfile(true)}
+                                          className="btn btn-xs btn-primary border-2 border-base-content/20 ml-2"
+                                          style={{ color: getContrastTextColor('primary') }}
+                                        >
+                                          {bio ? 'Edit Bio' : 'Add Bio'}
+                                        </button>
+                                      )}
                                     </label>
                                     <div className="space-y-4">
                                       {isEditingProfile ? (
@@ -1432,39 +1479,15 @@ const AccountSettingsPage: React.FC = () => {
                                             placeholder="Tell others about yourself, your interests, and what you're working on..."
                                             maxLength={500}
                                           />
-                                          <div className="flex gap-2">
-                                            <button
-                                              onClick={handleSaveProfile}
-                                              className="btn btn-sm btn-primary"
-                                              disabled={savingProfile}
-                                            >
-                                              {savingProfile ? 'Saving...' : 'Save Bio'}
-                                            </button>
-                                            <button
-                                              onClick={handleCancelProfileEdit}
-                                              className="btn btn-sm btn-ghost"
-                                              disabled={savingProfile}
-                                            >
-                                              Cancel
-                                            </button>
-                                          </div>
                                         </div>
                                       ) : (
                                         <>
-                                          <div className="bg-base-100 rounded-lg p-4 border border-base-content/20">
+                                          <div className="textarea textarea-bordered">
                                             {bio ? (
                                               <p className="text-base-content whitespace-pre-wrap">{bio}</p>
                                             ) : (
                                               <p className="text-base-content/60 italic">No bio added yet. Click edit to add one.</p>
                                             )}
-                                          </div>
-                                          <div className="flex gap-2">
-                                            <button
-                                              onClick={() => setIsEditingProfile(true)}
-                                              className="btn btn-sm btn-primary"
-                                            >
-                                              {bio ? 'Edit Bio' : 'Add Bio'}
-                                            </button>
                                           </div>
                                         </>
                                       )}
@@ -1507,32 +1530,6 @@ const AccountSettingsPage: React.FC = () => {
                                   </div>
                                 </div>
                               )}
-
-                              {/* Call to action when public is disabled */}
-                              {!isPublicProfile && (
-                                <div className="text-center py-8 border-t border-base-300">
-                                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/20 flex items-center justify-center">
-                                    <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                    </svg>
-                                  </div>
-                                  <h3 className="text-xl font-bold mb-2">Create Your Public Portfolio</h3>
-                                  <p className="text-base-content/70 mb-4 max-w-md mx-auto">
-                                    Showcase your work to the world! Enable your public profile to share your projects, 
-                                    skills, and experience with the developer community.
-                                  </p>
-                                  <button 
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      e.preventDefault();
-                                      setIsPublicProfile(true);
-                                    }}
-                                    className="btn btn-primary"
-                                  >
-                                    Enable Public Profile
-                                  </button>
-                                </div>
-                              )}
                             </div>
                         </div>
                       </div>
@@ -1541,11 +1538,14 @@ const AccountSettingsPage: React.FC = () => {
 
                     {/* Privacy Information */}
                     {profileSubTab === 'privacy' && (
-                    <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200">
-                      <div className="text-lg font-semibold bg-base-200 border-b border-base-content/10 p-4">
-                        📋 Privacy Information
+                    <div className="section-container mb-4">
+                      <div className="section-header">
+                        <div className="flex items-center gap-3">
+                          <div className="section-icon">📋</div>
+                          <span>Privacy Information</span>
+                        </div>
                       </div>
-                      <div className="p-4">
+                      <div className="section-content">
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-3">
                               <h4 className="font-medium text-success">✅ Included</h4>

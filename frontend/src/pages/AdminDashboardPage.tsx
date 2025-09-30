@@ -532,23 +532,23 @@ const AdminDashboardPage: React.FC = () => {
         {/* Stats Cards */}
         {activeTab === 'users' && stats && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-4 sm:mb-8">
-            <div className="stat bg-base-100 rounded-lg shadow-lg border-subtle">
+            <div className="stat bg-base-100 rounded-lg shadow-md border-2 border-base-content/20">
               <div className="stat-title">Total Users</div>
               <div className="stat-value text-primary">{stats.totalUsers}</div>
               <div className="stat-desc">↗︎ {stats.recentSignups} new this month</div>
             </div>
             
-            <div className="stat bg-base-100 rounded-lg shadow-lg border-subtle">
+            <div className="stat bg-base-100 rounded-lg shadow-md border-2 border-base-content/20">
               <div className="stat-title">Total Projects</div>
               <div className="stat-value text-secondary">{stats.totalProjects}</div>
             </div>
             
-            <div className="stat bg-base-100 rounded-lg shadow-lg border-subtle">
+            <div className="stat bg-base-100 rounded-lg shadow-md border-2 border-base-content/20">
               <div className="stat-title">Active Subscriptions</div>
               <div className="stat-value text-accent">{stats.activeSubscriptions}</div>
             </div>
             
-            <div className="stat bg-base-100 rounded-lg shadow-lg border-subtle">
+            <div className="stat bg-base-100 rounded-lg shadow-md border-2 border-base-content/20">
               <div className="stat-title">Plan Distribution</div>
               <div className="stat-value text-sm">
                 <div>Free: {stats.planDistribution.free}</div>
@@ -562,25 +562,25 @@ const AdminDashboardPage: React.FC = () => {
         {/* Ticket Stats Cards */}
         {activeTab === 'tickets' && ticketStats && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-4 sm:mb-8">
-            <div className="stat bg-base-100 rounded-lg shadow-lg border-subtle">
+            <div className="stat bg-base-100 rounded-lg shadow-md border-2 border-base-content/20">
               <div className="stat-title">Open Tickets</div>
               <div className="stat-value text-error">{ticketStats.open}</div>
               <div className="stat-desc">Require attention</div>
             </div>
             
-            <div className="stat bg-base-100 rounded-lg shadow-lg border-subtle">
+            <div className="stat bg-base-100 rounded-lg shadow-md border-2 border-base-content/20">
               <div className="stat-title">In Progress</div>
               <div className="stat-value text-warning">{ticketStats.inProgress}</div>
               <div className="stat-desc">Being worked on</div>
             </div>
             
-            <div className="stat bg-base-100 rounded-lg shadow-lg border-subtle">
+            <div className="stat bg-base-100 rounded-lg shadow-md border-2 border-base-content/20">
               <div className="stat-title">Resolved</div>
               <div className="stat-value text-success">{ticketStats.resolved}</div>
               <div className="stat-desc">Awaiting closure</div>
             </div>
             
-            <div className="stat bg-base-100 rounded-lg shadow-lg border-subtle">
+            <div className="stat bg-base-100 rounded-lg shadow-md border-2 border-base-content/20">
               <div className="stat-title">Closed</div>
               <div className="stat-value text-neutral">{ticketStats.closed}</div>
               <div className="stat-desc">Completed tickets</div>
@@ -590,7 +590,7 @@ const AdminDashboardPage: React.FC = () => {
 
         {/* Users Table */}
         {activeTab === 'users' && (
-          <div className="card-default border-subtle rounded-lg" style={{ overflow: 'visible' }}>
+          <div className="shadow-md p-4 rounded-lg border-2 border-base-content/20 transition-all duration-200" style={{ overflow: 'visible' }}>
             <div className="card-body" style={{ overflow: 'visible' }}>
             <div className="flex-between-center mb-4">
               <h2 className="card-title">Users</h2>
@@ -739,12 +739,12 @@ const AdminDashboardPage: React.FC = () => {
 
         {/* Tickets Table */}
         {activeTab === 'tickets' && (
-          <div className="card-default border-subtle rounded-lg" style={{ overflow: 'visible' }}>
+          <div className="shadow-md p-4 rounded-lg border-2 border-base-content/20 transition-all duration-200" style={{ overflow: 'visible' }}>
             <div className="card-body p-4" style={{ overflow: 'visible' }}>
 
               {/* Ticket Status Tabs */}
               <div className="flex justify-center mb-2">
-                <div className="tabs tabs-boxed tabs-lg bg-base-200 shadow-lg border-subtle rounded-lg w-full max-w-4xl overflow-x-auto">
+                <div className="tabs tabs-boxed tabs-lg bg-base-200 shadow-md border-2 border-base-content/20 rounded-lg w-full max-w-4xl overflow-x-auto">
                 <button 
                   className={`tab tab-sm sm:tab-lg min-h-14 sm:min-h-16 font-bold text-xs sm:text-base px-2 sm:px-4 whitespace-nowrap ${ticketStatusTab === 'open' ? 'tab-active' : ''}`}
                   style={ticketStatusTab === 'open' ? {color: getContrastTextColor()} : {}}
@@ -990,7 +990,7 @@ const AdminDashboardPage: React.FC = () => {
 
               {/* Ticket Details */}
               {selectedTicket && (
-                <div className="mt-6 p-4 bg-base-200 shadow-lg border-subtle rounded-lg">
+                <div className="mt-6 p-4 bg-base-200 shadow-md border-2 border-base-content/20 rounded-lg">
                   <h3 className="font-bold text-lg mb-2">Ticket Details</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
@@ -1025,7 +1025,7 @@ const AdminDashboardPage: React.FC = () => {
 
               {/* Admin Response Form */}
               {respondingToTicket && (
-                <div className="mt-6 p-4 bg-warning/10 shadow-lg border-subtle rounded-lg">
+                <div className="mt-6 p-4 bg-warning/10 shadow-md border-2 border-base-content/20 rounded-lg">
                   <h3 className="font-bold text-lg mb-4">Respond to Ticket: {respondingToTicket}</h3>
                   <div className="form-control mb-4">
                     <label className="label">
@@ -1187,7 +1187,7 @@ const AdminDashboardPage: React.FC = () => {
             </div>
 
             {/* Compact Create News Form */}
-            <div className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200">
+            <div className="shadow-md p-4 rounded-lg border-2 border-base-content/20 hover:border-base-300/50 transition-all duration-200">
               {!showNewsForm ? (
                 <button
                   onClick={() => setShowNewsForm(true)}
@@ -1321,10 +1321,11 @@ const AdminDashboardPage: React.FC = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {newsPosts.map((post) => (
-                  <div key={post._id} className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 h-48 flex flex-col">
-                    <div className="p-4 flex flex-col flex-1">
+                  <div key={post._id} className="shadow-md p-4 rounded-lg border-2 border-base-content/20 hover:border-base-300/50 transition-all duration-200 h-48 flex flex-col">
+                    <div className="flex flex-col flex-1">
                       <div className="flex items-start justify-between mb-3">
-                        <h3 className="font-semibold text-base-content truncate px-2 py-1 rounded-md bg-base-300 inline-block w-fit">
+                        <h3 className="border-2 border-base-content/20 font-semibold truncate px-2 py-1 rounded-md group-hover:opacity-90 transition-opacity bg-primary"
+                           style={{ color: getContrastTextColor() }}>
                           {post.type === 'news' ? '📰' : post.type === 'update' ? '🔄' : post.type === 'dev_log' ? '👩‍💻' : '📢'} {post.title}
                         </h3>
                         <span className={`badge badge-xs ${post.isPublished ? 'badge-success' : 'badge-ghost'}`}>

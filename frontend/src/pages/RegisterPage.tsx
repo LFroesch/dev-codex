@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authAPI } from '../api';
 import { useLoadingState } from '../hooks/useLoadingState';
@@ -17,6 +17,12 @@ const RegisterPage: React.FC = () => {
   });
   const { loading, withLoading } = useLoadingState();
   const { error, handleError, clearError } = useErrorHandler();
+
+  useEffect(() => {
+    // Apply saved theme on register page
+    const savedTheme = localStorage.getItem('theme') || 'retro';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({

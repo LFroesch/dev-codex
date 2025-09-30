@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { apiClient } from '../api';
+import { getContrastTextColor } from '../utils/contrastTextColor';
 
 const ResetPasswordPage: React.FC = () => {
   const [password, setPassword] = useState('');
@@ -13,6 +14,10 @@ const ResetPasswordPage: React.FC = () => {
   const token = searchParams.get('token');
 
   useEffect(() => {
+    // Apply saved theme on reset password page
+    const savedTheme = localStorage.getItem('theme') || 'retro';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    
     if (!token) {
       setError('Invalid reset link. Please request a new password reset.');
     }
@@ -51,16 +56,14 @@ const ResetPasswordPage: React.FC = () => {
 
   if (!token) {
     return (
-      <div className="min-h-screen bg-base-100 flex items-center justify-center px-4">
-        <div className="max-w-md w-full">
-          <div className="card bg-base-200 shadow-xl">
-            <div className="card-body text-center">
-              <h1 className="text-2xl font-bold text-error mb-4">Invalid Reset Link</h1>
-              <p className="mb-4">This password reset link is invalid or has expired.</p>
-              <Link to="/forgot-password" className="btn btn-primary">
-                Request New Reset Link
-              </Link>
-            </div>
+      <div className="min-h-screen bg-base-200 flex items-center justify-center px-4 py-8">
+        <div className="card w-full max-w-md bg-base-100 shadow-xl">
+          <div className="card-body text-center">
+            <h2 className="card-title text-2xl font-bold text-error justify-center mb-4">Invalid Reset Link</h2>
+            <p className="mb-4">This password reset link is invalid or has expired.</p>
+            <Link to="/forgot-password" className="btn btn-primary" style={{ color: getContrastTextColor('primary') }}>
+              Request New Reset Link
+            </Link>
           </div>
         </div>
       </div>
@@ -69,20 +72,18 @@ const ResetPasswordPage: React.FC = () => {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-base-100 flex items-center justify-center px-4">
-        <div className="max-w-md w-full">
-          <div className="card bg-base-200 shadow-xl">
-            <div className="card-body text-center">
-              <div className="text-success text-6xl mb-4">✓</div>
-              <h1 className="text-2xl font-bold mb-4">Password Reset Successful!</h1>
-              <p className="mb-4">Your password has been reset successfully.</p>
-              <p className="text-sm text-base-content/70">
-                Redirecting to login page in 3 seconds...
-              </p>
-              <Link to="/login" className="btn btn-primary mt-4">
-                Go to Login
-              </Link>
-            </div>
+      <div className="min-h-screen bg-base-200 flex items-center justify-center px-4 py-8">
+        <div className="card w-full max-w-md bg-base-100 shadow-xl">
+          <div className="card-body text-center">
+            <div className="text-success text-6xl mb-4">✓</div>
+            <h2 className="card-title text-2xl font-bold justify-center mb-4">Password Reset Successful!</h2>
+            <p className="mb-4">Your password has been reset successfully.</p>
+            <p className="text-sm text-base-content/70">
+              Redirecting to login page in 3 seconds...
+            </p>
+            <Link to="/login" className="btn btn-primary mt-4" style={{ color: getContrastTextColor('primary') }}>
+              Go to Login
+            </Link>
           </div>
         </div>
       </div>
@@ -90,13 +91,12 @@ const ResetPasswordPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-base-100 flex items-center justify-center px-4">
-      <div className="max-w-md w-full">
-        <div className="card bg-base-200 shadow-xl">
-          <div className="card-body">
-            <h1 className="text-3xl font-bold text-center text-base-content mb-6">
-              Set New Password
-            </h1>
+    <div className="min-h-screen bg-base-200 flex items-center justify-center px-4 py-8">
+      <div className="card w-full max-w-md bg-base-100 shadow-xl">
+        <div className="card-body">
+          <h2 className="card-title text-3xl font-bold text-center justify-center mb-6">
+            Set New Password
+          </h2>
 
             {error && (
               <div className="alert alert-error mb-4">
@@ -107,63 +107,69 @@ const ResetPasswordPage: React.FC = () => {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text">New Password</span>
-                </label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="input input-bordered w-full"
-                  placeholder="Enter new password"
-                  required
-                  minLength={6}
-                />
-              </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="form-control">
+              <label className="label" htmlFor="password">
+                <span className="label-text">New Password</span>
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter new password"
+                className="input input-bordered"
+                required
+                minLength={6}
+              />
+            </div>
 
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text">Confirm Password</span>
-                </label>
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="input input-bordered w-full"
-                  placeholder="Confirm new password"
-                  required
-                  minLength={6}
-                />
-              </div>
+            <div className="form-control">
+              <label className="label" htmlFor="confirmPassword">
+                <span className="label-text">Confirm Password</span>
+              </label>
+              <input
+                id="confirmPassword"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Confirm new password"
+                className="input input-bordered"
+                required
+                minLength={6}
+              />
+            </div>
 
-              <button 
-                type="submit" 
-                className="btn btn-primary w-full"
+            <div className="form-control">
+              <button
+                type="submit"
                 disabled={loading}
+                className="btn btn-primary"
+                style={{ color: getContrastTextColor('primary') }}
               >
                 {loading ? (
                   <>
-                    <span className="loading loading-spinner loading-sm"></span>
+                    <span className="loading loading-spinner"></span>
                     Resetting...
                   </>
                 ) : (
                   'Reset Password'
                 )}
               </button>
-            </form>
-
-            <div className="divider">OR</div>
-
-            <div className="text-center">
-              <Link to="/login" className="link link-primary">
-                Back to Login
-              </Link>
             </div>
+          </form>
+
+          <div className="divider">OR</div>
+          
+          <div className="text-center">
+            <p className="text-sm text-base-content/70 mb-2">
+              Remember your password?
+            </p>
+            <Link to="/login" className="link link-primary">
+              Back to Login
+            </Link>
           </div>
         </div>
-      </div>
     </div>
   );
 };

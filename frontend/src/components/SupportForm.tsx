@@ -116,7 +116,7 @@ const SupportForm: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
-      <div className="card bg-base-100 shadow-xl">
+      <div className="card bg-base-100 shadow-xl border-2 border-base-content/20">
         <div className="card-body">
           <h2 className="card-title text-2xl mb-6">Contact Support</h2>
           <form onSubmit={handleSubmit} className="space-y-6">

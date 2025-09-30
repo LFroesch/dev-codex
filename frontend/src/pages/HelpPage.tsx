@@ -11,7 +11,7 @@ const HelpPage: React.FC = () => {
     { id: 'projects', title: 'Projects & Teams', icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h1a1 1 0 011 1v5m-4 0h4' },
     { id: 'todos', title: 'Tasks & Todos', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4' },
     { id: 'notifications', title: 'Notifications', icon: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9' },
-    { id: 'collaboration', title: 'Collaboration', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z' },
+    { id: 'collaboration', title: 'Collaboration', icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' },
     { id: 'tips', title: 'Tips & Shortcuts', icon: 'M13 10V3L4 14h7v7l9-11h-7z' }
   ];
 
@@ -22,9 +22,9 @@ const HelpPage: React.FC = () => {
           <div className="space-y-6">
             <h2 className="text-2xl font-bold">Quick Start</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div className="card bg-base-200 border border-base-300 hover:border-primary/50 cursor-pointer transition-all hover:shadow-md group"
+              <div className="shadow-md p-4 rounded-lg border-2 border-base-content/20 hover:border-base-300/50 transition-all duration-200 cursor-pointer group"
                    onClick={() => navigate('/create-project')}>
-                <div className="card-body p-4">
+                <div>
                   <div className="flex items-center gap-3 mb-2">
                     <div className="bg-primary/10 p-2 rounded group-hover:bg-primary/20 transition-colors">
                       <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -40,9 +40,9 @@ const HelpPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="card bg-base-200 border border-base-300 hover:border-success/50 cursor-pointer transition-all hover:shadow-md group"
+              <div className="shadow-md p-4 rounded-lg border-2 border-base-content/20 hover:border-base-300/50 transition-all duration-200 cursor-pointer group"
                    onClick={() => navigate('/notes')}>
-                <div className="card-body p-4">
+                <div>
                   <div className="flex items-center gap-3 mb-2">
                     <div className="bg-success/10 p-2 rounded group-hover:bg-success/20 transition-colors">
                       <svg className="w-5 h-5 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -58,9 +58,9 @@ const HelpPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="card bg-base-200 border border-base-300 hover:border-info/50 cursor-pointer transition-all hover:shadow-md group"
+              <div className="shadow-md p-4 rounded-lg border-2 border-base-content/20 hover:border-base-300/50 transition-all duration-200 cursor-pointer group"
                    onClick={() => navigate('/stack')}>
-                <div className="card-body p-4">
+                <div>
                   <div className="flex items-center gap-3 mb-2">
                     <div className="bg-info/10 p-2 rounded group-hover:bg-info/20 transition-colors">
                       <svg className="w-5 h-5 text-info" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -76,9 +76,9 @@ const HelpPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="card bg-base-200 border border-base-300 hover:border-warning/50 cursor-pointer transition-all hover:shadow-md group"
+              <div className="shadow-md p-4 rounded-lg border-2 border-base-content/20 hover:border-base-300/50 transition-all duration-200 cursor-pointer group"
                    onClick={() => navigate('/docs')}>
-                <div className="card-body p-4">
+                <div>
                   <div className="flex items-center gap-3 mb-2">
                     <div className="bg-warning/10 p-2 rounded group-hover:bg-warning/20 transition-colors">
                       <svg className="w-5 h-5 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -94,9 +94,9 @@ const HelpPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="card bg-base-200 border border-base-300 hover:border-error/50 cursor-pointer transition-all hover:shadow-md group"
+              <div className="shadow-md p-4 rounded-lg border-2 border-base-content/20 hover:border-base-300/50 transition-all duration-200 cursor-pointer group"
                    onClick={() => navigate('/deployment')}>
-                <div className="card-body p-4">
+                <div>
                   <div className="flex items-center gap-3 mb-2">
                     <div className="bg-error/10 p-2 rounded group-hover:bg-error/20 transition-colors">
                       <svg className="w-5 h-5 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -112,9 +112,9 @@ const HelpPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="card bg-base-200 border border-base-300 hover:border-secondary/50 cursor-pointer transition-all hover:shadow-md group"
+              <div className="shadow-md p-4 rounded-lg border-2 border-base-content/20 hover:border-base-300/50 transition-all duration-200 cursor-pointer group"
                    onClick={() => navigate('/discover')}>
-                <div className="card-body p-4">
+                <div>
                   <div className="flex items-center gap-3 mb-2">
                     <div className="bg-secondary/10 p-2 rounded group-hover:bg-secondary/20 transition-colors">
                       <svg className="w-5 h-5 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -138,9 +138,9 @@ const HelpPage: React.FC = () => {
           <div className="space-y-6">
             <h2 className="text-2xl font-bold">Projects & Teams</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="card bg-base-200 border border-base-300 hover:border-primary/50 cursor-pointer transition-all hover:shadow-md group"
+              <div className="shadow-md p-4 rounded-lg border-2 border-base-content/20 hover:border-base-300/50 transition-all duration-200 cursor-pointer group"
                    onClick={() => navigate('/create-project')}>
-                <div className="card-body p-4">
+                <div>
                   <div className="flex items-center gap-3 mb-3">
                     <div className="bg-primary/10 p-2 rounded group-hover:bg-primary/20 transition-colors">
                       <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -156,14 +156,14 @@ const HelpPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="card bg-base-200 border border-base-300 hover:border-secondary/50 cursor-pointer transition-all hover:shadow-md group"
+              <div className="shadow-md p-4 rounded-lg border-2 border-base-content/20 hover:border-base-300/50 transition-all duration-200 cursor-pointer group"
                    onClick={() => navigate('/')}>
-                <div className="card-body p-4">
+                <div>
                   <div className="flex items-center gap-3 mb-3">
                     <div className="bg-secondary/10 p-2 rounded group-hover:bg-secondary/20 transition-colors">
                       <svg className="w-5 h-5 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-                      </svg>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
                     </div>
                     <h3 className="font-semibold">Team Management</h3>
                     <svg className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -174,9 +174,9 @@ const HelpPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="card bg-base-200 border border-base-300 hover:border-info/50 cursor-pointer transition-all hover:shadow-md group"
+              <div className="shadow-md p-4 rounded-lg border-2 border-base-content/20 hover:border-base-300/50 transition-all duration-200 cursor-pointer group"
                    onClick={() => navigate('/settings')}>
-                <div className="card-body p-4">
+                <div>
                   <div className="flex items-center gap-3 mb-3">
                     <div className="bg-info/10 p-2 rounded group-hover:bg-info/20 transition-colors">
                       <svg className="w-5 h-5 text-info" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -193,9 +193,9 @@ const HelpPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="card bg-base-200 border border-base-300 hover:border-success/50 cursor-pointer transition-all hover:shadow-md group"
+              <div className="shadow-md p-4 rounded-lg border-2 border-base-content/20 hover:border-base-300/50 transition-all duration-200 cursor-pointer group"
                    onClick={() => navigate('/discover')}>
-                <div className="card-body p-4">
+                <div>
                   <div className="flex items-center gap-3 mb-3">
                     <div className="bg-success/10 p-2 rounded group-hover:bg-success/20 transition-colors">
                       <svg className="w-5 h-5 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -219,9 +219,9 @@ const HelpPage: React.FC = () => {
           <div className="space-y-6">
             <h2 className="text-2xl font-bold">Tasks & Todos</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="card bg-base-200 border border-base-300 hover:border-primary/50 cursor-pointer transition-all hover:shadow-md group"
+              <div className="shadow-md p-4 rounded-lg border-2 border-base-content/20 hover:border-base-300/50 transition-all duration-200 cursor-pointer group"
                    onClick={() => navigate('/notes')}>
-                <div className="card-body p-4">
+                <div>
                   <div className="flex items-center gap-3 mb-3">
                     <div className="bg-primary/10 p-2 rounded group-hover:bg-primary/20 transition-colors">
                       <kbd className="kbd kbd-sm text-primary">☐</kbd>
@@ -235,9 +235,9 @@ const HelpPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="card bg-base-200 border border-base-300 hover:border-success/50 cursor-pointer transition-all hover:shadow-md group"
+              <div className="shadow-md p-4 rounded-lg border-2 border-base-content/20 hover:border-base-300/50 transition-all duration-200 cursor-pointer group"
                    onClick={() => navigate('/notes')}>
-                <div className="card-body p-4">
+                <div>
                   <div className="flex items-center gap-3 mb-3">
                     <div className="bg-success/10 p-2 rounded group-hover:bg-success/20 transition-colors">
                       <svg className="w-5 h-5 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -253,13 +253,13 @@ const HelpPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="card bg-base-200 border border-base-300 hover:border-info/50 cursor-pointer transition-all hover:shadow-md group"
+              <div className="shadow-md p-4 rounded-lg border-2 border-base-content/20 hover:border-base-300/50 transition-all duration-200 cursor-pointer group"
                    onClick={() => navigate('/')}>
-                <div className="card-body p-4">
+                <div>
                   <div className="flex items-center gap-3 mb-3">
                     <div className="bg-info/10 p-2 rounded group-hover:bg-info/20 transition-colors">
                       <svg className="w-5 h-5 text-info" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
                     </div>
                     <h3 className="font-semibold">Assignment</h3>
@@ -271,9 +271,9 @@ const HelpPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="card bg-base-200 border border-base-300 hover:border-warning/50 cursor-pointer transition-all hover:shadow-md group"
+              <div className="shadow-md p-4 rounded-lg border-2 border-base-content/20 hover:border-base-300/50 transition-all duration-200 cursor-pointer group"
                    onClick={() => navigate('/')}>
-                <div className="card-body p-4">
+                <div>
                   <div className="flex items-center gap-3 mb-3">
                     <div className="bg-warning/10 p-2 rounded group-hover:bg-warning/20 transition-colors">
                       <svg className="w-5 h-5 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -297,9 +297,9 @@ const HelpPage: React.FC = () => {
           <div className="space-y-6">
             <h2 className="text-2xl font-bold">Notifications</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="card bg-base-200 border border-base-300 hover:border-warning/50 cursor-pointer transition-all hover:shadow-md group"
+              <div className="shadow-md p-4 rounded-lg border-2 border-base-content/20 hover:border-base-300/50 transition-all duration-200 cursor-pointer group"
                    onClick={() => navigate('/')}>
-                <div className="card-body p-4">
+                <div>
                   <div className="flex items-center gap-3 mb-3">
                     <div className="bg-warning/10 p-2 rounded group-hover:bg-warning/20 transition-colors">
                       <svg className="w-5 h-5 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -315,9 +315,9 @@ const HelpPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="card bg-base-200 border border-base-300 hover:border-error/50 cursor-pointer transition-all hover:shadow-md group"
+              <div className="shadow-md p-4 rounded-lg border-2 border-base-content/20 hover:border-base-300/50 transition-all duration-200 cursor-pointer group"
                    onClick={() => navigate('/account-settings')}>
-                <div className="card-body p-4">
+                <div>
                   <div className="flex items-center gap-3 mb-3">
                     <div className="bg-error/10 p-2 rounded group-hover:bg-error/20 transition-colors">
                       <svg className="w-5 h-5 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -342,13 +342,13 @@ const HelpPage: React.FC = () => {
           <div className="space-y-6">
             <h2 className="text-2xl font-bold">Collaboration</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="card bg-base-200 border border-base-300 hover:border-secondary/50 cursor-pointer transition-all hover:shadow-md group"
+              <div className="shadow-md p-4 rounded-lg border-2 border-base-content/20 hover:border-base-300/50 transition-all duration-200 cursor-pointer group"
                    onClick={() => navigate('/notes')}>
-                <div className="card-body p-4">
+                <div>
                   <div className="flex items-center gap-3 mb-3">
                     <div className="bg-secondary/10 p-2 rounded group-hover:bg-secondary/20 transition-colors">
                       <svg className="w-5 h-5 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
                     </div>
                     <h3 className="font-semibold">Real-time Editing</h3>
@@ -360,9 +360,9 @@ const HelpPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="card bg-base-200 border border-base-300 hover:border-info/50 cursor-pointer transition-all hover:shadow-md group"
+              <div className="shadow-md p-4 rounded-lg border-2 border-base-content/20 hover:border-base-300/50 transition-all duration-200 cursor-pointer group"
                    onClick={() => navigate('/discover')}>
-                <div className="card-body p-4">
+                <div>
                   <div className="flex items-center gap-3 mb-3">
                     <div className="bg-info/10 p-2 rounded group-hover:bg-info/20 transition-colors">
                       <svg className="w-5 h-5 text-info" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -386,11 +386,11 @@ const HelpPage: React.FC = () => {
           <div className="space-y-6">
             <h2 className="text-2xl font-bold">Tips & Shortcuts</h2>
             <div className="space-y-4">
-              <div className="card bg-base-200 border border-base-300">
-                <div className="card-body">
+              <div className="shadow-md rounded-lg border-2 border-base-content/20 bg-base-100">
+                <div className="p-6">
                   <h3 className="text-lg font-semibold mb-3">Editor Shortcuts</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="flex items-center gap-3 p-2 bg-base-100 rounded border hover:border-primary/50 cursor-pointer transition-all hover:shadow-sm group"
+                    <div className="flex items-center gap-3 p-2 bg-base-100 rounded border-2 border-base-content/20 hover:border-base-300/50 cursor-pointer transition-all hover:shadow-sm group"
                          onClick={() => navigate('/notes')}>
                       <kbd className="kbd kbd-sm group-hover:bg-primary group-hover:text-primary-content transition-colors">**B**</kbd>
                       <span className="text-sm"><strong>Bold</strong> text formatting</span>
@@ -400,7 +400,7 @@ const HelpPage: React.FC = () => {
                         </svg>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 p-2 bg-base-100 rounded border hover:border-primary/50 cursor-pointer transition-all hover:shadow-sm group"
+                    <div className="flex items-center gap-3 p-2 bg-base-100 rounded border-2 border-base-content/20 hover:border-base-300/50 cursor-pointer transition-all hover:shadow-sm group"
                          onClick={() => navigate('/notes')}>
                       <kbd className="kbd kbd-sm group-hover:bg-primary group-hover:text-primary-content transition-colors">*I*</kbd>
                       <span className="text-sm"><em>Italic</em> text formatting</span>
@@ -410,7 +410,7 @@ const HelpPage: React.FC = () => {
                         </svg>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 p-2 bg-base-100 rounded border hover:border-primary/50 cursor-pointer transition-all hover:shadow-sm group"
+                    <div className="flex items-center gap-3 p-2 bg-base-100 rounded border-2 border-base-content/20 hover:border-base-300/50 cursor-pointer transition-all hover:shadow-sm group"
                          onClick={() => navigate('/notes')}>
                       <kbd className="kbd kbd-sm group-hover:bg-primary group-hover:text-primary-content transition-colors">`code`</kbd>
                       <span className="text-sm font-mono">Inline code</span>
@@ -420,7 +420,7 @@ const HelpPage: React.FC = () => {
                         </svg>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 p-2 bg-base-100 rounded border hover:border-primary/50 cursor-pointer transition-all hover:shadow-sm group"
+                    <div className="flex items-center gap-3 p-2 bg-base-100 rounded border-2 border-base-content/20 hover:border-base-300/50 cursor-pointer transition-all hover:shadow-sm group"
                          onClick={() => navigate('/notes')}>
                       <kbd className="kbd kbd-sm group-hover:bg-primary group-hover:text-primary-content transition-colors">☐</kbd>
                       <span className="text-sm">Add checkboxes</span>
@@ -430,7 +430,7 @@ const HelpPage: React.FC = () => {
                         </svg>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 p-2 bg-base-100 rounded border hover:border-primary/50 cursor-pointer transition-all hover:shadow-sm group"
+                    <div className="flex items-center gap-3 p-2 bg-base-100 rounded border-2 border-base-content/20 hover:border-base-300/50 cursor-pointer transition-all hover:shadow-sm group"
                          onClick={() => navigate('/notes')}>
                       <kbd className="kbd kbd-sm group-hover:bg-primary group-hover:text-primary-content transition-colors">- [ ]</kbd>
                       <span className="text-sm">Checkbox syntax</span>
@@ -440,7 +440,7 @@ const HelpPage: React.FC = () => {
                         </svg>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 p-2 bg-base-100 rounded border hover:border-primary/50 cursor-pointer transition-all hover:shadow-sm group"
+                    <div className="flex items-center gap-3 p-2 bg-base-100 rounded border-2 border-base-content/20 hover:border-base-300/50 cursor-pointer transition-all hover:shadow-sm group"
                          onClick={() => navigate('/notes')}>
                       <kbd className="kbd kbd-sm group-hover:bg-primary group-hover:text-primary-content transition-colors">Ctrl+S</kbd>
                       <span className="text-sm">Manual save</span>
@@ -454,11 +454,11 @@ const HelpPage: React.FC = () => {
                 </div>
               </div>
               
-              <div className="card bg-base-200 border border-base-300">
-                <div className="card-body">
+              <div className="shadow-md rounded-lg border-2 border-base-content/20 bg-base-100">
+                <div className="p-6">
                   <h3 className="text-lg font-semibold mb-3">Productivity Tips</h3>
                   <div className="grid grid-cols-1 gap-2">
-                    <div className="flex items-center gap-3 p-2 bg-base-100 rounded border hover:border-primary/50 transition-all cursor-pointer hover:shadow-sm group"
+                    <div className="flex items-center gap-3 p-2 bg-base-100 rounded border-2 border-base-content/20 hover:border-base-300/50 transition-all cursor-pointer hover:shadow-sm group"
                          onClick={() => navigate('/notes')}>
                       <span className="text-lg">⏰</span>
                       <span className="text-sm flex-1"><strong>Set Reminders:</strong> Use reminder dates for important tasks</span>
@@ -468,7 +468,7 @@ const HelpPage: React.FC = () => {
                         </svg>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 p-2 bg-base-100 rounded border hover:border-primary/50 transition-all cursor-pointer hover:shadow-sm group"
+                    <div className="flex items-center gap-3 p-2 bg-base-100 rounded border-2 border-base-content/20 hover:border-base-300/50 transition-all cursor-pointer hover:shadow-sm group"
                          onClick={() => navigate('/notes')}>
                       <span className="text-lg">☐</span>
                       <span className="text-sm flex-1"><strong>Use Checkboxes:</strong> Track task completion with the new checkbox feature</span>
@@ -478,7 +478,7 @@ const HelpPage: React.FC = () => {
                         </svg>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 p-2 bg-base-100 rounded border hover:border-primary/50 transition-all cursor-pointer hover:shadow-sm group"
+                    <div className="flex items-center gap-3 p-2 bg-base-100 rounded border-2 border-base-content/20 hover:border-base-300/50 transition-all cursor-pointer hover:shadow-sm group"
                          onClick={() => navigate('/')}>
                       <span className="text-lg">📊</span>
                       <span className="text-sm flex-1"><strong>Regular Reviews:</strong> Check your notification bell daily</span>
@@ -488,7 +488,7 @@ const HelpPage: React.FC = () => {
                         </svg>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 p-2 bg-base-100 rounded border hover:border-primary/50 transition-all cursor-pointer hover:shadow-sm group"
+                    <div className="flex items-center gap-3 p-2 bg-base-100 rounded border-2 border-base-content/20 hover:border-base-300/50 transition-all cursor-pointer hover:shadow-sm group"
                          onClick={() => navigate('/notes')}>
                       <span className="text-lg">👥</span>
                       <span className="text-sm flex-1"><strong>Team Communication:</strong> Use project notes for team updates</span>
@@ -498,7 +498,7 @@ const HelpPage: React.FC = () => {
                         </svg>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 p-2 bg-base-100 rounded border hover:border-primary/50 transition-all cursor-pointer hover:shadow-sm group"
+                    <div className="flex items-center gap-3 p-2 bg-base-100 rounded border-2 border-base-content/20 hover:border-base-300/50 transition-all cursor-pointer hover:shadow-sm group"
                          onClick={() => navigate('/account-settings')}>
                       <span className="text-lg">🎨</span>
                       <span className="text-sm flex-1"><strong>Theme Customization:</strong> Choose themes that work best for you</span>
@@ -521,7 +521,7 @@ const HelpPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-base-100 to-base-200">
+    <div className="min-h-screen bg-base-100">
       <div className="max-w-7xl mx-auto px-2 sm:px-4 py-4 sm:py-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-center justify-between mb-4 sm:mb-8 gap-4">
@@ -551,7 +551,7 @@ const HelpPage: React.FC = () => {
         <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
           {/* Sidebar Navigation */}
           <div className="w-full lg:w-64 flex-shrink-0">
-            <div className="card bg-base-100 border border-base-300 lg:sticky lg:top-4">
+            <div className="card bg-base-100 border-2 border-base-content/20 lg:sticky lg:top-4">
               <div className="card-body p-4">
                 <h3 className="font-semibold mb-4">Topics</h3>
                 <ul className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-1 gap-2 lg:space-y-2">
@@ -561,9 +561,10 @@ const HelpPage: React.FC = () => {
                         onClick={() => setActiveSection(section.id)}
                         className={`w-full text-left p-2 rounded flex items-center gap-2 text-sm transition-colors ${
                           activeSection === section.id 
-                            ? 'bg-primary text-primary-content' 
+                            ? 'bg-primary' 
                             : 'hover:bg-base-200'
                         }`}
+                        style={activeSection === section.id ? { color: getContrastTextColor('primary') } : {}}
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={section.icon} />
@@ -579,8 +580,8 @@ const HelpPage: React.FC = () => {
 
           {/* Main Content */}
           <div className="flex-1">
-            <div className="card bg-base-100 border border-base-300">
-              <div className="card-body p-4 sm:p-8">
+            <div className="shadow-md rounded-lg border-2 border-base-content/20 bg-base-100">
+              <div className="p-4 sm:p-8">
                 {renderContent()}
               </div>
             </div>
@@ -655,7 +656,7 @@ const HelpPage: React.FC = () => {
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9.5a2.5 2.5 0 00-2.5-2.5H15" />
                   </svg>
-                  📰 What's New?
+                  What's New?
                 </button>
               </li>
               <li>

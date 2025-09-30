@@ -1461,7 +1461,7 @@ const Layout: React.FC = () => {
                   onClick={() => setActiveAdminTab('users')}
                 >
                   <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
                   <span className="hidden sm:inline">Users</span>
                   <span className="sm:hidden">Users</span>
@@ -1516,8 +1516,8 @@ const Layout: React.FC = () => {
               </div>
             </div>
           </>
-        ) : location.pathname === '/billing' || location.pathname === '/account-settings' ? (
-          /* Billing and Account Settings - No sub-menu */
+        ) : location.pathname === '/billing' || location.pathname === '/account-settings' || location.pathname === '/support' || location.pathname === '/help' || location.pathname === '/news' ? (
+          /* Billing, Account Settings, Support, Help, and News - No sub-menu */
           <div className="flex-1 overflow-auto border-2 border-base-content/20 bg-gradient-to-br from-base-50 to-base-100/50 mx-4 my-4 rounded-2xl shadow-2xl backdrop-blur-none container-height-fix">
             <div className="p-1">
               <Outlet />

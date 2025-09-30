@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { getContrastTextColor } from '../utils/contrastTextColor';
 
 const BillingSuccessPage: React.FC = () => {
   const navigate = useNavigate();
@@ -8,6 +9,10 @@ const BillingSuccessPage: React.FC = () => {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    // Apply saved theme on billing success page
+    const savedTheme = localStorage.getItem('theme') || 'retro';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    
     const sessionId = searchParams.get('session_id');
     
     if (!sessionId) {
@@ -65,6 +70,7 @@ const BillingSuccessPage: React.FC = () => {
               <button
                 onClick={() => navigate('/billing')}
                 className="btn btn-primary"
+                style={{ color: getContrastTextColor('primary') }}
               >
                 Back to Billing
               </button>
@@ -86,6 +92,7 @@ const BillingSuccessPage: React.FC = () => {
                 <button
                   onClick={() => navigate('/')}
                   className="btn btn-primary"
+                  style={{ color: getContrastTextColor('primary') }}
                 >
                   Go to Projects
                 </button>

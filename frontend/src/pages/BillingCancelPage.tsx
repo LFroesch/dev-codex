@@ -1,8 +1,15 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getContrastTextColor } from '../utils/contrastTextColor';
 
 const BillingCancelPage: React.FC = () => {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Apply saved theme on billing cancel page
+    const savedTheme = localStorage.getItem('theme') || 'retro';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  }, []);
 
   return (
     <div className="min-h-screen bg-base-200 flex items-center justify-center px-4 py-8">
@@ -23,6 +30,7 @@ const BillingCancelPage: React.FC = () => {
             <button
               onClick={() => navigate('/billing')}
               className="btn btn-primary"
+              style={{ color: getContrastTextColor('primary') }}
             >
               Back to Billing
             </button>

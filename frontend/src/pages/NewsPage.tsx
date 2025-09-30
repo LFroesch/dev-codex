@@ -113,11 +113,31 @@ const NewsPage: React.FC = () => {
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'news': return '📰';
-      case 'update': return '🔄';
-      case 'dev_log': return '👩‍💻';
-      case 'announcement': return '📢';
-      default: return '📝';
+      case 'news': return (
+        <svg className="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9.5a2.5 2.5 0 00-2.5-2.5H15" />
+        </svg>
+      );
+      case 'update': return (
+        <svg className="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+      );
+      case 'dev_log': return (
+        <svg className="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+        </svg>
+      );
+      case 'announcement': return (
+        <svg className="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+        </svg>
+      );
+      default: return (
+        <svg className="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+      );
     }
   };
 
@@ -204,12 +224,13 @@ const NewsPage: React.FC = () => {
           {filteredPosts.map((post) => (
             <div 
               key={post._id}
-              className="bg-base-100 rounded-lg border-subtle shadow-md hover:shadow-lg hover:border-primary/30 transition-all duration-200 cursor-pointer group h-48 flex flex-col"
+              className="shadow-md p-4 rounded-lg border-2 border-base-content/20 hover:border-base-300/50 transition-all duration-200 cursor-pointer group h-48 flex flex-col"
               onClick={() => handlePostClick(post)}
             >
-              <div className="p-4 flex flex-col flex-1">
+              <div className="flex flex-col flex-1">
                 <div className="flex items-start justify-between mb-3">
-                  <h3 className="font-semibold text-base-content group-hover:text-primary transition-colors duration-200 truncate px-2 py-1 rounded-md bg-base-300 inline-block w-fit">
+                  <h3 className="border-2 border-base-content/20 font-semibold truncate px-2 py-1 rounded-md group-hover:opacity-90 transition-opacity bg-primary"
+                     style={{ color: getContrastTextColor() }}>
                     {getTypeIcon(post.type)} {post.title}
                   </h3>
                   <div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -220,9 +241,11 @@ const NewsPage: React.FC = () => {
                 </div>
                 
                 {post.summary && (
-                  <p className="text-sm text-base-content/60 mb-2 line-clamp-1">
-                    {post.summary}
-                  </p>
+                  <div className="inline-flex items-start px-2 py-0.5 rounded-md text-xs font-medium text-base-content/80 border-2 border-base-content/20 h-fit w-full bg-base-200 mb-2">
+                    <p className="text-sm text-base-content/70 line-clamp-1">
+                      {post.summary}
+                    </p>
+                  </div>
                 )}
                 
                 <div 
@@ -230,9 +253,14 @@ const NewsPage: React.FC = () => {
                   dangerouslySetInnerHTML={{ __html: renderMarkdown(post.content.substring(0, 200) + '...', true) }}
                 />
                 
-                <div className="flex items-center justify-between text-xs text-base-content/50 pt-3 mt-auto">
-                  <span>{getTypeLabel(post.type)}</span>
-                  <span>{new Date(post.publishedAt!).toLocaleDateString()}</span>
+                <div className="flex items-center justify-between text-xs pt-3 border-t-2 border-base-content/20 mt-auto">
+                  <div className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-success/80 text-base-content/80 border-2 border-base-content/20"
+                       style={{ color: getContrastTextColor("success") }}>
+                    {getTypeLabel(post.type)}
+                  </div>
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-base-200 text-base-content/80 border-2 border-base-content/20 font-mono">
+                    {new Date(post.publishedAt!).toLocaleDateString()}
+                  </span>
                 </div>
               </div>
             </div>
@@ -246,7 +274,11 @@ const NewsPage: React.FC = () => {
           <div className={`bg-base-100 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col transition-transform duration-300 ${isModalOpen ? 'scale-100' : 'scale-95'}`}>
             <div className="flex justify-between items-center p-6 border-b border-base-300">
               <div className="flex items-center gap-3">
-                <span className="text-lg">{getTypeIcon(selectedPost.type)}</span>
+                <div className="text-lg">
+                  {React.cloneElement(getTypeIcon(selectedPost.type) as React.ReactElement, { 
+                    className: "w-5 h-5 inline" 
+                  })}
+                </div>
                 <div>
                   <h2 className="text-xl font-bold">{selectedPost.title}</h2>
                   <p className="text-sm text-base-content/60">

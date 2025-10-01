@@ -1216,7 +1216,7 @@ const Layout: React.FC = () => {
         </div>
       </header>
 
-      <div className="flex-1 w-full max-w-7xl mx-auto p-2 sm:p-4 bg-base-100 flex flex-col mb-4 min-h-0">
+      <div className="flex-1 w-full max-w-7xl mx-auto p-2 bg-base-100 flex flex-col mb-4 min-h-0">
         {/* Render content based on current route */}
         {searchParams.get('view') === 'projects' ? (
           /* My Projects Tab - Modern Style */
@@ -1224,7 +1224,7 @@ const Layout: React.FC = () => {
 
             {/* Tab Content */}
             <div className="flex-1 overflow-auto border-2 border-base-content/20 bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-none container-height-fix">
-              <div className="p-4 sm:p-4">
+              <div className="p-4">
                 <div className="space-y-4">
                 {(activeProjectTab === 'active' || activeProjectTab === 'archived' || activeProjectTab === 'shared') && (
                   <div className="space-y-4">
@@ -1437,7 +1437,7 @@ const Layout: React.FC = () => {
           <>
             
             <div className="flex-1 overflow-auto border-2 border-base-content/20 bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-none container-height-fix">
-              <div className="p-2 sm:p-4 lg:p-4">
+              <div className="p-2">
                 <Outlet />
               </div>
             </div>
@@ -1453,7 +1453,7 @@ const Layout: React.FC = () => {
           /* Admin Dashboard - With submenu tabs */
           <>
             {/* Admin Dashboard Tab Navigation */}
-            <div className="flex justify-center px-2 sm:px-4 py-4 sm:py-6">
+            <div className="flex justify-center px-2 py-4">
               <div className="tabs tabs-boxed tabs-lg border-2 border-base-content/20 shadow-sm bg-base-200 w-full max-w-4xl overflow-x-auto">
                 <button 
                   className={`tab tab-sm sm:tab-lg min-h-14 sm:min-h-16 font-bold text-xs sm:text-base px-3 sm:px-4 whitespace-nowrap ${activeAdminTab === 'users' ? 'tab-active' : ''}`}
@@ -1529,7 +1529,7 @@ const Layout: React.FC = () => {
             {/* Page Content */}
             <div className={`flex-1 overflow-auto border-2 border-base-content/20 bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-none container-height-fix ${location.pathname === '/support' ? 'mt-4' : ''}`}>
               {selectedProject ? (
-                <div className="p-2 sm:p-4 lg:p-4">
+                <div className="p-4">
                   <Outlet context={{ 
                     selectedProject, 
                     user,

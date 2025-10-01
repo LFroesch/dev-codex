@@ -584,6 +584,7 @@ const StackPage: React.FC = () => {
                 const category = stackCategories.find(c => c.id === categoryId) || {
                   id: categoryId,
                   name: categoryId.charAt(0).toUpperCase() + categoryId.slice(1),
+                  shortName: categoryId.charAt(0).toUpperCase() + categoryId.slice(1),
                   emoji: '🔧',
                   color: '#6B7280',
                   description: '',
@@ -602,23 +603,24 @@ const StackPage: React.FC = () => {
                     >
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <h3 
-                              className="font-semibold px-2 py-1 rounded-md bg-primary inline-block"
+                          <div className="flex flex-col md:flex-row md:items-center gap-2 mb-2">
+                            <h3
+                              className="font-semibold px-2 py-1 rounded-md bg-primary inline-block w-fit"
                               style={{ color: getContrastTextColor() }}
                             >
                               {tech.name}
                             </h3>
-                            <VersionBadge 
-                              type="tech" 
-                              category={tech.category} 
-                              name={tech.name} 
-                              version={tech.version} 
-                            />
-                          </div>
-                          <div className="bg-base-200 inline-flex items-center gap-1 px-2 py-1 rounded-md border-2 border-base-content/20">
-                            <span className="text-sm">{category.emoji}</span>
-                            <p className="text-xs text-base-content/60">{category.name}</p>
+                            <div className="flex items-center gap-2">
+                              <VersionBadge
+                                type="tech"
+                                category={tech.category}
+                                name={tech.name}
+                                version={tech.version}
+                              />
+                              <div className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-base-200/50 border-2 border-base-content/10">
+                                <p className="text-xs text-base-content/70">{category.shortName}</p>
+                              </div>
+                            </div>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -659,6 +661,7 @@ const StackPage: React.FC = () => {
                 const category = stackCategories.find(c => c.id === categoryId) || {
                   id: categoryId,
                   name: categoryId.charAt(0).toUpperCase() + categoryId.slice(1),
+                  shortName: categoryId.charAt(0).toUpperCase() + categoryId.slice(1),
                   emoji: '📦',
                   color: '#6B7280',
                   description: '',
@@ -677,20 +680,22 @@ const StackPage: React.FC = () => {
                     >
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <h3 className="font-semibold text-base-content group-hover:text-primary transition-colors duration-200 px-2 py-1 rounded-md bg-base-300 inline-block">
+                          <div className="flex flex-col md:flex-row md:items-center gap-2 mb-2">
+                            <h3 className="font-semibold text-base-content group-hover:text-primary transition-colors duration-200 px-2 py-1 rounded-md bg-base-300 inline-block w-fit">
                               {pkg.name}
                             </h3>
-                            <VersionBadge 
-                              type="package" 
-                              category={pkg.category} 
-                              name={pkg.name} 
-                              version={pkg.version} 
-                            />
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <span className="text-sm">{category.emoji}</span>
-                            <p className="text-xs text-base-content/60">{category.name}</p>
+                            <div className="flex items-center gap-2">
+                              <VersionBadge
+                                type="package"
+                                category={pkg.category}
+                                name={pkg.name}
+                                version={pkg.version}
+                              />
+                              <div className="flex items-center gap-1">
+                                <span className="text-sm bg-base-300 px-1.5 py-0.5 rounded">{category.emoji}</span>
+                                <p className="text-xs text-base-content/60">{category.shortName}</p>
+                              </div>
+                            </div>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">

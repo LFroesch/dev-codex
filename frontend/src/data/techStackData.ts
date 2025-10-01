@@ -12,6 +12,7 @@ export interface TechOption {
 export interface TechCategory {
   id: string;
   name: string;
+  shortName: string;
   emoji: string;
   color: string;
   description: string;
@@ -22,6 +23,7 @@ export const STACK_CATEGORIES: TechCategory[] = [
   {
     id: 'frontend-framework',
     name: 'Frontend Framework',
+    shortName: 'Frontend',
     emoji: '⚛️',
     color: '#61DAFB',
     description: 'Core framework for building your user interface',
@@ -63,6 +65,7 @@ export const STACK_CATEGORIES: TechCategory[] = [
   {
     id: 'meta-framework',
     name: 'Meta Framework',
+    shortName: 'Meta',
     emoji: '🚀',
     color: '#000000',
     description: 'Full-stack frameworks that handle routing, SSR, and more',
@@ -144,6 +147,7 @@ export const STACK_CATEGORIES: TechCategory[] = [
   {
     id: 'ui-library',
     name: 'UI Component Library',
+    shortName: 'UI Library',
     emoji: '🧩',
     color: '#EC4899',
     description: 'Pre-built components to speed up UI development',
@@ -225,6 +229,7 @@ export const STACK_CATEGORIES: TechCategory[] = [
   {
     id: 'styling',
     name: 'Styling Solution',
+    shortName: 'Styling',
     emoji: '🎨',
     color: '#EF4444',
     description: 'How you write and organize your CSS',
@@ -314,6 +319,7 @@ export const STACK_CATEGORIES: TechCategory[] = [
   {
     id: 'backend-language',
     name: 'Backend Language',
+    shortName: 'Language',
     emoji: '🖥️',
     color: '#4B5563',
     description: 'Programming language and runtime for your server',
@@ -379,6 +385,7 @@ export const STACK_CATEGORIES: TechCategory[] = [
   {
     id: 'backend-framework',
     name: 'Backend Framework',
+    shortName: 'Backend',
     emoji: '⚙️',
     color: '#8B5CF6',
     description: 'Framework to build your API and server logic',
@@ -484,6 +491,7 @@ export const STACK_CATEGORIES: TechCategory[] = [
   {
     id: 'database',
     name: 'Database',
+    shortName: 'Database',
     emoji: '🗄️',
     color: '#3B82F6',
     description: 'Where you store and manage your data',
@@ -581,6 +589,7 @@ export const STACK_CATEGORIES: TechCategory[] = [
   {
     id: 'database-orm',
     name: 'Database ORM/Client',
+    shortName: 'ORM',
     emoji: '🔗',
     color: '#F59E0B',
     description: 'Tool to interact with your database from code',
@@ -654,6 +663,7 @@ export const STACK_CATEGORIES: TechCategory[] = [
   {
     id: 'mobile-framework',
     name: 'Mobile Framework',
+    shortName: 'Mobile',
     emoji: '📱',
     color: '#EF4444',
     description: 'Framework for building mobile apps',
@@ -711,6 +721,7 @@ export const STACK_CATEGORIES: TechCategory[] = [
   {
     id: 'desktop-framework',
     name: 'Desktop Framework',
+    shortName: 'Desktop',
     emoji: '💻',
     color: '#14B8A6',
     description: 'Framework for building desktop applications',
@@ -752,6 +763,7 @@ export const STACK_CATEGORIES: TechCategory[] = [
   {
     id: 'hosting-deployment',
     name: 'Hosting & Deployment',
+    shortName: 'Hosting',
     emoji: '🌐',
     color: '#8B5CF6',
     description: 'Where and how you deploy your application',
@@ -857,6 +869,7 @@ export const STACK_CATEGORIES: TechCategory[] = [
   {
     id: 'development-tools',
     name: 'Development Tools',
+    shortName: 'Dev Tools',
     emoji: '🔧',
     color: '#14B8A6',
     description: 'Tools to help you build and maintain your code',
@@ -962,6 +975,7 @@ export const STACK_CATEGORIES: TechCategory[] = [
   {
     id: 'testing',
     name: 'Testing Framework',
+    shortName: 'Testing',
     emoji: '🧪',
     color: '#EC4899',
     description: 'Tools to test your code and prevent bugs',
@@ -1019,6 +1033,7 @@ export const STACK_CATEGORIES: TechCategory[] = [
   {
     id: 'authentication',
     name: 'Authentication',
+    shortName: 'Auth',
     emoji: '🔐',
     color: '#F59E0B',
     description: 'User authentication and authorization services',
@@ -1068,6 +1083,7 @@ export const STACK_CATEGORIES: TechCategory[] = [
   {
     id: 'payments',
     name: 'Payments',
+    shortName: 'Payments',
     emoji: '💳',
     color: '#10B981',
     description: 'Payment processing and billing solutions',
@@ -1101,6 +1117,7 @@ export const STACK_CATEGORIES: TechCategory[] = [
   {
     id: 'email',
     name: 'Email Services',
+    shortName: 'Email',
     emoji: '📧',
     color: '#EF4444',
     description: 'Transactional email and communication services',
@@ -1134,6 +1151,7 @@ export const STACK_CATEGORIES: TechCategory[] = [
   {
     id: 'file-storage',
     name: 'File Storage',
+    shortName: 'Storage',
     emoji: '📁',
     color: '#8B5CF6',
     description: 'Cloud storage solutions for files and media',
@@ -1167,6 +1185,7 @@ export const STACK_CATEGORIES: TechCategory[] = [
   {
     id: 'analytics',
     name: 'Analytics',
+    shortName: 'Analytics',
     emoji: '📊',
     color: '#06B6D4',
     description: 'Track user behavior and application performance',
@@ -1200,6 +1219,7 @@ export const STACK_CATEGORIES: TechCategory[] = [
   {
     id: 'monitoring',
     name: 'Error Tracking & Monitoring',
+    shortName: 'Monitoring',
     emoji: '🚨',
     color: '#DC2626',
     description: 'Monitor errors and application performance',
@@ -1233,6 +1253,7 @@ export const STACK_CATEGORIES: TechCategory[] = [
   {
     id: 'cms',
     name: 'Content Management',
+    shortName: 'CMS',
     emoji: '📝',
     color: '#7C3AED',
     description: 'Headless CMS and content management solutions',
@@ -1266,6 +1287,7 @@ export const STACK_CATEGORIES: TechCategory[] = [
   {
     id: 'state-management',
     name: 'State Management',
+    shortName: 'State',
     emoji: '🗂️',
     color: '#3B82F6',
     description: 'Manage application state across components',
@@ -1307,6 +1329,7 @@ export const STACK_CATEGORIES: TechCategory[] = [
   {
     id: 'data-fetching',
     name: 'Data Fetching & APIs',
+    shortName: 'Data Fetching',
     emoji: '🔌',
     color: '#F59E0B',
     description: 'Libraries for fetching and caching API data',
@@ -1364,6 +1387,7 @@ export const STACK_CATEGORIES: TechCategory[] = [
   {
     id: 'forms',
     name: 'Forms & Validation',
+    shortName: 'Forms',
     emoji: '📋',
     color: '#8B5CF6',
     description: 'Handle user input and form validation',
@@ -1405,6 +1429,7 @@ export const STACK_CATEGORIES: TechCategory[] = [
   {
     id: 'routing',
     name: 'Routing & Navigation',
+    shortName: 'Routing',
     emoji: '🗺️',
     color: '#10B981',
     description: 'Navigate between different pages/screens',
@@ -1446,6 +1471,7 @@ export const STACK_CATEGORIES: TechCategory[] = [
   {
     id: 'animation',
     name: 'Animation & Motion',
+    shortName: 'Animation',
     emoji: '✨',
     color: '#EC4899',
     description: 'Add motion and animations to your UI',
@@ -1487,6 +1513,7 @@ export const STACK_CATEGORIES: TechCategory[] = [
   {
     id: 'utilities',
     name: 'Utility Libraries',
+    shortName: 'Utilities',
     emoji: '🛠️',
     color: '#14B8A6',
     description: 'Helpful utilities and helper functions',

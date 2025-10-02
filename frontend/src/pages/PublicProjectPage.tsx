@@ -149,14 +149,50 @@ const PublicProjectPage: React.FC = () => {
                 }}>
                   {project.category}
                 </span>
-              </div>
               
+              {project.owner && (
+                <button className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-secondary text-base-content/80 border-2 border-base-content/20 h-[1.5rem]"
+                style={{
+                  color: getContrastTextColor()
+                }}>
+                  {project.owner.isPublic || project.owner.publicSlug ? (
+                    <Link
+                    to={`/discover/user/${project.owner.publicSlug || project.owner.id}`}
+                    className="font-semibold"
+                    >
+                    @{project.owner.publicSlug || `${project.owner.firstName}${project.owner.lastName}`.toLowerCase()}
+                    </Link>
+                  ) : (
+                    <span className="font-semibold">
+                    @{`${project.owner.firstName}${project.owner.lastName}`.toLowerCase()}
+                    </span>
+                  )}
+                </button>
+              )}
+              
+              {visibility.timestamps && (
+                <div className="flex items-center bg-accent gap-2 border-2 border-base-content/20 px-2 py-0.5 rounded-md h-[1.5rem]">
+                  <svg className="w-4 h-4" fill="none" stroke={getContrastTextColor()} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="text-xs font-semibold"
+                    style={{ color: getContrastTextColor() }}
+                    >
+                    Updated {new Date(project.updatedAt).toLocaleDateString('en-US', { 
+                      year: 'numeric', 
+                      month: 'long'
+                    })}
+                  </span>
+                </div>
+              )}
+              </div>
+
               <div className="flex gap-2">
                 <button
                   onClick={() => navigate('/discover')}
                   className="btn btn-sm btn-primary gap-2"
                   style={{ color: getContrastTextColor('primary') }}
-                >
+                  >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
@@ -166,7 +202,7 @@ const PublicProjectPage: React.FC = () => {
                 <button
                   onClick={copyProjectUrl}
                   className="btn btn-sm btn-outline gap-2"
-                >
+                  >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                   </svg>
@@ -175,55 +211,9 @@ const PublicProjectPage: React.FC = () => {
               </div>
             </div>
             
-            {/* Project metadata */}
-            <div className="flex flex-wrap items-center gap-4 text-sm text-base-content/60 mb-3">
-              {project.owner && (
-                <div className="flex items-center gap-2 bg-base-200 px-2 py-1 rounded-md">
-                  <span>by</span>
-                  {project.owner.isPublic || project.owner.publicSlug ? (
-                    <Link 
-                      to={`/discover/user/${project.owner.publicSlug || project.owner.id}`}
-                      className="font-semibold"
-                      style={{ color: getContrastTextColor() }}
-                    >
-                      @{project.owner.publicSlug || `${project.owner.firstName}${project.owner.lastName}`.toLowerCase()}
-                    </Link>
-                  ) : (
-                    <span className="font-semibold text-base-content"
-                    style={{ color: getContrastTextColor() }}>
-                      @{`${project.owner.firstName}${project.owner.lastName}`.toLowerCase()}
-                    </span>
-                  )}
-                </div>
-              )}
-              
-              {visibility.timestamps && (
-                <div className="flex items-center gap-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span>
-                    Updated {new Date(project.updatedAt).toLocaleDateString('en-US', { 
-                      year: 'numeric', 
-                      month: 'long'
-                    })}
-                  </span>
-                </div>
-              )}
-            </div>
-            
-            {/* Description */}
-            {visibility.description && (
-              <div className="bg-base-200 p-4 rounded-lg mb-4">
-                <p className="text-base leading-relaxed text-base-content/80">
-                  {project.publicDescription || project.description}
-                </p>
-              </div>
-            )}
-
             {/* Tags */}
             {visibility.tags && project.tags && project.tags.length > 0 && (
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 mb-3">
                 {project.tags.map((tag: string, index: number) => (
                   <span key={index} className="inline-flex items-center px-2 py-1 rounded-md text-sm font-medium bg-base-200 text-base-content/80 border border-base-300/50">
                     {tag}
@@ -231,6 +221,16 @@ const PublicProjectPage: React.FC = () => {
                 ))}
               </div>
             )}
+
+            {/* Description */}
+            {visibility.description && (
+              <div className="bg-base-200 p-4 rounded-lg">
+                <p className="text-base leading-relaxed text-base-content/80">
+                  {project.publicDescription || project.description}
+                </p>
+              </div>
+            )}
+
           </div>
         </div>
 

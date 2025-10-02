@@ -609,30 +609,30 @@ const AccountSettingsPage: React.FC = () => {
 
       {/* Tabs */}
       <div className="flex justify-center">
-        <div className="tabs tabs-boxed border-2 border-base-content/20 shadow-sm">
-          <button 
-            className={`tab tab-sm min-h-10 font-bold text-sm ${activeTab === 'profile' ? 'tab-active' : ''}`}
+        <div className="tabs-container">
+          <button
+            className={`tab-button ${activeTab === 'profile' ? 'tab-active' : ''}`}
             style={activeTab === 'profile' ? {color: getContrastTextColor()} : {}}
             onClick={() => setActiveTab('profile')}
           >
             Profile
           </button>
-          <button 
-            className={`tab tab-sm min-h-10 font-bold text-sm ${activeTab === 'theme' ? 'tab-active' : ''}`}
+          <button
+            className={`tab-button ${activeTab === 'theme' ? 'tab-active' : ''}`}
             style={activeTab === 'theme' ? {color: getContrastTextColor()} : {}}
             onClick={() => setActiveTab('theme')}
           >
             Theme
           </button>
-          <button 
-            className={`tab tab-sm min-h-10 font-bold text-sm ${activeTab === 'connections' ? 'tab-active' : ''}`}
+          <button
+            className={`tab-button ${activeTab === 'connections' ? 'tab-active' : ''}`}
             style={activeTab === 'connections' ? {color: getContrastTextColor()} : {}}
             onClick={() => setActiveTab('connections')}
           >
             Connections
           </button>
-          <button 
-            className={`tab tab-sm min-h-10 font-bold text-sm ${activeTab === 'analytics' ? 'tab-active' : ''}`}
+          <button
+            className={`tab-button ${activeTab === 'analytics' ? 'tab-active' : ''}`}
             style={activeTab === 'analytics' ? {color: getContrastTextColor()} : {}}
             onClick={() => setActiveTab('analytics')}
           >
@@ -658,16 +658,16 @@ const AccountSettingsPage: React.FC = () => {
 
                 {/* Theme Sub-tabs */}
                 <div className="flex justify-center">
-                  <div className="tabs tabs-boxed border-2 border-base-content/20 shadow-sm">
-                    <button 
-                      className={`tab tab-sm min-h-10 font-bold text-sm ${themeSubTab === 'preset' ? 'tab-active' : ''}`}
+                  <div className="tabs-container">
+                    <button
+                      className={`tab-button ${themeSubTab === 'preset' ? 'tab-active' : ''}`}
                       style={themeSubTab === 'preset' ? {color: getContrastTextColor()} : {}}
                       onClick={() => setThemeSubTab('preset')}
                     >
                       Preset Themes
                     </button>
-                    <button 
-                      className={`tab tab-sm min-h-10 font-bold text-sm ${themeSubTab === 'custom' ? 'tab-active' : ''}`}
+                    <button
+                      className={`tab-button ${themeSubTab === 'custom' ? 'tab-active' : ''}`}
                       style={themeSubTab === 'custom' ? {color: getContrastTextColor()} : {}}
                       onClick={() => setThemeSubTab('custom')}
                     >
@@ -1229,23 +1229,23 @@ const AccountSettingsPage: React.FC = () => {
               <div className="space-y-6">
                 {/* Sub-navigation for Profile sections */}
                 <div className="flex justify-center">
-                  <div className="tabs tabs-boxed border-2 border-base-content/20 shadow-sm">
-                    <button 
-                      className={`tab tab-sm min-h-10 font-bold text-sm ${profileSubTab === 'personal' ? 'tab-active' : ''}`}
+                  <div className="tabs-container">
+                    <button
+                      className={`tab-button ${profileSubTab === 'personal' ? 'tab-active' : ''}`}
                       style={profileSubTab === 'personal' ? {color: getContrastTextColor()} : {}}
                       onClick={() => setProfileSubTab('personal')}
                     >
                       Personal Info
                     </button>
-                    <button 
-                      className={`tab tab-sm min-h-10 font-bold text-sm ${profileSubTab === 'public' ? 'tab-active' : ''}`}
+                    <button
+                      className={`tab-button ${profileSubTab === 'public' ? 'tab-active' : ''}`}
                       style={profileSubTab === 'public' ? {color: getContrastTextColor()} : {}}
                       onClick={() => setProfileSubTab('public')}
                     >
                       Public Profile
                     </button>
-                    <button 
-                      className={`tab tab-sm min-h-10 font-bold text-sm ${profileSubTab === 'privacy' ? 'tab-active' : ''}`}
+                    <button
+                      className={`tab-button ${profileSubTab === 'privacy' ? 'tab-active' : ''}`}
                       style={profileSubTab === 'privacy' ? {color: getContrastTextColor()} : {}}
                       onClick={() => setProfileSubTab('privacy')}
                     >

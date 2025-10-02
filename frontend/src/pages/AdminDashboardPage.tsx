@@ -744,7 +744,7 @@ const AdminDashboardPage: React.FC = () => {
 
               {/* Ticket Status Tabs */}
               <div className="flex justify-center mb-2">
-                <div className="tabs tabs-boxed tabs-lg bg-base-200 shadow-md border-2 border-base-content/20 rounded-lg w-full max-w-4xl overflow-x-auto">
+                <div className="tabs-container tabs-lg bg-base-200 w-full max-w-4xl">
                 <button 
                   className={`tab tab-sm sm:tab-lg min-h-14 sm:min-h-16 font-bold text-xs sm:text-base px-2 sm:px-4 whitespace-nowrap ${ticketStatusTab === 'open' ? 'tab-active' : ''}`}
                   style={ticketStatusTab === 'open' ? {color: getContrastTextColor()} : {}}

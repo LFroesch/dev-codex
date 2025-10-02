@@ -275,7 +275,7 @@ React App:
 
       {/* Template Categories Navigation */}
       <div className="flex justify-center px-2">
-        <div className="tabs tabs-boxed border-2 border-base-content/20 shadow-sm overflow-x-auto">
+        <div className="tabs-container overflow-x-auto">
           <button 
             className={`tab tab-sm min-h-10 font-bold text-sm ${activeTemplateCategory === 'create-new' ? 'tab-active' : ''}`}
             style={activeTemplateCategory === 'create-new' ? {color: getContrastTextColor()} : {}}

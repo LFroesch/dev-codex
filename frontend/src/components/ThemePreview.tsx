@@ -87,9 +87,9 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({ colors }) => {
         {/* Buttons & Tabs */}
         <div className="space-y-2">
           <div className="tabs-container border-subtle">
-            <button className="tab tab-sm tab-active text-xs font-bold" style={{color: getContrastTextColor()}}>Projects</button>
-            <button className="tab tab-sm text-xs font-bold">Details</button>
-            <button className="tab tab-sm text-xs font-bold">Discover</button>
+            <button className="tab-button-xs tab-active" style={{color: getContrastTextColor()}}>Projects</button>
+            <button className="tab-button-xs">Details</button>
+            <button className="tab-button-xs">Discover</button>
           </div>
           <div className="flex flex-wrap gap-1">
             <button className="btn btn-primary btn-xs">Primary</button>

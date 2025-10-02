@@ -64,7 +64,7 @@ const SharingPage: React.FC = () => {
       <div className="flex justify-center px-2">
         <div className="tabs-container">
           <button 
-            className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'overview' ? 'tab-active' : ''}`}
+            className={`tab-button ${activeSection === 'overview' ? 'tab-active' : ''}`}
             style={activeSection === 'overview' ? {color: getContrastTextColor()} : {}}
             onClick={() => setActiveSection('overview')}
           >
@@ -75,7 +75,7 @@ const SharingPage: React.FC = () => {
           </button>
           {selectedProject.isShared && (
             <button 
-              className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'team' ? 'tab-active' : ''}`}
+              className={`tab-button ${activeSection === 'team' ? 'tab-active' : ''}`}
               style={activeSection === 'team' ? {color: getContrastTextColor()} : {}}
               onClick={() => setActiveSection('team')}
             >
@@ -87,7 +87,7 @@ const SharingPage: React.FC = () => {
           )}
           {!selectedProject.isShared && (
             <button 
-              className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'activity' ? 'tab-active' : ''}`}
+              className={`tab-button ${activeSection === 'activity' ? 'tab-active' : ''}`}
               style={activeSection === 'activity' ? {color: getContrastTextColor()} : {}}
               onClick={() => setActiveSection('activity')}
             >

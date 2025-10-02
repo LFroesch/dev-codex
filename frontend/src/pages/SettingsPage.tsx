@@ -170,7 +170,7 @@ const SettingsPage: React.FC = () => {
       <div className="flex justify-center px-2">
         <div className="tabs-container">
           <button 
-            className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'info' ? 'tab-active' : ''}`}
+            className={`tab-button ${activeSection === 'info' ? 'tab-active' : ''}`}
             style={activeSection === 'info' ? {color: getContrastTextColor()} : {}}
             onClick={() => setActiveSection('info')}
           >
@@ -180,7 +180,7 @@ const SettingsPage: React.FC = () => {
             Project Info
           </button>
           <button 
-            className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'export' ? 'tab-active' : ''}`}
+            className={`tab-button ${activeSection === 'export' ? 'tab-active' : ''}`}
             style={activeSection === 'export' ? {color: getContrastTextColor()} : {}}
             onClick={() => setActiveSection('export')}
           >
@@ -190,7 +190,7 @@ const SettingsPage: React.FC = () => {
             Export & Import
           </button>
           <button 
-            className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'danger' ? 'tab-active' : ''}`}
+            className={`tab-button ${activeSection === 'danger' ? 'tab-active' : ''}`}
             style={activeSection === 'danger' ? {color: getContrastTextColor()} : {}}
             onClick={() => setActiveSection('danger')}
           >

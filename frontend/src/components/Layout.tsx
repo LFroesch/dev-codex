@@ -922,7 +922,7 @@ const Layout: React.FC = () => {
                   <button
                     key={tab.id}
                     onClick={() => handleNavigateWithCheck(tab.path)}
-                    className={`tab tab-sm min-h-10 font-bold text-sm whitespace-nowrap ${currentTab === tab.id ? 'tab-active' : ''}`}
+                    className={`tab-button whitespace-nowrap ${currentTab === tab.id ? 'tab-active' : ''}`}
                     style={currentTab === tab.id ? {color: getContrastTextColor()} : {}}
                   >
                     <span>
@@ -946,14 +946,14 @@ const Layout: React.FC = () => {
               <div className="tabs-container">
                 <button
                   onClick={() => handleNavigateWithCheck('/discover')}
-                  className={`tab tab-sm min-h-10 font-bold text-sm ${location.pathname === '/discover' ? 'tab-active' : ''}`}
+                  className={`tab-button ${location.pathname === '/discover' ? 'tab-active' : ''}`}
                   style={location.pathname === '/discover' ? {color: getContrastTextColor()} : {}}
                 >
                   Discover
                 </button>
                 <button
                   onClick={() => handleNavigateWithCheck('/discover')}
-                  className={`tab tab-sm min-h-10 font-bold text-sm ${(location.pathname.startsWith('/discover/project/') || location.pathname.startsWith('/discover/user/')) ? 'tab-active' : ''}`}
+                  className={`tab-button ${(location.pathname.startsWith('/discover/project/') || location.pathname.startsWith('/discover/user/')) ? 'tab-active' : ''}`}
                   style={(location.pathname.startsWith('/discover/project/') || location.pathname.startsWith('/discover/user/')) ? {color: getContrastTextColor()} : {}}
                   disabled={!(location.pathname.startsWith('/discover/project/') || location.pathname.startsWith('/discover/user/'))}
                 >
@@ -1026,7 +1026,7 @@ const Layout: React.FC = () => {
             <div className="absolute left-1/2 transform -translate-x-1/2">
               <div className="tabs-container">
               <button 
-                className={`tab tab-sm min-h-10 font-bold text-sm ${searchParams.get('view') === 'projects' ? 'tab-active' : ''} gap-2`}
+                className={`tab-button ${searchParams.get('view') === 'projects' ? 'tab-active' : ''} gap-2`}
                 style={searchParams.get('view') === 'projects' ? {color: getContrastTextColor()} : {}}
                 onClick={() => handleNavigateWithCheck('/notes?view=projects')}
               >
@@ -1036,7 +1036,7 @@ const Layout: React.FC = () => {
                 My Projects
               </button>
               <button 
-                className={`tab tab-sm min-h-10 font-bold text-sm ${(location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && searchParams.get('view') !== 'projects' ? 'tab-active' : ''} gap-2`}
+                className={`tab-button ${(location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && searchParams.get('view') !== 'projects' ? 'tab-active' : ''} gap-2`}
                 style={(location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && searchParams.get('view') !== 'projects' ? {color: getContrastTextColor()} : {}}
                 onClick={() => handleNavigateWithCheck('/notes')}
               >
@@ -1046,7 +1046,7 @@ const Layout: React.FC = () => {
                 Project Details
               </button>
               <button 
-                className={`tab tab-sm min-h-10 font-bold text-sm ${location.pathname === '/discover' || location.pathname.startsWith('/discover/') ? 'tab-active' : ''} gap-2`}
+                className={`tab-button ${location.pathname === '/discover' || location.pathname.startsWith('/discover/') ? 'tab-active' : ''} gap-2`}
                 style={location.pathname === '/discover' || location.pathname.startsWith('/discover/') ? {color: getContrastTextColor()} : {}}
                 onClick={() => handleNavigateWithCheck('/discover')}
               >
@@ -1114,7 +1114,7 @@ const Layout: React.FC = () => {
                   onClick={() => {
                     setActiveProjectTab('active');
                   }}
-                  className={`tab tab-sm min-h-10 h-auto py-3 font-bold text-sm ${activeProjectTab === 'active' ? 'tab-active' : ''}`}
+                  className={`tab-button ${activeProjectTab === 'active' ? 'tab-active' : ''}`}
                   style={activeProjectTab === 'active' ? {color: getContrastTextColor()} : {}}
                 >
                   <span>Active <span className="text-xs opacity-60">({currentProjects.length})</span></span>
@@ -1122,7 +1122,7 @@ const Layout: React.FC = () => {
                 {archivedProjects.length > 0 && (
                   <button
                     onClick={() => setActiveProjectTab('archived')}
-                    className={`tab tab-sm min-h-10 h-auto py-3 font-bold text-sm ${activeProjectTab === 'archived' ? 'tab-active' : ''}`}
+                    className={`tab-button ${activeProjectTab === 'archived' ? 'tab-active' : ''}`}
                     style={activeProjectTab === 'archived' ? {color: getContrastTextColor()} : {}}
                   >
                     <span>Archived <span className="text-xs opacity-60">({archivedProjects.length})</span></span>
@@ -1131,7 +1131,7 @@ const Layout: React.FC = () => {
                 {sharedProjects.length > 0 && (
                   <button
                     onClick={() => setActiveProjectTab('shared')}
-                    className={`tab tab-sm min-h-10 h-auto py-3 font-bold text-sm ${activeProjectTab === 'shared' ? 'tab-active' : ''}`}
+                    className={`tab-button ${activeProjectTab === 'shared' ? 'tab-active' : ''}`}
                     style={activeProjectTab === 'shared' ? {color: getContrastTextColor()} : {}}
                   >
                     <span>Shared <span className="text-xs opacity-60">({sharedProjects.length})</span></span>
@@ -1139,7 +1139,7 @@ const Layout: React.FC = () => {
                 )}
                 <button
                   onClick={() => setActiveProjectTab('ideas')}
-                  className={`tab tab-sm min-h-10 h-auto py-3 font-bold text-sm ${activeProjectTab === 'ideas' ? 'tab-active' : ''}`}
+                  className={`tab-button ${activeProjectTab === 'ideas' ? 'tab-active' : ''}`}
                   style={activeProjectTab === 'ideas' ? {color: getContrastTextColor()} : {}}
                 >
                   <span>Ideas</span>
@@ -1156,7 +1156,7 @@ const Layout: React.FC = () => {
                   <button
                     key={tab.id}
                     onClick={() => handleNavigateWithCheck(tab.path)}
-                    className={`tab tab-sm min-h-10 font-bold text-sm whitespace-nowrap ${currentTab === tab.id ? 'tab-active' : ''}`}
+                    className={`tab-button whitespace-nowrap ${currentTab === tab.id ? 'tab-active' : ''}`}
                     style={currentTab === tab.id ? {color: getContrastTextColor()} : {}}
                   >
                     <span>
@@ -1180,14 +1180,14 @@ const Layout: React.FC = () => {
               <div className="tabs-container">
                 <button
                   onClick={() => handleNavigateWithCheck('/discover')}
-                  className={`tab tab-sm min-h-10 font-bold text-sm ${location.pathname === '/discover' ? 'tab-active' : ''}`}
+                  className={`tab-button ${location.pathname === '/discover' ? 'tab-active' : ''}`}
                   style={location.pathname === '/discover' ? {color: getContrastTextColor()} : {}}
                 >
                   Discover
                 </button>
                 <button
                   onClick={() => handleNavigateWithCheck('/discover')}
-                  className={`tab tab-sm min-h-10 font-bold text-sm ${(location.pathname.startsWith('/discover/project/') || location.pathname.startsWith('/discover/user/')) ? 'tab-active' : ''}`}
+                  className={`tab-button ${(location.pathname.startsWith('/discover/project/') || location.pathname.startsWith('/discover/user/')) ? 'tab-active' : ''}`}
                   style={(location.pathname.startsWith('/discover/project/') || location.pathname.startsWith('/discover/user/')) ? {color: getContrastTextColor()} : {}}
                   disabled={!(location.pathname.startsWith('/discover/project/') || location.pathname.startsWith('/discover/user/'))}
                 >

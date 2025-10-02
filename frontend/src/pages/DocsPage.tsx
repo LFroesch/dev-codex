@@ -277,7 +277,7 @@ React App:
       <div className="flex justify-center px-2">
         <div className="tabs-container overflow-x-auto">
           <button 
-            className={`tab tab-sm min-h-10 font-bold text-sm ${activeTemplateCategory === 'create-new' ? 'tab-active' : ''}`}
+            className={`tab-button ${activeTemplateCategory === 'create-new' ? 'tab-active' : ''}`}
             style={activeTemplateCategory === 'create-new' ? {color: getContrastTextColor()} : {}}
             onClick={() => setActiveTemplateCategory('create-new')}
           >
@@ -288,7 +288,7 @@ React App:
           </button>
           {categoriesWithDocs.length > 0 && (
             <button 
-              className={`tab tab-sm min-h-10 font-bold text-sm ${activeTemplateCategory === 'all' ? 'tab-active' : ''}`}
+              className={`tab-button ${activeTemplateCategory === 'all' ? 'tab-active' : ''}`}
               style={activeTemplateCategory === 'all' ? {color: getContrastTextColor()} : {}}
               onClick={() => setActiveTemplateCategory('all')}
             >
@@ -301,7 +301,7 @@ React App:
           {categoriesWithDocs.map(typeInfo => (
             <button 
               key={typeInfo.value}
-              className={`tab tab-sm min-h-10 font-bold text-sm ${activeTemplateCategory === typeInfo.value ? 'tab-active' : ''}`}
+              className={`tab-button ${activeTemplateCategory === typeInfo.value ? 'tab-active' : ''}`}
               style={activeTemplateCategory === typeInfo.value ? {color: getContrastTextColor()} : {}}
               onClick={() => setActiveTemplateCategory(typeInfo.value)}
             >

@@ -120,7 +120,7 @@ const DeploymentPage: React.FC = () => {
       <div className="flex justify-center px-2">
         <div className="tabs-container">
         <button 
-          className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'overview' ? 'tab-active' : ''}`}
+          className={`tab-button ${activeSection === 'overview' ? 'tab-active' : ''}`}
           style={activeSection === 'overview' ? {color: getContrastTextColor()} : {}}
           onClick={() => setActiveSection('overview')}
         >
@@ -130,7 +130,7 @@ const DeploymentPage: React.FC = () => {
           Overview
         </button>
         <button 
-          className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'deployment' ? 'tab-active' : ''}`}
+          className={`tab-button ${activeSection === 'deployment' ? 'tab-active' : ''}`}
           style={activeSection === 'deployment' ? {color: getContrastTextColor()} : {}}
           onClick={() => setActiveSection('deployment')}
         >
@@ -141,7 +141,7 @@ const DeploymentPage: React.FC = () => {
           Deployment
         </button>
         <button 
-          className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'env' ? 'tab-active' : ''}`}
+          className={`tab-button ${activeSection === 'env' ? 'tab-active' : ''}`}
           style={activeSection === 'env' ? {color: getContrastTextColor()} : {}}
           onClick={() => setActiveSection('env')}
         >
@@ -151,7 +151,7 @@ const DeploymentPage: React.FC = () => {
           Environment
         </button>
         <button 
-          className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'notes' ? 'tab-active' : ''}`}
+          className={`tab-button ${activeSection === 'notes' ? 'tab-active' : ''}`}
           style={activeSection === 'notes' ? {color: getContrastTextColor()} : {}}
           onClick={() => setActiveSection('notes')}
         >

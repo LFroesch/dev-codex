@@ -746,7 +746,7 @@ const AdminDashboardPage: React.FC = () => {
               <div className="flex justify-center mb-2">
                 <div className="tabs-container tabs-lg bg-base-200 w-full max-w-4xl">
                 <button 
-                  className={`tab tab-sm sm:tab-lg min-h-14 sm:min-h-16 font-bold text-xs sm:text-base px-2 sm:px-4 whitespace-nowrap ${ticketStatusTab === 'open' ? 'tab-active' : ''}`}
+                  className={`tab-button-admin ${ticketStatusTab === 'open' ? 'tab-active' : ''}`}
                   style={ticketStatusTab === 'open' ? {color: getContrastTextColor()} : {}}
                   onClick={() => {
                     setTicketStatusTab('open');
@@ -760,7 +760,7 @@ const AdminDashboardPage: React.FC = () => {
                   <span className="sm:hidden">Open</span>
                 </button>
                 <button 
-                  className={`tab tab-sm sm:tab-lg min-h-14 sm:min-h-16 font-bold text-xs sm:text-base px-2 sm:px-4 whitespace-nowrap ${ticketStatusTab === 'in_progress' ? 'tab-active' : ''}`}
+                  className={`tab-button-admin ${ticketStatusTab === 'in_progress' ? 'tab-active' : ''}`}
                   style={ticketStatusTab === 'in_progress' ? {color: getContrastTextColor()} : {}}
                   onClick={() => {
                     setTicketStatusTab('in_progress');
@@ -774,7 +774,7 @@ const AdminDashboardPage: React.FC = () => {
                   <span className="sm:hidden">Progress</span>
                 </button>
                 <button 
-                  className={`tab tab-sm sm:tab-lg min-h-14 sm:min-h-16 font-bold text-xs sm:text-base px-2 sm:px-4 whitespace-nowrap ${ticketStatusTab === 'resolved' ? 'tab-active' : ''}`}
+                  className={`tab-button-admin ${ticketStatusTab === 'resolved' ? 'tab-active' : ''}`}
                   style={ticketStatusTab === 'resolved' ? {color: getContrastTextColor()} : {}}
                   onClick={() => {
                     setTicketStatusTab('resolved');
@@ -788,7 +788,7 @@ const AdminDashboardPage: React.FC = () => {
                   <span className="sm:hidden">Resolved</span>
                 </button>
                 <button 
-                  className={`tab tab-sm sm:tab-lg min-h-14 sm:min-h-16 font-bold text-xs sm:text-base px-2 sm:px-4 whitespace-nowrap ${ticketStatusTab === 'closed' ? 'tab-active' : ''}`}
+                  className={`tab-button-admin ${ticketStatusTab === 'closed' ? 'tab-active' : ''}`}
                   style={ticketStatusTab === 'closed' ? {color: getContrastTextColor()} : {}}
                   onClick={() => {
                     setTicketStatusTab('closed');

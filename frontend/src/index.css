@@ -82,17 +82,32 @@ body {
   }
 
   /* Tab Components */
+  /* Base tab sizes (DaisyUI doesn't provide these) */
   .tab-sm {
     @apply flex-shrink-0 rounded-lg min-h-10 px-3 font-bold whitespace-nowrap;
   }
+  .tab-lg {
+    @apply flex-shrink-0 rounded-lg min-h-16 px-4 font-bold whitespace-nowrap;
+  }
+
+  /* Container for tab groups */
   .tabs-container {
     @apply tabs tabs-boxed border-2 border-base-content/20 shadow-sm flex flex-nowrap overflow-x-auto pb-0.5;
   }
+
+  /* Standard tab button (regular size) */
   .tab-button {
-    @apply tab tab-sm flex-shrink-0 min-h-10 px-3 font-bold whitespace-nowrap;
+    @apply tab tab-sm flex-shrink-0 min-h-10 px-3 font-bold text-sm whitespace-nowrap;
   }
+
+  /* Smaller responsive tab button */
   .tab-button-xs {
     @apply tab tab-sm flex-shrink-0 min-h-10 px-2 sm:px-3 font-bold text-xs sm:text-sm whitespace-nowrap;
+  }
+
+  /* Large admin-style tab button */
+  .tab-button-admin {
+    @apply tab tab-sm sm:tab-lg flex-shrink-0 min-h-14 sm:min-h-16 font-bold text-xs sm:text-base px-3 sm:px-4 whitespace-nowrap;
   }
 }
 

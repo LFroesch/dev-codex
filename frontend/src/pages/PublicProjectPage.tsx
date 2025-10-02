@@ -143,7 +143,7 @@ const PublicProjectPage: React.FC = () => {
                 >
                   {project.name}
                 </h3>
-                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-primary text-base-content/80 border-2 border-base-content/20 h-[1.5rem]"
+                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-primary text-base-content/80 border-2 border-base-content/20 lg:h-[1.5rem]"
                 style={{
                   color: getContrastTextColor()
                 }}>
@@ -151,7 +151,7 @@ const PublicProjectPage: React.FC = () => {
                 </span>
               
               {project.owner && (
-                <button className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-secondary text-base-content/80 border-2 border-base-content/20 h-[1.5rem]"
+                <button className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-secondary text-base-content/80 border-2 border-base-content/20 lg:h-[1.5rem]"
                 style={{
                   color: getContrastTextColor()
                 }}>
@@ -171,7 +171,7 @@ const PublicProjectPage: React.FC = () => {
               )}
               
               {visibility.timestamps && (
-                <div className="flex items-center bg-accent gap-2 border-2 border-base-content/20 px-2 py-0.5 rounded-md h-[1.5rem]">
+                <div className="flex items-center bg-accent gap-2 border-2 border-base-content/20 px-2 py-0.5 rounded-md lg:h-[1.5rem] mr-4">
                   <svg className="w-4 h-4" fill="none" stroke={getContrastTextColor()} viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>

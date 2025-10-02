@@ -248,7 +248,7 @@ const DiscoverPage: React.FC = () => {
                     {/* Project Header */}
                     <div className="flex items-center gap-3 mb-3">
                       <h3 
-                        className="font-semibold text-base truncate px-2 py-1 rounded-md group-hover:opacity-90 transition-opacity"
+                        className="font-semibold text-base truncate px-2 py-1 rounded-md group-hover:opacity-90 transition-opacity border-thick"
                         style={{ 
                           backgroundColor: project.color,
                           color: getContrastTextColor(project.color)
@@ -324,7 +324,7 @@ const DiscoverPage: React.FC = () => {
                         {project.owner ? (
                           project.owner.isPublic || project.owner.publicSlug ? (
                             <span 
-                              className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-primary border border-base-300/50 hover:bg-primary hover:text-primary-content transition-colors cursor-pointer"
+                              className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-primary border-2 border-base-content/20 hover:bg-primary hover:text-primary-content transition-colors cursor-pointer"
                               style={{ color: getContrastTextColor() }}
                               onClick={(e) => {
                                 e.preventDefault();

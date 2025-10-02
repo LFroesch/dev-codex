@@ -80,6 +80,20 @@ body {
   .section-collapsible-header {
     @apply text-lg font-semibold bg-base-200 border-b-2 border-base-content/20;
   }
+
+  /* Tab Components */
+  .tab-sm {
+    @apply flex-shrink-0 rounded-lg min-h-10 px-3 font-bold whitespace-nowrap;
+  }
+  .tabs-container {
+    @apply tabs tabs-boxed border-2 border-base-content/20 shadow-sm flex flex-nowrap overflow-x-auto pb-0.5;
+  }
+  .tab-button {
+    @apply tab tab-sm flex-shrink-0 min-h-10 px-3 font-bold whitespace-nowrap;
+  }
+  .tab-button-xs {
+    @apply tab tab-sm flex-shrink-0 min-h-10 px-2 sm:px-3 font-bold text-xs sm:text-sm whitespace-nowrap;
+  }
 }
 
 /* ===== SPECIALIZED UTILITIES ===== */

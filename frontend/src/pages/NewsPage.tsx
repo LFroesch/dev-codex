@@ -182,7 +182,7 @@ const NewsPage: React.FC = () => {
 
       {/* Category Navigation */}
       <div className="flex justify-center">
-        <div className="tabs tabs-boxed border-2 border-base-content/20 shadow-sm opacity-90">
+        <div className="tabs-container opacity-90">
           <button 
             className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'all' ? 'tab-active' : ''}`}
             style={activeSection === 'all' ? {color: getContrastTextColor()} : {}}

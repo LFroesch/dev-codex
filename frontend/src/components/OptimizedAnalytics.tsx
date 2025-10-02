@@ -451,7 +451,7 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
           </div>
 
           <div className="flex justify-center mb-6 px-2">
-            <div className="tabs tabs-boxed bg-base-200/50 backdrop-blur-sm border-subtle shadow-sm w-full max-w-4xl overflow-x-auto">
+            <div className="tabs-container bg-base-200/50 backdrop-blur-sm border-subtle w-full max-w-4xl">
               <button 
                 className={`tab tab-sm sm:tab-lg min-h-14 sm:min-h-16 font-bold text-xs sm:text-base px-2 sm:px-4 whitespace-nowrap ${activeTab === 'overview' ? 'tab-active' : ''}`}
                 onClick={() => setActiveTab('overview')}

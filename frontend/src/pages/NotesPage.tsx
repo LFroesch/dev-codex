@@ -461,7 +461,7 @@ const NotesPage: React.FC = () => {
                     <div className="p-4 flex flex-col flex-1">
                       <div className="flex items-start justify-between mb-3">
                         <h3 
-                          className="font-semibold truncate px-2 py-1 rounded-md bg-primary inline-block w-fit"
+                          className="font-semibold truncate px-2 py-1 rounded-md bg-primary inline-block w-fit border-thick"
                           style={{ 
                             color: getContrastTextColor()
                           }}

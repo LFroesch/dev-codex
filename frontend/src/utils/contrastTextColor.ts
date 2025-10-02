@@ -71,7 +71,9 @@ export const getContrastTextColor = (colorValue?: string): string => {
       'info': '--in',
       'success': '--su',
       'warning': '--wa',
-      'error': '--er'
+      'error': '--er',
+      'base': '--bc',
+      
     };
 
     if (colorMap[colorValue] && typeof window !== 'undefined') {

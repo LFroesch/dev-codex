@@ -307,7 +307,7 @@ const Layout: React.FC = () => {
     const minutes = totalMinutes % 60;
 
     if (hours > 0) {
-      return `${hours}h ${minutes}m`;
+      return `${hours}h${minutes}m`;
     } else if (minutes > 0) {
       return `${minutes}m`;
     } else {
@@ -652,7 +652,7 @@ const Layout: React.FC = () => {
           <div className="flex flex-col gap-3">
             {/* Top row: Logo + Search (tablet), Project indicator (tablet), Session Tracker, and User Menu */}
             <div className="flex items-center justify-between min-w-0 gap-3">
-              <div className="flex items-center gap-3 bg-base-200 backdrop-blur-none border-2 border-base-content/20 rounded-xl px-3 py-2 h-12 shadow-sm hover:shadow-md transition-all cursor-pointer min-w-0" onClick={() => navigate('/notes?view=projects')}>
+              <div className="flex items-center gap-3 bg-base-200 backdrop-blur-none border-2 border-base-content/20 rounded-xl px-3 py-2 min-h-12 h-auto shadow-sm hover:shadow-md transition-all cursor-pointer min-w-0" onClick={() => navigate('/notes?view=projects')}>
                 <div className="tablet:w-8 tablet:h-8 w-7 h-7 bg-primary rounded-lg flex items-center justify-center shadow-sm flex-shrink-0">
                   <svg className="tablet:w-4 tablet:h-4 w-3.5 h-3.5" fill={getContrastTextColor('primary')} viewBox="0 0 20 20">
                     <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
@@ -835,38 +835,38 @@ const Layout: React.FC = () => {
             {/* Navigation buttons */}
             {location.pathname !== '/support' && (
             <div className="flex justify-center px-2">
-              <div className="tabs tabs-boxed border-2 border-base-content/20 shadow-sm">
-                <button 
-                  className={`tab tab-sm ${searchParams.get('view') === 'projects' ? 'tab-active' : ''} gap-2 font-bold whitespace-nowrap min-h-10 px-4`}
+              <div className="tabs-container">
+                <button
+                  className={`tab tab-sm flex-shrink-0 min-h-10 ${searchParams.get('view') === 'projects' ? 'tab-active' : ''} gap-1 sm:gap-2 font-bold whitespace-nowrap px-2 sm:px-4`}
                   style={searchParams.get('view') === 'projects' ? {color: getContrastTextColor()} : {}}
                   onClick={() => handleNavigateWithCheck('/notes?view=projects')}
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                   </svg>
-                  <span>Projects</span>
+                  <span className="text-xs sm:text-sm">Projects</span>
                 </button>
-                <button 
-                  className={`tab tab-sm ${(location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && searchParams.get('view') !== 'projects' ? 'tab-active' : ''} gap-2 font-bold whitespace-nowrap min-h-10 px-4`}
+                <button
+                  className={`tab tab-sm flex-shrink-0 min-h-10 ${(location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && searchParams.get('view') !== 'projects' ? 'tab-active' : ''} gap-1 sm:gap-2 font-bold whitespace-nowrap px-2 sm:px-4`}
                   style={(location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && searchParams.get('view') !== 'projects' ? {color: getContrastTextColor()} : {}}
                   onClick={() => handleNavigateWithCheck('/notes')}
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                  <span>Details</span>
+                  <span className="text-xs sm:text-sm">Details</span>
                 </button>
-                <button 
-                  className={`tab tab-sm ${location.pathname === '/discover' || location.pathname.startsWith('/discover/') ? 'tab-active' : ''} gap-2 font-bold whitespace-nowrap min-h-10 px-4`}
+                <button
+                  className={`tab tab-sm flex-shrink-0 min-h-10 ${location.pathname === '/discover' || location.pathname.startsWith('/discover/') ? 'tab-active' : ''} gap-1 sm:gap-2 font-bold whitespace-nowrap px-2 sm:px-4`}
                   style={location.pathname === '/discover' || location.pathname.startsWith('/discover/') ? {color: getContrastTextColor()} : {}}
                   onClick={() => {
                     handleNavigateWithCheck('/discover');
                   }}
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
-                  <span>Discover</span>
+                  <span className="text-xs sm:text-sm">Discover</span>
                 </button>
               </div>
             </div>
@@ -875,12 +875,12 @@ const Layout: React.FC = () => {
             {/* Project Views Submenu - Mobile */}
             {searchParams.get('view') === 'projects' && (
             <div className="flex justify-center px-2 py-1">
-              <div className="tabs tabs-boxed border-2 border-base-content/20 shadow-sm">
+              <div className="tabs-container">
                 <button
                   onClick={() => {
                     setActiveProjectTab('active');
                   }}
-                  className={`tab tab-sm min-h-10 font-bold text-sm ${activeProjectTab === 'active' ? 'tab-active' : ''}`}
+                  className={`tab tab-sm flex-shrink-0 min-h-10 px-3 font-bold text-xs sm:text-sm whitespace-nowrap ${activeProjectTab === 'active' ? 'tab-active' : ''}`}
                   style={activeProjectTab === 'active' ? {color: getContrastTextColor()} : {}}
                 >
                   <span>Active <span className="text-xs opacity-60">({currentProjects.length})</span></span>
@@ -888,7 +888,7 @@ const Layout: React.FC = () => {
                 {archivedProjects.length > 0 && (
                   <button
                     onClick={() => setActiveProjectTab('archived')}
-                    className={`tab tab-sm min-h-10 font-bold text-sm ${activeProjectTab === 'archived' ? 'tab-active' : ''}`}
+                    className={`tab tab-sm flex-shrink-0 min-h-10 px-3 font-bold text-xs sm:text-sm whitespace-nowrap ${activeProjectTab === 'archived' ? 'tab-active' : ''}`}
                     style={activeProjectTab === 'archived' ? {color: getContrastTextColor()} : {}}
                   >
                     <span>Archived <span className="text-xs opacity-60">({archivedProjects.length})</span></span>
@@ -897,7 +897,7 @@ const Layout: React.FC = () => {
                 {sharedProjects.length > 0 && (
                   <button
                     onClick={() => setActiveProjectTab('shared')}
-                    className={`tab tab-sm min-h-10 font-bold text-sm ${activeProjectTab === 'shared' ? 'tab-active' : ''}`}
+                    className={`tab tab-sm flex-shrink-0 min-h-10 px-3 font-bold text-xs sm:text-sm whitespace-nowrap ${activeProjectTab === 'shared' ? 'tab-active' : ''}`}
                     style={activeProjectTab === 'shared' ? {color: getContrastTextColor()} : {}}
                   >
                     <span>Shared <span className="text-xs opacity-60">({sharedProjects.length})</span></span>
@@ -905,7 +905,7 @@ const Layout: React.FC = () => {
                 )}
                 <button
                   onClick={() => setActiveProjectTab('ideas')}
-                  className={`tab tab-sm min-h-10 font-bold text-sm ${activeProjectTab === 'ideas' ? 'tab-active' : ''}`}
+                  className={`tab tab-sm flex-shrink-0 min-h-10 px-3 font-bold text-xs sm:text-sm whitespace-nowrap ${activeProjectTab === 'ideas' ? 'tab-active' : ''}`}
                   style={activeProjectTab === 'ideas' ? {color: getContrastTextColor()} : {}}
                 >
                   <span>Ideas</span>
@@ -917,7 +917,7 @@ const Layout: React.FC = () => {
             {/* Project Details Submenu - Mobile */}
             {selectedProject && (location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && searchParams.get('view') !== 'projects' && (
             <div className="flex justify-center px-2 py-1">
-              <div className="tabs tabs-boxed border-2 border-base-content/20 shadow-sm overflow-x-auto scrollbar-hide">
+              <div className="tabs-container">
                 {tabs.map((tab) => (
                   <button
                     key={tab.id}
@@ -943,7 +943,7 @@ const Layout: React.FC = () => {
             {/* Discover Submenu - Mobile */}
             {(location.pathname === '/discover' || location.pathname.startsWith('/discover/')) && (
             <div className="flex justify-center px-2 py-1">
-              <div className="tabs tabs-boxed border-2 border-base-content/20 shadow-sm">
+              <div className="tabs-container">
                 <button
                   onClick={() => handleNavigateWithCheck('/discover')}
                   className={`tab tab-sm min-h-10 font-bold text-sm ${location.pathname === '/discover' ? 'tab-active' : ''}`}
@@ -1024,7 +1024,7 @@ const Layout: React.FC = () => {
             </div>
             
             <div className="absolute left-1/2 transform -translate-x-1/2">
-              <div className="tabs tabs-boxed border-2 border-base-content/20 shadow-sm">
+              <div className="tabs-container">
               <button 
                 className={`tab tab-sm min-h-10 font-bold text-sm ${searchParams.get('view') === 'projects' ? 'tab-active' : ''} gap-2`}
                 style={searchParams.get('view') === 'projects' ? {color: getContrastTextColor()} : {}}
@@ -1109,12 +1109,12 @@ const Layout: React.FC = () => {
             {/* Project Views Submenu - Desktop */}
             {searchParams.get('view') === 'projects' && (
             <div className="flex justify-center">
-              <div className="tabs tabs-boxed border-2 border-base-content/20 shadow-sm">
+              <div className="tabs-container">
                 <button
                   onClick={() => {
                     setActiveProjectTab('active');
                   }}
-                  className={`tab tab-sm min-h-10 font-bold text-sm ${activeProjectTab === 'active' ? 'tab-active' : ''}`}
+                  className={`tab tab-sm min-h-10 h-auto py-3 font-bold text-sm ${activeProjectTab === 'active' ? 'tab-active' : ''}`}
                   style={activeProjectTab === 'active' ? {color: getContrastTextColor()} : {}}
                 >
                   <span>Active <span className="text-xs opacity-60">({currentProjects.length})</span></span>
@@ -1122,7 +1122,7 @@ const Layout: React.FC = () => {
                 {archivedProjects.length > 0 && (
                   <button
                     onClick={() => setActiveProjectTab('archived')}
-                    className={`tab tab-sm min-h-10 font-bold text-sm ${activeProjectTab === 'archived' ? 'tab-active' : ''}`}
+                    className={`tab tab-sm min-h-10 h-auto py-3 font-bold text-sm ${activeProjectTab === 'archived' ? 'tab-active' : ''}`}
                     style={activeProjectTab === 'archived' ? {color: getContrastTextColor()} : {}}
                   >
                     <span>Archived <span className="text-xs opacity-60">({archivedProjects.length})</span></span>
@@ -1131,7 +1131,7 @@ const Layout: React.FC = () => {
                 {sharedProjects.length > 0 && (
                   <button
                     onClick={() => setActiveProjectTab('shared')}
-                    className={`tab tab-sm min-h-10 font-bold text-sm ${activeProjectTab === 'shared' ? 'tab-active' : ''}`}
+                    className={`tab tab-sm min-h-10 h-auto py-3 font-bold text-sm ${activeProjectTab === 'shared' ? 'tab-active' : ''}`}
                     style={activeProjectTab === 'shared' ? {color: getContrastTextColor()} : {}}
                   >
                     <span>Shared <span className="text-xs opacity-60">({sharedProjects.length})</span></span>
@@ -1139,26 +1139,11 @@ const Layout: React.FC = () => {
                 )}
                 <button
                   onClick={() => setActiveProjectTab('ideas')}
-                  className={`tab tab-sm min-h-10 font-bold text-sm ${activeProjectTab === 'ideas' ? 'tab-active' : ''}`}
+                  className={`tab tab-sm min-h-10 h-auto py-3 font-bold text-sm ${activeProjectTab === 'ideas' ? 'tab-active' : ''}`}
                   style={activeProjectTab === 'ideas' ? {color: getContrastTextColor()} : {}}
                 >
                   <span>Ideas</span>
                 </button>
-                {/* <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    navigate('/create-project');
-                  }}
-                  className="tab tab-sm min-h-10 font-bold text-sm relative z-50"
-                  title="Create New Project"
-                  style={{ pointerEvents: 'auto' }}
-                >
-                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
-                  <span>Create New</span>
-                </button> */}
               </div>
             </div>
             )}
@@ -1166,7 +1151,7 @@ const Layout: React.FC = () => {
             {/* Project Details Submenu - Desktop */}
             {selectedProject && (location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && searchParams.get('view') !== 'projects' && (
             <div className="flex justify-center">
-              <div className="tabs tabs-boxed border-2 border-base-content/20 shadow-sm overflow-x-auto scrollbar-hide">
+              <div className="tabs-container">
                 {tabs.map((tab) => (
                   <button
                     key={tab.id}
@@ -1192,7 +1177,7 @@ const Layout: React.FC = () => {
             {/* Discover Submenu - Desktop */}
             {(location.pathname === '/discover' || location.pathname.startsWith('/discover/')) && (
             <div className="flex justify-center">
-              <div className="tabs tabs-boxed border-2 border-base-content/20 shadow-sm">
+              <div className="tabs-container">
                 <button
                   onClick={() => handleNavigateWithCheck('/discover')}
                   className={`tab tab-sm min-h-10 font-bold text-sm ${location.pathname === '/discover' ? 'tab-active' : ''}`}
@@ -1280,10 +1265,10 @@ const Layout: React.FC = () => {
                       <>
                         {/* Category Selector */}
                         <div className="flex justify-center">
-                          <div className="tabs tabs-boxed border-2 border-base-content/20 shadow-sm opacity-90">
+                          <div className="tabs-container opacity-90 max-w-full">
                             <button
                               onClick={() => setSelectedCategory(null)}
-                              className={`tab tab-sm min-h-10 font-bold text-sm ${
+                              className={`tab-button-xs ${
                                 selectedCategory === null ? 'tab-active' : ''
                               }`}
                               style={selectedCategory === null ? {color: getContrastTextColor()} : {}}
@@ -1302,7 +1287,7 @@ const Layout: React.FC = () => {
                               <button
                                 key={category}
                                 onClick={() => setSelectedCategory(category)}
-                                className={`tab tab-sm min-h-10 font-bold text-sm ${
+                                className={`tab-button-xs ${
                                   selectedCategory === category ? 'tab-active' : ''
                                 }`}
                                 style={selectedCategory === category ? {color: getContrastTextColor()} : {}}
@@ -1403,7 +1388,7 @@ const Layout: React.FC = () => {
                               
                               {/* Footer - Always at bottom */}
                               <div className="flex items-center justify-between text-xs pt-3 border-t-2 border-base-content/20 mt-auto">
-                                <div className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-success/80 text-base-content/80 border-2 border-base-content/20 gap-1"
+                                <div className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold font-mono bg-success/80 text-base-content/80 border-2 border-base-content/20 gap-1"
                                 style={{ color: getContrastTextColor("success") }}>
                                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -1454,7 +1439,7 @@ const Layout: React.FC = () => {
           <>
             {/* Admin Dashboard Tab Navigation */}
             <div className="flex justify-center px-2 py-4">
-              <div className="tabs tabs-boxed tabs-lg border-2 border-base-content/20 shadow-sm bg-base-200 w-full max-w-4xl overflow-x-auto">
+              <div className="tabs-container tabs-lg bg-base-200 w-full max-w-4xl">
                 <button 
                   className={`tab tab-sm sm:tab-lg min-h-14 sm:min-h-16 font-bold text-xs sm:text-base px-3 sm:px-4 whitespace-nowrap ${activeAdminTab === 'users' ? 'tab-active' : ''}`}
                   style={activeAdminTab === 'users' ? {color: getContrastTextColor()} : {}}

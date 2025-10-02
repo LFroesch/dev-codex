@@ -286,13 +286,16 @@ const DiscoverPage: React.FC = () => {
                           {project.tags.slice(0, 3).map((tag: string, index: number) => (
                             <span
                               key={index}
-                              className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-base-100 text-base-content/80 border-2 border-base-content/20 h-[1.5rem] "
+                              className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-secondary text-base-content/80 border-2 border-base-content/20 h-[1.5rem]"
+                              style={{ color: getContrastTextColor("secondary") }}
                             >
                               {tag}
                             </span>
                           ))}
                           {project.tags.length > 3 && (
-                            <span className="text-xs text-base-content/50 font-medium flex items-center">
+                            <span className="text-xs text-base-content/50 font-medium flex items-center bg-secondary px-2 py-0.5 rounded-md border-2 border-base-content/20 h-[1.5rem]"
+                            style={{color: getContrastTextColor("secondary") }}
+                            >
                               +{project.tags.length - 3}
                             </span>
                           )}

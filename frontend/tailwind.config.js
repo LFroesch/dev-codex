@@ -10,7 +10,7 @@ export default {
     extend: {
       screens: {
         'tablet': '1024px',
-        'desktop': '1340px',
+        'desktop': '1360px', // make it 1430 if we re-add brain dump
       },
     },
   },

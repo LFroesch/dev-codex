@@ -224,7 +224,7 @@ const PublicPage: React.FC = () => {
             <div className="flex items-center gap-4 mb-4">
               <div className="flex-1">
                 <h3 
-                  className="text-xl font-semibold px-3 py-1 rounded-md inline-block"
+                  className="text-xl font-semibold px-3 py-1 rounded-md inline-block border-thick"
                   style={{ 
                     backgroundColor: selectedProject.color,
                     color: getContrastTextColor(selectedProject.color)
@@ -233,7 +233,7 @@ const PublicPage: React.FC = () => {
                   {selectedProject.name}
                 </h3>
                 <span> </span>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium text-base-content relative -top-0.5 ${isPublic ? 'bg-success/50' : 'bg-warning/50'}`}
+                <span className={`px-3 py-1 rounded-full text-sm font-medium text-base-content border-thick relative -top-0.5 ${isPublic ? 'bg-success/50' : 'bg-warning/50'}`}
                 style={{ 
                   color: isPublic ? getContrastTextColor('success') : getContrastTextColor('warning')
                 }}>

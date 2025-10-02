@@ -63,9 +63,10 @@ const PublicProfilePage: React.FC = () => {
           <p className="text-base-content/60 mb-8">
             The profile you're looking for is not available.
           </p>
-          <button 
-            onClick={() => navigate('/discover')} 
+          <button
+            onClick={() => navigate('/discover')}
             className="btn btn-primary"
+            style={{ color: getContrastTextColor('primary') }}
           >
             Back to Discover
           </button>
@@ -80,71 +81,72 @@ const PublicProfilePage: React.FC = () => {
     <div className="flex-1 w-full max-w-7xl mx-auto p-2 sm:p-4 bg-base-100 flex flex-col mb-4 min-h-0">
       <div className="space-y-6">
         {/* Profile Header */}
-        <div className="bg-base-100 rounded-md border-2 border-base-content/20 shadow-md hover:shadow-lg">
-          <div className="p-4">
+        <div className="section-container">
+          <div className="section-content p-3 sm:p-4">
             {/* Header with buttons and profile info */}
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center border-2 border-primary/10 flex-shrink-0">
-                  <span className="text-lg font-bold text-primary">
-                    {user.firstName?.charAt(0)}{user.lastName?.charAt(0)}
+            <div className="flex flex-wrap items-start gap-2 mb-3">
+              {/* Left side: Profile info (wraps internally) */}
+              <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
+
+                <h1 className="bg-primary text-lg sm:text-xl font-bold text-base-content px-3 py-1.5 rounded-md border-2 border-base-content/20"
+                  style={{ color: getContrastTextColor('primary') }}>
+                  
+                  {user.firstName} {user.lastName}
+                </h1>
+                {user.publicSlug && (
+                  <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-secondary border-2 border-base-content/20"
+                    style={{ color: getContrastTextColor("secondary") }}>
+                    @{user.publicSlug}
+                  </span>
+                )}
+                <div className="flex items-center bg-accent gap-1.5 border-2 border-base-content/20 px-2 py-1 rounded-md">
+                  <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke={getContrastTextColor()} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="text-xs font-semibold whitespace-nowrap" style={{ color: getContrastTextColor() }}>
+                    <span className="hidden sm:inline">Member </span>
+                    {new Date(user.createdAt).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'short'
+                    })}
                   </span>
                 </div>
-                <div className="min-w-0">
-                  <h1 className="text-xl font-bold text-base-content">
-                    {user.firstName} {user.lastName}
-                  </h1>
-                  {user.publicSlug && (
-                    <p className="text-primary font-medium text-sm">@{user.publicSlug}</p>
-                  )}
-                </div>
               </div>
-              
-              <div className="flex gap-2">
+
+              {/* Right side: Action Buttons (stays on top row) */}
+              <div className="flex gap-2 flex-shrink-0">
                 <button
                   onClick={() => navigate('/discover')}
-                  className="btn btn-sm btn-primary gap-2"
+                  className="btn btn-sm btn-primary gap-1 sm:gap-2 border-thick"
                   style={{ color: getContrastTextColor('primary') }}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
-                  Back
+                  <span className="hidden sm:inline">Back</span>
                 </button>
-                
+
                 <button
                   onClick={copyProfileUrl}
-                  className="btn btn-sm btn-outline gap-2"
+                  className="btn btn-sm btn-outline gap-1 sm:gap-2"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                   </svg>
-                  Share
+                  <span className="hidden sm:inline">Share</span>
                 </button>
               </div>
             </div>
-            
-            {/* Profile metadata and stats */}
-            <div className="flex flex-row gap-4 items-start">
-              {/* Left side - Member info & Bio */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 text-base-content/60 text-sm mb-3">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span>Member since {new Date(user.createdAt).toLocaleDateString('en-US', { 
-                    year: 'numeric', 
-                    month: 'long'
-                  })}</span>
+
+            {/* Bio */}
+            <div className="h-[3.5rem] flex-shrink-0">
+              {user.bio && (
+                <div className="inline-flex items-start px-2 py-0.5 rounded-md text-xs font-medium text-base-content/80 h-full w-full input input-bordered">
+                  <p className="text-sm text-base-content/70 line-clamp-2 leading-relaxed">
+                    {user.bio}
+                  </p>
                 </div>
-                
-                {/* Bio */}
-                {user.bio && (
-                  <div className="bg-base-200 p-3 rounded-lg">
-                    <p className="text-sm leading-relaxed text-base-content/80">{user.bio}</p>
-                  </div>
-                )}
-              </div>
+              )}
             </div>
           </div>
         </div>
@@ -159,9 +161,9 @@ const PublicProfilePage: React.FC = () => {
                 <Link
                   key={project.id}
                   to={`/discover/project/${project.publicSlug || project.id}`}
-                  className="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] border-2 border-base-content/20 w-full group"
+                  className="section-container transition-all duration-300 hover:scale-[1.02] w-full group block"
                 >
-                  <div className="card-body p-6 flex flex-col h-full">
+                  <div className="section-content p-6 flex flex-col h-full">
                     <div className="flex items-start gap-3 mb-4">
                       <div 
                         className="w-12 h-12 rounded-xl flex items-center justify-center text-lg font-bold flex-shrink-0 shadow-lg"
@@ -177,50 +179,71 @@ const PublicProfilePage: React.FC = () => {
                           {project.name}
                         </h3>
                         <div className="flex items-center gap-2 flex-wrap">
-                          <div className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-primary text-base-content/80 border-2 border-base-content/20 h-[1.5rem]">
+                          <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-primary border-2 border-base-content/20"
+                            style={{ color: getContrastTextColor() }}>
                             {project.category}
-                          </div>
+                          </span>
                           <span className="text-xs text-base-content/60">
-                            Updated {new Date(project.updatedAt).toLocaleDateString()}
+                            <span className="hidden sm:inline">Updated </span>
+                            {new Date(project.updatedAt).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'short'
+                            })}
                           </span>
                         </div>
                       </div>
                     </div>
 
-                    <p className="text-sm text-base-content/70 line-clamp-3 mb-4 flex-grow">
-                      {project.publicDescription || project.description}
-                    </p>
+                    <div className="h-[3.5rem] flex-shrink-0 mb-3">
+                      {project.description && (
+                        <div className={"inline-flex items-start px-2 py-0.5 rounded-md text-xs font-medium text-base-content/80 h-full w-full input input-bordered"}>
+                          <p className="text-sm text-base-content/70 line-clamp-2 leading-relaxed">
+                            {project.description}
+                          </p>
+                        </div>
+                      )}
+                    </div>
 
                     {/* Tags & Technologies Section */}
-                    <div className="space-y-3 mb-4">
+                    <div className="space-y-2 mb-4">
                       {/* Tags */}
                       {project.tags && project.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
+                        <div className="flex flex-wrap gap-2">
                           {project.tags.slice(0, 3).map((tag: string, index: number) => (
-                            <div key={index} className="badge badge-secondary badge-sm">
+                            <span key={index} className="inline-flex items-center px-2 py-1 rounded-md text-sm font-medium bg-secondary text-base-content/80 border-2 border-base-content/20"
+                              style={{ color: getContrastTextColor("secondary") }}>
                               {tag}
-                            </div>
+                            </span>
                           ))}
                           {project.tags.length > 3 && (
-                            <div className="badge badge-ghost badge-sm">
+                            <span className="inline-flex items-center px-2 py-1 rounded-md text-sm font-medium bg-secondary text-base-content/80 border-2 border-base-content/20"
+                              style={{ color: getContrastTextColor("secondary") }}>
                               +{project.tags.length - 3}
-                            </div>
+                            </span>
                           )}
                         </div>
                       )}
+                      {!project.tags || project.tags.length === 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                            <span className="inline-flex items-center px-2 py-1 rounded-md text-sm font-medium bg-secondary text-base-content/80 border-2 border-base-content/20"
+                              style={{ color: getContrastTextColor("secondary") }}>
+                              No Tags
+                            </span>
+                        </div>
+                      ) : null}
 
                       {/* Technologies */}
                       {project.technologies && project.technologies.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
+                        <div className="flex flex-wrap gap-2">
                           {project.technologies.slice(0, 4).map((tech: any, index: number) => (
-                            <div key={index} className="badge badge-outline badge-sm">
+                            <span key={index} className="inline-flex items-center px-2 py-1 rounded-md text-sm font-medium bg-base-200 text-base-content/80 border-2 border-base-content/20">
                               {tech.name}
-                            </div>
+                            </span>
                           ))}
                           {project.technologies.length > 4 && (
-                            <div className="badge badge-ghost badge-sm">
+                            <span className="inline-flex items-center px-2 py-1 rounded-md text-sm font-medium bg-base-200 text-base-content/80 border-2 border-base-content/20">
                               +{project.technologies.length - 4}
-                            </div>
+                            </span>
                           )}
                         </div>
                       )}
@@ -229,14 +252,14 @@ const PublicProfilePage: React.FC = () => {
                     {/* Deployment status */}
                     {project.deploymentData && project.deploymentData.deploymentStatus && (
                       <div className="flex justify-end">
-                        <div className={`badge badge-sm ${
-                          project.deploymentData.deploymentStatus === 'active' 
-                            ? 'badge-success' 
+                        <div className={`badge badge-sm border-thick ${
+                          project.deploymentData.deploymentStatus === 'active'
+                            ? 'badge-success'
                             : project.deploymentData.deploymentStatus === 'error'
                             ? 'badge-error'
                             : 'badge-warning'
                         }`}>
-                          {project.deploymentData.deploymentPlatform || 
+                          {project.deploymentData.deploymentPlatform ||
                            (project.deploymentData.deploymentStatus === 'active' ? 'Live' :
                             project.deploymentData.deploymentStatus === 'error' ? 'Error' : 'Inactive')}
                         </div>
@@ -248,8 +271,8 @@ const PublicProfilePage: React.FC = () => {
             </div>
           </div>
         ) : (
-          <div className="hero bg-base-100 rounded-2xl shadow-xl border border-base-200">
-            <div className="hero-content text-center py-16">
+          <div className="section-container">
+            <div className="section-content text-center py-16">
               <div>
                 <div className="w-24 h-24 bg-base-200 rounded-full flex items-center justify-center mx-auto mb-6">
                   <svg className="w-12 h-12 text-base-content/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">

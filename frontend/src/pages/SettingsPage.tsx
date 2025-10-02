@@ -264,7 +264,7 @@ const SettingsPage: React.FC = () => {
                       type="text"
                       value={color}
                       onChange={(e) => updateField('color', e.target.value)}
-                      className="input input-bordered input-sm flex-1 font-mono text-xs h-10"
+                      className="input input-bordered input-sm flex-1 font-mono text-xs h-10 md:w-10"
                       placeholder="#3B82F6"
                     />
                   </div>
@@ -323,7 +323,7 @@ const SettingsPage: React.FC = () => {
                       type="text"
                       value={newTag}
                       onChange={(e) => setNewTag(e.target.value)}
-                      className="input input-bordered input-sm flex-1 h-10"
+                      className="input input-bordered input-sm flex-1 h-10 lg:w-10"
                       placeholder="Add tag..."
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {

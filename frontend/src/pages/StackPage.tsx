@@ -452,8 +452,8 @@ const StackPage: React.FC = () => {
                 >
                   <div className="flex justify-between items-start mb-2">
                     <div className="flex items-center gap-2">
-                      <h4 
-                        className="font-semibold text-sm px-2 py-1 rounded-md bg-primary"
+                      <h4
+                        className="font-semibold text-sm px-2 py-1 rounded-md bg-primary border-thick"
                         style={{ color: getContrastTextColor() }}
                       >
                         {option.name}
@@ -605,7 +605,7 @@ const StackPage: React.FC = () => {
                         <div className="flex-1">
                           <div className="flex flex-col md:flex-row md:items-center gap-2 mb-2">
                             <h3
-                              className="font-semibold px-2 py-1 rounded-md bg-primary inline-block w-fit"
+                              className="font-semibold px-2 py-1 rounded-md bg-primary inline-block w-fit border-thick"
                               style={{ color: getContrastTextColor() }}
                             >
                               {tech.name}

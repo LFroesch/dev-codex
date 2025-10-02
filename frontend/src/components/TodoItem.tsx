@@ -227,11 +227,11 @@ const TodoItem: React.FC<TodoItemProps> = ({
         
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <h3 
-              className={`font-semibold text-lg leading-tight px-2 py-1 rounded-md bg-primary inline-block w-fit ${
+            <h3
+              className={`font-semibold text-lg leading-tight px-2 py-1 rounded-md bg-primary inline-block w-fit border-thick ${
                 todo.completed ? 'line-through text-base-content/60' : ''
               }`}
-              style={{ 
+              style={{
                 color: getContrastTextColor()
               }}
             >

@@ -131,7 +131,7 @@ const IdeasPage: React.FC<IdeasPageProps> = ({ onIdeasCountChange }) => {
               >
                 <div className="p-3 flex flex-col flex-1">
                   <div className="flex items-start justify-between mb-2">
-                    <h3 className="font-semibold text-base-content truncate px-2 py-1 rounded-md bg-primary inline-block w-fit"
+                    <h3 className="font-semibold text-base-content truncate px-2 py-1 rounded-md bg-primary inline-block w-fit border-thick"
                       style={{ color: getContrastTextColor() }}>
                       {idea.title}
                     </h3>

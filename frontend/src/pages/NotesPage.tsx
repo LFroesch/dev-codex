@@ -325,7 +325,7 @@ const NotesPage: React.FC = () => {
       <div className="flex justify-center px-2">
         <div className="tabs-container">
           <button 
-            className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'notes' ? 'tab-active' : ''}`}
+            className={`tab-button ${activeSection === 'notes' ? 'tab-active' : ''}`}
             style={activeSection === 'notes' ? {color: getContrastTextColor()} : {}}
             onClick={() => setActiveSection('notes')}
           >
@@ -335,7 +335,7 @@ const NotesPage: React.FC = () => {
             <span>Notes <span className="text-xs opacity-70">({selectedProject.notes?.length || 0})</span></span>
           </button>
           <button 
-            className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'todos' ? 'tab-active' : ''}`}
+            className={`tab-button ${activeSection === 'todos' ? 'tab-active' : ''}`}
             style={activeSection === 'todos' ? {color: getContrastTextColor()} : {}}
             onClick={() => setActiveSection('todos')}
           >
@@ -345,7 +345,7 @@ const NotesPage: React.FC = () => {
             <span>Todos <span className="text-xs opacity-70">({selectedProject.todos?.filter(todo => !todo.parentTodoId).length || 0})</span></span>
           </button>
           <button 
-            className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'devlog' ? 'tab-active' : ''}`}
+            className={`tab-button ${activeSection === 'devlog' ? 'tab-active' : ''}`}
             style={activeSection === 'devlog' ? {color: getContrastTextColor()} : {}}
             onClick={() => setActiveSection('devlog')}
           >

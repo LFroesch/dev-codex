@@ -170,6 +170,7 @@ const ResetPasswordPage: React.FC = () => {
             </Link>
           </div>
         </div>
+      </div>
     </div>
   );
 };

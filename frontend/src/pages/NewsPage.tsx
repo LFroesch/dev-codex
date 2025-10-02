@@ -184,7 +184,7 @@ const NewsPage: React.FC = () => {
       <div className="flex justify-center">
         <div className="tabs-container opacity-90">
           <button 
-            className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'all' ? 'tab-active' : ''}`}
+            className={`tab-button ${activeSection === 'all' ? 'tab-active' : ''}`}
             style={activeSection === 'all' ? {color: getContrastTextColor()} : {}}
             onClick={() => setActiveSection('all')}
           >
@@ -197,7 +197,7 @@ const NewsPage: React.FC = () => {
             return (
               <button 
                 key={type}
-                className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === type ? 'tab-active' : ''}`}
+                className={`tab-button ${activeSection === type ? 'tab-active' : ''}`}
                 style={activeSection === type ? {color: getContrastTextColor()} : {}}
                 onClick={() => setActiveSection(type)}
               >

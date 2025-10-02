@@ -153,7 +153,7 @@ const PublicPage: React.FC = () => {
       <div className="flex justify-center px-2">
         <div className="tabs-container">
           <button 
-            className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'overview' ? 'tab-active' : ''}`}
+            className={`tab-button ${activeSection === 'overview' ? 'tab-active' : ''}`}
             style={activeSection === 'overview' ? {color: getContrastTextColor()} : {}}
             onClick={() => setActiveSection('overview')}
           >
@@ -165,7 +165,7 @@ const PublicPage: React.FC = () => {
           {isPublic && (
             <>
               <button 
-                className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'url' ? 'tab-active' : ''}`}
+                className={`tab-button ${activeSection === 'url' ? 'tab-active' : ''}`}
                 style={activeSection === 'url' ? {color: getContrastTextColor()} : {}}
                 onClick={() => setActiveSection('url')}
               >
@@ -175,7 +175,7 @@ const PublicPage: React.FC = () => {
                 URL & Preview
               </button>
               <button 
-                className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'visibility' ? 'tab-active' : ''}`}
+                className={`tab-button ${activeSection === 'visibility' ? 'tab-active' : ''}`}
                 style={activeSection === 'visibility' ? {color: getContrastTextColor()} : {}}
                 onClick={() => setActiveSection('visibility')}
               >

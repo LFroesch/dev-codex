@@ -398,7 +398,7 @@ const StackPage: React.FC = () => {
               <button
                 key={category.id}
                 onClick={() => setActiveCategory(category.id)}
-                className={`tab tab-sm min-h-10 font-bold text-sm whitespace-nowrap ${
+                className={`tab-button whitespace-nowrap ${
                   activeCategory === category.id ? 'tab-active' : ''
                 }`}
                 style={activeCategory === category.id ? {color: getContrastTextColor()} : {}}
@@ -541,7 +541,7 @@ const StackPage: React.FC = () => {
       <div className="flex justify-center px-2">
         <div className="tabs-container">
           <button 
-            className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'add' ? 'tab-active' : ''}`}
+            className={`tab-button ${activeSection === 'add' ? 'tab-active' : ''}`}
             style={activeSection === 'add' ? {color: getContrastTextColor()} : {}}
             onClick={() => setActiveSection('add')}
           >
@@ -551,7 +551,7 @@ const StackPage: React.FC = () => {
             <span>Add Technologies</span>
           </button>
           <button 
-            className={`tab tab-sm min-h-10 font-bold text-sm ${activeSection === 'current' ? 'tab-active' : ''}`}
+            className={`tab-button ${activeSection === 'current' ? 'tab-active' : ''}`}
             style={activeSection === 'current' ? {color: getContrastTextColor()} : {}}
             onClick={() => setActiveSection('current')}
           >

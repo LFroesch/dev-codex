@@ -453,7 +453,7 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
           <div className="flex justify-center mb-6 px-2">
             <div className="tabs-container bg-base-200/50 backdrop-blur-sm border-subtle w-full max-w-4xl">
               <button 
-                className={`tab tab-sm sm:tab-lg min-h-14 sm:min-h-16 font-bold text-xs sm:text-base px-2 sm:px-4 whitespace-nowrap ${activeTab === 'overview' ? 'tab-active' : ''}`}
+                className={`tab-button-admin ${activeTab === 'overview' ? 'tab-active' : ''}`}
                 onClick={() => setActiveTab('overview')}
               >
                 <span className="mr-1">📈</span>
@@ -461,7 +461,7 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
                 <span className="sm:hidden">Overview</span>
               </button>
               <button 
-                className={`tab tab-sm sm:tab-lg min-h-14 sm:min-h-16 font-bold text-xs sm:text-base px-2 sm:px-4 whitespace-nowrap ${activeTab === 'users' ? 'tab-active' : ''}`}
+                className={`tab-button-admin ${activeTab === 'users' ? 'tab-active' : ''}`}
                 onClick={() => setActiveTab('users')}
               >
                 <span className="mr-1">👥</span>
@@ -469,7 +469,7 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
                 <span className="sm:hidden">Users</span>
               </button>
               <button 
-                className={`tab tab-sm sm:tab-lg min-h-14 sm:min-h-16 font-bold text-xs sm:text-base px-2 sm:px-4 whitespace-nowrap ${activeTab === 'projects' ? 'tab-active' : ''}`}
+                className={`tab-button-admin ${activeTab === 'projects' ? 'tab-active' : ''}`}
                 onClick={() => setActiveTab('projects')}
               >
                 <span className="mr-1">🚀</span>

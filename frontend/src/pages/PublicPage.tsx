@@ -293,39 +293,47 @@ const PublicPage: React.FC = () => {
               </div>
             </div>
             <div className="section-content">
-            <div className="form-control">
-              <label className="label cursor-pointer">
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-base-content/60 mt-1">
-                    Toggle your project's visibility in the community discover page.
-                    <br />
-                    Others will be able to view your project details, tech stack, and documentation.
-                  </p>
-                </div>
-                <div className="flex items-center gap-3 h-10 bg-base-200 border-thick rounded-lg p-1">
-                  <input
-                  type="checkbox"
-                  className="toggle toggle-success toggle-lg"
-                  checked={isPublic}
-                  onChange={(e) => setIsPublic(e.target.checked)}
-                  id="public-toggle"
-                  />
-                  <label htmlFor="public-toggle" className="font-semibold text-base-content cursor-pointer select-none">
-                  {isPublic ? (
-                    <span className="text-base-content">Public</span>
-                  ) : (
-                    <span className="text-base-content">Private</span>
-                  )}
-                  </label>
-                </div>
-              </label>
+            <div className="space-y-3">
+              <p className="text-sm text-base-content/60">
+                Toggle your project's visibility in the community discover page.
+                <br />
+                Others will be able to view your project details, tech stack, and documentation.
+              </p>
+
+              <div className="flex items-center justify-center gap-0 bg-base-200 border-thick rounded-lg p-1 w-fit">
+                <button
+                  type="button"
+                  onClick={() => setIsPublic(false)}
+                  className={`px-6 py-2 rounded-md font-semibold transition-all ${
+                    !isPublic
+                      ? 'bg-warning text-warning-content shadow-md'
+                      : 'text-base-content/60 hover:text-base-content'
+                  }`}
+                  style={!isPublic ? { color: getContrastTextColor('warning') } : {}}
+                >
+                  Private
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsPublic(true)}
+                  className={`px-6 py-2 rounded-md font-semibold transition-all ${
+                    isPublic
+                      ? 'bg-success text-success-content shadow-md'
+                      : 'text-base-content/60 hover:text-base-content'
+                  }`}
+                  style={isPublic ? { color: getContrastTextColor('success') } : {}}
+                >
+                  Public
+                </button>
+              </div>
+
+              {isPublic && (
+                <p className="text-sm bg-success/20 inline-block rounded-lg px-3 py-2 font-medium border-thick"
+                style={{ color: getContrastTextColor('success') }}>
+                  ☑️ Your project is publicly accessible
+                </p>
+              )}
             </div>
-                  {isPublic && (
-                    <p className="text-sm text-base-content bg-success/50 inline-block rounded-lg p-2 font-medium mt-2"
-                    style={{ color: getContrastTextColor('success') }}>
-                      ☑️ Your project is publicly accessible
-                    </p>
-                  )}
             </div>
           </div>
         </div>

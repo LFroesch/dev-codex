@@ -661,7 +661,7 @@ const Layout: React.FC = () => {
                 <h1 className="tablet:text-xl text-base font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text whitespace-nowrap">Dev Codex</h1>
                 
                 {/* Search bar on tablet - hidden on mobile */}
-                {user && selectedProject && (
+                {user && (
                   <div className="hidden tablet:flex relative ml-4 flex-center-gap-2">
                     <div className="relative">
                       <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-base-content/70 z-50 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">

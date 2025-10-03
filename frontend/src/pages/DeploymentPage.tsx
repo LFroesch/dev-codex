@@ -340,7 +340,7 @@ const DeploymentPage: React.FC = () => {
                     <span className="label-text font-medium">Deployment Status</span>
                   </label>
                   <select
-                    className="select select-bordered w-full font-mono font-semibold"
+                    className="input input-bordered w-full font-mono"
                     value={deploymentData.deploymentStatus || 'inactive'}
                     onChange={(e) => updateField('deploymentStatus', e.target.value as 'active' | 'inactive' | 'error')}
                   >

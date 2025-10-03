@@ -91,10 +91,30 @@ const DeploymentPage: React.FC = () => {
     updateField('environmentVariables', currentVars);
   };
 
-  const removeEnvironmentVariable = (index: number) => {
+  const removeEnvironmentVariable = async (index: number) => {
     const currentVars = [...(deploymentData.environmentVariables || [])];
     currentVars.splice(index, 1);
-    updateField('environmentVariables', currentVars);
+
+    // Update the deployment data immediately
+    const updatedData = { ...deploymentData, environmentVariables: currentVars };
+    setDeploymentData(updatedData);
+
+    // Auto-save after removal
+    if (selectedProject) {
+      setLoading(true);
+      try {
+        await onProjectUpdate(selectedProject.id, {
+          deploymentData: updatedData
+        });
+        setHasUnsavedChanges(false);
+      } catch (error) {
+        console.error('Failed to save after removal:', error);
+        setHasUnsavedChanges(true);
+      } finally {
+        setLoading(false);
+      }
+    }
+
     setDeleteConfirmation({ isOpen: false, index: -1, envKey: '' });
   };
 
@@ -260,7 +280,8 @@ const DeploymentPage: React.FC = () => {
               <button
                 onClick={handleSave}
                 disabled={loading || !hasUnsavedChanges}
-                className={`btn btn-sm ml-auto ${hasUnsavedChanges ? 'btn-primary' : 'btn-ghost'} ${loading ? 'loading' : ''}`}
+                className={`btn btn-sm ml-auto ${hasUnsavedChanges ? 'bg-success border-thick' : 'btn-ghost'} ${loading ? 'loading' : ''}`}
+                style={hasUnsavedChanges ? { color: getContrastTextColor('success') } : undefined}
               >
                 {loading ? 'Saving...' : hasUnsavedChanges ? 'Save Changes' : 'Saved'}
               </button>
@@ -319,7 +340,7 @@ const DeploymentPage: React.FC = () => {
                     <span className="label-text font-medium">Deployment Status</span>
                   </label>
                   <select
-                    className="select select-bordered w-full font-mono"
+                    className="select select-bordered w-full font-mono font-semibold"
                     value={deploymentData.deploymentStatus || 'inactive'}
                     onChange={(e) => updateField('deploymentStatus', e.target.value as 'active' | 'inactive' | 'error')}
                   >
@@ -403,22 +424,33 @@ const DeploymentPage: React.FC = () => {
       {activeSection === 'env' && (
         <div className="section-container mb-4">
           <div className="section-header">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <div className="section-icon">🔐</div>
-              <span>Environment Variables</span>
-              <div className="flex gap-2 ml-auto">
+              <span className="text-sm sm:text-base truncate">Env Variables</span>
+              <div className="flex gap-1 sm:gap-2 ml-auto shrink-0">
                 <button
                   onClick={addEnvironmentVariable}
-                  className="btn btn-primary btn-sm"
+                  className="btn btn-primary btn-sm h-8 sm:h-10 min-h-0"
+                  title="Add environment variable"
                 >
-                  Add Variable
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  <span className="hidden md:inline text-xs sm:text-sm">Add</span>
                 </button>
                 <button
                   onClick={handleSave}
                   disabled={loading || !hasUnsavedChanges}
-                  className={`btn btn-sm ${hasUnsavedChanges ? 'btn-primary' : 'btn-ghost'} ${loading ? 'loading' : ''}`}
+                  className={`btn btn-sm h-8 sm:h-10 min-h-0 ${hasUnsavedChanges ? 'bg-success border-thick' : 'btn-ghost'} ${loading ? 'loading' : ''}`}
+                  title={loading ? 'Saving...' : hasUnsavedChanges ? 'Save changes' : 'All changes saved'}
+                  style={hasUnsavedChanges ? { color: getContrastTextColor('success') } : undefined}
                 >
-                  {loading ? 'Saving...' : hasUnsavedChanges ? 'Save Changes' : 'Saved'}
+                  {!loading && (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                  <span className="hidden md:inline text-xs sm:text-sm">{loading ? 'Saving' : hasUnsavedChanges ? 'Save' : 'Saved'}</span>
                 </button>
               </div>
             </div>
@@ -435,26 +467,29 @@ const DeploymentPage: React.FC = () => {
           
           <div className="space-y-2">
             {(deploymentData.environmentVariables || []).map((envVar, index) => (
-              <div key={index} className="flex gap-2">
+              <div key={index} className="flex gap-1 sm:gap-2">
                 <input
                   type="text"
-                  placeholder="Key"
-                  className="input input-bordered w-1/3 font-mono"
+                  placeholder="KEY"
+                  className="input input-bordered input-sm sm:input-md w-[30%] sm:w-1/3 font-mono text-xs sm:text-sm"
                   value={envVar.key}
                   onChange={(e) => updateEnvironmentVariable(index, 'key', e.target.value)}
                 />
                 <input
                   type="text"
-                  placeholder="Value"
-                  className="input input-bordered flex-1 font-mono"
+                  placeholder="value"
+                  className="input input-bordered input-sm sm:input-md flex-1 font-mono text-xs sm:text-sm"
                   value={envVar.value}
                   onChange={(e) => updateEnvironmentVariable(index, 'value', e.target.value)}
                 />
                 <button
                   onClick={() => confirmRemoveEnvironmentVariable(index, envVar.key || `Variable ${index + 1}`)}
-                  className="btn btn-error btn-sm"
+                  className="btn btn-error btn-square h-8 sm:h-12 w-8 sm:w-12 min-h-0 shrink-0"
+                  title="Remove variable"
                 >
-                  Remove
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
                 </button>
               </div>
             ))}
@@ -481,7 +516,8 @@ const DeploymentPage: React.FC = () => {
               <button
                 onClick={handleSave}
                 disabled={loading || !hasUnsavedChanges}
-                className={`btn btn-sm ml-auto ${hasUnsavedChanges ? 'btn-primary' : 'btn-ghost'} ${loading ? 'loading' : ''}`}
+                className={`btn btn-sm ml-auto ${hasUnsavedChanges ? 'bg-success border-thick' : 'btn-ghost'} ${loading ? 'loading' : ''}`}
+                style={hasUnsavedChanges ? { color: getContrastTextColor('success') } : undefined}
               >
                 {loading ? 'Saving...' : hasUnsavedChanges ? 'Save Changes' : 'Saved'}
               </button>

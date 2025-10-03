@@ -54,7 +54,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
         <span className="label-text font-medium">
           {label}
           {required && <span className="text-error ml-1">*</span>}
-          <span className="text-xs text-base-content/50 ml-2">({getTimezoneAbbreviation()})</span>
+          <span className="text-xs text-base-content/80 ml-2">({getTimezoneAbbreviation()})</span>
         </span>
       </label>
       <input
@@ -62,7 +62,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
         value={formatDateForInput(value)}
         onChange={handleDateChange}
         min={minDate ? formatDateForInput(minDate) : undefined}
-        className="input input-bordered input-sm text-base-content/40 text-base-content/40"
+        className="input input-bordered input-sm text-base-content/80"
         placeholder={placeholder}
         required={required}
       />

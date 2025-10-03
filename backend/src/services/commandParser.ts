@@ -7,10 +7,31 @@ export enum CommandType {
   ADD_TODO = 'add_todo',
   ADD_NOTE = 'add_note',
   ADD_DEVLOG = 'add_devlog',
+  ADD_DOC = 'add_doc',
   VIEW_NOTES = 'view_notes',
   VIEW_TODOS = 'view_todos',
   VIEW_DEVLOG = 'view_devlog',
   VIEW_DOCS = 'view_docs',
+  ADD_TECH = 'add_tech',
+  ADD_PACKAGE = 'add_package',
+  VIEW_STACK = 'view_stack',
+  REMOVE_TECH = 'remove_tech',
+  REMOVE_PACKAGE = 'remove_package',
+  VIEW_DEPLOYMENT = 'view_deployment',
+  SET_DEPLOYMENT = 'set_deployment',
+  VIEW_PUBLIC = 'view_public',
+  SET_PUBLIC = 'set_public',
+  VIEW_TEAM = 'view_team',
+  INVITE_MEMBER = 'invite_member',
+  REMOVE_MEMBER = 'remove_member',
+  VIEW_SETTINGS = 'view_settings',
+  SET_NAME = 'set_name',
+  SET_DESCRIPTION = 'set_description',
+  ADD_TAG = 'add_tag',
+  REMOVE_TAG = 'remove_tag',
+  VIEW_NEWS = 'view_news',
+  SET_THEME = 'set_theme',
+  VIEW_THEMES = 'view_themes',
   SWAP_PROJECT = 'swap_project',
   WIZARD_NEW = 'wizard_new',
   WIZARD_SETUP = 'wizard_setup',
@@ -49,6 +70,9 @@ const COMMAND_ALIASES: Record<string, CommandType> = {
   'add devlog': CommandType.ADD_DEVLOG,
   'add-devlog': CommandType.ADD_DEVLOG,
   'devlog': CommandType.ADD_DEVLOG,
+  'add doc': CommandType.ADD_DOC,
+  'add-doc': CommandType.ADD_DOC,
+  'doc': CommandType.ADD_DOC,
 
   // View commands
   'view notes': CommandType.VIEW_NOTES,
@@ -89,6 +113,83 @@ const COMMAND_ALIASES: Record<string, CommandType> = {
   // Export commands
   'export': CommandType.EXPORT,
   'download': CommandType.EXPORT,
+
+  // Stack commands
+  'add tech': CommandType.ADD_TECH,
+  'add-tech': CommandType.ADD_TECH,
+  'tech': CommandType.ADD_TECH,
+  'add package': CommandType.ADD_PACKAGE,
+  'add-package': CommandType.ADD_PACKAGE,
+  'add-pkg': CommandType.ADD_PACKAGE,
+  'pkg': CommandType.ADD_PACKAGE,
+  'view stack': CommandType.VIEW_STACK,
+  'view-stack': CommandType.VIEW_STACK,
+  'stack': CommandType.VIEW_STACK,
+  'remove tech': CommandType.REMOVE_TECH,
+  'remove-tech': CommandType.REMOVE_TECH,
+  'rm tech': CommandType.REMOVE_TECH,
+  'remove package': CommandType.REMOVE_PACKAGE,
+  'remove-package': CommandType.REMOVE_PACKAGE,
+  'remove-pkg': CommandType.REMOVE_PACKAGE,
+  'rm pkg': CommandType.REMOVE_PACKAGE,
+
+  // Deployment commands
+  'view deployment': CommandType.VIEW_DEPLOYMENT,
+  'view-deployment': CommandType.VIEW_DEPLOYMENT,
+  'deployment': CommandType.VIEW_DEPLOYMENT,
+  'deploy': CommandType.VIEW_DEPLOYMENT,
+  'set deployment': CommandType.SET_DEPLOYMENT,
+  'set-deployment': CommandType.SET_DEPLOYMENT,
+
+  // Public commands
+  'view public': CommandType.VIEW_PUBLIC,
+  'view-public': CommandType.VIEW_PUBLIC,
+  'public': CommandType.VIEW_PUBLIC,
+  'set public': CommandType.SET_PUBLIC,
+  'set-public': CommandType.SET_PUBLIC,
+  'make public': CommandType.SET_PUBLIC,
+  'make private': CommandType.SET_PUBLIC,
+
+  // Team commands
+  'view team': CommandType.VIEW_TEAM,
+  'view-team': CommandType.VIEW_TEAM,
+  'team': CommandType.VIEW_TEAM,
+  'invite': CommandType.INVITE_MEMBER,
+  'invite member': CommandType.INVITE_MEMBER,
+  'remove member': CommandType.REMOVE_MEMBER,
+  'remove-member': CommandType.REMOVE_MEMBER,
+  'kick': CommandType.REMOVE_MEMBER,
+
+  // Settings commands
+  'view settings': CommandType.VIEW_SETTINGS,
+  'view-settings': CommandType.VIEW_SETTINGS,
+  'settings': CommandType.VIEW_SETTINGS,
+  'set name': CommandType.SET_NAME,
+  'set-name': CommandType.SET_NAME,
+  'rename': CommandType.SET_NAME,
+  'set description': CommandType.SET_DESCRIPTION,
+  'set-description': CommandType.SET_DESCRIPTION,
+  'describe': CommandType.SET_DESCRIPTION,
+  'add tag': CommandType.ADD_TAG,
+  'add-tag': CommandType.ADD_TAG,
+  'tag': CommandType.ADD_TAG,
+  'remove tag': CommandType.REMOVE_TAG,
+  'remove-tag': CommandType.REMOVE_TAG,
+  'untag': CommandType.REMOVE_TAG,
+
+  // News commands
+  'view news': CommandType.VIEW_NEWS,
+  'view-news': CommandType.VIEW_NEWS,
+  'news': CommandType.VIEW_NEWS,
+  'updates': CommandType.VIEW_NEWS,
+
+  // Theme commands
+  'set theme': CommandType.SET_THEME,
+  'set-theme': CommandType.SET_THEME,
+  'theme': CommandType.SET_THEME,
+  'view themes': CommandType.VIEW_THEMES,
+  'view-themes': CommandType.VIEW_THEMES,
+  'themes': CommandType.VIEW_THEMES,
 
   // Help
   'help': CommandType.HELP,
@@ -145,6 +246,18 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
     requiresProject: true,
     requiresArgs: true
   },
+  [CommandType.ADD_DOC]: {
+    type: CommandType.ADD_DOC,
+    syntax: '/add doc [type] [title] - [content] [@project]',
+    description: 'Create a new documentation template',
+    examples: [
+      '/add doc Model User - id, name, email @myproject',
+      '/doc API /api/users - GET all users endpoint',
+      '/add-doc ENV DATABASE_URL - MongoDB connection string'
+    ],
+    requiresProject: true,
+    requiresArgs: true
+  },
   [CommandType.VIEW_NOTES]: {
     type: CommandType.VIEW_NOTES,
     syntax: '/view notes [@project]',
@@ -195,12 +308,12 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
   },
   [CommandType.SWAP_PROJECT]: {
     type: CommandType.SWAP_PROJECT,
-    syntax: '/swap-project [@project]',
+    syntax: '/swap [@project]',
     description: 'Switch to a different project',
     examples: [
-      '/swap-project @myproject',
-      '/swap @frontend',
-      '/switch-project @backend'
+      '/swap @myproject',
+      '/swap frontend',
+      '/switch backend'
     ],
     requiresProject: true,
     requiresArgs: false
@@ -251,6 +364,238 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
       '/download @frontend'
     ],
     requiresProject: true,
+    requiresArgs: false
+  },
+  [CommandType.ADD_TECH]: {
+    type: CommandType.ADD_TECH,
+    syntax: '/add tech [name] --category=[category] --version=[version] [@project]',
+    description: 'Add a technology to the tech stack',
+    examples: [
+      '/add tech React --category=framework --version=18.2.0 @myproject',
+      '/tech Node.js --category=runtime',
+      '/add-tech PostgreSQL --category=database @backend'
+    ],
+    requiresProject: true,
+    requiresArgs: true
+  },
+  [CommandType.ADD_PACKAGE]: {
+    type: CommandType.ADD_PACKAGE,
+    syntax: '/add package [name] --category=[category] --version=[version] [@project]',
+    description: 'Add a package to the project',
+    examples: [
+      '/add package express --category=api --version=4.18.0 @backend',
+      '/pkg axios --category=api',
+      '/add-pkg tailwindcss --category=ui @frontend'
+    ],
+    requiresProject: true,
+    requiresArgs: true
+  },
+  [CommandType.VIEW_STACK]: {
+    type: CommandType.VIEW_STACK,
+    syntax: '/view stack [@project]',
+    description: 'View the tech stack and packages',
+    examples: [
+      '/view stack @myproject',
+      '/stack',
+      '/view-stack @backend'
+    ],
+    requiresProject: true,
+    requiresArgs: false
+  },
+  [CommandType.REMOVE_TECH]: {
+    type: CommandType.REMOVE_TECH,
+    syntax: '/remove tech [name] [@project]',
+    description: 'Remove a technology from the stack',
+    examples: [
+      '/remove tech React @myproject',
+      '/rm tech Node.js',
+      '/remove-tech PostgreSQL @backend'
+    ],
+    requiresProject: true,
+    requiresArgs: true
+  },
+  [CommandType.REMOVE_PACKAGE]: {
+    type: CommandType.REMOVE_PACKAGE,
+    syntax: '/remove package [name] [@project]',
+    description: 'Remove a package from the project',
+    examples: [
+      '/remove package express @backend',
+      '/rm pkg axios',
+      '/remove-pkg tailwindcss @frontend'
+    ],
+    requiresProject: true,
+    requiresArgs: true
+  },
+  [CommandType.VIEW_DEPLOYMENT]: {
+    type: CommandType.VIEW_DEPLOYMENT,
+    syntax: '/view deployment [@project]',
+    description: 'View deployment information',
+    examples: [
+      '/view deployment @myproject',
+      '/deployment',
+      '/deploy'
+    ],
+    requiresProject: true,
+    requiresArgs: false
+  },
+  [CommandType.SET_DEPLOYMENT]: {
+    type: CommandType.SET_DEPLOYMENT,
+    syntax: '/set deployment --url=[url] --platform=[platform] --status=[status] [@project]',
+    description: 'Update deployment settings',
+    examples: [
+      '/set deployment --url=https://myapp.com --platform=vercel',
+      '/set-deployment --status=active --branch=main',
+      '/set deployment --url=https://api.example.com @backend'
+    ],
+    requiresProject: true,
+    requiresArgs: false
+  },
+  [CommandType.VIEW_PUBLIC]: {
+    type: CommandType.VIEW_PUBLIC,
+    syntax: '/view public [@project]',
+    description: 'View public settings',
+    examples: [
+      '/view public @myproject',
+      '/public'
+    ],
+    requiresProject: true,
+    requiresArgs: false
+  },
+  [CommandType.SET_PUBLIC]: {
+    type: CommandType.SET_PUBLIC,
+    syntax: '/set public --enabled=[true/false] --slug=[slug] [@project]',
+    description: 'Toggle public visibility and set slug',
+    examples: [
+      '/set public --enabled=true --slug=my-awesome-project',
+      '/make public --slug=my-project @myproject',
+      '/make private @myproject'
+    ],
+    requiresProject: true,
+    requiresArgs: false
+  },
+  [CommandType.VIEW_TEAM]: {
+    type: CommandType.VIEW_TEAM,
+    syntax: '/view team [@project]',
+    description: 'View team members',
+    examples: [
+      '/view team @myproject',
+      '/team'
+    ],
+    requiresProject: true,
+    requiresArgs: false
+  },
+  [CommandType.INVITE_MEMBER]: {
+    type: CommandType.INVITE_MEMBER,
+    syntax: '/invite [email] --role=[editor/viewer] [@project]',
+    description: 'Invite a user to the project',
+    examples: [
+      '/invite user@example.com --role=editor @myproject',
+      '/invite colleague@company.com @myproject',
+      '/invite friend@email.com --role=viewer'
+    ],
+    requiresProject: true,
+    requiresArgs: true
+  },
+  [CommandType.REMOVE_MEMBER]: {
+    type: CommandType.REMOVE_MEMBER,
+    syntax: '/remove member [email] [@project]',
+    description: 'Remove a team member',
+    examples: [
+      '/remove member user@example.com @myproject',
+      '/kick colleague@company.com'
+    ],
+    requiresProject: true,
+    requiresArgs: true
+  },
+  [CommandType.VIEW_SETTINGS]: {
+    type: CommandType.VIEW_SETTINGS,
+    syntax: '/view settings [@project]',
+    description: 'View project settings',
+    examples: [
+      '/view settings @myproject',
+      '/settings'
+    ],
+    requiresProject: true,
+    requiresArgs: false
+  },
+  [CommandType.SET_NAME]: {
+    type: CommandType.SET_NAME,
+    syntax: '/set name [new name] [@project]',
+    description: 'Update project name',
+    examples: [
+      '/set name My Awesome Project @myproject',
+      '/rename New Project Name'
+    ],
+    requiresProject: true,
+    requiresArgs: true
+  },
+  [CommandType.SET_DESCRIPTION]: {
+    type: CommandType.SET_DESCRIPTION,
+    syntax: '/set description [new description] [@project]',
+    description: 'Update project description',
+    examples: [
+      '/set description A web app for managing tasks @myproject',
+      '/describe This is my new project'
+    ],
+    requiresProject: true,
+    requiresArgs: true
+  },
+  [CommandType.ADD_TAG]: {
+    type: CommandType.ADD_TAG,
+    syntax: '/add tag [tag name] [@project]',
+    description: 'Add a tag to the project',
+    examples: [
+      '/add tag react @myproject',
+      '/tag typescript',
+      '/add-tag web-app'
+    ],
+    requiresProject: true,
+    requiresArgs: true
+  },
+  [CommandType.REMOVE_TAG]: {
+    type: CommandType.REMOVE_TAG,
+    syntax: '/remove tag [tag name] [@project]',
+    description: 'Remove a tag from the project',
+    examples: [
+      '/remove tag react @myproject',
+      '/untag typescript'
+    ],
+    requiresProject: true,
+    requiresArgs: true
+  },
+  [CommandType.VIEW_NEWS]: {
+    type: CommandType.VIEW_NEWS,
+    syntax: '/view news',
+    description: 'View latest news and updates',
+    examples: [
+      '/view news',
+      '/news',
+      '/updates'
+    ],
+    requiresProject: false,
+    requiresArgs: false
+  },
+  [CommandType.SET_THEME]: {
+    type: CommandType.SET_THEME,
+    syntax: '/set theme [theme name]',
+    description: 'Change the application theme',
+    examples: [
+      '/set theme dark',
+      '/theme light',
+      '/set-theme cyberpunk'
+    ],
+    requiresProject: false,
+    requiresArgs: true
+  },
+  [CommandType.VIEW_THEMES]: {
+    type: CommandType.VIEW_THEMES,
+    syntax: '/view themes',
+    description: 'List all available themes',
+    examples: [
+      '/view themes',
+      '/themes'
+    ],
+    requiresProject: false,
     requiresArgs: false
   },
   [CommandType.HELP]: {
@@ -309,14 +654,15 @@ export class CommandParser {
     const withoutSlash = trimmed.slice(1);
 
     // Extract @project mention if present (handles spaces in project names)
+    // Must be preceded by whitespace or start of string to avoid matching emails
     // Captures everything after @ until we hit --, another @, or end of string
-    const projectMatch = withoutSlash.match(/@([^@]+?)(?:\s+--|\s+@|$)/);
+    const projectMatch = withoutSlash.match(/(?:^|\s)@([^@]+?)(?:\s+--|\s+@|$)/);
     if (projectMatch) {
       result.projectMention = projectMatch[1].trim();
     }
 
-    // Remove @project mention to parse rest of command
-    const withoutProject = withoutSlash.replace(/@[^@]+?(?=\s+--|@|$)/g, '').trim();
+    // Remove @project mention to parse rest of command (only those preceded by whitespace/start)
+    const withoutProject = withoutSlash.replace(/(?:^|\s)@[^@]+?(?=\s+--|@|$)/g, '').trim();
 
     // Extract flags (--flag or -f)
     const flagMatches = withoutProject.matchAll(/--?(\w+)(?:=(\S+))?/g);

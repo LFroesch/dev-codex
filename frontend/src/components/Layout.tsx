@@ -869,10 +869,10 @@ const Layout: React.FC = () => {
                   <span className="text-xs sm:text-sm">Discover</span>
                 </button>
                 <button
-                  className={`tab tab-sm flex-shrink-0 min-h-10 ${location.pathname === '/braindump' ? 'tab-active' : ''} gap-1 sm:gap-2 font-bold whitespace-nowrap px-2 sm:px-4`}
-                  style={location.pathname === '/braindump' ? {color: getContrastTextColor()} : {}}
+                  className={`tab tab-sm flex-shrink-0 min-h-10 ${location.pathname === '/terminal' ? 'tab-active' : ''} gap-1 sm:gap-2 font-bold whitespace-nowrap px-2 sm:px-4`}
+                  style={location.pathname === '/terminal' ? {color: getContrastTextColor()} : {}}
                   onClick={() => {
-                    handleNavigateWithCheck('/braindump');
+                    handleNavigateWithCheck('/terminal');
                   }}
                 >
                   <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1068,9 +1068,9 @@ const Layout: React.FC = () => {
                 Discover
               </button>
               <button
-                className={`tab-button ${location.pathname === '/braindump' ? 'tab-active' : ''} gap-2`}
-                style={location.pathname === '/braindump' ? {color: getContrastTextColor()} : {}}
-                onClick={() => handleNavigateWithCheck('/braindump')}
+                className={`tab-button ${location.pathname === '/terminal' ? 'tab-active' : ''} gap-2`}
+                style={location.pathname === '/terminal' ? {color: getContrastTextColor()} : {}}
+                onClick={() => handleNavigateWithCheck('/terminal')}
               >
                 <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -1523,9 +1523,9 @@ const Layout: React.FC = () => {
               </div>
             </div>
           </>
-        ) : location.pathname === '/braindump' ? (
+        ) : location.pathname === '/terminal' ? (
           /* Terminal - Command Interface */
-          <div className="flex-1 overflow-auto border-2 border-base-content/20 bg-gradient-to-br from-base-50 to-base-100/50 mx-4 my-4 rounded-2xl shadow-2xl backdrop-blur-none container-height-fix">
+          <div className="flex-1 overflow-hidden border-2 border-base-content/20 bg-gradient-to-br from-base-50 to-base-100/50 mx-4 my-4 rounded-2xl shadow-2xl backdrop-blur-none container-height-fix">
             <div className="h-full">
               <Outlet context={{
                 user,

@@ -1,51 +1,90 @@
 # Terminal/CLI Implementation Status
 
 ## ✅ PHASE 1 COMPLETE: Backend Command Infrastructure
+## ✅ PHASE 2 COMPLETE: Frontend Terminal Interface (Color Scheme Updated)
+## ✅ PHASES 4 & 5 COMPLETE: News, Theme, and Command Expansion
 
 ### What's Been Built:
 
 #### 1. Command Parser (`backend/src/services/commandParser.ts`)
-**Status**: ✅ Complete and tested
-- **Line Count**: ~500 lines
+**Status**: ✅ Complete and tested (Expanded)
+- **Line Count**: ~800 lines
 - **Features**:
-  - Parses 15+ command types with intelligent aliases
+  - Parses 30+ command types with intelligent aliases
   - Extracts @project mentions, arguments, and flags
   - Command validation and error reporting
   - Suggestion system for autocomplete
   - Full metadata for all commands
+  - Support for news, theme, stack, deployment, team, and settings commands
 
 **Example Commands Supported**:
 ```bash
 /add todo fix authentication bug @myproject
 /add note API architecture decisions @backend
 /view notes @myproject
-/swap-project frontend
+/swap frontend
 /export @myproject
 /help
 ```
 
 #### 2. Command Executor (`backend/src/services/commandExecutor.ts`)
-**Status**: ✅ Complete and tested
-- **Line Count**: ~700 lines
+**Status**: ✅ Complete and tested (Expanded with 30+ commands)
+- **Line Count**: ~2300 lines
 - **Features**:
   - Executes parsed commands via existing CRUD APIs
   - Smart project resolution: current context → @mention → prompt user
   - Fuzzy project name matching
   - Structured responses for terminal UI
   - Full permission checking
+  - News and theme management
+  - Stack and deployment commands
+  - Team collaboration commands
 
 **Command Implementations**:
+
+**Add Commands:**
 - ✅ `/add todo` - Creates todos via existing API
 - ✅ `/add note` - Creates notes via existing API
 - ✅ `/add devlog` - Creates dev log entries
+- ✅ `/add doc` - Creates documentation templates
+- ✅ `/add tech` - Adds technology to tech stack
+- ✅ `/add package` - Adds package to project
+- ✅ `/add tag` - Adds tag to project
+
+**View Commands:**
 - ✅ `/view notes` - Lists all notes in project
 - ✅ `/view todos` - Lists all todos with status
 - ✅ `/view devlog` - Lists dev log entries
 - ✅ `/view docs` - Lists documentation
-- ✅ `/swap-project` - Switch active project
+- ✅ `/view stack` - View tech stack and packages
+- ✅ `/view deployment` - View deployment information
+- ✅ `/view public` - View public settings
+- ✅ `/view team` - View team members
+- ✅ `/view settings` - View project settings
+- ✅ `/view news` - View latest news and updates
+- ✅ `/view themes` - List all available themes
+
+**Set Commands:**
+- ✅ `/set deployment` - Update deployment settings
+- ✅ `/set public` - Toggle public visibility
+- ✅ `/set name` - Update project name
+- ✅ `/set description` - Update project description
+- ✅ `/set theme` - Change application theme
+
+**Remove Commands:**
+- ✅ `/remove tech` - Remove technology from stack
+- ✅ `/remove package` - Remove package from project
+- ✅ `/remove member` - Remove team member
+- ✅ `/remove tag` - Remove tag from project
+
+**Project Management:**
+- ✅ `/swap` - Switch active project
 - ✅ `/export` - Export project data
+- ✅ `/invite` - Invite user to project
+
+**Other:**
 - ✅ `/help` - Show command help
-- 🚧 `/wizard new/setup/deploy` - Placeholder (Phase 3)
+- 🚧 `/wizard new/setup/deploy` - Placeholder (Future)
 
 #### 3. Terminal API Routes (`backend/src/routes/terminal.ts`)
 **Status**: ✅ Complete and tested
@@ -122,34 +161,73 @@ curl http://localhost:5003/api/terminal/commands \
 
 ---
 
-## 🚀 What's Next: Phase 2 - Frontend Terminal Interface
+## ✅ PHASE 2: Frontend Terminal Interface - COMPLETE
 
-### Tasks Remaining:
+### Completed Components:
 
-1. **Frontend Terminal API Service** (`frontend/src/api/terminal.ts`)
-   - Create TerminalService class extending BaseApiService
-   - Implement methods for execute, getCommands, getProjects
+1. **Frontend Terminal API Service** (`frontend/src/api/terminal.ts`) ✅
+   - TerminalService class extending BaseApiService
+   - Methods for execute, getCommands, getProjects
+   - Full TypeScript type definitions
 
-2. **TerminalInput Component** (`frontend/src/components/TerminalInput.tsx`)
+2. **TerminalInput Component** (`frontend/src/components/TerminalInput.tsx`) ✅
    - Command input with syntax highlighting
    - Dual autocomplete (/ for commands, @ for projects)
    - Command history navigation (↑/↓ arrows)
    - Multi-line support (Shift+Enter)
+   - Matches site color scheme (bg-base-200, border-base-content/20)
 
-3. **CommandResponse Component** (`frontend/src/components/CommandResponse.tsx`)
-   - Render different response types (success, error, data, prompt)
-   - Format todo/note/devlog lists
-   - Syntax highlighting
+3. **CommandResponse Component** (`frontend/src/components/CommandResponse.tsx`) ✅
+   - Renders all response types (success, error, data, prompt)
+   - Formatted todo/note/devlog/docs lists
+   - Syntax highlighting with primary colors
+   - Consistent color scheme with site
 
-4. **BrainDumpPage Overhaul** (`frontend/src/pages/BrainDumpPage.tsx`)
-   - Replace prototype with real terminal interface
-   - Integrate TerminalInput and CommandResponse
-   - Connect to terminal API
-   - Handle project context
+4. **TerminalPage** (`frontend/src/pages/TerminalPage.tsx`) ✅
+   - Full terminal interface implementation
+   - Connected to terminal API
+   - Handles project context switching
+   - Welcome message with examples
+   - Real-time command execution
 
-5. **Layout.tsx Updates**
-   - Uncomment /braindump tab
-   - Pass project context to BrainDumpPage
+5. **Layout.tsx Integration** ✅
+   - Terminal tab added to navigation
+   - Project context passed to TerminalPage
+   - Cross-tab project sync support
+
+### Color Scheme Updates (2025-10-03):
+
+**Aligned with site-wide design system:**
+- ✅ Solid backgrounds (bg-base-100, bg-base-200) - no semi-transparent
+- ✅ Consistent borders (border-2 border-base-content/20)
+- ✅ Better text contrast (text-base-content/70-80 for main, /60 for secondary)
+- ✅ Primary color highlights for commands and interactive elements
+- ✅ Shadow effects matching site cards
+- ✅ Hover states with bg-base-300/50
+- ✅ Border accents on all list items (border border-base-content/10)
+- ✅ `getContrastTextColor()` utility used for all primary buttons
+
+### Navigation & UX Updates (2025-10-03):
+
+**CTA Buttons in Responses:**
+- ✅ "View Todos" button (navigates to `/notes?section=todos`)
+- ✅ "View Notes" button (navigates to `/notes?section=notes`)
+- ✅ "View Dev Log" button (navigates to `/notes?section=devlog`)
+- ✅ "View Docs" button (navigates to `/docs`)
+- ✅ "Open Project" button (navigates to `/notes`)
+- ✅ All buttons auto-switch projects before navigation if needed
+- ✅ Uses `getContrastTextColor('primary')` for proper text contrast
+
+**Query Parameter Support:**
+- ✅ NotesPage now supports `?section=` query parameter
+- ✅ Automatically switches to correct subsection on load
+- ✅ Updates URL when tabs are clicked (shareable links)
+- ✅ Browser back/forward navigation works correctly
+
+**Terminal UX:**
+- ✅ "Back to Top" button added to input area
+- ✅ Smooth scroll to top functionality
+- ✅ Full-width button for easy access
 
 ---
 
@@ -236,15 +314,95 @@ Frontend (Phase 2):
 ## 📅 Timeline
 
 - ✅ **Phase 1**: Backend (Days 1-3) - COMPLETE
-- 🚧 **Phase 2**: Frontend (Days 4-6) - PENDING
-- 🚧 **Phase 3**: Wizards & Advanced Features (Days 7-9) - PENDING
-- 🚧 **Phase 4**: Testing & Polish (Days 10-11) - PENDING
-- 🚧 **Phase 5**: Future CLI Prep (Day 12) - PENDING
+- ✅ **Phase 2**: Frontend (Days 4-6) - COMPLETE (Colors updated 2025-10-03)
+- 🚧 **Phase 3**: Wizards & Advanced Features (Days 7-9) - OPTIONAL
+- ✅ **Phase 4**: Command Expansion (News & Theme) - COMPLETE (2025-10-03)
+- ✅ **Phase 5**: Documentation & Polish - COMPLETE (2025-10-03)
 
-**Current Progress**: 20% complete (Phase 1 of 5)
+**Current Progress**: 80% complete (Phases 1, 2, 4, 5 of 5)
 
 ---
 
-**Last Updated**: 2025-10-02
-**Status**: Phase 1 Complete ✅
-**Next**: Start Phase 2 (Frontend Terminal Interface)
+**Last Updated**: 2025-10-03
+**Status**: Phases 1, 2, 4, 5 Complete ✅ (30+ commands, news, themes, full expansion)
+**Next**: Phase 3 (Wizards & Advanced Features - optional)
+
+---
+
+## 📋 Session Summary for Next Claude
+
+### What's Been Completed:
+
+**Terminal Features:**
+- Full command execution system with backend API
+- Dual autocomplete (/ for commands, @ for projects)
+- Command history navigation (↑/↓)
+- Real-time command responses with formatted data
+- Project switching via terminal commands
+- Help system with grouped commands
+
+**Color & Design:**
+- Color scheme matches site-wide design (Layout.tsx patterns)
+- Uses `getContrastTextColor()` utility for all primary buttons
+- Solid backgrounds (no semi-transparent)
+- Consistent borders and text contrast
+- Proper hover states
+
+**Navigation:**
+- CTA buttons in command responses
+- Auto project-switching before navigation
+- Query parameter support in NotesPage (`?section=todos/notes/devlog`)
+- "Back to Top" button in terminal input
+
+**Components:**
+- `TerminalPage.tsx` - Main terminal interface
+- `TerminalInput.tsx` - Command input with autocomplete
+- `CommandResponse.tsx` - Response rendering with CTA buttons
+- `terminal.ts` (API) - Backend integration
+- `NotesPage.tsx` - Updated with query param support
+
+### Files Modified (This Session):
+1. `/backend/src/services/commandParser.ts` - Added NEWS and THEME command types
+2. `/backend/src/services/commandExecutor.ts` - Implemented news and theme handlers
+3. `/frontend/src/components/CommandResponse.tsx` - Added news/theme rendering, theme auto-reload
+4. `/md_files/TERMINAL_STATUS.md` - Updated with phase 4 & 5 completion
+
+### Key Patterns Used:
+- `bg-base-200` for backgrounds (solid, not semi-transparent)
+- `border-2 border-base-content/20` for main borders
+- `border border-base-content/10` for item borders
+- `text-base-content/70-80` for main text
+- `text-base-content/60` for secondary text
+- `getContrastTextColor('primary')` for primary button text
+- `handleNavigateToProject()` checks current project before navigation
+
+### Latest Changes (Phases 4 & 5 - 2025-10-03):
+**New Commands Added:**
+- `/view news` - View latest news and updates
+- `/view themes` - List all available DaisyUI themes
+- `/set theme [name]` - Change application theme with auto-reload
+
+**New Features:**
+- Theme changes automatically apply and reload the page
+- News rendering with type badges and summaries
+- Theme grid view with click-to-copy functionality
+- Full command expansion (30+ commands total)
+- Updated help system with new command categories
+
+**Backend Enhancements:**
+- Dynamic News model loading in commandExecutor
+- User settings integration for theme persistence
+- 28 DaisyUI themes supported
+- News fetching with pagination (5 latest)
+
+**Frontend Enhancements:**
+- Theme auto-apply on change with page reload
+- News cards with type badges
+- Theme grid with descriptions
+- Click-to-copy theme commands
+
+### What Still Needs Work (Phase 3 - Optional):
+- `/wizard` commands for interactive flows
+- Advanced command features
+- More sophisticated NLP parsing
+- CLI token authentication system

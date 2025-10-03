@@ -513,7 +513,7 @@ interface AIUsage {
 
  🎯 Overview
 
-    Transform the BrainDumpPage into a full-featured terminal/CLI interface with unified command API, supporting commands like /add todo @projectxyz, /swap-project x, /wizard 
+    Transform the BrainDumpPage into a full-featured terminal/CLI interface with unified command API, supporting commands like /add todo @projectxyz, /swap x, /wizard
     new, etc., with autocomplete for both projects (@) and commands (/).
 
     ---
@@ -556,7 +556,7 @@ interface AIUsage {
       - /add todo [@project] [text] - Create todo
       - /add note [@project] [text] - Create note
       - /add devlog [@project] [text] - Create dev log
-      - /swap-project [name] - Switch active project
+      - /swap [name] - Switch active project
       - /wizard new - Interactive project creation
       - /export [project] - Export project data
       - /view notes [@project] - List notes
@@ -644,11 +644,11 @@ interface AIUsage {
 
     For each command in commandExecutor.ts:
     - /add todo - Call existing POST /api/projects/:id/todos
-    - /add note - Call existing POST /api/projects/:id/notes  
+    - /add note - Call existing POST /api/projects/:id/notes
     - /add devlog - Call existing POST /api/projects/:id/devlog
     - /view notes - Call existing GET /api/projects/:id
     - /view todos - Call existing GET /api/projects/:id
-    - /swap-project - Return project data for frontend to switch
+    - /swap - Return project data for frontend to switch
     - /export - Call existing GET /api/projects/:id/export
 
     3.2 Create Interactive Wizard System

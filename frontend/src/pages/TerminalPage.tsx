@@ -17,7 +17,7 @@ interface TerminalEntry {
   timestamp: Date;
 }
 
-const BrainDumpPage: React.FC = () => {
+const TerminalPage: React.FC = () => {
   const { currentProjectId, onProjectSwitch } = useOutletContext<ContextType>();
   const [entries, setEntries] = useState<TerminalEntry[]>([]);
   const [isExecuting, setIsExecuting] = useState(false);
@@ -102,74 +102,71 @@ const BrainDumpPage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-base-100">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b-2 border-base-content/10 bg-base-200/30">
-        <div className="flex items-center gap-3">
-          <div className="text-2xl">💻</div>
+    <div className="flex flex-col h-full max-h-full overflow-hidden">
+      {/* Header - Compact */}
+      <div className="flex-shrink-0 flex items-center justify-between p-3 border-b-2 border-base-content/20 bg-base-200">
+        <div className="flex items-center gap-2">
+          <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
           <div>
-            <h1 className="text-2xl font-bold">Terminal</h1>
-            <p className="text-sm text-base-content/60">
-              Command-line interface for project management
-            </p>
+            <h1 className="text-lg font-bold">Terminal</h1>
+            <p className="text-xs text-base-content/70">Command-line interface</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={handleClearTerminal}
-            className="btn btn-sm btn-ghost gap-2"
-            title="Clear terminal"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-            Clear
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={handleClearTerminal}
+          className="btn btn-sm btn-ghost gap-1"
+          title="Clear terminal"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+          <span className="hidden sm:inline">Clear</span>
+        </button>
       </div>
 
-      {/* Terminal Output */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 font-mono text-sm">
-        {/* Welcome Message */}
+      {/* Terminal Output - Scrollable */}
+      <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3 font-mono text-sm">
+        {/* Welcome Message - Compact */}
         {showWelcome && (
-          <div className="space-y-4 animate-fade-in">
-            <div className="border-2 border-primary/20 rounded-lg p-6 bg-base-200/30">
-              <div className="flex items-start gap-4">
-                <div className="text-4xl">👋</div>
+          <div className="animate-fade-in">
+            <div className="border-2 border-base-content/20 rounded-lg p-4 bg-base-100 shadow-md">
+              <div className="flex items-start gap-3">
+                <div className="text-2xl">💻</div>
                 <div className="flex-1">
-                  <h2 className="text-xl font-bold mb-2">Welcome to Terminal Mode!</h2>
-                  <p className="text-base-content/70 mb-4">
-                    Execute commands to manage your projects faster. Type <code className="px-2 py-0.5 bg-base-content/10 rounded">/help</code> to see available commands.
+                  <h2 className="text-lg font-bold mb-2">Welcome to Terminal!</h2>
+                  <p className="text-sm text-base-content/70 mb-3">
+                    Execute commands to manage your projects. Type <code className="px-1.5 py-0.5 bg-base-200 rounded text-xs text-primary">/help</code> for available commands.
                   </p>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className="p-3 bg-base-100 rounded-lg border border-base-content/10">
-                      <div className="text-sm font-semibold mb-2 text-primary">Quick Start</div>
-                      <div className="space-y-1 text-xs">
-                        <div><code className="text-primary">/add todo</code> - Create a todo</div>
-                        <div><code className="text-primary">/add note</code> - Create a note</div>
-                        <div><code className="text-primary">/view todos</code> - List all todos</div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <div className="p-2.5 bg-base-200 rounded-lg border-2 border-base-content/20">
+                      <div className="text-xs font-semibold mb-1.5 text-primary">Quick Start</div>
+                      <div className="space-y-0.5 text-xs text-base-content/70">
+                        <div><code className="text-primary">/add todo</code> - Create todo</div>
+                        <div><code className="text-primary">/add note</code> - Create note</div>
+                        <div><code className="text-primary">/view todos</code> - List todos</div>
                       </div>
                     </div>
 
-                    <div className="p-3 bg-base-100 rounded-lg border border-base-content/10">
-                      <div className="text-sm font-semibold mb-2 text-primary">Features</div>
-                      <div className="space-y-1 text-xs">
-                        <div>✨ Command autocomplete with <kbd className="kbd kbd-xs">/</kbd></div>
-                        <div>📁 Project autocomplete with <kbd className="kbd kbd-xs">@</kbd></div>
-                        <div>⏮️ Command history with <kbd className="kbd kbd-xs">↑</kbd><kbd className="kbd kbd-xs">↓</kbd></div>
+                    <div className="p-2.5 bg-base-200 rounded-lg border-2 border-base-content/20">
+                      <div className="text-xs font-semibold mb-1.5 text-primary">Features</div>
+                      <div className="space-y-0.5 text-xs text-base-content/70">
+                        <div>✨ Commands with <kbd className="kbd kbd-xs">/</kbd></div>
+                        <div>📁 Projects with <kbd className="kbd kbd-xs">@</kbd></div>
+                        <div>⏮️ History with <kbd className="kbd kbd-xs">↑</kbd><kbd className="kbd kbd-xs">↓</kbd></div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="mt-4 p-3 bg-primary/10 border border-primary/20 rounded-lg">
-                    <div className="text-sm font-semibold mb-2">Example Commands:</div>
-                    <div className="space-y-1 text-xs font-mono">
-                      <div className="opacity-80">/add todo fix authentication bug @myproject</div>
-                      <div className="opacity-80">/view notes @frontend</div>
-                      <div className="opacity-80">/swap-project backend</div>
-                      <div className="opacity-80">/export @myproject</div>
+                  <div className="mt-3 p-2.5 bg-primary/20 border-2 border-primary/30 rounded-lg">
+                    <div className="text-xs font-semibold mb-1.5 text-base-content/80">Examples:</div>
+                    <div className="space-y-0.5 text-xs font-mono text-base-content/70">
+                      <div>/add todo fix auth bug @myproject</div>
+                      <div>/view notes @frontend</div>
+                      <div>/swap backend</div>
                     </div>
                   </div>
                 </div>
@@ -186,22 +183,23 @@ const BrainDumpPage: React.FC = () => {
             command={entry.command}
             timestamp={entry.timestamp}
             onProjectSelect={handleProjectSelect}
+            currentProjectId={currentProjectId}
           />
         ))}
 
         {/* Loading indicator */}
         {isExecuting && (
-          <div className="flex items-center gap-2 text-base-content/60 animate-pulse">
-            <div className="loading loading-spinner loading-sm"></div>
-            <span className="text-sm">Executing command...</span>
+          <div className="flex items-center gap-2 text-base-content/70 animate-pulse">
+            <div className="loading loading-spinner loading-sm text-primary"></div>
+            <span className="text-xs">Executing...</span>
           </div>
         )}
 
         <div ref={terminalEndRef} />
       </div>
 
-      {/* Input Area */}
-      <div className="p-4 border-t-2 border-base-content/10 bg-base-200/30">
+      {/* Input Area - Compact */}
+      <div className="flex-shrink-0 p-3 border-t-2 border-base-content/20 bg-base-200">
         <TerminalInput
           onSubmit={handleCommandSubmit}
           disabled={isExecuting}
@@ -212,4 +210,4 @@ const BrainDumpPage: React.FC = () => {
   );
 };
 
-export default BrainDumpPage;
+export default TerminalPage;

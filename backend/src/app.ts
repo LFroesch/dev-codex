@@ -23,7 +23,9 @@ import publicRoutes from './routes/public';
 import ideasRoutes from './routes/ideas';
 import newsRoutes from './routes/news';
 import healthRoutes from './routes/health';
+import terminalRoutes from './routes/terminal';
 import { normalRateLimit, authRateLimit, devRateLimit, publicRateLimit } from './middleware/rateLimit';
+import { terminalExecuteSecurity, terminalSuggestionsSecurity } from './middleware/commandSecurity';
 import { sessionMiddleware, AnalyticsService } from './middleware/analytics';
 import ReminderService from './services/reminderService';
 import UserSession from './models/UserSession';
@@ -102,6 +104,7 @@ app.use('/api/analytics', rateLimitMiddleware, sessionMiddleware, analyticsRoute
 app.use('/api/activity-logs', rateLimitMiddleware, activityLogRoutes);
 app.use('/api/ideas', rateLimitMiddleware, ideasRoutes);
 app.use('/api/news', rateLimitMiddleware, newsRoutes);
+app.use('/api/terminal', rateLimitMiddleware, terminalRoutes);
 
 if (isDevelopment) {
   app.use('/api/debug', debugRoutes);

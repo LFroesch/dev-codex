@@ -262,14 +262,41 @@ router.get('/history', async (req: AuthRequest, res) => {
 });
 
 /**
- * Helper function to categorize commands
+ * Helper function to categorize commands by page/section
  */
 function categorizeCommand(type: string): string {
-  if (type.startsWith('add_')) return 'Create';
-  if (type.startsWith('view_')) return 'View';
-  if (type.startsWith('wizard_')) return 'Wizards';
-  if (['swap_project', 'export'].includes(type)) return 'Project';
-  return 'Other';
+  // Notes & Content
+  if (type.includes('todo')) return 'Notes';
+  if (type.includes('note')) return 'Notes';
+  if (type.includes('devlog')) return 'Dev Log';
+
+  // Documentation
+  if (type.includes('doc')) return 'Docs';
+
+  // Tech Stack
+  if (type.includes('tech') || type.includes('package') || type.includes('stack')) return 'Stack';
+
+  // Deployment
+  if (type.includes('deployment')) return 'Deployment';
+
+  // Public/Sharing
+  if (type.includes('public')) return 'Public';
+  if (type.includes('team') || type.includes('member') || type.includes('invite')) return 'Team';
+
+  // Settings
+  if (type.includes('settings') || type.includes('name') || type.includes('description') || type.includes('tag')) return 'Settings';
+
+  // Project Operations
+  if (type.includes('swap') || type.includes('project')) return 'Project';
+  if (type.includes('export')) return 'Export';
+
+  // Wizards
+  if (type.includes('wizard')) return 'Wizards';
+
+  // Help
+  if (type.includes('help')) return 'Help';
+
+  return 'General';
 }
 
 export default router;

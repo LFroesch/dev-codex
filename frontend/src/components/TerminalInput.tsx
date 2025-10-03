@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { terminalAPI, CommandMetadata, ProjectAutocomplete } from '../api/terminal';
+import { getContrastTextColor } from '../utils/contrastTextColor';
 
 interface TerminalInputProps {
   onSubmit: (command: string) => void;
@@ -13,6 +14,8 @@ interface AutocompleteItem {
   description?: string;
   category?: string;
   type: 'command' | 'project';
+  template?: string; // Full template with flags/params
+  syntax?: string; // Original syntax
 }
 
 const TerminalInput: React.FC<TerminalInputProps> = ({
@@ -59,6 +62,31 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
     }
   };
 
+  // Generate command template from syntax
+  const generateTemplate = (syntax: string): string => {
+    // Extract command base and convert flags to empty placeholders
+    // Example: "/set deployment --url=[url] --platform=[platform]" → "/set deployment --url= --platform= --status="
+
+    // Special handling for different command patterns
+    if (syntax.includes('--')) {
+      // Has flags - extract them and create template
+      const parts = syntax.split('--');
+      const baseCommand = parts[0].trim();
+
+      // Extract flag names from patterns like --url=[url] or --role=[editor/viewer]
+      const flags = parts.slice(1).map(part => {
+        const flagMatch = part.match(/^(\w+)/);
+        return flagMatch ? `--${flagMatch[1]}=` : '';
+      }).filter(Boolean);
+
+      return `${baseCommand} ${flags.join(' ')}`;
+    }
+
+    // No flags - return base command with space
+    const baseMatch = syntax.match(/^(\/[^\[]+)/);
+    return baseMatch ? `${baseMatch[1].trim()} ` : `${syntax} `;
+  };
+
   // Handle autocomplete based on cursor position
   useEffect(() => {
     const textBeforeCursor = input.slice(0, cursorPosition);
@@ -66,28 +94,58 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
     // Check for / command autocomplete
     if (textBeforeCursor.startsWith('/')) {
       const commandText = textBeforeCursor.slice(1);
-      const spaceIndex = commandText.indexOf(' ');
 
-      // Only autocomplete the command part (before first space)
-      if (spaceIndex === -1) {
-        const matchingCommands = commands.filter(cmd =>
-          cmd.value.toLowerCase().includes(commandText.toLowerCase())
+      // Match and prioritize commands
+      const matchingCommands = commands
+        .filter(cmd => {
+          const cmdValue = cmd.value.toLowerCase();
+          const typedCmd = commandText.toLowerCase();
+
+          // Match anything that contains the typed text
+          return cmdValue.includes(typedCmd);
+        })
+        .sort((a, b) => {
+          const aValue = a.value.toLowerCase();
+          const bValue = b.value.toLowerCase();
+          const typedCmd = commandText.toLowerCase();
+
+          // Priority 1: Exact start match with space (e.g., "/set deployment" when typing "set")
+          const aStartsWithSpace = aValue.startsWith(`/${typedCmd} `);
+          const bStartsWithSpace = bValue.startsWith(`/${typedCmd} `);
+          if (aStartsWithSpace && !bStartsWithSpace) return -1;
+          if (!aStartsWithSpace && bStartsWithSpace) return 1;
+
+          // Priority 2: Exact match (e.g., "/set" when typing "set")
+          const aExact = aValue === `/${typedCmd}`;
+          const bExact = bValue === `/${typedCmd}`;
+          if (aExact && !bExact) return -1;
+          if (!aExact && bExact) return 1;
+
+          // Priority 3: Starts with typed text (e.g., "/settings" when typing "set")
+          const aStarts = aValue.startsWith(`/${typedCmd}`);
+          const bStarts = bValue.startsWith(`/${typedCmd}`);
+          if (aStarts && !bStarts) return -1;
+          if (!aStarts && bStarts) return 1;
+
+          // Priority 4: Contains typed text (e.g., "/wizard setup" when typing "set")
+          return 0;
+        });
+
+      if (matchingCommands.length > 0 && commandText.length > 0) {
+        setAutocompleteItems(
+          matchingCommands.map(cmd => ({
+            value: cmd.value,
+            label: cmd.label,
+            description: cmd.description,
+            category: cmd.category,
+            type: 'command' as const,
+            template: generateTemplate(cmd.label),
+            syntax: cmd.label
+          }))
         );
-
-        if (matchingCommands.length > 0 && commandText.length > 0) {
-          setAutocompleteItems(
-            matchingCommands.map(cmd => ({
-              value: cmd.value,
-              label: cmd.label,
-              description: cmd.description,
-              category: cmd.category,
-              type: 'command' as const
-            }))
-          );
-          setShowAutocomplete(true);
-          setSelectedIndex(0);
-          return;
-        }
+        setShowAutocomplete(true);
+        setSelectedIndex(0);
+        return;
       }
     }
 
@@ -194,16 +252,24 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
 
   const selectAutocompleteItem = (item: AutocompleteItem) => {
     if (item.type === 'command') {
-      // Replace entire input with selected command, add space for user to continue
-      const newInput = `${item.value} `;
+      // Use template if available, otherwise use value with space
+      const newInput = item.template || `${item.value} `;
       setInput(newInput);
-      setCursorPosition(newInput.length);
 
-      // Focus and move cursor to end
+      // Position cursor at first = sign if template has flags, otherwise at end
+      let cursorPos = newInput.length;
+      if (item.template && newInput.includes('=')) {
+        const firstEqualPos = newInput.indexOf('=');
+        cursorPos = firstEqualPos + 1; // Position right after first =
+      }
+
+      setCursorPosition(cursorPos);
+
+      // Focus and move cursor
       setTimeout(() => {
         if (inputRef.current) {
           inputRef.current.focus();
-          inputRef.current.setSelectionRange(newInput.length, newInput.length);
+          inputRef.current.setSelectionRange(cursorPos, cursorPos);
         }
       }, 0);
     } else {
@@ -280,9 +346,9 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
           className="absolute bottom-full mb-2 w-full bg-base-100 border-2 border-base-content/20 rounded-lg shadow-xl max-h-64 overflow-y-auto z-50"
         >
           <div className="p-2">
-            <div className="text-xs font-semibold text-base-content/60 px-2 py-1 bg-base-200 rounded-t-lg sticky top-0">
+            <div className="text-xs font-semibold text-base-content/80 px-2 py-1 bg-base-200 rounded-t-lg sticky top-0">
               {autocompleteItems[0].type === 'command' ? '🔧 Commands' : '📁 Projects'}
-              <span className="ml-2 opacity-60">({autocompleteItems.length})</span>
+              <span className="ml-2 opacity-70">({autocompleteItems.length})</span>
             </div>
             <div className="mt-1 space-y-1">
               {autocompleteItems.map((item, index) => (
@@ -297,16 +363,23 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
                   }`}
                 >
                   <div className="flex items-center gap-2">
-                    <div className="flex-1">
-                      <div className="font-medium text-sm">{item.label}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm text-base-content/80 font-mono truncate">
+                        {item.syntax || item.label}
+                      </div>
                       {item.description && (
-                        <div className="text-xs text-base-content/60 truncate">
+                        <div className="text-xs text-base-content/70 truncate mt-0.5">
                           {item.description}
+                        </div>
+                      )}
+                      {item.template && (
+                        <div className="text-xs text-primary/80 font-mono mt-1 truncate">
+                          → {item.template}
                         </div>
                       )}
                     </div>
                     {item.category && (
-                      <span className="text-xs px-2 py-0.5 bg-base-200 rounded-full text-base-content/70">
+                      <span className="text-xs px-2 py-0.5 bg-base-200 rounded-full text-base-content/80 border border-base-content/20 flex-shrink-0">
                         {item.category}
                       </span>
                     )}
@@ -338,6 +411,7 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
             onClick={handleSubmit}
             disabled={!input.trim() || disabled}
             className="btn btn-primary flex flex-col gap-1 h-auto px-6"
+            style={{ color: getContrastTextColor('primary') }}
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
@@ -347,38 +421,51 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
         </div>
 
         {/* Help text */}
-        <div className="flex items-center justify-between text-xs text-base-content/60 bg-base-200/50 rounded-lg p-2">
+        <div className="flex items-center justify-between text-xs text-base-content/70 bg-base-200 rounded-lg p-2 border border-base-content/20">
           <div className="flex items-center gap-2 flex-wrap">
             <div className="flex items-center gap-1">
               <kbd className="kbd kbd-xs">/</kbd>
               <span>commands</span>
             </div>
-            <span className="text-base-content/40">•</span>
+            <span className="text-base-content/50">•</span>
             <div className="flex items-center gap-1">
               <kbd className="kbd kbd-xs">@</kbd>
               <span>projects</span>
             </div>
-            <span className="text-base-content/40">•</span>
+            <span className="text-base-content/50">•</span>
             <div className="flex items-center gap-1">
               <kbd className="kbd kbd-xs">↑</kbd>
               <kbd className="kbd kbd-xs">↓</kbd>
               <span>history</span>
             </div>
-            <span className="text-base-content/40">•</span>
+            <span className="text-base-content/50">•</span>
             <div className="flex items-center gap-1">
               <kbd className="kbd kbd-xs">Enter</kbd>
               <span>send</span>
             </div>
-            <span className="text-base-content/40">•</span>
+            <span className="text-base-content/50">•</span>
             <div className="flex items-center gap-1">
               <kbd className="kbd kbd-xs">Shift+Enter</kbd>
               <span>new line</span>
             </div>
           </div>
-          <div className="text-base-content/40">
+          <div className="text-base-content/60">
             {input.length} chars
           </div>
         </div>
+
+        {/* Scroll to top button */}
+        <button
+          type="button"
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className="btn btn-ghost btn-sm w-full gap-2 mt-2"
+          title="Scroll to top"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+          </svg>
+          <span>Back to Top</span>
+        </button>
       </div>
     </div>
   );

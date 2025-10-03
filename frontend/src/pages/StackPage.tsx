@@ -761,16 +761,17 @@ const StackPage: React.FC = () => {
                     <button
                       key={platform.id}
                       onClick={() => handlePlatformToggle(platform.id)}
-                      className={`text-left p-2 rounded-md border-2 transition-all duration-200 hover:shadow-md text-primary ${
+                      className={`text-left p-2 rounded-md border-2 transition-all duration-200 hover:shadow-md ${
                         selectedPlatforms.has(platform.id)
                           ? 'border-primary bg-primary/50 shadow-sm'
                           : 'border-base-300 hover:border-primary/30 bg-base-200'
                       }`}
-                      style={{ color: selectedPlatforms.has(platform.id) ? getContrastTextColor() : undefined }}
                     >
                       <div className="flex items-center gap-2">
                         <span>{platform.emoji}</span>
-                        <span className="font-medium text-xs">{platform.name}</span>
+                        <span className="font-medium text-xs"
+                        style={{ color: selectedPlatforms.has(platform.id) ? getContrastTextColor() : undefined }}
+                        >{platform.name}</span>
                       </div>
                     </button>
                   ))}

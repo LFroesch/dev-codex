@@ -511,6 +511,306 @@ interface AIUsage {
 4. **Pricing Model:** Include in subscription vs usage-based billing?
 5. **Multi-language:** English only or support other languages?
 
+ 🎯 Overview
+
+    Transform the BrainDumpPage into a full-featured terminal/CLI interface with unified command API, supporting commands like /add todo @projectxyz, /swap-project x, /wizard 
+    new, etc., with autocomplete for both projects (@) and commands (/).
+
+    ---
+    📊 Current Architecture Analysis
+
+    Backend (Express + MongoDB + TypeScript)
+
+    - ✅ RESTful API with route-based organization (/api/projects, /api/auth, etc.)
+    - ✅ Middleware: auth, validation, rate limiting, analytics
+    - ✅ CRUD operations for Projects, Notes, Todos, DevLog, Docs
+    - ✅ Models: Project, User, TeamMember, Analytics, etc.
+    - ❌ Missing: Unified command API, command parser
+
+    Frontend (React + TypeScript)
+
+    - ✅ Service-based API clients (BaseApiService pattern)
+    - ✅ BrainDumpPage prototype with @ autocomplete for projects
+    - ✅ Layout.tsx handles project selection and routing
+    - ❌ Missing: / command autocomplete, command execution system, terminal UX
+
+    ---
+    🏗️ Implementation Plan
+
+    Phase 1: Backend Command Infrastructure (Days 1-3)
+
+    1.1 Create Command Parser Service
+
+    File: backend/src/services/commandParser.ts
+    - Parse command syntax: /command [params] [@project] [flags]
+    - Extract command type, arguments, project mentions, and flags
+    - Return structured command object with validation
+
+    1.2 Create Command Executor Service
+
+    File: backend/src/services/commandExecutor.ts
+    - Execute parsed commands by routing to appropriate CRUD operations
+    - Handle project resolution (current → @mentioned → prompt user)
+    - Return standardized response format for CLI rendering
+    - Support commands:
+      - /add todo [@project] [text] - Create todo
+      - /add note [@project] [text] - Create note
+      - /add devlog [@project] [text] - Create dev log
+      - /swap-project [name] - Switch active project
+      - /wizard new - Interactive project creation
+      - /export [project] - Export project data
+      - /view notes [@project] - List notes
+      - /view todos [@project] - List todos
+      - /help - Show available commands
+
+    1.3 Create Terminal Routes
+
+    File: backend/src/routes/terminal.ts
+    - POST /api/terminal/execute - Execute command string
+    - GET /api/terminal/commands - Get available commands for autocomplete
+    - GET /api/terminal/projects - Get projects for @ autocomplete
+    - POST /api/terminal/validate - Validate command syntax (optional)
+
+    1.4 Command Middleware & Security
+
+    File: backend/src/middleware/commandSecurity.ts
+    - Rate limiting for command execution (stricter than normal API)
+    - Command validation middleware
+    - Project access validation (ensure user can access @mentioned projects)
+    - Command logging for audit trail
+
+    1.5 Update app.ts
+
+    - Register new terminal routes with middleware
+    - Add command rate limiting
+
+    ---
+    Phase 2: Frontend Terminal Interface (Days 4-6)
+
+    2.1 Create Terminal API Service
+
+    File: frontend/src/api/terminal.ts
+    class TerminalService extends BaseApiService {
+      executeCommand(command: string, currentProjectId?: string)
+      getCommands()
+      getProjects()
+      validateCommand(command: string)
+    }
+
+    2.2 Create Terminal Input Component
+
+    File: frontend/src/components/TerminalInput.tsx
+    - Command input with syntax highlighting
+    - Dual autocomplete:
+      - / triggers command autocomplete
+      - @ triggers project autocomplete
+
+    - Command history (up/down arrows)
+    - Multi-line support (Shift+Enter)
+    - Tab completion
+    - Escape to clear
+
+    2.3 Create Command Response Renderer
+
+    File: frontend/src/components/CommandResponse.tsx
+    - Parse and render structured command responses
+    - Support different response types:
+      - Success confirmations
+      - Data tables (todo lists, notes)
+      - Error messages with suggestions
+      - Interactive prompts (for wizards)
+    - Syntax highlighting for data
+
+    2.4 Overhaul BrainDumpPage
+
+    File: frontend/src/pages/BrainDumpPage.tsx
+    - Replace prototype message system with terminal interface
+    - Integrate TerminalInput and CommandResponse components
+    - Add command history state management
+    - Connect to terminal API service
+    - Handle project context (pass current project to commands)
+    - Add keyboard shortcuts (Ctrl+L to clear, etc.)
+
+    2.5 Update Layout.tsx
+
+    - Add route to BrainDumpPage (uncomment existing /braindump tab)
+    - Pass current project context to BrainDumpPage
+    - Ensure project selection works with terminal commands
+
+    ---
+    Phase 3: Command System & Wizards (Days 7-9)
+
+    3.1 Implement Core Commands (Backend)
+
+    For each command in commandExecutor.ts:
+    - /add todo - Call existing POST /api/projects/:id/todos
+    - /add note - Call existing POST /api/projects/:id/notes  
+    - /add devlog - Call existing POST /api/projects/:id/devlog
+    - /view notes - Call existing GET /api/projects/:id
+    - /view todos - Call existing GET /api/projects/:id
+    - /swap-project - Return project data for frontend to switch
+    - /export - Call existing GET /api/projects/:id/export
+
+    3.2 Create Interactive Wizard System
+
+    File: backend/src/services/wizardService.ts
+    - Multi-step command flows (like /wizard new for project creation)
+    - Track wizard state per user session
+    - Support wizard commands:
+      - /wizard new - Create new project (interactive)
+      - /wizard setup - Setup existing project
+      - /wizard deploy - Deployment wizard
+
+    3.3 Add Fuzzy Project Matching
+
+    - Use existing project names to suggest close matches
+    - Handle typos in @project mentions
+    - Suggest corrections when project not found
+
+    3.4 Natural Language Parsing (Optional Enhancement)
+
+    File: backend/src/services/nlpParser.ts
+    - Parse natural language commands (e.g., "add a todo to fix login bug")
+    - Extract intent, entities, and parameters
+    - Convert to structured command format
+    - Fall back to strict syntax if NLP fails
+
+    ---
+    Phase 4: Testing & Polish (Days 10-11)
+
+    4.1 Backend Tests
+
+    File: backend/src/tests/terminal.test.ts
+    - Test command parser with various inputs
+    - Test command executor for each command type
+    - Test project resolution logic
+    - Test error handling and validation
+    - Test rate limiting
+
+    4.2 Frontend Tests
+
+    File: frontend/src/tests/terminal.test.tsx
+    - Test terminal input autocomplete
+    - Test command history
+    - Test response rendering
+    - Test error states
+
+    4.3 Integration Testing
+
+    - Test full command flow (input → backend → response → render)
+    - Test @ and / autocomplete with real data
+    - Test project context switching
+    - Test command chaining
+
+    4.4 UX Polish
+
+    - Add loading states during command execution
+    - Add command execution animations
+    - Improve error messages with helpful hints
+    - Add keyboard shortcut help overlay
+    - Add command examples in help system
+
+    ---
+    Phase 5: Future CLI/TUI Preparation (Day 12)
+
+    5.1 API Token System
+
+    File: backend/src/routes/tokens.ts
+    - Generate API tokens for CLI authentication
+    - Token management (create, revoke, list)
+    - Scoped permissions for tokens
+
+    5.2 CLI Authentication Middleware
+
+    File: backend/src/middleware/cliAuth.ts
+    - Support both cookie (web) and token (CLI) auth
+    - Validate API tokens
+    - Map tokens to user sessions
+
+    5.3 Documentation
+
+    File: TERMINAL_API.md
+    - Document all available commands
+    - Document API endpoints for CLI developers
+    - Document authentication flow for external CLI
+    - Add command examples and recipes
+
+    ---
+    🔐 Security Considerations
+
+    1. Command Injection Prevention: Sanitize all command inputs before parsing
+    2. Rate Limiting: Stricter limits on terminal commands (e.g., 20/min vs 100/min for normal API)
+    3. Project Access: Validate user has permission to access @mentioned projects
+    4. Command Auditing: Log all executed commands for security review
+    5. Token Security: Use secure token generation and storage for future CLI
+    6. Sensitive Data: Ensure export commands don't expose sensitive data
+
+    ---
+    📈 Benefits of This Architecture
+
+    1. Single Source of Truth: All CRUD operations flow through existing API endpoints
+    2. Consistency: Same backend API works for web UI, terminal UI, and future CLI
+    3. Extensibility: Easy to add new commands without duplicating logic
+    4. Security: Centralized auth and validation for all interfaces
+    5. Testing: Each layer can be tested independently
+    6. Future-Proof: Ready for external CLI/TUI with minimal changes
+
+    ---
+    🎨 User Experience Flow
+
+    User types: "/add todo fix auth bug @myproject"
+                    ↓
+    Frontend autocompletes /add, @myproject
+                    ↓
+    Send to: POST /api/terminal/execute
+                    ↓
+    Backend: Parse → Validate → Execute
+                    ↓
+    Backend: POST /api/projects/{id}/todos (existing endpoint)
+                    ↓
+    Return structured response
+                    ↓
+    Frontend renders: "✅ Added todo: fix auth bug to MyProject"
+
+    ---
+    📦 New Files to Create
+
+    Backend (8 files)
+
+    - backend/src/services/commandParser.ts
+    - backend/src/services/commandExecutor.ts
+    - backend/src/services/wizardService.ts
+    - backend/src/routes/terminal.ts
+    - backend/src/middleware/commandSecurity.ts
+    - backend/src/tests/terminal.test.ts
+    - backend/src/routes/tokens.ts (Phase 5)
+    - backend/src/middleware/cliAuth.ts (Phase 5)
+
+    Frontend (4 files)
+
+    - frontend/src/api/terminal.ts
+    - frontend/src/components/TerminalInput.tsx
+    - frontend/src/components/CommandResponse.tsx
+    - frontend/src/tests/terminal.test.tsx
+
+    Files to Modify (4 files)
+
+    - backend/src/app.ts - Register terminal routes
+    - frontend/src/pages/BrainDumpPage.tsx - Complete overhaul
+    - frontend/src/components/Layout.tsx - Uncomment braindump tab
+    - frontend/src/api/index.ts - Export terminalAPI
+
+    ---
+    ⏱️ Estimated Timeline
+
+    - Phase 1: 3 days (Backend foundation)
+    - Phase 2: 3 days (Frontend terminal UI)
+    - Phase 3: 3 days (Commands & wizards)
+    - Phase 4: 2 days (Testing & polish)
+    - Phase 5: 1 day (Future CLI prep)
+
+    Total: ~12 days for full implementation
+
 ---
 
 **Last Updated:** 2025-10-01

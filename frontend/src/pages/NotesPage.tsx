@@ -584,7 +584,7 @@ const NotesPage: React.FC = () => {
           {/* Todo Filter and Sort Controls */}
           {selectedProject.todos && selectedProject.todos.filter(todo => !todo.parentTodoId).length > 0 && (
             <div className="border-2 border-base-content/20 rounded-lg mb-4 p-4">
-              <div className="flex items-center gap-4">
+              <div className="flex flex-col items-center gap-4">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-base-content/80">Sort by:</span>
                   <select 
@@ -614,7 +614,7 @@ const NotesPage: React.FC = () => {
                   </select>
                 </div>
 
-                <div className="ml-auto text-xs text-base-content/60">
+                <div className="items-center text-xs text-base-content/60">
                   {filterAndSortTodos(selectedProject.todos || []).length} of {selectedProject.todos?.filter(todo => !todo.parentTodoId).length || 0} todos
                 </div>
               </div>

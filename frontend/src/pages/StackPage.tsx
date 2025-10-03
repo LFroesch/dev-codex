@@ -382,9 +382,11 @@ const StackPage: React.FC = () => {
     if (!group) return null;
 
     // Auto-select first category if none selected
-    if (!activeCategory && group.categories.length > 0) {
-      setActiveCategory(group.categories[0].id);
-    }
+    useEffect(() => {
+      if (!activeCategory && group.categories.length > 0) {
+        setActiveCategory(group.categories[0].id);
+      }
+    }, [activeCategory, group.categories]);
 
     const activeTab = group.categories.find(cat => cat.id === activeCategory);
     if (!activeTab) return null;

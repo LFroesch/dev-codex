@@ -168,7 +168,7 @@ const DiscoverPage: React.FC = () => {
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
               >
-                <option value="all">All Categories</option>
+                <option value="all" >All Categories</option>
                 {categories.map((category) => (
                   <option key={category} value={category}>
                     {category.charAt(0).toUpperCase() + category.slice(1)}
@@ -271,11 +271,13 @@ const DiscoverPage: React.FC = () => {
                     </div>
 
                     {/* Description - Fixed height */}
-                    <div className="mb-3 h-[3rem] flex-shrink-0">
-                      {(project.publicDescription || project.description) && (
-                        <p className="text-sm text-base-content/70 line-clamp-2">
-                          {project.publicDescription || project.description}
+                    <div className="h-[3.5rem] flex-shrink-0 mb-3">
+                    {project.description && (
+                      <div className={"inline-flex items-start px-2 py-0.5 rounded-md text-xs font-medium text-base-content/80 h-full w-full input input-bordered"}>
+                        <p className="text-sm text-base-content/70 line-clamp-2 leading-relaxed">
+                          {project.description}
                         </p>
+                      </div>
                       )}
                     </div>
 

@@ -481,15 +481,15 @@ React App:
                                       )}
                                     </div>
                                     <div className="text-xs text-base-content/50">
-                                      Created: {new Date(doc.createdAt).toLocaleDateString()}
+                                      <div>Created: {new Date(doc.createdAt).toLocaleDateString()}</div>
                                       {doc.updatedAt !== doc.createdAt && (
-                                        <> • Updated: {new Date(doc.updatedAt).toLocaleDateString()}</>
+                                        <div>Updated: {new Date(doc.updatedAt).toLocaleDateString()}</div>
                                       )}
                                     </div>
                                   </div>
                                 </button>
                                 
-                                <div className="flex gap-2 ml-4">
+                                <div className="flex gap-1 sm:gap-2 ml-2 sm:ml-4 shrink-0">
                                   {isEditing ? (
                                     <>
                                       <button
@@ -497,20 +497,22 @@ React App:
                                         className="btn btn-sm btn-primary"
                                         style={{ color: getContrastTextColor('primary') }}
                                         disabled={!editData.title.trim() || !editData.content.trim()}
+                                        title="Save changes"
                                       >
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                         </svg>
-                                        Save
+                                        <span className="hidden sm:inline">Save</span>
                                       </button>
                                       <button
                                         onClick={handleCancelEdit}
                                         className="btn btn-sm btn-ghost"
+                                        title="Cancel editing"
                                       >
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                         </svg>
-                                        Cancel
+                                        <span className="hidden sm:inline">Cancel</span>
                                       </button>
                                     </>
                                   ) : (
@@ -521,11 +523,12 @@ React App:
                                           handleEditDoc(doc);
                                         }}
                                         className="btn btn-sm btn-ghost"
+                                        title="Edit template"
                                       >
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                         </svg>
-                                        Edit
+                                        <span className="hidden sm:inline">Edit</span>
                                       </button>
                                       <button
                                         onClick={(e) => {
@@ -533,11 +536,12 @@ React App:
                                           confirmDeleteDoc(doc.id, doc.title);
                                         }}
                                         className="btn btn-sm btn-error btn-outline"
+                                        title="Delete template"
                                       >
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                         </svg>
-                                        Delete
+                                        <span className="hidden sm:inline">Delete</span>
                                       </button>
                                     </>
                                   )}

@@ -1542,7 +1542,7 @@ const Layout: React.FC = () => {
           </div>
         ) : location.pathname === '/billing' || location.pathname === '/account-settings' || location.pathname === '/support' || location.pathname === '/help' || location.pathname === '/news' ? (
           /* Billing, Account Settings, Support, Help, and News - No sub-menu */
-          <div className="flex-1 overflow-auto border-2 border-base-content/20 bg-gradient-to-br from-base-50 to-base-100/50 mx-4 my-4 rounded-2xl shadow-2xl backdrop-blur-none container-height-fix">
+          <div className="flex-1 border-2 border-base-content/20 bg-gradient-to-br from-base-50 to-base-100/50 mx-4 my-4 rounded-2xl shadow-2xl backdrop-blur-none">
             <div className="p-1">
               <Outlet />
             </div>

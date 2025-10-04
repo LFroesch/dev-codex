@@ -9,6 +9,7 @@ interface CommandResponseProps {
   timestamp: Date;
   onProjectSelect?: (projectId: string) => void;
   currentProjectId?: string;
+  onCommandClick?: (command: string) => void;
 }
 
 const CommandResponse: React.FC<CommandResponseProps> = ({
@@ -16,9 +17,35 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
   command,
   timestamp,
   onProjectSelect,
-  currentProjectId
+  currentProjectId,
+  onCommandClick
 }) => {
   const navigate = useNavigate();
+
+  // Generate command template from syntax (same logic as autocomplete)
+  const generateTemplate = (syntax: string): string => {
+    // Extract command base and convert flags to empty placeholders
+    // Example: "/set deployment --url=[url] --platform=[platform]" → "/set deployment --url= --platform= --status="
+
+    // Special handling for different command patterns
+    if (syntax.includes('--')) {
+      // Has flags - extract them and create template
+      const parts = syntax.split('--');
+      const baseCommand = parts[0].trim();
+
+      // Extract flag names from patterns like --url=[url] or --role=[editor/viewer]
+      const flags = parts.slice(1).map(part => {
+        const flagMatch = part.match(/^(\w+)/);
+        return flagMatch ? `--${flagMatch[1]}=` : '';
+      }).filter(Boolean);
+
+      return `${baseCommand} ${flags.join(' ')}`;
+    }
+
+    // No flags - return base command with space
+    const baseMatch = syntax.match(/^(\/[^\[]+)/);
+    return baseMatch ? `${baseMatch[1].trim()} ` : `${syntax} `;
+  };
 
   // Handle theme changes that require reload
   React.useEffect(() => {
@@ -559,7 +586,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
     // Render help data
     if (response.data.grouped) {
       const [expandedSections, setExpandedSections] = React.useState<Set<string>>(
-        new Set(Object.keys(response.data.grouped))
+        new Set()
       );
 
       const toggleSection = (category: string) => {
@@ -578,32 +605,37 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
         <div className="mt-3 space-y-2">
           {Object.entries(response.data.grouped).map(([category, cmds]: [string, any]) => (
             cmds.length > 0 && (
-              <div key={category} className="collapse collapse-arrow bg-base-200 border-2 border-base-content/20 rounded-lg">
+              <div key={category} className="collapse collapse-arrow bg-base-200 border-thick rounded-lg">
                 <input
                   type="checkbox"
                   checked={expandedSections.has(category)}
                   onChange={() => toggleSection(category)}
                 />
-                <div className="collapse-title font-semibold text-sm text-primary flex items-center gap-2">
+                <div className="collapse-title font-semibold text-lg flex items-center gap-2 section-header">
                   {category}
-                  <span className="badge badge-sm badge-primary">{cmds.length}</span>
+                  <span className="badge badge-md badge-primary">{cmds.length}</span>
                 </div>
                 <div className="collapse-content">
                   <div className="overflow-x-auto">
                     <table className="table table-xs table-zebra">
                       <thead>
                         <tr>
-                          <th className="w-1/3">Command</th>
-                          <th>Description</th>
+                          <th className="w-1/3 text-xl">Command</th>
+                          <th className='text-xl'>Description</th>
                         </tr>
                       </thead>
                       <tbody>
                         {cmds.map((cmd: any, index: number) => (
-                          <tr key={index} className="hover">
+                          <tr key={index} className='hover'>
                             <td>
-                              <code className="text-xs text-primary font-mono bg-base-300/50 px-1.5 py-0.5 rounded">
+                              <button
+                                type="button"
+                                onClick={() => onCommandClick?.(generateTemplate(cmd.syntax))}
+                                className="text-xs text-primary font-mono bg-base-300/50 px-1.5 py-0.5 rounded hover:bg-primary/20 hover:border-primary border-2 border-transparent transition-colors cursor-pointer"
+                                title="Click to use this command"
+                              >
                                 {cmd.syntax}
-                              </code>
+                              </button>
                             </td>
                             <td className="text-xs text-base-content/70">
                               {cmd.description}
@@ -710,20 +742,20 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
     <div className="animate-fade-in">
       {/* Command echo */}
       <div className="flex items-start gap-2 mb-2">
-        <div className="text-xs text-base-content/60 font-mono">
+        <div className="text-xs text-base-content/80 font-mono">
           {timestamp.toLocaleTimeString()}
         </div>
-        <div className="text-xs text-base-content/70 font-mono">$</div>
-        <code className="text-xs font-mono text-primary flex-1">{command}</code>
+        <div className="text-xs text-base-content/80 font-mono font-semibold">$</div>
+        <code className="text-xs font-mono font-semibold text-primary flex-1">{command}</code>
       </div>
 
       {/* Response */}
-      <div className={`alert ${getAlertClass()} border-2`}>
+      <div className="bg-primary/80 p-4 rounded-lg border-thick">
         <div className="w-full">
           <div className="flex items-start gap-2">
             <span className="text-xl flex-shrink-0">{getIcon()}</span>
             <div className="flex-1 min-w-0">
-              <div className="font-medium">{response.message}</div>
+              <div className="ml-1 text-lg font-semibold">{response.message}</div>
 
               {/* Render data */}
               {renderData()}

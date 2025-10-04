@@ -558,21 +558,61 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
 
     // Render help data
     if (response.data.grouped) {
+      const [expandedSections, setExpandedSections] = React.useState<Set<string>>(
+        new Set(Object.keys(response.data.grouped))
+      );
+
+      const toggleSection = (category: string) => {
+        setExpandedSections(prev => {
+          const newSet = new Set(prev);
+          if (newSet.has(category)) {
+            newSet.delete(category);
+          } else {
+            newSet.add(category);
+          }
+          return newSet;
+        });
+      };
+
       return (
-        <div className="mt-3 space-y-4">
+        <div className="mt-3 space-y-2">
           {Object.entries(response.data.grouped).map(([category, cmds]: [string, any]) => (
             cmds.length > 0 && (
-              <div key={category}>
-                <div className="text-xs font-semibold text-primary mb-2">{category}</div>
-                <div className="space-y-1">
-                  {cmds.map((cmd: any, index: number) => (
-                    <div key={index} className="p-2 bg-base-200 rounded-lg border border-base-content/10">
-                      <code className="text-xs text-primary">{cmd.syntax}</code>
-                      <div className="text-xs text-base-content/70 mt-1">
-                        {cmd.description}
-                      </div>
-                    </div>
-                  ))}
+              <div key={category} className="collapse collapse-arrow bg-base-200 border-2 border-base-content/20 rounded-lg">
+                <input
+                  type="checkbox"
+                  checked={expandedSections.has(category)}
+                  onChange={() => toggleSection(category)}
+                />
+                <div className="collapse-title font-semibold text-sm text-primary flex items-center gap-2">
+                  {category}
+                  <span className="badge badge-sm badge-primary">{cmds.length}</span>
+                </div>
+                <div className="collapse-content">
+                  <div className="overflow-x-auto">
+                    <table className="table table-xs table-zebra">
+                      <thead>
+                        <tr>
+                          <th className="w-1/3">Command</th>
+                          <th>Description</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {cmds.map((cmd: any, index: number) => (
+                          <tr key={index} className="hover">
+                            <td>
+                              <code className="text-xs text-primary font-mono bg-base-300/50 px-1.5 py-0.5 rounded">
+                                {cmd.syntax}
+                              </code>
+                            </td>
+                            <td className="text-xs text-base-content/70">
+                              {cmd.description}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             )

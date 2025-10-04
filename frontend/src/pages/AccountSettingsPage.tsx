@@ -757,7 +757,7 @@ const AccountSettingsPage: React.FC = () => {
                           setNewThemeName('');
                           setCustomColors(DEFAULT_CUSTOM_COLORS);
                         }}
-                        className="btn btn-primary gap-2"
+                        className="btn btn-primary gap-2 border-thick"
                         style={{ color: getContrastTextColor('primary') }}
                         disabled={isCreatingTheme}
                       >
@@ -1136,7 +1136,7 @@ const AccountSettingsPage: React.FC = () => {
                 )}
 
                 {/* Current Theme Info */}
-                <div className="bg-base-200 rounded-lg p-4">
+                <div className="bg-base-200 rounded-lg p-4 border-thick">
                   <h3 className="font-semibold mb-2">
                     Current Theme: {currentTheme.startsWith('custom-') 
                       ? customThemes.find(t => t.id === currentTheme.replace('custom-', ''))?.name || 'Unknown Custom Theme'
@@ -1164,7 +1164,7 @@ const AccountSettingsPage: React.FC = () => {
                 </div>
 
                 {/* Google Account */}
-                <div className="bg-base-200 rounded-lg p-6">
+                <div className="bg-base-200 rounded-lg p-6 border-thick">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 bg-base-100 rounded-lg flex items-center justify-center shadow-sm">

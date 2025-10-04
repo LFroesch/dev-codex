@@ -1005,7 +1005,7 @@ export class CommandExecutor {
 
     return {
       type: ResponseType.INFO,
-      message: '📖 Available Commands',
+      message: '📚 Available Commands',
       data: { grouped }
     };
   }

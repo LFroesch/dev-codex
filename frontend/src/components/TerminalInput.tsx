@@ -7,6 +7,8 @@ interface TerminalInputProps {
   disabled?: boolean;
   currentProjectId?: string;
   onScrollToTop?: () => void;
+  pendingCommand?: string | null;
+  onCommandSet?: () => void;
 }
 
 interface AutocompleteItem {
@@ -23,7 +25,9 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
   onSubmit,
   disabled = false,
   currentProjectId,
-  onScrollToTop
+  onScrollToTop,
+  pendingCommand,
+  onCommandSet
 }) => {
   const [input, setInput] = useState('');
   const [cursorPosition, setCursorPosition] = useState(0);
@@ -63,6 +67,33 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
       inputRef.current.focus();
     }
   }, [disabled]);
+
+  // Handle pending command from external source (e.g., help command buttons)
+  useEffect(() => {
+    if (pendingCommand) {
+      setInput(pendingCommand);
+
+      // Position cursor at first = sign if template has flags, otherwise at end
+      let cursorPos = pendingCommand.length;
+      if (pendingCommand.includes('=')) {
+        const firstEqualPos = pendingCommand.indexOf('=');
+        cursorPos = firstEqualPos + 1; // Position right after first =
+      }
+
+      setCursorPosition(cursorPos);
+
+      // Focus input and position cursor
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+          inputRef.current.setSelectionRange(cursorPos, cursorPos);
+        }
+      }, 0);
+
+      // Notify parent that command has been set
+      onCommandSet?.();
+    }
+  }, [pendingCommand, onCommandSet]);
 
   const loadCommands = async () => {
     try {
@@ -436,8 +467,8 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
             onClick={handleClick}
             onSelect={(e) => setCursorPosition(e.currentTarget.selectionStart)}
             disabled={disabled}
-            placeholder="Type a command (e.g., /add todo fix bug @myproject) or press / for commands..."
-            className="textarea textarea-bordered w-full min-h-10 max-h-10 resize-none text-sm font-mono"
+            placeholder="Type / for commands or @ for projects..."
+            className="textarea textarea-bordered w-full min-h-10 max-h-10 resize-none text-sm font-mono overflow-hidden placeholder:overflow-ellipsis placeholder:whitespace-nowrap"
           />
           <button
             type="button"
@@ -454,30 +485,30 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
         </div>
 
         {/* Help text */}
-        <div className="flex h-10 items-center justify-between text-xs text-base-content/70 bg-base-200 rounded-lg p-2 border-2 border-base-content/20">
+        <div className="flex min-h-10 items-center justify-between text-xs text-base-content/70 bg-base-200 rounded-lg p-2 border-2 border-base-content/20 gap-2">
           <div className="flex items-center gap-2 flex-wrap">
 
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 hidden sm:flex">
               <kbd className="kbd kbd-xs">@</kbd>
-              <span>projects</span>
+              <span className="hidden sm:inline">projects</span>
             </div>
-            <span className="text-base-content/50">•</span>
-            <div className="flex items-center gap-1">
+            <span className="text-base-content/50 hidden sm:inline">•</span>
+            <div className="flex items-center gap-1 hidden sm:flex">
               <kbd className="kbd kbd-xs">↑</kbd>
               <kbd className="kbd kbd-xs">↓</kbd>
               <span>history</span>
             </div>
-            <span className="text-base-content/50">•</span>
-            <div className="flex items-center gap-1">
+            <span className="text-base-content/50 hidden sm:inline">•</span>
+            <div className="flex items-center gap-1 hidden md:flex">
               <kbd className="kbd kbd-xs">Enter</kbd>
               <span>send</span>
             </div>
-            <span className="text-base-content/50">•</span>
-            <div className="flex items-center gap-1">
+            <span className="text-base-content/50 hidden md:inline">•</span>
+            <div className="flex items-center gap-1 hidden md:flex">
               <kbd className="kbd kbd-xs">Shift+Enter</kbd>
               <span>new line</span>
             </div>
-            <span className="text-base-content/50">•</span>
+            <span className="text-base-content/50 hidden md:inline">•</span>
             {/* runs /help in terminal on click */}
             <div className="flex items-center gap-1">
               <button
@@ -492,9 +523,8 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
                   Help
                 </span>
               </button>
-              <span>commands</span>
             </div>
-            <span className="text-base-content/50">•</span>
+            <span className="text-base-content/50 hidden sm:inline">•</span>
             <button
               onClick={onScrollToTop}
               title="Scroll to top of terminal"
@@ -503,12 +533,13 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
               <span className='font-mono'
                 style={{ color: getContrastTextColor('secondary') }}
                 >
-                  ↑ Back To Top
+                  <span className="hidden sm:inline">↑ Back To Top</span>
+                  <span className="sm:hidden">↑ Top</span>
                 </span>
             </button>
           </div>
-          <div className="text-base-content/60">
-            {input.length} chars
+          <div className="text-base-content/60 text-[10px] sm:text-xs flex-shrink-0">
+            {input.length}
           </div>
         </div>
 

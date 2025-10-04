@@ -22,6 +22,7 @@ const TerminalPage: React.FC = () => {
   const [entries, setEntries] = useState<TerminalEntry[]>([]);
   const [isExecuting, setIsExecuting] = useState(false);
   const [showWelcome, setShowWelcome] = useState(true);
+  const [pendingCommand, setPendingCommand] = useState<string | null>(null);
   const terminalEndRef = useRef<HTMLDivElement>(null);
   const terminalOutputRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -108,6 +109,10 @@ const TerminalPage: React.FC = () => {
     }
   };
 
+  const handleCommandClick = (command: string) => {
+    setPendingCommand(command);
+  };
+
   return (
     <div className="flex flex-col h-full">
       {/* Header - Compact */}
@@ -191,6 +196,7 @@ const TerminalPage: React.FC = () => {
             timestamp={entry.timestamp}
             onProjectSelect={handleProjectSelect}
             currentProjectId={currentProjectId}
+            onCommandClick={handleCommandClick}
           />
         ))}
 
@@ -212,6 +218,8 @@ const TerminalPage: React.FC = () => {
           disabled={isExecuting}
           currentProjectId={currentProjectId}
           onScrollToTop={handleScrollToTop}
+          pendingCommand={pendingCommand}
+          onCommandSet={() => setPendingCommand(null)}
         />
       </div>
     </div>

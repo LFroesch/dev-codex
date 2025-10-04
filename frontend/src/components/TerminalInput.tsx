@@ -6,6 +6,7 @@ interface TerminalInputProps {
   onSubmit: (command: string) => void;
   disabled?: boolean;
   currentProjectId?: string;
+  onScrollToTop?: () => void;
 }
 
 interface AutocompleteItem {
@@ -21,7 +22,8 @@ interface AutocompleteItem {
 const TerminalInput: React.FC<TerminalInputProps> = ({
   onSubmit,
   disabled = false,
-  currentProjectId
+  currentProjectId,
+  onScrollToTop
 }) => {
   const [input, setInput] = useState('');
   const [cursorPosition, setCursorPosition] = useState(0);
@@ -37,12 +39,30 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const autocompleteRef = useRef<HTMLDivElement>(null);
+  const selectedItemRef = useRef<HTMLButtonElement>(null);
 
   // Load commands and projects on mount
   useEffect(() => {
     loadCommands();
     loadProjects();
   }, []);
+
+  // Scroll selected item into view
+  useEffect(() => {
+    if (showAutocomplete && selectedItemRef.current) {
+      selectedItemRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest'
+      });
+    }
+  }, [selectedIndex, showAutocomplete]);
+
+  // Refocus input when it becomes enabled again
+  useEffect(() => {
+    if (!disabled && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [disabled]);
 
   const loadCommands = async () => {
     try {
@@ -152,10 +172,13 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
     // Check for @ project autocomplete
     const lastAtIndex = textBeforeCursor.lastIndexOf('@');
     if (lastAtIndex !== -1) {
-      const afterAt = textBeforeCursor.slice(lastAtIndex + 1);
+      // Only show autocomplete if @ is at the start or preceded by a space
+      const charBeforeAt = lastAtIndex > 0 ? textBeforeCursor[lastAtIndex - 1] : ' ';
+      if (charBeforeAt === ' ' || lastAtIndex === 0) {
+        const afterAt = textBeforeCursor.slice(lastAtIndex + 1);
 
-      // Only show autocomplete if no space after @ and we're still at the cursor position near it
-      if (!afterAt.includes(' ') && afterAt.length >= 0) {
+        // Only show autocomplete if no space after @ and we're still at the cursor position near it
+        if (!afterAt.includes(' ') && afterAt.length >= 0) {
         const matchingProjects = projects.filter(proj =>
           proj.label.toLowerCase().includes(afterAt.toLowerCase())
         );
@@ -173,6 +196,7 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
           setShowAutocomplete(true);
           setSelectedIndex(0);
           return;
+        }
         }
       }
     }
@@ -331,6 +355,15 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
     // Clear input
     setInput('');
     setShowAutocomplete(false);
+
+    // Refocus input for next command
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+        }
+      });
+    });
   };
 
   const handleClick = (e: React.MouseEvent<HTMLTextAreaElement>) => {
@@ -354,6 +387,7 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
               {autocompleteItems.map((item, index) => (
                 <button
                   key={index}
+                  ref={index === selectedIndex ? selectedItemRef : null}
                   type="button"
                   onClick={() => selectAutocompleteItem(item)}
                   className={`w-full text-left px-3 py-2 rounded-lg transition-colors border-2 ${
@@ -403,14 +437,13 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
             onSelect={(e) => setCursorPosition(e.currentTarget.selectionStart)}
             disabled={disabled}
             placeholder="Type a command (e.g., /add todo fix bug @myproject) or press / for commands..."
-            className="textarea textarea-bordered flex-1 min-h-[80px] max-h-[200px] resize-none text-sm font-mono"
-            rows={3}
+            className="textarea textarea-bordered w-full min-h-10 max-h-10 resize-none text-sm font-mono"
           />
           <button
             type="button"
             onClick={handleSubmit}
             disabled={!input.trim() || disabled}
-            className="btn btn-primary flex flex-col gap-1 h-auto px-6"
+            className="btn btn-primary flex flex-col gap-1 min-h-10 max-h-10 px-6"
             style={{ color: getContrastTextColor('primary') }}
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -421,13 +454,9 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
         </div>
 
         {/* Help text */}
-        <div className="flex items-center justify-between text-xs text-base-content/70 bg-base-200 rounded-lg p-2 border border-base-content/20">
+        <div className="flex h-10 items-center justify-between text-xs text-base-content/70 bg-base-200 rounded-lg p-2 border-2 border-base-content/20">
           <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-1">
-              <kbd className="kbd kbd-xs">/</kbd>
-              <span>commands</span>
-            </div>
-            <span className="text-base-content/50">•</span>
+
             <div className="flex items-center gap-1">
               <kbd className="kbd kbd-xs">@</kbd>
               <span>projects</span>
@@ -448,24 +477,41 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
               <kbd className="kbd kbd-xs">Shift+Enter</kbd>
               <span>new line</span>
             </div>
+            <span className="text-base-content/50">•</span>
+            {/* runs /help in terminal on click */}
+            <div className="flex items-center gap-1">
+              <button
+                className='border-thick rounded-xl px-2 bg-primary'
+                onClick={() => {
+                  setCommandHistory(prev => [...prev, '/help']);
+                  onSubmit('/help');
+                }}>
+                <span className='font-mono'
+                style={{ color: getContrastTextColor('primary') }}
+                >
+                  Help
+                </span>
+              </button>
+              <span>commands</span>
+            </div>
+            <span className="text-base-content/50">•</span>
+            <button
+              onClick={onScrollToTop}
+              title="Scroll to top of terminal"
+              className='border-thick rounded-xl px-2 bg-secondary'
+            >
+              <span className='font-mono'
+                style={{ color: getContrastTextColor('secondary') }}
+                >
+                  ↑ Back To Top
+                </span>
+            </button>
           </div>
           <div className="text-base-content/60">
             {input.length} chars
           </div>
         </div>
 
-        {/* Scroll to top button */}
-        <button
-          type="button"
-          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          className="btn btn-ghost btn-sm w-full gap-2 mt-2"
-          title="Scroll to top"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-          </svg>
-          <span>Back to Top</span>
-        </button>
       </div>
     </div>
   );

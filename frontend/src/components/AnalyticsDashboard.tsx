@@ -137,7 +137,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
             Track your productivity and app usage patterns. All data is private and only visible to you.
           </p>
               <button 
-                className="btn btn-xs btn-outline"
+                className="btn btn-xs btn-outline border-2"
                 onClick={() => {
                   const dataStr = JSON.stringify(analyticsData, null, 2);
                   const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
@@ -163,28 +163,28 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
       {/* Compact Metrics */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="stat bg-primary/5 rounded-lg border border-primary/70 p-3">
+        <div className="stat bg-primary/5 rounded-lg border-2 border-primary/70 p-3">
           <div className="stat-title text-xs text-primary">Total Time</div>
           <div className="stat-value text-primary text-lg">
             {formatDuration(metrics.totalTime)}
           </div>
         </div>
 
-        <div className="stat bg-accent/5 rounded-lg border border-accent/70 p-3">
+        <div className="stat bg-accent/5 rounded-lg border-2 border-accent/70 p-3">
           <div className="stat-title text-xs text-accent">Unique Projects</div>
           <div className="stat-value text-accent text-lg">
             {metrics.uniqueProjects}
           </div>
         </div>
 
-        <div className="stat bg-info/5 rounded-lg border border-info/70 p-3">
+        <div className="stat bg-info/5 rounded-lg border-2 border-info/70 p-3">
           <div className="stat-title text-xs text-info">Sessions</div>
           <div className="stat-value text-info text-lg">
             {metrics.sessions}
           </div>
         </div>
 
-        <div className="stat bg-secondary/5 rounded-lg border border-secondary/70 p-3">
+        <div className="stat bg-secondary/5 rounded-lg border-2 border-secondary/70 p-3">
           <div className="stat-title text-xs text-secondary">Avg Session</div>
           <div className="stat-value text-secondary text-lg">
             {formatDuration(analyticsData.sessionStats?.avgDuration || 0)}
@@ -194,7 +194,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
       {/* Project Time Breakdown */}
       {!compact && analyticsData.projectBreakdown && analyticsData.projectBreakdown.length > 0 && (
-        <div className="border rounded-lg border-base-content/20">
+        <div className="border-2 rounded-lg border-base-content/20">
           <div className="card-body p-4">
             <h3 className="font-semibold mb-3">⏱️ Project Time</h3>
             
@@ -202,7 +202,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
               {analyticsData.projectBreakdown
                 .sort((a, b) => b.totalTime - a.totalTime)
                 .map((project) => (
-                <div key={project.projectId} className="flex justify-between items-center p-2 bg-base-200 rounded border border-base-content/20">
+                <div key={project.projectId} className="flex justify-between items-center p-2 bg-base-200 rounded border-2 border-base-content/20">
                   <div>
                     <div className="font-medium text-sm">
                       {project.projectName}

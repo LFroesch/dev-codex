@@ -23,6 +23,7 @@ const TerminalPage: React.FC = () => {
   const [isExecuting, setIsExecuting] = useState(false);
   const [showWelcome, setShowWelcome] = useState(true);
   const terminalEndRef = useRef<HTMLDivElement>(null);
+  const terminalOutputRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
   // Auto-scroll to bottom when new entries are added
@@ -101,6 +102,12 @@ const TerminalPage: React.FC = () => {
     setShowWelcome(true);
   };
 
+  const handleScrollToTop = () => {
+    if (terminalOutputRef.current) {
+      terminalOutputRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   return (
     <div className="flex flex-col h-full">
       {/* Header - Compact */}
@@ -128,7 +135,7 @@ const TerminalPage: React.FC = () => {
       </div>
 
       {/* Terminal Output - Scrollable */}
-      <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3 font-mono text-sm">
+      <div ref={terminalOutputRef} className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3 font-mono text-sm">
         {/* Welcome Message - Compact */}
         {showWelcome && (
           <div className="animate-fade-in">
@@ -204,6 +211,7 @@ const TerminalPage: React.FC = () => {
           onSubmit={handleCommandSubmit}
           disabled={isExecuting}
           currentProjectId={currentProjectId}
+          onScrollToTop={handleScrollToTop}
         />
       </div>
     </div>

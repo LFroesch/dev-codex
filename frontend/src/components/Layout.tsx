@@ -644,7 +644,7 @@ const Layout: React.FC = () => {
   const groupedSharedProjects = groupProjectsByCategory(sharedProjects);
 
   return (
-    <div className="min-h-screen bg-base-100 flex flex-col">
+    <div className="h-screen overflow-hidden bg-base-100 flex flex-col">
       {/* Header */}
       <header className="bg-base-100 border-b-2 border-base-content/20 shadow-sm sticky top-0 z-40 w-full">
         {/* Mobile and Tablet Layout */}
@@ -1525,7 +1525,7 @@ const Layout: React.FC = () => {
           </>
         ) : location.pathname === '/terminal' ? (
           /* Terminal - Command Interface */
-          <div className="flex-1 overflow-hidden border-2 border-base-content/20 bg-gradient-to-br from-base-50 to-base-100/50 mx-4 my-4 rounded-2xl shadow-2xl backdrop-blur-none container-height-fix">
+          <div className="flex-1 min-h-0 overflow-hidden border-2 border-base-content/20 bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-none">
             <div className="h-full">
               <Outlet context={{
                 user,

@@ -102,7 +102,7 @@ const TerminalPage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full max-h-full overflow-hidden">
+    <div className="flex flex-col h-full">
       {/* Header - Compact */}
       <div className="flex-shrink-0 flex items-center justify-between p-3 border-b-2 border-base-content/20 bg-base-200">
         <div className="flex items-center gap-2">

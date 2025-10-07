@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import analyticsService from '../services/analytics';
-import CollaborationIndicator from './CollaborationIndicator';
 
 interface SessionInfo {
   sessionId: string;
@@ -95,15 +94,6 @@ const SessionTracker: React.FC<SessionTrackerProps> = ({
           {formatDuration(sessionInfo.duration)}
         </button>
 
-        {/* Show active collaborators if we have a project */}
-        {projectId && (
-          <CollaborationIndicator
-            projectId={projectId}
-            currentUserId={currentUserId}
-            showInSessionTracker={true}
-            className="ml-1"
-          />
-        )}
       </div>
 
       {/* Detailed view */}

@@ -90,10 +90,10 @@ const NoteItem: React.FC<NoteItemProps> = ({
             )}
             <div className="text-xs text-base-content/50">
               {note.updatedAt !== note.createdAt && (
-                <>Updated: {new Date(note.updatedAt).toLocaleDateString()}{note.updatedBy && ` by ${note.updatedBy}`} • </>
+                <>Updated: {new Date(note.updatedAt).toLocaleDateString()}{note.updatedBy && ` by ${typeof note.updatedBy === 'object' ? `${note.updatedBy.firstName} ${note.updatedBy.lastName}` : note.updatedBy}`} • </>
               )}
               {note.createdAt && (
-                <>Created: {new Date(note.createdAt).toLocaleDateString()}{note.createdBy && ` by ${note.createdBy}`}</>
+                <>Created: {new Date(note.createdAt).toLocaleDateString()}{note.createdBy && ` by ${typeof note.createdBy === 'object' ? `${note.createdBy.firstName} ${note.createdBy.lastName}` : note.createdBy}`}</>
               )}
             </div>
           </div>
@@ -730,10 +730,10 @@ const NoteModal: React.FC<NoteModalProps> = ({
             )}
             <div className="text-sm text-base-content/50 mt-2">
               {note.updatedAt !== note.createdAt && (
-                <>Updated: {new Date(note.updatedAt).toLocaleDateString()}{note.updatedBy && ` by ${note.updatedBy}`} • </>
+                <>Updated: {new Date(note.updatedAt).toLocaleDateString()}{note.updatedBy && ` by ${typeof note.updatedBy === 'object' ? `${note.updatedBy.firstName} ${note.updatedBy.lastName}` : note.updatedBy}`} • </>
               )}
               {note.createdAt && (
-                <>Created: {new Date(note.createdAt).toLocaleDateString()}{note.createdBy && ` by ${note.createdBy}`}</>
+                <>Created: {new Date(note.createdAt).toLocaleDateString()}{note.createdBy && ` by ${typeof note.createdBy === 'object' ? `${note.createdBy.firstName} ${note.createdBy.lastName}` : note.createdBy}`}</>
               )}
             </div>
           </div>

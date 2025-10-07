@@ -980,24 +980,32 @@ export class CommandExecutor {
     const commands = CommandParser.getAllCommands();
     const grouped: Record<string, any[]> = {
       'Add Items': [],
+      'Remove Items': [],
       'View Items': [],
       'Project Management': [],
-      'Settings & Configuration': [],
-      'Wizards': [],
       'Other': []
     };
 
     commands.forEach(cmd => {
-      if (cmd.type.toString().startsWith('add_')) {
+      const cmdType = cmd.type.toString();
+
+      if (cmdType.startsWith('add_')) {
         grouped['Add Items'].push(cmd);
-      } else if (cmd.type.toString().startsWith('view_')) {
+      } else if (cmdType.startsWith('remove_') && cmdType !== 'remove_member') {
+        grouped['Remove Items'].push(cmd);
+      } else if (cmdType.startsWith('view_')) {
         grouped['View Items'].push(cmd);
-      } else if (cmd.type.toString().startsWith('wizard_')) {
-        grouped['Wizards'].push(cmd);
-      } else if (['swap_project', 'export'].includes(cmd.type.toString())) {
+      } else if ([
+        'swap_project',
+        'export',
+        'set_name',
+        'set_description',
+        'set_deployment',
+        'set_public',
+        'invite_member',
+        'remove_member'
+      ].includes(cmdType)) {
         grouped['Project Management'].push(cmd);
-      } else if (cmd.type.toString().startsWith('set_') || cmd.type.toString().startsWith('remove_')) {
-        grouped['Settings & Configuration'].push(cmd);
       } else {
         grouped['Other'].push(cmd);
       }
@@ -1860,7 +1868,7 @@ export class CommandExecutor {
     // Create notification for removed user
     await Notification.create({
       userId: userToRemove._id,
-      type: 'team_update',
+      type: 'team_member_removed',
       title: 'Removed from Project',
       message: `You have been removed from the project "${resolution.project.name}"`,
       relatedProjectId: resolution.project._id

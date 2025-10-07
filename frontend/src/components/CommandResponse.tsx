@@ -55,7 +55,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
       setTimeout(() => {
       });window.location.reload();
     }
-    
+
   }, [response.data?.theme]);
 
   const handleNavigateToProject = async (path: string) => {
@@ -112,7 +112,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
             {response.data.todos.map((todo: any, index: number) => (
               <div
                 key={index}
-                className="flex items-start gap-3 p-2 bg-base-200 rounded-lg hover:bg-base-300/50 transition-colors border border-base-content/10"
+                className="flex items-start gap-3 p-2 bg-base-200 rounded-lg hover:bg-base-300/50 transition-colors border-thick"
               >
                 <div className="flex-shrink-0 mt-0.5">
                   {todo.completed ? (
@@ -148,10 +148,10 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
           {response.metadata?.projectId && (
             <button
               onClick={() => handleNavigateToProject('/notes?section=todos')}
-              className="btn btn-primary btn-sm gap-2"
+              className="btn-primary-sm gap-2"
               style={{ color: getContrastTextColor('primary') }}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
               View Todos
@@ -169,7 +169,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
             {response.data.notes.map((note: any, index: number) => (
               <div
                 key={index}
-                className="p-3 bg-base-200 rounded-lg hover:bg-base-300/50 transition-colors border border-base-content/10"
+                className="p-3 bg-base-200 rounded-lg hover:bg-base-300/50 transition-colors border-thick"
               >
                 <div className="font-medium text-sm mb-1 text-base-content/80">{note.title}</div>
                 {note.preview && (
@@ -186,10 +186,10 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
           {response.metadata?.projectId && (
             <button
               onClick={() => handleNavigateToProject('/notes?section=notes')}
-              className="btn btn-primary btn-sm gap-2"
+              className="btn-primary-sm gap-2"
               style={{ color: getContrastTextColor('primary') }}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
               View Notes
@@ -219,10 +219,10 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
           {response.metadata?.projectId && (
             <button
               onClick={() => handleNavigateToProject('/notes?section=devlog')}
-              className="btn btn-primary btn-sm gap-2"
+              className="btn-primary-sm gap-2"
               style={{ color: getContrastTextColor('primary') }}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
               </svg>
               View Dev Log
@@ -240,9 +240,9 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
             {response.data.docs.map((doc: any, index: number) => (
               <div
                 key={index}
-                className="flex items-center gap-3 p-2 bg-base-200 rounded-lg hover:bg-base-300/50 transition-colors border border-base-content/10"
+                className="flex items-center gap-3 p-2 bg-base-200 rounded-lg hover:bg-base-300/50 transition-colors border-thick"
               >
-                <span className="text-xs px-2 py-0.5 bg-primary/30 rounded border border-primary/40">{doc.type}</span>
+                <span className="text-xs px-2 py-0.5 bg-primary/30 rounded border-2 border-primary/40">{doc.type}</span>
                 <div className="flex-1 text-sm font-medium text-base-content/80">{doc.title}</div>
               </div>
             ))}
@@ -250,10 +250,10 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
           {response.metadata?.projectId && (
             <button
               onClick={() => handleNavigateToProject('/docs')}
-              className="btn btn-primary btn-sm gap-2"
+              className="btn-primary-sm gap-2"
               style={{ color: getContrastTextColor('primary') }}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
               View Docs
@@ -278,9 +278,9 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                 {technologies.map((tech: any, index: number) => (
                   <div
                     key={index}
-                    className="flex items-center gap-3 p-2 bg-base-200 rounded-lg hover:bg-base-300/50 transition-colors border border-base-content/10"
+                    className="flex items-center gap-3 p-2 bg-base-200 rounded-lg hover:bg-base-300/50 transition-colors border-thick"
                   >
-                    <span className="text-xs px-2 py-0.5 bg-primary/30 rounded border border-primary/40">{tech.category}</span>
+                    <span className="text-xs px-2 py-0.5 bg-primary/30 rounded border-2 border-primary/40">{tech.category}</span>
                     <div className="flex-1 text-sm font-medium text-base-content/80">{tech.name}</div>
                     {tech.version && (
                       <span className="text-xs text-base-content/60">{tech.version}</span>
@@ -299,9 +299,9 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                 {packages.map((pkg: any, index: number) => (
                   <div
                     key={index}
-                    className="flex items-center gap-3 p-2 bg-base-200 rounded-lg hover:bg-base-300/50 transition-colors border border-base-content/10"
+                    className="flex items-center gap-3 p-2 bg-base-200 rounded-lg hover:bg-base-300/50 transition-colors border-thick"
                   >
-                    <span className="text-xs px-2 py-0.5 bg-secondary/30 rounded border border-secondary/40">{pkg.category}</span>
+                    <span className="text-xs px-2 py-0.5 bg-secondary/30 rounded border-2 border-secondary/40">{pkg.category}</span>
                     <div className="flex-1 text-sm font-medium text-base-content/80">{pkg.name}</div>
                     {pkg.version && (
                       <span className="text-xs text-base-content/60">{pkg.version}</span>
@@ -315,10 +315,10 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
           {response.metadata?.projectId && (
             <button
               onClick={() => handleNavigateToProject('/stack')}
-              className="btn btn-primary btn-sm gap-2"
+              className="btn-primary-sm gap-2"
               style={{ color: getContrastTextColor('primary') }}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
               </svg>
               View Full Stack
@@ -334,19 +334,19 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
       return (
         <div className="mt-3 space-y-2">
           <div className="grid grid-cols-2 gap-2">
-            <div className="p-2 bg-base-200 rounded-lg border border-base-content/10">
+            <div className="p-2 bg-base-200 rounded-lg border-thick">
               <div className="text-xs text-base-content/60">Live URL</div>
               <div className="text-sm text-base-content/80 truncate">{dep.liveUrl}</div>
             </div>
-            <div className="p-2 bg-base-200 rounded-lg border border-base-content/10">
+            <div className="p-2 bg-base-200 rounded-lg border-thick">
               <div className="text-xs text-base-content/60">Platform</div>
               <div className="text-sm text-base-content/80">{dep.platform}</div>
             </div>
-            <div className="p-2 bg-base-200 rounded-lg border border-base-content/10">
+            <div className="p-2 bg-base-200 rounded-lg border-thick">
               <div className="text-xs text-base-content/60">Status</div>
               <div className="text-sm text-base-content/80 capitalize">{dep.status}</div>
             </div>
-            <div className="p-2 bg-base-200 rounded-lg border border-base-content/10">
+            <div className="p-2 bg-base-200 rounded-lg border-thick">
               <div className="text-xs text-base-content/60">Branch</div>
               <div className="text-sm text-base-content/80">{dep.branch}</div>
             </div>
@@ -354,10 +354,10 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
           {response.metadata?.projectId && (
             <button
               onClick={() => handleNavigateToProject('/deployment')}
-              className="btn btn-primary btn-sm gap-2"
+              className="btn-primary-sm gap-2"
               style={{ color: getContrastTextColor('primary') }}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
               </svg>
               View Deployment
@@ -373,17 +373,17 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
       return (
         <div className="mt-3 space-y-2">
           <div className="grid grid-cols-2 gap-2">
-            <div className="p-2 bg-base-200 rounded-lg border border-base-content/10">
+            <div className="p-2 bg-base-200 rounded-lg border-thick">
               <div className="text-xs text-base-content/60">Visibility</div>
               <div className="text-sm text-base-content/80">{pub.isPublic ? '🌐 Public' : '🔒 Private'}</div>
             </div>
-            <div className="p-2 bg-base-200 rounded-lg border border-base-content/10">
+            <div className="p-2 bg-base-200 rounded-lg border-thick">
               <div className="text-xs text-base-content/60">Slug</div>
               <div className="text-sm text-base-content/80 truncate">{pub.slug}</div>
             </div>
           </div>
           {pub.url && pub.url !== 'Not available (project is private)' && (
-            <div className="p-2 bg-base-200 rounded-lg border border-base-content/10">
+            <div className="p-2 bg-base-200 rounded-lg border-thick">
               <div className="text-xs text-base-content/60">Public URL</div>
               <a href={pub.url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline truncate block">
                 {pub.url}
@@ -393,10 +393,10 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
           {response.metadata?.projectId && (
             <button
               onClick={() => handleNavigateToProject('/public')}
-              className="btn btn-primary btn-sm gap-2"
+              className="btn-primary-sm gap-2"
               style={{ color: getContrastTextColor('primary') }}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               Manage Public Settings
@@ -414,7 +414,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
             {response.data.members.map((member: any, index: number) => (
               <div
                 key={index}
-                className="flex items-center gap-3 p-2 bg-base-200 rounded-lg hover:bg-base-300/50 transition-colors border border-base-content/10"
+                className="flex items-center gap-3 p-2 bg-base-200 rounded-lg hover:bg-base-300/50 transition-colors border-thick"
               >
                 <div className="flex-1">
                   <div className="text-sm font-medium text-base-content/80">{member.name}</div>
@@ -429,10 +429,10 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
           {response.metadata?.projectId && (
             <button
               onClick={() => handleNavigateToProject('/sharing')}
-              className="btn btn-primary btn-sm gap-2"
+              className="btn-primary-sm gap-2"
               style={{ color: getContrastTextColor('primary') }}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
               Manage Team
@@ -448,21 +448,21 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
       return (
         <div className="mt-3 space-y-2">
           <div className="grid grid-cols-2 gap-2">
-            <div className="p-2 bg-base-200 rounded-lg border border-base-content/10">
+            <div className="p-2 bg-base-200 rounded-lg border-thick">
               <div className="text-xs text-base-content/60">Name</div>
               <div className="text-sm text-base-content/80">{settings.name}</div>
             </div>
-            <div className="p-2 bg-base-200 rounded-lg border border-base-content/10">
+            <div className="p-2 bg-base-200 rounded-lg border-thick">
               <div className="text-xs text-base-content/60">Category</div>
               <div className="text-sm text-base-content/80 capitalize">{settings.category}</div>
             </div>
           </div>
-          <div className="p-2 bg-base-200 rounded-lg border border-base-content/10">
+          <div className="p-2 bg-base-200 rounded-lg border-thick">
             <div className="text-xs text-base-content/60">Description</div>
             <div className="text-sm text-base-content/80">{settings.description}</div>
           </div>
           {settings.tags && settings.tags.length > 0 && (
-            <div className="p-2 bg-base-200 rounded-lg border border-base-content/10">
+            <div className="p-2 bg-base-200 rounded-lg border-thick">
               <div className="text-xs text-base-content/60 mb-1">Tags</div>
               <div className="flex flex-wrap gap-1">
                 {settings.tags.map((tag: string, index: number) => (
@@ -474,10 +474,10 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
           {response.metadata?.projectId && (
             <button
               onClick={() => handleNavigateToProject('/settings')}
-              className="btn btn-primary btn-sm gap-2"
+              className="btn-primary-sm gap-2"
               style={{ color: getContrastTextColor('primary') }}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
@@ -496,10 +496,10 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
             {response.data.news.map((newsItem: any, index: number) => (
               <div
                 key={index}
-                className="p-3 bg-base-200 rounded-lg hover:bg-base-300/50 transition-colors border border-base-content/10"
+                className="p-3 bg-base-200 rounded-lg hover:bg-base-300/50 transition-colors border-thick"
               >
                 <div className="flex items-start gap-2 mb-1">
-                  <span className="text-xs px-2 py-0.5 bg-primary/30 rounded border border-primary/40 capitalize">
+                  <span className="text-xs px-2 py-0.5 bg-primary/30 rounded border-2 border-primary/40 capitalize">
                     {newsItem.type || 'update'}
                   </span>
                   <div className="flex-1">
@@ -534,9 +534,9 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
               {response.data.themes.map((theme: any, index: number) => (
                 <div
                   key={index}
-                  className="p-2 bg-base-200 rounded-lg hover:bg-base-300/50 transition-colors border border-base-content/10 cursor-pointer"
-                  onClick={() => navigator.clipboard.writeText(`/set theme ${theme.name}`)}
-                  title={`Click to copy: /set theme ${theme.name}`}
+                  className="p-2 bg-base-200 rounded-lg hover:bg-base-300/50 transition-colors border-thick cursor-pointer"
+                  onClick={() => onCommandClick?.(`/set theme ${theme.name}`)}
+                  title={`Click to use: /set theme ${theme.name}`}
                 >
                   <div className="font-medium text-xs text-base-content/80">{theme.name}</div>
                   <div className="text-xs text-base-content/60 truncate">
@@ -555,9 +555,9 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                 {customThemes.map((theme: any, index: number) => (
                   <div
                     key={index}
-                    className="p-2 bg-base-200 rounded-lg hover:bg-base-300/50 transition-colors border border-secondary/30 cursor-pointer"
-                    onClick={() => navigator.clipboard.writeText(`/set theme ${theme.name}`)}
-                    title={`Click to copy: /set theme ${theme.name}`}
+                    className="p-2 bg-base-200 rounded-lg hover:bg-base-300/50 transition-colors border-2 border-secondary/30 cursor-pointer"
+                    onClick={() => onCommandClick?.(`/set theme ${theme.name}`)}
+                    title={`Click to use: /set theme ${theme.name}`}
                   >
                     <div className="font-medium text-xs text-base-content/80 flex items-center gap-1">
                       <span>🎨</span>
@@ -568,9 +568,9 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                     </div>
                     {/* Color preview */}
                     <div className="flex gap-1 mt-1">
-                      <div className="w-3 h-3 rounded-full border border-base-content/20" style={{ backgroundColor: theme.colors?.primary }} title="Primary" />
-                      <div className="w-3 h-3 rounded-full border border-base-content/20" style={{ backgroundColor: theme.colors?.secondary }} title="Secondary" />
-                      <div className="w-3 h-3 rounded-full border border-base-content/20" style={{ backgroundColor: theme.colors?.accent }} title="Accent" />
+                      <div className="w-3 h-3 rounded-full border-thick" style={{ backgroundColor: theme.colors?.primary }} title="Primary" />
+                      <div className="w-3 h-3 rounded-full border-thick" style={{ backgroundColor: theme.colors?.secondary }} title="Secondary" />
+                      <div className="w-3 h-3 rounded-full border-thick" style={{ backgroundColor: theme.colors?.accent }} title="Accent" />
                     </div>
                   </div>
                 ))}
@@ -579,7 +579,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
           )}
 
           <div className="mt-3 text-xs text-base-content/60">
-            💡 Click any theme to copy the command
+            💡 Click any theme to populate terminal input
           </div>
         </div>
       );
@@ -594,12 +594,12 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
               key={index}
               type="button"
               onClick={() => onProjectSelect?.(project.id)}
-              className="w-full p-3 bg-base-200 rounded-lg hover:bg-primary/20 hover:border-primary/50 border-2 border-base-content/20 transition-all text-left"
+              className="w-full p-3 bg-base-200 rounded-lg hover:bg-primary/20 hover:border-primary/50 border-thick transition-all text-left"
             >
               <div className="flex items-center gap-3">
                 {project.color && (
                   <div
-                    className="w-3 h-3 rounded-full border border-base-content/20"
+                    className="w-3 h-3 rounded-full border-thick"
                     style={{ backgroundColor: project.color }}
                   />
                 )}
@@ -612,7 +612,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                   )}
                 </div>
                 {project.category && (
-                  <span className="badge badge-sm border-base-content/20">{project.category}</span>
+                  <span className="badge badge-sm border-thick">{project.category}</span>
                 )}
               </div>
             </button>
@@ -669,7 +669,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                               <button
                                 type="button"
                                 onClick={() => onCommandClick?.(generateTemplate(cmd.syntax))}
-                                className="text-xs text-primary font-mono bg-base-100 px-1.5 py-0.5 rounded hover:bg-primary/20 hover:border-primary border-2 border-transparent transition-colors cursor-pointer"
+                                className="text-xs text-primary font-mono bg-base-100 px-1.5 py-0.5 rounded hover:bg-primary/20 hover:border-primary border-thick transition-colors cursor-pointer"
                                 title="Click to use this command"
                               >
                                 {cmd.syntax}
@@ -697,7 +697,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
         <div className="mt-3 space-y-3">
           <div>
             <div className="text-xs font-semibold text-base-content/70 mb-1">Syntax:</div>
-            <code className="text-sm text-primary bg-base-200 px-2 py-1 rounded border border-base-content/10">
+            <code className="text-sm text-primary bg-base-200 px-2 py-1 rounded border-thick">
               {response.data.syntax}
             </code>
           </div>
@@ -709,9 +709,15 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
             <div className="text-xs font-semibold text-base-content/70 mb-1">Examples:</div>
             <div className="space-y-1">
               {response.data.examples.map((example: string, index: number) => (
-                <code key={index} className="block text-xs bg-base-200 px-2 py-1 rounded border border-base-content/10 text-base-content/80">
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() => onCommandClick?.(example)}
+                  className="block w-full text-left text-xs bg-base-200 px-2 py-1 rounded border-thick text-base-content/80 hover:bg-base-300/50 cursor-pointer transition-colors"
+                  title="Click to use this example"
+                >
                   {example}
-                </code>
+                </button>
               ))}
             </div>
           </div>
@@ -726,7 +732,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
           <a
             href={response.data.exportUrl}
             download={`${response.data.projectName}.json`}
-            className="btn btn-sm btn-primary"
+            className="btn-primary-sm"
             style={{ color: getContrastTextColor('primary') }}
           >
             📥 Download {response.data.projectName}
@@ -740,10 +746,10 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
       const project = response.data.project;
       return (
         <div className="mt-3 space-y-2">
-          <div className="p-3 bg-base-200 rounded-lg flex items-center gap-3 border border-base-content/10">
+          <div className="p-3 bg-base-200 rounded-lg flex items-center gap-3 border-thick">
             {project.color && (
               <div
-                className="w-4 h-4 rounded-full border border-base-content/20"
+                className="w-4 h-4 rounded-full border-thick"
                 style={{ backgroundColor: project.color }}
               />
             )}
@@ -754,10 +760,10 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
           </div>
           <button
             onClick={() => handleNavigateToProject('/notes')}
-            className="btn btn-primary btn-sm gap-2"
+            className="btn-primary-sm gap-2"
             style={{ color: getContrastTextColor('primary') }}
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
             </svg>
             Open Project
@@ -768,7 +774,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
 
     // Generic data rendering
     return (
-      <div className="mt-3 p-3 bg-base-200 rounded-lg border border-base-content/10">
+      <div className="mt-3 p-3 bg-base-200 rounded-lg border-thick">
         <pre className="text-xs overflow-x-auto text-base-content/80">
           {JSON.stringify(response.data, null, 2)}
         </pre>
@@ -788,7 +794,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
       </div>
 
       {/* Response */}
-      <div className="bg-primary/80 p-4 rounded-lg border-thick">
+      <div className="bg-base-100 p-4 rounded-lg border-thick">
         <div className="w-full">
           <div className="flex items-start gap-2">
             <span className="text-xl flex-shrink-0">{getIcon()}</span>
@@ -805,10 +811,10 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                   {command.toLowerCase().includes('add todo') || (command.toLowerCase().includes('todo') && !command.toLowerCase().includes('view')) ? (
                     <button
                       onClick={() => handleNavigateToProject('/notes?section=todos')}
-                      className="btn btn-primary btn-sm gap-2"
+                      className="btn-primary-sm gap-2"
                       style={{ color: getContrastTextColor('primary') }}
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                       </svg>
                       View Todos
@@ -816,10 +822,10 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                   ) : command.toLowerCase().includes('add note') || command.toLowerCase().includes('note') ? (
                     <button
                       onClick={() => handleNavigateToProject('/notes?section=notes')}
-                      className="btn btn-primary btn-sm gap-2"
+                      className="btn-primary-sm gap-2"
                       style={{ color: getContrastTextColor('primary') }}
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
                       View Notes
@@ -827,10 +833,10 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                   ) : command.toLowerCase().includes('add devlog') || command.toLowerCase().includes('devlog') ? (
                     <button
                       onClick={() => handleNavigateToProject('/notes?section=devlog')}
-                      className="btn btn-primary btn-sm gap-2"
+                      className="btn-primary-sm gap-2"
                       style={{ color: getContrastTextColor('primary') }}
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                       </svg>
                       View Dev Log
@@ -838,10 +844,10 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                   ) : command.toLowerCase().includes('add doc') || (command.toLowerCase().includes('doc') && !command.toLowerCase().includes('view')) ? (
                     <button
                       onClick={() => handleNavigateToProject('/docs')}
-                      className="btn btn-primary btn-sm gap-2"
+                      className="btn-primary-sm gap-2"
                       style={{ color: getContrastTextColor('primary') }}
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
                       View Docs
@@ -851,10 +857,10 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                      command.toLowerCase().includes('remove tech') || command.toLowerCase().includes('remove package') ? (
                     <button
                       onClick={() => handleNavigateToProject('/stack')}
-                      className="btn btn-primary btn-sm gap-2"
+                      className="btn-primary-sm gap-2"
                       style={{ color: getContrastTextColor('primary') }}
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                       </svg>
                       View Stack
@@ -862,10 +868,10 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                   ) : (
                     <button
                       onClick={() => handleNavigateToProject('/notes')}
-                      className="btn btn-primary btn-sm gap-2"
+                      className="btn-primary-sm gap-2"
                       style={{ color: getContrastTextColor('primary') }}
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                       </svg>
@@ -882,14 +888,15 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                     Suggestions:
                   </div>
                   {response.suggestions.map((suggestion, index) => (
-                    <code
+                    <button
                       key={index}
-                      className="block text-xs bg-base-200 px-2 py-1 rounded hover:bg-base-300/50 cursor-pointer transition-colors border border-base-content/10 text-base-content/80"
-                      onClick={() => navigator.clipboard.writeText(suggestion)}
-                      title="Click to copy"
+                      type="button"
+                      onClick={() => onCommandClick?.(suggestion)}
+                      className="block w-full text-left text-xs bg-base-200 px-2 py-1 rounded hover:bg-base-300/50 cursor-pointer transition-colors border-thick text-base-content/80"
+                      title="Click to use this suggestion"
                     >
                       {suggestion}
-                    </code>
+                    </button>
                   ))}
                 </div>
               )}

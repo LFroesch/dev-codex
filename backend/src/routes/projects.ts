@@ -71,7 +71,7 @@ router.get('/', async (req: AuthRequest, res) => {
     const userId = req.userId!;
     
     // Get projects owned by user
-    const ownedProjects = await Project.find({ 
+    const ownedProjects = await Project.find({
       $or: [
         { userId: userId },
         { ownerId: userId }
@@ -80,6 +80,10 @@ router.get('/', async (req: AuthRequest, res) => {
     .populate('todos.assignedTo', 'firstName lastName email')
     .populate('todos.createdBy', 'firstName lastName')
     .populate('todos.updatedBy', 'firstName lastName')
+    .populate('notes.createdBy', 'firstName lastName')
+    .populate('notes.updatedBy', 'firstName lastName')
+    .populate('devLog.createdBy', 'firstName lastName')
+    .populate('devLog.updatedBy', 'firstName lastName')
     .sort({ createdAt: -1 });
 
     // Get projects where user is a team member (optimized: single query with lean())
@@ -88,8 +92,8 @@ router.get('/', async (req: AuthRequest, res) => {
       .lean()
       .then(memberships => memberships.map(tm => tm.projectId));
     
-    const teamProjects = teamProjectIds.length > 0 
-      ? await Project.find({ 
+    const teamProjects = teamProjectIds.length > 0
+      ? await Project.find({
           _id: { $in: teamProjectIds },
           // Exclude projects user already owns
           $nor: [
@@ -100,6 +104,10 @@ router.get('/', async (req: AuthRequest, res) => {
         .populate('todos.assignedTo', 'firstName lastName email')
         .populate('todos.createdBy', 'firstName lastName')
         .populate('todos.updatedBy', 'firstName lastName')
+        .populate('notes.createdBy', 'firstName lastName')
+        .populate('notes.updatedBy', 'firstName lastName')
+        .populate('devLog.createdBy', 'firstName lastName')
+        .populate('devLog.updatedBy', 'firstName lastName')
         .sort({ createdAt: -1 })
       : [];
 
@@ -122,8 +130,12 @@ router.get('/:id', requireProjectAccess('view'), async (req: AuthRequest, res) =
     const project = await Project.findById(req.params.id)
       .populate('todos.assignedTo', 'firstName lastName email')
       .populate('todos.createdBy', 'firstName lastName')
-      .populate('todos.updatedBy', 'firstName lastName');
-    
+      .populate('todos.updatedBy', 'firstName lastName')
+      .populate('notes.createdBy', 'firstName lastName')
+      .populate('notes.updatedBy', 'firstName lastName')
+      .populate('devLog.createdBy', 'firstName lastName')
+      .populate('devLog.updatedBy', 'firstName lastName');
+
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
     }

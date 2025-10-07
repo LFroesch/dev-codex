@@ -97,8 +97,13 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
   }, async (req, _accessToken, _refreshToken, profile, done) => {
     try {
       const googleId = profile.id;
-      const email = profile.emails?.[0].value;
-      
+      const email = profile.emails?.[0]?.value;
+
+      // Validate that we have an email from Google
+      if (!email) {
+        return done(new Error('No email provided by Google account'), undefined);
+      }
+
       // Check if this is an account linking flow by looking for the state parameter
       const stateParam = req.query.state as string;
       let linkingUserId: string | undefined;

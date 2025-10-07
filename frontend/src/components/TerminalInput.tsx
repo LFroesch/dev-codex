@@ -476,7 +476,7 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
             type="button"
             onClick={handleSubmit}
             disabled={!input.trim() || disabled}
-            className="btn flex flex-col gap-1 min-h-10 max-h-10 px-6 text-primary group hover:border-thick"
+            className="btn flex flex-col gap-1 min-h-10 max-h-10 px-6 text-primary group border-thick"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />

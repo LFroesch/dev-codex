@@ -5,8 +5,8 @@ export interface BaseNote {
   content: string;
   createdAt: string;
   updatedAt: string;
-  createdBy?: string;
-  updatedBy?: string;
+  createdBy?: string | { _id: string; firstName: string; lastName: string };
+  updatedBy?: string | { _id: string; firstName: string; lastName: string };
 }
 
 export interface BaseTodo {
@@ -32,8 +32,8 @@ export interface BaseDevLogEntry {
   description?: string;
   entry: string;
   date: string;
-  createdBy?: string;
-  updatedBy?: string;
+  createdBy?: string | { _id: string; firstName: string; lastName: string };
+  updatedBy?: string | { _id: string; firstName: string; lastName: string };
 }
 
 export interface BaseDoc {

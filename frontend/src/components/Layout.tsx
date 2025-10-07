@@ -1461,7 +1461,7 @@ const Layout: React.FC = () => {
           <>
             {/* Admin Dashboard Tab Navigation */}
             <div className="flex justify-center px-2 py-4">
-              <div className="tabs-container tabs-lg bg-base-200 w-full max-w-4xl">
+              <div className="tabs-container tabs-lg bg-base-200 max-w-4xl">
                 <button 
                   className={`tab tab-sm sm:tab-lg min-h-14 sm:min-h-16 font-bold text-xs sm:text-base px-3 sm:px-4 whitespace-nowrap ${activeAdminTab === 'users' ? 'tab-active' : ''}`}
                   style={activeAdminTab === 'users' ? {color: getContrastTextColor()} : {}}

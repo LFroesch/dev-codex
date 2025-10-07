@@ -518,10 +518,10 @@ router.post('/users/:id/password-reset', async (req, res) => {
     const resetToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     const resetExpires = new Date(Date.now() + 3600000); // 1 hour from now
 
-    // Update user with reset token (assuming you add these fields to User model)
+    // Update user with reset token
     await User.findByIdAndUpdate(req.params.id, {
-      passwordResetToken: resetToken,
-      passwordResetExpires: resetExpires
+      resetPasswordToken: resetToken,
+      resetPasswordExpires: resetExpires
     });
 
     try {

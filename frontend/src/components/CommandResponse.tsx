@@ -47,16 +47,16 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
     return baseMatch ? `${baseMatch[1].trim()} ` : `${syntax} `;
   };
 
-  // Handle theme changes that require reload
+  // Handle theme changes
   React.useEffect(() => {
-    if (response.data?.theme && response.data?.needsReload) {
-      // Apply theme and reload page
+    if (response.data?.theme) {
       document.documentElement.setAttribute('data-theme', response.data.theme);
+      // refresh if theme changed to apply tailwind colors properly
       setTimeout(() => {
-        window.location.reload();
-      }, 500);
+      });window.location.reload();
     }
-  }, [response.data?.theme, response.data?.needsReload]);
+    
+  }, [response.data?.theme]);
 
   const handleNavigateToProject = async (path: string) => {
     // If the response has a project ID and it's different from current, switch first
@@ -523,23 +523,61 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
 
     // Render themes
     if (response.data.themes && Array.isArray(response.data.themes)) {
+      const customThemes = response.data.customThemes || [];
+
       return (
-        <div className="mt-3">
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-            {response.data.themes.map((theme: any, index: number) => (
-              <div
-                key={index}
-                className="p-2 bg-base-200 rounded-lg hover:bg-base-300/50 transition-colors border border-base-content/10 cursor-pointer"
-                onClick={() => navigator.clipboard.writeText(`/set theme ${theme.name}`)}
-                title={`Click to copy: /set theme ${theme.name}`}
-              >
-                <div className="font-medium text-xs text-base-content/80">{theme.name}</div>
-                <div className="text-xs text-base-content/60 truncate">
-                  {theme.description}
+        <div className="mt-3 space-y-4">
+          {/* Preset Themes */}
+          <div>
+            <div className="text-xs font-semibold text-primary mb-2">Preset Themes ({response.data.themes.length})</div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+              {response.data.themes.map((theme: any, index: number) => (
+                <div
+                  key={index}
+                  className="p-2 bg-base-200 rounded-lg hover:bg-base-300/50 transition-colors border border-base-content/10 cursor-pointer"
+                  onClick={() => navigator.clipboard.writeText(`/set theme ${theme.name}`)}
+                  title={`Click to copy: /set theme ${theme.name}`}
+                >
+                  <div className="font-medium text-xs text-base-content/80">{theme.name}</div>
+                  <div className="text-xs text-base-content/60 truncate">
+                    {theme.description}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
+
+          {/* Custom Themes */}
+          {customThemes.length > 0 && (
+            <div>
+              <div className="text-xs font-semibold text-secondary mb-2">Custom Themes ({customThemes.length})</div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                {customThemes.map((theme: any, index: number) => (
+                  <div
+                    key={index}
+                    className="p-2 bg-base-200 rounded-lg hover:bg-base-300/50 transition-colors border border-secondary/30 cursor-pointer"
+                    onClick={() => navigator.clipboard.writeText(`/set theme ${theme.name}`)}
+                    title={`Click to copy: /set theme ${theme.name}`}
+                  >
+                    <div className="font-medium text-xs text-base-content/80 flex items-center gap-1">
+                      <span>🎨</span>
+                      {theme.displayName}
+                    </div>
+                    <div className="text-xs text-base-content/60 truncate">
+                      {theme.description}
+                    </div>
+                    {/* Color preview */}
+                    <div className="flex gap-1 mt-1">
+                      <div className="w-3 h-3 rounded-full border border-base-content/20" style={{ backgroundColor: theme.colors?.primary }} title="Primary" />
+                      <div className="w-3 h-3 rounded-full border border-base-content/20" style={{ backgroundColor: theme.colors?.secondary }} title="Secondary" />
+                      <div className="w-3 h-3 rounded-full border border-base-content/20" style={{ backgroundColor: theme.colors?.accent }} title="Accent" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="mt-3 text-xs text-base-content/60">
             💡 Click any theme to copy the command
           </div>
@@ -631,7 +669,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                               <button
                                 type="button"
                                 onClick={() => onCommandClick?.(generateTemplate(cmd.syntax))}
-                                className="text-xs text-primary font-mono bg-base-300/50 px-1.5 py-0.5 rounded hover:bg-primary/20 hover:border-primary border-2 border-transparent transition-colors cursor-pointer"
+                                className="text-xs text-primary font-mono bg-base-100 px-1.5 py-0.5 rounded hover:bg-primary/20 hover:border-primary border-2 border-transparent transition-colors cursor-pointer"
                                 title="Click to use this command"
                               >
                                 {cmd.syntax}

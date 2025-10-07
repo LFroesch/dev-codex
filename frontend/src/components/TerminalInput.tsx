@@ -7,6 +7,7 @@ interface TerminalInputProps {
   disabled?: boolean;
   currentProjectId?: string;
   onScrollToTop?: () => void;
+  onClear?: () => void;
   pendingCommand?: string | null;
   onCommandSet?: () => void;
 }
@@ -26,6 +27,7 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
   disabled = false,
   currentProjectId,
   onScrollToTop,
+  onClear,
   pendingCommand,
   onCommandSet
 }) => {
@@ -468,24 +470,25 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
             onSelect={(e) => setCursorPosition(e.currentTarget.selectionStart)}
             disabled={disabled}
             placeholder="Type / for commands or @ for projects..."
-            className="textarea textarea-bordered w-full min-h-10 max-h-10 resize-none text-sm font-mono overflow-hidden placeholder:overflow-ellipsis placeholder:whitespace-nowrap"
+            className="textarea textarea-bordered w-full min-h-10 max-h-10 resize-none text-sm font-mono overflow-hidden placeholder:overflow-ellipsis placeholder:whitespace-nowrap bg-base-100"
           />
           <button
             type="button"
             onClick={handleSubmit}
             disabled={!input.trim() || disabled}
-            className="btn btn-primary flex flex-col gap-1 min-h-10 max-h-10 px-6"
-            style={{ color: getContrastTextColor('primary') }}
+            className="btn flex flex-col gap-1 min-h-10 max-h-10 px-6 text-primary group hover:border-thick"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
             </svg>
-            <span className="text-xs font-semibold">Send</span>
+            <span 
+            className="text-xs font-semibold"
+            >Send</span>
           </button>
         </div>
 
         {/* Help text */}
-        <div className="flex min-h-10 items-center justify-between text-xs text-base-content/70 bg-base-200 rounded-lg p-2 border-2 border-base-content/20 gap-2">
+        <div className="flex min-h-10 items-center justify-between text-xs text-base-content/70 bg-base-100 rounded-lg p-2 border-2 border-base-content/20 gap-2">
           <div className="flex items-center gap-2 flex-wrap">
 
             <div className="flex items-center gap-1 hidden sm:flex">
@@ -535,6 +538,19 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
                 >
                   <span className="hidden sm:inline">↑ Back To Top</span>
                   <span className="sm:hidden">↑ Top</span>
+                </span>
+            </button>
+            <span className="text-base-content/50 hidden sm:inline">•</span>
+            <button
+              onClick={onClear}
+              title="Clear terminal"
+              className='border-thick rounded-xl px-2 bg-warning'
+            >
+              <span className='font-mono'
+                style={{ color: getContrastTextColor('warning') }}
+                >
+                  <span className="hidden sm:inline">Clear</span>
+                  <span className="sm:hidden">✕</span>
                 </span>
             </button>
           </div>

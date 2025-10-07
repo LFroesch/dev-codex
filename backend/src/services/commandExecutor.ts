@@ -169,7 +169,7 @@ export class CommandExecutor {
           return await this.handleSetTheme(parsed);
 
         case CommandType.VIEW_THEMES:
-          return this.handleViewThemes(parsed);
+          return await this.handleViewThemes(parsed);
 
         case CommandType.SWAP_PROJECT:
           return await this.handleSwapProject(parsed);
@@ -2218,7 +2218,9 @@ export class CommandExecutor {
       'coffee', 'winter', 'nord', 'sunset'
     ];
 
-    if (!validThemes.includes(themeName.toLowerCase())) {
+    const isCustomTheme = themeName.startsWith('custom-');
+
+    if (!validThemes.includes(themeName.toLowerCase()) && !isCustomTheme) {
       return {
         type: ResponseType.ERROR,
         message: `Theme "${themeName}" not found`,
@@ -2236,15 +2238,29 @@ export class CommandExecutor {
         };
       }
 
+      // If it's a custom theme, verify it exists
+      if (isCustomTheme) {
+        const customThemeId = themeName.replace('custom-', '');
+        const customThemeExists = user.customThemes?.some((ct: any) => ct.id === customThemeId);
+
+        if (!customThemeExists) {
+          return {
+            type: ResponseType.ERROR,
+            message: `Custom theme "${themeName}" not found`,
+            suggestions: ['/view themes']
+          };
+        }
+      }
+
       // Update theme in user settings
+      user.theme = themeName.toLowerCase() as any;
       await user.save();
 
       return {
         type: ResponseType.SUCCESS,
         message: `🎨 Theme changed to ${themeName}`,
         data: {
-          theme: themeName.toLowerCase(),
-          needsReload: true // Signal frontend to apply theme
+          theme: themeName.toLowerCase()
         }
       };
     } catch (error) {
@@ -2259,7 +2275,7 @@ export class CommandExecutor {
   /**
    * Handle /view themes command
    */
-  private handleViewThemes(parsed: ParsedCommand): CommandResponse {
+  private async handleViewThemes(parsed: ParsedCommand): Promise<CommandResponse> {
     const themes = [
       { name: 'dim', description: 'Dim gray theme' },
       { name: 'light', description: 'Light theme' },
@@ -2291,16 +2307,46 @@ export class CommandExecutor {
       { name: 'sunset', description: 'Sunset orange' }
     ];
 
-    return {
-      type: ResponseType.DATA,
-      message: '🎨 Available themes',
-      data: {
-        themes: themes.map(t => ({
-          name: t.name,
-          description: t.description
-        }))
-      },
-      suggestions: ['/set theme dark', '/set theme light']
-    };
+    // Fetch user's custom themes
+    try {
+      const user = await User.findById(this.userId).select('customThemes');
+      const customThemes = user?.customThemes || [];
+
+      return {
+        type: ResponseType.DATA,
+        message: '🎨 Available themes',
+        data: {
+          themes: themes.map(t => ({
+            name: t.name,
+            description: t.description,
+            type: 'preset'
+          })),
+          customThemes: customThemes.map((ct: any) => ({
+            name: `custom-${ct.id}`,
+            displayName: ct.name,
+            description: 'Custom theme',
+            type: 'custom',
+            colors: ct.colors
+          }))
+        },
+        suggestions: ['/set theme dark', '/set theme light']
+      };
+    } catch (error) {
+      logError('Error fetching custom themes', error as Error);
+      // Fallback to just showing preset themes
+      return {
+        type: ResponseType.DATA,
+        message: '🎨 Available themes',
+        data: {
+          themes: themes.map(t => ({
+            name: t.name,
+            description: t.description,
+            type: 'preset'
+          })),
+          customThemes: []
+        },
+        suggestions: ['/set theme dark', '/set theme light']
+      };
+    }
   }
 }

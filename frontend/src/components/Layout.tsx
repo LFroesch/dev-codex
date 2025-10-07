@@ -644,7 +644,7 @@ const Layout: React.FC = () => {
   const groupedSharedProjects = groupProjectsByCategory(sharedProjects);
 
   return (
-    <div className="h-screen overflow-hidden bg-base-100 flex flex-col">
+    <div className={`bg-base-100 flex flex-col ${location.pathname === '/terminal' ? 'h-screen overflow-hidden' : ''}`}>
       {/* Header */}
       <header className="bg-base-100 border-b-2 border-base-content/20 shadow-sm sticky top-0 z-40 w-full">
         {/* Mobile and Tablet Layout */}
@@ -1223,7 +1223,7 @@ const Layout: React.FC = () => {
         </div>
       </header>
 
-      <div className="flex-1 w-full max-w-7xl mx-auto p-2 bg-base-100 flex flex-col mb-4 min-h-0">
+      <div className="flex-1 w-full max-w-7xl mx-auto p-2 bg-base-100 flex flex-col min-h-0">
         {/* Render content based on current route */}
         {searchParams.get('view') === 'projects' ? (
           /* My Projects Tab - Modern Style */

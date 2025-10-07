@@ -664,16 +664,16 @@ export class CommandParser {
     // Remove @project mention to parse rest of command (only those preceded by whitespace/start)
     const withoutProject = withoutSlash.replace(/(?:^|\s)@[^@]+?(?=\s+--|@|$)/g, '').trim();
 
-    // Extract flags (--flag or -f)
-    const flagMatches = withoutProject.matchAll(/--?(\w+)(?:=(\S+))?/g);
+    // Extract flags (--flag or -f) - only match if preceded by whitespace or at start
+    const flagMatches = withoutProject.matchAll(/(?:^|\s)(--?(\w+)(?:=(\S+))?)/g);
     for (const match of flagMatches) {
-      const flagName = match[1];
-      const flagValue = match[2] || true;
+      const flagName = match[2];
+      const flagValue = match[3] || true;
       result.flags.set(flagName, flagValue);
     }
 
-    // Remove flags to parse command and args
-    const withoutFlags = withoutProject.replace(/--?\w+(?:=\S+)?/g, '').trim();
+    // Remove flags to parse command and args - only remove if preceded by whitespace or at start
+    const withoutFlags = withoutProject.replace(/(?:^|\s)--?\w+(?:=\S+)?/g, '').trim();
 
     // Split into words for command detection
     const words = withoutFlags.split(/\s+/).filter(w => w.length > 0);

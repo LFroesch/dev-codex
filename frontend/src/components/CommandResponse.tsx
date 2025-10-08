@@ -785,7 +785,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
   return (
     <div className="animate-fade-in">
       {/* Command echo */}
-      <div className="flex items-start gap-2 mb-2">
+      <div className="inline-flex items-start gap-2 mb-2 border-thick p-2 rounded-lg bg-base-200 ">
         <div className="text-xs text-base-content/80 font-mono flex-shrink-0">
           {timestamp.toLocaleTimeString()}
         </div>

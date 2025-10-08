@@ -12,17 +12,73 @@ const RegisterPage: React.FC = () => {
     firstName: '',
     lastName: '',
     email: '',
+    username: '',
     password: '',
     confirmPassword: ''
   });
+  const [usernameStatus, setUsernameStatus] = useState<{
+    checking: boolean;
+    available: boolean | null;
+    message: string;
+  }>({ checking: false, available: null, message: '' });
   const { loading, withLoading } = useLoadingState();
-  const { error, handleError, clearError } = useErrorHandler();
+  const { error, handleError, clearError} = useErrorHandler();
 
   useEffect(() => {
     // Apply saved theme on register page
     const savedTheme = localStorage.getItem('theme') || 'retro';
     document.documentElement.setAttribute('data-theme', savedTheme);
   }, []);
+
+  // Check username availability with debounce
+  useEffect(() => {
+    const checkUsername = async () => {
+      const username = formData.username.trim().toLowerCase();
+
+      if (!username) {
+        setUsernameStatus({ checking: false, available: null, message: '' });
+        return;
+      }
+
+      if (username.length < 3) {
+        setUsernameStatus({
+          checking: false,
+          available: false,
+          message: 'Username must be at least 3 characters'
+        });
+        return;
+      }
+
+      if (!/^[a-z0-9_]+$/.test(username)) {
+        setUsernameStatus({
+          checking: false,
+          available: false,
+          message: 'Only lowercase letters, numbers, and underscores allowed'
+        });
+        return;
+      }
+
+      setUsernameStatus({ checking: true, available: null, message: 'Checking...' });
+
+      try {
+        const result = await authAPI.checkUsername(username);
+        setUsernameStatus({
+          checking: false,
+          available: result.available,
+          message: result.message
+        });
+      } catch (err) {
+        setUsernameStatus({
+          checking: false,
+          available: null,
+          message: 'Error checking username'
+        });
+      }
+    };
+
+    const timer = setTimeout(checkUsername, 500);
+    return () => clearTimeout(timer);
+  }, [formData.username]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -34,6 +90,16 @@ const RegisterPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     clearError();
+
+    if (!formData.username) {
+      handleError(new Error('Username is required'));
+      return;
+    }
+
+    if (!usernameStatus.available) {
+      handleError(new Error('Please choose an available username'));
+      return;
+    }
 
     if (formData.password !== formData.confirmPassword) {
       handleError(new Error('Passwords do not match'));
@@ -51,6 +117,7 @@ const RegisterPage: React.FC = () => {
           firstName: formData.firstName,
           lastName: formData.lastName,
           email: formData.email,
+          username: formData.username.trim().toLowerCase(),
           password: formData.password
         });
         toast.success('Account created successfully! Welcome to Dev Codex.');
@@ -129,7 +196,41 @@ const RegisterPage: React.FC = () => {
                 required
               />
             </div>
-            
+
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text">Username</span>
+                {usernameStatus.message && (
+                  <span className={`label-text-alt ${
+                    usernameStatus.checking ? 'text-info' :
+                    usernameStatus.available ? 'text-success' : 'text-error'
+                  }`}>
+                    {usernameStatus.checking ? '⏳' : usernameStatus.available ? '✓' : '✗'} {usernameStatus.message}
+                  </span>
+                )}
+              </label>
+              <input
+                type="text"
+                name="username"
+                value={formData.username}
+                onChange={handleChange}
+                placeholder="Choose a unique username"
+                className={`input input-bordered ${
+                  usernameStatus.available === true ? 'input-success' :
+                  usernameStatus.available === false ? 'input-error' : ''
+                }`}
+                required
+                minLength={3}
+                maxLength={30}
+                pattern="[a-z0-9_]+"
+              />
+              <label className="label">
+                <span className="label-text-alt text-xs opacity-70">
+                  3-30 characters, lowercase letters, numbers, and underscores only
+                </span>
+              </label>
+            </div>
+
             <div className="form-control">
               <label className="label">
                 <span className="label-text">Password</span>

@@ -35,6 +35,8 @@ export interface IUser extends Document {
   password: string;
   firstName: string;
   lastName: string;
+  username: string;
+  displayPreference: 'name' | 'username';
   theme: UserTheme;
   planTier: 'free' | 'pro' | 'enterprise';
   projectLimit: number;
@@ -79,6 +81,21 @@ const userSchema = new Schema<IUser>({
     type: String,
     required: true,
     trim: true
+  },
+  username: {
+    type: String,
+    required: true,
+    unique: true,
+    lowercase: true,
+    trim: true,
+    match: /^[a-z0-9_]+$/,
+    minlength: 3,
+    maxlength: 30
+  },
+  displayPreference: {
+    type: String,
+    enum: ['name', 'username'],
+    default: 'username'
   },
   theme: {
     type: String,
@@ -228,6 +245,7 @@ const userSchema = new Schema<IUser>({
 });
 
 // Critical indexes for authentication and user lookup
+userSchema.index({ username: 1 }, { unique: true });
 userSchema.index({ googleId: 1 }, { sparse: true });
 userSchema.index({ stripeCustomerId: 1 }, { sparse: true });
 userSchema.index({ resetPasswordToken: 1 }, { sparse: true });

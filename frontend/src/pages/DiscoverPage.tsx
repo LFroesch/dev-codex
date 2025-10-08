@@ -328,20 +328,20 @@ const DiscoverPage: React.FC = () => {
                       <div className="flex items-center gap-1">
                         {project.owner ? (
                           project.owner.isPublic || project.owner.publicSlug ? (
-                            <span 
+                            <span
                               className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-primary border-2 border-base-content/20 hover:bg-primary hover:text-primary-content transition-colors cursor-pointer"
                               style={{ color: getContrastTextColor() }}
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                navigate(`/discover/user/${project.owner.publicSlug || project.owner.id}`);
+                                navigate(`/discover/user/${project.owner.publicSlug || project.owner.username || project.owner.id}`);
                               }}
                             >
-                              @{project.owner.publicSlug || `${project.owner.firstName}${project.owner.lastName}`.toLowerCase()}
+                              {project.owner.displayName}
                             </span>
                           ) : (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-primary text-base-content/80 border border-base-300/50">
-                              @{`${project.owner.firstName}${project.owner.lastName}`.toLowerCase()}
+                              {project.owner.displayName}
                             </span>
                           )
                         ) : (

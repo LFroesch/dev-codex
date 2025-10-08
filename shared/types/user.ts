@@ -3,6 +3,8 @@ export interface BaseUser {
   email: string;
   firstName: string;
   lastName: string;
+  username: string;
+  displayPreference: 'name' | 'username';
   theme: string;
   planTier: 'free' | 'pro' | 'enterprise';
   projectLimit: number;

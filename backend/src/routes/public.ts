@@ -14,10 +14,10 @@ router.get('/project/:identifier', async (req, res) => {
     let project;
     if (mongoose.Types.ObjectId.isValid(identifier)) {
       project = await Project.findById(identifier)
-        .populate('ownerId', 'firstName lastName email isPublic publicSlug');
+        .populate('ownerId', 'firstName lastName username displayPreference email isPublic publicSlug');
     } else {
       project = await Project.findOne({ publicSlug: identifier })
-        .populate('ownerId', 'firstName lastName email isPublic publicSlug');
+        .populate('ownerId', 'firstName lastName username displayPreference email isPublic publicSlug');
     }
 
     if (!project) {
@@ -51,6 +51,11 @@ router.get('/project/:identifier', async (req, res) => {
         id: (project.ownerId as any)._id,
         firstName: (project.ownerId as any).firstName,
         lastName: (project.ownerId as any).lastName,
+        username: (project.ownerId as any).username,
+        displayPreference: (project.ownerId as any).displayPreference,
+        displayName: (project.ownerId as any).displayPreference === 'username'
+          ? `@${(project.ownerId as any).username}`
+          : `${(project.ownerId as any).firstName} ${(project.ownerId as any).lastName}`,
         isPublic: (project.ownerId as any).isPublic,
         publicSlug: (project.ownerId as any).publicSlug
       } : null
@@ -98,17 +103,23 @@ router.get('/project/:identifier', async (req, res) => {
   }
 });
 
-// Get public user profile by ID or slug
+// Get public user profile by ID, slug, or username
 router.get('/user/:identifier', async (req, res) => {
   try {
     const { identifier } = req.params;
-    
-    // Try to find by publicSlug first, then by ID
+
+    // Try to find by publicSlug, username, or ID
     let user;
     if (mongoose.Types.ObjectId.isValid(identifier)) {
       user = await User.findById(identifier);
     } else {
-      user = await User.findOne({ publicSlug: identifier });
+      // Try publicSlug first, then username
+      user = await User.findOne({
+        $or: [
+          { publicSlug: identifier },
+          { username: identifier.toLowerCase() }
+        ]
+      });
     }
 
     if (!user) {
@@ -132,6 +143,11 @@ router.get('/user/:identifier', async (req, res) => {
       id: user._id,
       firstName: user.firstName,
       lastName: user.lastName,
+      username: user.username,
+      displayPreference: user.displayPreference,
+      displayName: user.displayPreference === 'username'
+        ? `@${user.username}`
+        : `${user.firstName} ${user.lastName}`,
       bio: user.bio || '',
       publicDescription: user.publicDescription || '',
       publicSlug: user.publicSlug,
@@ -252,6 +268,8 @@ router.get('/projects', async (req, res) => {
             selectedTechnologies: 1,
             'ownerId.firstName': 1,
             'ownerId.lastName': 1,
+            'ownerId.username': 1,
+            'ownerId.displayPreference': 1,
             'ownerId.publicSlug': 1,
             'ownerId.isPublic': 1,
             'ownerId._id': 1
@@ -278,7 +296,7 @@ router.get('/projects', async (req, res) => {
       // Regular query without search
       [projects, total] = await Promise.all([
         Project.find(query)
-          .populate('ownerId', 'firstName lastName publicSlug isPublic')
+          .populate('ownerId', 'firstName lastName username displayPreference publicSlug isPublic')
           .select('name description publicDescription color category tags publicSlug createdAt updatedAt selectedTechnologies')
           .sort({ updatedAt: -1 })
           .skip(skip)
@@ -290,7 +308,7 @@ router.get('/projects', async (req, res) => {
     const publicProjects = projects.map((project: any) => {
       // Handle both aggregation results and populated results
       const owner = project.ownerId;
-      
+
       return {
         id: project._id,
         name: project.name,
@@ -306,6 +324,11 @@ router.get('/projects', async (req, res) => {
           id: owner._id,
           firstName: owner.firstName,
           lastName: owner.lastName,
+          username: owner.username,
+          displayPreference: owner.displayPreference,
+          displayName: owner.displayPreference === 'username'
+            ? `@${owner.username}`
+            : `${owner.firstName} ${owner.lastName}`,
           publicSlug: owner.publicSlug
         } : null
       };

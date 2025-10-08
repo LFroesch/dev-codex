@@ -439,7 +439,7 @@ const NotesPage: React.FC = () => {
                 <div className="flex items-center gap-2 pt-2">
                   <button
                     type="submit"
-                    className="btn btn-primary btn-sm"
+                    className="bg-primary rounded-lg border-thick p-2 font-semibold"
                     style={{ color: getContrastTextColor('primary') }}
                     disabled={isCreatingNote || !newNoteTitle.trim() || !newNoteContent.trim()}
                   >

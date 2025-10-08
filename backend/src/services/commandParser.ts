@@ -486,10 +486,11 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
   },
   [CommandType.INVITE_MEMBER]: {
     type: CommandType.INVITE_MEMBER,
-    syntax: '/invite [email] --role=[editor/viewer] [@project]',
-    description: 'Invite a user to the project',
+    syntax: '/invite [email/username] --role=[editor/viewer] [@project]',
+    description: 'Invite a user to the project by email or username',
     examples: [
       '/invite user@example.com --role=editor @myproject',
+      '/invite johndoe --role=editor @myproject',
       '/invite colleague@company.com @myproject',
       '/invite friend@email.com --role=viewer'
     ],
@@ -498,10 +499,11 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
   },
   [CommandType.REMOVE_MEMBER]: {
     type: CommandType.REMOVE_MEMBER,
-    syntax: '/remove member [email] [@project]',
-    description: 'Remove a team member',
+    syntax: '/remove member [email/username] [@project]',
+    description: 'Remove a team member by email or username',
     examples: [
       '/remove member user@example.com @myproject',
+      '/kick johndoe @myproject',
       '/kick colleague@company.com'
     ],
     requiresProject: true,

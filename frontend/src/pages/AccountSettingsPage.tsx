@@ -1674,26 +1674,47 @@ const AccountSettingsPage: React.FC = () => {
                             <div className="space-y-4">
                               {/* Public Profile Toggle */}
                               <div className="form-control">
-                                <label className="label cursor-pointer">
-                                  <div className="flex-1">
-                                    <span className="label-text text-lg font-semibold">🔓 Make Profile Public</span>
-                                    <p className="text-sm text-base-content/60 mt-1">
-                                      Enable this to create a public portfolio page showcasing your projects and skills.
-                                      Others will be able to discover your profile and view your public projects.
-                                    </p>
-                                    {isPublicProfile && (
-                                      <p className="text-sm text-success font-medium mt-2">
-                                        ✅ Your profile is publicly accessible
-                                      </p>
-                                    )}
-                                  </div>
-                                  <input
-                                    type="checkbox"
-                                    className="toggle toggle-primary toggle-lg"
-                                    checked={isPublicProfile}
-                                    onChange={(e) => setIsPublicProfile(e.target.checked)}
-                                  />
-                                </label>
+                                <div className="flex-1 mb-4">
+                                  <span className="label-text text-lg font-semibold">🔓 Make Profile Public</span>
+                                  <p className="text-sm text-base-content/60 mt-1">
+                                    Enable this to create a public portfolio page showcasing your projects and skills.
+                                    Others will be able to discover your profile and view your public projects.
+                                  </p>
+                                </div>
+
+                                <div className="flex items-center justify-center gap-0 bg-base-200 border-thick rounded-lg p-1 w-fit mx-auto sm:mx-0">
+                                  <button
+                                    type="button"
+                                    onClick={() => setIsPublicProfile(false)}
+                                    className={`px-4 sm:px-6 py-2 rounded-md font-semibold transition-all ${
+                                      !isPublicProfile
+                                        ? 'bg-warning text-warning-content shadow-md'
+                                        : 'text-base-content/60 hover:text-base-content'
+                                    }`}
+                                    style={!isPublicProfile ? { color: getContrastTextColor('warning') } : {}}
+                                  >
+                                    Private
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setIsPublicProfile(true)}
+                                    className={`px-4 sm:px-6 py-2 rounded-md font-semibold transition-all ${
+                                      isPublicProfile
+                                        ? 'bg-success text-success-content shadow-md'
+                                        : 'text-base-content/60 hover:text-base-content'
+                                    }`}
+                                    style={isPublicProfile ? { color: getContrastTextColor('success') } : {}}
+                                  >
+                                    Public
+                                  </button>
+                                </div>
+
+                                {isPublicProfile && (
+                                  <p className="text-sm bg-success inline-block rounded-lg px-3 py-2 font-medium border-thick mt-3"
+                                  style={{ color: getContrastTextColor('success') }}>
+                                    ☑️ Your profile is publicly accessible
+                                  </p>
+                                )}
                               </div>
 
                               {/* Public Settings - Only show when public is enabled */}

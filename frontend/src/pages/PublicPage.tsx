@@ -152,38 +152,41 @@ const PublicPage: React.FC = () => {
       {/* Navigation Tabs */}
       <div className="flex justify-center px-2">
         <div className="tabs-container">
-          <button 
+          <button
             className={`tab-button ${activeSection === 'overview' ? 'tab-active' : ''}`}
             style={activeSection === 'overview' ? {color: getContrastTextColor()} : {}}
             onClick={() => setActiveSection('overview')}
           >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
-            Overview & Settings
+            <span className="hidden sm:inline">Overview & Settings</span>
+            <span className="sm:hidden">Overview</span>
           </button>
           {isPublic && (
             <>
-              <button 
+              <button
                 className={`tab-button ${activeSection === 'url' ? 'tab-active' : ''}`}
                 style={activeSection === 'url' ? {color: getContrastTextColor()} : {}}
                 onClick={() => setActiveSection('url')}
               >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                 </svg>
-                URL & Preview
+                <span className="hidden sm:inline">URL & Preview</span>
+                <span className="sm:hidden">URL</span>
               </button>
-              <button 
+              <button
                 className={`tab-button ${activeSection === 'visibility' ? 'tab-active' : ''}`}
                 style={activeSection === 'visibility' ? {color: getContrastTextColor()} : {}}
                 onClick={() => setActiveSection('visibility')}
               >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                 </svg>
-                Visibility & Privacy
+                <span className="hidden sm:inline">Visibility & Privacy</span>
+                <span className="sm:hidden">Privacy</span>
               </button>
             </>
           )}
@@ -233,7 +236,7 @@ const PublicPage: React.FC = () => {
                   {selectedProject.name}
                 </h3>
                 <span> </span>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium text-base-content border-thick relative -top-0.5 ${isPublic ? 'bg-success/50' : 'bg-warning/50'}`}
+                <span className={`px-3 py-1 rounded-full text-sm font-medium text-base-content border-thick relative -top-0.5 ${isPublic ? 'bg-success' : 'bg-warning'}`}
                 style={{ 
                   color: isPublic ? getContrastTextColor('success') : getContrastTextColor('warning')
                 }}>
@@ -244,7 +247,7 @@ const PublicPage: React.FC = () => {
             </div>
             
             {isPublic && (
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <button
                   onClick={copyPublicUrl}
                   className="btn btn-outline btn-sm gap-2"
@@ -256,12 +259,12 @@ const PublicPage: React.FC = () => {
                 </button>
                 <Link
                   to={`/project/${publicSlug || selectedProject.id}`}
-                  className="btn btn-outline btn-sm gap-2"
+                  className="btn btn-outline btn-sm gap-2 truncate"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                   </svg>
-                  View: /project/{publicSlug || selectedProject.id}
+                  <span className="truncate">View: /project/{publicSlug || selectedProject.id}</span>
                 </Link>
               </div>
             )}
@@ -300,11 +303,11 @@ const PublicPage: React.FC = () => {
                 Others will be able to view your project details, tech stack, and documentation.
               </p>
 
-              <div className="flex items-center justify-center gap-0 bg-base-200 border-thick rounded-lg p-1 w-fit">
+              <div className="flex items-center justify-center gap-0 bg-base-200 border-thick rounded-lg p-1 w-fit mx-auto sm:mx-0">
                 <button
                   type="button"
                   onClick={() => setIsPublic(false)}
-                  className={`px-6 py-2 rounded-md font-semibold transition-all ${
+                  className={`px-4 sm:px-6 py-2 rounded-md font-semibold transition-all ${
                     !isPublic
                       ? 'bg-warning text-warning-content shadow-md'
                       : 'text-base-content/60 hover:text-base-content'
@@ -316,7 +319,7 @@ const PublicPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsPublic(true)}
-                  className={`px-6 py-2 rounded-md font-semibold transition-all ${
+                  className={`px-4 sm:px-6 py-2 rounded-md font-semibold transition-all ${
                     isPublic
                       ? 'bg-success text-success-content shadow-md'
                       : 'text-base-content/60 hover:text-base-content'
@@ -328,7 +331,7 @@ const PublicPage: React.FC = () => {
               </div>
 
               {isPublic && (
-                <p className="text-sm bg-success/20 inline-block rounded-lg px-3 py-2 font-medium border-thick"
+                <p className="text-sm bg-success inline-block rounded-lg px-3 py-2 font-medium border-thick"
                 style={{ color: getContrastTextColor('success') }}>
                   ☑️ Your project is publicly accessible
                 </p>
@@ -368,35 +371,35 @@ const PublicPage: React.FC = () => {
             <div className="space-y-4">
             {/* Custom Slug */}
             <div className="form-control">
-              <div className="label justify-start">
+              <div className="label flex-col sm:flex-row justify-start items-start sm:items-center gap-2">
                 <span className="label-text font-medium">Custom URL Slug (Optional):</span>
-                <span className="label-text-alt ml-2 flex items-center gap-1">
-                  <span>Your project will be accessible at:</span>
+                <span className="label-text-alt flex flex-col sm:flex-row sm:items-center gap-1 sm:ml-2">
+                  <span className="hidden sm:inline">Your project will be accessible at:</span>
                   {publicSlug ? (
-                    <Link 
-                      to={`/project/${publicSlug}`} 
-                      className="font-bold bg-primary/50 rounded-lg px-2 py-1 border-2 border-base-content/20 hover:bg-primary transition inline-flex items-center gap-1"
+                    <Link
+                      to={`/project/${publicSlug}`}
+                      className="font-bold bg-primary/50 rounded-lg px-2 py-1 border-2 border-base-content/20 hover:bg-primary transition inline-flex items-center gap-1 text-xs sm:text-sm"
                       style={{ color: getContrastTextColor('primary') }}
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                       </svg>
-                      /project/{publicSlug}
+                      <span className="truncate max-w-[150px] sm:max-w-none">/project/{publicSlug}</span>
                     </Link>
                   ) : (
-                    <Link 
-                      to={`/project/${selectedProject.id}`} 
-                      className="font-bold bg-primary rounded-lg px-2 py-1 border-2 border-base-content/20 hover:shadow-lg transition inline-flex items-center gap-1"
+                    <Link
+                      to={`/project/${selectedProject.id}`}
+                      className="font-bold bg-primary rounded-lg px-2 py-1 border-2 border-base-content/20 hover:shadow-lg transition inline-flex items-center gap-1 text-xs sm:text-sm"
                       style={{ color: getContrastTextColor('primary') }}
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                       </svg>
-                      /project/{selectedProject.id}
+                      <span className="truncate max-w-[150px] sm:max-w-none">/project/{selectedProject.id}</span>
                     </Link>
                   )}
                 </span>
-                <span className="label-text-alt ml-auto">
+                <span className="label-text-alt sm:ml-auto">
                   <button
                     type="button"
                     onClick={generateSlugFromName}
@@ -407,12 +410,13 @@ const PublicPage: React.FC = () => {
                 </span>
               </div>
               <div className="flex flex-col sm:flex-row gap-2 sm:gap-0 border-2 border-base-content/20 rounded-lg overflow-hidden">
-                <span className="bg-base-200 px-3 py-2 text-sm text-base-content/70 rounded-lg flex items-center">
-                  {window.location.origin}/project/
+                <span className="bg-base-200 px-3 py-2 text-xs sm:text-sm text-base-content/70 rounded-lg sm:rounded-none flex items-center truncate">
+                  <span className="hidden sm:inline">{window.location.origin}/project/</span>
+                  <span className="sm:hidden">.../project/</span>
                 </span>
                 <input
                   type="text"
-                  className="input input-bordered flex-1 rounded-lg border-none"
+                  className="input input-bordered flex-1 rounded-lg sm:rounded-none sm:border-none text-sm"
                   placeholder={selectedProject.id}
                   value={publicSlug}
                   onChange={(e) => setPublicSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}

@@ -5,6 +5,7 @@ import ActivityLog from './ActivityLog';
 import ConfirmationModal from './ConfirmationModal';
 import InfoModal from './InfoModal';
 import { toast } from '../services/toast';
+import { getContrastTextColor } from '../utils/contrastTextColor';
 
 interface TeamManagementProps {
   projectId: string;
@@ -257,11 +258,11 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
       {canManageTeam && (
         <div className="bg-base-200/40 border-2 border-base-content/20 rounded-lg p-4">
           <div>
-            <h3 className="text-base font-semibold mb-3">Invite Team Member</h3>
-            <form onSubmit={handleInvite} className="flex gap-3">
+            <h3 className="text-sm sm:text-base font-semibold mb-3">Invite Team Member</h3>
+            <form onSubmit={handleInvite} className="flex flex-col sm:flex-row gap-2 sm:gap-3">
               <input
-                type="email"
-                placeholder="colleague@company.com"
+                type="text"
+                placeholder="email@company.com or username"
                 value={inviteEmail}
                 onChange={(e) => setInviteEmail(e.target.value)}
                 className="input input-bordered input-sm text-base-content/40 flex-1"
@@ -270,12 +271,12 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
               <select
                 value={inviteRole}
                 onChange={(e) => setInviteRole(e.target.value as 'editor' | 'viewer')}
-                className="select select-bordered select-sm w-24"
+                className="select select-bordered select-sm w-full sm:w-24"
               >
                 <option value="viewer">Viewer</option>
                 <option value="editor">Editor</option>
               </select>
-              <button type="submit" className="btn btn-primary btn-sm px-6" disabled={inviting}>
+              <button type="submit" className="btn btn-primary btn-sm sm:px-6" disabled={inviting}>
                 {inviting ? <span className="loading loading-spinner loading-xs mr-2"></span> : null}
                 {inviting ? 'Sending' : 'Send Invite'}
               </button>
@@ -287,16 +288,17 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
       {/* Team Members */}
       <div className="bg-base-100 border-2 border-base-content/20 rounded-lg p-4">
         <div>
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
             <h3 className="text-base font-semibold">Team Members</h3>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 text-sm">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              <div className="flex items-center gap-2 text-xs sm:text-sm">
                 <span className="text-base-content/60">Members:</span>
-                <span className="badge badge-primary border-thick font-semibold">{members.length}</span>
+                <span className="badge badge-primary border-thick font-semibold text-xs sm:text-sm">{members.length}</span>
               </div>
-              <div className="flex items-center gap-2 text-sm">
-                <span className="text-base-content/60">Total Time (30d):</span>
-                <span className="badge badge-success border-thick font-semibold">{getTotalProjectTime()}</span>
+              <div className="flex items-center gap-2 text-xs sm:text-sm">
+                <span className="text-base-content/60 hidden sm:inline">Total Time (30d):</span>
+                <span className="text-base-content/60 sm:hidden">Time (30d):</span>
+                <span className="badge badge-success border-thick font-semibold text-xs sm:text-sm">{getTotalProjectTime()}</span>
               </div>
             </div>
           </div>
@@ -372,7 +374,8 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
                       <div className="flex items-center justify-between">
                         {/* Time Display */}
                         <div className="flex items-center gap-1.5">
-                          <span className="text-xs font-medium bg-success border-thick rounded px-1 py-0.5 text-base-content">
+                          <span className="text-xs font-medium bg-success border-thick rounded px-1 py-0.5"
+                          style={{ color: getContrastTextColor('success') }}>
                             {formatProjectTime(member.userId._id)}
                           </span>
                         </div>
@@ -403,8 +406,8 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
 
       {/* Activity Log Section */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-xl p-2">Recent Activity</h3>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <h3 className="font-semibold text-lg sm:text-xl p-2">Recent Activity</h3>
           <div className="flex items-center gap-2 border-thick rounded-lg p-2">
             <button
               onClick={() => {
@@ -431,13 +434,16 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
               {clearingActivity ? (
                 <div className="loading loading-spinner loading-xs"></div>
               ) : showClearConfirm ? (
-                'Confirm Clear'
+                <>
+                  <span className="hidden sm:inline">Confirm Clear</span>
+                  <span className="sm:hidden">Confirm</span>
+                </>
               ) : (
                 <>
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3 h-3 sm:mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                   </svg>
-                  Clear
+                  <span className="hidden sm:inline">Clear</span>
                 </>
               )}
             </button>
@@ -447,7 +453,8 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
                 className="btn btn-ghost btn-xs"
                 disabled={clearingActivity}
               >
-                Cancel
+                <span className="hidden sm:inline">Cancel</span>
+                <span className="sm:hidden">X</span>
               </button>
             )}
           </div>

@@ -532,25 +532,25 @@ const AdminDashboardPage: React.FC = () => {
         {/* Stats Cards */}
         {activeTab === 'users' && stats && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-4 sm:mb-8">
-            <div className="stat bg-base-100 rounded-lg shadow-md border-2 border-base-content/20">
-              <div className="stat-title">Total Users</div>
-              <div className="stat-value text-primary">{stats.totalUsers}</div>
-              <div className="stat-desc">↗︎ {stats.recentSignups} new this month</div>
+            <div className="stat bg-base-100 rounded-lg shadow-md border-2 border-base-content/20 py-4">
+              <div className="stat-title text-xs sm:text-sm">Total Users</div>
+              <div className="stat-value text-2xl sm:text-3xl text-primary">{stats.totalUsers}</div>
+              <div className="stat-desc text-xs">↗︎ {stats.recentSignups} new this month</div>
             </div>
-            
-            <div className="stat bg-base-100 rounded-lg shadow-md border-2 border-base-content/20">
-              <div className="stat-title">Total Projects</div>
-              <div className="stat-value text-secondary">{stats.totalProjects}</div>
+
+            <div className="stat bg-base-100 rounded-lg shadow-md border-2 border-base-content/20 py-4">
+              <div className="stat-title text-xs sm:text-sm">Total Projects</div>
+              <div className="stat-value text-2xl sm:text-3xl text-secondary">{stats.totalProjects}</div>
             </div>
-            
-            <div className="stat bg-base-100 rounded-lg shadow-md border-2 border-base-content/20">
-              <div className="stat-title">Active Subscriptions</div>
-              <div className="stat-value text-accent">{stats.activeSubscriptions}</div>
+
+            <div className="stat bg-base-100 rounded-lg shadow-md border-2 border-base-content/20 py-4">
+              <div className="stat-title text-xs sm:text-sm">Active Subscriptions</div>
+              <div className="stat-value text-2xl sm:text-3xl text-accent">{stats.activeSubscriptions}</div>
             </div>
-            
-            <div className="stat bg-base-100 rounded-lg shadow-md border-2 border-base-content/20">
-              <div className="stat-title">Plan Distribution</div>
-              <div className="stat-value text-sm">
+
+            <div className="stat bg-base-100 rounded-lg shadow-md border-2 border-base-content/20 py-4">
+              <div className="stat-title text-xs sm:text-sm">Plan Distribution</div>
+              <div className="stat-value text-xs sm:text-sm">
                 <div>Free: {stats.planDistribution.free}</div>
                 <div>Pro: {stats.planDistribution.pro}</div>
                 <div>Enterprise: {stats.planDistribution.enterprise}</div>
@@ -561,29 +561,29 @@ const AdminDashboardPage: React.FC = () => {
 
         {/* Ticket Stats Cards */}
         {activeTab === 'tickets' && ticketStats && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-4 sm:mb-8">
-            <div className="stat bg-base-100 rounded-lg shadow-md border-2 border-base-content/20">
-              <div className="stat-title">Open Tickets</div>
-              <div className="stat-value text-error">{ticketStats.open}</div>
-              <div className="stat-desc">Require attention</div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-4 sm:mb-8">
+            <div className="stat bg-base-100 rounded-lg shadow-md border-2 border-base-content/20 py-4">
+              <div className="stat-title text-xs sm:text-sm">Open Tickets</div>
+              <div className="stat-value text-2xl sm:text-3xl text-error">{ticketStats.open}</div>
+              <div className="stat-desc text-xs hidden sm:block">Require attention</div>
             </div>
-            
-            <div className="stat bg-base-100 rounded-lg shadow-md border-2 border-base-content/20">
-              <div className="stat-title">In Progress</div>
-              <div className="stat-value text-warning">{ticketStats.inProgress}</div>
-              <div className="stat-desc">Being worked on</div>
+
+            <div className="stat bg-base-100 rounded-lg shadow-md border-2 border-base-content/20 py-4">
+              <div className="stat-title text-xs sm:text-sm">In Progress</div>
+              <div className="stat-value text-2xl sm:text-3xl text-warning">{ticketStats.inProgress}</div>
+              <div className="stat-desc text-xs hidden sm:block">Being worked on</div>
             </div>
-            
-            <div className="stat bg-base-100 rounded-lg shadow-md border-2 border-base-content/20">
-              <div className="stat-title">Resolved</div>
-              <div className="stat-value text-success">{ticketStats.resolved}</div>
-              <div className="stat-desc">Awaiting closure</div>
+
+            <div className="stat bg-base-100 rounded-lg shadow-md border-2 border-base-content/20 py-4">
+              <div className="stat-title text-xs sm:text-sm">Resolved</div>
+              <div className="stat-value text-2xl sm:text-3xl text-success">{ticketStats.resolved}</div>
+              <div className="stat-desc text-xs hidden sm:block">Awaiting closure</div>
             </div>
-            
-            <div className="stat bg-base-100 rounded-lg shadow-md border-2 border-base-content/20">
-              <div className="stat-title">Closed</div>
-              <div className="stat-value text-neutral">{ticketStats.closed}</div>
-              <div className="stat-desc">Completed tickets</div>
+
+            <div className="stat bg-base-100 rounded-lg shadow-md border-2 border-base-content/20 py-4">
+              <div className="stat-title text-xs sm:text-sm">Closed</div>
+              <div className="stat-value text-2xl sm:text-3xl text-neutral">{ticketStats.closed}</div>
+              <div className="stat-desc text-xs hidden sm:block">Completed tickets</div>
             </div>
           </div>
         )}
@@ -990,32 +990,32 @@ const AdminDashboardPage: React.FC = () => {
 
               {/* Ticket Details */}
               {selectedTicket && (
-                <div className="mt-6 p-4 bg-base-200 shadow-md border-2 border-base-content/20 rounded-lg">
-                  <h3 className="font-bold text-lg mb-2">Ticket Details</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div>
+                <div className="mt-6 p-3 sm:p-4 bg-base-200 shadow-md border-2 border-base-content/20 rounded-lg">
+                  <h3 className="font-bold text-base sm:text-lg mb-2">Ticket Details</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4">
+                    <div className="text-sm sm:text-base">
                       <strong>Subject:</strong> {selectedTicket.subject}
                     </div>
-                    <div>
+                    <div className="text-sm sm:text-base">
                       <strong>Category:</strong> {selectedTicket.category.replace('_', ' ')}
                     </div>
-                    <div>
+                    <div className="text-sm sm:text-base">
                       <strong>Priority:</strong> {selectedTicket.priority}
                     </div>
-                    <div>
+                    <div className="text-sm sm:text-base">
                       <strong>Status:</strong> {getStatusDisplayText(selectedTicket.status)}
                     </div>
                   </div>
-                  <div className="mb-4">
+                  <div className="mb-4 text-sm sm:text-base">
                     <strong>Message:</strong>
-                    <div className="bg-base-100 p-3 rounded mt-2 whitespace-pre-wrap">
+                    <div className="bg-base-100 p-3 rounded mt-2 whitespace-pre-wrap text-sm">
                       {selectedTicket.message}
                     </div>
                   </div>
                   {selectedTicket.adminResponse && (
-                    <div>
+                    <div className="text-sm sm:text-base">
                       <strong>Admin Response:</strong>
-                      <div className="bg-success/10 p-3 rounded mt-2 whitespace-pre-wrap">
+                      <div className="bg-success/10 p-3 rounded mt-2 whitespace-pre-wrap text-sm">
                         {selectedTicket.adminResponse}
                       </div>
                     </div>
@@ -1025,56 +1025,60 @@ const AdminDashboardPage: React.FC = () => {
 
               {/* Admin Response Form */}
               {respondingToTicket && (
-                <div className="mt-6 p-4 bg-warning/10 shadow-md border-2 border-base-content/20 rounded-lg">
-                  <h3 className="font-bold text-lg mb-4">Respond to Ticket: {respondingToTicket}</h3>
+                <div className="mt-6 p-3 sm:p-4 bg-warning/10 shadow-md border-2 border-base-content/20 rounded-lg">
+                  <h3 className="font-bold text-base sm:text-lg mb-4">Respond to Ticket: {respondingToTicket}</h3>
                   <div className="form-control mb-4">
                     <label className="label">
-                      <span className="label-text font-semibold">Response</span>
+                      <span className="label-text font-semibold text-sm sm:text-base">Response</span>
                     </label>
                     <textarea
                       value={adminResponse}
                       onChange={(e) => setAdminResponse(e.target.value)}
                       placeholder="Type your response to the user..."
-                      className="textarea textarea-bordered h-24 w-full"
+                      className="textarea textarea-bordered h-24 w-full text-sm sm:text-base"
                       maxLength={2000}
                     />
                     <label className="label">
-                      <span className="label-text-alt text-base-content/50">
+                      <span className="label-text-alt text-base-content/50 text-xs">
                         {adminResponse.length}/2000 characters
                       </span>
                     </label>
                   </div>
                   <div className="flex gap-2 flex-wrap">
-                    <button 
-                      className="btn btn-primary"
+                    <button
+                      className="btn btn-primary btn-sm sm:btn-md"
                       onClick={() => updateTicket(respondingToTicket, undefined, adminResponse)}
                       disabled={!adminResponse.trim()}
                     >
-                      Send Response
+                      <span className="hidden sm:inline">Send Response</span>
+                      <span className="sm:hidden">Send</span>
                     </button>
-                    <button 
-                      className="btn btn-warning"
+                    <button
+                      className="btn btn-warning btn-sm sm:btn-md"
                       onClick={() => updateTicket(respondingToTicket, 'in_progress', adminResponse)}
                       disabled={!adminResponse.trim()}
                     >
-                      Send & Mark In Progress
+                      <span className="hidden sm:inline">Send & Mark In Progress</span>
+                      <span className="sm:hidden">In Progress</span>
                     </button>
-                    <button 
-                      className="btn btn-success"
+                    <button
+                      className="btn btn-success btn-sm sm:btn-md"
                       onClick={() => updateTicket(respondingToTicket, 'resolved', adminResponse)}
                       disabled={!adminResponse.trim()}
                     >
-                      Send & Mark Resolved
+                      <span className="hidden sm:inline">Send & Mark Resolved</span>
+                      <span className="sm:hidden">Resolved</span>
                     </button>
-                    <button 
-                      className="btn btn-neutral"
+                    <button
+                      className="btn btn-neutral btn-sm sm:btn-md"
                       onClick={() => updateTicket(respondingToTicket, 'closed', adminResponse)}
                       disabled={!adminResponse.trim()}
                     >
-                      Send & Close
+                      <span className="hidden sm:inline">Send & Close</span>
+                      <span className="sm:hidden">Close</span>
                     </button>
-                    <button 
-                      className="btn btn-ghost"
+                    <button
+                      className="btn btn-ghost btn-sm sm:btn-md"
                       onClick={() => {
                         setRespondingToTicket(null);
                         setAdminResponse('');
@@ -1381,11 +1385,11 @@ const AdminDashboardPage: React.FC = () => {
 
         {/* User Details Modal */}
         {selectedUser && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-base-100 rounded-lg shadow-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-              <div className="flex-between-center mb-6">
-                <h2 className="text-2xl font-bold">User Details</h2>
-                <button 
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-base-100 rounded-lg shadow-xl p-4 sm:p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <div className="flex-between-center mb-4 sm:mb-6">
+                <h2 className="text-xl sm:text-2xl font-bold">User Details</h2>
+                <button
                   className="btn-ghost-sm"
                   onClick={() => setSelectedUser(null)}
                 >
@@ -1395,7 +1399,7 @@ const AdminDashboardPage: React.FC = () => {
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div className="space-y-4">
                   <div>
                     <label className="font-semibold text-base-content/70">Name</label>
@@ -1447,9 +1451,9 @@ const AdminDashboardPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex gap-3 mt-8">
-                <button 
-                  className="btn btn-warning"
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mt-6 sm:mt-8">
+                <button
+                  className="btn btn-warning btn-sm sm:btn-md"
                   onClick={() => {
                     sendPasswordReset(selectedUser._id);
                     setSelectedUser(null);
@@ -1458,10 +1462,11 @@ const AdminDashboardPage: React.FC = () => {
                   <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
                   </svg>
-                  Send Password Reset
+                  <span className="hidden sm:inline">Send Password Reset</span>
+                  <span className="sm:hidden">Password Reset</span>
                 </button>
-                <button 
-                  className="btn btn-error"
+                <button
+                  className="btn btn-error btn-sm sm:btn-md"
                   onClick={() => {
                     setUserToDelete(selectedUser);
                     setShowDeleteConfirm(true);

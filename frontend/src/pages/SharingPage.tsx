@@ -126,13 +126,15 @@ const SharingPage: React.FC = () => {
                 <div className={`w-8 h-8 rounded-full flex items-center border-thick justify-center ${
                   selectedProject.isShared ? 'bg-success/50 ' : 'bg-base-300'
                 }`}>
-                  <svg className={`w-4 h-4 ${selectedProject.isShared ? 'text-base-content' : 'text-base-content/60'}`} 
-                       fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                          d={selectedProject.isShared 
-                            ? "M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
-                            : "M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"} />
-                  </svg>
+                  {selectedProject.isShared ? (
+                    <svg className="w-4 h-4 text-base-content" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+                    </svg>
+                  ) : (
+                    <svg className="w-4 h-4 text-base-content/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                  )}
                 </div>
                 <div>
                   <div className={`font-medium text-md ${selectedProject.isShared ? 'text-base-content' : 'text-base-content'}`}>
@@ -151,31 +153,43 @@ const SharingPage: React.FC = () => {
               </div>
               
               {(selectedProject.canManageTeam !== false) && (
-                <div className="flex items-center gap-3 h-10 bg-base-200 border-thick rounded-lg p-1">
-                  <input
-                    type="checkbox"
-                    className="toggle toggle-success toggle-lg"
-                    checked={selectedProject.isShared}
-                    onChange={() => {
-                      // If toggling off (making private), show confirmation
+                <div className="flex items-center justify-center gap-0 bg-base-200 border-thick rounded-lg p-1 w-fit">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // If making private, show confirmation
                       if (selectedProject.isShared) {
                         setMakePrivateConfirm(true);
-                      } else {
-                        // If toggling on (making shared), just do it directly
+                      }
+                    }}
+                    className={`px-4 sm:px-6 py-2 rounded-md font-semibold transition-all ${
+                      !selectedProject.isShared
+                        ? 'bg-warning text-warning-content shadow-md'
+                        : 'text-base-content/60 hover:text-base-content'
+                    }`}
+                    style={!selectedProject.isShared ? { color: getContrastTextColor('warning') } : {}}
+                  >
+                    Private
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // If making shared, just do it directly
+                      if (!selectedProject.isShared) {
                         onProjectUpdate(selectedProject.id, { isShared: true }).then(() => {
                           onProjectRefresh();
                         });
                       }
                     }}
-                    id="sharing-toggle"
-                  />
-                  <label htmlFor="sharing-toggle" className="font-semibold text-base-content cursor-pointer select-none">
-                    {selectedProject.isShared ? (
-                      <span className="text-base-content">Shared</span>
-                    ) : (
-                      <span className="text-base-content">Private</span>
-                    )}
-                  </label>
+                    className={`px-4 sm:px-6 py-2 rounded-md font-semibold transition-all ${
+                      selectedProject.isShared
+                        ? 'bg-success text-success-content shadow-md'
+                        : 'text-base-content/60 hover:text-base-content'
+                    }`}
+                    style={selectedProject.isShared ? { color: getContrastTextColor('success') } : {}}
+                  >
+                    Shared
+                  </button>
                 </div>
               )}
             </div>

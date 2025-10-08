@@ -45,6 +45,18 @@ class AuthService extends BaseApiService {
   async getCustomThemes(): Promise<{ customThemes: any[] }> {
     return this.get('/custom-themes');
   }
+
+  async checkUsername(username: string): Promise<{ available: boolean; message: string }> {
+    return this.get(`/check-username/${username}`);
+  }
+
+  async updateName(data: { firstName: string; lastName: string }): Promise<{ message: string; user: User }> {
+    return this.patch('/update-name', data);
+  }
+
+  async updateUsername(data: { username: string }): Promise<{ message: string; user: User }> {
+    return this.patch('/update-username', data);
+  }
 }
 
 export const authAPI = new AuthService();

@@ -162,14 +162,14 @@ const PublicProjectPage: React.FC = () => {
                   >
                     {project.owner.isPublic || project.owner.publicSlug ? (
                       <Link
-                        to={`/discover/user/${project.owner.publicSlug || project.owner.id}`}
+                        to={`/discover/user/${project.owner.publicSlug || project.owner.username || project.owner.id}`}
                         className="font-semibold hover:underline"
                       >
-                        @{project.owner.publicSlug || `${project.owner.firstName}${project.owner.lastName}`.toLowerCase()}
+                        {project.owner.displayName}
                       </Link>
                     ) : (
                       <span className="font-semibold">
-                        @{`${project.owner.firstName}${project.owner.lastName}`.toLowerCase()}
+                        {project.owner.displayName}
                       </span>
                     )}
                   </div>

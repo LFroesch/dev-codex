@@ -77,13 +77,13 @@ router.get('/', async (req: AuthRequest, res) => {
         { ownerId: userId }
       ]
     })
-    .populate('todos.assignedTo', 'firstName lastName email')
-    .populate('todos.createdBy', 'firstName lastName')
-    .populate('todos.updatedBy', 'firstName lastName')
-    .populate('notes.createdBy', 'firstName lastName')
-    .populate('notes.updatedBy', 'firstName lastName')
-    .populate('devLog.createdBy', 'firstName lastName')
-    .populate('devLog.updatedBy', 'firstName lastName')
+    .populate('todos.assignedTo', 'firstName lastName username displayPreference email')
+    .populate('todos.createdBy', 'firstName lastName username displayPreference')
+    .populate('todos.updatedBy', 'firstName lastName username displayPreference')
+    .populate('notes.createdBy', 'firstName lastName username displayPreference')
+    .populate('notes.updatedBy', 'firstName lastName username displayPreference')
+    .populate('devLog.createdBy', 'firstName lastName username displayPreference')
+    .populate('devLog.updatedBy', 'firstName lastName username displayPreference')
     .sort({ createdAt: -1 });
 
     // Get projects where user is a team member (optimized: single query with lean())
@@ -101,13 +101,13 @@ router.get('/', async (req: AuthRequest, res) => {
             { ownerId: userId }
           ]
         })
-        .populate('todos.assignedTo', 'firstName lastName email')
-        .populate('todos.createdBy', 'firstName lastName')
-        .populate('todos.updatedBy', 'firstName lastName')
-        .populate('notes.createdBy', 'firstName lastName')
-        .populate('notes.updatedBy', 'firstName lastName')
-        .populate('devLog.createdBy', 'firstName lastName')
-        .populate('devLog.updatedBy', 'firstName lastName')
+        .populate('todos.assignedTo', 'firstName lastName username displayPreference email')
+        .populate('todos.createdBy', 'firstName lastName username displayPreference')
+        .populate('todos.updatedBy', 'firstName lastName username displayPreference')
+        .populate('notes.createdBy', 'firstName lastName username displayPreference')
+        .populate('notes.updatedBy', 'firstName lastName username displayPreference')
+        .populate('devLog.createdBy', 'firstName lastName username displayPreference')
+        .populate('devLog.updatedBy', 'firstName lastName username displayPreference')
         .sort({ createdAt: -1 })
       : [];
 
@@ -128,13 +128,13 @@ router.get('/', async (req: AuthRequest, res) => {
 router.get('/:id', requireProjectAccess('view'), async (req: AuthRequest, res) => {
   try {
     const project = await Project.findById(req.params.id)
-      .populate('todos.assignedTo', 'firstName lastName email')
-      .populate('todos.createdBy', 'firstName lastName')
-      .populate('todos.updatedBy', 'firstName lastName')
-      .populate('notes.createdBy', 'firstName lastName')
-      .populate('notes.updatedBy', 'firstName lastName')
-      .populate('devLog.createdBy', 'firstName lastName')
-      .populate('devLog.updatedBy', 'firstName lastName');
+      .populate('todos.assignedTo', 'firstName lastName username displayPreference email')
+      .populate('todos.createdBy', 'firstName lastName username displayPreference')
+      .populate('todos.updatedBy', 'firstName lastName username displayPreference')
+      .populate('notes.createdBy', 'firstName lastName username displayPreference')
+      .populate('notes.updatedBy', 'firstName lastName username displayPreference')
+      .populate('devLog.createdBy', 'firstName lastName username displayPreference')
+      .populate('devLog.updatedBy', 'firstName lastName username displayPreference');
 
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
@@ -1318,6 +1318,15 @@ router.get('/:id/members', requireAuth, requireProjectAccess('view'), async (req
             _id: '$userInfo._id',
             firstName: '$userInfo.firstName',
             lastName: '$userInfo.lastName',
+            username: '$userInfo.username',
+            displayPreference: '$userInfo.displayPreference',
+            displayName: {
+              $cond: {
+                if: { $eq: ['$userInfo.displayPreference', 'username'] },
+                then: { $concat: ['@', '$userInfo.username'] },
+                else: { $concat: ['$userInfo.firstName', ' ', '$userInfo.lastName'] }
+              }
+            },
             email: '$userInfo.email'
           },
           role: 1,
@@ -1436,7 +1445,7 @@ router.post('/:id/invite', requireAuth, requireProjectAccess('manage'), async (r
         userId: existingUser._id,
         type: 'project_invitation',
         title: 'Project Invitation',
-        message: `${inviter?.firstName} ${inviter?.lastName} invited you to collaborate on "${project.name}"`,
+        message: `${inviter?.displayPreference === 'username' ? `@${inviter?.username}` : `${inviter?.firstName} ${inviter?.lastName}`} invited you to collaborate on "${project.name}"`,
         actionUrl: `/notifications/invitation/${invitation._id}`,
         relatedProjectId: project._id,
         relatedInvitationId: invitation._id,
@@ -1542,7 +1551,7 @@ router.patch('/:id/members/:userId', requireAuth, requireProjectAccess('manage')
       { projectId, userId: memberUserId },
       { role },
       { new: true }
-    ).populate('userId', 'firstName lastName email');
+    ).populate('userId', 'firstName lastName username displayPreference email');
 
     if (!updatedMember) {
       return res.status(404).json({ message: 'Team member not found' });
@@ -1582,7 +1591,7 @@ router.get('/:id/export',
 
     // Get team members
     const teamMembers = await TeamMember.find({ projectId })
-      .populate('userId', 'firstName lastName email')
+      .populate('userId', 'firstName lastName username displayPreference email')
       .lean();
 
     // Sanitize the data for export

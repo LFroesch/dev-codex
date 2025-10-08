@@ -133,8 +133,8 @@ const TerminalPage: React.FC = () => {
                     <div className="p-2.5 bg-base-200 rounded-lg border-2 border-base-content/20">
                       <div className="text-xs font-semibold mb-1.5 text-primary">Quick Start</div>
                       <div className="space-y-0.5 text-xs text-base-content/70">
-                        <div><code className="text-primary">/add todo</code> - Create todo</div>
-                        <div><code className="text-primary">/add note</code> - Create note</div>
+                        <div><code className="text-primary">/help</code> - Show help</div>
+                        <div><code className="text-primary">/view note</code> - List notes</div>
                         <div><code className="text-primary">/view todos</code> - List todos</div>
                       </div>
                     </div>

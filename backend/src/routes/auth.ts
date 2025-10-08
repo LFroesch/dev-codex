@@ -138,13 +138,25 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
       } else {
         // Regular OAuth login/signup flow
         let user = await User.findOne({ $or: [{ googleId }, { email }] });
-        
+
         if (!user) {
+          // Generate a unique username from email
+          const baseUsername = email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '_');
+          let username = baseUsername;
+          let counter = 1;
+
+          // Ensure username is unique
+          while (await User.findOne({ username })) {
+            username = `${baseUsername}${counter}`;
+            counter++;
+          }
+
           // Create new user
           user = new User({
             email,
             firstName: profile.name?.givenName || '',
             lastName: profile.name?.familyName || '',
+            username,
             password: crypto.randomBytes(32).toString('hex'),
             googleId,
             planTier: 'free',
@@ -180,15 +192,67 @@ if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
   });
 }
 
+// Check username availability
+router.get('/check-username/:username', async (req, res) => {
+  try {
+    const { username } = req.params;
+
+    // Validate username format
+    if (!/^[a-z0-9_]+$/.test(username)) {
+      return res.json({
+        available: false,
+        message: 'Username can only contain lowercase letters, numbers, and underscores'
+      });
+    }
+
+    if (username.length < 3 || username.length > 30) {
+      return res.json({
+        available: false,
+        message: 'Username must be between 3 and 30 characters'
+      });
+    }
+
+    const existingUser = await User.findOne({ username: username.toLowerCase() });
+
+    res.json({
+      available: !existingUser,
+      message: existingUser ? 'Username is already taken' : 'Username is available'
+    });
+  } catch (error) {
+    console.error('Check username error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Register route
 router.post('/register', authRateLimit, validateUserRegistration, async (req, res) => {
   try {
-    const { email, password, firstName, lastName, theme } = req.body;
+    const { email, password, firstName, lastName, username, theme } = req.body;
 
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
+    // Validate username
+    if (!username) {
+      return res.status(400).json({ message: 'Username is required' });
+    }
+
+    if (!/^[a-z0-9_]+$/.test(username)) {
+      return res.status(400).json({ message: 'Username can only contain lowercase letters, numbers, and underscores' });
+    }
+
+    if (username.length < 3 || username.length > 30) {
+      return res.status(400).json({ message: 'Username must be between 3 and 30 characters' });
+    }
+
+    // Check if user already exists (email or username)
+    const existingUser = await User.findOne({
+      $or: [{ email }, { username: username.toLowerCase() }]
+    });
+
     if (existingUser) {
-      return res.status(400).json({ message: 'User already exists' });
+      if (existingUser.email === email) {
+        return res.status(400).json({ message: 'Email already exists' });
+      } else {
+        return res.status(400).json({ message: 'Username already taken' });
+      }
     }
 
     // Create new user (password will be hashed by the pre-save hook)
@@ -197,6 +261,7 @@ router.post('/register', authRateLimit, validateUserRegistration, async (req, re
       password,
       firstName,
       lastName,
+      username: username.toLowerCase(),
       theme: theme || 'retro'
     });
 
@@ -222,13 +287,15 @@ router.post('/register', authRateLimit, validateUserRegistration, async (req, re
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
 
-    res.status(201).json({ 
+    res.status(201).json({
       message: 'User created successfully',
       user: {
         id: user._id,
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
+        username: user.username,
+        displayPreference: user.displayPreference,
         theme: user.theme
       }
     });
@@ -285,6 +352,8 @@ router.post('/login', authRateLimit, validateUserLogin, async (req, res) => {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
+        username: user.username,
+        displayPreference: user.displayPreference,
         theme: user.theme,
         isAdmin: user.isAdmin
       }
@@ -337,12 +406,14 @@ router.get('/me', async (req, res) => {
     }
 
     res.json({
-      message: 'User retrieved successfully',  
+      message: 'User retrieved successfully',
       user: {
         id: user._id,
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
+        username: user.username,
+        displayPreference: user.displayPreference,
         theme: user.theme,
         hasGoogleAccount: !!user.googleId,
         isAdmin: user.isAdmin,
@@ -405,16 +476,135 @@ router.patch('/theme', requireAuth, async (req: AuthRequest, res) => {
   }
 });
 
+// NEW: Update user name
+router.patch('/update-name', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const { firstName, lastName } = req.body;
+
+    if (!firstName || !lastName) {
+      return res.status(400).json({ message: 'First name and last name are required' });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.userId,
+      { firstName: firstName.trim(), lastName: lastName.trim() },
+      { new: true, runValidators: true }
+    ).select('-password');
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json({
+      message: 'Name updated successfully',
+      user: {
+        id: user._id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        username: user.username,
+        displayPreference: user.displayPreference,
+        theme: user.theme,
+        hasGoogleAccount: !!user.googleId,
+        isAdmin: user.isAdmin,
+        bio: user.bio || '',
+        planTier: user.planTier || 'free',
+        projectLimit: user.projectLimit || 3,
+        isPublic: user.isPublic || false,
+        publicSlug: user.publicSlug,
+        publicDescription: user.publicDescription,
+        createdAt: user.createdAt
+      }
+    });
+  } catch (error) {
+    console.error('Update name error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// NEW: Update username
+router.patch('/update-username', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const { username } = req.body;
+
+    if (!username) {
+      return res.status(400).json({ message: 'Username is required' });
+    }
+
+    const trimmedUsername = username.trim().toLowerCase();
+
+    // Validate username format
+    if (!/^[a-z0-9_]+$/.test(trimmedUsername)) {
+      return res.status(400).json({ message: 'Username can only contain lowercase letters, numbers, and underscores' });
+    }
+
+    if (trimmedUsername.length < 3 || trimmedUsername.length > 30) {
+      return res.status(400).json({ message: 'Username must be between 3 and 30 characters' });
+    }
+
+    // Check if username is already taken by another user
+    const existingUser = await User.findOne({
+      username: trimmedUsername,
+      _id: { $ne: req.userId } // Exclude current user
+    });
+
+    if (existingUser) {
+      return res.status(400).json({ message: 'Username already taken' });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.userId,
+      { username: trimmedUsername },
+      { new: true, runValidators: true }
+    ).select('-password');
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json({
+      message: 'Username updated successfully',
+      user: {
+        id: user._id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        username: user.username,
+        displayPreference: user.displayPreference,
+        theme: user.theme,
+        hasGoogleAccount: !!user.googleId,
+        isAdmin: user.isAdmin,
+        bio: user.bio || '',
+        planTier: user.planTier || 'free',
+        projectLimit: user.projectLimit || 3,
+        isPublic: user.isPublic || false,
+        publicSlug: user.publicSlug,
+        publicDescription: user.publicDescription,
+        createdAt: user.createdAt
+      }
+    });
+  } catch (error) {
+    console.error('Update username error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // NEW: Update user profile
 router.patch('/profile', requireAuth, async (req: AuthRequest, res) => {
   try {
-    const { bio, isPublic, publicSlug, publicDescription } = req.body;
-    
+    const { bio, isPublic, publicSlug, publicDescription, displayPreference } = req.body;
+
     const updateData: any = {};
     if (bio !== undefined) updateData.bio = bio;
     if (isPublic !== undefined) updateData.isPublic = isPublic;
     if (publicSlug !== undefined) updateData.publicSlug = publicSlug;
     if (publicDescription !== undefined) updateData.publicDescription = publicDescription;
+    if (displayPreference !== undefined) {
+      if (!['name', 'username'].includes(displayPreference)) {
+        return res.status(400).json({ message: 'Invalid display preference. Must be "name" or "username"' });
+      }
+      updateData.displayPreference = displayPreference;
+    }
     
     const user = await User.findByIdAndUpdate(
       req.userId,
@@ -433,6 +623,8 @@ router.patch('/profile', requireAuth, async (req: AuthRequest, res) => {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
+        username: user.username,
+        displayPreference: user.displayPreference,
         theme: user.theme,
         hasGoogleAccount: !!user.googleId,
         isAdmin: user.isAdmin,

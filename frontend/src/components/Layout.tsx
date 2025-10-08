@@ -651,17 +651,20 @@ const Layout: React.FC = () => {
         <div className="block desktop:hidden px-3 py-4">
           <div className="flex flex-col gap-3">
             {/* Top row: Logo + Search (tablet), Project indicator (tablet), Session Tracker, and User Menu */}
-            <div className="flex items-center justify-between min-w-0 gap-3">
-              <div className="flex items-center gap-3 bg-base-200 backdrop-blur-none border-2 border-base-content/20 rounded-xl px-3 py-2 min-h-12 h-auto shadow-sm hover:shadow-md transition-all cursor-pointer min-w-0" onClick={() => navigate('/notes?view=projects')}>
-                <div className="tablet:w-8 tablet:h-8 w-7 h-7 bg-primary rounded-lg flex items-center justify-center shadow-sm flex-shrink-0">
-                  <svg className="tablet:w-4 tablet:h-4 w-3.5 h-3.5" fill={getContrastTextColor('primary')} viewBox="0 0 20 20">
+            <div className="flex items-center justify-between min-w-0 gap-2">
+              {/* Dev Codex logo */}
+              <div className={`flex items-center gap-3 bg-base-200 backdrop-blur-none border-2 border-base-content/20 rounded-xl px-2 py-2 ${location.pathname === '/terminal' ? 'min-h-10' : 'min-h-12'} h-auto shadow-sm hover:shadow-md transition-all cursor-pointer min-w-0`} onClick={() => navigate('/notes?view=projects')}>
+                <div className={`tablet:w-8 tablet:h-8 ${location.pathname === '/terminal' ? 'w-6 h-6' : 'w-7 h-7'} bg-primary rounded-lg flex items-center justify-center shadow-sm flex-shrink-0`}>
+                  <svg className={`tablet:w-4 tablet:h-4 ${location.pathname === '/terminal' ? 'w-3 h-3' : 'w-3.5 h-3.5'}`} fill={getContrastTextColor('primary')} viewBox="0 0 20 20">
                     <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
                   </svg>
                 </div>
-                <h1 className="tablet:text-xl text-base font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text whitespace-nowrap">Dev Codex</h1>
-                
-                {/* Search bar on tablet - hidden on mobile */}
-                {user && (
+                {location.pathname !== '/terminal' && (
+                  <h1 className="tablet:text-xl text-base font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text whitespace-nowrap">Dev Codex</h1>
+                )}
+
+                {/* Search bar on tablet - hidden on mobile and terminal */}
+                {user && location.pathname !== '/terminal' && (
                   <div className="hidden tablet:flex relative ml-4 flex-center-gap-2">
                     <div className="relative">
                       <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-base-content/70 z-50 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -707,7 +710,53 @@ const Layout: React.FC = () => {
                   </div>
                 )}
               </div>
-              
+
+              {/* Navigation tabs - Terminal page only */}
+              {location.pathname === '/terminal' && (
+                <div className="tabs-container">
+                  <button
+                    className={`tab tab-sm flex-shrink-0 min-h-10 ${searchParams.get('view') === 'projects' ? 'tab-active' : ''} gap-1 sm:gap-2 font-bold whitespace-nowrap px-2 sm:px-4`}
+                    style={searchParams.get('view') === 'projects' ? {color: getContrastTextColor()} : {}}
+                    onClick={() => handleNavigateWithCheck('/notes?view=projects')}
+                  >
+                    <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                    </svg>
+                  </button>
+                  <button
+                    className={`tab tab-sm flex-shrink-0 min-h-10 ${(location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && searchParams.get('view') !== 'projects' ? 'tab-active' : ''} gap-1 sm:gap-2 font-bold whitespace-nowrap px-2 sm:px-4`}
+                    style={(location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && searchParams.get('view') !== 'projects' ? {color: getContrastTextColor()} : {}}
+                    onClick={() => handleNavigateWithCheck('/notes')}
+                  >
+                    <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </button>
+                  <button
+                    className={`tab tab-sm flex-shrink-0 min-h-10 ${location.pathname === '/discover' || location.pathname.startsWith('/discover/') ? 'tab-active' : ''} gap-1 sm:gap-2 font-bold whitespace-nowrap px-2 sm:px-4`}
+                    style={location.pathname === '/discover' || location.pathname.startsWith('/discover/') ? {color: getContrastTextColor()} : {}}
+                    onClick={() => {
+                      handleNavigateWithCheck('/discover');
+                    }}
+                  >
+                    <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </button>
+                  <button
+                    className={`tab tab-sm flex-shrink-0 min-h-10 ${location.pathname === '/terminal' ? 'tab-active' : ''} gap-1 sm:gap-2 font-bold whitespace-nowrap px-2 sm:px-4`}
+                    style={location.pathname === '/terminal' ? {color: getContrastTextColor()} : {}}
+                    onClick={() => {
+                      handleNavigateWithCheck('/terminal');
+                    }}
+                  >
+                    <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+
               {/* Project indicator and user section - styled background for all sizes */}
               {user ? (
                 <div className="flex items-center gap-0 bg-base-200 backdrop-blur-none border-2 border-base-content/20 rounded-xl px-1 py-2 h-12 shadow-sm relative z-30 flex-shrink-0">
@@ -735,12 +784,14 @@ const Layout: React.FC = () => {
                       )}
                     </div>
                   )}
-                  <SessionTracker 
+                  <SessionTracker
                     projectId={selectedProject?.id}
                     currentUserId={user?.id}
                   />
-                  
-                  <span className="hidden tablet:block text-sm font-medium text-base-content/80 ml-2">Hi, {user?.firstName}!</span>
+
+                  {location.pathname !== '/terminal' && (
+                    <span className="hidden tablet:block text-sm font-medium text-base-content/80 ml-2">Hi, {user?.firstName}!</span>
+                  )}
 
                   <NotificationBell />
                   <UserMenu user={user} onLogout={handleLogout} />
@@ -757,9 +808,9 @@ const Layout: React.FC = () => {
                 </div>
               )}
             </div>
-            
+
             {/* Current Project and Search/Create Row - Mobile only */}
-            {user && selectedProject && (
+            {user && selectedProject && location.pathname !== '/terminal' && (
               <div className="flex tablet:hidden items-center gap-3">
                 <div 
                   className="flex items-center gap-2 px-3 py-2 rounded-lg border-2 border-base-content/20 shadow-sm hover:opacity-90 transition-all duration-200 cursor-pointer min-w-0 flex-shrink-0 h-10"
@@ -831,9 +882,9 @@ const Layout: React.FC = () => {
                 </div>
               </div>
             )}
-            
+
             {/* Navigation buttons */}
-            {location.pathname !== '/support' && (
+            {location.pathname !== '/support' && location.pathname !== '/terminal' && (
             <div className="flex justify-center px-2">
               <div className="tabs-container">
                 <button
@@ -885,7 +936,7 @@ const Layout: React.FC = () => {
             )}
 
             {/* Project Views Submenu - Mobile */}
-            {searchParams.get('view') === 'projects' && (
+            {searchParams.get('view') === 'projects' && location.pathname !== '/terminal' && (
             <div className="flex justify-center px-2 py-1">
               <div className="tabs-container">
                 <button
@@ -927,7 +978,7 @@ const Layout: React.FC = () => {
             )}
 
             {/* Project Details Submenu - Mobile */}
-            {selectedProject && (location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && searchParams.get('view') !== 'projects' && (
+            {selectedProject && (location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && searchParams.get('view') !== 'projects' && location.pathname !== '/terminal' && (
             <div className="flex justify-center px-2 py-1">
               <div className="tabs-container">
                 {tabs.map((tab) => (
@@ -953,7 +1004,7 @@ const Layout: React.FC = () => {
             )}
 
             {/* Discover Submenu - Mobile */}
-            {(location.pathname === '/discover' || location.pathname.startsWith('/discover/')) && (
+            {(location.pathname === '/discover' || location.pathname.startsWith('/discover/')) && location.pathname !== '/terminal' && (
             <div className="flex justify-center px-2 py-1">
               <div className="tabs-container">
                 <button

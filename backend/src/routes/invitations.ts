@@ -28,7 +28,7 @@ router.get('/pending', requireAuth, async (req: AuthRequest, res) => {
       expiresAt: { $gt: new Date() }, // Not expired
     })
       .populate('projectId', 'name description color')
-      .populate('inviterUserId', 'firstName lastName email')
+      .populate('inviterUserId', 'firstName lastName username displayPreference email')
       .sort({ createdAt: -1 });
 
     res.json({
@@ -52,7 +52,7 @@ router.post('/:token/accept', requireAuth, async (req: AuthRequest, res) => {
       token,
       status: 'pending',
       expiresAt: { $gt: new Date() },
-    }).populate('projectId').populate('inviterUserId', 'firstName lastName');
+    }).populate('projectId').populate('inviterUserId', 'firstName lastName username displayPreference');
 
     if (!invitation) {
       return res.status(404).json({ message: 'Invitation not found or expired' });
@@ -116,7 +116,7 @@ router.post('/:token/accept', requireAuth, async (req: AuthRequest, res) => {
       userId: invitation.inviterUserId,
       type: 'team_member_added',
       title: 'Invitation Accepted',
-      message: `${user.firstName} ${user.lastName} accepted your invitation to "${project.name}"`,
+      message: `${user.displayPreference === 'username' ? `@${user.username}` : `${user.firstName} ${user.lastName}`} accepted your invitation to "${project.name}"`,
       relatedProjectId: project._id,
       relatedUserId: userId,
     });
@@ -149,7 +149,7 @@ router.post('/:token/decline', requireAuth, async (req: AuthRequest, res) => {
       token,
       status: 'pending',
       expiresAt: { $gt: new Date() },
-    }).populate('projectId', 'name').populate('inviterUserId', 'firstName lastName');
+    }).populate('projectId', 'name').populate('inviterUserId', 'firstName lastName username displayPreference');
 
     if (!invitation) {
       return res.status(404).json({ message: 'Invitation not found or expired' });
@@ -199,7 +199,7 @@ router.get('/:token', async (req, res) => {
       expiresAt: { $gt: new Date() },
     })
       .populate('projectId', 'name description color')
-      .populate('inviterUserId', 'firstName lastName');
+      .populate('inviterUserId', 'firstName lastName username displayPreference');
 
     if (!invitation) {
       return res.status(404).json({ message: 'Invitation not found or expired' });
@@ -212,7 +212,9 @@ router.get('/:token', async (req, res) => {
         projectName: (invitation.projectId as any).name,
         projectDescription: (invitation.projectId as any).description,
         projectColor: (invitation.projectId as any).color,
-        inviterName: `${(invitation.inviterUserId as any).firstName} ${(invitation.inviterUserId as any).lastName}`,
+        inviterName: (invitation.inviterUserId as any).displayPreference === 'username'
+          ? `@${(invitation.inviterUserId as any).username}`
+          : `${(invitation.inviterUserId as any).firstName} ${(invitation.inviterUserId as any).lastName}`,
         role: invitation.role,
         expiresAt: invitation.expiresAt,
       },

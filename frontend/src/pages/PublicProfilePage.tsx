@@ -1,19 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { publicAPI } from '../api';
+import { publicAPI, authAPI } from '../api';
 import { getContrastTextColor } from '../utils/contrastTextColor';
 
 const PublicProfilePage: React.FC = () => {
   const { identifier } = useParams<{ identifier: string }>();
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (identifier) {
-      loadUser();
-    }
+    const loadData = async () => {
+      // Try to load current user (may fail if not logged in)
+      try {
+        const response = await authAPI.getMe();
+        setCurrentUser(response.user);
+      } catch {
+        // User not logged in, that's okay
+        setCurrentUser(null);
+      }
+
+      // Load the profile
+      if (identifier) {
+        await loadUser();
+      }
+    };
+
+    loadData();
   }, [identifier]);
 
   const loadUser = async () => {
@@ -118,6 +133,20 @@ const PublicProfilePage: React.FC = () => {
 
               {/* Right side: Action Buttons (stays on top row) */}
               <div className="flex gap-2 flex-shrink-0">
+                {currentUser && currentUser.id === user.id && (
+                  <button
+                    onClick={() => navigate('/account-settings')}
+                    className="btn btn-sm btn-secondary gap-1 sm:gap-2 border-thick"
+                    style={{ color: getContrastTextColor('secondary') }}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    <span className="hidden sm:inline">Edit Profile</span>
+                    <span className="sm:hidden">Edit</span>
+                  </button>
+                )}
+
                 <button
                   onClick={() => navigate('/discover')}
                   className="btn btn-sm btn-primary gap-1 sm:gap-2 border-thick"

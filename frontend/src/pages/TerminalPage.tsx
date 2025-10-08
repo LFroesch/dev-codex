@@ -124,9 +124,11 @@ const TerminalPage: React.FC = () => {
               <div className="flex items-start gap-3">
                 <div className="text-2xl">💻</div>
                 <div className="flex-1">
-                  <h2 className="text-lg font-bold mb-2">Welcome to Terminal!</h2>
+                  <h2 className="text-lg font-bold mb-2">Welcome to the Terminal!</h2>
                   <p className="text-sm text-base-content/70 mb-3">
                     Execute commands to manage your projects. Type <code className="px-1.5 py-0.5 bg-base-200 rounded text-xs text-primary">/help</code> for available commands.
+                    <br />
+                    If you don't specify a project with @, it will use the currently selected project.
                   </p>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -138,23 +140,13 @@ const TerminalPage: React.FC = () => {
                         <div><code className="text-primary">/view todos</code> - List todos</div>
                       </div>
                     </div>
-
-                    <div className="p-2.5 bg-base-200 rounded-lg border-2 border-base-content/20">
-                      <div className="text-xs font-semibold mb-1.5 text-primary">Features</div>
-                      <div className="space-y-0.5 text-xs text-base-content/70">
-                        <div>✨ Commands with <kbd className="kbd kbd-xs">/</kbd></div>
-                        <div>📁 Projects with <kbd className="kbd kbd-xs">@</kbd></div>
-                        <div>⏮️ History with <kbd className="kbd kbd-xs">↑</kbd><kbd className="kbd kbd-xs">↓</kbd></div>
+                    <div className="p-2.5 bg-base-200 border-2 border-base-content/20 rounded-lg">
+                      <div className="text-xs font-semibold mb-1.5 text-primary">Example Syntax:</div>
+                      <div className="space-y-0.5 text-xs font-mono text-base-content/70">
+                        <div><code className="text-primary">/add todo fix auth bug @projectx</code></div>
+                        <div><code className="text-primary">/view notes @projecty</code></div>
+                        <div><code className="text-primary">/swap @projectz</code></div>
                       </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-3 p-2.5 bg-primary/20 border-2 border-primary/30 rounded-lg">
-                    <div className="text-xs font-semibold mb-1.5 text-base-content/80">Example Syntax:</div>
-                    <div className="space-y-0.5 text-xs font-mono text-base-content/70">
-                      <div>/add todo fix auth bug @myproject</div>
-                      <div>/view notes @frontend</div>
-                      <div>/swap backend</div>
                     </div>
                   </div>
                 </div>

@@ -21,6 +21,9 @@ const PublicProfilePage: React.FC = () => {
       setLoading(true);
       setError('');
       const response = await publicAPI.getUserProfile(identifier!);
+      console.log('PublicProfile loaded user:', response.user);
+      console.log('displayPreference:', response.user.displayPreference);
+      console.log('displayName:', response.user.displayName);
       setUser(response.user);
     } catch (err: any) {
       if (err.response?.status === 404) {
@@ -90,8 +93,8 @@ const PublicProfilePage: React.FC = () => {
 
                 <h1 className="bg-primary text-lg sm:text-xl font-bold text-base-content px-3 py-1.5 rounded-md border-2 border-base-content/20"
                   style={{ color: getContrastTextColor('primary') }}>
-                  
-                  {user.firstName} {user.lastName}
+
+                  {user.displayName}
                 </h1>
                 {user.publicSlug && (
                   <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-secondary border-2 border-base-content/20"

@@ -109,9 +109,22 @@ const AccountSettingsPage: React.FC = () => {
   const { loading: saving, withLoading: withSaving } = useLoadingState();
   const { loading: unlinkingGoogle, withLoading: withUnlinking } = useLoadingState();
   const { loading: savingProfile, withLoading: withSavingProfile } = useLoadingState();
-  
+  const { loading: savingName, withLoading: withSavingName } = useLoadingState();
+  const { loading: savingUsername, withLoading: withSavingUsername } = useLoadingState();
+
   const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [isEditingUsername, setIsEditingUsername] = useState(false);
   const [bio, setBio] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [username, setUsername] = useState('');
+  const [displayPreference, setDisplayPreference] = useState<'name' | 'username'>('username');
+  const [usernameStatus, setUsernameStatus] = useState<{
+    checking: boolean;
+    available: boolean | null;
+    message: string;
+  }>({ checking: false, available: null, message: '' });
   
   // Public profile settings
   const [isPublicProfile, setIsPublicProfile] = useState(false);
@@ -284,6 +297,10 @@ const AccountSettingsPage: React.FC = () => {
         setUser(response.user);
         setCurrentTheme(response.user.theme || 'retro');
         setBio(response.user.bio || '');
+        setFirstName(response.user.firstName || '');
+        setLastName(response.user.lastName || '');
+        setUsername(response.user.username || '');
+        setDisplayPreference(response.user.displayPreference || 'username');
         setIsPublicProfile(response.user.isPublic || false);
         setPublicSlug(response.user.publicSlug || '');
         
@@ -357,6 +374,67 @@ const AccountSettingsPage: React.FC = () => {
       setSearchParams({});
     }
   }, [searchParams, setSearchParams]);
+
+  // Check username availability with debounce
+  useEffect(() => {
+    if (!isEditingUsername) {
+      setUsernameStatus({ checking: false, available: null, message: '' });
+      return;
+    }
+
+    const checkUsername = async () => {
+      const trimmedUsername = username.trim().toLowerCase();
+
+      // If username is same as current, it's available
+      if (trimmedUsername === user?.username) {
+        setUsernameStatus({ checking: false, available: true, message: 'Current username' });
+        return;
+      }
+
+      if (!trimmedUsername) {
+        setUsernameStatus({ checking: false, available: null, message: '' });
+        return;
+      }
+
+      if (trimmedUsername.length < 3) {
+        setUsernameStatus({
+          checking: false,
+          available: false,
+          message: 'Username must be at least 3 characters'
+        });
+        return;
+      }
+
+      if (!/^[a-z0-9_]+$/.test(trimmedUsername)) {
+        setUsernameStatus({
+          checking: false,
+          available: false,
+          message: 'Only lowercase letters, numbers, and underscores allowed'
+        });
+        return;
+      }
+
+      setUsernameStatus({ checking: true, available: null, message: 'Checking...' });
+
+      try {
+        const result = await authAPI.checkUsername(trimmedUsername);
+        setUsernameStatus({
+          checking: false,
+          available: result.available,
+          message: result.message
+        });
+      } catch (err) {
+        setUsernameStatus({
+          checking: false,
+          available: null,
+          message: 'Error checking username'
+        });
+      }
+    };
+
+    const timer = setTimeout(checkUsername, 500);
+    return () => clearTimeout(timer);
+  }, [username, isEditingUsername, user?.username]);
 
   const handleThemeChange = async (newTheme: string) => {
     await withSaving(async () => {
@@ -539,8 +617,73 @@ const AccountSettingsPage: React.FC = () => {
     setIsEditingProfile(false);
   };
 
+  const handleSaveName = async () => {
+    await withSavingName(async () => {
+      const response = await authAPI.updateName({ firstName, lastName });
+      setUser(response.user);
+      setIsEditingName(false);
+      toast.success('Name updated successfully!');
+    }).catch((err: any) => {
+      toast.error(err.response?.data?.message || 'Failed to update name');
+    });
+  };
+
+  const handleCancelNameEdit = () => {
+    setFirstName(user?.firstName || '');
+    setLastName(user?.lastName || '');
+    setIsEditingName(false);
+  };
+
+  const handleSaveUsername = async () => {
+    if (!usernameStatus.available) {
+      toast.error('Please choose an available username');
+      return;
+    }
+
+    await withSavingUsername(async () => {
+      const response = await authAPI.updateUsername({ username: username.trim().toLowerCase() });
+      setUser(response.user);
+      setIsEditingUsername(false);
+      setUsernameStatus({ checking: false, available: null, message: '' });
+      toast.success('Username updated successfully!');
+    }).catch((err: any) => {
+      toast.error(err.response?.data?.message || 'Failed to update username');
+    });
+  };
+
+  const handleCancelUsernameEdit = () => {
+    setUsername(user?.username || '');
+    setIsEditingUsername(false);
+    setUsernameStatus({ checking: false, available: null, message: '' });
+  };
+
+  const handleSaveDisplayPreference = async (preference: 'name' | 'username') => {
+    try {
+      const updateData: { displayPreference: 'name' | 'username'; publicSlug?: string } = { displayPreference: preference };
+
+      // SAFETY FEATURE: If switching to username preference and no custom publicSlug is set,
+      // automatically set publicSlug to username so the URL uses it
+      if (preference === 'username' && !publicSlug && user?.username) {
+        updateData.publicSlug = user.username;
+        setPublicSlug(user.username);
+      }
+
+      const response = await authAPI.updateProfile(updateData);
+      setUser(response.user);
+      setDisplayPreference(preference);
+      toast.success('Display preference updated successfully!');
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to update display preference');
+    }
+  };
+
   const generateSlugFromName = () => {
-    if (user?.firstName && user?.lastName) {
+    // Generate slug based on display preference
+    if (displayPreference === 'username' && user?.username) {
+      // Use username as slug if display preference is username
+      setPublicSlug(user.username);
+    } else if (user?.firstName && user?.lastName) {
+      // Use name-based slug if display preference is name
       const slug = `${user.firstName}-${user.lastName}`
         .toLowerCase()
         .replace(/[^a-z0-9\s-]/g, '')
@@ -569,7 +712,7 @@ const AccountSettingsPage: React.FC = () => {
   };
 
   const copyPublicProfileUrl = () => {
-    const url = `${window.location.origin}/user/${publicSlug || user?.id}`;
+    const url = `${window.location.origin}/user/${publicSlug || user?.username || user?.id}`;
     navigator.clipboard.writeText(url);
     toast.success('Public profile URL copied to clipboard!');
   };
@@ -1268,15 +1411,124 @@ const AccountSettingsPage: React.FC = () => {
                         <div className="section-content space-y-4">
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                             <div>
-                              <h3 className="font-semibold text-base mb-3">Account Details</h3>
+                              <h3 className="font-semibold text-base mb-3 flex items-center justify-between">
+                                Account Details
+                                {!isEditingName && (
+                                  <button
+                                    onClick={() => setIsEditingName(true)}
+                                    className="btn btn-xs btn-primary"
+                                    style={{ color: getContrastTextColor('primary') }}
+                                  >
+                                    Edit Name
+                                  </button>
+                                )}
+                              </h3>
                               <div className="space-y-3">
                                 <div>
                                   <label className="text-sm font-medium text-base-content/70">First Name</label>
-                                  <p className="text-base-content font-medium">{user.firstName}</p>
+                                  {isEditingName ? (
+                                    <input
+                                      type="text"
+                                      value={firstName}
+                                      onChange={(e) => setFirstName(e.target.value)}
+                                      className="input input-bordered input-sm w-full"
+                                      required
+                                    />
+                                  ) : (
+                                    <p className="text-base-content font-medium">{user.firstName}</p>
+                                  )}
                                 </div>
                                 <div>
                                   <label className="text-sm font-medium text-base-content/70">Last Name</label>
-                                  <p className="text-base-content font-medium">{user.lastName}</p>
+                                  {isEditingName ? (
+                                    <input
+                                      type="text"
+                                      value={lastName}
+                                      onChange={(e) => setLastName(e.target.value)}
+                                      className="input input-bordered input-sm w-full"
+                                      required
+                                    />
+                                  ) : (
+                                    <p className="text-base-content font-medium">{user.lastName}</p>
+                                  )}
+                                </div>
+                                {isEditingName && (
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={handleSaveName}
+                                      className="btn btn-sm btn-primary"
+                                      style={{ color: getContrastTextColor('primary') }}
+                                      disabled={savingName || !firstName.trim() || !lastName.trim()}
+                                    >
+                                      {savingName ? 'Saving...' : 'Save'}
+                                    </button>
+                                    <button
+                                      onClick={handleCancelNameEdit}
+                                      className="btn btn-sm btn-ghost"
+                                      disabled={savingName}
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+                                )}
+                                <div>
+                                  <label className="text-sm font-medium text-base-content/70 flex items-center justify-between">
+                                    Username
+                                    {!isEditingUsername && (
+                                      <button
+                                        onClick={() => setIsEditingUsername(true)}
+                                        className="btn btn-xs btn-primary"
+                                        style={{ color: getContrastTextColor('primary') }}
+                                      >
+                                        Edit
+                                      </button>
+                                    )}
+                                  </label>
+                                  {isEditingUsername ? (
+                                    <div className="space-y-2">
+                                      <div className="relative">
+                                        <input
+                                          type="text"
+                                          value={username}
+                                          onChange={(e) => setUsername(e.target.value)}
+                                          className={`input input-bordered input-sm w-full ${
+                                            usernameStatus.available === true ? 'input-success' :
+                                            usernameStatus.available === false ? 'input-error' : ''
+                                          }`}
+                                          placeholder="Enter username"
+                                          minLength={3}
+                                          maxLength={30}
+                                        />
+                                        {usernameStatus.message && (
+                                          <span className={`text-xs mt-1 block ${
+                                            usernameStatus.checking ? 'text-info' :
+                                            usernameStatus.available ? 'text-success' : 'text-error'
+                                          }`}>
+                                            {usernameStatus.checking ? '⏳' : usernameStatus.available ? '✓' : '✗'} {usernameStatus.message}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div className="flex gap-2">
+                                        <button
+                                          onClick={handleSaveUsername}
+                                          className="btn btn-sm btn-primary"
+                                          style={{ color: getContrastTextColor('primary') }}
+                                          disabled={savingUsername || !usernameStatus.available || !username.trim()}
+                                        >
+                                          {savingUsername ? 'Saving...' : 'Save'}
+                                        </button>
+                                        <button
+                                          onClick={handleCancelUsernameEdit}
+                                          className="btn btn-sm btn-ghost"
+                                          disabled={savingUsername}
+                                        >
+                                          Cancel
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <p className="text-base-content font-medium">@{user.username}</p>
+                                  )}
                                 </div>
                                 <div>
                                   <label className="text-sm font-medium text-base-content/70">Email</label>
@@ -1310,6 +1562,43 @@ const AccountSettingsPage: React.FC = () => {
                                       month: 'long',
                                       day: 'numeric'
                                     }) : 'Unknown'}
+                                  </p>
+                                </div>
+                                <div className="divider my-2"></div>
+                                <div>
+                                  <label className="text-sm font-medium text-base-content/70 mb-2 block">Public Display Preference</label>
+                                  <div className="form-control">
+                                    <label className="label cursor-pointer justify-start gap-3 py-2">
+                                      <input
+                                        type="radio"
+                                        name="displayPreference"
+                                        className="radio radio-primary"
+                                        checked={displayPreference === 'name'}
+                                        onChange={() => handleSaveDisplayPreference('name')}
+                                      />
+                                      <div>
+                                        <span className="label-text font-medium">Show Full Name</span>
+                                        <p className="text-xs text-base-content/60">Display as: {user.firstName} {user.lastName}</p>
+                                      </div>
+                                    </label>
+                                  </div>
+                                  <div className="form-control">
+                                    <label className="label cursor-pointer justify-start gap-3 py-2">
+                                      <input
+                                        type="radio"
+                                        name="displayPreference"
+                                        className="radio radio-primary"
+                                        checked={displayPreference === 'username'}
+                                        onChange={() => handleSaveDisplayPreference('username')}
+                                      />
+                                      <div>
+                                        <span className="label-text font-medium">Show Username</span>
+                                        <p className="text-xs text-base-content/60">Display as: @{user.username}</p>
+                                      </div>
+                                    </label>
+                                  </div>
+                                  <p className="text-xs text-base-content/60 mt-2">
+                                    This controls how your name appears in public profiles and discovery.
                                   </p>
                                 </div>
                               </div>
@@ -1351,13 +1640,13 @@ const AccountSettingsPage: React.FC = () => {
                                   Copy URL
                                 </button>
                                 <Link
-                                  to={`/user/${publicSlug || user?.id}`}
+                                  to={`/user/${publicSlug || user?.username || user?.id}`}
                                   className="btn btn-outline btn-sm gap-2"
                                 >
                                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                                   </svg>
-                                  {publicSlug ? `/user/${publicSlug}` : `/user/${user?.id}`}
+                                  {publicSlug ? `/user/${publicSlug}` : `/user/${user?.username || user?.id}`}
                                 </Link>
                               </>
                             )}
@@ -1417,10 +1706,10 @@ const AccountSettingsPage: React.FC = () => {
                                       <span className="label-text-alt ml-2 flex items-center gap-1">
                                         <span>Your profile will be accessible at:</span>
                                         {publicSlug ? (
-                                          <a 
-                                            href={`${window.location.origin}/user/${publicSlug}`} 
-                                            target="_blank" 
-                                            rel="noopener noreferrer" 
+                                          <a
+                                            href={`${window.location.origin}/user/${publicSlug}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
                                             className="font-bold bg-primary/50 rounded-lg px-2 py-1 border-2 border-base-content/20 hover:bg-primary transition inline-flex items-center gap-1"
                                             style={{ color: getContrastTextColor() }}
                                           >
@@ -1430,17 +1719,17 @@ const AccountSettingsPage: React.FC = () => {
                                             /user/{publicSlug}
                                           </a>
                                         ) : (
-                                          <a 
-                                            href={`${window.location.origin}/user/${user?.id}`} 
-                                            target="_blank" 
-                                            rel="noopener noreferrer" 
+                                          <a
+                                            href={`${window.location.origin}/user/${user?.username || user?.id}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
                                             className="font-bold bg-primary/50 rounded-lg px-2 py-1 border-2 border-base-content/20 hover:bg-primary transition inline-flex items-center gap-1"
                                             style={{ color: getContrastTextColor() }}
                                           >
                                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                                             </svg>
-                                            /user/{user?.id}
+                                            /user/{user?.username || user?.id}
                                           </a>
                                         )}
                                       </span>
@@ -1538,7 +1827,7 @@ const AccountSettingsPage: React.FC = () => {
                                   <div className="mockup-browser border border-base-content/10 bg-base-300">
                                     <div className="mockup-browser-toolbar">
                                       <div className="input">
-                                        {window.location.origin}/user/{publicSlug || user?.id}
+                                        {window.location.origin}/user/{publicSlug || user?.username || user?.id}
                                       </div>
                                     </div>
                                     <div className="bg-base-100 p-4">
@@ -1548,7 +1837,7 @@ const AccountSettingsPage: React.FC = () => {
                                         </div>
                                         <div>
                                           <h3 className="text-xl font-bold">
-                                            {user?.firstName} {user?.lastName}
+                                            {displayPreference === 'username' ? `@${user?.username}` : `${user?.firstName} ${user?.lastName}`}
                                           </h3>
                                           {publicSlug && (
                                             <span className="text-base-content/60">

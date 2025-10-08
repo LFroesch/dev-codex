@@ -178,9 +178,9 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
   const handleRemoveMember = async (userId: string) => {
     const member = members.find(m => m.userId._id === userId);
     if (member) {
-      setMemberToRemove({ 
-        id: userId, 
-        name: `${member.userId.firstName} ${member.userId.lastName}` 
+      setMemberToRemove({
+        id: userId,
+        name: (member.userId as any).displayName || `${member.userId.firstName} ${member.userId.lastName}`
       });
       setShowRemoveModal(true);
     }
@@ -210,7 +210,8 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
         m.userId._id === userId ? { ...m, role: newRole } : m
       ));
       const member = members.find(m => m.userId._id === userId);
-      toast.success(`${member?.userId?.firstName || 'Member'}'s role updated to ${newRole}!`);
+      const memberName = (member?.userId as any)?.displayName || member?.userId?.firstName || 'Member';
+      toast.success(`${memberName}'s role updated to ${newRole}!`);
     } catch (error) {
       console.error('Failed to update role:', error);
       toast.error('Failed to update member role. Please try again.');
@@ -341,7 +342,7 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
                       {/* Name and Role Row */}
                       <div className="flex items-center justify-between mb-2">
                         <h4 className="font-medium text-sm truncate pr-2">
-                          {member.userId.firstName} {member.userId.lastName}
+                          {(member.userId as any).displayName || `${member.userId.firstName} ${member.userId.lastName}`}
                         </h4>
                         
                         {/* Role Badge/Select */}

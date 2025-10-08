@@ -111,7 +111,7 @@ const PublicProfilePage: React.FC = () => {
 
                   {user.displayName}
                 </h1>
-                {user.publicSlug && (
+                {user.publicSlug && !(currentUser && currentUser.id === user.id) && (
                   <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-secondary border-2 border-base-content/20"
                     style={{ color: getContrastTextColor("secondary") }}>
                     @{user.publicSlug}
@@ -211,7 +211,7 @@ const PublicProfilePage: React.FC = () => {
                           {project.name}
                         </h3>
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-primary border-2 border-base-content/20"
+                          <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-bold bg-primary border-2 border-base-content/20"
                             style={{ color: getContrastTextColor() }}>
                             {project.category}
                           </span>

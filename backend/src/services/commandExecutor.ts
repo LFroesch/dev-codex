@@ -357,28 +357,95 @@ export class CommandExecutor {
   }
 
   /**
+   * Get user's role in a project
+   * @returns 'owner' | 'editor' | 'viewer' | null
+   */
+  private async getUserRole(projectId: string): Promise<'owner' | 'editor' | 'viewer' | null> {
+    const project = await Project.findById(projectId);
+    if (!project) return null;
+
+    // Check ownership
+    if (project.userId?.toString() === this.userId ||
+        project.ownerId?.toString() === this.userId) {
+      return 'owner';
+    }
+
+    // Check team membership
+    const teamMember = await TeamMember.findOne({
+      projectId: new mongoose.Types.ObjectId(projectId),
+      userId: new mongoose.Types.ObjectId(this.userId)
+    });
+
+    return teamMember?.role || null;
+  }
+
+  /**
+   * Check if user can edit a project (not a viewer)
+   */
+  private async canEditProject(projectId: string): Promise<{ canEdit: boolean; role: string | null }> {
+    const role = await this.getUserRole(projectId);
+    if (!role) {
+      return { canEdit: false, role: null };
+    }
+    return { canEdit: role !== 'viewer', role };
+  }
+
+  /**
+   * Resolve project and check edit permissions in one go
+   * Returns error response if user is a viewer
+   */
+  private async resolveProjectWithEditCheck(
+    projectMention?: string,
+    currentProjectId?: string
+  ): Promise<{ project: any | null; error?: CommandResponse }> {
+    const resolution = await this.resolveProject(projectMention, currentProjectId);
+
+    if (!resolution.project) {
+      if (resolution.needsSelection) {
+        return {
+          project: null,
+          error: {
+            type: ResponseType.PROMPT,
+            message: 'Please specify a project using @projectname or select from:',
+            data: { projects: resolution.availableProjects }
+          }
+        };
+      }
+      return {
+        project: null,
+        error: {
+          type: ResponseType.ERROR,
+          message: resolution.error || 'Project not found',
+          suggestions: resolution.suggestions
+        }
+      };
+    }
+
+    // Check if user has edit permissions
+    const { canEdit, role } = await this.canEditProject(resolution.project._id.toString());
+    if (!canEdit) {
+      return {
+        project: null,
+        error: {
+          type: ResponseType.ERROR,
+          message: `❌ You are a ${role} and do not have edit permissions for this project`,
+          suggestions: []
+        }
+      };
+    }
+
+    return { project: resolution.project };
+  }
+
+  /**
    * Handle /add todo command
    */
   private async handleAddTodo(
     parsed: ParsedCommand,
     currentProjectId?: string
   ): Promise<CommandResponse> {
-    const resolution = await this.resolveProject(parsed.projectMention, currentProjectId);
-
-    if (!resolution.project) {
-      if (resolution.needsSelection) {
-        return {
-          type: ResponseType.PROMPT,
-          message: 'Please specify a project using @projectname or select from:',
-          data: { projects: resolution.availableProjects }
-        };
-      }
-      return {
-        type: ResponseType.ERROR,
-        message: resolution.error || 'Project not found',
-        suggestions: resolution.suggestions
-      };
-    }
+    const { project, error } = await this.resolveProjectWithEditCheck(parsed.projectMention, currentProjectId);
+    if (error) return error;
 
     const todoText = parsed.args.join(' ').trim();
     if (!todoText) {
@@ -401,15 +468,15 @@ export class CommandExecutor {
       createdBy: new mongoose.Types.ObjectId(this.userId)
     };
 
-    resolution.project.todos.push(newTodo);
-    await resolution.project.save();
+    project.todos.push(newTodo);
+    await project.save();
 
     return {
       type: ResponseType.SUCCESS,
-      message: `✅ Added todo: "${todoText}" to ${resolution.project.name}`,
+      message: `✅ Added todo: "${todoText}" to ${project.name}`,
       metadata: {
-        projectId: resolution.project._id.toString(),
-        projectName: resolution.project.name,
+        projectId: project._id.toString(),
+        projectName: project.name,
         action: 'add_todo',
         timestamp: new Date()
       }
@@ -423,22 +490,8 @@ export class CommandExecutor {
     parsed: ParsedCommand,
     currentProjectId?: string
   ): Promise<CommandResponse> {
-    const resolution = await this.resolveProject(parsed.projectMention, currentProjectId);
-
-    if (!resolution.project) {
-      if (resolution.needsSelection) {
-        return {
-          type: ResponseType.PROMPT,
-          message: 'Please specify a project using @projectname or select from:',
-          data: { projects: resolution.availableProjects }
-        };
-      }
-      return {
-        type: ResponseType.ERROR,
-        message: resolution.error || 'Project not found',
-        suggestions: resolution.suggestions
-      };
-    }
+    const { project, error } = await this.resolveProjectWithEditCheck(parsed.projectMention, currentProjectId);
+    if (error) return error;
 
     const noteText = parsed.args.join(' ').trim();
     if (!noteText) {
@@ -463,16 +516,16 @@ export class CommandExecutor {
       createdBy: new mongoose.Types.ObjectId(this.userId)
     };
 
-    resolution.project.notes.push(newNote);
-    await resolution.project.save();
+    project.notes.push(newNote);
+    await project.save();
 
     return {
       type: ResponseType.SUCCESS,
-      message: `📝 Added note to ${resolution.project.name}`,
+      message: `📝 Added note to ${project.name}`,
       data: { title, preview: noteText.slice(0, 50) + (noteText.length > 50 ? '...' : '') },
       metadata: {
-        projectId: resolution.project._id.toString(),
-        projectName: resolution.project.name,
+        projectId: project._id.toString(),
+        projectName: project.name,
         action: 'add_note',
         timestamp: new Date()
       }
@@ -486,22 +539,8 @@ export class CommandExecutor {
     parsed: ParsedCommand,
     currentProjectId?: string
   ): Promise<CommandResponse> {
-    const resolution = await this.resolveProject(parsed.projectMention, currentProjectId);
-
-    if (!resolution.project) {
-      if (resolution.needsSelection) {
-        return {
-          type: ResponseType.PROMPT,
-          message: 'Please specify a project using @projectname or select from:',
-          data: { projects: resolution.availableProjects }
-        };
-      }
-      return {
-        type: ResponseType.ERROR,
-        message: resolution.error || 'Project not found',
-        suggestions: resolution.suggestions
-      };
-    }
+    const { project, error } = await this.resolveProjectWithEditCheck(parsed.projectMention, currentProjectId);
+    if (error) return error;
 
     const entryText = parsed.args.join(' ').trim();
     if (!entryText) {
@@ -522,16 +561,16 @@ export class CommandExecutor {
       createdBy: new mongoose.Types.ObjectId(this.userId)
     };
 
-    resolution.project.devLog.push(newEntry);
-    await resolution.project.save();
+    project.devLog.push(newEntry);
+    await project.save();
 
     return {
       type: ResponseType.SUCCESS,
-      message: `📋 Added dev log entry to ${resolution.project.name}`,
+      message: `📋 Added dev log entry to ${project.name}`,
       data: { preview: entryText.slice(0, 50) + (entryText.length > 50 ? '...' : '') },
       metadata: {
-        projectId: resolution.project._id.toString(),
-        projectName: resolution.project.name,
+        projectId: project._id.toString(),
+        projectName: project.name,
         action: 'add_devlog',
         timestamp: new Date()
       }
@@ -545,22 +584,8 @@ export class CommandExecutor {
     parsed: ParsedCommand,
     currentProjectId?: string
   ): Promise<CommandResponse> {
-    const resolution = await this.resolveProject(parsed.projectMention, currentProjectId);
-
-    if (!resolution.project) {
-      if (resolution.needsSelection) {
-        return {
-          type: ResponseType.PROMPT,
-          message: 'Please specify a project using @projectname or select from:',
-          data: { projects: resolution.availableProjects }
-        };
-      }
-      return {
-        type: ResponseType.ERROR,
-        message: resolution.error || 'Project not found',
-        suggestions: resolution.suggestions
-      };
-    }
+    const { project, error } = await this.resolveProjectWithEditCheck(parsed.projectMention, currentProjectId);
+    if (error) return error;
 
     // Parse: /add doc [type] [title] - [content]
     // Format: type title - content
@@ -611,15 +636,15 @@ export class CommandExecutor {
       createdAt: new Date()
     };
 
-    resolution.project.docs.push(newDoc);
-    await resolution.project.save();
+    project.docs.push(newDoc);
+    await project.save();
 
     return {
       type: ResponseType.SUCCESS,
-      message: `📚 Added ${docType} doc: "${title}" to ${resolution.project.name}`,
+      message: `📚 Added ${docType} doc: "${title}" to ${project.name}`,
       metadata: {
-        projectId: resolution.project._id.toString(),
-        projectName: resolution.project.name,
+        projectId: project._id.toString(),
+        projectName: project.name,
         action: 'add_doc',
         timestamp: new Date()
       }
@@ -704,7 +729,10 @@ export class CommandExecutor {
       };
     }
 
-    const todos = resolution.project.todos || [];
+    const allTodos = resolution.project.todos || [];
+
+    // Filter to only show top-level todos (not subtasks)
+    const todos = allTodos.filter((t: any) => !t.parentTodoId);
 
     if (todos.length === 0) {
       return {
@@ -1036,22 +1064,8 @@ export class CommandExecutor {
     parsed: ParsedCommand,
     currentProjectId?: string
   ): Promise<CommandResponse> {
-    const resolution = await this.resolveProject(parsed.projectMention, currentProjectId);
-
-    if (!resolution.project) {
-      if (resolution.needsSelection) {
-        return {
-          type: ResponseType.PROMPT,
-          message: 'Please specify a project using @projectname or select from:',
-          data: { projects: resolution.availableProjects }
-        };
-      }
-      return {
-        type: ResponseType.ERROR,
-        message: resolution.error || 'Project not found',
-        suggestions: resolution.suggestions
-      };
-    }
+    const { project, error } = await this.resolveProjectWithEditCheck(parsed.projectMention, currentProjectId);
+    if (error) return error;
 
     const name = parsed.args[0];
     if (!name) {
@@ -1066,7 +1080,7 @@ export class CommandExecutor {
     const version = (parsed.flags.get('version') as string) || '';
 
     // Check if already exists
-    const exists = resolution.project.selectedTechnologies?.some(
+    const exists = project.selectedTechnologies?.some(
       (t: any) => t.name === name && t.category === category
     );
 
@@ -1085,19 +1099,19 @@ export class CommandExecutor {
       version
     };
 
-    if (!resolution.project.selectedTechnologies) {
-      resolution.project.selectedTechnologies = [];
+    if (!project.selectedTechnologies) {
+      project.selectedTechnologies = [];
     }
 
-    resolution.project.selectedTechnologies.push(newTech);
-    await resolution.project.save();
+    project.selectedTechnologies.push(newTech);
+    await project.save();
 
     return {
       type: ResponseType.SUCCESS,
       message: `⚡ Added ${name}${version ? ` v${version}` : ''} to tech stack`,
       metadata: {
-        projectId: resolution.project._id.toString(),
-        projectName: resolution.project.name,
+        projectId: project._id.toString(),
+        projectName: project.name,
         action: 'add_tech',
         timestamp: new Date()
       }
@@ -1111,22 +1125,8 @@ export class CommandExecutor {
     parsed: ParsedCommand,
     currentProjectId?: string
   ): Promise<CommandResponse> {
-    const resolution = await this.resolveProject(parsed.projectMention, currentProjectId);
-
-    if (!resolution.project) {
-      if (resolution.needsSelection) {
-        return {
-          type: ResponseType.PROMPT,
-          message: 'Please specify a project using @projectname or select from:',
-          data: { projects: resolution.availableProjects }
-        };
-      }
-      return {
-        type: ResponseType.ERROR,
-        message: resolution.error || 'Project not found',
-        suggestions: resolution.suggestions
-      };
-    }
+    const { project, error } = await this.resolveProjectWithEditCheck(parsed.projectMention, currentProjectId);
+    if (error) return error;
 
     const name = parsed.args[0];
     if (!name) {
@@ -1141,7 +1141,7 @@ export class CommandExecutor {
     const version = (parsed.flags.get('version') as string) || '';
 
     // Check if already exists
-    const exists = resolution.project.selectedPackages?.some(
+    const exists = project.selectedPackages?.some(
       (p: any) => p.name === name && p.category === category
     );
 
@@ -1160,19 +1160,19 @@ export class CommandExecutor {
       version
     };
 
-    if (!resolution.project.selectedPackages) {
-      resolution.project.selectedPackages = [];
+    if (!project.selectedPackages) {
+      project.selectedPackages = [];
     }
 
-    resolution.project.selectedPackages.push(newPackage);
-    await resolution.project.save();
+    project.selectedPackages.push(newPackage);
+    await project.save();
 
     return {
       type: ResponseType.SUCCESS,
       message: `📦 Added ${name}${version ? ` v${version}` : ''} to packages`,
       metadata: {
-        projectId: resolution.project._id.toString(),
-        projectName: resolution.project.name,
+        projectId: project._id.toString(),
+        projectName: project.name,
         action: 'add_package',
         timestamp: new Date()
       }
@@ -1246,22 +1246,8 @@ export class CommandExecutor {
     parsed: ParsedCommand,
     currentProjectId?: string
   ): Promise<CommandResponse> {
-    const resolution = await this.resolveProject(parsed.projectMention, currentProjectId);
-
-    if (!resolution.project) {
-      if (resolution.needsSelection) {
-        return {
-          type: ResponseType.PROMPT,
-          message: 'Please specify a project using @projectname or select from:',
-          data: { projects: resolution.availableProjects }
-        };
-      }
-      return {
-        type: ResponseType.ERROR,
-        message: resolution.error || 'Project not found',
-        suggestions: resolution.suggestions
-      };
-    }
+    const { project, error } = await this.resolveProjectWithEditCheck(parsed.projectMention, currentProjectId);
+    if (error) return error;
 
     const name = parsed.args[0];
     if (!name) {
@@ -1272,7 +1258,7 @@ export class CommandExecutor {
       };
     }
 
-    const technologies = resolution.project.selectedTechnologies || [];
+    const technologies = project.selectedTechnologies || [];
     const index = technologies.findIndex((t: any) => t.name === name);
 
     if (index === -1) {
@@ -1284,15 +1270,15 @@ export class CommandExecutor {
     }
 
     technologies.splice(index, 1);
-    resolution.project.selectedTechnologies = technologies;
-    await resolution.project.save();
+    project.selectedTechnologies = technologies;
+    await project.save();
 
     return {
       type: ResponseType.SUCCESS,
       message: `🗑️ Removed ${name} from tech stack`,
       metadata: {
-        projectId: resolution.project._id.toString(),
-        projectName: resolution.project.name,
+        projectId: project._id.toString(),
+        projectName: project.name,
         action: 'remove_tech',
         timestamp: new Date()
       }
@@ -1306,22 +1292,8 @@ export class CommandExecutor {
     parsed: ParsedCommand,
     currentProjectId?: string
   ): Promise<CommandResponse> {
-    const resolution = await this.resolveProject(parsed.projectMention, currentProjectId);
-
-    if (!resolution.project) {
-      if (resolution.needsSelection) {
-        return {
-          type: ResponseType.PROMPT,
-          message: 'Please specify a project using @projectname or select from:',
-          data: { projects: resolution.availableProjects }
-        };
-      }
-      return {
-        type: ResponseType.ERROR,
-        message: resolution.error || 'Project not found',
-        suggestions: resolution.suggestions
-      };
-    }
+    const { project, error } = await this.resolveProjectWithEditCheck(parsed.projectMention, currentProjectId);
+    if (error) return error;
 
     const name = parsed.args[0];
     if (!name) {
@@ -1332,7 +1304,7 @@ export class CommandExecutor {
       };
     }
 
-    const packages = resolution.project.selectedPackages || [];
+    const packages = project.selectedPackages || [];
     const index = packages.findIndex((p: any) => p.name === name);
 
     if (index === -1) {
@@ -1344,15 +1316,15 @@ export class CommandExecutor {
     }
 
     packages.splice(index, 1);
-    resolution.project.selectedPackages = packages;
-    await resolution.project.save();
+    project.selectedPackages = packages;
+    await project.save();
 
     return {
       type: ResponseType.SUCCESS,
       message: `🗑️ Removed ${name} from packages`,
       metadata: {
-        projectId: resolution.project._id.toString(),
-        projectName: resolution.project.name,
+        projectId: project._id.toString(),
+        projectName: project.name,
         action: 'remove_package',
         timestamp: new Date()
       }
@@ -1414,24 +1386,10 @@ export class CommandExecutor {
     parsed: ParsedCommand,
     currentProjectId?: string
   ): Promise<CommandResponse> {
-    const resolution = await this.resolveProject(parsed.projectMention, currentProjectId);
+    const { project, error } = await this.resolveProjectWithEditCheck(parsed.projectMention, currentProjectId);
+    if (error) return error;
 
-    if (!resolution.project) {
-      if (resolution.needsSelection) {
-        return {
-          type: ResponseType.PROMPT,
-          message: 'Please specify a project using @projectname or select from:',
-          data: { projects: resolution.availableProjects }
-        };
-      }
-      return {
-        type: ResponseType.ERROR,
-        message: resolution.error || 'Project not found',
-        suggestions: resolution.suggestions
-      };
-    }
-
-    const deploymentData = resolution.project.deploymentData || {};
+    const deploymentData = project.deploymentData || {};
     let updated = false;
 
     // Update fields from flags
@@ -1460,15 +1418,15 @@ export class CommandExecutor {
       };
     }
 
-    resolution.project.deploymentData = deploymentData;
-    await resolution.project.save();
+    project.deploymentData = deploymentData;
+    await project.save();
 
     return {
       type: ResponseType.SUCCESS,
-      message: `🚀 Updated deployment settings for ${resolution.project.name}`,
+      message: `🚀 Updated deployment settings for ${project.name}`,
       metadata: {
-        projectId: resolution.project._id.toString(),
-        projectName: resolution.project.name,
+        projectId: project._id.toString(),
+        projectName: project.name,
         action: 'set_deployment',
         timestamp: new Date()
       }
@@ -1667,12 +1625,12 @@ export class CommandExecutor {
       };
     }
 
-    const email = parsed.args[0];
-    if (!email || !email.includes('@')) {
+    const emailOrUsername = parsed.args[0];
+    if (!emailOrUsername) {
       return {
         type: ResponseType.ERROR,
-        message: 'Valid email is required',
-        suggestions: ['/invite user@example.com --role=editor @myproject']
+        message: 'Email or username is required',
+        suggestions: ['/invite user@example.com --role=editor @myproject', '/invite username --role=editor']
       };
     }
 
@@ -1688,15 +1646,19 @@ export class CommandExecutor {
 
     // Check if user is trying to invite themselves
     const inviter = await User.findById(this.userId);
-    if (inviter?.email.toLowerCase() === email.toLowerCase()) {
+
+    // Find user by email or username
+    const isEmail = emailOrUsername.includes('@');
+    const existingUser = isEmail
+      ? await User.findOne({ email: emailOrUsername.toLowerCase() })
+      : await User.findOne({ username: emailOrUsername.toLowerCase() });
+
+    if (inviter && existingUser && inviter._id.toString() === existingUser._id.toString()) {
       return {
         type: ResponseType.ERROR,
         message: 'Cannot invite yourself to the project'
       };
     }
-
-    // Check if user is already a member
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
       const existingMember = await TeamMember.findOne({
         projectId: resolution.project._id,
@@ -1720,10 +1682,21 @@ export class CommandExecutor {
       }
     }
 
+    // Create invitation - use email from found user or the provided email
+    const inviteeEmail = existingUser?.email || (isEmail ? emailOrUsername.toLowerCase() : null);
+
+    if (!inviteeEmail) {
+      return {
+        type: ResponseType.ERROR,
+        message: `User "${emailOrUsername}" not found. For new users, use their email address.`,
+        suggestions: ['/view team']
+      };
+    }
+
     // Check if there's already a pending invitation
     const existingInvitation = await ProjectInvitation.findOne({
       projectId: resolution.project._id,
-      inviteeEmail: email.toLowerCase(),
+      inviteeEmail: inviteeEmail,
       status: 'pending',
     });
 
@@ -1735,11 +1708,10 @@ export class CommandExecutor {
       };
     }
 
-    // Create invitation
     const invitation = new ProjectInvitation({
       projectId: resolution.project._id,
       inviterUserId: this.userId,
-      inviteeEmail: email.toLowerCase(),
+      inviteeEmail: inviteeEmail,
       inviteeUserId: existingUser?._id,
       role,
       token: require('crypto').randomBytes(32).toString('hex'),
@@ -1764,7 +1736,7 @@ export class CommandExecutor {
     try {
       const inviterName = `${inviter?.firstName || ''} ${inviter?.lastName || ''}`.trim() || 'Someone';
       await sendProjectInvitationEmail(
-        email,
+        inviteeEmail,
         inviterName,
         resolution.project.name,
         invitation.token,
@@ -1785,7 +1757,7 @@ export class CommandExecutor {
     const sharedMessage = wasShared ? '' : ' (Project is now shared)';
     return {
       type: ResponseType.SUCCESS,
-      message: `📧 Invitation sent to ${email} as ${role}${sharedMessage}`,
+      message: `📧 Invitation sent to ${emailOrUsername} as ${role}${sharedMessage}`,
       suggestions: ['/view team'],
       metadata: {
         projectId: resolution.project._id.toString(),
@@ -1820,21 +1792,24 @@ export class CommandExecutor {
       };
     }
 
-    const email = parsed.args[0];
-    if (!email || !email.includes('@')) {
+    const emailOrUsername = parsed.args[0];
+    if (!emailOrUsername) {
       return {
         type: ResponseType.ERROR,
-        message: 'Valid email is required',
-        suggestions: ['/remove member user@example.com', '/rm user@example.com']
+        message: 'Email or username is required',
+        suggestions: ['/remove member user@example.com', '/kick username']
       };
     }
 
-    // Find user by email
-    const userToRemove = await User.findOne({ email: email.toLowerCase() });
+    // Find user by email or username
+    const isEmail = emailOrUsername.includes('@');
+    const userToRemove = isEmail
+      ? await User.findOne({ email: emailOrUsername.toLowerCase() })
+      : await User.findOne({ username: emailOrUsername.toLowerCase() });
     if (!userToRemove) {
       return {
         type: ResponseType.ERROR,
-        message: `User with email "${email}" not found`,
+        message: `User "${emailOrUsername}" not found`,
         suggestions: ['/view team']
       };
     }
@@ -1857,7 +1832,7 @@ export class CommandExecutor {
     if (!teamMember) {
       return {
         type: ResponseType.ERROR,
-        message: `${email} is not a member of this project`,
+        message: `${emailOrUsername} is not a member of this project`,
         suggestions: ['/view team']
       };
     }
@@ -1887,7 +1862,7 @@ export class CommandExecutor {
 
     return {
       type: ResponseType.SUCCESS,
-      message: `🗑️ Removed ${email} from ${resolution.project.name}`,
+      message: `🗑️ Removed ${emailOrUsername} from ${resolution.project.name}`,
       suggestions: ['/view team'],
       metadata: {
         projectId: resolution.project._id.toString(),

@@ -169,35 +169,38 @@ const SettingsPage: React.FC = () => {
       {/* Navigation Tabs */}
       <div className="flex justify-center px-2">
         <div className="tabs-container">
-          <button 
+          <button
             className={`tab-button ${activeSection === 'info' ? 'tab-active' : ''}`}
             style={activeSection === 'info' ? {color: getContrastTextColor()} : {}}
             onClick={() => setActiveSection('info')}
           >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            Project Info
+            <span className="hidden sm:inline">Project Info</span>
+            <span className="sm:hidden">Info</span>
           </button>
-          <button 
+          <button
             className={`tab-button ${activeSection === 'export' ? 'tab-active' : ''}`}
             style={activeSection === 'export' ? {color: getContrastTextColor()} : {}}
             onClick={() => setActiveSection('export')}
           >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            Export & Import
+            <span className="hidden sm:inline">Export & Import</span>
+            <span className="sm:hidden">Export</span>
           </button>
-          <button 
+          <button
             className={`tab-button ${activeSection === 'danger' ? 'tab-active' : ''}`}
             style={activeSection === 'danger' ? {color: getContrastTextColor()} : {}}
             onClick={() => setActiveSection('danger')}
           >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
             </svg>
-            Danger Zone
+            <span className="hidden sm:inline">Danger Zone</span>
+            <span className="sm:hidden">Danger</span>
           </button>
         </div>
       </div>
@@ -233,7 +236,7 @@ const SettingsPage: React.FC = () => {
           <div className="section-content">
           {/* Basic Info and Metadata Section */}
           <div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
               <div>
                 <label className="label py-1">
                   <span className="label-text font-medium text-sm">Project Name</span>
@@ -264,7 +267,7 @@ const SettingsPage: React.FC = () => {
                       type="text"
                       value={color}
                       onChange={(e) => updateField('color', e.target.value)}
-                      className="input input-bordered input-sm flex-1 font-mono text-xs h-10 md:w-10"
+                      className="input input-bordered input-sm flex-1 font-mono text-xs h-10"
                       placeholder="#3B82F6"
                     />
                   </div>
@@ -276,7 +279,7 @@ const SettingsPage: React.FC = () => {
                         onClick={() => updateField('color', presetColor)}
                         className={`w-6 h-6 rounded border-2 ${
                           color === presetColor ? 'border-base-content' : 'border-base-300'
-                        } hover:scale-110 transition-transform`}
+                        } hover:scale-110 transition-transform active:scale-95`}
                         style={{ backgroundColor: presetColor }}
                         title={presetColor}
                       />
@@ -323,7 +326,7 @@ const SettingsPage: React.FC = () => {
                       type="text"
                       value={newTag}
                       onChange={(e) => setNewTag(e.target.value)}
-                      className="input input-bordered input-sm flex-1 h-10 lg:w-10"
+                      className="input input-bordered input-sm flex-1 h-10"
                       placeholder="Add tag..."
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
@@ -333,7 +336,7 @@ const SettingsPage: React.FC = () => {
                     />
                     <button
                       onClick={handleAddTag}
-                      className="btn btn-primary btn-sm h-10 w-10"
+                      className="btn btn-primary btn-sm h-10 w-10 flex-shrink-0"
                     >
                       +
                     </button>
@@ -382,14 +385,14 @@ const SettingsPage: React.FC = () => {
 
           {/* Project Status Section */}
           <div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Archive Status:</span>
+                    <span className="text-xs sm:text-sm font-medium">Archive Status:</span>
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold border-2 border-base-content/20 ${
-                      selectedProject.isArchived 
-                        ? 'bg-warning/80 text-base-content/80' 
+                      selectedProject.isArchived
+                        ? 'bg-warning/80 text-base-content/80'
                         : 'bg-success/80 text-base-content/80'
                     }`}
                     style={{ color: getContrastTextColor(selectedProject.isArchived ? "warning" : "success") }}>
@@ -397,7 +400,7 @@ const SettingsPage: React.FC = () => {
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Sharing Status:</span>
+                    <span className="text-xs sm:text-sm font-medium">Sharing Status:</span>
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold border-2 border-base-content/20 ${
                       selectedProject.isShared
                         ? 'bg-info/80 text-base-content/80'
@@ -411,16 +414,16 @@ const SettingsPage: React.FC = () => {
               </div>
 
               <div>
-                <div className="space-y-2 text-sm">
+                <div className="space-y-2 text-xs sm:text-sm">
                   <div>
                     <span className="font-medium">Created:</span> {new Date(selectedProject.createdAt).toLocaleDateString()}
                   </div>
                   <div>
                     <span className="font-medium">Updated:</span> {new Date(selectedProject.updatedAt).toLocaleDateString()}
                   </div>
-                  <div>
-                    <span className="font-medium">Project ID:</span> 
-                    <span className="font-mono text-xs ml-2">{selectedProject.id}</span>
+                  <div className="flex flex-col sm:flex-row sm:items-center">
+                    <span className="font-medium">Project ID:</span>
+                    <span className="font-mono text-xs sm:ml-2 break-all">{selectedProject.id}</span>
                   </div>
                 </div>
               </div>

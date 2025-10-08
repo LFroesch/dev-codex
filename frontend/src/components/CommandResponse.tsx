@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CommandResponse as CommandResponseType } from '../api/terminal';
 import { getContrastTextColor } from '../utils/contrastTextColor';
+import { TodosRenderer, NotesRenderer, StackRenderer, DevLogRenderer, DocsRenderer } from './responses';
 
 interface CommandResponseProps {
   response: CommandResponseType;
@@ -106,226 +107,27 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
 
     // Render todos list
     if (response.data.todos && Array.isArray(response.data.todos)) {
-      return (
-        <div className="mt-3 space-y-2">
-          <div className="space-y-1">
-            {response.data.todos.map((todo: any, index: number) => (
-              <div
-                key={index}
-                className="flex items-start gap-3 p-2 bg-base-200 rounded-lg hover:bg-base-300/50 transition-colors border-thick"
-              >
-                <div className="flex-shrink-0 mt-0.5">
-                  {todo.completed ? (
-                    <span className="text-success">✓</span>
-                  ) : (
-                    <span className="text-base-content/50">○</span>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className={`text-sm text-base-content/80 break-words ${todo.completed ? 'line-through opacity-60' : ''}`}>
-                    {todo.text}
-                  </div>
-                  <div className="flex items-center gap-2 mt-1">
-                    {todo.priority && (
-                      <span className={`badge badge-xs ${
-                        todo.priority === 'high' ? 'badge-error' :
-                        todo.priority === 'medium' ? 'badge-warning' :
-                        'badge-info'
-                      }`}>
-                        {todo.priority}
-                      </span>
-                    )}
-                    {todo.status && (
-                      <span className="text-xs text-base-content/60">
-                        {todo.status.replace('_', ' ')}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-          {response.metadata?.projectId && (
-            <button
-              onClick={() => handleNavigateToProject('/notes?section=todos')}
-              className="btn-primary-sm gap-2 border-thick"
-              style={{ color: getContrastTextColor('primary') }}
-            >
-              <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-              View Todos
-            </button>
-          )}
-        </div>
-      );
+      return <TodosRenderer todos={response.data.todos} projectId={response.metadata?.projectId} onNavigate={handleNavigateToProject} />;
     }
 
     // Render notes list
     if (response.data.notes && Array.isArray(response.data.notes)) {
-      return (
-        <div className="mt-3 space-y-2">
-          <div className="space-y-2">
-            {response.data.notes.map((note: any, index: number) => (
-              <div
-                key={index}
-                className="p-3 bg-base-200 rounded-lg hover:bg-base-300/50 transition-colors border-thick"
-              >
-                <div className="font-medium text-sm mb-1 text-base-content/80 break-words">{note.title}</div>
-                {note.preview && (
-                  <div className="text-xs text-base-content/70 line-clamp-3 break-words">
-                    {note.preview}
-                  </div>
-                )}
-                <div className="text-xs text-base-content/60 mt-2">
-                  {new Date(note.createdAt).toLocaleString()}
-                </div>
-              </div>
-            ))}
-          </div>
-          {response.metadata?.projectId && (
-            <button
-              onClick={() => handleNavigateToProject('/notes?section=notes')}
-              className="btn-primary-sm gap-2 border-thick"
-              style={{ color: getContrastTextColor('primary') }}
-            >
-              <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              View Notes
-            </button>
-          )}
-        </div>
-      );
+      return <NotesRenderer notes={response.data.notes} projectId={response.metadata?.projectId} onNavigate={handleNavigateToProject} />;
     }
 
     // Render dev log entries
     if (response.data.entries && Array.isArray(response.data.entries)) {
-      return (
-        <div className="mt-3 space-y-2">
-          <div className="space-y-2">
-            {response.data.entries.map((entry: any, index: number) => (
-              <div
-                key={index}
-                className="p-3 bg-base-200 rounded-lg hover:bg-base-300/50 transition-colors border-l-4 border-primary/50"
-              >
-                <div className="text-sm text-base-content/80 break-words">{entry.entry}</div>
-                <div className="text-xs text-base-content/60 mt-2">
-                  {new Date(entry.date).toLocaleString()}
-                </div>
-              </div>
-            ))}
-          </div>
-          {response.metadata?.projectId && (
-            <button
-              onClick={() => handleNavigateToProject('/notes?section=devlog')}
-              className="btn-primary-sm gap-2 border-thick"
-              style={{ color: getContrastTextColor('primary') }}
-            >
-              <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-              </svg>
-              View Dev Log
-            </button>
-          )}
-        </div>
-      );
+      return <DevLogRenderer entries={response.data.entries} projectId={response.metadata?.projectId} onNavigate={handleNavigateToProject} />;
     }
 
     // Render docs list
     if (response.data.docs && Array.isArray(response.data.docs)) {
-      return (
-        <div className="mt-3 space-y-2">
-          <div className="space-y-1">
-            {response.data.docs.map((doc: any, index: number) => (
-              <div
-                key={index}
-                className="flex items-center gap-3 p-2 bg-base-200 rounded-lg hover:bg-base-300/50 transition-colors border-thick"
-              >
-                <span className="text-xs px-2 py-0.5 bg-primary/30 rounded border-2 border-primary/40 flex-shrink-0">{doc.type}</span>
-                <div className="flex-1 min-w-0 text-sm font-medium text-base-content/80 break-words">{doc.title}</div>
-              </div>
-            ))}
-          </div>
-          {response.metadata?.projectId && (
-            <button
-              onClick={() => handleNavigateToProject('/docs')}
-              className="btn-primary-sm gap-2 border-thick"
-              style={{ color: getContrastTextColor('primary') }}
-            >
-              <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              View Docs
-            </button>
-          )}
-        </div>
-      );
+      return <DocsRenderer docs={response.data.docs} projectId={response.metadata?.projectId} onNavigate={handleNavigateToProject} />;
     }
 
     // Render stack data
     if (response.data.stack) {
-      const { technologies = [], packages = [] } = response.data.stack;
-      const totalItems = technologies.length + packages.length;
-
-      return (
-        <div className="mt-3 space-y-3">
-          {/* Technologies */}
-          {technologies.length > 0 && (
-            <div>
-              <div className="text-xs font-semibold text-primary mb-2">Technologies ({technologies.length})</div>
-              <div className="space-y-1">
-                {technologies.map((tech: any, index: number) => (
-                  <div
-                    key={index}
-                    className="flex items-center gap-3 p-2 bg-base-200 rounded-lg hover:bg-base-300/50 transition-colors border-thick"
-                  >
-                    <span className="text-xs px-2 py-0.5 bg-primary/30 rounded border-2 border-primary/40 flex-shrink-0">{tech.category}</span>
-                    <div className="flex-1 min-w-0 text-sm font-medium text-base-content/80 break-words">{tech.name}</div>
-                    {tech.version && (
-                      <span className="text-xs text-base-content/60 flex-shrink-0">{tech.version}</span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Packages */}
-          {packages.length > 0 && (
-            <div>
-              <div className="text-xs font-semibold text-primary mb-2">Packages ({packages.length})</div>
-              <div className="space-y-1">
-                {packages.map((pkg: any, index: number) => (
-                  <div
-                    key={index}
-                    className="flex items-center gap-3 p-2 bg-base-200 rounded-lg hover:bg-base-300/50 transition-colors border-thick"
-                  >
-                    <span className="text-xs px-2 py-0.5 bg-secondary/30 rounded border-2 border-secondary/40 flex-shrink-0">{pkg.category}</span>
-                    <div className="flex-1 min-w-0 text-sm font-medium text-base-content/80 break-words">{pkg.name}</div>
-                    {pkg.version && (
-                      <span className="text-xs text-base-content/60 flex-shrink-0">{pkg.version}</span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {response.metadata?.projectId && (
-            <button
-              onClick={() => handleNavigateToProject('/stack')}
-              className="btn-primary-sm gap-2 border-thick"
-              style={{ color: getContrastTextColor('primary') }}
-            >
-              <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-              </svg>
-              View Full Stack
-            </button>
-          )}
-        </div>
-      );
+      return <StackRenderer stack={response.data.stack} projectId={response.metadata?.projectId} onNavigate={handleNavigateToProject} />;
     }
 
     // Render deployment data

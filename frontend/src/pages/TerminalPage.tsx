@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate, useOutletContext } from 'react-router-dom';
+import { useOutletContext } from 'react-router-dom';
 import TerminalInput from '../components/TerminalInput';
 import CommandResponse from '../components/CommandResponse';
 import { terminalAPI, CommandResponse as CommandResponseType } from '../api/terminal';
@@ -25,7 +25,6 @@ const TerminalPage: React.FC = () => {
   const [pendingCommand, setPendingCommand] = useState<string | null>(null);
   const terminalEndRef = useRef<HTMLDivElement>(null);
   const terminalOutputRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
 
   // Auto-scroll to bottom when new entries are added
   useEffect(() => {

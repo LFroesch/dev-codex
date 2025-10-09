@@ -87,21 +87,6 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
     }
   };
 
-  const getAlertClass = () => {
-    switch (response.type) {
-      case 'success':
-        return 'alert-success';
-      case 'error':
-        return 'alert-error';
-      case 'warning':
-        return 'alert-warning';
-      case 'info':
-        return 'alert-info';
-      default:
-        return '';
-    }
-  };
-
   const renderData = () => {
     if (!response.data) return null;
 

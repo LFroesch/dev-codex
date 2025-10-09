@@ -1,13 +1,10 @@
 # Bugs & Future Features
 
-## 🐛 Bugs
-- [ ] Public page display improvements
-- [ ] Search notes functionality
+## Bugs
+- If a user is kicked from a project, force refresh/disconnect them if they are on that project
+- Autocomplete for roles / users / variables in the terminalinput.tsx
 
 ## 🧹 Code Cleanup
-- [x] Add database indexes for performance
-- [x] Implement caching for user projects
-- [x] Optimize repeated queries in command handlers
 - [ ] Consolidate API hooks
 - [ ] Standardize button components
 - [ ] Create route factory
@@ -27,13 +24,6 @@
 ## ✨ New Features
 
 ### High Priority
-- [x] **Search System:** `/search [query]` - Full-text search across all content
-- [x] **Task Management Commands:**
-  - `/complete [todo]` - Mark todo as complete
-  - `/assign [todo] [user]` - Assign todo to user
-  - `/priority [todo] [level]` - Set priority
-  - `/due [todo] [date]` - Set due date
-- [x] **Summary/Export:** `/summary` or `/readme` - Generate project summaries/prompts
 - [ ] **Wizard Commands:** Flesh out `/wizard new/setup/deploy` for interactive flows
 
 ### Medium Priority
@@ -50,3 +40,5 @@
 - [ ] Outage banner system
 - [ ] Force update mechanism
 - [ ] Browser extension integration
+- [ ] Test Page of index.css classes / buttons etc etc then replace across site..
+- [ ] Alias odd syntaxing of commands?

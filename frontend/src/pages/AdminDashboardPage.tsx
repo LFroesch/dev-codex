@@ -280,7 +280,7 @@ const AdminDashboardPage: React.FC = () => {
   const resetAnalytics = async () => {
     try {
       setResettingAnalytics(true);
-      const result = await analyticsAPI.resetAllAnalytics();
+      const result = await analyticsAPI.resetAllAnalytics() as any;
       const deletedAnalytics = result?.deletedAnalytics ?? 0;
       const deletedSessions = result?.deletedSessions ?? 0;
       alert(`Analytics reset successful! Deleted ${deletedAnalytics} analytics events, ${deletedSessions} sessions, and cleared all project time data.`);

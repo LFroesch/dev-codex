@@ -12,6 +12,7 @@ import { checkProjectLimit } from '../middleware/planLimits';
 import { trackProjectAccess } from '../middleware/analytics';
 import { AnalyticsService } from '../middleware/analytics';
 import activityLogger from '../services/activityLogger';
+import { logInfo, logError, logWarn } from '../config/logger';
 import { v4 as uuidv4 } from 'uuid';
 import NoteLock from '../models/NoteLock';
 import {
@@ -60,7 +61,7 @@ router.post('/', checkProjectLimit, async (req: AuthRequest, res) => {
       project: formatProjectResponse(project)
     });
   } catch (error) {
-    console.error('Create project error:', error);
+    logError('Create project error', error as Error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -119,7 +120,7 @@ router.get('/', async (req: AuthRequest, res) => {
 
     res.json({ projects: allProjects });
   } catch (error) {
-    console.error('Get projects error:', error);
+    logError('Get projects error', error as Error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -150,7 +151,7 @@ router.get('/:id', requireProjectAccess('view'), async (req: AuthRequest, res) =
       }
     });
   } catch (error) {
-    console.error('Get single project error:', error);
+    logError('Get single project error', error as Error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -160,10 +161,7 @@ router.put('/:id', requireProjectAccess('edit'), async (req: AuthRequest, res) =
   try {
     const updateData = { ...req.body };
     
-    console.log('Project update request:', {
-      projectId: req.params.id,
-      updateData: JSON.stringify(updateData, null, 2)
-    });
+    logInfo('Project update request', { projectId: req.params.id, updateData });
     
     if (updateData.name && !updateData.name.trim()) {
       return res.status(400).json({ message: 'Name cannot be empty' });
@@ -189,9 +187,7 @@ router.put('/:id', requireProjectAccess('edit'), async (req: AuthRequest, res) =
       { new: true, runValidators: true }
     );
     
-    console.log('Project after update:', {
-      deploymentData: project?.deploymentData
-    });
+    logInfo('Project after update', { deploymentData: project?.deploymentData });
 
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
@@ -203,9 +199,9 @@ router.put('/:id', requireProjectAccess('edit'), async (req: AuthRequest, res) =
       project: formatProjectResponse(project)
     });
   } catch (error: any) {
-    console.error('Update project error:', error);
+    logError('Update project error', error as Error);
     if (error.name === 'ValidationError') {
-      console.error('Validation details:', error.errors);
+      logError('Validation details', new Error(JSON.stringify(error.errors)));
       return res.status(400).json({ 
         message: 'Validation error', 
         details: error.errors 
@@ -239,7 +235,7 @@ router.patch('/:id/archive', requireProjectAccess('manage'), async (req: AuthReq
       project: formatProjectResponse(project)
     });
   } catch (error) {
-    console.error('Archive project error:', error);
+    logError('Archive project error', error as Error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -264,7 +260,7 @@ router.delete('/:id', requireProjectAccess('manage'), async (req: AuthRequest, r
 
     res.json({ message: 'Project deleted successfully' });
   } catch (error) {
-    console.error('Delete project error:', error);
+    logError('Delete project error', error as Error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -301,7 +297,7 @@ router.post('/:id/notes', requireProjectAccess('edit'), async (req: AuthRequest,
       note: newNote
     });
   } catch (error) {
-    console.error('Add note error:', error);
+    logError('Add note error', error as Error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -371,7 +367,7 @@ router.post('/:id/notes/:noteId/lock', requireProjectAccess('edit'), async (req:
       lock
     });
   } catch (error) {
-    console.error('Lock note error:', error);
+    logError('Lock note error', error as Error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -396,7 +392,7 @@ router.delete('/:id/notes/:noteId/lock', requireProjectAccess('edit'), async (re
 
     res.json({ message: 'Note unlocked successfully' });
   } catch (error) {
-    console.error('Unlock note error:', error);
+    logError('Unlock note error', error as Error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -416,7 +412,7 @@ router.put('/:id/notes/:noteId/lock/heartbeat', requireProjectAccess('edit'), as
 
     res.json({ message: 'Heartbeat updated' });
   } catch (error) {
-    console.error('Heartbeat error:', error);
+    logError('Heartbeat error', error as Error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -441,7 +437,7 @@ router.get('/:id/notes/:noteId/lock', requireProjectAccess('view'), async (req: 
       }
     });
   } catch (error) {
-    console.error('Check lock error:', error);
+    logError('Check lock error', error as Error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -530,7 +526,7 @@ router.put('/:id/notes/:noteId', requireProjectAccess('edit'), async (req: AuthR
       note: note
     });
   } catch (error) {
-    console.error('Update note error:', error);
+    logError('Update note error', error as Error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -548,7 +544,7 @@ router.delete('/:id/notes/:noteId', requireProjectAccess('edit'), async (req: Au
 
     res.json({ message: 'Note deleted successfully' });
   } catch (error) {
-    console.error('Delete note error:', error);
+    logError('Delete note error', error as Error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -595,7 +591,7 @@ router.post('/:id/technologies', requireProjectAccess('edit'), async (req: AuthR
       technology: newTech
     });
   } catch (error) {
-    console.error('Add technology error:', error);
+    logError('Add technology error', error as Error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -617,7 +613,7 @@ router.delete('/:id/technologies/:category/:name', requireProjectAccess('edit'),
 
     res.json({ message: 'Technology removed successfully' });
   } catch (error) {
-    console.error('Remove technology error:', error);
+    logError('Remove technology error', error as Error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -651,7 +647,7 @@ router.put('/:id/technologies/:category/:name', requireProjectAccess('edit'), as
       technology: technology
     });
   } catch (error) {
-    console.error('Update technology error:', error);
+    logError('Update technology error', error as Error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -699,7 +695,7 @@ router.post('/:id/packages', requireProjectAccess('edit'), async (req: AuthReque
       package: newPackage
     });
   } catch (error) {
-    console.error('Add package error:', error);
+    logError('Add package error', error as Error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -721,7 +717,7 @@ router.delete('/:id/packages/:category/:name', requireProjectAccess('edit'), asy
 
     res.json({ message: 'Package removed successfully' });
   } catch (error) {
-    console.error('Remove package error:', error);
+    logError('Remove package error', error as Error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -755,7 +751,7 @@ router.put('/:id/packages/:category/:name', requireProjectAccess('edit'), async 
       package: packageItem
     });
   } catch (error) {
-    console.error('Update package error:', error);
+    logError('Update package error', error as Error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -826,12 +822,12 @@ router.post('/:id/todos', requireProjectAccess('edit'), async (req: AuthRequest,
         req.ip
       );
     } catch (error) {
-      console.error('Failed to log todo creation:', error);
+      logWarn('Failed to log todo creation', { error });
     }
 
     // Create assignment notification if assigning to someone else
     if (assignedTo && assignedTo !== req.userId?.toString()) {
-      console.log(`Creating assignment notification for user ${assignedTo}, todo: ${text.trim()}`);
+      logInfo(`Creating assignment notification for user ${assignedTo}, todo: ${text.trim()}`);
       try {
         await Notification.create({
           userId: assignedTo,
@@ -842,9 +838,9 @@ router.post('/:id/todos', requireProjectAccess('edit'), async (req: AuthRequest,
           relatedTodoId: newTodo.id,
           actionUrl: `/projects/${project._id}`
         });
-        console.log(`Assignment notification created successfully`);
+        logInfo(`Assignment notification created successfully`);
       } catch (notifError) {
-        console.error('Failed to create assignment notification:', notifError);
+        logWarn('Failed to create assignment notification', { error: notifError });
       }
 
       // Log todo assignment activity with user name
@@ -867,7 +863,7 @@ router.post('/:id/todos', requireProjectAccess('edit'), async (req: AuthRequest,
           req.ip
         );
       } catch (error) {
-        console.error('Failed to log todo assignment:', error);
+        logError('Failed to log todo assignment:', error as Error);
       }
     }
 
@@ -876,7 +872,7 @@ router.post('/:id/todos', requireProjectAccess('edit'), async (req: AuthRequest,
       todo: newTodo
     });
   } catch (error) {
-    console.error('Add todo error:', error);
+    logError('Add todo error', error as Error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -982,7 +978,7 @@ router.put('/:id/todos/:todoId', requireProjectAccess('edit'), async (req: AuthR
             req.ip
           );
         } catch (error) {
-          console.error(`Failed to log todo ${mapping.field} update:`, error);
+          logError(`Failed to log todo ${mapping.field} update:`, error as Error);
         }
       }
     }
@@ -1005,7 +1001,7 @@ router.put('/:id/todos/:todoId', requireProjectAccess('edit'), async (req: AuthR
       todo: todo
     });
   } catch (error) {
-    console.error('Update todo error:', error);
+    logError('Update todo error', error as Error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -1047,7 +1043,7 @@ router.delete('/:id/todos/:todoId', requireProjectAccess('edit'), async (req: Au
         req.ip
       );
     } catch (error) {
-      console.error('Failed to log todo deletion:', error);
+      logError('Failed to log todo deletion:', error as Error);
     }
 
     project.todos = project.todos.filter(t => t.id !== req.params.todoId);
@@ -1055,7 +1051,7 @@ router.delete('/:id/todos/:todoId', requireProjectAccess('edit'), async (req: Au
 
     res.json({ message: 'Todo deleted successfully' });
   } catch (error) {
-    console.error('Delete todo error:', error);
+    logError('Delete todo error:', error as Error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -1091,7 +1087,7 @@ router.post('/:id/devlog', requireProjectAccess('edit'), async (req: AuthRequest
       entry: newEntry
     });
   } catch (error) {
-    console.error('Add dev log error:', error);
+    logError('Add dev log error:', error as Error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -1126,7 +1122,7 @@ router.put('/:id/devlog/:entryId', requireProjectAccess('edit'), async (req: Aut
       entry: devLogEntry
     });
   } catch (error) {
-    console.error('Update dev log error:', error);
+    logError('Update dev log error:', error as Error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -1144,7 +1140,7 @@ router.delete('/:id/devlog/:entryId', requireProjectAccess('edit'), async (req: 
 
     res.json({ message: 'Dev log entry deleted successfully' });
   } catch (error) {
-    console.error('Delete dev log error:', error);
+    logError('Delete dev log error:', error as Error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -1186,7 +1182,7 @@ router.post('/:id/docs', requireProjectAccess('edit'), async (req: AuthRequest, 
       doc: newDoc
     });
   } catch (error) {
-    console.error('Add doc error:', error);
+    logError('Add doc error:', error as Error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -1224,7 +1220,7 @@ router.put('/:id/docs/:docId', requireProjectAccess('edit'), async (req: AuthReq
       doc: doc
     });
   } catch (error) {
-    console.error('Update doc error:', error);
+    logError('Update doc error:', error as Error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -1242,7 +1238,7 @@ router.delete('/:id/docs/:docId', requireProjectAccess('edit'), async (req: Auth
 
     res.json({ message: 'Doc deleted successfully' });
   } catch (error) {
-    console.error('Delete doc error:', error);
+    logError('Delete doc error:', error as Error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -1366,7 +1362,7 @@ router.get('/:id/members', requireAuth, requireProjectAccess('view'), async (req
       members: allMembers,
     });
   } catch (error) {
-    console.error('Get team members error:', error);
+    logError('Get team members error:', error as Error);
     res.status(500).json({ message: 'Server error fetching team members' });
   }
 });
@@ -1463,7 +1459,7 @@ router.post('/:id/invite', requireAuth, requireProjectAccess('manage'), async (r
         role
       );
     } catch (emailError) {
-      console.error('Failed to send invitation email:', emailError);
+      logError('Failed to send invitation email:', emailError as Error);
       // Continue without failing the invitation creation
     }
 
@@ -1485,7 +1481,7 @@ router.post('/:id/invite', requireAuth, requireProjectAccess('manage'), async (r
       },
     });
   } catch (error) {
-    console.error('Invite user error:', error);
+    logError('Invite user error:', error as Error);
     res.status(500).json({ message: 'Server error sending invitation' });
   }
 });
@@ -1525,7 +1521,7 @@ router.delete('/:id/members/:userId', requireAuth, requireProjectAccess('manage'
       message: 'Team member removed successfully',
     });
   } catch (error) {
-    console.error('Remove team member error:', error);
+    logError('Remove team member error:', error as Error);
     res.status(500).json({ message: 'Server error removing team member' });
   }
 });
@@ -1563,7 +1559,7 @@ router.patch('/:id/members/:userId', requireAuth, requireProjectAccess('manage')
       member: updatedMember,
     });
   } catch (error) {
-    console.error('Update team member role error:', error);
+    logError('Update team member role error:', error as Error);
     res.status(500).json({ message: 'Server error updating team member role' });
   }
 });
@@ -1670,7 +1666,7 @@ router.get('/:id/export',
     // Check export size limit
     const exportSize = JSON.stringify(exportData).length;
     if (exportSize > 100 * 1024 * 1024) { // 100MB limit
-      console.warn(`Export size ${exportSize} bytes exceeds limit for project ${projectId}`);
+      logWarn(`Export size ${exportSize} bytes exceeds limit for project ${projectId}`);
       return res.status(413).json({
         error: 'Export too large',
         message: 'Project data exceeds maximum export size limit',
@@ -1688,12 +1684,12 @@ router.get('/:id/export',
     res.setHeader('Content-Length', exportSize.toString());
     
     // Log export activity for security monitoring
-    console.log(`Project export: ${projectId} by user ${req.userId}, size: ${exportSize} bytes`);
+    logInfo(`Project export: ${projectId} by user ${req.userId}, size: ${exportSize} bytes`);
     
     res.json(exportData);
     
   } catch (error) {
-    console.error('Export project error:', error);
+    logError('Export project error:', error as Error);
     res.status(500).json({ message: 'Server error exporting project' });
   }
 });
@@ -1827,7 +1823,7 @@ router.post('/import',
 
     // Enhanced logging for security monitoring
     const importSize = JSON.stringify(req.body).length;
-    console.log(`Project import: ${newProject._id} by user ${req.userId}, size: ${importSize} bytes, name: "${newProject.name}"`);
+    logInfo(`Project import: ${newProject._id} by user ${req.userId}, size: ${importSize} bytes, name: "${newProject.name}"`);
     
     // Log the activity
     try {
@@ -1855,7 +1851,7 @@ router.post('/import',
         }
       });
     } catch (logError) {
-      console.error('Failed to log import activity:', logError);
+      logWarn('Failed to log import activity:', { error: logError });
     }
 
     res.status(201).json({
@@ -1869,7 +1865,7 @@ router.post('/import',
     });
     
   } catch (error) {
-    console.error('Import project error:', error);
+    logError('Import project error:', error as Error);
     if (error instanceof mongoose.Error.ValidationError) {
       const errorMessages = Object.values(error.errors).map(err => err.message);
       return res.status(400).json({ 

@@ -341,13 +341,17 @@ projectSchema.index({ ownerId: 1, tags: 1, isArchived: 1 });
 projectSchema.index({ isShared: 1, isArchived: 1 });
 
 // Text index for search functionality
-projectSchema.index({ 
-  name: 'text', 
+projectSchema.index({
+  name: 'text',
   description: 'text',
   'notes.title': 'text',
   'notes.content': 'text',
   'docs.title': 'text',
-  'docs.content': 'text'
+  'docs.content': 'text',
+  'todos.text': 'text',
+  'todos.description': 'text',
+  'devLog.title': 'text',
+  'devLog.entry': 'text'
 }, {
   weights: {
     name: 10,
@@ -355,7 +359,51 @@ projectSchema.index({
     'notes.title': 3,
     'notes.content': 1,
     'docs.title': 3,
-    'docs.content': 1
+    'docs.content': 1,
+    'todos.text': 2,
+    'todos.description': 1,
+    'devLog.title': 2,
+    'devLog.entry': 1
+  }
+});
+
+// Additional indexes for terminal command performance
+projectSchema.index({ 'todos.id': 1 });
+projectSchema.index({ 'devLog.id': 1 });
+projectSchema.index({ 'todos.completed': 1, 'todos.priority': 1 });
+projectSchema.index({ ownerId: 1, updatedAt: -1 }); // For recent projects cache
+projectSchema.index({ userId: 1, updatedAt: -1 }); // For recent projects cache
+
+// Compound indexes for team queries (used in command handlers)
+projectSchema.index({ ownerId: 1, 'members.userId': 1 });
+
+// Cache invalidation middleware
+projectSchema.post('save', async function(doc) {
+  // Invalidate cache for project owner
+  const { projectCache } = await import('../services/ProjectCache');
+  projectCache.invalidate(doc.userId.toString());
+  if (doc.ownerId && doc.ownerId.toString() !== doc.userId.toString()) {
+    projectCache.invalidate(doc.ownerId.toString());
+  }
+});
+
+projectSchema.post('findOneAndUpdate', async function(doc) {
+  if (doc) {
+    const { projectCache } = await import('../services/ProjectCache');
+    projectCache.invalidate(doc.userId.toString());
+    if (doc.ownerId && doc.ownerId.toString() !== doc.userId.toString()) {
+      projectCache.invalidate(doc.ownerId.toString());
+    }
+  }
+});
+
+projectSchema.post('findOneAndDelete', async function(doc) {
+  if (doc) {
+    const { projectCache } = await import('../services/ProjectCache');
+    projectCache.invalidate(doc.userId.toString());
+    if (doc.ownerId && doc.ownerId.toString() !== doc.userId.toString()) {
+      projectCache.invalidate(doc.ownerId.toString());
+    }
   }
 });
 

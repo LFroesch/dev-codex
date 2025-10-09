@@ -165,6 +165,280 @@ export class UtilityHandlers extends BaseCommandHandler {
   }
 
   /**
+   * Handle /summary command - Generate downloadable project summary
+   */
+  async handleSummary(parsed: ParsedCommand, currentProjectId?: string): Promise<CommandResponse> {
+    const resolution = await this.resolveProject(parsed.projectMention, currentProjectId);
+    if (!resolution.project) {
+      return this.buildProjectErrorResponse(resolution);
+    }
+
+    const project = resolution.project;
+    const format = parsed.args[0]?.toLowerCase() || 'markdown';
+
+    // Validate format
+    const validFormats = ['markdown', 'json', 'prompt', 'text'];
+    if (!validFormats.includes(format)) {
+      return {
+        type: ResponseType.ERROR,
+        message: `Invalid format "${format}". Available formats: markdown, json, prompt, text`,
+        suggestions: ['/help summary']
+      };
+    }
+
+    // Build summary content
+    const summary = this.generateProjectSummary(project, format);
+
+    // Determine file extension
+    const extensions: Record<string, string> = {
+      markdown: 'md',
+      json: 'json',
+      prompt: 'txt',
+      text: 'txt'
+    };
+
+    const fileExtension = extensions[format];
+    const fileName = `${project.name.replace(/\s+/g, '-')}-summary.${fileExtension}`;
+
+    return {
+      type: ResponseType.DATA,
+      message: `📄 Generated ${format} summary for ${project.name}`,
+      data: {
+        summary,
+        format,
+        fileName,
+        projectName: project.name,
+        downloadable: true
+      },
+      metadata: {
+        projectId: project._id.toString(),
+        projectName: project.name,
+        action: 'summary'
+      }
+    };
+  }
+
+  /**
+   * Generate project summary in different formats
+   */
+  private generateProjectSummary(project: any, format: string): string {
+    const todos = project.todos || [];
+    const notes = project.notes || [];
+    const devLog = project.devLog || [];
+    const docs = project.docs || [];
+    const tech = project.selectedTechnologies || [];
+    const packages = project.selectedPackages || [];
+
+    // Count stats
+    const completedTodos = todos.filter((t: any) => t.completed).length;
+    const highPriorityTodos = todos.filter((t: any) => t.priority === 'high' && !t.completed).length;
+    const activeTodos = todos.filter((t: any) => !t.completed);
+
+    switch (format) {
+      case 'json':
+        return JSON.stringify({
+          name: project.name,
+          description: project.description,
+          category: project.category,
+          tags: project.tags || [],
+          stats: {
+            todos: {
+              total: todos.length,
+              completed: completedTodos,
+              active: activeTodos.length,
+              highPriority: highPriorityTodos
+            },
+            notes: notes.length,
+            devLog: devLog.length,
+            docs: docs.length
+          },
+          techStack: {
+            technologies: tech,
+            packages: packages
+          },
+          todos: activeTodos.map((t: any) => ({
+            text: t.text,
+            description: t.description,
+            priority: t.priority,
+            status: t.status,
+            dueDate: t.dueDate
+          })),
+          recentActivity: devLog.slice(0, 5).map((e: any) => ({
+            title: e.title,
+            entry: e.entry,
+            date: e.date
+          })),
+          deployment: project.deploymentData || null,
+          createdAt: project.createdAt,
+          updatedAt: project.updatedAt
+        }, null, 2);
+
+      case 'prompt':
+        let prompt = `# AI Assistant Context for "${project.name}"\n\n`;
+        prompt += `## 🤖 REQUEST:\n[Replace this with your specific request or question about the project]\n\n`;
+        prompt += `## 📋 PROJECT OVERVIEW\n\n`;
+        prompt += `**Name:** ${project.name}\n`;
+        if (project.description) prompt += `**Description:** ${project.description}\n`;
+        prompt += `**Category:** ${project.category || 'General'}\n`;
+        if (project.tags && project.tags.length > 0) {
+          prompt += `**Tags:** ${project.tags.join(', ')}\n`;
+        }
+
+        // Tech Stack
+        if (tech.length > 0 || packages.length > 0) {
+          prompt += `\n## ⚡ TECH STACK\n\n`;
+          if (tech.length > 0) {
+            prompt += `**Technologies:** ${tech.map((t: any) => `${t.name}${t.version ? ` v${t.version}` : ''}`).join(', ')}\n`;
+          }
+          if (packages.length > 0) {
+            prompt += `**Packages:** ${packages.map((p: any) => p.name).join(', ')}\n`;
+          }
+        }
+
+        // Tasks
+        if (todos.length > 0) {
+          prompt += `\n## ✅ TASKS (${completedTodos}/${todos.length} completed)\n\n`;
+          if (activeTodos.length > 0) {
+            prompt += `**🚧 Active Tasks:**\n`;
+            activeTodos.slice(0, 10).forEach((todo: any) => {
+              prompt += `- ${todo.text}`;
+              if (todo.priority) prompt += ` [${todo.priority.toUpperCase()}]`;
+              if (todo.dueDate) prompt += ` (Due: ${new Date(todo.dueDate).toLocaleDateString()})`;
+              prompt += `\n`;
+            });
+          }
+        }
+
+        // Recent Activity
+        if (devLog.length > 0) {
+          prompt += `\n## 📝 RECENT DEVELOPMENT LOG\n\n`;
+          devLog.slice(0, 5).forEach((entry: any) => {
+            prompt += `**${entry.title || 'Entry'}** (${new Date(entry.date).toLocaleDateString()})\n`;
+            prompt += `${entry.entry.substring(0, 200)}${entry.entry.length > 200 ? '...' : ''}\n\n`;
+          });
+        }
+
+        // Deployment
+        if (project.deploymentData?.liveUrl) {
+          prompt += `## 🚀 DEPLOYMENT\n\n`;
+          prompt += `**Live URL:** ${project.deploymentData.liveUrl}\n`;
+          prompt += `**Platform:** ${project.deploymentData.deploymentPlatform || 'N/A'}\n`;
+          prompt += `**Status:** ${project.deploymentData.deploymentStatus || 'N/A'}\n`;
+        }
+
+        return prompt;
+
+      case 'markdown':
+        let md = `# ${project.name}\n\n`;
+        if (project.description) md += `${project.description}\n\n`;
+        md += `**Category:** ${project.category || 'Uncategorized'}\n`;
+        if (project.tags && project.tags.length > 0) {
+          md += `**Tags:** ${project.tags.join(', ')}\n`;
+        }
+        md += `\n---\n\n`;
+
+        // Stats
+        md += `## 📊 Project Stats\n\n`;
+        md += `- **Todos:** ${completedTodos}/${todos.length} completed\n`;
+        md += `- **High Priority:** ${highPriorityTodos} remaining\n`;
+        md += `- **Notes:** ${notes.length}\n`;
+        md += `- **Dev Log Entries:** ${devLog.length}\n`;
+        md += `- **Docs:** ${docs.length}\n\n`;
+
+        // Tech Stack
+        if (tech.length > 0 || packages.length > 0) {
+          md += `## 🛠️ Tech Stack\n\n`;
+          if (tech.length > 0) {
+            md += `### Technologies\n`;
+            tech.forEach((t: any) => {
+              md += `- **${t.name}** (${t.category})${t.version ? ` v${t.version}` : ''}\n`;
+            });
+            md += `\n`;
+          }
+          if (packages.length > 0) {
+            md += `### Packages\n`;
+            packages.forEach((p: any) => {
+              md += `- ${p.name}${p.version ? ` v${p.version}` : ''}\n`;
+            });
+            md += `\n`;
+          }
+        }
+
+        // Active Todos
+        if (activeTodos.length > 0) {
+          md += `## ✅ Active Todos\n\n`;
+          activeTodos.slice(0, 15).forEach((todo: any) => {
+            const priority = todo.priority === 'high' ? '🔴' : todo.priority === 'medium' ? '🟡' : '🟢';
+            md += `- ${priority} ${todo.text}`;
+            if (todo.dueDate) md += ` (Due: ${new Date(todo.dueDate).toLocaleDateString()})`;
+            md += `\n`;
+          });
+          if (activeTodos.length > 15) {
+            md += `\n*...and ${activeTodos.length - 15} more*\n`;
+          }
+          md += `\n`;
+        }
+
+        // Recent Dev Log
+        if (devLog.length > 0) {
+          md += `## 📝 Recent Activity\n\n`;
+          devLog.slice(0, 5).forEach((entry: any) => {
+            md += `### ${entry.title}\n`;
+            md += `${entry.entry}\n`;
+            md += `*${new Date(entry.date).toLocaleDateString()}*\n\n`;
+          });
+        }
+
+        // Deployment
+        if (project.deploymentData?.liveUrl) {
+          md += `## 🚀 Deployment\n\n`;
+          md += `- **Live URL:** ${project.deploymentData.liveUrl}\n`;
+          md += `- **Platform:** ${project.deploymentData.deploymentPlatform || 'N/A'}\n`;
+          md += `- **Status:** ${project.deploymentData.deploymentStatus || 'N/A'}\n\n`;
+        }
+
+        return md;
+
+      case 'text':
+      default:
+        let text = `${project.name}\n${'='.repeat(project.name.length)}\n\n`;
+        if (project.description) text += `${project.description}\n\n`;
+        text += `Category: ${project.category || 'Uncategorized'}\n`;
+        if (project.tags && project.tags.length > 0) {
+          text += `Tags: ${project.tags.join(', ')}\n`;
+        }
+        text += `\n`;
+        text += `STATISTICS\n`;
+        text += `----------\n`;
+        text += `Todos: ${completedTodos}/${todos.length} completed\n`;
+        text += `High Priority: ${highPriorityTodos} remaining\n`;
+        text += `Notes: ${notes.length}\n`;
+        text += `Dev Log Entries: ${devLog.length}\n`;
+        text += `Docs: ${docs.length}\n\n`;
+
+        if (tech.length > 0) {
+          text += `TECH STACK\n`;
+          text += `----------\n`;
+          tech.forEach((t: any) => {
+            text += `- ${t.name} (${t.category})\n`;
+          });
+          text += `\n`;
+        }
+
+        if (activeTodos.length > 0) {
+          text += `ACTIVE TODOS\n`;
+          text += `------------\n`;
+          activeTodos.slice(0, 10).forEach((todo: any) => {
+            text += `[${todo.priority?.toUpperCase() || 'MED'}] ${todo.text}\n`;
+          });
+          text += `\n`;
+        }
+
+        return text;
+    }
+  }
+
+  /**
    * Handle /view news command
    */
   async handleViewNews(): Promise<CommandResponse> {

@@ -327,4 +327,465 @@ export class CrudHandlers extends BaseCommandHandler {
       }
     );
   }
+
+  /**
+   * Handle /search command
+   */
+  async handleSearch(parsed: ParsedCommand, currentProjectId?: string): Promise<CommandResponse> {
+    const query = parsed.args.join(' ').trim().toLowerCase();
+
+    if (!query) {
+      return {
+        type: ResponseType.ERROR,
+        message: 'Search query is required',
+        suggestions: ['/help search']
+      };
+    }
+
+    // If project is specified, search only in that project
+    if (parsed.projectMention || currentProjectId) {
+      const resolution = await this.resolveProject(parsed.projectMention, currentProjectId);
+      if (!resolution.project) {
+        return this.buildProjectErrorResponse(resolution);
+      }
+
+      return this.searchInProject(resolution.project, query);
+    }
+
+    // Otherwise, search across all user's projects
+    return this.searchAcrossProjects(query);
+  }
+
+  /**
+   * Search within a specific project
+   */
+  private searchInProject(project: any, query: string): CommandResponse {
+    const results: any[] = [];
+
+    // Search todos
+    (project.todos || []).forEach((todo: any) => {
+      if (todo.text.toLowerCase().includes(query) ||
+          (todo.description && todo.description.toLowerCase().includes(query))) {
+        results.push({
+          type: 'todo',
+          id: todo.id,
+          text: todo.text,
+          priority: todo.priority,
+          status: todo.status,
+          projectName: project.name,
+          projectId: project._id.toString()
+        });
+      }
+    });
+
+    // Search notes
+    (project.notes || []).forEach((note: any) => {
+      if (note.title.toLowerCase().includes(query) ||
+          note.content.toLowerCase().includes(query)) {
+        results.push({
+          type: 'note',
+          id: note.id,
+          title: note.title,
+          preview: note.content.substring(0, 100),
+          projectName: project.name,
+          projectId: project._id.toString()
+        });
+      }
+    });
+
+    // Search devlog
+    (project.devLog || []).forEach((entry: any) => {
+      if (entry.title.toLowerCase().includes(query) ||
+          entry.entry.toLowerCase().includes(query)) {
+        results.push({
+          type: 'devlog',
+          id: entry.id,
+          title: entry.title,
+          preview: entry.entry.substring(0, 100),
+          date: entry.date,
+          projectName: project.name,
+          projectId: project._id.toString()
+        });
+      }
+    });
+
+    // Search docs
+    (project.docs || []).forEach((doc: any) => {
+      if (doc.title.toLowerCase().includes(query) ||
+          doc.content.toLowerCase().includes(query)) {
+        results.push({
+          type: 'doc',
+          id: doc.id,
+          docType: doc.type,
+          title: doc.title,
+          preview: doc.content.substring(0, 100),
+          projectName: project.name,
+          projectId: project._id.toString()
+        });
+      }
+    });
+
+    if (results.length === 0) {
+      return {
+        type: ResponseType.INFO,
+        message: `🔍 No results found for "${query}" in ${project.name}`,
+        suggestions: [`Try a different search term`]
+      };
+    }
+
+    return this.buildDataResponse(
+      `🔍 Found ${results.length} results for "${query}" in ${project.name}`,
+      project,
+      'search',
+      { results, query }
+    );
+  }
+
+  /**
+   * Search across all user's projects (optimized with text index)
+   */
+  private async searchAcrossProjects(query: string): Promise<CommandResponse> {
+    const { Project } = await import('../../models/Project');
+
+    // Use MongoDB text search for better performance
+    const projects = await Project.find({
+      $or: [
+        { ownerId: this.userId },
+        { userId: this.userId }
+      ],
+      $text: { $search: query }
+    }, {
+      score: { $meta: 'textScore' }
+    })
+    .select('_id name todos notes devLog docs')
+    .sort({ score: { $meta: 'textScore' } })
+    .limit(10) // Limit to top 10 matching projects for performance
+    .lean();
+
+    // Also check team projects
+    const TeamMember = (await import('../../models/TeamMember')).default;
+    const teamProjectIds = await TeamMember.find({ userId: this.userId })
+      .select('projectId')
+      .lean();
+
+    if (teamProjectIds.length > 0) {
+      const teamProjects = await Project.find({
+        _id: { $in: teamProjectIds.map(tm => tm.projectId) },
+        $text: { $search: query }
+      }, {
+        score: { $meta: 'textScore' }
+      })
+      .select('_id name todos notes devLog docs')
+      .sort({ score: { $meta: 'textScore' } })
+      .limit(10)
+      .lean();
+
+      projects.push(...teamProjects);
+    }
+
+    const results: any[] = [];
+    const queryLower = query.toLowerCase();
+
+    for (const project of projects) {
+      // Search todos
+      (project.todos || []).forEach((todo: any) => {
+        if (todo.text.toLowerCase().includes(queryLower) ||
+            (todo.description && todo.description.toLowerCase().includes(queryLower))) {
+          results.push({
+            type: 'todo',
+            id: todo.id,
+            text: todo.text,
+            priority: todo.priority,
+            status: todo.status,
+            projectName: project.name,
+            projectId: project._id.toString()
+          });
+        }
+      });
+
+      // Search notes
+      (project.notes || []).forEach((note: any) => {
+        if (note.title.toLowerCase().includes(queryLower) ||
+            note.content.toLowerCase().includes(queryLower)) {
+          results.push({
+            type: 'note',
+            id: note.id,
+            title: note.title,
+            preview: note.content.substring(0, 100),
+            projectName: project.name,
+            projectId: project._id.toString()
+          });
+        }
+      });
+
+      // Search devlog
+      (project.devLog || []).forEach((entry: any) => {
+        if (entry.title.toLowerCase().includes(queryLower) ||
+            entry.entry.toLowerCase().includes(queryLower)) {
+          results.push({
+            type: 'devlog',
+            id: entry.id,
+            title: entry.title,
+            preview: entry.entry.substring(0, 100),
+            date: entry.date,
+            projectName: project.name,
+            projectId: project._id.toString()
+          });
+        }
+      });
+
+      // Search docs
+      (project.docs || []).forEach((doc: any) => {
+        if (doc.title.toLowerCase().includes(queryLower) ||
+            doc.content.toLowerCase().includes(queryLower)) {
+          results.push({
+            type: 'doc',
+            id: doc.id,
+            docType: doc.type,
+            title: doc.title,
+            preview: doc.content.substring(0, 100),
+            projectName: project.name,
+            projectId: project._id.toString()
+          });
+        }
+      });
+    }
+
+    // Limit total results
+    const limitedResults = results.slice(0, 50);
+
+    if (limitedResults.length === 0) {
+      return {
+        type: ResponseType.INFO,
+        message: `🔍 No results found for "${query}" across all projects`,
+        suggestions: [`Try a different search term`, `/help search`]
+      };
+    }
+
+    return {
+      type: ResponseType.DATA,
+      message: `🔍 Found ${limitedResults.length} results for "${query}"${results.length > 50 ? ' (showing top 50)' : ''}`,
+      data: { results: limitedResults, query },
+      metadata: {
+        action: 'search',
+        timestamp: new Date()
+      }
+    };
+  }
+
+  /**
+   * Handle /complete command - Mark todo as completed
+   */
+  async handleCompleteTodo(parsed: ParsedCommand, currentProjectId?: string): Promise<CommandResponse> {
+    const { project, error } = await this.resolveProjectWithEditCheck(parsed.projectMention, currentProjectId);
+    if (error) return error;
+
+    const todoIdentifier = parsed.args.join(' ').trim();
+    const todo = this.findTodo(project.todos, todoIdentifier);
+
+    if (!todo) {
+      return {
+        type: ResponseType.ERROR,
+        message: `Todo not found: "${todoIdentifier}"`,
+        suggestions: ['/view todos', '/help complete']
+      };
+    }
+
+    todo.completed = true;
+    todo.status = 'completed';
+    await project.save();
+
+    return this.buildSuccessResponse(
+      `✅ Marked todo as completed: "${todo.text}"`,
+      project,
+      'complete_todo'
+    );
+  }
+
+  /**
+   * Handle /assign command - Assign todo to user
+   */
+  async handleAssignTodo(parsed: ParsedCommand, currentProjectId?: string): Promise<CommandResponse> {
+    const { project, error } = await this.resolveProjectWithEditCheck(parsed.projectMention, currentProjectId);
+    if (error) return error;
+
+    if (parsed.args.length < 2) {
+      return {
+        type: ResponseType.ERROR,
+        message: 'Usage: /assign [todo] [user email]',
+        suggestions: ['/help assign']
+      };
+    }
+
+    // Last arg is the email, everything before is the todo identifier
+    const userEmail = parsed.args[parsed.args.length - 1];
+    const todoIdentifier = parsed.args.slice(0, -1).join(' ').trim();
+
+    const todo = this.findTodo(project.todos, todoIdentifier);
+
+    if (!todo) {
+      return {
+        type: ResponseType.ERROR,
+        message: `Todo not found: "${todoIdentifier}"`,
+        suggestions: ['/view todos', '/help assign']
+      };
+    }
+
+    // Find user in project members
+    const { User } = await import('../../models/User');
+    const user = await User.findOne({ email: userEmail });
+
+    if (!user) {
+      return {
+        type: ResponseType.ERROR,
+        message: `User not found: ${userEmail}`,
+        suggestions: ['/view team']
+      };
+    }
+
+    // Check if user is a member of the project
+    const isMember = project.members.some((m: any) => m.userId.toString() === user._id.toString());
+    const isOwner = project.owner.toString() === user._id.toString();
+
+    if (!isMember && !isOwner) {
+      return {
+        type: ResponseType.ERROR,
+        message: `${userEmail} is not a member of this project`,
+        suggestions: ['/invite ' + userEmail]
+      };
+    }
+
+    todo.assignedTo = user._id;
+    await project.save();
+
+    return this.buildSuccessResponse(
+      `✅ Assigned todo "${todo.text}" to ${user.firstName} ${user.lastName}`,
+      project,
+      'assign_todo'
+    );
+  }
+
+  /**
+   * Handle /priority command - Set todo priority
+   */
+  async handleSetPriority(parsed: ParsedCommand, currentProjectId?: string): Promise<CommandResponse> {
+    const { project, error } = await this.resolveProjectWithEditCheck(parsed.projectMention, currentProjectId);
+    if (error) return error;
+
+    if (parsed.args.length < 2) {
+      return {
+        type: ResponseType.ERROR,
+        message: 'Usage: /priority [todo] [low/medium/high]',
+        suggestions: ['/help priority']
+      };
+    }
+
+    // Last arg is the priority, everything before is the todo identifier
+    const priorityStr = parsed.args[parsed.args.length - 1].toLowerCase();
+    const todoIdentifier = parsed.args.slice(0, -1).join(' ').trim();
+
+    if (!['low', 'medium', 'high'].includes(priorityStr)) {
+      return {
+        type: ResponseType.ERROR,
+        message: 'Priority must be: low, medium, or high',
+        suggestions: ['/help priority']
+      };
+    }
+
+    const todo = this.findTodo(project.todos, todoIdentifier);
+
+    if (!todo) {
+      return {
+        type: ResponseType.ERROR,
+        message: `Todo not found: "${todoIdentifier}"`,
+        suggestions: ['/view todos', '/help priority']
+      };
+    }
+
+    todo.priority = priorityStr as 'low' | 'medium' | 'high';
+    await project.save();
+
+    return this.buildSuccessResponse(
+      `✅ Set priority to ${priorityStr} for todo: "${todo.text}"`,
+      project,
+      'set_priority'
+    );
+  }
+
+  /**
+   * Handle /due command - Set todo due date
+   */
+  async handleSetDueDate(parsed: ParsedCommand, currentProjectId?: string): Promise<CommandResponse> {
+    const { project, error } = await this.resolveProjectWithEditCheck(parsed.projectMention, currentProjectId);
+    if (error) return error;
+
+    if (parsed.args.length < 2) {
+      return {
+        type: ResponseType.ERROR,
+        message: 'Usage: /due [todo] [date]',
+        suggestions: ['/help due']
+      };
+    }
+
+    // Last arg is the date, everything before is the todo identifier
+    const dateStr = parsed.args[parsed.args.length - 1];
+    const todoIdentifier = parsed.args.slice(0, -1).join(' ').trim();
+
+    const todo = this.findTodo(project.todos, todoIdentifier);
+
+    if (!todo) {
+      return {
+        type: ResponseType.ERROR,
+        message: `Todo not found: "${todoIdentifier}"`,
+        suggestions: ['/view todos', '/help due']
+      };
+    }
+
+    // Parse date - support YYYY-MM-DD, relative dates like "tomorrow", etc.
+    let dueDate: Date;
+
+    if (dateStr.toLowerCase() === 'today') {
+      dueDate = new Date();
+      dueDate.setHours(23, 59, 59, 999);
+    } else if (dateStr.toLowerCase() === 'tomorrow') {
+      dueDate = new Date();
+      dueDate.setDate(dueDate.getDate() + 1);
+      dueDate.setHours(23, 59, 59, 999);
+    } else {
+      dueDate = new Date(dateStr);
+      if (isNaN(dueDate.getTime())) {
+        return {
+          type: ResponseType.ERROR,
+          message: `Invalid date format: ${dateStr}. Use YYYY-MM-DD, "today", or "tomorrow"`,
+          suggestions: ['/help due']
+        };
+      }
+    }
+
+    todo.dueDate = dueDate;
+    await project.save();
+
+    return this.buildSuccessResponse(
+      `✅ Set due date to ${dueDate.toLocaleDateString()} for todo: "${todo.text}"`,
+      project,
+      'set_due_date'
+    );
+  }
+
+  /**
+   * Find a todo by text or index
+   */
+  private findTodo(todos: any[], identifier: string): any | null {
+    // Try to find by index (1-based)
+    const index = parseInt(identifier);
+    if (!isNaN(index) && index > 0 && index <= todos.length) {
+      return todos[index - 1];
+    }
+
+    // Try to find by partial text match (case insensitive)
+    const identifierLower = identifier.toLowerCase();
+    return todos.find((todo: any) =>
+      todo.text.toLowerCase().includes(identifierLower)
+    ) || null;
+  }
 }

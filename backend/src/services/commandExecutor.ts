@@ -100,6 +100,18 @@ export class CommandExecutor {
           return await this.crudHandlers.handleViewDevLog(parsed, currentProjectId);
         case CommandType.VIEW_DOCS:
           return await this.crudHandlers.handleViewDocs(parsed, currentProjectId);
+        case CommandType.SEARCH:
+          return await this.crudHandlers.handleSearch(parsed, currentProjectId);
+
+        // Task management
+        case CommandType.COMPLETE_TODO:
+          return await this.crudHandlers.handleCompleteTodo(parsed, currentProjectId);
+        case CommandType.ASSIGN_TODO:
+          return await this.crudHandlers.handleAssignTodo(parsed, currentProjectId);
+        case CommandType.SET_PRIORITY:
+          return await this.crudHandlers.handleSetPriority(parsed, currentProjectId);
+        case CommandType.SET_DUE_DATE:
+          return await this.crudHandlers.handleSetDueDate(parsed, currentProjectId);
 
         // Stack operations
         case CommandType.ADD_TECH:
@@ -148,6 +160,8 @@ export class CommandExecutor {
           return await this.utilityHandlers.handleSwapProject(parsed);
         case CommandType.EXPORT:
           return await this.utilityHandlers.handleExport(parsed, currentProjectId);
+        case CommandType.SUMMARY:
+          return await this.utilityHandlers.handleSummary(parsed, currentProjectId);
         case CommandType.VIEW_NEWS:
           return await this.utilityHandlers.handleViewNews();
         case CommandType.SET_THEME:

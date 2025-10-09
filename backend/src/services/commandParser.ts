@@ -32,11 +32,17 @@ export enum CommandType {
   VIEW_NEWS = 'view_news',
   SET_THEME = 'set_theme',
   VIEW_THEMES = 'view_themes',
+  SEARCH = 'search',
+  COMPLETE_TODO = 'complete_todo',
+  ASSIGN_TODO = 'assign_todo',
+  SET_PRIORITY = 'set_priority',
+  SET_DUE_DATE = 'set_due_date',
   SWAP_PROJECT = 'swap_project',
   WIZARD_NEW = 'wizard_new',
   WIZARD_SETUP = 'wizard_setup',
   WIZARD_DEPLOY = 'wizard_deploy',
   EXPORT = 'export',
+  SUMMARY = 'summary',
   HELP = 'help',
   UNKNOWN = 'unknown'
 }
@@ -97,6 +103,11 @@ const COMMAND_ALIASES: Record<string, CommandType> = {
   'switch': CommandType.SWAP_PROJECT,
   'switch-project': CommandType.SWAP_PROJECT,
   'project': CommandType.SWAP_PROJECT,
+
+  'summary': CommandType.SUMMARY,
+  'summarize': CommandType.SUMMARY,
+  'readme': CommandType.SUMMARY,
+  'prompt': CommandType.SUMMARY,
 
   // Wizard commands
   'wizard new': CommandType.WIZARD_NEW,
@@ -190,6 +201,22 @@ const COMMAND_ALIASES: Record<string, CommandType> = {
   'view themes': CommandType.VIEW_THEMES,
   'view-themes': CommandType.VIEW_THEMES,
   'themes': CommandType.VIEW_THEMES,
+
+  // Search
+  'search': CommandType.SEARCH,
+  'find': CommandType.SEARCH,
+
+  // Task management
+  'complete': CommandType.COMPLETE_TODO,
+  'complete todo': CommandType.COMPLETE_TODO,
+  'done': CommandType.COMPLETE_TODO,
+  'assign': CommandType.ASSIGN_TODO,
+  'assign todo': CommandType.ASSIGN_TODO,
+  'priority': CommandType.SET_PRIORITY,
+  'set priority': CommandType.SET_PRIORITY,
+  'due': CommandType.SET_DUE_DATE,
+  'set due': CommandType.SET_DUE_DATE,
+  'due date': CommandType.SET_DUE_DATE,
 
   // Help
   'help': CommandType.HELP,
@@ -362,6 +389,20 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
       '/export @myproject',
       '/export',
       '/download @frontend'
+    ],
+    requiresProject: true,
+    requiresArgs: false
+  },
+  [CommandType.SUMMARY]: {
+    type: CommandType.SUMMARY,
+    syntax: '/summary [markdown|json|prompt|text] [@project]',
+    description: 'Generate downloadable project summary in various formats',
+    examples: [
+      '/summary markdown - README-style documentation',
+      '/summary json - Structured data export',
+      '/summary prompt - AI assistant template',
+      '/summary text - Plain text overview',
+      '/readme @myproject - Alias for markdown format'
     ],
     requiresProject: true,
     requiresArgs: false
@@ -599,6 +640,65 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
     ],
     requiresProject: false,
     requiresArgs: false
+  },
+  [CommandType.SEARCH]: {
+    type: CommandType.SEARCH,
+    syntax: '/search [query] [@project]',
+    description: 'Search across all project content (todos, notes, devlog, docs)',
+    examples: [
+      '/search authentication bug @myproject',
+      '/find database schema',
+      '/search api design'
+    ],
+    requiresProject: false,
+    requiresArgs: true
+  },
+  [CommandType.COMPLETE_TODO]: {
+    type: CommandType.COMPLETE_TODO,
+    syntax: '/complete [todo text/id] [@project]',
+    description: 'Mark a todo as completed',
+    examples: [
+      '/complete fix authentication bug @myproject',
+      '/done implement user dashboard',
+      '/complete 1'
+    ],
+    requiresProject: true,
+    requiresArgs: true
+  },
+  [CommandType.ASSIGN_TODO]: {
+    type: CommandType.ASSIGN_TODO,
+    syntax: '/assign [todo text/id] [user email] [@project]',
+    description: 'Assign a todo to a team member',
+    examples: [
+      '/assign fix bug user@example.com @myproject',
+      '/assign 1 john@example.com'
+    ],
+    requiresProject: true,
+    requiresArgs: true
+  },
+  [CommandType.SET_PRIORITY]: {
+    type: CommandType.SET_PRIORITY,
+    syntax: '/priority [todo text/id] [low/medium/high] [@project]',
+    description: 'Set the priority of a todo',
+    examples: [
+      '/priority fix bug high @myproject',
+      '/set priority 1 low',
+      '/priority implement feature medium'
+    ],
+    requiresProject: true,
+    requiresArgs: true
+  },
+  [CommandType.SET_DUE_DATE]: {
+    type: CommandType.SET_DUE_DATE,
+    syntax: '/due [todo text/id] [date] [@project]',
+    description: 'Set the due date of a todo',
+    examples: [
+      '/due fix bug 2025-12-31 @myproject',
+      '/set due 1 2025-10-15',
+      '/due date implement feature tomorrow'
+    ],
+    requiresProject: true,
+    requiresArgs: true
   },
   [CommandType.HELP]: {
     type: CommandType.HELP,

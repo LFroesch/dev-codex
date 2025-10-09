@@ -3,6 +3,7 @@ import { Project } from '../../models/Project';
 import TeamMember from '../../models/TeamMember';
 import { logError } from '../../config/logger';
 import { ResponseType, CommandResponse } from '../commandExecutor';
+import { projectCache } from '../ProjectCache';
 
 /**
  * Project resolution result
@@ -26,15 +27,27 @@ export class BaseCommandHandler {
   }
 
   /**
-   * Get all projects accessible by user
+   * Get all projects accessible by user (with caching)
    */
-  protected async getUserProjects(): Promise<any[]> {
+  protected async getUserProjects(bypassCache: boolean = false): Promise<any[]> {
+    // Check cache first
+    if (!bypassCache) {
+      const cached = projectCache.get(this.userId);
+      if (cached) {
+        // Return full project objects from cache
+        const projectIds = cached.map(c => new mongoose.Types.ObjectId(c._id));
+        return await Project.find({ _id: { $in: projectIds } }).lean();
+      }
+    }
+
+    // Cache miss - fetch from database
     const ownedProjects = await Project.find({
       $or: [
         { userId: this.userId },
         { ownerId: this.userId }
       ]
-    });
+    }).select('_id name ownerId userId isArchived updatedAt')
+      .lean();
 
     const teamProjectIds = await TeamMember.find({ userId: this.userId })
       .select('projectId')
@@ -48,14 +61,32 @@ export class BaseCommandHandler {
             { userId: this.userId },
             { ownerId: this.userId }
           ]
-        })
+        }).select('_id name ownerId userId isArchived updatedAt')
+        .lean()
       : [];
 
-    return [...ownedProjects, ...teamProjects];
+    const allProjectsSummary = [...ownedProjects, ...teamProjects];
+
+    // Cache the project summaries
+    projectCache.set(
+      this.userId,
+      allProjectsSummary.map(p => ({
+        _id: p._id.toString(),
+        name: p.name,
+        ownerId: p.ownerId?.toString() || p.userId.toString(),
+        userId: p.userId.toString(),
+        isArchived: p.isArchived || false,
+        updatedAt: p.updatedAt
+      }))
+    );
+
+    // Return full project objects for immediate use
+    const projectIds = allProjectsSummary.map(p => p._id);
+    return await Project.find({ _id: { $in: projectIds } }).lean();
   }
 
   /**
-   * Resolve project from mention or current context
+   * Resolve project from mention or current context (optimized)
    */
   protected async resolveProject(
     projectMention?: string,
@@ -64,29 +95,39 @@ export class BaseCommandHandler {
     try {
       // Priority 1: Use @mentioned project
       if (projectMention) {
-        const project = await Project.findOne({
-          $or: [
-            { userId: this.userId },
-            { ownerId: this.userId }
-          ],
-          name: new RegExp(`^${projectMention}$`, 'i')
-        });
+        // Use cache to find project by name (faster than DB query)
+        const cached = projectCache.get(this.userId);
+        let project: any = null;
+
+        if (cached) {
+          const match = cached.find(p => p.name.toLowerCase() === projectMention.toLowerCase());
+          if (match) {
+            project = await Project.findById(match._id).lean();
+          }
+        }
+
+        // Fallback to database if not in cache
+        if (!project) {
+          project = await Project.findOne({
+            $or: [
+              { userId: this.userId },
+              { ownerId: this.userId }
+            ],
+            name: new RegExp(`^${projectMention}$`, 'i')
+          }).lean();
+        }
 
         // Check team projects if not found in owned
         if (!project) {
-          const teamMembership = await TeamMember.findOne({
-            userId: this.userId
-          });
+          const teamProjectIds = await TeamMember.find({ userId: this.userId })
+            .select('projectId')
+            .lean();
 
-          if (teamMembership) {
-            const teamProject = await Project.findOne({
-              _id: teamMembership.projectId,
+          if (teamProjectIds.length > 0) {
+            project = await Project.findOne({
+              _id: { $in: teamProjectIds.map(tm => tm.projectId) },
               name: new RegExp(`^${projectMention}$`, 'i')
-            });
-
-            if (teamProject) {
-              return { project: teamProject };
-            }
+            }).lean();
           }
         }
 
@@ -111,7 +152,7 @@ export class BaseCommandHandler {
 
       // Priority 2: Use current project context
       if (currentProjectId) {
-        const project = await Project.findById(currentProjectId);
+        const project = await Project.findById(currentProjectId).lean();
         if (project) {
           const hasAccess = await this.verifyProjectAccess(currentProjectId);
           if (hasAccess) {

@@ -1,158 +1,83 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import { authAPI, projectAPI, analyticsAPI, ideasAPI } from '../api';
+import { authAPI, projectAPI } from '../api';
 import type { Project } from '../api/types';
 import SessionTracker from './SessionTracker';
 import NotificationBell from './NotificationBell';
 import UserMenu from './UserMenu';
 import ConfirmationModal from './ConfirmationModal';
 import { useAnalytics } from '../hooks/useAnalytics';
+import { useThemeManager } from '../hooks/useThemeManager';
+import { useProjectManagement } from '../hooks/useProjectManagement';
+import { useProjectSelection } from '../hooks/useProjectSelection';
+import { useLayoutEvents } from '../hooks/useLayoutEvents';
 import { unsavedChangesManager } from '../utils/unsavedChanges';
-import { hexToOklch, oklchToCssValue, generateFocusVariant, generateContrastingTextColor } from '../utils/colorUtils';
 import { getContrastTextColor } from '../utils/contrastTextColor';
 import ToastContainer from './Toast';
 import IdeasPage from '../pages/IdeasPage';
 import { toast } from '../services/toast';
-import { handleAPIError } from '../services/errorService';
 
 const Layout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const [user, setUser] = useState<any>(null);
-  const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeProjectTab, setActiveProjectTab] = useState('active');
   const [activeAdminTab, setActiveAdminTab] = useState<'users' | 'tickets' | 'analytics' | 'news'>('users');
-  const [projectTimeData, setProjectTimeData] = useState<{ [projectId: string]: number }>({});
-  const [, setIdeasCount] = useState(0);
   const [isHandlingTimeout, setIsHandlingTimeout] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [selectedArchivedCategory, setSelectedArchivedCategory] = useState<string | null>(null);
-  const [selectedSharedCategory, setSelectedSharedCategory] = useState<string | null>(null);
   const [analyticsReady, setAnalyticsReady] = useState(false);
-  
+
   // when setActiveProjectTab, clear category selections
   useEffect(() => {
     setSelectedCategory(null);
-    setSelectedArchivedCategory(null);
-    setSelectedSharedCategory(null);
   }, [activeProjectTab]);
 
   // Unsaved changes modal state
   const [showUnsavedChangesModal, setShowUnsavedChangesModal] = useState(false);
   const [unsavedChangesResolve, setUnsavedChangesResolve] = useState<((value: boolean) => void) | null>(null);
 
-  // Helper function to apply custom theme
-  const applyUserCustomTheme = async (themeName: string) => {
-    try {
-      // Load custom themes from database or localStorage
-      let customThemes: any[] = [];
-      try {
-        const response = await authAPI.getCustomThemes();
-        customThemes = response.customThemes || [];
-      } catch (error) {
-        // Fallback to localStorage
-        const saved = localStorage.getItem('customThemes');
-        if (saved) {
-          customThemes = JSON.parse(saved);
-        }
-      }
+  // Theme management
+  const { setCurrentTheme, applyUserCustomTheme } = useThemeManager();
 
-      const themeId = themeName.replace('custom-', '');
-      const customTheme = customThemes.find((t: any) => t.id === themeId);
+  // Project management
+  const {
+    projects,
+    setProjects,
+    setIdeasCount,
+    groupProjectsByCategory,
+    loadProjectTimeData,
+    loadIdeasCount,
+    formatProjectTime,
+    loadProjects,
+    handleProjectUpdate: projectUpdate,
+    handleProjectArchive: projectArchive,
+    handleProjectDelete: projectDelete
+  } = useProjectManagement();
 
-      if (customTheme) {
-        // Remove existing custom theme styles
-        const existingStyle = document.getElementById('custom-theme-style');
-        if (existingStyle) {
-          existingStyle.remove();
-        }
-
-        // Convert colors to OKLCH and create CSS
-        const style = document.createElement('style');
-        style.id = 'custom-theme-style';
-
-        const primaryOklch = hexToOklch(customTheme.colors.primary);
-        const secondaryOklch = hexToOklch(customTheme.colors.secondary);
-        const accentOklch = hexToOklch(customTheme.colors.accent);
-        const neutralOklch = hexToOklch(customTheme.colors.neutral);
-        const base100Oklch = hexToOklch(customTheme.colors['base-100']);
-        const base200Oklch = hexToOklch(customTheme.colors['base-200']);
-        const base300Oklch = hexToOklch(customTheme.colors['base-300']);
-        const infoOklch = hexToOklch(customTheme.colors.info);
-        const successOklch = hexToOklch(customTheme.colors.success);
-        const warningOklch = hexToOklch(customTheme.colors.warning);
-        const errorOklch = hexToOklch(customTheme.colors.error);
-
-        const css = `
-          [data-theme="${themeName}"] {
-            color-scheme: light;
-            --p: ${oklchToCssValue(primaryOklch)};
-            --pf: ${oklchToCssValue(generateFocusVariant(primaryOklch))};
-            --pc: ${generateContrastingTextColor(primaryOklch)};
-            --s: ${oklchToCssValue(secondaryOklch)};
-            --sf: ${oklchToCssValue(generateFocusVariant(secondaryOklch))};
-            --sc: ${generateContrastingTextColor(secondaryOklch)};
-            --a: ${oklchToCssValue(accentOklch)};
-            --af: ${oklchToCssValue(generateFocusVariant(accentOklch))};
-            --ac: ${generateContrastingTextColor(accentOklch)};
-            --n: ${oklchToCssValue(neutralOklch)};
-            --nf: ${oklchToCssValue(generateFocusVariant(neutralOklch))};
-            --nc: ${generateContrastingTextColor(neutralOklch)};
-            --b1: ${oklchToCssValue(base100Oklch)};
-            --b2: ${oklchToCssValue(base200Oklch)};
-            --b3: ${oklchToCssValue(base300Oklch)};
-            --bc: ${generateContrastingTextColor(base100Oklch)};
-            --in: ${oklchToCssValue(infoOklch)};
-            --inc: ${generateContrastingTextColor(infoOklch)};
-            --su: ${oklchToCssValue(successOklch)};
-            --suc: ${generateContrastingTextColor(successOklch)};
-            --wa: ${oklchToCssValue(warningOklch)};
-            --wac: ${generateContrastingTextColor(warningOklch)};
-            --er: ${oklchToCssValue(errorOklch)};
-            --erc: ${generateContrastingTextColor(errorOklch)};
-          }
-        `;
-
-        style.textContent = css;
-        document.head.appendChild(style);
-        document.documentElement.setAttribute('data-theme', themeName);
-      } else {
-        // Custom theme not found, fall back to retro
-        document.documentElement.setAttribute('data-theme', 'retro');
-        setCurrentTheme('retro');
-      }
-    } catch (error) {
-      console.error('Error applying custom theme:', error);
-      // Fall back to retro theme on error
-      document.documentElement.setAttribute('data-theme', 'retro');
-      setCurrentTheme('retro');
-    }
-  };
-  
   // Initialize analytics
   const analytics = useAnalytics({
     projectId: selectedProject?.id,
     projectName: selectedProject?.name
   });
-  
-  const [currentTheme, setCurrentTheme] = useState(() => {
-    return localStorage.getItem('theme') || 'retro';
+
+  // Project selection
+  const { handleProjectSelect: projectSelect } = useProjectSelection({
+    analyticsReady,
+    analytics,
+    setSearchTerm,
+    loadProjectTimeData
   });
+
   const [collapsedSections] = useState<{
     [key: string]: boolean;
   }>(() => {
     const saved = localStorage.getItem('collapsedSections');
     return saved ? JSON.parse(saved) : {};
   });
-
-  // Apply theme on mount
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', currentTheme);
-  }, [currentTheme]);
 
   // Save collapsed sections to localStorage whenever they change
   useEffect(() => {
@@ -199,40 +124,9 @@ const Layout: React.FC = () => {
     }
   };
 
-  // Helper function to select project
-  const handleProjectSelect = async (project: Project) => {
-    // Prevent project selection until analytics session is ready
-    if (!analyticsReady) {
-      toast.warning('Please wait for session to initialize before selecting a project...');
-      return;
-    }
-    
-    setSelectedProject(project);
-    setSearchTerm(''); // Clear search when selecting a project
-    
-    // Save selected project to localStorage for refresh persistence
-    localStorage.setItem('selectedProjectId', project.id);
-
-    // Update analytics service current project (this handles backend time recording)
-    try {
-      await analytics.setCurrentProject(project.id);
-    } catch (error) {
-      
-      // Fallback to direct API call if analytics service fails
-      const sessionInfo = analytics.getSessionInfo();
-      if (sessionInfo?.sessionId) {
-        analyticsAPI.switchProject(sessionInfo.sessionId, project.id).catch(() => {
-        });
-      }
-    }
-    
-    // Update project time data immediately after switching
-    setTimeout(() => {
-      loadProjectTimeData();
-    }, 1000); // Small delay to allow backend time tracking to update
-    
-    // Scroll to top when selecting a project
-    window.scrollTo(0, 0);
+  // Wrapper for project selection that passes setSelectedProject
+  const handleProjectSelect = (project: Project) => {
+    return projectSelect(project, setSelectedProject);
   };
 
   // Toggle section collapse
@@ -243,100 +137,21 @@ const Layout: React.FC = () => {
   //   }));
   // };
 
-  // Group projects by category
-  const groupProjectsByCategory = (projects: Project[]) => {
-    const grouped: { [category: string]: Project[] } = {};
-    
-    projects.forEach(project => {
-      const category = project.category || 'General';
-      // Capitalize first letter of each word
-      const normalizedCategory = category.split(' ').map((word: string) => 
-        word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-      ).join(' ');
-      
-      if (!grouped[normalizedCategory]) {
-        grouped[normalizedCategory] = [];
-      }
-      grouped[normalizedCategory].push(project);
-    });
-    
-    // Sort projects within each category alphabetically
-    Object.keys(grouped).forEach(category => {
-      grouped[category].sort((a, b) => a.name.localeCompare(b.name));
-    });
-    
-    return grouped;
+  // Wrapper functions that pass selectedProject state to hook functions
+  const handleProjectUpdate = (projectId: string, updatedData: any) => {
+    return projectUpdate(projectId, updatedData, selectedProject, setSelectedProject);
   };
 
-  // Loads project time data - called on heartbeat for real-time updates
-  const loadProjectTimeData = async () => {
-    try {
-      const response = await analyticsAPI.getProjectsTime(30) as any;
-      if (response && response.projects && Array.isArray(response.projects)) {
-        const timeMap: { [projectId: string]: number } = {};
-        response.projects.forEach((project: any) => {
-          timeMap[project._id] = project.totalTime || 0;
-        });
-        setProjectTimeData(timeMap);
-      } else if (response && Array.isArray(response)) {
-        // Handle case where response is directly an array
-        const timeMap: { [projectId: string]: number } = {};
-        response.forEach((project: any) => {
-          timeMap[project._id] = project.totalTime || 0;
-        });
-        setProjectTimeData(timeMap);
-      }
-    } catch (err) {
-      console.error('Failed to load project time data:', err);
-    }
+  const handleProjectArchive = (projectId: string, isArchived: boolean) => {
+    return projectArchive(projectId, isArchived, selectedProject, setSelectedProject);
   };
 
-  const loadIdeasCount = async () => {
-    try {
-      const response = await ideasAPI.getAll();
-      setIdeasCount(response.ideas.length);
-    } catch (err) {
-      console.error('Failed to load ideas count:', err);
-    }
+  const handleProjectDelete = (projectId: string) => {
+    return projectDelete(projectId, selectedProject, setSelectedProject);
   };
 
-  const formatProjectTime = (projectId: string): string => {
-    const timeMs = projectTimeData[projectId] || 0;
-    const totalMinutes = Math.floor(timeMs / (1000 * 60));
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-
-    if (hours > 0) {
-      return `${hours}h${minutes}m`;
-    } else if (minutes > 0) {
-      return `${minutes}m`;
-    } else {
-      return '0m';
-    }
-  };
-
-  const loadProjects = async () => {
-    try {
-      const projectsResponse = await projectAPI.getAll();
-      setProjects(projectsResponse.projects);
-      
-      // If there's a currently selected project, update it with fresh data
-      if (selectedProject) {
-        const updatedSelectedProject = projectsResponse.projects.find(p => p.id === selectedProject.id);
-        if (updatedSelectedProject) {
-          setSelectedProject(updatedSelectedProject);
-        }
-      }
-      
-      // Load project time data
-      await loadProjectTimeData();
-      
-      // Load ideas count
-      await loadIdeasCount();
-      
-    } catch (err) {
-      console.error('Failed to load projects:', err);
-    }
+  const loadProjectsWrapper = () => {
+    return loadProjects(selectedProject, setSelectedProject);
   };
 
   useEffect(() => {
@@ -414,131 +229,18 @@ const Layout: React.FC = () => {
     loadData();
   }, [navigate, location.pathname]);
 
-  // Listen for custom project selection events from notifications
-  useEffect(() => {
-    const handleSelectProject = (event: CustomEvent) => {
-      const { projectId } = event.detail;
-      if (projects.length > 0) {
-        const project = projects.find(p => p.id === projectId);
-        if (project) {
-          setSelectedProject(project);
-        }
-      }
-    };
-
-    const handleRefreshProject = () => {
-      if (user) {
-        loadProjects();
-      }
-    };
-
-    const handleProjectSync = (event: CustomEvent) => {
-      const { newProjectId } = event.detail;
-      console.log('[Layout] Cross-tab project sync received:', newProjectId);
-      
-      if (projects.length > 0 && newProjectId) {
-        const project = projects.find(p => p.id === newProjectId);
-        if (project) {
-          console.log('[Layout] Updating UI to synced project:', project.name);
-          setSelectedProject(project);
-          
-          // Show subtle feedback
-          toast.success(`Switched to ${project.name}`);
-          
-          // Update project time data
-          setTimeout(() => {
-            loadProjectTimeData();
-          }, 500);
-        }
-      }
-    };
-
-    const handleSessionTimeout = async (event?: Event) => {
-      // Check if analytics service already handled this timeout
-      const handledByAnalytics = (event as CustomEvent)?.detail?.handledByAnalytics;
-      
-      // Prevent multiple timeout handlers from running
-      if (isHandlingTimeout) {
-        return;
-      }
-      setIsHandlingTimeout(true);
-      
-      try {
-        // ALWAYS clear the selected project UI state and localStorage
-        setSelectedProject(null);
-        localStorage.removeItem('selectedProjectId');
-        
-        // If analytics didn't handle it, we need to end the session ourselves
-        if (!handledByAnalytics && analytics.hasActiveSession()) {
-          await analytics.endSession();
-        }
-        
-        // Don't reload projects here - we're navigating away and it might restore the selected project
-        // Force refresh of time data only
-        await loadProjectTimeData();
-        
-        // Navigate to projects view
-        navigate('/notes?view=projects');
-        
-        // Show unique feedback to user
-        toast.info('Session timed out due to inactivity. Time has been saved. Please select a project to continue.', 5000, true);
-      } finally {
-        setIsHandlingTimeout(false);
-      }
-    };
-
-    const handleForceProjectClear = () => {
-      setSelectedProject(null);
-      localStorage.removeItem('selectedProjectId');
-    };
-
-    window.addEventListener('selectProject', handleSelectProject as EventListener);
-    window.addEventListener('refreshProject', handleRefreshProject as EventListener);
-    window.addEventListener('projectSync', handleProjectSync as EventListener);
-    window.addEventListener('sessionTimeout', handleSessionTimeout as EventListener);
-    window.addEventListener('forceProjectClear', handleForceProjectClear as EventListener);
-    
-    return () => {
-      window.removeEventListener('selectProject', handleSelectProject as EventListener);
-      window.removeEventListener('refreshProject', handleRefreshProject as EventListener);
-      window.removeEventListener('projectSync', handleProjectSync as EventListener);
-      window.removeEventListener('sessionTimeout', handleSessionTimeout as EventListener);
-      window.removeEventListener('forceProjectClear', handleForceProjectClear as EventListener);
-    };
-  }, [projects, user]);
-
-  // Update project time data on analytics heartbeat for real-time updates
-  useEffect(() => {
-    if (!user) return;
-
-    const handleHeartbeat = () => {
-      loadProjectTimeData();
-    };
-
-    window.addEventListener('analyticsHeartbeat', handleHeartbeat);
-
-    return () => {
-      window.removeEventListener('analyticsHeartbeat', handleHeartbeat);
-    };
-  }, [user]);
-
-  // Update project time data when user becomes active
-  useEffect(() => {
-    if (!user) return;
-
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        // User became active, refresh project time data
-        loadProjectTimeData();
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [user]);
+  // Layout event listeners (project selection, sync, timeouts, etc.)
+  useLayoutEvents({
+    projects,
+    user,
+    setSelectedProject,
+    loadProjectsWrapper,
+    loadProjectTimeData,
+    analytics,
+    isHandlingTimeout,
+    setIsHandlingTimeout,
+    navigate
+  });
 
   const handleLogout = async () => {
     try {
@@ -558,55 +260,6 @@ const Layout: React.FC = () => {
     }
   };
 
-  const handleProjectUpdate = async (projectId: string, updatedData: any) => {
-    try {
-      if (!projectId || projectId === 'undefined') {
-        throw new Error('Invalid project ID');
-      }
-
-      const response = await projectAPI.update(projectId, updatedData);
-      await loadProjects();
-      toast.success('Project updated successfully!');
-      return response;
-    } catch (error: any) {
-      handleAPIError(error, {
-        component: 'Layout',
-        action: 'update_project',
-        projectId
-      });
-      throw error;
-    }
-  };
-
-  const handleProjectArchive = async (projectId: string, isArchived: boolean) => {
-    try {
-      await projectAPI.archive(projectId, isArchived);
-      await loadProjects();
-      toast.success(isArchived ? 'Project archived successfully!' : 'Project restored successfully!');
-    } catch (error: any) {
-      handleAPIError(error, {
-        component: 'Layout',
-        action: isArchived ? 'archive_project' : 'restore_project',
-        projectId
-      });
-      throw error;
-    }
-  };
-
-  const handleProjectDelete = async (projectId: string) => {
-    try {
-      await projectAPI.deleteProject(projectId);
-      await loadProjects();
-      if (selectedProject?.id === projectId) {
-        setSelectedProject(null);
-      }
-      toast.success('Project deleted successfully!');
-    } catch (error) {
-      toast.error('Failed to delete project. Please try again.');
-      console.error('Failed to delete project:', error);
-      throw error;
-    }
-  };
 
   if (loading) {
     return (
@@ -724,8 +377,7 @@ const Layout: React.FC = () => {
                     </svg>
                   </button>
                   <button
-                    className={`tab tab-sm flex-shrink-0 min-h-10 ${(location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && searchParams.get('view') !== 'projects' ? 'tab-active' : ''} gap-1 sm:gap-2 font-bold whitespace-nowrap px-2 sm:px-4`}
-                    style={(location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && searchParams.get('view') !== 'projects' ? {color: getContrastTextColor()} : {}}
+                    className={`tab tab-sm flex-shrink-0 min-h-10 gap-1 sm:gap-2 font-bold whitespace-nowrap px-2 sm:px-4`}
                     onClick={() => handleNavigateWithCheck('/notes')}
                   >
                     <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -733,8 +385,7 @@ const Layout: React.FC = () => {
                     </svg>
                   </button>
                   <button
-                    className={`tab tab-sm flex-shrink-0 min-h-10 ${location.pathname === '/discover' || location.pathname.startsWith('/discover/') ? 'tab-active' : ''} gap-1 sm:gap-2 font-bold whitespace-nowrap px-2 sm:px-4`}
-                    style={location.pathname === '/discover' || location.pathname.startsWith('/discover/') ? {color: getContrastTextColor()} : {}}
+                    className={`tab tab-sm flex-shrink-0 min-h-10 gap-1 sm:gap-2 font-bold whitespace-nowrap px-2 sm:px-4`}
                     onClick={() => {
                       handleNavigateWithCheck('/discover');
                     }}
@@ -978,7 +629,7 @@ const Layout: React.FC = () => {
             )}
 
             {/* Project Details Submenu - Mobile */}
-            {selectedProject && (location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && searchParams.get('view') !== 'projects' && location.pathname !== '/terminal' && (
+            {selectedProject && (location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && searchParams.get('view') !== 'projects' && (
             <div className="flex justify-center px-2 py-1">
               <div className="tabs-container">
                 {tabs.map((tab) => (

@@ -323,6 +323,129 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
       );
     }
 
+    // Render summary
+    if (response.data.summary) {
+      const downloadSummary = () => {
+        const blob = new Blob([response.data.summary], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = response.data.fileName || `${response.data.projectName}-summary.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      };
+
+      return (
+        <div className="mt-3 space-y-2">
+          <div className="p-3 bg-base-200 rounded-lg border-thick max-h-96 overflow-y-auto">
+            <pre className="text-xs text-base-content/80 whitespace-pre-wrap break-words font-mono">
+              {response.data.summary}
+            </pre>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={downloadSummary}
+              className="btn-primary-sm gap-2 border-thick"
+              style={{ color: getContrastTextColor('primary') }}
+            >
+              📥 Download {response.data.format || 'summary'}
+            </button>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(response.data.summary);
+              }}
+              className="btn-primary-sm gap-2 border-thick"
+              style={{ color: getContrastTextColor('primary') }}
+            >
+              📋 Copy to Clipboard
+            </button>
+            {response.metadata?.projectId && (
+              <button
+                onClick={() => handleNavigateToProject('/notes')}
+                className="btn-primary-sm gap-2 border-thick"
+                style={{ color: getContrastTextColor('primary') }}
+              >
+                📁 Open Project
+              </button>
+            )}
+          </div>
+          <div className="text-xs text-base-content/60">
+            💡 Use <code className="bg-base-300 px-1 rounded">/summary [format]</code> to change format (markdown, json, prompt, text)
+          </div>
+        </div>
+      );
+    }
+
+    // Render search results
+    if (response.data.results && Array.isArray(response.data.results)) {
+      const results = response.data.results;
+      const groupedResults = results.reduce((acc: any, result: any) => {
+        const type = result.type;
+        if (!acc[type]) acc[type] = [];
+        acc[type].push(result);
+        return acc;
+      }, {});
+
+      return (
+        <div className="mt-3 space-y-3">
+          {Object.entries(groupedResults).map(([type, items]: [string, any]) => (
+            <div key={type} className="space-y-1">
+              <div className="text-xs font-semibold text-primary capitalize">
+                {type}s ({items.length})
+              </div>
+              <div className="space-y-1">
+                {items.map((item: any, index: number) => (
+                  <div
+                    key={index}
+                    className="p-2 bg-base-200 rounded-lg hover:bg-base-300/50 transition-colors border-thick"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-base-content/80 break-words">
+                          {item.text || item.title}
+                        </div>
+                        {item.preview && (
+                          <div className="text-xs text-base-content/60 mt-1 break-words">
+                            {item.preview}
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-xs text-base-content/60">
+                            📁 {item.projectName}
+                          </span>
+                          {item.priority && (
+                            <span className={`badge badge-xs ${
+                              item.priority === 'high' ? 'badge-error' :
+                              item.priority === 'medium' ? 'badge-warning' :
+                              'badge-info'
+                            }`}>
+                              {item.priority}
+                            </span>
+                          )}
+                          {item.status && (
+                            <span className="badge badge-xs badge-ghost">
+                              {item.status}
+                            </span>
+                          )}
+                          {item.docType && (
+                            <span className="badge badge-xs badge-secondary">
+                              {item.docType}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
     // Render themes
     if (response.data.themes && Array.isArray(response.data.themes)) {
       const customThemes = response.data.customThemes || [];

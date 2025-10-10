@@ -62,7 +62,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   const { bgClass, textClass, btnClass, colorName, icon } = getIconAndColor();
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-200 p-4">
       <div className="bg-base-100 rounded-lg shadow-xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto border-2 border-base-content/20">
         <div className={`flex items-center justify-center w-16 h-16 mx-auto mb-4 ${bgClass} rounded-full border-2 border-base-content/20`}>
           <svg className={`w-8 h-8 ${textClass}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">

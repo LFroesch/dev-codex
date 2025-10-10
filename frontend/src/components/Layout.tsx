@@ -300,27 +300,31 @@ const Layout: React.FC = () => {
     <div className={`bg-base-100 flex flex-col ${location.pathname === '/terminal' ? 'h-screen overflow-hidden' : ''}`}>
       {/* Header */}
       <header className="bg-base-100 border-b-2 border-base-content/20 shadow-sm sticky top-0 z-40 w-full">
+
+
         {/* Mobile and Tablet Layout */}
         <div className="block desktop:hidden px-3 py-4">
           <div className="flex flex-col gap-3">
+
             {/* Top row: Logo + Search (tablet), Project indicator (tablet), Session Tracker, and User Menu */}
             <div className="flex items-center justify-between min-w-0 gap-2">
+
               {/* Dev Codex logo */}
-              <div className={`flex items-center gap-3 bg-base-200 backdrop-blur-none border-2 border-base-content/20 rounded-xl px-2 py-2 ${location.pathname === '/terminal' ? 'min-h-10' : 'min-h-12'} h-auto shadow-sm hover:shadow-md transition-all cursor-pointer min-w-0`} onClick={() => navigate('/notes?view=projects')}>
-                <div className={`tablet:w-8 tablet:h-8 ${location.pathname === '/terminal' ? 'w-6 h-6' : 'w-7 h-7'} bg-primary rounded-lg flex items-center justify-center shadow-sm flex-shrink-0`}>
-                  <svg className={`tablet:w-4 tablet:h-4 ${location.pathname === '/terminal' ? 'w-3 h-3' : 'w-3.5 h-3.5'}`} fill={getContrastTextColor('primary')} viewBox="0 0 20 20">
-                    <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
-                  </svg>
+              <div className="flex items-center gap-3 bg-base-200 backdrop-blur-none border-2 border-base-content/20 rounded-xl px-4 py-2 h-12 shadow-sm hover:shadow-md transition-all cursor-pointer" onClick={() => navigate('/notes?view=projects')}>
+                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-sm">
+                  <svg className="icon-md text-primary-content" fill={getContrastTextColor()} viewBox="0 0 20 20">
+                  <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
+                </svg>
                 </div>
                 {location.pathname !== '/terminal' && (
-                  <h1 className="tablet:text-xl text-base font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text whitespace-nowrap">Dev Codex</h1>
+                  <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text whitespace-nowrap">Dev Codex</h1>
                 )}
 
                 {/* Search bar on tablet - hidden on mobile and terminal */}
                 {user && location.pathname !== '/terminal' && (
                   <div className="hidden tablet:flex relative ml-4 flex-center-gap-2">
                     <div className="relative">
-                      <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-base-content/70 z-50 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="absolute left-2.5 top-1/2 transform -translate-y-1/2 icon-sm text-base-content/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                       </svg>
                       <input
@@ -333,7 +337,7 @@ const Layout: React.FC = () => {
                             navigate('/notes?view=projects');
                           }
                         }}
-                        className="input input-sm pl-10 pr-10 w-48 h-9 bg-base-100/80 backdrop-blur-none shadow-sm border-2 border-base-content/20 rounded-lg focus:border-primary text-base-content/40"
+                        className="input-field input-sm pl-9 pr-8 w-48 h-8 bg-base-100/80 backdrop-blur-none shadow-sm"
                       />
                       {searchTerm && (
                         <button
@@ -347,19 +351,19 @@ const Layout: React.FC = () => {
                       )}
                     </div>
                     <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        navigate('/create-project');
-                      }}
-                      className="btn btn-primary btn-sm btn-circle h-9 w-9 shadow-sm relative z-50"
-                      title="New Project"
-                      style={{ pointerEvents: 'auto', color: getContrastTextColor('primary') }}
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke={getContrastTextColor()} viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                      </svg>
-                    </button>
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      navigate('/create-project');
+                    }}
+                    className="btn btn-primary btn-sm btn-circle shadow-sm relative"
+                    title="New Project"
+                    style={{ pointerEvents: 'auto' }}
+                  >
+                    <svg className="icon-sm" fill="none" stroke={getContrastTextColor()} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                  </button>
                   </div>
                 )}
               </div>
@@ -461,24 +465,26 @@ const Layout: React.FC = () => {
             </div>
 
             {/* Current Project and Search/Create Row - Mobile only */}
-            {user && selectedProject && location.pathname !== '/terminal' && (
-              <div className="flex tablet:hidden items-center gap-3">
-                <div 
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg border-2 border-base-content/20 shadow-sm hover:opacity-90 transition-all duration-200 cursor-pointer min-w-0 flex-shrink-0 h-10"
-                  style={{ 
-                    backgroundColor: selectedProject.color,
-                    color: getContrastTextColor(selectedProject.color)
-                  }}
-                  onClick={() => handleNavigateWithCheck('/notes')}
-                  title={`Current project: ${selectedProject.name}`}
-                >
-                  <span className="text-sm font-medium truncate">{selectedProject.name}</span>
-                </div>
+            {user && location.pathname !== '/terminal' && (
+              <div className="flex justify-center max-w-sm tablet:hidden items-center gap-3 mx-auto">
+                {selectedProject && (
+                  <div 
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg border-2 border-base-content/20 shadow-sm hover:opacity-90 transition-all duration-200 cursor-pointer min-w-0 flex-shrink-0 h-10"
+                    style={{ 
+                      backgroundColor: selectedProject.color,
+                      color: getContrastTextColor(selectedProject.color)
+                    }}
+                    onClick={() => handleNavigateWithCheck('/notes')}
+                    title={`Current project: ${selectedProject.name}`}
+                  >
+                    <span className="text-sm font-medium truncate">{selectedProject.name}</span>
+                  </div>
+                )}
                 
                 {/* Search bar and create button */}
                 <div className="flex items-center gap-2 flex-1">
                   <div className="relative flex-1">
-                    <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-base-content/70 z-50 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-base-content/70 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                     <input
@@ -522,7 +528,7 @@ const Layout: React.FC = () => {
                       e.stopPropagation();
                       navigate('/create-project');
                     }}
-                    className="btn btn-primary btn-sm btn-circle h-10 w-10 shadow-sm relative z-50"
+                    className="btn btn-primary btn-sm btn-circle h-10 w-10 shadow-sm relative"
                     title="New Project"
                     style={{ pointerEvents: 'auto', color: getContrastTextColor('primary') }}
                   >
@@ -716,8 +722,10 @@ const Layout: React.FC = () => {
         </div>
 
         {/* Desktop Layout */}
-        <div className="hidden desktop:block px-6 py-2">
+        <div className="hidden desktop:block px-3 py-4">
           <div className="relative flex-between-center">
+
+            { /* Logo and Search/Create Row */}
             <div className="flex items-center gap-3 bg-base-200 backdrop-blur-none border-2 border-base-content/20 rounded-xl px-4 py-2 h-12 shadow-sm hover:shadow-md transition-all cursor-pointer" onClick={() => navigate('/notes?view=projects')}>
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-sm">
                 <svg className="icon-md text-primary-content" fill={getContrastTextColor()} viewBox="0 0 20 20">
@@ -748,7 +756,7 @@ const Layout: React.FC = () => {
                   {searchTerm && (
                     <button
                       onClick={() => setSearchTerm('')}
-                      className="absolute right-2 top-3 icon-sm text-base-content/70 hover:text-base-content/80 transition-colors"
+                      className="absolute right-3 top-2.5 w-4 h-4 text-base-content/70 hover:text-base-content/80 transition-colors"
                     >
                       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -762,7 +770,7 @@ const Layout: React.FC = () => {
                     e.stopPropagation();
                     navigate('/create-project');
                   }}
-                  className="btn btn-primary btn-sm btn-circle shadow-sm relative z-50"
+                  className="btn btn-primary btn-sm btn-circle shadow-sm relative"
                   title="New Project"
                   style={{ pointerEvents: 'auto' }}
                 >
@@ -1047,7 +1055,7 @@ const Layout: React.FC = () => {
                               e.stopPropagation();
                               navigate('/create-project');
                             }} 
-                            className="btn btn-primary btn-lg gap-2 relative z-50"
+                            className="btn btn-primary btn-lg gap-2 relative"
                             style={{ pointerEvents: 'auto' }}
                           >
                             <svg className="icon-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1113,18 +1121,18 @@ const Layout: React.FC = () => {
                                 navigate('/notes');
                               }}
                               disabled={!analyticsReady}
-                              className={`shadow-md p-4 rounded-lg border-2 transition-all duration-200 text-left group hover:shadow-lg h-[225px] flex flex-col ${
+                              className={`shadow-lg hover:shadow-xl p-4 rounded-lg border-2 transition-all duration-200 text-left group h-[225px] flex flex-col ${
                                 !analyticsReady 
                                   ? 'border-base-300/30 bg-base-100/50 opacity-60 cursor-not-allowed' 
                                   : selectedProject?.id === project.id 
-                                    ? 'border-base-300 bg-base-200/50 hover:border-base-300/50' 
-                                    : 'border-base-content/20 hover:border-base-300/50'
+                                    ? 'border-base-300 bg-base-200/50 hover:border-secondary/50' 
+                                    : 'border-base-content/20 hover:border-secondary/50'
                               }`}
                             >
                               {/* Header with project name */}
                               <div className="flex items-center gap-3 mb-3">
                                 <h3 
-                                  className="border-2 border-base-content/20 font-semibold truncate px-2 py-1 rounded-md group-hover:opacity-90 transition-opacity bg-primary"
+                                  className="border-2 border-base-content/20 font-bold truncate px-2 py-1 rounded-md group-hover:opacity-90 transition-opacity bg-primary text-md"
                                   style={{ 
                                     color: getContrastTextColor()
                                   }}
@@ -1166,14 +1174,14 @@ const Layout: React.FC = () => {
                                     {project.tags.slice(0, 3).map((tag, tagIndex) => (
                                       <span
                                         key={tagIndex}
-                                        className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-primary/70  border-2 border-base-content/20"
+                                        className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-mono font-semibold bg-primary/70  border-2 border-base-content/20"
                                         style={{ color: getContrastTextColor() }}
                                       >
                                         {tag}
                                       </span>
                                     ))}
                                     {project.tags.length > 3 && (
-                                      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-primary/70  border-2 border-base-content/20"
+                                      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-mono font-semibold bg-primary/70  border-2 border-base-content/20"
                                       style={{ color: getContrastTextColor() }}>
                                         +{project.tags.length - 3}
                                       </span>

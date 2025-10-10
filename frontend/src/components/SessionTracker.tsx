@@ -44,6 +44,18 @@ const SessionTracker: React.FC<SessionTrackerProps> = ({
     return () => clearInterval(interval);
   }, []);
 
+  // Close this dropdown when another header dropdown opens
+  useEffect(() => {
+    const handleDropdownOpen = (event: CustomEvent) => {
+      if (event.detail.component !== 'sessiontracker') {
+        setIsVisible(false);
+      }
+    };
+
+    window.addEventListener('headerDropdownOpen' as any, handleDropdownOpen);
+    return () => window.removeEventListener('headerDropdownOpen' as any, handleDropdownOpen);
+  }, []);
+
   const formatDuration = (seconds: number): string => {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
@@ -88,7 +100,13 @@ const SessionTracker: React.FC<SessionTrackerProps> = ({
         </div>
         
         <button
-          onClick={() => setIsVisible(!isVisible)}
+          onClick={() => {
+            const newState = !isVisible;
+            setIsVisible(newState);
+            if (newState) {
+              window.dispatchEvent(new CustomEvent('headerDropdownOpen', { detail: { component: 'sessiontracker' } }));
+            }
+          }}
           className="text-xs text-base-content/70 hover:text-base-content/90 font-mono font-medium transition-colors duration-200 flex-1 text-center"
         >
           {formatDuration(sessionInfo.duration)}
@@ -98,7 +116,7 @@ const SessionTracker: React.FC<SessionTrackerProps> = ({
 
       {/* Detailed view */}
       {(isVisible || showDetails) && (
-        <div className="absolute right-0 top-full mt-4 w-60 max-w-[calc(100vw-2rem)] bg-base-100 border-2 border-base-content/20 rounded-lg shadow-lg p-4 transform translate-x-1/2 z-100">
+        <div className="absolute right-0 top-full mt-4 mr-4 w-60 max-w-[calc(100vw-2rem)] bg-base-100 border-2 border-base-content/20 rounded-lg shadow-lg p-4 transform translate-x-1/2 z-100">
           <div className="space-y-1">
             <div className="flex justify-between items-center">
               <h4 className="font-semibold text-sm">Session Info</h4>

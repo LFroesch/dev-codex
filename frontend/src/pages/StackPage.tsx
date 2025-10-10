@@ -90,24 +90,41 @@ const StackPage: React.FC = () => {
 
     try {
       const { techCategory, packageCategory } = getBackendCategory(category);
-      
-      // Try adding as technology first
+
+      // Try adding as technology first, fallback to package
+      let success = false;
+      let lastError: any = null;
+
       try {
         await projectAPI.addTechnology(selectedProject.id, {
           category: techCategory as any,
           name: tech.name,
           version: tech.latestVersion || ''
         });
+        success = true;
       } catch (techErr: any) {
-        // If that fails, try adding as package
-        await projectAPI.addPackage(selectedProject.id, {
-          category: packageCategory as any,
-          name: tech.name,
-          version: tech.latestVersion || '',
-          description: tech.description
-        });
+        lastError = techErr;
+        // If already exists as technology, that's fine
+        if (techErr.response?.status !== 400) {
+          // Try adding as package instead
+          try {
+            await projectAPI.addPackage(selectedProject.id, {
+              category: packageCategory as any,
+              name: tech.name,
+              version: tech.latestVersion || '',
+              description: tech.description
+            });
+            success = true;
+          } catch (pkgErr: any) {
+            lastError = pkgErr;
+          }
+        }
       }
-      
+
+      if (!success) {
+        throw lastError || new Error('Failed to add technology');
+      }
+
       // Track activity
       await activityTracker.trackCreate(
         'tech',
@@ -187,16 +204,22 @@ const StackPage: React.FC = () => {
     setError('');
 
     try {
-      // Find the item in either list and remove it with the correct backend category
+      // Find the item in either list BY NAME ONLY (category is frontend category, not backend)
       const techItem = selectedProject.selectedTechnologies?.find(tech => tech.name === name);
       const packageItem = selectedProject.selectedPackages?.find(pkg => pkg.name === name);
-      
+
       if (techItem) {
         await projectAPI.removeTechnology(selectedProject.id, techItem.category, name);
+        await onProjectRefresh();
       } else if (packageItem) {
         await projectAPI.removePackage(selectedProject.id, packageItem.category, name);
+        await onProjectRefresh();
+      } else {
+        // Item not found - shouldn't happen but handle it
+        setError(`Item "${name}" not found in project`);
+        setLoadingStates(prev => ({ ...prev, [loadingKey]: false }));
+        return;
       }
-      await onProjectRefresh();
     } catch (err: any) {
       handleAPIError(err, {
         component: 'StackPage',

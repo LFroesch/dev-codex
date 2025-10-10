@@ -116,8 +116,8 @@ const StackPage: React.FC = () => {
         undefined,
         { category: techCategory, packageCategory }
       );
-      
-      onProjectRefresh();
+
+      await onProjectRefresh();
     } catch (err: any) {
       handleAPIError(err, {
         component: 'StackPage',
@@ -196,7 +196,7 @@ const StackPage: React.FC = () => {
       } else if (packageItem) {
         await projectAPI.removePackage(selectedProject.id, packageItem.category, name);
       }
-      onProjectRefresh();
+      await onProjectRefresh();
     } catch (err: any) {
       handleAPIError(err, {
         component: 'StackPage',

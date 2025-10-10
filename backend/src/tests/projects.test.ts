@@ -27,6 +27,7 @@ describe('Project CRUD Operations', () => {
       password: 'StrongPass123!', // Plain password - will be hashed by pre-save hook
       firstName: 'John',
       lastName: 'Doe',
+      username: 'testuser',
       planTier: 'free',
       isEmailVerified: true
     });
@@ -366,6 +367,7 @@ describe('Project CRUD Operations', () => {
         password: 'StrongPass123!', // Plain password - will be hashed by pre-save hook
         firstName: 'Jane',
         lastName: 'Smith',
+        username: 'otheruser',
         planTier: 'free',
         isEmailVerified: true
       });

@@ -18,7 +18,8 @@ describe('Authentication Routes', () => {
         email: 'test@example.com',
         password: 'StrongPass123!',
         firstName: 'John',
-        lastName: 'Doe'
+        lastName: 'Doe',
+        username: 'testuser'
       };
 
       const response = await request(app)
@@ -93,7 +94,8 @@ describe('Authentication Routes', () => {
         email: 'test@example.com',
         password: 'StrongPass123!',
         firstName: 'John',
-        lastName: 'Doe'
+        lastName: 'Doe',
+        username: 'testuser'
       };
 
       await request(app)
@@ -107,7 +109,7 @@ describe('Authentication Routes', () => {
         .send(userData)
         .expect(400);
 
-      expect(response.body).toHaveProperty('message', 'User already exists');
+      expect(response.body).toHaveProperty('message', 'Email already exists');
     });
   });
 
@@ -119,6 +121,7 @@ describe('Authentication Routes', () => {
         password: 'StrongPass123!', // Plain password - will be hashed by pre-save hook
         firstName: 'John',
         lastName: 'Doe',
+        username: 'testuser',
         planTier: 'free',
         isEmailVerified: true
       });
@@ -214,6 +217,7 @@ describe('Authentication Routes', () => {
         password: 'StrongPass123!', // Plain password - will be hashed by pre-save hook
         firstName: 'John',
         lastName: 'Doe',
+        username: 'testuser',
         planTier: 'free',
         isEmailVerified: true
       });

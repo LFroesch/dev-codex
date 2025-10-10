@@ -527,7 +527,7 @@ const AdminDashboardPage: React.FC = () => {
   };
 
   return (
-    <div className="p-6">
+    <div className="p-2">
 
         {/* Stats Cards */}
         {activeTab === 'users' && stats && (
@@ -739,21 +739,21 @@ const AdminDashboardPage: React.FC = () => {
 
         {/* Tickets Table */}
         {activeTab === 'tickets' && (
-          <div className="shadow-md p-4 rounded-lg border-2 border-base-content/20 transition-all duration-200" style={{ overflow: 'visible' }}>
-            <div className="card-body p-4" style={{ overflow: 'visible' }}>
+          <div className="shadow-md p-2 rounded-lg border-2 border-base-content/20 transition-all duration-200" style={{ overflow: 'visible' }}>
+            <div className="card-body p-2" style={{ overflow: 'visible' }}>
 
               {/* Ticket Status Tabs */}
               <div className="flex justify-center mb-2">
-                <div className="tabs-container tabs-lg bg-base-200 w-full max-w-4xl">
+                <div className="tabs-container tabs-sm bg-base-200 flex max-w-4xl">
                 <button 
-                  className={`tab-button-admin ${ticketStatusTab === 'open' ? 'tab-active' : ''}`}
+                  className={`tab-button-admin  ${ticketStatusTab === 'open' ? 'tab-active' : ''}`}
                   style={ticketStatusTab === 'open' ? {color: getContrastTextColor()} : {}}
                   onClick={() => {
                     setTicketStatusTab('open');
                     setPage(1);
                   }}
                 >
-                  <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
                   </svg>
                   <span className="hidden sm:inline">Open ({ticketStats?.open || 0})</span>
@@ -767,7 +767,7 @@ const AdminDashboardPage: React.FC = () => {
                     setPage(1);
                   }}
                 >
-                  <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <span className="hidden sm:inline">In Progress ({ticketStats?.inProgress || 0})</span>
@@ -781,7 +781,7 @@ const AdminDashboardPage: React.FC = () => {
                     setPage(1);
                   }}
                 >
-                  <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <span className="hidden sm:inline">Resolved ({ticketStats?.resolved || 0})</span>
@@ -795,7 +795,7 @@ const AdminDashboardPage: React.FC = () => {
                     setPage(1);
                   }}
                 >
-                  <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <span className="hidden sm:inline">Closed ({ticketStats?.closed || 0})</span>

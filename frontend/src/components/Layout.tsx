@@ -466,7 +466,7 @@ const Layout: React.FC = () => {
 
             {/* Current Project and Search/Create Row - Mobile only */}
             {user && location.pathname !== '/terminal' && (
-              <div className="flex justify-center max-w-sm tablet:hidden items-center gap-3 mx-auto">
+              <div className="flex justify-center max-w-sm tablet:hidden items-center gap-3 mx-auto border-thick rounded-lg p-1 bg-base-200 shadow-sm w-full">
                 {selectedProject && (
                   <div 
                     className="flex items-center gap-2 px-3 py-2 rounded-lg border-2 border-base-content/20 shadow-sm hover:opacity-90 transition-all duration-200 cursor-pointer min-w-0 flex-shrink-0 h-10"

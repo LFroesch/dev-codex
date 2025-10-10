@@ -459,10 +459,7 @@ const SettingsPage: React.FC = () => {
           </div>
           <div className="section-content">
             <div className="space-y-4">
-              <div className={`p-4 ${!selectedProject.isArchived ? 'bg-warning/20' : 'bg-info/10'} rounded-lg border-thick`}>
-                <h4 className="font-bold mb-2" style={{ color: getContrastTextColor(!selectedProject.isArchived ? "warning" : "info") }}>
-                  {selectedProject.isArchived ? 'Unarchive Project' : 'Archive Project'}
-                </h4>
+              <div className={`p-4 ${!selectedProject.isArchived ? 'bg-warning/50' : 'bg-info/50'} rounded-lg border-thick items-center text-center`}>
                 <p className="font-bold text-sm mb-4" style={{ color: getContrastTextColor(!selectedProject.isArchived ? "warning" : "info") }}>
                   {selectedProject.isArchived ? 'Make this project active again.' : 'Move this project to archived section.'}
                 </p>
@@ -476,22 +473,22 @@ const SettingsPage: React.FC = () => {
                   disabled={archiveLoading}
                   style={{ color: getContrastTextColor(selectedProject.isArchived ? "info" : "warning") }}
                 >
-                  {archiveLoading ? 'Processing...' : selectedProject.isArchived ? 'Make Active' : 'Archive Project'}
+                  <span className="font-bold">{archiveLoading ? 'Processing...' : selectedProject.isArchived ? 'Make Active' : 'Archive Project'}</span>
                 </button>
               </div>
 
-              <div className="p-4 bg-error/40 rounded-lg border-thick">
-                <h4 className="font-bold mb-2" style={{ color: getContrastTextColor("error") }}>Delete Project</h4>
+              <div className="p-4 bg-error/50 rounded-lg border-thick items-center text-center">
                 <p className="font-bold text-sm mb-4" style={{ color: getContrastTextColor("error") }}>
                   This action cannot be undone. This will permanently delete the project and all of its data.
                 </p>
                 
                 <button
                   onClick={() => setDeleteConfirm(true)}
-                  className="btn btn-error border-thick"
+                  className="btn btn-error border-thick "
                   style={{ color: getContrastTextColor("error") }}
                 >
-                  Delete Project
+                  <span className="font-bold">Delete Project</span>
+                  
                 </button>
               </div>
             </div>

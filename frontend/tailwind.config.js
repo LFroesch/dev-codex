@@ -9,8 +9,8 @@ export default {
   theme: {
     extend: {
       screens: {
-        'tablet': '1024px',
-        'desktop': '1360px', // make it 1430 if we re-add brain dump
+        'tablet': '900px',
+        'desktop': '1420px',
       },
     },
   },

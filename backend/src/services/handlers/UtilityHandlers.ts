@@ -638,9 +638,9 @@ export class UtilityHandlers extends BaseCommandHandler {
    */
   async handleViewNews(): Promise<CommandResponse> {
     try {
-      const News = require('../../models/News').default;
+      const NewsPost = require('../../models/NewsPost').default;
 
-      const newsPosts = await News.find({ status: 'published' })
+      const newsPosts = await NewsPost.find({ status: 'published' })
         .sort({ publishedAt: -1 })
         .limit(5)
         .select('title type summary publishedAt')
@@ -752,34 +752,34 @@ export class UtilityHandlers extends BaseCommandHandler {
    */
   async handleViewThemes(): Promise<CommandResponse> {
     const themes = [
-      { name: 'dim', description: 'Dim gray theme' },
-      { name: 'light', description: 'Light theme' },
-      { name: 'dark', description: 'Dark theme' },
-      { name: 'cupcake', description: 'Sweet pink theme' },
-      { name: 'bumblebee', description: 'Yellow and black' },
-      { name: 'emerald', description: 'Green theme' },
-      { name: 'retro', description: 'Vintage style' },
-      { name: 'cyberpunk', description: 'Futuristic neon' },
-      { name: 'synthwave', description: 'Retrowave style' },
-      { name: 'forest', description: 'Nature green' },
-      { name: 'aqua', description: 'Ocean blue' },
-      { name: 'lofi', description: 'Calm and minimal' },
-      { name: 'pastel', description: 'Soft colors' },
-      { name: 'fantasy', description: 'Purple fantasy' },
-      { name: 'wireframe', description: 'Minimal lines' },
-      { name: 'black', description: 'Pure black' },
-      { name: 'luxury', description: 'Gold and black' },
-      { name: 'dracula', description: 'Dracula purple' },
-      { name: 'cmyk', description: 'Print colors' },
-      { name: 'autumn', description: 'Fall colors' },
-      { name: 'business', description: 'Professional blue' },
-      { name: 'acid', description: 'Bright lime' },
-      { name: 'lemonade', description: 'Lemon yellow' },
-      { name: 'night', description: 'Deep night blue' },
-      { name: 'coffee', description: 'Brown coffee' },
-      { name: 'winter', description: 'Cool winter' },
-      { name: 'nord', description: 'Nordic theme' },
-      { name: 'sunset', description: 'Sunset orange' }
+      { name: 'dim', description: 'Dim gray theme', colors: { primary: '#9333ea', secondary: '#f000b8', accent: '#1dcdbc' } },
+      { name: 'light', description: 'Light theme', colors: { primary: '#570df8', secondary: '#f000b8', accent: '#37cdbe' } },
+      { name: 'dark', description: 'Dark theme', colors: { primary: '#661ae6', secondary: '#d926aa', accent: '#1fb2a6' } },
+      { name: 'cupcake', description: 'Sweet pink theme', colors: { primary: '#65c3c8', secondary: '#ef9fbc', accent: '#eeaf3a' } },
+      { name: 'bumblebee', description: 'Yellow and black', colors: { primary: '#f9d72f', secondary: '#df7e07', accent: '#181830' } },
+      { name: 'emerald', description: 'Green theme', colors: { primary: '#66cc8a', secondary: '#377cfb', accent: '#ea5234' } },
+      { name: 'retro', description: 'Vintage style', colors: { primary: '#ef9995', secondary: '#a4cbb4', accent: '#ebdc99' } },
+      { name: 'cyberpunk', description: 'Futuristic neon', colors: { primary: '#ff7598', secondary: '#75d1f0', accent: '#c7f500' } },
+      { name: 'synthwave', description: 'Retrowave style', colors: { primary: '#e779c1', secondary: '#58c7f3', accent: '#f3cc30' } },
+      { name: 'forest', description: 'Nature green', colors: { primary: '#1eb854', secondary: '#1fd65f', accent: '#1db88e' } },
+      { name: 'aqua', description: 'Ocean blue', colors: { primary: '#09ecf3', secondary: '#966fb3', accent: '#fbb8b5' } },
+      { name: 'lofi', description: 'Calm and minimal', colors: { primary: '#0d0d0d', secondary: '#1a1919', accent: '#262626' } },
+      { name: 'pastel', description: 'Soft colors', colors: { primary: '#d1c1d7', secondary: '#f6cbd1', accent: '#b4e9d6' } },
+      { name: 'fantasy', description: 'Purple fantasy', colors: { primary: '#6e0b75', secondary: '#007ebd', accent: '#f57e20' } },
+      { name: 'wireframe', description: 'Minimal lines', colors: { primary: '#b8b8b8', secondary: '#b8b8b8', accent: '#b8b8b8' } },
+      { name: 'black', description: 'Pure black', colors: { primary: '#343232', secondary: '#343232', accent: '#343232' } },
+      { name: 'luxury', description: 'Gold and black', colors: { primary: '#ffffff', secondary: '#152747', accent: '#513448' } },
+      { name: 'dracula', description: 'Dracula purple', colors: { primary: '#ff79c6', secondary: '#bd93f9', accent: '#ffb86c' } },
+      { name: 'cmyk', description: 'Print colors', colors: { primary: '#45AEEE', secondary: '#E8488A', accent: '#FFF232' } },
+      { name: 'autumn', description: 'Fall colors', colors: { primary: '#8C0327', secondary: '#D85251', accent: '#D59B6A' } },
+      { name: 'business', description: 'Professional blue', colors: { primary: '#1C4E80', secondary: '#7C909A', accent: '#EA6947' } },
+      { name: 'acid', description: 'Bright lime', colors: { primary: '#FF00F4', secondary: '#FF7400', accent: '#CBFD03' } },
+      { name: 'lemonade', description: 'Lemon yellow', colors: { primary: '#519903', secondary: '#E9E92E', accent: '#F7A300' } },
+      { name: 'night', description: 'Deep night blue', colors: { primary: '#38bdf8', secondary: '#818cf8', accent: '#f471b5' } },
+      { name: 'coffee', description: 'Brown coffee', colors: { primary: '#DB924B', secondary: '#6F4C3E', accent: '#263E3F' } },
+      { name: 'winter', description: 'Cool winter', colors: { primary: '#047AFF', secondary: '#463AA2', accent: '#C148AC' } },
+      { name: 'nord', description: 'Nordic theme', colors: { primary: '#5E81AC', secondary: '#81A1C1', accent: '#88C0D0' } },
+      { name: 'sunset', description: 'Sunset orange', colors: { primary: '#FF865B', secondary: '#FD6585', accent: '#FFFB8D' } }
     ];
 
     try {
@@ -793,7 +793,8 @@ export class UtilityHandlers extends BaseCommandHandler {
           themes: themes.map(t => ({
             name: t.name,
             description: t.description,
-            type: 'preset'
+            type: 'preset',
+            colors: t.colors
           })),
           customThemes: customThemes.map((ct: any) => ({
             name: `custom-${ct.id}`,
@@ -814,7 +815,8 @@ export class UtilityHandlers extends BaseCommandHandler {
           themes: themes.map(t => ({
             name: t.name,
             description: t.description,
-            type: 'preset'
+            type: 'preset',
+            colors: t.colors
           })),
           customThemes: []
         },

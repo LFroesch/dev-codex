@@ -44,6 +44,7 @@ describe('Ticket Routes', () => {
       password: 'testpass123',
       firstName: 'Test',
       lastName: 'User',
+      username: 'testuser',
       planTier: 'free',
       isEmailVerified: true
     });
@@ -80,6 +81,7 @@ describe('Ticket Routes', () => {
         password: 'testpass123',
         firstName: 'Test',
         lastName: 'User',
+        username: 'testuser',
         planTier: 'free',
         isEmailVerified: true
       });
@@ -270,7 +272,8 @@ describe('Ticket Routes', () => {
         email: 'other@example.com',
         password: await bcrypt.hash('pass', 10),
         firstName: 'Other',
-        lastName: 'User'
+        lastName: 'User',
+        username: 'otheruser'
       });
       await otherUser.save();
 
@@ -337,7 +340,8 @@ describe('Ticket Routes', () => {
         email: 'other@example.com',
         password: await bcrypt.hash('pass', 10),
         firstName: 'Other',
-        lastName: 'User'
+        lastName: 'User',
+        username: 'otheruser2'
       });
       await otherUser.save();
 

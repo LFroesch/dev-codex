@@ -169,6 +169,88 @@ input[class*="input"]::placeholder, textarea[class*="textarea"]::placeholder {
   color: oklch(var(--bc) / 0.5) !important;
 }
 
+/* ===== NATIVE BROWSER CONTROLS THEMING ===== */
+
+/* Set color scheme based on theme lightness */
+[data-theme="light"], [data-theme="cupcake"], [data-theme="bumblebee"],
+[data-theme="emerald"], [data-theme="corporate"], [data-theme="retro"],
+[data-theme="valentine"], [data-theme="garden"], [data-theme="lofi"],
+[data-theme="pastel"], [data-theme="fantasy"], [data-theme="wireframe"],
+[data-theme="cmyk"], [data-theme="autumn"], [data-theme="acid"],
+[data-theme="lemonade"], [data-theme="winter"] {
+  color-scheme: light;
+}
+
+[data-theme="dark"], [data-theme="dim"], [data-theme="synthwave"],
+[data-theme="cyberpunk"], [data-theme="halloween"], [data-theme="forest"],
+[data-theme="aqua"], [data-theme="black"], [data-theme="luxury"],
+[data-theme="dracula"], [data-theme="business"], [data-theme="night"],
+[data-theme="coffee"], [data-theme="sunset"], [data-theme="nord"] {
+  color-scheme: dark;
+}
+
+/* Custom themes should detect their base color */
+[data-theme*="custom-"] {
+  color-scheme: light dark;
+}
+
+/* Style native select dropdown options */
+select option {
+  background-color: oklch(var(--b1)) !important;
+  color: oklch(var(--bc)) !important;
+  padding: 0.5rem !important;
+}
+
+select option:checked,
+select option:hover {
+  background-color: oklch(var(--p) / 0.2) !important;
+  color: oklch(var(--bc)) !important;
+}
+
+/* Style datetime-local picker */
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  background-color: oklch(var(--b2));
+  border-radius: 0.25rem;
+  padding: 0.25rem;
+  cursor: pointer;
+  filter: invert(var(--calendar-picker-invert, 0));
+}
+
+/* Adjust calendar picker icon for dark themes */
+[data-theme="dark"] input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+[data-theme="dim"] input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+[data-theme="synthwave"] input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+[data-theme="cyberpunk"] input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+[data-theme="halloween"] input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+[data-theme="forest"] input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+[data-theme="aqua"] input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+[data-theme="black"] input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+[data-theme="luxury"] input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+[data-theme="dracula"] input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+[data-theme="business"] input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+[data-theme="night"] input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+[data-theme="coffee"] input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+[data-theme="sunset"] input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+[data-theme="nord"] input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}
+
+/* Firefox datetime controls */
+input[type="datetime-local"]::-moz-calendar-picker-indicator {
+  background-color: oklch(var(--b2));
+  border-radius: 0.25rem;
+  padding: 0.25rem;
+  cursor: pointer;
+}
+
+/* Focus states for better visibility */
+select:focus,
+input[type="datetime-local"]:focus {
+  outline: 2px solid oklch(var(--p)) !important;
+  outline-offset: 2px !important;
+  border-color: oklch(var(--p)) !important;
+}
+
 /* Disable animations globally */
 .btn, button, input[type="button"], input[type="submit"], input[type="reset"] {
   animation: none !important;

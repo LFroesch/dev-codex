@@ -102,7 +102,7 @@ export class BaseCommandHandler {
         if (cached) {
           const match = cached.find(p => p.name.toLowerCase() === projectMention.toLowerCase());
           if (match) {
-            project = await Project.findById(match._id).lean();
+            project = await Project.findById(match._id);
           }
         }
 
@@ -114,7 +114,7 @@ export class BaseCommandHandler {
               { ownerId: this.userId }
             ],
             name: new RegExp(`^${projectMention}$`, 'i')
-          }).lean();
+          });
         }
 
         // Check team projects if not found in owned
@@ -127,7 +127,7 @@ export class BaseCommandHandler {
             project = await Project.findOne({
               _id: { $in: teamProjectIds.map(tm => tm.projectId) },
               name: new RegExp(`^${projectMention}$`, 'i')
-            }).lean();
+            });
           }
         }
 
@@ -152,7 +152,7 @@ export class BaseCommandHandler {
 
       // Priority 2: Use current project context
       if (currentProjectId) {
-        const project = await Project.findById(currentProjectId).lean();
+        const project = await Project.findById(currentProjectId);
         if (project) {
           const hasAccess = await this.verifyProjectAccess(currentProjectId);
           if (hasAccess) {

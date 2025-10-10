@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { activityLogsAPI, ActivityLogEntry, formatActivityMessage, getRelativeTime } from '../api/activityLogs';
+import { getContrastTextColor } from '../utils/contrastTextColor';
 
 interface ActivityLogProps {
   projectId: string;
@@ -256,7 +257,7 @@ const ActivityLog: React.FC<ActivityLogProps> = ({
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-xl p-2">Recent Activity</h3>
           <div className="flex items-center gap-2 border-thick rounded-lg p-2">
-            <span className="text-xs text-base-content/60 bg-success/50 border-thick h-7 rounded-lg p-1">{total} Total</span>
+            <span className="text-xs bg-success border-thick h-7 rounded-lg p-1" style={{ color: getContrastTextColor('success') }}>{total} Total</span>
             {autoRefresh && (
               <div className="flex items-center gap-1">
                 <div className="w-2 h-2 bg-success rounded-full animate-pulse"></div>
@@ -265,10 +266,10 @@ const ActivityLog: React.FC<ActivityLogProps> = ({
             )}
             <button
               onClick={() => loadActivities(1, false)}
-              className="btn btn-xs h-7 border-thick bg-warning/50"
+              className="btn btn-xs h-7 border-thick bg-warning"
               disabled={loading}
             >
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3 h-3" fill="none" stroke={getContrastTextColor('warning')} viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
             </button>
@@ -276,7 +277,7 @@ const ActivityLog: React.FC<ActivityLogProps> = ({
               <>
                 <button
                   onClick={handleClearActivities}
-                  className={`btn btn-xs bg-error/60 border-thick h-7 ${showClearConfirm ? 'btn-error' : 'btn-ghost'}`}
+                  className={`btn btn-xs bg-error border-thick h-7 ${showClearConfirm ? 'btn-error' : 'btn-ghost'}`}
                   disabled={clearing}
                 >
                   {clearing ? (
@@ -285,10 +286,10 @@ const ActivityLog: React.FC<ActivityLogProps> = ({
                     'Confirm Clear'
                   ) : (
                     <>
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-3 h-3" fill="none" stroke={getContrastTextColor('error')} viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
-                      Clear
+                      <span style={{ color: getContrastTextColor('error') }}>Clear</span>
                     </>
                   )}
                 </button>
@@ -336,10 +337,10 @@ const ActivityLog: React.FC<ActivityLogProps> = ({
                             </span>
                           )}
                           {activity.details?.oldValue !== undefined && activity.details?.newValue !== undefined && (
-                            <span> → </span>
+                            <span className='m-1'> → </span>
                           )}
                           {activity.details?.newValue !== undefined && (
-                            <span className="text-base-content bg-success/50 border-thick rounded p-1">
+                            <span className="text-base-content bg-success border-thick rounded p-1" style={{ color: getContrastTextColor('success') }}>
                               "{formatFieldValue(activity.details?.field, activity.details?.newValue).slice(0, 40)}"
                             </span>
                           )}
@@ -350,7 +351,7 @@ const ActivityLog: React.FC<ActivityLogProps> = ({
                 </div>
                 
                 <div className="flex items-center border-thick rounded-lg p-1 bg-primary gap-2 font-semibold text-sm text-neutral-content">
-                  <span title={new Date(activity.timestamp).toLocaleString()}>
+                  <span title={new Date(activity.timestamp).toLocaleString()} style={{ color: getContrastTextColor('primary') }}>
                     {getRelativeTime(activity.timestamp)}
                   </span>
                 </div>

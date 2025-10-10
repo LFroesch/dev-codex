@@ -219,7 +219,7 @@ export class UtilityHandlers extends BaseCommandHandler {
   }
 
   /**
-   * Generate project summary in different formats
+   * Generate project summary in different formats (with all data included)
    */
   private generateProjectSummary(project: any, format: string): string {
     const todos = project.todos || [];
@@ -237,9 +237,13 @@ export class UtilityHandlers extends BaseCommandHandler {
     switch (format) {
       case 'json':
         return JSON.stringify({
-          name: project.name,
+          basicInfo: {
+            name: project.name,
+            category: project.category,
+            stagingEnvironment: project.stagingEnvironment,
+            color: project.color,
+          },
           description: project.description,
-          category: project.category,
           tags: project.tags || [],
           stats: {
             todos: {
@@ -252,149 +256,254 @@ export class UtilityHandlers extends BaseCommandHandler {
             devLog: devLog.length,
             docs: docs.length
           },
+          notes: notes,
+          todos: todos,
+          devLog: devLog,
+          docs: docs,
           techStack: {
             technologies: tech,
             packages: packages
           },
-          todos: activeTodos.map((t: any) => ({
-            text: t.text,
-            description: t.description,
-            priority: t.priority,
-            status: t.status,
-            dueDate: t.dueDate
-          })),
-          recentActivity: devLog.slice(0, 5).map((e: any) => ({
-            title: e.title,
-            entry: e.entry,
-            date: e.date
-          })),
-          deployment: project.deploymentData || null,
-          createdAt: project.createdAt,
-          updatedAt: project.updatedAt
+          deploymentData: project.deploymentData || null,
+          publicPageData: project.publicPageData || null,
+          timestamps: {
+            createdAt: project.createdAt,
+            updatedAt: project.updatedAt
+          }
         }, null, 2);
 
       case 'prompt':
-        let prompt = `# AI Assistant Context for "${project.name}"\n\n`;
-        prompt += `## 🤖 REQUEST:\n[Replace this with your specific request or question about the project]\n\n`;
+        let prompt = `# Project Context for AI Assistant for "${project.name}"\n\n`;
+        if (project.description) prompt += `**Description:** ${project.description}\n\n`;
+        prompt += `## 🤖 MY REQUEST:\n[Please replace this text with what you need help with regarding this project]\n\n`;
         prompt += `## 📋 PROJECT OVERVIEW\n\n`;
-        prompt += `**Name:** ${project.name}\n`;
-        if (project.description) prompt += `**Description:** ${project.description}\n`;
-        prompt += `**Category:** ${project.category || 'General'}\n`;
+        prompt += `**Project Name:** ${project.name}\n`;
+        if (project.category) prompt += `**Category:** ${project.category}\n`;
+        if (project.stagingEnvironment) prompt += `**Current Environment:** ${project.stagingEnvironment}\n`;
+        if (project.color) prompt += `**Theme Color:** ${project.color}\n`;
         if (project.tags && project.tags.length > 0) {
-          prompt += `**Tags:** ${project.tags.join(', ')}\n`;
+          prompt += `\n**Tags/Keywords:** ${project.tags.join(' • ')}\n`;
         }
 
         // Tech Stack
         if (tech.length > 0 || packages.length > 0) {
           prompt += `\n## ⚡ TECH STACK\n\n`;
           if (tech.length > 0) {
-            prompt += `**Technologies:** ${tech.map((t: any) => `${t.name}${t.version ? ` v${t.version}` : ''}`).join(', ')}\n`;
+            prompt += `**Technologies:** ${tech.map((t: any) => t.name).join(' • ')}\n`;
           }
           if (packages.length > 0) {
-            prompt += `**Packages:** ${packages.map((p: any) => p.name).join(', ')}\n`;
+            prompt += `**Packages/Dependencies:** ${packages.map((p: any) => p.name).join(' • ')}\n`;
           }
         }
 
         // Tasks
         if (todos.length > 0) {
-          prompt += `\n## ✅ TASKS (${completedTodos}/${todos.length} completed)\n\n`;
+          prompt += `\n## ✅ CURRENT TASKS (${completedTodos} completed, ${activeTodos.length} pending)\n\n`;
           if (activeTodos.length > 0) {
-            prompt += `**🚧 Active Tasks:**\n`;
-            activeTodos.slice(0, 10).forEach((todo: any) => {
-              prompt += `- ${todo.text}`;
-              if (todo.priority) prompt += ` [${todo.priority.toUpperCase()}]`;
-              if (todo.dueDate) prompt += ` (Due: ${new Date(todo.dueDate).toLocaleDateString()})`;
-              prompt += `\n`;
+            prompt += `**🚧 Pending Tasks:**\n`;
+            activeTodos.forEach((todo: any) => {
+              if (todo?.text) {
+                prompt += `• ${todo.text}`;
+                if (todo.description) prompt += ` - ${todo.description}`;
+                if (todo.priority) prompt += ` [${todo.priority.toUpperCase()} PRIORITY]`;
+                if (todo.dueDate) prompt += ` (Due: ${new Date(todo.dueDate).toLocaleDateString()})`;
+                prompt += `\n`;
+              }
+            });
+          }
+          if (completedTodos > 0) {
+            prompt += `\n**✅ Completed Tasks:**\n`;
+            todos.filter((t: any) => t.completed).forEach((todo: any) => {
+              if (todo?.text) {
+                prompt += `• ${todo.text}`;
+                if (todo.description) prompt += ` - ${todo.description}`;
+                prompt += `\n`;
+              }
             });
           }
         }
 
-        // Recent Activity
+        // Recent Development Log
         if (devLog.length > 0) {
-          prompt += `\n## 📝 RECENT DEVELOPMENT LOG\n\n`;
-          devLog.slice(0, 5).forEach((entry: any) => {
-            prompt += `**${entry.title || 'Entry'}** (${new Date(entry.date).toLocaleDateString()})\n`;
-            prompt += `${entry.entry.substring(0, 200)}${entry.entry.length > 200 ? '...' : ''}\n\n`;
+          const recentEntries = devLog.slice(-5);
+          prompt += `\n## 📝 RECENT DEVELOPMENT LOG\n`;
+          recentEntries.forEach((entry: any) => {
+            const entryContent = entry.entry?.length > 500 ?
+              entry.entry.substring(0, 500) + '...' :
+              entry.entry || '';
+            prompt += `\n**${entry.date}${entry.title ? ' - ' + entry.title : ''}**\n`;
+            prompt += `${entryContent}\n`;
+          });
+          if (devLog.length > 5) {
+            prompt += `\n*(Showing ${recentEntries.length} most recent entries out of ${devLog.length} total)*\n`;
+          }
+        }
+
+        // Notes
+        if (notes.length > 0) {
+          prompt += `\n## 📋 PROJECT NOTES\n`;
+          notes.forEach((note: any) => {
+            const noteContent = note.content?.length > 1000 ?
+              note.content.substring(0, 1000) + '...' :
+              note.content || '';
+            prompt += `\n**${note.title || 'Untitled Note'}**\n`;
+            prompt += `${noteContent}\n`;
+          });
+        }
+
+        // Documentation
+        if (docs.length > 0) {
+          prompt += `\n## 📚 DOCUMENTATION\n`;
+          const docsByType = docs.reduce((acc: any, doc: any) => {
+            if (!acc[doc.type]) acc[doc.type] = [];
+            acc[doc.type].push(doc);
+            return acc;
+          }, {});
+
+          Object.entries(docsByType).forEach(([type, docList]: [string, any]) => {
+            prompt += `\n**${type} Documentation:**\n`;
+            docList.forEach((doc: any) => {
+              const docContent = doc.content?.length > 800 ?
+                doc.content.substring(0, 800) + '...' :
+                doc.content || '';
+              prompt += `• **${doc.title || 'Untitled'}:** ${docContent}\n`;
+            });
           });
         }
 
         // Deployment
-        if (project.deploymentData?.liveUrl) {
-          prompt += `## 🚀 DEPLOYMENT\n\n`;
-          prompt += `**Live URL:** ${project.deploymentData.liveUrl}\n`;
-          prompt += `**Platform:** ${project.deploymentData.deploymentPlatform || 'N/A'}\n`;
-          prompt += `**Status:** ${project.deploymentData.deploymentStatus || 'N/A'}\n`;
+        if (project.deploymentData) {
+          prompt += `\n## 🚀 DEPLOYMENT INFO\n`;
+          if (project.deploymentData.liveUrl) prompt += `**Live URL:** ${project.deploymentData.liveUrl}\n`;
+          if (project.deploymentData.githubUrl) prompt += `**GitHub Repository:** ${project.deploymentData.githubUrl}\n`;
+          if (project.deploymentData.deploymentPlatform) prompt += `**Hosting Platform:** ${project.deploymentData.deploymentPlatform}\n`;
+          if (project.deploymentData.environment) prompt += `**Environment:** ${project.deploymentData.environment}\n`;
         }
 
+        // Public Page Data
+        if (project.publicPageData?.isPublic) {
+          prompt += `\n## 🌐 PUBLIC PAGE INFO\n`;
+          if (project.publicPageData.publicTitle) prompt += `**Public Title:** ${project.publicPageData.publicTitle}\n`;
+          if (project.publicPageData.publicDescription) prompt += `**Public Description:** ${project.publicPageData.publicDescription}\n`;
+          if (project.publicPageData.publicTags?.length) prompt += `**Public Tags:** ${project.publicPageData.publicTags.join(' • ')}\n`;
+        }
+
+        // Timestamps
+        if (project.createdAt || project.updatedAt) {
+          const created = new Date(project.createdAt);
+          const updated = new Date(project.updatedAt);
+          const daysSinceCreated = Math.floor((Date.now() - created.getTime()) / (1000 * 60 * 60 * 24));
+          const daysSinceUpdated = Math.floor((Date.now() - updated.getTime()) / (1000 * 60 * 60 * 24));
+
+          prompt += `\n## ⏱️ PROJECT TIMELINE\n`;
+          prompt += `**Created:** ${created.toLocaleDateString()} (${daysSinceCreated} days ago)\n`;
+          prompt += `**Last Updated:** ${updated.toLocaleDateString()} (${daysSinceUpdated} days ago)\n`;
+        }
+
+        prompt += `\n---\n`;
         return prompt;
 
       case 'markdown':
         let md = `# ${project.name}\n\n`;
-        if (project.description) md += `${project.description}\n\n`;
-        md += `**Category:** ${project.category || 'Uncategorized'}\n`;
-        if (project.tags && project.tags.length > 0) {
-          md += `**Tags:** ${project.tags.join(', ')}\n`;
-        }
-        md += `\n---\n\n`;
 
-        // Stats
-        md += `## 📊 Project Stats\n\n`;
-        md += `- **Todos:** ${completedTodos}/${todos.length} completed\n`;
-        md += `- **High Priority:** ${highPriorityTodos} remaining\n`;
-        md += `- **Notes:** ${notes.length}\n`;
-        md += `- **Dev Log Entries:** ${devLog.length}\n`;
-        md += `- **Docs:** ${docs.length}\n\n`;
+        // Basic Info
+        md += `## Basic Information\n\n`;
+        md += `- **Name:** ${project.name}\n`;
+        if (project.category) md += `- **Category:** ${project.category}\n`;
+        if (project.stagingEnvironment) md += `- **Environment:** ${project.stagingEnvironment}\n`;
+        md += `\n`;
 
-        // Tech Stack
-        if (tech.length > 0 || packages.length > 0) {
-          md += `## 🛠️ Tech Stack\n\n`;
-          if (tech.length > 0) {
-            md += `### Technologies\n`;
-            tech.forEach((t: any) => {
-              md += `- **${t.name}** (${t.category})${t.version ? ` v${t.version}` : ''}\n`;
-            });
-            md += `\n`;
-          }
-          if (packages.length > 0) {
-            md += `### Packages\n`;
-            packages.forEach((p: any) => {
-              md += `- ${p.name}${p.version ? ` v${p.version}` : ''}\n`;
-            });
-            md += `\n`;
-          }
+        // Description
+        if (project.description) {
+          md += `## Description\n\n${project.description}\n\n`;
         }
 
-        // Active Todos
-        if (activeTodos.length > 0) {
-          md += `## ✅ Active Todos\n\n`;
-          activeTodos.slice(0, 15).forEach((todo: any) => {
-            const priority = todo.priority === 'high' ? '🔴' : todo.priority === 'medium' ? '🟡' : '🟢';
-            md += `- ${priority} ${todo.text}`;
-            if (todo.dueDate) md += ` (Due: ${new Date(todo.dueDate).toLocaleDateString()})`;
+        // Tags
+        if (project.tags?.length) {
+          md += `## Tags\n\n${project.tags.map((tag: string) => `\`${tag}\``).join(', ')}\n\n`;
+        }
+
+        // Notes
+        if (notes.length > 0) {
+          md += `## Notes\n\n`;
+          notes.forEach((note: any) => {
+            const noteContent = note.content?.length > 2000 ?
+              note.content.substring(0, 2000) + '...' :
+              note.content || '';
+            md += `### ${note.title || 'Untitled Note'}\n${noteContent}\n\n`;
+          });
+        }
+
+        // Todo Items
+        if (todos.length > 0) {
+          md += `## Todo Items\n\n`;
+          todos.forEach((todo: any) => {
+            const todoDesc = todo.description?.length > 200 ?
+              todo.description.substring(0, 200) + '...' :
+              todo.description;
+            md += `- [${todo.completed ? 'x' : ' '}] **${todo.text || 'Untitled Task'}**${todoDesc ? `: ${todoDesc}` : ''}`;
+            if (todo.priority) md += ` [${todo.priority.toUpperCase()}]`;
             md += `\n`;
           });
-          if (activeTodos.length > 15) {
-            md += `\n*...and ${activeTodos.length - 15} more*\n`;
-          }
           md += `\n`;
         }
 
-        // Recent Dev Log
+        // Development Log
         if (devLog.length > 0) {
-          md += `## 📝 Recent Activity\n\n`;
-          devLog.slice(0, 5).forEach((entry: any) => {
-            md += `### ${entry.title}\n`;
-            md += `${entry.entry}\n`;
-            md += `*${new Date(entry.date).toLocaleDateString()}*\n\n`;
+          md += `## Development Log\n\n`;
+          devLog.forEach((entry: any) => {
+            const entryContent = entry.entry?.length > 1500 ?
+              entry.entry.substring(0, 1500) + '...' :
+              entry.entry || '';
+            md += `### ${entry.date} - ${entry.title || 'Development Entry'}\n${entryContent}\n\n`;
           });
         }
 
+        // Documentation
+        if (docs.length > 0) {
+          md += `## Documentation\n\n`;
+          docs.forEach((doc: any) => {
+            const docContent = doc.content?.length > 2000 ?
+              doc.content.substring(0, 2000) + '...' :
+              doc.content || '';
+            md += `### ${doc.title || 'Untitled'} (${doc.type})\n${docContent}\n\n`;
+          });
+        }
+
+        // Tech Stack
+        if (tech.length > 0 || packages.length > 0) {
+          md += `## Tech Stack\n\n`;
+          if (tech.length > 0) {
+            md += `### Technologies\n${tech.map((t: any) => `- ${t.name}`).join('\n')}\n\n`;
+          }
+          if (packages.length > 0) {
+            md += `### Packages\n${packages.map((p: any) => `- ${p.name}`).join('\n')}\n\n`;
+          }
+        }
+
         // Deployment
-        if (project.deploymentData?.liveUrl) {
-          md += `## 🚀 Deployment\n\n`;
-          md += `- **Live URL:** ${project.deploymentData.liveUrl}\n`;
-          md += `- **Platform:** ${project.deploymentData.deploymentPlatform || 'N/A'}\n`;
-          md += `- **Status:** ${project.deploymentData.deploymentStatus || 'N/A'}\n\n`;
+        if (project.deploymentData) {
+          md += `## Deployment\n\n`;
+          if (project.deploymentData.liveUrl) md += `- **Live URL:** ${project.deploymentData.liveUrl}\n`;
+          if (project.deploymentData.githubUrl) md += `- **GitHub:** ${project.deploymentData.githubUrl}\n`;
+          if (project.deploymentData.deploymentPlatform) md += `- **Platform:** ${project.deploymentData.deploymentPlatform}\n`;
+          md += `\n`;
+        }
+
+        // Public Page Data
+        if (project.publicPageData?.isPublic) {
+          md += `## Public Page Info\n\n`;
+          if (project.publicPageData.publicTitle) md += `- **Title:** ${project.publicPageData.publicTitle}\n`;
+          if (project.publicPageData.publicDescription) md += `- **Description:** ${project.publicPageData.publicDescription}\n`;
+          if (project.publicPageData.publicTags?.length) md += `- **Tags:** ${project.publicPageData.publicTags.join(', ')}\n`;
+          md += `\n`;
+        }
+
+        // Timestamps
+        if (project.createdAt || project.updatedAt) {
+          md += `## Timestamps\n\n`;
+          md += `- **Created:** ${new Date(project.createdAt).toLocaleDateString()}\n`;
+          md += `- **Updated:** ${new Date(project.updatedAt).toLocaleDateString()}\n`;
         }
 
         return md;
@@ -402,12 +511,30 @@ export class UtilityHandlers extends BaseCommandHandler {
       case 'text':
       default:
         let text = `${project.name}\n${'='.repeat(project.name.length)}\n\n`;
-        if (project.description) text += `${project.description}\n\n`;
-        text += `Category: ${project.category || 'Uncategorized'}\n`;
-        if (project.tags && project.tags.length > 0) {
-          text += `Tags: ${project.tags.join(', ')}\n`;
-        }
+
+        // Basic Info
+        text += `BASIC INFORMATION\n`;
+        text += `-----------------\n`;
+        text += `Name: ${project.name}\n`;
+        if (project.category) text += `Category: ${project.category}\n`;
+        if (project.stagingEnvironment) text += `Environment: ${project.stagingEnvironment}\n`;
         text += `\n`;
+
+        // Description
+        if (project.description) {
+          text += `DESCRIPTION\n`;
+          text += `-----------\n`;
+          text += `${project.description}\n\n`;
+        }
+
+        // Tags
+        if (project.tags?.length) {
+          text += `TAGS\n`;
+          text += `----\n`;
+          text += `${project.tags.join(', ')}\n\n`;
+        }
+
+        // Statistics
         text += `STATISTICS\n`;
         text += `----------\n`;
         text += `Todos: ${completedTodos}/${todos.length} completed\n`;
@@ -416,22 +543,90 @@ export class UtilityHandlers extends BaseCommandHandler {
         text += `Dev Log Entries: ${devLog.length}\n`;
         text += `Docs: ${docs.length}\n\n`;
 
-        if (tech.length > 0) {
-          text += `TECH STACK\n`;
-          text += `----------\n`;
-          tech.forEach((t: any) => {
-            text += `- ${t.name} (${t.category})\n`;
+        // Notes
+        if (notes.length > 0) {
+          text += `NOTES\n`;
+          text += `-----\n`;
+          notes.forEach((note: any) => {
+            text += `${note.title || 'Untitled'}: ${note.content?.substring(0, 200) || ''}${note.content?.length > 200 ? '...' : ''}\n`;
           });
           text += `\n`;
         }
 
-        if (activeTodos.length > 0) {
-          text += `ACTIVE TODOS\n`;
-          text += `------------\n`;
-          activeTodos.slice(0, 10).forEach((todo: any) => {
-            text += `[${todo.priority?.toUpperCase() || 'MED'}] ${todo.text}\n`;
+        // Todos
+        if (todos.length > 0) {
+          text += `TODO ITEMS\n`;
+          text += `----------\n`;
+          todos.forEach((todo: any) => {
+            text += `[${todo.completed ? 'X' : ' '}] [${todo.priority?.toUpperCase() || 'MED'}] ${todo.text}\n`;
           });
           text += `\n`;
+        }
+
+        // Dev Log
+        if (devLog.length > 0) {
+          text += `DEVELOPMENT LOG\n`;
+          text += `---------------\n`;
+          devLog.forEach((entry: any) => {
+            text += `${entry.date} - ${entry.title || 'Entry'}: ${entry.entry?.substring(0, 150) || ''}${entry.entry?.length > 150 ? '...' : ''}\n`;
+          });
+          text += `\n`;
+        }
+
+        // Documentation
+        if (docs.length > 0) {
+          text += `DOCUMENTATION\n`;
+          text += `-------------\n`;
+          docs.forEach((doc: any) => {
+            text += `${doc.title || 'Untitled'} (${doc.type}): ${doc.content?.substring(0, 150) || ''}${doc.content?.length > 150 ? '...' : ''}\n`;
+          });
+          text += `\n`;
+        }
+
+        // Tech Stack
+        if (tech.length > 0 || packages.length > 0) {
+          text += `TECH STACK\n`;
+          text += `----------\n`;
+          if (tech.length > 0) {
+            text += `Technologies:\n`;
+            tech.forEach((t: any) => {
+              text += `- ${t.name}\n`;
+            });
+          }
+          if (packages.length > 0) {
+            text += `Packages:\n`;
+            packages.forEach((p: any) => {
+              text += `- ${p.name}\n`;
+            });
+          }
+          text += `\n`;
+        }
+
+        // Deployment
+        if (project.deploymentData) {
+          text += `DEPLOYMENT\n`;
+          text += `----------\n`;
+          if (project.deploymentData.liveUrl) text += `Live URL: ${project.deploymentData.liveUrl}\n`;
+          if (project.deploymentData.githubUrl) text += `GitHub: ${project.deploymentData.githubUrl}\n`;
+          if (project.deploymentData.deploymentPlatform) text += `Platform: ${project.deploymentData.deploymentPlatform}\n`;
+          text += `\n`;
+        }
+
+        // Public Page Data
+        if (project.publicPageData?.isPublic) {
+          text += `PUBLIC PAGE INFO\n`;
+          text += `----------------\n`;
+          if (project.publicPageData.publicTitle) text += `Title: ${project.publicPageData.publicTitle}\n`;
+          if (project.publicPageData.publicDescription) text += `Description: ${project.publicPageData.publicDescription}\n`;
+          text += `\n`;
+        }
+
+        // Timestamps
+        if (project.createdAt || project.updatedAt) {
+          text += `TIMESTAMPS\n`;
+          text += `----------\n`;
+          text += `Created: ${new Date(project.createdAt).toLocaleDateString()}\n`;
+          text += `Updated: ${new Date(project.updatedAt).toLocaleDateString()}\n`;
         }
 
         return text;

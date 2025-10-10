@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { CommandResponse as CommandResponseType } from '../api/terminal';
 import { getContrastTextColor } from '../utils/contrastTextColor';
 import { TodosRenderer, NotesRenderer, StackRenderer, DevLogRenderer, DocsRenderer } from './responses';
+import { authAPI } from '../api';
+import { hexToOklch, oklchToCssValue, generateFocusVariant, generateContrastingTextColor } from '../utils/colorUtils';
 
 interface CommandResponseProps {
   response: CommandResponseType;
@@ -48,16 +50,137 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
     return baseMatch ? `${baseMatch[1].trim()} ` : `${syntax} `;
   };
 
-  // Handle theme changes
-  React.useEffect(() => {
-    if (response.data?.theme) {
-      document.documentElement.setAttribute('data-theme', response.data.theme);
-      // refresh if theme changed to apply tailwind colors properly
-      setTimeout(() => {
-      });window.location.reload();
+  // Apply custom theme by updating tailwind config dynamically
+  const applyCustomTheme = React.useCallback((theme: any) => {
+    // Remove existing custom theme styles
+    const existingStyle = document.getElementById('custom-theme-style');
+    if (existingStyle) {
+      existingStyle.remove();
     }
 
-  }, [response.data?.theme]);
+    // Add custom theme to DaisyUI themes dynamically
+    const style = document.createElement('style');
+    style.id = 'custom-theme-style';
+
+    // Convert user colors to OKLCH format
+    const primaryOklch = hexToOklch(theme.colors.primary);
+    const secondaryOklch = hexToOklch(theme.colors.secondary);
+    const accentOklch = hexToOklch(theme.colors.accent);
+    const neutralOklch = hexToOklch(theme.colors.neutral);
+    const base100Oklch = hexToOklch(theme.colors['base-100']);
+    const base200Oklch = hexToOklch(theme.colors['base-200']);
+    const base300Oklch = hexToOklch(theme.colors['base-300']);
+    const infoOklch = hexToOklch(theme.colors.info);
+    const successOklch = hexToOklch(theme.colors.success);
+    const warningOklch = hexToOklch(theme.colors.warning);
+    const errorOklch = hexToOklch(theme.colors.error);
+
+    const css = `
+      [data-theme="custom-${theme.id}"] {
+        color-scheme: light;
+        --p: ${oklchToCssValue(primaryOklch)};
+        --pf: ${oklchToCssValue(generateFocusVariant(primaryOklch))};
+        --pc: ${generateContrastingTextColor(primaryOklch)};
+        --s: ${oklchToCssValue(secondaryOklch)};
+        --sf: ${oklchToCssValue(generateFocusVariant(secondaryOklch))};
+        --sc: ${generateContrastingTextColor(secondaryOklch)};
+        --a: ${oklchToCssValue(accentOklch)};
+        --af: ${oklchToCssValue(generateFocusVariant(accentOklch))};
+        --ac: ${generateContrastingTextColor(accentOklch)};
+        --n: ${oklchToCssValue(neutralOklch)};
+        --nf: ${oklchToCssValue(generateFocusVariant(neutralOklch))};
+        --nc: ${generateContrastingTextColor(neutralOklch)};
+        --b1: ${oklchToCssValue(base100Oklch)};
+        --b2: ${oklchToCssValue(base200Oklch)};
+        --b3: ${oklchToCssValue(base300Oklch)};
+        --bc: ${generateContrastingTextColor(base100Oklch)};
+        --in: ${oklchToCssValue(infoOklch)};
+        --inc: ${generateContrastingTextColor(infoOklch)};
+        --su: ${oklchToCssValue(successOklch)};
+        --suc: ${generateContrastingTextColor(successOklch)};
+        --wa: ${oklchToCssValue(warningOklch)};
+        --wac: ${generateContrastingTextColor(warningOklch)};
+        --er: ${oklchToCssValue(errorOklch)};
+        --erc: ${generateContrastingTextColor(errorOklch)};
+      }
+    `;
+
+    style.textContent = css;
+    document.head.appendChild(style);
+
+    // Set the theme attribute
+    document.documentElement.setAttribute('data-theme', `custom-${theme.id}`);
+  }, []);
+
+  // Clear custom theme styles and apply standard theme
+  const clearCustomTheme = React.useCallback((standardTheme: string) => {
+    // Always remove any existing custom theme CSS
+    const existingStyle = document.getElementById('custom-theme-style');
+    if (existingStyle) {
+      existingStyle.remove();
+    }
+    // Set the theme attribute to the standard theme
+    document.documentElement.setAttribute('data-theme', standardTheme);
+  }, []);
+
+  // Handle theme changes
+  React.useEffect(() => {
+    const handleThemeChange = async () => {
+      if (response.data?.theme) {
+        const themeName = response.data.theme;
+
+        // Clear any existing custom theme CSS first
+        clearCustomTheme(themeName);
+
+        // Update theme in database
+        try {
+          await authAPI.updateTheme(themeName);
+        } catch (error) {
+          console.error('Failed to save theme to database:', error);
+        }
+
+        // Apply the theme
+        if (themeName.startsWith('custom-')) {
+          // It's a custom theme, need to load and apply it
+          const themeId = themeName.replace('custom-', '');
+          try {
+            // Try to get custom themes from API
+            const { customThemes } = await authAPI.getCustomThemes();
+            const customTheme = customThemes.find((t: any) => t.id === themeId);
+            if (customTheme) {
+              applyCustomTheme(customTheme);
+            } else {
+              // Fallback to localStorage
+              const saved = localStorage.getItem('customThemes');
+              if (saved) {
+                const localCustomThemes = JSON.parse(saved);
+                const localCustomTheme = localCustomThemes.find((t: any) => t.id === themeId);
+                if (localCustomTheme) {
+                  applyCustomTheme(localCustomTheme);
+                }
+              }
+            }
+          } catch (error) {
+            console.error('Failed to load custom theme:', error);
+            // Fallback to localStorage
+            const saved = localStorage.getItem('customThemes');
+            if (saved) {
+              const localCustomThemes = JSON.parse(saved);
+              const localCustomTheme = localCustomThemes.find((t: any) => t.id === themeId);
+              if (localCustomTheme) {
+                applyCustomTheme(localCustomTheme);
+              }
+            }
+          }
+        }
+
+        // Keep localStorage as fallback
+        localStorage.setItem('theme', themeName);
+      }
+    };
+
+    handleThemeChange();
+  }, [response.data?.theme, clearCustomTheme, applyCustomTheme]);
 
   const handleNavigateToProject = async (path: string) => {
     // If the response has a project ID and it's different from current, switch first

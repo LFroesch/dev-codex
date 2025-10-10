@@ -398,7 +398,7 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
   return (
     <>
       <style>{styles}</style>
-      <div className="bg-base-100 border-subtle rounded-xl shadow-lg">
+      <div className=" rounded-xl shadow-lg">
         <div className="p-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <div className="flex items-center gap-3">
@@ -450,8 +450,8 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
             </div>
           </div>
 
-          <div className="flex justify-center mb-6 px-2">
-            <div className="tabs-container bg-base-200/50 backdrop-blur-sm border-subtle w-full max-w-4xl">
+          <div className="flex justify-center mb-4 px-2">
+            <div className="tabs-container bg-base-200/50 backdrop-blur-sm border-subtle flex max-w-4xl">
               <button 
                 className={`tab-button-admin ${activeTab === 'overview' ? 'tab-active' : ''}`}
                 onClick={() => setActiveTab('overview')}

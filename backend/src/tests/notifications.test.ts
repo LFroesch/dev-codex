@@ -44,7 +44,8 @@ describe('Notification Routes', () => {
       email: 'testuser@example.com',
       password: hashedPassword,
       firstName: 'Test',
-      lastName: 'User'
+      lastName: 'User',
+      username: 'testuser'
     });
     await user.save();
     userId = user._id.toString();

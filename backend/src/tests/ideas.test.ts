@@ -44,6 +44,7 @@ describe('Ideas Routes', () => {
       lastName: 'User',
       email: 'test@example.com',
       password: 'hashedpassword',
+      username: 'testuser',
     });
     await user.save();
     userId = user._id.toString();

@@ -13,6 +13,7 @@ interface CommandResponseProps {
   onProjectSelect?: (projectId: string) => void;
   currentProjectId?: string;
   onCommandClick?: (command: string) => void;
+  onDirectThemeChange?: (themeName: string) => Promise<void>;
 }
 
 const CommandResponse: React.FC<CommandResponseProps> = ({
@@ -21,7 +22,8 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
   timestamp,
   onProjectSelect,
   currentProjectId,
-  onCommandClick
+  onCommandClick,
+  onDirectThemeChange
 }) => {
   const navigate = useNavigate();
 
@@ -567,14 +569,23 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
               {response.data.themes.map((theme: any, index: number) => (
                 <div
                   key={index}
-                  className="p-2 bg-base-200 rounded-lg hover:bg-base-300/50 transition-colors border-thick cursor-pointer"
-                  onClick={() => onCommandClick?.(`/set theme ${theme.name}`)}
-                  title={`Click to use: /set theme ${theme.name}`}
+                  className="p-2 bg-base-200 rounded-lg hover:bg-primary/20 hover:border-primary/50 transition-all border-2 border-base-content/20 cursor-pointer flex items-center gap-2"
+                  onClick={() => onDirectThemeChange?.(theme.name)}
+                  title={`Click to apply ${theme.name} theme`}
                 >
-                  <div className="font-medium text-xs text-base-content/80 break-words">{theme.name}</div>
-                  <div className="text-xs text-base-content/60 break-words line-clamp-2">
-                    {theme.description}
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-xs text-base-content/80 break-words">{theme.name}</div>
+                    <div className="text-xs text-base-content/60 break-words line-clamp-1">
+                      {theme.description}
+                    </div>
                   </div>
+                  {theme.colors && (
+                    <div className="flex gap-1 flex-shrink-0">
+                      <div className="w-3 h-3 rounded-full border-thick" style={{ backgroundColor: theme.colors.primary }} title="Primary" />
+                      <div className="w-3 h-3 rounded-full border-thick" style={{ backgroundColor: theme.colors.secondary }} title="Secondary" />
+                      <div className="w-3 h-3 rounded-full border-thick" style={{ backgroundColor: theme.colors.accent }} title="Accent" />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -588,23 +599,26 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                 {customThemes.map((theme: any, index: number) => (
                   <div
                     key={index}
-                    className="p-2 bg-base-200 rounded-lg hover:bg-base-300/50 transition-colors border-2 border-secondary/30 cursor-pointer"
-                    onClick={() => onCommandClick?.(`/set theme ${theme.name}`)}
-                    title={`Click to use: /set theme ${theme.name}`}
+                    className="p-2 bg-base-200 rounded-lg hover:bg-secondary/20 hover:border-secondary/50 transition-all border-2 border-secondary/30 cursor-pointer flex items-center gap-2"
+                    onClick={() => onDirectThemeChange?.(theme.name)}
+                    title={`Click to apply ${theme.displayName} theme`}
                   >
-                    <div className="font-medium text-xs text-base-content/80 flex items-center gap-1 break-words">
-                      <span className="flex-shrink-0">🎨</span>
-                      <span className="break-words">{theme.displayName}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-xs text-base-content/80 flex items-center gap-1 break-words">
+                        <span className="flex-shrink-0">🎨</span>
+                        <span className="break-words">{theme.displayName}</span>
+                      </div>
+                      <div className="text-xs text-base-content/60 break-words line-clamp-1">
+                        {theme.description}
+                      </div>
                     </div>
-                    <div className="text-xs text-base-content/60 break-words line-clamp-2">
-                      {theme.description}
-                    </div>
-                    {/* Color preview */}
-                    <div className="flex gap-1 mt-1">
-                      <div className="w-3 h-3 rounded-full border-thick" style={{ backgroundColor: theme.colors?.primary }} title="Primary" />
-                      <div className="w-3 h-3 rounded-full border-thick" style={{ backgroundColor: theme.colors?.secondary }} title="Secondary" />
-                      <div className="w-3 h-3 rounded-full border-thick" style={{ backgroundColor: theme.colors?.accent }} title="Accent" />
-                    </div>
+                    {theme.colors && (
+                      <div className="flex gap-1 flex-shrink-0">
+                        <div className="w-3 h-3 rounded-full border-thick" style={{ backgroundColor: theme.colors.primary }} title="Primary" />
+                        <div className="w-3 h-3 rounded-full border-thick" style={{ backgroundColor: theme.colors.secondary }} title="Secondary" />
+                        <div className="w-3 h-3 rounded-full border-thick" style={{ backgroundColor: theme.colors.accent }} title="Accent" />
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -612,7 +626,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
           )}
 
           <div className="mt-3 text-xs text-base-content/60">
-            💡 Click any theme to populate terminal input
+            💡 Click any theme to apply it immediately
           </div>
         </div>
       );
@@ -656,67 +670,67 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
 
     // Render help data
     if (response.data.grouped) {
-      const [expandedSections, setExpandedSections] = React.useState<Set<string>>(
-        new Set()
-      );
+      const [openSection, setOpenSection] = React.useState<string | null>(null);
 
       const toggleSection = (category: string) => {
-        setExpandedSections(prev => {
-          const newSet = new Set(prev);
-          if (newSet.has(category)) {
-            newSet.delete(category);
-          } else {
-            newSet.add(category);
-          }
-          return newSet;
-        });
+        setOpenSection(prev => prev === category ? null : category);
       };
 
       return (
         <div className="mt-3 space-y-2">
           {Object.entries(response.data.grouped).map(([category, cmds]: [string, any]) => (
             cmds.length > 0 && (
-              <div key={category} className="collapse collapse-arrow bg-base-200 border-thick rounded-lg">
-                <input
-                  type="checkbox"
-                  checked={expandedSections.has(category)}
-                  onChange={() => toggleSection(category)}
-                />
-                <div className="collapse-title font-semibold text-lg flex items-center gap-2 section-header">
-                  {category}
-                  <span className="badge badge-md badge-primary">{cmds.length}</span>
-                </div>
-                <div className="collapse-content">
-                  <div className="overflow-x-auto">
-                    <table className="table table-xs table-zebra">
-                      <thead>
-                        <tr>
-                          <th className="w-1/3 text-xl">Command</th>
-                          <th className='text-xl'>Description</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {cmds.map((cmd: any, index: number) => (
-                          <tr key={index} className='hover'>
-                            <td>
-                              <button
-                                type="button"
-                                onClick={() => onCommandClick?.(generateTemplate(cmd.syntax))}
-                                className="text-xs text-primary font-mono bg-base-100 px-1.5 py-0.5 rounded hover:bg-primary/20 hover:border-primary border-thick transition-colors cursor-pointer"
-                                title="Click to use this command"
-                              >
-                                {cmd.syntax}
-                              </button>
-                            </td>
-                            <td className="text-xs text-base-content/70">
-                              {cmd.description}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+              <div key={category} className="border-thick rounded-lg overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => toggleSection(category)}
+                  className="w-full text-left p-3 flex items-center justify-between bg-base-200 hover:bg-base-300/50 transition-colors"
+                >
+                  <div className="text-sm font-semibold text-base-content">
+                    {category} ({cmds.length})
                   </div>
-                </div>
+                  <svg
+                    className={`w-4 h-4 transition-transform ${openSection === category ? 'rotate-180' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {openSection === category && (
+                  <div className="px-3 pb-3 bg-base-100">
+                    <div className="overflow-x-auto">
+                      <table className="table table-xs table-zebra">
+                        <thead>
+                          <tr>
+                            <th className="text-xs">Command</th>
+                            <th className="text-xs">Description</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {cmds.map((cmd: any, index: number) => (
+                            <tr key={index} className="hover">
+                              <td>
+                                <button
+                                  type="button"
+                                  onClick={() => onCommandClick?.(generateTemplate(cmd.syntax))}
+                                  className="text-xs text-primary font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
+                                  title="Click to use this command"
+                                >
+                                  {cmd.syntax}
+                                </button>
+                              </td>
+                              <td className="text-xs text-base-content/70">
+                                {cmd.description}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
               </div>
             )
           ))}
@@ -819,20 +833,20 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
     <div className="animate-fade-in">
       {/* Command echo */}
       <div className="inline-flex items-start gap-2 mb-2 border-thick p-2 rounded-lg bg-base-200 ">
-        <div className="text-xs text-base-content/80 font-mono flex-shrink-0">
+        <div className="text-xs text-base-content/80 font-mono font-semibold flex-shrink-0">
           {timestamp.toLocaleTimeString()}
         </div>
         <div className="text-xs text-base-content/80 font-mono font-semibold flex-shrink-0">$</div>
-        <code className="text-xs font-mono font-semibold text-primary flex-1 break-all">{command}</code>
+        <code className="text-xs font-mono font-semibold text-base-content/80 flex-1 break-all">{command}</code>
       </div>
 
       {/* Response */}
       <div className="bg-base-100 p-4 rounded-lg border-thick">
         <div className="w-full">
           <div className="flex items-start gap-2">
-            <span className="text-xl flex-shrink-0 bg-base-200 p-2 rounded-lg border-thick">{getIcon()}</span>
+            <span className="mr-2 text-xl flex-shrink-0 bg-base-200 p-2 rounded-lg border-thick">{getIcon()}</span>
             <div className="flex-1 min-w-0">
-              <div className="ml-1 text-lg font-semibold bg-base-200 p-2 rounded-lg border-thick break-words">{response.message}</div>
+              <div className="text-lg font-semibold bg-base-200 p-2 rounded-lg border-thick break-words">{response.message}</div>
 
               {/* Render data */}
               {renderData()}

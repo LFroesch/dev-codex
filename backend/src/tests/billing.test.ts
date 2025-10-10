@@ -78,6 +78,7 @@ describe('Billing and Payment Routes', () => {
       password: 'StrongPass123!', // Plain password - will be hashed by pre-save hook
       firstName: 'John',
       lastName: 'Doe',
+      username: 'testuser',
       planTier: 'free',
       isEmailVerified: true
     });

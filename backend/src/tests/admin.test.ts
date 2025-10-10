@@ -45,6 +45,7 @@ describe('Admin Routes', () => {
       lastName: 'User',
       email: 'admin@example.com',
       password: 'hashedpassword',
+      username: 'adminuser',
       role: 'admin',
       isAdmin: true,
     });
@@ -83,6 +84,7 @@ describe('Admin Routes', () => {
         lastName: 'User',
         email: 'user@example.com',
         password: 'hashedpassword',
+        username: 'regularuser',
         role: 'user',
       });
       await regularUser.save();

@@ -21,6 +21,7 @@ describe('Integration: Complete Auth Flow', () => {
     password: string;
     firstName: string;
     lastName: string;
+    username: string;
   };
 
   beforeAll(() => {
@@ -28,7 +29,8 @@ describe('Integration: Complete Auth Flow', () => {
       email: 'integration@test.com',
       password: 'IntegrationTest123!',
       firstName: 'Integration',
-      lastName: 'Test'
+      lastName: 'Test',
+      username: 'integrationuser'
     };
   });
 
@@ -221,17 +223,17 @@ describe('Integration: Complete Auth Flow', () => {
 
     it('should prevent access to other users projects', async () => {
       // Create first user and project
-      const firstUser = { ...testUser, email: 'first@test.com' };
+      const firstUser = { ...testUser, email: 'first@test.com', username: 'firstuser' };
       const firstRegister = await request(app)
         .post('/api/auth/register')
         .send(firstUser);
-      
+
       const firstLogin = await request(app)
         .post('/api/auth/login')
         .send({ email: firstUser.email, password: firstUser.password });
-      
+
       const firstCookies = firstLogin.headers['set-cookie'];
-      const firstCookie = Array.isArray(firstCookies) 
+      const firstCookie = Array.isArray(firstCookies)
         ? firstCookies.find((cookie: string) => cookie.startsWith('token='))
         : firstCookies;
 
@@ -243,17 +245,17 @@ describe('Integration: Complete Auth Flow', () => {
       const projectId = projectResponse.body.project.id;
 
       // Create second user
-      const secondUser = { ...testUser, email: 'second@test.com' };
+      const secondUser = { ...testUser, email: 'second@test.com', username: 'seconduser' };
       await request(app)
         .post('/api/auth/register')
         .send(secondUser);
-      
+
       const secondLogin = await request(app)
         .post('/api/auth/login')
         .send({ email: secondUser.email, password: secondUser.password });
-      
+
       const secondCookies = secondLogin.headers['set-cookie'];
-      const secondCookie = Array.isArray(secondCookies) 
+      const secondCookie = Array.isArray(secondCookies)
         ? secondCookies.find((cookie: string) => cookie.startsWith('token='))
         : secondCookies;
 

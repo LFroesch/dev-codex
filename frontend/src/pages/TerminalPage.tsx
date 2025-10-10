@@ -115,7 +115,7 @@ const TerminalPage: React.FC = () => {
   return (
     <div className="flex flex-col h-full">
       {/* Terminal Output - Scrollable */}
-      <div ref={terminalOutputRef} className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3 font-mono text-sm">
+      <div ref={terminalOutputRef} className="flex-1 min-h-0 overflow-y-auto p-2 space-y-3 font-mono text-sm">
         {/* Welcome Message - Compact */}
         {showWelcome && (
           <div className="animate-fade-in">

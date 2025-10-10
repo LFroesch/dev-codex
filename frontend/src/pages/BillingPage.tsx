@@ -135,7 +135,7 @@ const BillingPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-base-100">
-      <div className="max-w-7xl mx-auto px-2 sm:px-4 py-4 sm:py-8">
+      <div className="max-w-7xl mx-auto p-2">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
           <button

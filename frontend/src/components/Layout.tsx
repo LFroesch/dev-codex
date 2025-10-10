@@ -303,8 +303,8 @@ const Layout: React.FC = () => {
 
 
         {/* Mobile and Tablet Layout */}
-        <div className="block desktop:hidden px-3 py-4">
-          <div className="flex flex-col gap-3">
+        <div className="block desktop:hidden px-2 pt-2 pb-2">
+          <div className="flex flex-col gap-2">
 
             {/* Top row: Logo + Search (tablet), Project indicator (tablet), Session Tracker, and User Menu */}
             <div className="flex items-center justify-between min-w-0 gap-2">
@@ -337,7 +337,7 @@ const Layout: React.FC = () => {
                             navigate('/notes?view=projects');
                           }
                         }}
-                        className="input-field input-sm pl-9 pr-8 w-48 h-8 bg-base-100/80 backdrop-blur-none shadow-sm"
+                        className="input-field input-sm pl-9 pr-8 w-48 h-10 bg-base-100/80 backdrop-blur-none shadow-sm"
                       />
                       {searchTerm && (
                         <button
@@ -356,7 +356,7 @@ const Layout: React.FC = () => {
                       e.stopPropagation();
                       navigate('/create-project');
                     }}
-                    className="btn btn-primary btn-sm btn-circle shadow-sm relative"
+                    className="btn btn-primary btn-sm btn-circle h-10 w-10 shadow-sm relative"
                     title="New Project"
                     style={{ pointerEvents: 'auto' }}
                   >
@@ -375,6 +375,7 @@ const Layout: React.FC = () => {
                     className={`tab tab-sm flex-shrink-0 min-h-10 ${searchParams.get('view') === 'projects' ? 'tab-active' : ''} gap-1 sm:gap-2 font-bold whitespace-nowrap px-2 sm:px-4`}
                     style={searchParams.get('view') === 'projects' ? {color: getContrastTextColor()} : {}}
                     onClick={() => handleNavigateWithCheck('/notes?view=projects')}
+                    title='Projects'
                   >
                     <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
@@ -383,6 +384,7 @@ const Layout: React.FC = () => {
                   <button
                     className={`tab tab-sm flex-shrink-0 min-h-10 gap-1 sm:gap-2 font-bold whitespace-nowrap px-2 sm:px-4`}
                     onClick={() => handleNavigateWithCheck('/notes')}
+                    title='Details'
                   >
                     <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -393,20 +395,10 @@ const Layout: React.FC = () => {
                     onClick={() => {
                       handleNavigateWithCheck('/discover');
                     }}
+                    title='Discover'
                   >
                     <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                  </button>
-                  <button
-                    className={`tab tab-sm flex-shrink-0 min-h-10 ${location.pathname === '/terminal' ? 'tab-active' : ''} gap-1 sm:gap-2 font-bold whitespace-nowrap px-2 sm:px-4`}
-                    style={location.pathname === '/terminal' ? {color: getContrastTextColor()} : {}}
-                    onClick={() => {
-                      handleNavigateWithCheck('/terminal');
-                    }}
-                  >
-                    <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                   </button>
                 </div>
@@ -466,11 +458,11 @@ const Layout: React.FC = () => {
 
             {/* Current Project and Search/Create Row - Mobile only */}
             {user && location.pathname !== '/terminal' && (
-              <div className="flex justify-center max-w-sm tablet:hidden items-center gap-3 mx-auto border-thick rounded-lg p-1 bg-base-200 shadow-sm w-full">
+              <div className="flex justify-center max-w-sm tablet:hidden items-center gap-3 mx-auto border-thick rounded-lg px-2 py-1 bg-base-200 shadow-sm w-full">
                 {selectedProject && (
-                  <div 
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg border-2 border-base-content/20 shadow-sm hover:opacity-90 transition-all duration-200 cursor-pointer min-w-0 flex-shrink-0 h-10"
-                    style={{ 
+                  <div
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg border-2 border-base-content/20 shadow-sm hover:opacity-90 transition-all duration-200 cursor-pointer min-w-0 flex-shrink-0 h-8"
+                    style={{
                       backgroundColor: selectedProject.color,
                       color: getContrastTextColor(selectedProject.color)
                     }}
@@ -542,7 +534,7 @@ const Layout: React.FC = () => {
 
             {/* Navigation buttons */}
             {location.pathname !== '/support' && location.pathname !== '/terminal' && (
-            <div className="flex justify-center px-2">
+            <div className="flex justify-center">
               <div className="tabs-container">
                 <button
                   className={`tab tab-sm flex-shrink-0 min-h-10 ${searchParams.get('view') === 'projects' ? 'tab-active' : ''} gap-1 sm:gap-2 font-bold whitespace-nowrap px-2 sm:px-4`}
@@ -594,7 +586,7 @@ const Layout: React.FC = () => {
 
             {/* Project Views Submenu - Mobile */}
             {searchParams.get('view') === 'projects' && location.pathname !== '/terminal' && (
-            <div className="flex justify-center px-2 py-1">
+            <div className="flex justify-center">
               <div className="tabs-container">
                 <button
                   onClick={() => {
@@ -636,7 +628,7 @@ const Layout: React.FC = () => {
 
             {/* Project Details Submenu - Mobile */}
             {selectedProject && (location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && searchParams.get('view') !== 'projects' && (
-            <div className="flex justify-center px-2 py-1">
+            <div className="flex justify-center">
               <div className="tabs-container">
                 {tabs.map((tab) => (
                   <button
@@ -698,7 +690,7 @@ const Layout: React.FC = () => {
 
             {/* Discover Submenu - Mobile */}
             {(location.pathname === '/discover' || location.pathname.startsWith('/discover/')) && location.pathname !== '/terminal' && (
-            <div className="flex justify-center px-2 py-1">
+            <div className="flex justify-center">
               <div className="tabs-container">
                 <button
                   onClick={() => handleNavigateWithCheck('/discover')}
@@ -722,7 +714,7 @@ const Layout: React.FC = () => {
         </div>
 
         {/* Desktop Layout */}
-        <div className="hidden desktop:block px-3 py-4">
+        <div className="hidden desktop:block px-2 pt-2">
           <div className="relative flex-between-center">
 
             { /* Logo and Search/Create Row */}
@@ -751,7 +743,7 @@ const Layout: React.FC = () => {
                         navigate('/notes?view=projects');
                       }
                     }}
-                    className="input-field input-sm pl-9 pr-8 w-48 h-8 bg-base-100/80 backdrop-blur-none shadow-sm"
+                    className="input-field input-sm pl-9 pr-8 w-48 h-10 bg-base-100/80 backdrop-blur-none shadow-sm"
                   />
                   {searchTerm && (
                     <button
@@ -770,7 +762,7 @@ const Layout: React.FC = () => {
                     e.stopPropagation();
                     navigate('/create-project');
                   }}
-                  className="btn btn-primary btn-sm btn-circle shadow-sm relative"
+                  className="btn btn-primary btn-sm btn-circle h-10 w-10 shadow-sm relative"
                   title="New Project"
                   style={{ pointerEvents: 'auto' }}
                 >
@@ -780,7 +772,7 @@ const Layout: React.FC = () => {
                 </button>
               </div>
             </div>
-            
+
             <div className="absolute left-1/2 transform -translate-x-1/2">
               <div className="tabs-container">
               <button 
@@ -870,10 +862,12 @@ const Layout: React.FC = () => {
               </div>
             )}
           </div>
-          
+          {/* /terminal only gap */}
+          <div className='mb-2'></div>
+
           {/* Second Navigation Bar - Desktop */}
-          {user && location.pathname !== '/support' && (
-          <div className="p-4 pb-2">
+          {user && location.pathname !== '/support' && (searchParams.get('view') === 'projects' || (selectedProject && (location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && searchParams.get('view') !== 'projects') || (location.pathname === '/discover' || location.pathname.startsWith('/discover/'))) && (
+          <div className="py-2">
             {/* Project Views Submenu - Desktop */}
             {searchParams.get('view') === 'projects' && (
             <div className="flex justify-center">
@@ -1005,7 +999,7 @@ const Layout: React.FC = () => {
         </div>
       </header>
 
-      <div className="flex-1 w-full max-w-7xl mx-auto p-2 bg-base-100 flex flex-col min-h-0">
+      <div className="flex-1 w-full max-w-7xl mx-auto p-2 bg-base-100 flex flex-col min-h-[400px]">
         {/* Render content based on current route */}
         {searchParams.get('view') === 'projects' ? (
           /* My Projects Tab - Modern Style */
@@ -1013,7 +1007,7 @@ const Layout: React.FC = () => {
 
             {/* Tab Content */}
             <div className="flex-1 overflow-auto border-2 border-base-content/20 bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-none container-height-fix">
-              <div className="p-4">
+              <div className="p-2">
                 <div className="space-y-4">
                 {(activeProjectTab === 'active' || activeProjectTab === 'archived' || activeProjectTab === 'shared') && (
                   <div className="space-y-4">
@@ -1233,8 +1227,8 @@ const Layout: React.FC = () => {
           </>
         ) : location.pathname.startsWith('/project/') || location.pathname.startsWith('/user/') ? (
           /* Public Pages - Same styling as discover */
-          <div className="flex-1 overflow-auto border-2 border-base-content/20 bg-gradient-to-br from-base-50 to-base-100/50 mx-4 my-4 rounded-2xl shadow-2xl backdrop-blur-none container-height-fix">
-            <div className="p-1">
+          <div className="flex-1 overflow-auto border-2 border-base-content/20 bg-gradient-to-br from-base-50 to-base-100/50 mx-4 rounded-2xl shadow-2xl backdrop-blur-none container-height-fix">
+            <div className="p-2">
               <Outlet />
             </div>
           </div>
@@ -1242,10 +1236,10 @@ const Layout: React.FC = () => {
           /* Admin Dashboard - With submenu tabs */
           <>
             {/* Admin Dashboard Tab Navigation */}
-            <div className="flex justify-center px-2 py-4">
-              <div className="tabs-container tabs-lg bg-base-200 max-w-4xl">
+            <div className="flex justify-center mb-2">
+              <div className="tabs-container tabs bg-base-200 max-w-4xl">
                 <button 
-                  className={`tab tab-sm sm:tab-lg min-h-14 sm:min-h-16 font-bold text-xs sm:text-base px-3 sm:px-4 whitespace-nowrap ${activeAdminTab === 'users' ? 'tab-active' : ''}`}
+                  className={`tab tab-sm font-bold text-xs sm:text-base px-3 sm:px-4 whitespace-nowrap ${activeAdminTab === 'users' ? 'tab-active' : ''}`}
                   style={activeAdminTab === 'users' ? {color: getContrastTextColor()} : {}}
                   onClick={() => setActiveAdminTab('users')}
                 >
@@ -1256,7 +1250,7 @@ const Layout: React.FC = () => {
                   <span className="sm:hidden">Users</span>
                 </button>
                 <button 
-                  className={`tab tab-sm sm:tab-lg min-h-14 sm:min-h-16 font-bold text-xs sm:text-base px-3 sm:px-4 whitespace-nowrap ${activeAdminTab === 'tickets' ? 'tab-active' : ''}`}
+                  className={`tab tab-sm font-bold text-xs sm:text-base px-3 sm:px-4 whitespace-nowrap ${activeAdminTab === 'tickets' ? 'tab-active' : ''}`}
                   style={activeAdminTab === 'tickets' ? {color: getContrastTextColor()} : {}}
                   onClick={() => setActiveAdminTab('tickets')}
                 >
@@ -1267,7 +1261,7 @@ const Layout: React.FC = () => {
                   <span className="sm:hidden">Tickets</span>
                 </button>
                 <button 
-                  className={`tab tab-sm sm:tab-lg min-h-14 sm:min-h-16 font-bold text-xs sm:text-base px-3 sm:px-4 whitespace-nowrap ${activeAdminTab === 'analytics' ? 'tab-active' : ''}`}
+                  className={`tab tab-sm font-bold text-xs sm:text-base px-3 sm:px-4 whitespace-nowrap ${activeAdminTab === 'analytics' ? 'tab-active' : ''}`}
                   style={activeAdminTab === 'analytics' ? {color: getContrastTextColor()} : {}}
                   onClick={() => setActiveAdminTab('analytics')}
                 >
@@ -1278,7 +1272,7 @@ const Layout: React.FC = () => {
                   <span className="sm:hidden">Analytics</span>
                 </button>
                 <button 
-                  className={`tab tab-sm sm:tab-lg min-h-14 sm:min-h-16 font-bold text-xs sm:text-base px-3 sm:px-4 whitespace-nowrap ${activeAdminTab === 'news' ? 'tab-active' : ''}`}
+                  className={`tab tab-sm font-bold text-xs sm:text-base px-3 sm:px-4 whitespace-nowrap ${activeAdminTab === 'news' ? 'tab-active' : ''}`}
                   style={activeAdminTab === 'news' ? {color: getContrastTextColor()} : {}}
                   onClick={() => setActiveAdminTab('news')}
                 >
@@ -1324,8 +1318,8 @@ const Layout: React.FC = () => {
           </div>
         ) : location.pathname === '/billing' || location.pathname === '/account-settings' || location.pathname === '/support' || location.pathname === '/help' || location.pathname === '/news' ? (
           /* Billing, Account Settings, Support, Help, and News - No sub-menu */
-          <div className="flex-1 border-2 border-base-content/20 bg-gradient-to-br from-base-50 to-base-100/50 mx-4 my-4 rounded-2xl shadow-2xl backdrop-blur-none">
-            <div className="p-1">
+          <div className="flex-1 border-2 border-base-content/20 bg-gradient-to-br from-base-50 to-base-100/50 mx-4 rounded-2xl shadow-2xl backdrop-blur-none">
+            <div className="p-2">
               <Outlet />
             </div>
           </div>

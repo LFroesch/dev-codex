@@ -154,6 +154,31 @@ const Layout: React.FC = () => {
     return loadProjects(selectedProject, setSelectedProject);
   };
 
+  // Keybind for ctrl + J to go to terminal page
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only trigger if not in an input, textarea, or contenteditable
+      const target = e.target as HTMLElement;
+      const isInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
+      if (isInput) return;
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'j') {
+        e.preventDefault();
+        handleNavigateWithCheck('/terminal');
+      }
+      // if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p') {
+      //   e.preventDefault();
+      //   handleNavigateWithCheck('/notes?view=projects');
+      // }
+      // if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') {
+      //   e.preventDefault();
+      //   handleNavigateWithCheck('/notes');
+      // }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   useEffect(() => {
     const loadData = async () => {
       // Check if this is a public page that doesn't require authentication
@@ -863,6 +888,10 @@ const Layout: React.FC = () => {
             )}
           </div>
           {/* /terminal only gap */}
+          {user && (location.pathname === '/terminal') && (
+            <div className="mt-2"></div>
+          )}
+          {/* Extra margin below navbars */}
           <div className='mb-2'></div>
 
           {/* Second Navigation Bar - Desktop */}
@@ -1329,7 +1358,7 @@ const Layout: React.FC = () => {
             {/* Page Content */}
             <div className={`flex-1 overflow-auto border-2 border-base-content/20 bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-none container-height-fix ${location.pathname === '/support' ? 'mt-4' : ''}`}>
               {selectedProject ? (
-                <div className="p-4">
+                <div className="p-2">
                   <Outlet context={{ 
                     selectedProject, 
                     user,

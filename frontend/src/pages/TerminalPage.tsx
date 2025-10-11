@@ -37,11 +37,8 @@ const TerminalPage: React.FC = () => {
     setShowWelcome(false);
     setIsExecuting(true);
 
-    console.log('Executing command:', command, 'with project:', currentProjectId);
-
     try {
       const response = await terminalAPI.executeCommand(command, currentProjectId);
-      console.log('Command response:', response);
 
       const newEntry: TerminalEntry = {
         id: Date.now().toString(),

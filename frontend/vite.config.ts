@@ -1,9 +1,19 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import path from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    alias: {
+      '@shared': path.resolve(__dirname, '../shared')
+    },
+    extensions: ['.ts', '.tsx', '.js', '.jsx']
+  },
+  optimizeDeps: {
+    include: ['@shared/data/techStackData']
+  },
   server: {
     port: 5002,
     proxy: {

@@ -97,7 +97,7 @@ const DiscoverPage: React.FC = () => {
   }
 
   return (
-    <div className="flex-1 w-full max-w-7xl mx-auto p-2 sm:p-4 bg-base-100 flex flex-col mb-4 min-h-0">
+    <div className="flex-1 w-full max-w-7xl mx-auto bg-base-100 flex flex-col mb-4 min-h-0">
       <div className="space-y-6">
       {/* Error State */}
       {error && (

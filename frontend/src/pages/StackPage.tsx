@@ -1,8 +1,8 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Project, projectAPI } from '../api';
-import type { TechOption, TechCategory } from '../data/techStackData';
-import { STACK_CATEGORIES } from '../data/techStackData';
+import type { TechOption, TechCategory } from '@shared/data/techStackData';
+import { STACK_CATEGORIES } from '@shared/data/techStackData';
 import { handleAPIError } from '../services/errorService';
 import activityTracker from '../services/activityTracker';
 import { getContrastTextColor } from '../utils/contrastTextColor';
@@ -33,18 +33,30 @@ const StackPage: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState<string>('');
   const [editingVersion, setEditingVersion] = useState<{type: 'tech' | 'package', category: string, name: string, version: string} | null>(null);
 
+  // Local state for instant UI updates
+  const [localTechnologies, setLocalTechnologies] = useState<any[]>([]);
+  const [localPackages, setLocalPackages] = useState<any[]>([]);
+
   // Load tech stack data and set up activity tracking
   useEffect(() => {
     if (!dataLoaded) {
       setStackCategories(STACK_CATEGORIES);
       setDataLoaded(true);
     }
-    
+
     // Set activity tracker context when project changes
     if (selectedProject && user) {
       activityTracker.setContext(selectedProject.id, user.id);
     }
   }, [dataLoaded, selectedProject, user]);
+
+  // Sync local state from selectedProject (server is source of truth)
+  useEffect(() => {
+    if (selectedProject) {
+      setLocalTechnologies(selectedProject.selectedTechnologies || []);
+      setLocalPackages(selectedProject.selectedPackages || []);
+    }
+  }, [selectedProject?.selectedTechnologies, selectedProject?.selectedPackages]);
 
   // Map frontend categories to valid backend categories
   const getBackendCategory = (frontendCategory: string): { techCategory: string, packageCategory: string } => {
@@ -56,7 +68,7 @@ const StackPage: React.FC = () => {
       'backend-language': { tech: 'runtime', package: 'api' },
       'backend-framework': { tech: 'framework', package: 'api' },
       'database': { tech: 'database', package: 'data' },
-      'database-orm': { tech: 'tooling', package: 'data' },
+      'database-orm': { tech: 'database', package: 'data' },
       'mobile-framework': { tech: 'framework', package: 'ui' },
       'desktop-framework': { tech: 'framework', package: 'ui' },
       'hosting-deployment': { tech: 'deployment', package: 'utility' },
@@ -91,6 +103,14 @@ const StackPage: React.FC = () => {
     try {
       const { techCategory, packageCategory } = getBackendCategory(category);
 
+      // OPTIMISTIC UPDATE - Add to local state immediately
+      const newTech = {
+        category: techCategory,
+        name: tech.name,
+        version: tech.latestVersion || ''
+      };
+      setLocalTechnologies(prev => [...prev, newTech]);
+
       // Try adding as technology first, fallback to package
       let success = false;
       let lastError: any = null;
@@ -106,7 +126,16 @@ const StackPage: React.FC = () => {
         lastError = techErr;
         // If already exists as technology, that's fine
         if (techErr.response?.status !== 400) {
-          // Try adding as package instead
+          // Try adding as package instead - move from tech to package in local state
+          setLocalTechnologies(prev => prev.filter(t => t.name !== tech.name));
+          const newPkg = {
+            category: packageCategory,
+            name: tech.name,
+            version: tech.latestVersion || '',
+            description: tech.description
+          };
+          setLocalPackages(prev => [...prev, newPkg]);
+
           try {
             await projectAPI.addPackage(selectedProject.id, {
               category: packageCategory as any,
@@ -116,6 +145,8 @@ const StackPage: React.FC = () => {
             });
             success = true;
           } catch (pkgErr: any) {
+            // Complete failure - remove from local state
+            setLocalPackages(prev => prev.filter(p => p.name !== tech.name));
             lastError = pkgErr;
           }
         }
@@ -149,15 +180,13 @@ const StackPage: React.FC = () => {
 
 
   const isSelected = useCallback((name: string) => {
-    if (!selectedProject) return false;
-    
     // Check if this item exists by name in either technologies or packages
     // (regardless of category since backend categories might be different)
-    const isInTech = selectedProject.selectedTechnologies?.some(tech => tech.name === name);
-    const isInPackages = selectedProject.selectedPackages?.some(pkg => pkg.name === name);
-    
+    const isInTech = localTechnologies?.some(tech => tech.name === name);
+    const isInPackages = localPackages?.some(pkg => pkg.name === name);
+
     return isInTech || isInPackages;
-  }, [selectedProject]);
+  }, [localTechnologies, localPackages]);
 
   const handleUpdateVersion = useCallback(async (type: 'tech' | 'package', category: string, name: string, newVersion: string) => {
     if (!selectedProject) return;
@@ -204,14 +233,18 @@ const StackPage: React.FC = () => {
     setError('');
 
     try {
-      // Find the item in either list BY NAME ONLY (category is frontend category, not backend)
-      const techItem = selectedProject.selectedTechnologies?.find(tech => tech.name === name);
-      const packageItem = selectedProject.selectedPackages?.find(pkg => pkg.name === name);
+      // Find in local state and remove immediately for instant UI update
+      const techItem = localTechnologies?.find(tech => tech.name === name);
+      const packageItem = localPackages?.find(pkg => pkg.name === name);
 
       if (techItem) {
+        // OPTIMISTIC UPDATE - Remove from local state immediately
+        setLocalTechnologies(prev => prev.filter(t => t.name !== name));
         await projectAPI.removeTechnology(selectedProject.id, techItem.category, name);
         await onProjectRefresh();
       } else if (packageItem) {
+        // OPTIMISTIC UPDATE - Remove from local state immediately
+        setLocalPackages(prev => prev.filter(p => p.name !== name));
         await projectAPI.removePackage(selectedProject.id, packageItem.category, name);
         await onProjectRefresh();
       } else {
@@ -227,36 +260,38 @@ const StackPage: React.FC = () => {
         projectId: selectedProject.id
       });
       setError('Failed to remove item');
+      // Refresh will re-sync from server if API failed
+      await onProjectRefresh();
     } finally {
       setLoadingStates(prev => ({ ...prev, [loadingKey]: false }));
     }
-  }, [selectedProject, onProjectRefresh]);
+  }, [selectedProject, onProjectRefresh, localTechnologies, localPackages]);
 
   // Memoize filtered categories for selected stack display
   const selectedTechsByCategory = useMemo(() => {
-    if (!selectedProject?.selectedTechnologies) return {};
-    return selectedProject.selectedTechnologies.reduce((acc, tech) => {
+    if (!localTechnologies) return {};
+    return localTechnologies.reduce((acc, tech) => {
       if (!acc[tech.category]) acc[tech.category] = [];
       acc[tech.category].push(tech);
       return acc;
     }, {} as { [key: string]: any[] });
-  }, [selectedProject?.selectedTechnologies]);
+  }, [localTechnologies]);
 
   const selectedPackagesByCategory = useMemo(() => {
-    if (!selectedProject?.selectedPackages) return {};
-    return selectedProject.selectedPackages.reduce((acc, pkg) => {
+    if (!localPackages) return {};
+    return localPackages.reduce((acc, pkg) => {
       if (!acc[pkg.category]) acc[pkg.category] = [];
       acc[pkg.category].push(pkg);
       return acc;
     }, {} as { [key: string]: any[] });
-  }, [selectedProject?.selectedPackages]);
+  }, [localPackages]);
 
   // Memoize total count
   const totalSelectedCount = useMemo(() => {
-    const techCount = selectedProject?.selectedTechnologies?.length || 0;
-    const packageCount = selectedProject?.selectedPackages?.length || 0;
+    const techCount = localTechnologies?.length || 0;
+    const packageCount = localPackages?.length || 0;
     return techCount + packageCount;
-  }, [selectedProject?.selectedTechnologies?.length, selectedProject?.selectedPackages?.length]);
+  }, [localTechnologies, localPackages]);
 
   // Filter categories based on selected platforms
   const filteredCategories = useMemo(() => {
@@ -604,7 +639,7 @@ const StackPage: React.FC = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {/* Technologies */}
-              {Object.entries(selectedTechsByCategory).map(([categoryId, techs]) => {
+              {(Object.entries(selectedTechsByCategory) as [string, any[]][]).map(([categoryId, techs]) => {
                 if (!techs?.length) return null;
                 const category = stackCategories.find(c => c.id === categoryId) || {
                   id: categoryId,
@@ -679,9 +714,9 @@ const StackPage: React.FC = () => {
                   );
                 });
               })}
-              
+
               {/* Packages */}
-              {Object.entries(selectedPackagesByCategory).map(([categoryId, packages]) => {
+              {(Object.entries(selectedPackagesByCategory) as [string, any[]][]).map(([categoryId, packages]) => {
                 if (!packages?.length) return null;
                 const category = stackCategories.find(c => c.id === categoryId) || {
                   id: categoryId,

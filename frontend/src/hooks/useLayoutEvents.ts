@@ -47,12 +47,10 @@ export const useLayoutEvents = ({
 
     const handleProjectSync = (event: CustomEvent) => {
       const { newProjectId } = event.detail;
-      console.log('[Layout] Cross-tab project sync received:', newProjectId);
 
       if (projects.length > 0 && newProjectId) {
         const project = projects.find(p => p.id === newProjectId);
         if (project) {
-          console.log('[Layout] Updating UI to synced project:', project.name);
           setSelectedProject(project);
 
           // Show subtle feedback

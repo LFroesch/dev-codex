@@ -36,9 +36,6 @@ const PublicProfilePage: React.FC = () => {
       setLoading(true);
       setError('');
       const response = await publicAPI.getUserProfile(identifier!);
-      console.log('PublicProfile loaded user:', response.user);
-      console.log('displayPreference:', response.user.displayPreference);
-      console.log('displayName:', response.user.displayName);
       setUser(response.user);
     } catch (err: any) {
       if (err.response?.status === 404) {

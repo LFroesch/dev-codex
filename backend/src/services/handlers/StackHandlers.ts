@@ -2,6 +2,7 @@ import { BaseCommandHandler } from './BaseCommandHandler';
 import { CommandResponse, ResponseType } from '../commandExecutor';
 import { ParsedCommand } from '../commandParser';
 import { isValidTechCategory, isValidPackageCategory } from '../../utils/validation';
+import { lookupTech } from '../../utils/techStackLookup';
 
 /**
  * Handlers for tech stack and package management commands
@@ -23,8 +24,29 @@ export class StackHandlers extends BaseCommandHandler {
       };
     }
 
-    const category = (parsed.flags.get('category') as string) || 'framework';
-    const version = (parsed.flags.get('version') as string) || '';
+    // Try to auto-detect from techStackData
+    const lookup = lookupTech(name);
+
+    // Use user-provided values or fall back to auto-detected values
+    let category = parsed.flags.get('category') as string;
+    let version = parsed.flags.get('version') as string;
+    let techName = name;
+
+    if (lookup.found) {
+      // Auto-detected! Use the properly cased name from data
+      techName = lookup.name!;
+      category = category || lookup.category!;
+      version = version || lookup.version || '';
+    } else {
+      // Not in techStackData - require all fields
+      if (!category || !version) {
+        return {
+          type: ResponseType.ERROR,
+          message: `"${name}" not found in tech database. Please specify --category and --version`,
+          suggestions: ['/add tech React --category=framework --version=18.2']
+        };
+      }
+    }
 
     if (!isValidTechCategory(category)) {
       return {
@@ -35,14 +57,14 @@ export class StackHandlers extends BaseCommandHandler {
     }
 
     const exists = project.selectedTechnologies?.some(
-      (t: any) => t.name === name && t.category === category
+      (t: any) => t.name === techName && t.category === category
     );
 
     if (exists) {
       return {
         type: ResponseType.ERROR,
-        message: `Technology "${name}" already exists in ${category}`,
-        suggestions: [`/remove tech ${name}`, '/view stack']
+        message: `Technology "${techName}" already exists in ${category}`,
+        suggestions: [`/remove tech ${techName}`, '/view stack']
       };
     }
 
@@ -50,11 +72,11 @@ export class StackHandlers extends BaseCommandHandler {
       project.selectedTechnologies = [];
     }
 
-    project.selectedTechnologies.push({ category, name, version });
+    project.selectedTechnologies.push({ category, name: techName, version });
     await project.save();
 
     return this.buildSuccessResponse(
-      `⚡ Added ${name}${version ? ` v${version}` : ''} to tech stack`,
+      `⚡ Added ${techName}${version ? ` v${version}` : ''}${lookup.found ? ' (auto-detected)' : ''} to tech stack`,
       project,
       'add_tech'
     );
@@ -76,8 +98,31 @@ export class StackHandlers extends BaseCommandHandler {
       };
     }
 
-    const category = (parsed.flags.get('category') as string) || 'utility';
-    const version = (parsed.flags.get('version') as string) || '';
+    // Try to auto-detect from techStackData
+    const lookup = lookupTech(name);
+
+    // Use user-provided values or fall back to auto-detected values
+    let category = parsed.flags.get('category') as string;
+    let version = parsed.flags.get('version') as string;
+    let packageName = name;
+
+    if (lookup.found) {
+      // Auto-detected! Use the properly cased name from data
+      packageName = lookup.name!;
+      // For packages, use the package category mapping
+      const packageCategory = this.mapFrontendCategoryToPackage(lookup.originalCategory!);
+      category = category || packageCategory;
+      version = version || lookup.version || '';
+    } else {
+      // Not in techStackData - require all fields
+      if (!category || !version) {
+        return {
+          type: ResponseType.ERROR,
+          message: `"${name}" not found in tech database. Please specify --category and --version`,
+          suggestions: ['/add package lodash --category=utility --version=4.17']
+        };
+      }
+    }
 
     if (!isValidPackageCategory(category)) {
       return {
@@ -88,14 +133,14 @@ export class StackHandlers extends BaseCommandHandler {
     }
 
     const exists = project.selectedPackages?.some(
-      (p: any) => p.name === name && p.category === category
+      (p: any) => p.name === packageName && p.category === category
     );
 
     if (exists) {
       return {
         type: ResponseType.ERROR,
-        message: `Package "${name}" already exists in ${category}`,
-        suggestions: [`/remove package ${name}`, '/view stack']
+        message: `Package "${packageName}" already exists in ${category}`,
+        suggestions: [`/remove package ${packageName}`, '/view stack']
       };
     }
 
@@ -103,14 +148,50 @@ export class StackHandlers extends BaseCommandHandler {
       project.selectedPackages = [];
     }
 
-    project.selectedPackages.push({ category, name, version });
+    project.selectedPackages.push({ category, name: packageName, version });
     await project.save();
 
     return this.buildSuccessResponse(
-      `📦 Added ${name}${version ? ` v${version}` : ''} to packages`,
+      `📦 Added ${packageName}${version ? ` v${version}` : ''}${lookup.found ? ' (auto-detected)' : ''} to packages`,
       project,
       'add_package'
     );
+  }
+
+  /**
+   * Map frontend category to package category
+   */
+  private mapFrontendCategoryToPackage(frontendCategory: string): string {
+    const categoryMap: { [key: string]: string } = {
+      'frontend-framework': 'ui',
+      'meta-framework': 'ui',
+      'ui-library': 'ui',
+      'styling': 'ui',
+      'backend-language': 'api',
+      'backend-framework': 'api',
+      'database': 'data',
+      'database-orm': 'data',
+      'mobile-framework': 'ui',
+      'desktop-framework': 'ui',
+      'hosting-deployment': 'utility',
+      'development-tools': 'utility',
+      'testing': 'utility',
+      'authentication': 'auth',
+      'payments': 'utility',
+      'email': 'api',
+      'file-storage': 'data',
+      'analytics': 'data',
+      'monitoring': 'utility',
+      'cms': 'data',
+      'state-management': 'state',
+      'data-fetching': 'api',
+      'forms': 'forms',
+      'routing': 'routing',
+      'animation': 'animation',
+      'utilities': 'utility'
+    };
+
+    return categoryMap[frontendCategory] || 'utility';
   }
 
   /**
@@ -170,23 +251,29 @@ export class StackHandlers extends BaseCommandHandler {
       };
     }
 
+    // Try to get properly cased name from techStackData
+    const lookup = lookupTech(name);
+    const searchName = lookup.found ? lookup.name! : name;
+
     const technologies = project.selectedTechnologies || [];
-    const index = technologies.findIndex((t: any) => t.name === name);
+    // Search case-insensitively
+    const index = technologies.findIndex((t: any) => t.name.toLowerCase() === searchName.toLowerCase());
 
     if (index === -1) {
       return {
         type: ResponseType.ERROR,
-        message: `Technology "${name}" not found in stack`,
+        message: `Technology "${searchName}" not found in stack`,
         suggestions: ['/view stack']
       };
     }
 
+    const removedTech = technologies[index];
     technologies.splice(index, 1);
     project.selectedTechnologies = technologies;
     await project.save();
 
     return this.buildSuccessResponse(
-      `🗑️ Removed ${name} from tech stack`,
+      `🗑️ Removed ${removedTech.name} from tech stack`,
       project,
       'remove_tech'
     );
@@ -208,23 +295,29 @@ export class StackHandlers extends BaseCommandHandler {
       };
     }
 
+    // Try to get properly cased name from techStackData
+    const lookup = lookupTech(name);
+    const searchName = lookup.found ? lookup.name! : name;
+
     const packages = project.selectedPackages || [];
-    const index = packages.findIndex((p: any) => p.name === name);
+    // Search case-insensitively
+    const index = packages.findIndex((p: any) => p.name.toLowerCase() === searchName.toLowerCase());
 
     if (index === -1) {
       return {
         type: ResponseType.ERROR,
-        message: `Package "${name}" not found`,
+        message: `Package "${searchName}" not found`,
         suggestions: ['/view stack']
       };
     }
 
+    const removedPackage = packages[index];
     packages.splice(index, 1);
     project.selectedPackages = packages;
     await project.save();
 
     return this.buildSuccessResponse(
-      `🗑️ Removed ${name} from packages`,
+      `🗑️ Removed ${removedPackage.name} from packages`,
       project,
       'remove_package'
     );

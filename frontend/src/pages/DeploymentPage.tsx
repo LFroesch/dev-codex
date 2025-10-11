@@ -199,10 +199,10 @@ const DeploymentPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-base-200/40 border-thick rounded-lg p-4">
               <div className="flex items-center gap-3 mb-2">
-                <span className="text-sm badge-neutral badge badge-md w-8 h-6">📶</span>
-                <span className="font-medium text-sm">Status</span>
+                <span className="text-md badge-neutral badge badge-md w-8 h-6">📶</span>
+                <span className="font-medium text-md">Status</span>
               </div>
-              <p className="text-sm badge-primary badge badge-md border-2 border-base-content/20 p-2"
+              <p className="text-sm font-semibold badge-primary badge badge-md border-2 border-base-content/20 p-2"
               style={{ color: getContrastTextColor("primary") }}>
                 {deploymentData.deploymentStatus === 'active' ? '🟢 Active' :
                  deploymentData.deploymentStatus === 'error' ? '🔴 Error' : '🟡 Inactive'}
@@ -211,10 +211,10 @@ const DeploymentPage: React.FC = () => {
             
             <div className="bg-base-200/40 border-thick rounded-lg p-4">
               <div className="flex items-center gap-3 mb-2">
-                <span className="text-sm badge-neutral badge badge-md w-8 h-6">🌐</span>
-                <span className="font-medium text-sm">Platform</span>
+                <span className="text-md badge-neutral badge badge-md w-8 h-6">🌐</span>
+                <span className="font-medium text-md">Platform</span>
               </div>
-              <p className="text-sm badge-primary badge badge-md border-2 border-base-content/20 p-2"
+              <p className="text-sm font-semibold badge-primary badge badge-md border-2 border-base-content/20 p-2"
               style={{ color: getContrastTextColor("primary") }}>
                 {deploymentData.deploymentPlatform || 'Not configured'}
               </p>
@@ -222,10 +222,10 @@ const DeploymentPage: React.FC = () => {
             
             <div className="bg-base-200/40 border-thick rounded-lg p-4">
               <div className="flex items-center gap-3 mb-2">
-                <span className="text-sm badge-neutral badge badge-md w-8 h-6">🔗</span>
-                <span className="font-medium text-sm">Live URL</span>
+                <span className="text-md badge-neutral badge badge-md w-8 h-6">🔗</span>
+                <span className="font-medium text-md">Live URL</span>
               </div>
-              <p className="text-sm truncate badge-primary badge badge-md border-2 border-base-content/20 p-2"
+              <p className="text-sm font-semibold truncate badge-primary badge badge-md border-2 border-base-content/20 p-2"
               style={{ color: getContrastTextColor("primary") }}>
                 {deploymentData.liveUrl || 'Not configured'}
               </p>
@@ -233,10 +233,10 @@ const DeploymentPage: React.FC = () => {
             
             <div className="bg-base-200/40 border-thick rounded-lg p-4">
               <div className="flex items-center gap-3 mb-2">
-                <span className="text-sm badge-neutral badge badge-md w-8 h-6">📅</span>
-                <span className="font-medium text-sm">Last Deploy</span>
+                <span className="text-md badge-neutral badge badge-md w-8 h-6">📅</span>
+                <span className="font-medium text-md">Last Deploy</span>
               </div>
-              <p className="text-sm badge-primary badge badge-md border-2 border-base-content/20 p-2"
+              <p className="text-sm font-semibold badge-primary badge badge-md border-2 border-base-content/20 p-2"
               style={{ color: getContrastTextColor("primary") }}>
                 {deploymentData.lastDeployDate ? 
                   new Date(deploymentData.lastDeployDate).toLocaleDateString() : 

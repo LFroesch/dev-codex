@@ -3,16 +3,6 @@
  * for optimal contrast and readability
  */
 export const getContrastTextColor = (colorValue?: string): string => {
-  // Quick debug to see what we're actually working with
-  if (colorValue === 'error') {
-    console.log('Error color debug - checking CSS vars...');
-    if (typeof window !== 'undefined') {
-      const computed = getComputedStyle(document.documentElement);
-      console.log('--er value:', computed.getPropertyValue('--er'));
-      console.log('--error value:', computed.getPropertyValue('--error'));
-      console.log('error color:', computed.getPropertyValue('color'));
-    }
-  }
   
   const hslToRgb = (h: number, s: number, l: number): [number, number, number] => {
     // Convert HSL to RGB

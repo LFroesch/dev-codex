@@ -43,6 +43,8 @@ export enum CommandType {
   WIZARD_DEPLOY = 'wizard_deploy',
   EXPORT = 'export',
   SUMMARY = 'summary',
+  VIEW_NOTIFICATIONS = 'view_notifications',
+  CLEAR_NOTIFICATIONS = 'clear_notifications',
   HELP = 'help',
   UNKNOWN = 'unknown'
 }
@@ -217,6 +219,15 @@ const COMMAND_ALIASES: Record<string, CommandType> = {
   'due': CommandType.SET_DUE_DATE,
   'set due': CommandType.SET_DUE_DATE,
   'due date': CommandType.SET_DUE_DATE,
+
+  // Notifications
+  'view notifications': CommandType.VIEW_NOTIFICATIONS,
+  'view-notifications': CommandType.VIEW_NOTIFICATIONS,
+  'notifications': CommandType.VIEW_NOTIFICATIONS,
+  'notifs': CommandType.VIEW_NOTIFICATIONS,
+  'clear notifications': CommandType.CLEAR_NOTIFICATIONS,
+  'clear-notifications': CommandType.CLEAR_NOTIFICATIONS,
+  'clear notifs': CommandType.CLEAR_NOTIFICATIONS,
 
   // Help
   'help': CommandType.HELP,
@@ -699,6 +710,31 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
     ],
     requiresProject: true,
     requiresArgs: true
+  },
+  [CommandType.VIEW_NOTIFICATIONS]: {
+    type: CommandType.VIEW_NOTIFICATIONS,
+    syntax: '/view notifications [--unread]',
+    description: 'View your notifications',
+    examples: [
+      '/view notifications',
+      '/notifications',
+      '/notifs',
+      '/view notifications --unread'
+    ],
+    requiresProject: false,
+    requiresArgs: false
+  },
+  [CommandType.CLEAR_NOTIFICATIONS]: {
+    type: CommandType.CLEAR_NOTIFICATIONS,
+    syntax: '/clear notifications',
+    description: 'Clear all notifications',
+    examples: [
+      '/clear notifications',
+      '/clear notifs',
+      '/clear-notifications'
+    ],
+    requiresProject: false,
+    requiresArgs: false
   },
   [CommandType.HELP]: {
     type: CommandType.HELP,

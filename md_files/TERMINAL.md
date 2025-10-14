@@ -77,8 +77,30 @@
   - Aliases: `/readme`, `/prompt`
 
 ### Coming Soon
+
+#### High Priority
+- **Batch/Chain Commands** - Execute multiple commands in sequence
+  - Syntax: `/add todo X && /set priority high`
+  - optional AI-powered batch via `/clippydump` *Hold off on this for now*
+- **Better Command Flags** - Enhanced flag system for all commands
+  - More intuitive syntax
+  - Better validation and help text
+- **Delete & Edit Operations** - Inline editing GUI
+  - `/edit todo [title]` - Opens inline editor
+  - `/delete [type] [title]` - Delete items with confirmation
+- **Subtask System** - Full subtask support for todos
+  - `/add subtask [parent-title] [sub-title]`
+  - `/view subtasks [todo-id]`
+
+#### Workflow Commands
+- `/today [@project]` - Show today's tasks and activity
+- `/week [@project]` - Weekly summary and planning
+- `/standup [@project]` - Generate standup report
+- `/info [@project]` - Quick project overview
+
+#### Interactive Features
 - `/wizard new/setup/deploy` - Interactive wizards
-- `/suggest [request]` - AI-powered suggestions
+- `/suggest [request]` - AI-powered suggestions (see clippy.md)
 - `/dump [requests]` - Batch AI operations
 
 ---

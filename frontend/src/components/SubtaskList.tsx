@@ -6,7 +6,7 @@ interface SubtaskListProps {
   parentTodo: Todo;
   subtasks: Todo[];
   projectId: string;
-  onUpdate: () => void;
+  onUpdate: () => Promise<void>;
   onArchiveToDevLog: (todo: Todo) => void;
   isSharedProject?: boolean;
   canEdit?: boolean;
@@ -74,9 +74,9 @@ const SubtaskList: React.FC<SubtaskListProps> = ({
 
   const sortedSubtasks = sortSubtasks(subtasks);
 
-  const handleAddSubtask = () => {
+  const handleAddSubtask = async () => {
     setShowAddSubtask(false);
-    onUpdate();
+    await onUpdate();
   };
 
   return (

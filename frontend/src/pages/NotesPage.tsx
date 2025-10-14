@@ -3,6 +3,8 @@ import { useOutletContext, useSearchParams } from 'react-router-dom';
 import { Project, projectAPI, Todo } from '../api';
 import {TodoItem} from '../components/TodoItem';
 import { NoteModal } from '../components/NoteItem';
+import DatePicker from '../components/DatePicker';
+import TeamMemberSelect from '../components/TeamMemberSelect';
 import activityTracker from '../services/activityTracker';
 import { getContrastTextColor } from '../utils/contrastTextColor';
 
@@ -109,78 +111,99 @@ const NotesPage: React.FC = () => {
     }
   };
 
-  // Todo sorting and filtering functions
-  const filterAndSortTodos = (todos: Todo[]) => {
+  // Helper functions for date comparisons
+  const isOverdue = (dueDate?: string) => {
+    if (!dueDate) return false;
+    return new Date(dueDate).getTime() < new Date().setHours(0, 0, 0, 0);
+  };
+
+  const isToday = (dueDate?: string) => {
+    if (!dueDate) return false;
+    const today = new Date().setHours(0, 0, 0, 0);
+    const due = new Date(dueDate).setHours(0, 0, 0, 0);
+    return due === today;
+  };
+
+  const isTomorrow = (dueDate?: string) => {
+    if (!dueDate) return false;
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+    const due = new Date(dueDate).setHours(0, 0, 0, 0);
+    return due === tomorrow.valueOf();
+  };
+
+  const isSoon = (dueDate?: string) => {
+    if (!dueDate) return false;
+    const now = new Date().setHours(0, 0, 0, 0);
+    const due = new Date(dueDate).setHours(0, 0, 0, 0);
+    const diffDays = Math.ceil((due - now) / (1000 * 60 * 60 * 24));
+    return diffDays >= 2 && diffDays <= 7;
+  };
+
+  const isFuture = (dueDate?: string) => {
+    if (!dueDate) return true; // Undated todos go to future
+    const now = new Date().setHours(0, 0, 0, 0);
+    const due = new Date(dueDate).setHours(0, 0, 0, 0);
+    const diffDays = Math.ceil((due - now) / (1000 * 60 * 60 * 24));
+    return diffDays > 7;
+  };
+
+  const getPriorityWeight = (priority?: string) => {
+    switch (priority) {
+      case 'high': return 3;
+      case 'medium': return 2;
+      case 'low': return 1;
+      default: return 2;
+    }
+  };
+
+  // Sort todos within a group by priority then creation date
+  const sortTodosInGroup = (todos: Todo[]) => {
+    return [...todos].sort((a, b) => {
+      // Completed items go to bottom
+      if (a.completed !== b.completed) {
+        return a.completed ? 1 : -1;
+      }
+
+      // Sort by priority
+      const aPriority = getPriorityWeight(a.priority);
+      const bPriority = getPriorityWeight(b.priority);
+
+      if (aPriority !== bPriority) {
+        return bPriority - aPriority;
+      }
+
+      // Finally by creation date (newest first)
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+  };
+
+  // Group todos by time period
+  const groupTodosByTime = (todos: Todo[]) => {
     // Filter out subtasks - only show parent todos
-    let filteredTodos = todos.filter(todo => !todo.parentTodoId);
-    
-    // Apply filters
+    const parentTodos = todos.filter(todo => !todo.parentTodoId);
+
+    // Apply global filters if needed
+    let filteredTodos = parentTodos;
     if (todoFilterBy !== 'all') {
       if (todoFilterBy === 'overdue') {
-        filteredTodos = filteredTodos.filter(todo => {
-          if (!todo.dueDate) return false;
-          return new Date(todo.dueDate).getTime() < new Date().getTime();
-        });
+        filteredTodos = parentTodos.filter(todo => isOverdue(todo.dueDate));
       } else if (todoFilterBy === 'completed') {
-        filteredTodos = filteredTodos.filter(todo => todo.completed);
+        filteredTodos = parentTodos.filter(todo => todo.completed);
       } else {
         // Filter by priority
-        filteredTodos = filteredTodos.filter(todo => todo.priority === todoFilterBy);
+        filteredTodos = parentTodos.filter(todo => todo.priority === todoFilterBy);
       }
     }
-    
-    // Sort todos
-    return [...filteredTodos].sort((a, b) => {
-      // Helper functions
-      const isOverdue = (dueDate?: string) => {
-        if (!dueDate) return false;
-        return new Date(dueDate).getTime() < new Date().getTime();
-      };
 
-      const getPriorityWeight = (priority?: string) => {
-        switch (priority) {
-          case 'high': return 3;
-          case 'medium': return 2;
-          case 'low': return 1;
-          default: return 2;
-        }
-      };
+    const overdue = sortTodosInGroup(filteredTodos.filter(todo => isOverdue(todo.dueDate)));
+    const today = sortTodosInGroup(filteredTodos.filter(todo => !isOverdue(todo.dueDate) && isToday(todo.dueDate)));
+    const tomorrow = sortTodosInGroup(filteredTodos.filter(todo => isTomorrow(todo.dueDate)));
+    const soon = sortTodosInGroup(filteredTodos.filter(todo => isSoon(todo.dueDate)));
+    const future = sortTodosInGroup(filteredTodos.filter(todo => isFuture(todo.dueDate) && !isToday(todo.dueDate) && !isTomorrow(todo.dueDate) && !isSoon(todo.dueDate) && !isOverdue(todo.dueDate)));
 
-      if (todoSortBy === 'priority') {
-        // Completed items go to bottom
-        if (a.completed !== b.completed) {
-          return a.completed ? 1 : -1;
-        }
-
-        // Overdue items first
-        const aOverdue = isOverdue(a.dueDate);
-        const bOverdue = isOverdue(b.dueDate);
-        
-        if (aOverdue !== bOverdue) {
-          return aOverdue ? -1 : 1;
-        }
-
-        // Then by priority
-        const aPriority = getPriorityWeight(a.priority);
-        const bPriority = getPriorityWeight(b.priority);
-        
-        if (aPriority !== bPriority) {
-          return bPriority - aPriority;
-        }
-
-        // Finally by creation date
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      } else if (todoSortBy === 'dueDate') {
-        // Sort by due date (items without due date go last)
-        if (!a.dueDate && !b.dueDate) return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-        if (!a.dueDate) return 1;
-        if (!b.dueDate) return -1;
-        return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
-      } else {
-        // Sort by creation date (newest first)
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      }
-    });
+    return { overdue, today, tomorrow, soon, future };
   };
 
   if (!selectedProject) {
@@ -230,6 +253,10 @@ const NotesPage: React.FC = () => {
   const [showCreateTodoForm, setShowCreateTodoForm] = useState(false);
   const [newTodoText, setNewTodoText] = useState('');
   const [newTodoDescription, setNewTodoDescription] = useState('');
+  const [newTodoPriority, setNewTodoPriority] = useState<'low' | 'medium' | 'high'>('medium');
+  const [newTodoDueDate, setNewTodoDueDate] = useState('');
+  const [newTodoReminderDate, setNewTodoReminderDate] = useState('');
+  const [newTodoAssignedTo, setNewTodoAssignedTo] = useState('');
   const [isCreatingTodo, setIsCreatingTodo] = useState(false);
 
   // Compact dev log form state
@@ -238,8 +265,42 @@ const NotesPage: React.FC = () => {
   const [newDevLogDescription, setNewDevLogDescription] = useState('');
   const [isCreatingDevLog, setIsCreatingDevLog] = useState(false);
 
-  const [todoSortBy, setTodoSortBy] = useState<'priority' | 'dueDate' | 'created'>('priority');
   const [todoFilterBy, setTodoFilterBy] = useState<'all' | 'high' | 'medium' | 'low' | 'overdue' | 'completed'>('all');
+
+  // Selected todo for detail view
+  const [selectedTodo, setSelectedTodo] = useState<Todo | null>(null);
+
+  // Effect to update selectedTodo when project data changes
+  useEffect(() => {
+    if (selectedTodo && selectedProject) {
+      const updatedTodo = selectedProject.todos?.find(t => t.id === selectedTodo.id);
+      if (updatedTodo) {
+        setSelectedTodo(updatedTodo);
+      } else {
+        // Todo was deleted
+        setSelectedTodo(null);
+      }
+    }
+  }, [selectedProject?.todos, selectedTodo?.id]);
+
+  // Collapsible sections state (persisted to localStorage)
+  const [collapsedTodoSections, setCollapsedTodoSections] = useState<{[key: string]: boolean}>(() => {
+    const saved = localStorage.getItem('collapsedTodoSections');
+    return saved ? JSON.parse(saved) : { overdue: false, today: false, tomorrow: true, soon: true, future: true };
+  });
+
+  // Save collapsed sections to localStorage
+  useEffect(() => {
+    localStorage.setItem('collapsedTodoSections', JSON.stringify(collapsedTodoSections));
+  }, [collapsedTodoSections]);
+
+  // Toggle section collapse
+  const toggleTodoSection = (section: string) => {
+    setCollapsedTodoSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
 
   const handleCreateNote = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -280,22 +341,35 @@ const NotesPage: React.FC = () => {
       await projectAPI.createTodo(selectedProject.id, {
         text: newTodoText.trim(),
         description: newTodoDescription.trim(),
-        priority: 'medium',
-        status: 'not_started'
+        priority: newTodoPriority,
+        status: 'not_started',
+        dueDate: newTodoDueDate || undefined,
+        reminderDate: newTodoReminderDate || undefined,
+        assignedTo: newTodoAssignedTo || undefined
       });
-      
+
       await activityTracker.trackCreate(
         'todo',
         'new-todo',
         newTodoText.trim(),
         undefined,
-        { hasDescription: !!newTodoDescription.trim() }
+        {
+          hasDescription: !!newTodoDescription.trim(),
+          priority: newTodoPriority,
+          hasDueDate: !!newTodoDueDate,
+          hasReminder: !!newTodoReminderDate,
+          isAssigned: !!newTodoAssignedTo
+        }
       );
-      
+
       setNewTodoText('');
       setNewTodoDescription('');
+      setNewTodoPriority('medium');
+      setNewTodoDueDate('');
+      setNewTodoReminderDate('');
+      setNewTodoAssignedTo('');
       setShowCreateTodoForm(false);
-      onProjectRefresh();
+      await onProjectRefresh();
     } catch (err) {
       setError('Failed to create todo');
     } finally {
@@ -528,9 +602,9 @@ const NotesPage: React.FC = () => {
 
       {/* Todos Section */}
       {activeSection === 'todos' && (
-        <div className="space-y-6">
-          {/* Compact Create Todo Form */}
-          <div className="border-2 border-base-content/20 rounded-lg mb-4">
+        <div className="space-y-4">
+          {/* Create New Todo Button/Form - Always at Top */}
+          <div className="border-2 border-base-content/20 rounded-lg bg-base-100">
             {!showCreateTodoForm ? (
               <button
                 onClick={() => setShowCreateTodoForm(true)}
@@ -541,18 +615,22 @@ const NotesPage: React.FC = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                   </svg>
                 </div>
-                <span className="text-base-content/60">Create a new todo...</span>
+                <span className="text-base-content/60 font-medium">Create New Todo</span>
               </button>
             ) : (
               <form onSubmit={handleCreateTodo} className="p-4 space-y-3">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-medium text-sm text-base-content/70">New Todo</h4>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-semibold text-base text-base-content/80">New Todo</h4>
                   <button
                     type="button"
                     onClick={() => {
                       setShowCreateTodoForm(false);
                       setNewTodoText('');
                       setNewTodoDescription('');
+                      setNewTodoPriority('medium');
+                      setNewTodoDueDate('');
+                      setNewTodoReminderDate('');
+                      setNewTodoAssignedTo('');
                     }}
                     className="text-base-content/40 hover:text-base-content/60 transition-colors"
                   >
@@ -561,7 +639,7 @@ const NotesPage: React.FC = () => {
                     </svg>
                   </button>
                 </div>
-                
+
                 <input
                   type="text"
                   value={newTodoText}
@@ -571,19 +649,60 @@ const NotesPage: React.FC = () => {
                   required
                   autoFocus
                 />
-                
+
                 <textarea
                   value={newTodoDescription}
                   onChange={(e) => setNewTodoDescription(e.target.value)}
                   className="textarea textarea-bordered textarea-sm w-full"
-                  placeholder="Todo description (optional)..."
+                  placeholder="Description (optional)..."
                   rows={2}
                 />
-                
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-base-content/70">Priority</label>
+                    <select
+                      value={newTodoPriority}
+                      onChange={(e) => setNewTodoPriority(e.target.value as 'low' | 'medium' | 'high')}
+                      className="select select-bordered select-sm w-full"
+                    >
+                      <option value="low">🟢 Low</option>
+                      <option value="medium">🟡 Medium</option>
+                      <option value="high">🔴 High</option>
+                    </select>
+                  </div>
+
+                  <DatePicker
+                    label="Due Date"
+                    value={newTodoDueDate}
+                    onChange={setNewTodoDueDate}
+                    placeholder="Set due date..."
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <DatePicker
+                    label="Reminder"
+                    value={newTodoReminderDate}
+                    onChange={setNewTodoReminderDate}
+                    placeholder="Set reminder..."
+                  />
+
+                  {selectedProject.isShared && (
+                    <TeamMemberSelect
+                      projectId={selectedProject.id}
+                      value={newTodoAssignedTo}
+                      onChange={(userId) => setNewTodoAssignedTo(userId ?? '')}
+                      isSharedProject={selectedProject.isShared}
+                      placeholder="Assign to..."
+                    />
+                  )}
+                </div>
+
                 <div className="flex items-center gap-2 pt-2">
                   <button
                     type="submit"
-                    className="btn btn-success btn-sm"
+                    className="btn btn-success btn-sm flex-1"
                     disabled={isCreatingTodo || !newTodoText.trim()}
                   >
                     {isCreatingTodo ? 'Creating...' : 'Create Todo'}
@@ -594,6 +713,10 @@ const NotesPage: React.FC = () => {
                       setShowCreateTodoForm(false);
                       setNewTodoText('');
                       setNewTodoDescription('');
+                      setNewTodoPriority('medium');
+                      setNewTodoDueDate('');
+                      setNewTodoReminderDate('');
+                      setNewTodoAssignedTo('');
                     }}
                     className="btn btn-ghost btn-sm"
                     disabled={isCreatingTodo}
@@ -605,70 +728,154 @@ const NotesPage: React.FC = () => {
             )}
           </div>
 
-          {/* Todo Filter and Sort Controls */}
-          {selectedProject.todos && selectedProject.todos.filter(todo => !todo.parentTodoId).length > 0 && (
-            <div className="border-2 border-base-content/20 rounded-lg mb-4 p-4">
-              <div className="flex justify-center items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-base-content/80">Sort by:</span>
-                  <select 
-                    value={todoSortBy} 
-                    onChange={(e) => setTodoSortBy(e.target.value as 'priority' | 'dueDate' | 'created')}
-                    className="select select-bordered select-xs"
-                  >
-                    <option value="priority">🔴 Priority</option>
-                    <option value="dueDate">📅 Due Date</option>
-                    <option value="created">⏰ Created</option>
-                  </select>
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-base-content/80">Filter:</span>
-                  <select 
-                    value={todoFilterBy} 
-                    onChange={(e) => setTodoFilterBy(e.target.value as any)}
-                    className="select select-bordered select-xs"
-                  >
-                    <option value="all">📋 All Todos</option>
-                    <option value="overdue">🚨 Overdue</option>
-                    <option value="high">🔴 High Priority</option>
-                    <option value="medium">🟡 Medium Priority</option>
-                    <option value="low">🟢 Low Priority</option>
-                    <option value="completed">✅ Completed</option>
-                  </select>
-                </div>
-
-                <div className="items-center text-xs text-base-content/60">
-                  {filterAndSortTodos(selectedProject.todos || []).length} of {selectedProject.todos?.filter(todo => !todo.parentTodoId).length || 0} todos
-                </div>
-              </div>
-            </div>
-          )}
-          
           {selectedProject.todos?.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="w-16 h-16 mx-auto mb-4 bg-base-200 rounded-full flex items-center justify-center">
-                <svg className="w-8 h-8 text-base-content/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                </svg>
+            <div className="text-center py-12 min-h-[500px] flex items-center justify-center">
+              <div>
+                <div className="w-16 h-16 mx-auto mb-4 bg-base-200 rounded-full flex items-center justify-center">
+                  <svg className="w-8 h-8 text-base-content/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-medium mb-2 text-base-content/80">No tasks yet</h3>
+                <p className="text-sm text-base-content/60">Use the form above to create your first todo</p>
               </div>
-              <h3 className="text-lg font-medium mb-2 text-base-content/80">No tasks yet</h3>
-              <p className="text-sm text-base-content/60">Add your first todo to get started</p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {filterAndSortTodos(selectedProject.todos || []).map((todo) => (
-                <TodoItem
-                  key={todo.id}
-                  todo={todo}
-                  projectId={selectedProject.id}
-                  onUpdate={onProjectRefresh}
-                  onArchiveToDevLog={handleArchiveTodoToDevLog}
-                  isSharedProject={selectedProject.isShared || false}
-                  canEdit={selectedProject.canEdit !== false}
-                  allTodos={selectedProject.todos || []}
-                />
-              ))}
+            // Master-Detail Layout
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 min-h-[500px]">
+              {/* Left Panel - Compact Todo List */}
+              <div className="lg:col-span-2 space-y-3">
+                {/* Filter Controls */}
+                {selectedProject.todos && selectedProject.todos.filter((todo: Todo) => !todo.parentTodoId).length > 0 && (
+                  <div className="border-2 border-base-content/20 rounded-lg p-3 bg-base-100">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-base-content/80">Filter:</span>
+                      <select
+                        value={todoFilterBy}
+                        onChange={(e) => setTodoFilterBy(e.target.value as 'all' | 'high' | 'medium' | 'low' | 'overdue' | 'completed')}
+                        className="select select-bordered select-xs flex-1"
+                      >
+                        <option value="all">📋 All Todos</option>
+                        <option value="overdue">🚨 Overdue</option>
+                        <option value="high">🔴 High Priority</option>
+                        <option value="medium">🟡 Medium Priority</option>
+                        <option value="low">🟢 Low Priority</option>
+                        <option value="completed">✅ Completed</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
+
+                {/* Time-based Sections */}
+                {(() => {
+                  const timeGroups = groupTodosByTime(selectedProject.todos || []);
+                  const sections: Array<{key: string; label: string; icon: string; todos: Todo[]}> = [
+                    { key: 'overdue', label: 'Overdue', icon: '🚨', todos: timeGroups.overdue },
+                    { key: 'today', label: 'Today', icon: '📅', todos: timeGroups.today },
+                    { key: 'tomorrow', label: 'Tomorrow', icon: '📆', todos: timeGroups.tomorrow },
+                    { key: 'soon', label: 'This Week', icon: '📋', todos: timeGroups.soon },
+                    { key: 'future', label: 'Future', icon: '🗓️', todos: timeGroups.future }
+                  ];
+
+                  return sections.map(section => section.todos.length > 0 && (
+                    <div key={section.key} className="border-2 border-base-content/20 rounded-lg bg-base-100">
+                      {/* Section Header */}
+                      <button
+                        onClick={() => toggleTodoSection(section.key)}
+                        className="w-full px-4 py-3 flex items-center justify-between hover:bg-base-200/40 transition-colors rounded-t-lg"
+                      >
+                        <div className="flex items-center gap-2">
+                          <svg
+                            className={`w-4 h-4 transition-transform ${collapsedTodoSections[section.key] ? '' : 'rotate-90'}`}
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                          <span className="text-sm font-semibold">{section.icon} {section.label}</span>
+                          <span className="text-xs bg-base-200 px-2 py-0.5 rounded-full font-medium">
+                            {section.todos.length}
+                          </span>
+                        </div>
+                      </button>
+
+                      {/* Collapsible Todo List */}
+                      {!collapsedTodoSections[section.key] && (
+                        <div className="px-2 pb-2 space-y-1">
+                          {section.todos.map(todo => (
+                            <button
+                              key={todo.id}
+                              onClick={() => setSelectedTodo(todo)}
+                              className={`w-full text-left p-3 rounded-lg transition-all ${
+                                selectedTodo?.id === todo.id
+                                  ? 'bg-primary/10 border-2 border-primary'
+                                  : 'hover:bg-base-200/60 border-2 border-transparent'
+                              }`}
+                            >
+                              <div className="flex items-start gap-2">
+                                <input
+                                  type="checkbox"
+                                  checked={todo.completed}
+                                  onChange={async (e) => {
+                                    e.stopPropagation();
+                                    await projectAPI.updateTodo(selectedProject.id, todo.id, { completed: !todo.completed });
+                                    await onProjectRefresh();
+                                  }}
+                                  className="checkbox checkbox-sm checkbox-primary mt-0.5 flex-shrink-0"
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className={`text-sm font-medium truncate ${todo.completed ? 'line-through text-base-content/50' : ''}`}>
+                                      {todo.text}
+                                    </span>
+                                    <span className="text-xs flex-shrink-0">
+                                      {todo.priority === 'high' ? '🔴' : todo.priority === 'medium' ? '🟡' : '🟢'}
+                                    </span>
+                                  </div>
+                                  {todo.dueDate && (
+                                    <span className="text-xs text-base-content/60">
+                                      {new Date(todo.dueDate).toLocaleDateString()}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ));
+                })()}
+              </div>
+
+              {/* Right Panel - Detail View */}
+              <div className="lg:col-span-3 min-h-[500px]">
+                {!selectedTodo ? (
+                  <div className="border-2 border-base-content/20 rounded-lg p-8 text-center bg-base-100 h-full flex items-center justify-center">
+                    <div>
+                      <svg className="w-16 h-16 mx-auto mb-4 text-base-content/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                      </svg>
+                      <h3 className="text-lg font-medium text-base-content/70 mb-2">Select a todo</h3>
+                      <p className="text-sm text-base-content/50">Choose a todo from the list to view details</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="border-2 border-base-content/20 rounded-lg bg-base-100 overflow-auto h-full flex flex-col">
+                    <TodoItem
+                      key={selectedTodo.id}
+                      todo={selectedTodo}
+                      projectId={selectedProject.id}
+                      onUpdate={onProjectRefresh}
+                      onArchiveToDevLog={handleArchiveTodoToDevLog}
+                      isSharedProject={selectedProject.isShared || false}
+                      canEdit={selectedProject.canEdit !== false}
+                      allTodos={selectedProject.todos || []}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>

@@ -23,7 +23,7 @@ const LoginPage: React.FC = () => {
     const result = await call(() => authAPI.login({ email, password }));
     if (result) {
       toast.success('Welcome back! Successfully logged in.');
-      navigate('/notes?view=projects');
+      navigate('/projects');
     }
   };
 

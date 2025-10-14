@@ -9,7 +9,7 @@ import { getContrastTextColor } from '../utils/contrastTextColor';
 interface TodoItemProps {
   todo: Todo;
   projectId: string;
-  onUpdate: () => void;
+  onUpdate: () => Promise<void>;
   onArchiveToDevLog: (todo: Todo) => void;
   isSharedProject?: boolean;
   canEdit?: boolean;
@@ -54,7 +54,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
         assignedTo: editAssignedTo || undefined
       });
       setIsEditing(false);
-      onUpdate();
+      await onUpdate();
     } catch (error) {
       console.error('Failed to update todo:', error);
     } finally {
@@ -65,7 +65,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
   const handleToggleComplete = async () => {
     try {
       await projectAPI.updateTodo(projectId, todo.id, { completed: !todo.completed });
-      onUpdate();
+      await onUpdate();
     } catch (error) {
       console.error('Failed to toggle todo:', error);
     }
@@ -74,7 +74,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
   const handleDelete = async () => {
     try {
       await projectAPI.deleteTodo(projectId, todo.id);
-      onUpdate();
+      await onUpdate();
       setShowDeleteConfirm(false);
     } catch (error) {
       console.error('Failed to delete todo:', error);
@@ -86,9 +86,9 @@ const TodoItem: React.FC<TodoItemProps> = ({
     onArchiveToDevLog(todo);
   };
 
-  const handleAddSubtask = () => {
+  const handleAddSubtask = async () => {
     setShowAddSubtask(false);
-    onUpdate();
+    await onUpdate();
   };
 
   const getPriorityColor = (priority: string) => {
@@ -137,7 +137,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
 
   if (isEditing) {
     return (
-      <div className="bg-base-100 border-2 border-base-content/20 rounded-lg p-4 mb-3 shadow-sm">
+      <div className="bg-base-100 p-3 rounded-lg h-full shadow-sm">
         <div className="space-y-3">
           <input
             type="text"
@@ -214,7 +214,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
   }
 
   return (
-    <div className={`group card-interactive p-3 mb-3 ${
+    <div className={`group p-3 flex-1 h-full ${
       todo.completed ? 'opacity-70' : ''
     }`}>
       <div className="flex items-start gap-3">
@@ -280,12 +280,12 @@ const TodoItem: React.FC<TodoItemProps> = ({
             </div>
           )}
         </div>
-        
-        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+
+        <div className="group-hover:opacity-100 transition-opacity flex items-center gap-1">
           {!isSubtask && canEdit && (
             <button
               onClick={() => setShowAddSubtask(true)}
-              className="btn btn-ghost btn-xs border border-base-300 bg-base-200"
+              className="btn btn-ghost btn-xs border-2 border-base-300 bg-base-200"
               title="Add Subtask"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -297,7 +297,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
           {todo.completed && (
             <button
               onClick={handleArchive}
-              className="btn btn-ghost btn-xs border border-base-300 bg-base-200"
+              className="btn btn-ghost btn-xs border-2 border-base-300 bg-base-200"
               title="Archive"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -308,7 +308,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
           
           <button
             onClick={() => setIsEditing(true)}
-            className="btn btn-ghost btn-xs border border-base-300 bg-base-200"
+            className="btn btn-ghost btn-xs border-2 border-base-300 bg-base-200"
             title="Edit"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -318,7 +318,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
           
           <button
             onClick={() => setShowDeleteConfirm(true)}
-            className="btn btn-ghost btn-xs text-error hover:bg-error hover:text-error-content border border-base-300 bg-base-200"
+            className="btn btn-ghost btn-xs text-error hover:bg-error hover:text-error-content border-2 border-base-300 bg-base-200"
             title="Delete"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -370,7 +370,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
 // Simple, fast todo creation
 interface QuickAddFormProps {
   projectId: string;
-  onAdd: () => void;
+  onAdd: () => Promise<void>;
   parentTodoId?: string;
   placeholder?: string;
   onCancel?: () => void;
@@ -396,9 +396,9 @@ const QuickAddForm: React.FC<QuickAddFormProps> = ({
         text: title.trim(),
         parentTodoId: parentTodoId || undefined
       });
-      
+
       setTitle('');
-      onAdd();
+      await onAdd();
     } catch (error) {
       console.error('Failed to create todo:', error);
     } finally {
@@ -441,7 +441,7 @@ const QuickAddForm: React.FC<QuickAddFormProps> = ({
 // Main creation form - clean and simple
 interface NewTodoFormProps {
   projectId: string;
-  onAdd: () => void;
+  onAdd: () => Promise<void>;
   isSharedProject?: boolean;
   parentTodoId?: string;
   compact?: boolean;

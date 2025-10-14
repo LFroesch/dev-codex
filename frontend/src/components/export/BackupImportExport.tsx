@@ -191,7 +191,7 @@ const BackupImportExport: React.FC<BackupImportExportProps> = ({
         isOpen={showImportSuccessModal}
         onConfirm={() => {
           setShowImportSuccessModal(false);
-          navigate('/notes?view=projects');
+          navigate('/projects');
         }}
         onCancel={() => {
           setShowImportSuccessModal(false);

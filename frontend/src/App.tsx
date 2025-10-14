@@ -82,7 +82,8 @@ const App: React.FC = () => {
             <Route path="/billing/cancel" element={<BillingCancelPage />} />
             <Route path="/create-project" element={<CreateProject />} />
             <Route path="/" element={<Layout />}>
-              <Route index element={<Navigate to="/notes?view=projects" />} />
+              <Route index element={<Navigate to="/projects" />} />
+              <Route path="projects" element={<div />} />
               <Route path="notes" element={<NotesPage />} />
               <Route path="stack" element={<StackPage />} />
               <Route path="docs" element={<DocsPage />} />

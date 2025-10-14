@@ -89,7 +89,7 @@ export const useLayoutEvents = ({
         await loadProjectTimeData();
 
         // Navigate to projects view
-        navigate('/notes?view=projects');
+        navigate('/projects');
 
         // Show unique feedback to user
         toast.info('Session timed out due to inactivity. Time has been saved. Please select a project to continue.', 5000, true);

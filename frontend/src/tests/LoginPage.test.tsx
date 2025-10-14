@@ -101,7 +101,7 @@ describe('LoginPage', () => {
       });
     });
 
-    expect(mockNavigate).toHaveBeenCalledWith('/notes?view=projects');
+    expect(mockNavigate).toHaveBeenCalledWith('/projects');
   });
 
   it('displays error message on login failure', async () => {

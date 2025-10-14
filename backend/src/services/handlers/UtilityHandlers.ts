@@ -4,6 +4,7 @@ import { ParsedCommand, CommandParser, COMMAND_METADATA } from '../commandParser
 import { User } from '../../models/User';
 import { Project } from '../../models/Project';
 import { logError } from '../../config/logger';
+import NotificationService from '../notificationService';
 
 /**
  * Handlers for utility commands (help, themes, swap, export, news, wizards)
@@ -821,6 +822,97 @@ export class UtilityHandlers extends BaseCommandHandler {
           customThemes: []
         },
         suggestions: ['/set theme dark', '/set theme light']
+      };
+    }
+  }
+
+  /**
+   * Handle /view notifications command
+   */
+  async handleViewNotifications(parsed: ParsedCommand): Promise<CommandResponse> {
+    try {
+      const notificationService = NotificationService.getInstance();
+      const unreadOnly = parsed.flags.has('unread');
+
+      const result = await notificationService.getNotifications(this.userId, {
+        limit: 50,
+        skip: 0,
+        unreadOnly
+      });
+
+      if (result.notifications.length === 0) {
+        return {
+          type: ResponseType.INFO,
+          message: unreadOnly ? '🔔 No unread notifications' : '🔔 No notifications',
+          data: {
+            notifications: [],
+            unreadCount: 0,
+            total: 0
+          }
+        };
+      }
+
+      return {
+        type: ResponseType.DATA,
+        message: `🔔 ${unreadOnly ? 'Unread notifications' : 'Notifications'} (${result.notifications.length} shown, ${result.unreadCount} unread)`,
+        data: {
+          notifications: result.notifications.map((notif: any) => ({
+            id: notif._id.toString(),
+            type: notif.type,
+            title: notif.title,
+            message: notif.message,
+            isRead: notif.isRead,
+            actionUrl: notif.actionUrl,
+            relatedProject: notif.relatedProjectId ? {
+              id: notif.relatedProjectId._id?.toString(),
+              name: notif.relatedProjectId.name,
+              color: notif.relatedProjectId.color
+            } : null,
+            relatedUser: notif.relatedUserId ? {
+              id: notif.relatedUserId._id?.toString(),
+              firstName: notif.relatedUserId.firstName,
+              lastName: notif.relatedUserId.lastName
+            } : null,
+            createdAt: notif.createdAt
+          })),
+          unreadCount: result.unreadCount,
+          total: result.total
+        },
+        suggestions: ['/clear notifications']
+      };
+    } catch (error) {
+      logError('Error fetching notifications', error as Error);
+      return {
+        type: ResponseType.ERROR,
+        message: 'Unable to fetch notifications at this time'
+      };
+    }
+  }
+
+  /**
+   * Handle /clear notifications command
+   */
+  async handleClearNotifications(): Promise<CommandResponse> {
+    try {
+      const notificationService = NotificationService.getInstance();
+      const deletedCount = await notificationService.clearAllNotifications(this.userId);
+
+      if (deletedCount === 0) {
+        return {
+          type: ResponseType.INFO,
+          message: '🔔 No notifications to clear'
+        };
+      }
+
+      return {
+        type: ResponseType.SUCCESS,
+        message: `✅ Cleared ${deletedCount} notification${deletedCount !== 1 ? 's' : ''}`
+      };
+    } catch (error) {
+      logError('Error clearing notifications', error as Error);
+      return {
+        type: ResponseType.ERROR,
+        message: 'Unable to clear notifications at this time'
       };
     }
   }

@@ -77,7 +77,7 @@ const NoteItem: React.FC<NoteItemProps> = ({
   return (
     <>
       <div 
-        className="bg-base-100 shadow-lg border-subtle rounded-lg p-3 sm:p-4 cursor-pointer hover:shadow-xl transition-shadow duration-200 group"
+        className="bg-base-100 shadow-lg border-2 rounded-lg p-3 sm:p-4 cursor-pointer hover:shadow-xl transition-shadow duration-200 group"
         onClick={onClick}
       >
         <div className="flex items-start justify-between">
@@ -101,7 +101,7 @@ const NoteItem: React.FC<NoteItemProps> = ({
           <div className="flex gap-1 ml-4 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
               onClick={handleCopy}
-              className="btn btn-xs btn-ghost"
+              className="btn btn-xs btn-ghost "
               title="Copy content"
             >
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -744,7 +744,7 @@ const NoteModal: React.FC<NoteModalProps> = ({
               <>
                 <button
                   onClick={handleSave}
-                  className="btn btn-primary btn-xs sm:btn-sm"
+                  className="border-thick btn btn-primary btn-xs sm:btn-sm"
                   title="Save (Ctrl+S)"
                   disabled={loading || !editTitle.trim() || !editContent.trim()}
                 >
@@ -755,7 +755,7 @@ const NoteModal: React.FC<NoteModalProps> = ({
                 </button>
                 <button
                   onClick={handleCancelClick}
-                  className="btn btn-primary btn-xs sm:btn-sm"
+                  className="border-thick btn btn-primary btn-xs sm:btn-sm"
                   disabled={loading}
                 >
                   <span className="hidden sm:inline">Cancel</span>
@@ -779,7 +779,7 @@ const NoteModal: React.FC<NoteModalProps> = ({
                     // In view mode, just close directly
                     onClose();
                   }}
-                  className="btn btn-primary btn-xs sm:btn-sm gap-1 sm:gap-2"
+                  className="border-thick btn btn-primary btn-xs sm:btn-sm gap-1 sm:gap-2"
                   title="Back (Esc)"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -792,7 +792,7 @@ const NoteModal: React.FC<NoteModalProps> = ({
               <>
                 <button
                   onClick={handleCopy}
-                  className="btn btn-primary btn-xs sm:btn-sm"
+                  className="border-thick btn btn-primary btn-xs sm:btn-sm"
                   title="Copy content (C)"
                 >
                   <svg className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -802,7 +802,7 @@ const NoteModal: React.FC<NoteModalProps> = ({
                 </button>
                 <button
                   onClick={handleEnterEditMode}
-                  className={`btn btn-xs sm:btn-sm ${
+                  className={`border-thick btn btn-xs sm:btn-sm ${
                     (isLocked && !lockedBy?.isCurrentUser) || (project && project.canEdit === false) 
                       ? 'btn-disabled' 
                       : 'btn-primary'
@@ -840,7 +840,7 @@ const NoteModal: React.FC<NoteModalProps> = ({
                 </button>
                 <button
                   onClick={handleDeleteClick}
-                  className="btn btn-primary btn-xs sm:btn-sm"
+                  className="border-thick btn btn-primary btn-xs sm:btn-sm"
                 >
                   <svg className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -849,7 +849,7 @@ const NoteModal: React.FC<NoteModalProps> = ({
                 </button>
                 <button
                   onClick={onClose}
-                  className="btn btn-primary btn-xs sm:btn-sm"
+                  className="border-thick btn btn-primary btn-xs sm:btn-sm"
                   title="Back (Esc)"
                 >
                   <svg className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

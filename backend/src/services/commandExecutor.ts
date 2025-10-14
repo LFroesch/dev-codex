@@ -168,6 +168,10 @@ export class CommandExecutor {
           return await this.utilityHandlers.handleSetTheme(parsed);
         case CommandType.VIEW_THEMES:
           return await this.utilityHandlers.handleViewThemes();
+        case CommandType.VIEW_NOTIFICATIONS:
+          return await this.utilityHandlers.handleViewNotifications(parsed);
+        case CommandType.CLEAR_NOTIFICATIONS:
+          return await this.utilityHandlers.handleClearNotifications();
         case CommandType.WIZARD_NEW:
         case CommandType.WIZARD_SETUP:
         case CommandType.WIZARD_DEPLOY:

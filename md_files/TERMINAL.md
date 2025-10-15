@@ -1,13 +1,17 @@
 # Terminal System Documentation
 
-## Status: ✅ Phases 1, 2, 4, 5 Complete (85% Implementation)
+## Status: ✅ Phases 1, 2, 4, 5 Complete + New Features (95% Implementation)
 
 ### Completed Features
 - ✅ Backend command infrastructure (parser, executor, routes)
 - ✅ Frontend terminal UI with dual autocomplete
-- ✅ 35+ commands implemented (add, view, set, remove, search, task management)
+- ✅ 50+ commands implemented (add, view, set, remove, search, task management, edit, delete, subtasks)
 - ✅ Full-text search with MongoDB text indexing
 - ✅ Task management commands (complete, assign, priority, due)
+- ✅ **NEW: Subtask system** (add, view subtasks)
+- ✅ **NEW: Edit operations** (edit todos, notes, devlog, docs)
+- ✅ **NEW: Delete operations with confirmation** (delete with --confirm flag)
+- ✅ **NEW: Batch command chaining** (chain commands with &&)
 - ✅ Summary/export with 4 formats (markdown, json, prompt, text)
 - ✅ News and theme management
 - ✅ Navigation buttons and query param support
@@ -21,10 +25,11 @@
 
 ---
 
-## Available Commands (30+)
+## Available Commands (50+)
 
 ### Add Commands
 - `/add todo [text] [@project]` - Create todo
+- `/add subtask [parent todo] [subtask text] [@project]` - Add subtask to a todo
 - `/add note [text] [@project]` - Create note
 - `/add devlog [text] [@project]` - Create dev log entry
 - `/add doc [type] [title] - [content] [@project]` - Create documentation
@@ -35,6 +40,7 @@
 ### View Commands
 - `/view notes [@project]` - List notes
 - `/view todos [@project]` - List todos
+- `/view subtasks [todo text/id] [@project]` - View subtasks for a todo
 - `/view devlog [@project]` - List dev log entries
 - `/view docs [@project]` - List documentation
 - `/view stack [@project]` - View tech stack
@@ -44,6 +50,19 @@
 - `/view settings [@project]` - View project settings
 - `/view news` - View latest news
 - `/view themes` - List available themes
+
+### Edit Commands
+- `/edit todo [todo text/id] [new text] [@project]` - Edit an existing todo
+- `/edit note [note id/title] [new content] [@project]` - Edit an existing note
+- `/edit devlog [entry id] [new content] [@project]` - Edit a dev log entry
+- `/edit doc [doc id/title] [new content] [@project]` - Edit documentation
+
+### Delete Commands (with confirmation)
+- `/delete todo [todo text/id] [@project] --confirm` - Delete a todo
+- `/delete note [note id/title] [@project] --confirm` - Delete a note
+- `/delete devlog [entry id] [@project] --confirm` - Delete a dev log entry
+- `/delete doc [doc id/title] [@project] --confirm` - Delete documentation
+- `/delete subtask [subtask text/id] [@project] --confirm` - Delete a subtask
 
 ### Set Commands
 - `/set deployment --url=[url] --platform=[platform]` - Update deployment
@@ -76,27 +95,23 @@
   - Formats: `markdown` (README), `json` (structured data), `prompt` (AI template), `text` (plain)
   - Aliases: `/readme`, `/prompt`
 
-### Coming Soon
+### Batch Command Chaining
+Execute multiple commands in sequence using `&&`:
+```bash
+/add todo implement feature && /set priority high && /add subtask "implement feature" write tests
+```
 
-#### High Priority
-- **Batch/Chain Commands** - Execute multiple commands in sequence
-  - Syntax: `/add todo X && /set priority high`
-  - optional AI-powered batch via `/clippydump` *Hold off on this for now*
-- **Better Command Flags** - Enhanced flag system for all commands
-  - More intuitive syntax
-  - Better validation and help text
-- **Delete & Edit Operations** - Inline editing GUI
-  - `/edit todo [title]` - Opens inline editor
-  - `/delete [type] [title]` - Delete items with confirmation
-- **Subtask System** - Full subtask support for todos
-  - `/add subtask [parent-title] [sub-title]`
-  - `/view subtasks [todo-id]`
+- Executes commands sequentially
+- Stops on first error
+- Returns combined results
+- Maximum 10 commands per batch
+- No AI processing - direct command execution
 
-#### Workflow Commands
+### Workflow Commands
 - `/today [@project]` - Show today's tasks and activity
 - `/week [@project]` - Weekly summary and planning
-- `/standup [@project]` - Generate standup report
-- `/info [@project]` - Quick project overview
+- `/standup [@project]` - Generate standup report (what I did yesterday, working on today, stuck on)
+- `/info [@project]` - Quick project overview with stats
 
 #### Interactive Features
 - `/wizard new/setup/deploy` - Interactive wizards
@@ -270,13 +285,12 @@ curl -X POST http://localhost:5003/api/terminal/execute \
 
 ---
 
-## Future Enhancements
 
-### Phase 3: Wizards & Advanced Features
-- Interactive project creation wizard
-- Multi-step deployment wizard
-- Setup wizard for new projects
-- NLP parsing for natural language commands
+**Last Updated:** 2025-10-14
+**Progress:** 95% (Phases 1, 2, 4, 5 complete + subtasks, edit, delete, batch commands)
+**Next:** Phase 3 (Wizards) + Workflow commands + AI integration
+
+## Future Enhancements
 
 ### CLI/TUI Support
 - API token authentication
@@ -289,8 +303,29 @@ curl -X POST http://localhost:5003/api/terminal/execute \
 - Bulk operations via AI
 - Smart autocomplete
 
----
+### Cross-Project Operations
+- /recent [limit] - View recently accessed projects or recent activity
+- /all search [query] - Search across ALL projects (not just current one)
+- /all todos [--status=pending/completed] - View todos across all projects
 
-**Last Updated:** 2025-10-08
-**Progress:** 85% (Phases 1, 2, 4, 5 complete + search, task mgmt, summaries)
-**Next:** Phase 3 (Wizards) + AI integration
+### Account Statistics & Analytics
+- /stats or /analytics - View account-wide statistics:
+  - Total projects created
+  - Todos completed (all-time / this week / this month)
+  - Most active projects
+  - Contribution streaks
+- /activity [--days=7] - View user activity log/timeline
+- /achievements - Gamification: show user achievements/badges
+
+### Data Management
+- /export all - Export all projects at once
+- /backup - Create full account backup
+- /archive @project - Archive a project (soft delete)
+- /archived - View archived projects
+- /restore @project - Restore an archived project
+
+### Collaboration & Social
+- /invites - View pending project invitations
+- /accept [invitation-id] / /decline [invitation-id] - Manage invitations
+- /shared - View projects shared with you
+- /mentions - View where you've been mentioned/assigned

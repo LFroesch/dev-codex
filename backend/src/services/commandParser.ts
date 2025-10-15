@@ -45,6 +45,32 @@ export enum CommandType {
   SUMMARY = 'summary',
   VIEW_NOTIFICATIONS = 'view_notifications',
   CLEAR_NOTIFICATIONS = 'clear_notifications',
+  LLM_CONTEXT = 'llm_context',
+
+  // Subtask commands
+  ADD_SUBTASK = 'add_subtask',
+  VIEW_SUBTASKS = 'view_subtasks',
+
+  // Edit commands
+  EDIT_TODO = 'edit_todo',
+  EDIT_NOTE = 'edit_note',
+  EDIT_DEVLOG = 'edit_devlog',
+  EDIT_DOC = 'edit_doc',
+
+  // Delete commands
+  DELETE_TODO = 'delete_todo',
+  DELETE_NOTE = 'delete_note',
+  DELETE_DEVLOG = 'delete_devlog',
+  DELETE_DOC = 'delete_doc',
+  DELETE_SUBTASK = 'delete_subtask',
+
+  // Navigation & Workflow
+  GOTO = 'goto',
+  TODAY = 'today',
+  WEEK = 'week',
+  STANDUP = 'standup',
+  INFO = 'info',
+
   HELP = 'help',
   UNKNOWN = 'unknown'
 }
@@ -228,6 +254,67 @@ const COMMAND_ALIASES: Record<string, CommandType> = {
   'clear notifications': CommandType.CLEAR_NOTIFICATIONS,
   'clear-notifications': CommandType.CLEAR_NOTIFICATIONS,
   'clear notifs': CommandType.CLEAR_NOTIFICATIONS,
+
+  // LLM Context
+  'llm': CommandType.LLM_CONTEXT,
+  'llm context': CommandType.LLM_CONTEXT,
+  'llm-context': CommandType.LLM_CONTEXT,
+  'ai': CommandType.LLM_CONTEXT,
+  'ai context': CommandType.LLM_CONTEXT,
+
+  // Subtask commands
+  'add subtask': CommandType.ADD_SUBTASK,
+  'add-subtask': CommandType.ADD_SUBTASK,
+  'subtask': CommandType.ADD_SUBTASK,
+  'view subtasks': CommandType.VIEW_SUBTASKS,
+  'view-subtasks': CommandType.VIEW_SUBTASKS,
+  'subtasks': CommandType.VIEW_SUBTASKS,
+  'list subtasks': CommandType.VIEW_SUBTASKS,
+
+  // Edit commands
+  'edit todo': CommandType.EDIT_TODO,
+  'edit-todo': CommandType.EDIT_TODO,
+  'edit note': CommandType.EDIT_NOTE,
+  'edit-note': CommandType.EDIT_NOTE,
+  'edit devlog': CommandType.EDIT_DEVLOG,
+  'edit-devlog': CommandType.EDIT_DEVLOG,
+  'edit doc': CommandType.EDIT_DOC,
+  'edit-doc': CommandType.EDIT_DOC,
+
+  // Delete commands
+  'delete todo': CommandType.DELETE_TODO,
+  'delete-todo': CommandType.DELETE_TODO,
+  'remove todo': CommandType.DELETE_TODO,
+  'rm todo': CommandType.DELETE_TODO,
+  'delete note': CommandType.DELETE_NOTE,
+  'delete-note': CommandType.DELETE_NOTE,
+  'remove note': CommandType.DELETE_NOTE,
+  'rm note': CommandType.DELETE_NOTE,
+  'delete devlog': CommandType.DELETE_DEVLOG,
+  'delete-devlog': CommandType.DELETE_DEVLOG,
+  'remove devlog': CommandType.DELETE_DEVLOG,
+  'rm devlog': CommandType.DELETE_DEVLOG,
+  'delete doc': CommandType.DELETE_DOC,
+  'delete-doc': CommandType.DELETE_DOC,
+  'remove doc': CommandType.DELETE_DOC,
+  'rm doc': CommandType.DELETE_DOC,
+  'delete subtask': CommandType.DELETE_SUBTASK,
+  'delete-subtask': CommandType.DELETE_SUBTASK,
+  'remove subtask': CommandType.DELETE_SUBTASK,
+  'rm subtask': CommandType.DELETE_SUBTASK,
+
+  // Navigation & Workflow
+  'goto': CommandType.GOTO,
+  'go': CommandType.GOTO,
+  'navigate': CommandType.GOTO,
+  'today': CommandType.TODAY,
+  'week': CommandType.WEEK,
+  'weekly': CommandType.WEEK,
+  'standup': CommandType.STANDUP,
+  'stand-up': CommandType.STANDUP,
+  'daily': CommandType.STANDUP,
+  'info': CommandType.INFO,
+  'overview': CommandType.INFO,
 
   // Help
   'help': CommandType.HELP,
@@ -736,6 +823,220 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
     requiresProject: false,
     requiresArgs: false
   },
+  [CommandType.LLM_CONTEXT]: {
+    type: CommandType.LLM_CONTEXT,
+    syntax: '/llm',
+    description: 'Generate comprehensive terminal interaction guide for local LLMs',
+    examples: [
+      '/llm',
+      '/llm context',
+      '/ai context'
+    ],
+    requiresProject: false,
+    requiresArgs: false
+  },
+
+  // Subtask commands
+  [CommandType.ADD_SUBTASK]: {
+    type: CommandType.ADD_SUBTASK,
+    syntax: '/add subtask [parent todo] [subtask text] [@project]',
+    description: 'Add a subtask to an existing todo',
+    examples: [
+      '/add subtask "fix bug" add tests @myproject',
+      '/subtask implement feature write documentation',
+      '/add-subtask 1 review code'
+    ],
+    requiresProject: true,
+    requiresArgs: true
+  },
+  [CommandType.VIEW_SUBTASKS]: {
+    type: CommandType.VIEW_SUBTASKS,
+    syntax: '/view subtasks [todo text/id] [@project]',
+    description: 'View all subtasks for a todo',
+    examples: [
+      '/view subtasks "fix bug" @myproject',
+      '/subtasks implement feature',
+      '/list subtasks 1'
+    ],
+    requiresProject: true,
+    requiresArgs: true
+  },
+
+  // Edit commands
+  [CommandType.EDIT_TODO]: {
+    type: CommandType.EDIT_TODO,
+    syntax: '/edit todo [todo text/id] [new text] [@project]',
+    description: 'Edit an existing todo',
+    examples: [
+      '/edit todo "old task" new task text @myproject',
+      '/edit-todo 1 updated task text',
+      '/edit todo fix bug fix authentication bug'
+    ],
+    requiresProject: true,
+    requiresArgs: true
+  },
+  [CommandType.EDIT_NOTE]: {
+    type: CommandType.EDIT_NOTE,
+    syntax: '/edit note [note id/title] [new content] [@project]',
+    description: 'Edit an existing note',
+    examples: [
+      '/edit note "meeting notes" updated notes content @myproject',
+      '/edit-note 1 new note content',
+      '/edit note architecture new architecture decisions'
+    ],
+    requiresProject: true,
+    requiresArgs: true
+  },
+  [CommandType.EDIT_DEVLOG]: {
+    type: CommandType.EDIT_DEVLOG,
+    syntax: '/edit devlog [entry id] [new content] [@project]',
+    description: 'Edit an existing dev log entry',
+    examples: [
+      '/edit devlog 1 updated entry content @myproject',
+      '/edit-devlog 2 fixed bug in authentication system',
+      '/edit devlog "fixed leak" fixed memory leak properly'
+    ],
+    requiresProject: true,
+    requiresArgs: true
+  },
+  [CommandType.EDIT_DOC]: {
+    type: CommandType.EDIT_DOC,
+    syntax: '/edit doc [doc id/title] [new content] [@project]',
+    description: 'Edit an existing documentation entry',
+    examples: [
+      '/edit doc "User Model" updated fields @myproject',
+      '/edit-doc 1 new API documentation',
+      '/edit doc API updated endpoint description'
+    ],
+    requiresProject: true,
+    requiresArgs: true
+  },
+
+  // Delete commands
+  [CommandType.DELETE_TODO]: {
+    type: CommandType.DELETE_TODO,
+    syntax: '/delete todo [todo text/id] [@project]',
+    description: 'Delete a todo (with confirmation)',
+    examples: [
+      '/delete todo "fix bug" @myproject',
+      '/delete-todo 1',
+      '/rm todo implement feature'
+    ],
+    requiresProject: true,
+    requiresArgs: true
+  },
+  [CommandType.DELETE_NOTE]: {
+    type: CommandType.DELETE_NOTE,
+    syntax: '/delete note [note id/title] [@project]',
+    description: 'Delete a note (with confirmation)',
+    examples: [
+      '/delete note "meeting notes" @myproject',
+      '/delete-note 1',
+      '/rm note old note'
+    ],
+    requiresProject: true,
+    requiresArgs: true
+  },
+  [CommandType.DELETE_DEVLOG]: {
+    type: CommandType.DELETE_DEVLOG,
+    syntax: '/delete devlog [entry id] [@project]',
+    description: 'Delete a dev log entry (with confirmation)',
+    examples: [
+      '/delete devlog 1 @myproject',
+      '/delete-devlog 2',
+      '/rm devlog old entry'
+    ],
+    requiresProject: true,
+    requiresArgs: true
+  },
+  [CommandType.DELETE_DOC]: {
+    type: CommandType.DELETE_DOC,
+    syntax: '/delete doc [doc id/title] [@project]',
+    description: 'Delete a documentation entry (with confirmation)',
+    examples: [
+      '/delete doc "old API" @myproject',
+      '/delete-doc 1',
+      '/rm doc deprecated'
+    ],
+    requiresProject: true,
+    requiresArgs: true
+  },
+  [CommandType.DELETE_SUBTASK]: {
+    type: CommandType.DELETE_SUBTASK,
+    syntax: '/delete subtask [subtask text/id] [@project]',
+    description: 'Delete a subtask (with confirmation)',
+    examples: [
+      '/delete subtask "old subtask" @myproject',
+      '/delete-subtask 1',
+      '/rm subtask completed task'
+    ],
+    requiresProject: true,
+    requiresArgs: true
+  },
+
+  // Navigation & Workflow
+  [CommandType.GOTO]: {
+    type: CommandType.GOTO,
+    syntax: '/goto [page] [@project]',
+    description: 'Navigate to a specific page in the app',
+    examples: [
+      '/goto notes @myproject',
+      '/goto stack',
+      '/goto deployment',
+      '/go settings',
+      '/navigate docs @myproject'
+    ],
+    requiresProject: false,
+    requiresArgs: true
+  },
+  [CommandType.TODAY]: {
+    type: CommandType.TODAY,
+    syntax: '/today [@project]',
+    description: 'View today\'s tasks and activity',
+    examples: [
+      '/today',
+      '/today @myproject'
+    ],
+    requiresProject: false,
+    requiresArgs: false
+  },
+  [CommandType.WEEK]: {
+    type: CommandType.WEEK,
+    syntax: '/week [@project]',
+    description: 'View weekly summary and upcoming tasks',
+    examples: [
+      '/week',
+      '/week @myproject',
+      '/weekly'
+    ],
+    requiresProject: false,
+    requiresArgs: false
+  },
+  [CommandType.STANDUP]: {
+    type: CommandType.STANDUP,
+    syntax: '/standup [@project]',
+    description: 'Generate standup report (what I did yesterday, working on today, stuck on)',
+    examples: [
+      '/standup',
+      '/standup @myproject',
+      '/daily @myproject'
+    ],
+    requiresProject: false,
+    requiresArgs: false
+  },
+  [CommandType.INFO]: {
+    type: CommandType.INFO,
+    syntax: '/info [@project]',
+    description: 'Quick project overview and statistics',
+    examples: [
+      '/info',
+      '/info @myproject',
+      '/overview'
+    ],
+    requiresProject: false,
+    requiresArgs: false
+  },
+
   [CommandType.HELP]: {
     type: CommandType.HELP,
     syntax: '/help [command]',

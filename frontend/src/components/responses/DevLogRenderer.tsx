@@ -23,12 +23,24 @@ export const DevLogRenderer: React.FC<DevLogRendererProps> = ({ entries, project
             key={index}
             className="p-3 bg-base-200 rounded-lg hover:bg-base-300/50 transition-colors border-l-4 border-primary/50"
           >
-            <div className="text-sm text-base-content/80 break-words">{entry.entry}</div>
-            <div className="text-xs text-base-content/60 mt-2">
-              {new Date(entry.date).toLocaleString()}
+            <div className="flex items-start gap-2 mb-2">
+              <span className="text-xs font-mono font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded border border-primary/30 flex-shrink-0">
+                #{index + 1}
+              </span>
+              <div className="text-xs text-base-content/60">
+                {new Date(entry.date).toLocaleString()}
+              </div>
             </div>
+            <div className="text-sm text-base-content/80 break-words ml-8">{entry.entry}</div>
           </div>
         ))}
+      </div>
+      <div className="text-xs text-base-content/60 mt-3 p-2 bg-base-200/50 rounded border-thick">
+        💡 <strong>Tip:</strong> Use the <code className="bg-base-300 px-1 rounded">#ID</code> to reference devlog entries:
+        <div className="mt-1 space-y-0.5 ml-4">
+          <div>• <code className="bg-base-300 px-1 rounded">/edit devlog 1 updated entry</code></div>
+          <div>• <code className="bg-base-300 px-1 rounded">/delete devlog 1 --confirm</code></div>
+        </div>
       </div>
       {projectId && (
         <button

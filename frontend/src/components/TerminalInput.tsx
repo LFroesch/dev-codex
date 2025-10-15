@@ -22,6 +22,28 @@ interface AutocompleteItem {
   syntax?: string; // Original syntax
 }
 
+// Storage key for command history
+const COMMAND_HISTORY_KEY = 'terminal_command_history';
+
+// Helper functions for command history localStorage
+const saveCommandHistory = (history: string[]) => {
+  try {
+    localStorage.setItem(COMMAND_HISTORY_KEY, JSON.stringify(history));
+  } catch (error) {
+    console.warn('Failed to save command history to localStorage:', error);
+  }
+};
+
+const loadCommandHistory = (): string[] => {
+  try {
+    const stored = localStorage.getItem(COMMAND_HISTORY_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch (error) {
+    console.warn('Failed to load command history from localStorage:', error);
+    return [];
+  }
+};
+
 const TerminalInput: React.FC<TerminalInputProps> = ({
   onSubmit,
   disabled = false,
@@ -46,6 +68,14 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const autocompleteRef = useRef<HTMLDivElement>(null);
   const selectedItemRef = useRef<HTMLButtonElement>(null);
+
+  // Load command history from localStorage on mount
+  useEffect(() => {
+    const loadedHistory = loadCommandHistory();
+    if (loadedHistory.length > 0) {
+      setCommandHistory(loadedHistory);
+    }
+  }, []);
 
   // Load commands and projects on mount
   useEffect(() => {
@@ -378,8 +408,12 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
     const trimmed = input.trim();
     if (!trimmed || disabled) return;
 
-    // Add to history
-    setCommandHistory(prev => [...prev, trimmed]);
+    // Add to history and save to localStorage
+    setCommandHistory(prev => {
+      const updated = [...prev, trimmed];
+      saveCommandHistory(updated);
+      return updated;
+    });
     setHistoryIndex(-1);
 
     // Submit command
@@ -517,7 +551,11 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
               <button
                 className='border-thick rounded-xl px-2 bg-primary'
                 onClick={() => {
-                  setCommandHistory(prev => [...prev, '/help']);
+                  setCommandHistory(prev => {
+                    const updated = [...prev, '/help'];
+                    saveCommandHistory(updated);
+                    return updated;
+                  });
                   onSubmit('/help');
                 }}>
                 <span className='font-mono'

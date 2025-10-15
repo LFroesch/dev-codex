@@ -177,10 +177,10 @@ export const createSmartRateLimit = (baseOptions: RateLimitOptions & { maxReques
     try {
       // Determine rate limit based on user plan
       let maxRequests = baseOptions.maxRequests || 60; // Default
-      
+
       if (req.userId && req.user) {
         const planTier = req.user.planTier || 'free';
-        
+
         switch (planTier) {
           case 'premium':
             maxRequests = Math.floor(maxRequests * 3); // 3x limit for premium
@@ -198,14 +198,14 @@ export const createSmartRateLimit = (baseOptions: RateLimitOptions & { maxReques
         // Unauthenticated users get stricter limits
         maxRequests = Math.floor(maxRequests * 0.5);
       }
-      
+
       // Create dynamic rate limiter with calculated limit
       const dynamicRateLimit = createRateLimit({
         ...baseOptions,
         maxRequests,
         endpoint: `${baseOptions.endpoint}_${req.user?.planTier || 'anonymous'}`
       });
-      
+
       return dynamicRateLimit(req, res, next);
     } catch (error) {
       console.error('Smart rate limiting error:', error);
@@ -218,3 +218,27 @@ export const createSmartRateLimit = (baseOptions: RateLimitOptions & { maxReques
     }
   };
 };
+
+// Ticket creation rate limiter - prevent support ticket spam
+export const ticketRateLimit = createRateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  maxRequests: 5, // Max 5 tickets per hour
+  endpoint: 'ticket_creation',
+  message: 'Too many support tickets. Please wait an hour before submitting another ticket.'
+});
+
+// Terminal command execution rate limiter - prevent command spam
+export const terminalRateLimit = createRateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  maxRequests: 30, // Max 30 commands per minute
+  endpoint: 'terminal_execution',
+  message: 'Too many terminal commands. Please slow down.'
+});
+
+// Admin operations rate limiter - stricter protection for admin routes
+export const adminRateLimit = createRateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  maxRequests: 20, // Max 20 admin operations per 15 minutes
+  endpoint: 'admin',
+  message: 'Too many admin operations. Please wait 15 minutes before trying again.'
+});

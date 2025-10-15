@@ -8,6 +8,7 @@ import Notification from '../../models/Notification';
 import { sendProjectInvitationEmail } from '../emailService';
 import { isValidEmail, isValidRole, parseEmailOrUsername } from '../../utils/validation';
 import { logError } from '../../config/logger';
+import NotificationService from '../notificationService';
 
 /**
  * Handlers for team management and collaboration commands
@@ -156,7 +157,8 @@ export class TeamHandlers extends BaseCommandHandler {
 
     // Create notification if user exists
     if (existingUser) {
-      await Notification.create({
+      const notificationService = NotificationService.getInstance();
+      await notificationService.createNotification({
         userId: existingUser._id,
         type: 'project_invitation',
         title: 'Project Invitation',
@@ -255,7 +257,8 @@ export class TeamHandlers extends BaseCommandHandler {
     await TeamMember.findByIdAndDelete(teamMember._id);
 
     // Create notification
-    await Notification.create({
+    const notificationService = NotificationService.getInstance();
+    await notificationService.createNotification({
       userId: userToRemove._id,
       type: 'team_member_removed',
       title: 'Removed from Project',

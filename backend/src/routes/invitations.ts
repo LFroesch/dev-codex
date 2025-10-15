@@ -6,6 +6,7 @@ import TeamMember from '../models/TeamMember';
 import ProjectInvitation from '../models/ProjectInvitation';
 import Notification from '../models/Notification';
 import { User } from '../models/User';
+import NotificationService from '../services/notificationService';
 
 const router = express.Router();
 
@@ -112,7 +113,8 @@ router.post('/:token/accept', requireAuth, async (req: AuthRequest, res) => {
     );
 
     // Notify inviter of acceptance
-    await Notification.create({
+    const notificationService = NotificationService.getInstance();
+    await notificationService.createNotification({
       userId: invitation.inviterUserId,
       type: 'team_member_added',
       title: 'Invitation Accepted',

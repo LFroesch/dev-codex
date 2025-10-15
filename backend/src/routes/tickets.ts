@@ -2,6 +2,7 @@ import express from 'express';
 import { Ticket } from '../models/Ticket';
 import { User } from '../models/User';
 import { requireAuth, AuthRequest } from '../middleware/auth';
+import { ticketRateLimit } from '../middleware/rateLimit';
 import { v4 as uuidv4 } from 'uuid';
 import nodemailer from 'nodemailer';
 
@@ -20,8 +21,8 @@ const createTransporter = () => {
   });
 };
 
-// Create a new ticket
-router.post('/', requireAuth, async (req: AuthRequest, res) => {
+// Create a new ticket - rate limited to prevent spam
+router.post('/', requireAuth, ticketRateLimit, async (req: AuthRequest, res) => {
   try {
     const { subject, message, category, priority = 'medium' } = req.body;
     const userId = req.userId;

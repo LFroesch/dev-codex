@@ -8,7 +8,7 @@ import ProjectInvitation from '../models/ProjectInvitation';
 import Notification from '../models/Notification';
 import { User } from '../models/User';
 import { sendProjectInvitationEmail } from '../services/emailService';
-import { checkProjectLimit } from '../middleware/planLimits';
+import { checkProjectLimit, checkTeamMemberLimit } from '../middleware/planLimits';
 import { trackProjectAccess } from '../middleware/analytics';
 import { AnalyticsService } from '../middleware/analytics';
 import activityLogger from '../services/activityLogger';
@@ -1367,8 +1367,8 @@ router.get('/:id/members', requireAuth, requireProjectAccess('view'), async (req
   }
 });
 
-// POST /api/projects/:id/invite - Invite user to project
-router.post('/:id/invite', requireAuth, requireProjectAccess('manage'), async (req: AuthRequest, res) => {
+// POST /api/projects/:id/invite - Invite user to project (with team member limit check)
+router.post('/:id/invite', requireAuth, requireProjectAccess('manage'), checkTeamMemberLimit, async (req: AuthRequest, res) => {
   try {
     const { id: projectId } = req.params;
     const { email, role = 'viewer' } = req.body;

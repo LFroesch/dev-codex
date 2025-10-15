@@ -9,7 +9,7 @@
 - ✅ Full-text search with MongoDB text indexing
 - ✅ Task management commands (complete, assign, priority, due)
 - ✅ **NEW: Subtask system** (add, view subtasks)
-- ✅ **NEW: Edit operations** (edit todos, notes, devlog, docs)
+- ✅ **NEW: Edit operations with interactive wizards** (edit todos, notes, devlog, docs with wizard UI or direct field updates)
 - ✅ **NEW: Delete operations with confirmation** (delete with --confirm flag)
 - ✅ **NEW: Batch command chaining** (chain commands with &&)
 - ✅ Summary/export with 4 formats (markdown, json, prompt, text)
@@ -19,7 +19,8 @@
 - ✅ Performance optimizations (caching, indexes)
 
 ### Pending Features (Phase 3)
-- 🚧 Interactive /wizard commands
+- ✅ **Interactive /wizard new command** (project creation)
+- ✅ **Interactive edit wizards** (todos, notes, docs, devlog)
 - 🚧 Advanced NLP parsing
 - 🚧 CLI token authentication
 
@@ -51,11 +52,18 @@
 - `/view news` - View latest news
 - `/view themes` - List available themes
 
-### Edit Commands
-- `/edit todo [todo text/id] [new text] [@project]` - Edit an existing todo
-- `/edit note [note id/title] [new content] [@project]` - Edit an existing note
-- `/edit devlog [entry id] [new content] [@project]` - Edit a dev log entry
-- `/edit doc [doc id/title] [new content] [@project]` - Edit documentation
+### Edit Commands (Interactive Wizards + Direct Updates)
+- `/edit todo [id] [@project]` - Opens interactive wizard to edit todo (or use `--field=` and `--content=` for direct updates)
+- `/edit note [id] [@project]` - Opens interactive wizard to edit note (or use `--field=` and `--content=` for direct updates)
+- `/edit devlog [id] [@project]` - Opens interactive wizard to edit dev log entry (or use `--field=` and `--content=` for direct updates)
+- `/edit doc [id] [@project]` - Opens interactive wizard to edit documentation (or use `--field=` and `--content=` for direct updates)
+
+Examples:
+```bash
+/edit todo 1                              # Opens wizard for interactive editing
+/edit note 1 --field=title --content="New Title"  # Direct field update
+/edit doc 2 --field=content --content="Updated documentation"
+```
 
 ### Delete Commands (with confirmation)
 - `/delete todo [todo text/id] [@project] --confirm` - Delete a todo

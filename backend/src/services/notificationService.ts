@@ -26,12 +26,45 @@ class NotificationService {
 
   /**
    * Create a new notification and emit real-time event
+   * This method ensures uniqueness by replacing duplicate notifications
    */
   async createNotification(data: CreateNotificationData): Promise<INotification> {
     try {
-      // Create the notification
+      // Build query to find existing duplicate notification
+      const duplicateQuery: any = {
+        userId: data.userId,
+        type: data.type,
+      };
+
+      // Add related entity fields to the duplicate check based on what's provided
+      if (data.relatedTodoId) {
+        duplicateQuery.relatedTodoId = data.relatedTodoId;
+      }
+      if (data.relatedInvitationId) {
+        duplicateQuery.relatedInvitationId = data.relatedInvitationId;
+      }
+      if (data.relatedProjectId && !data.relatedInvitationId && !data.relatedTodoId) {
+        // Only use relatedProjectId for uniqueness if no other related entity is specified
+        duplicateQuery.relatedProjectId = data.relatedProjectId;
+      }
+      if (data.relatedUserId && data.type === 'team_member_added') {
+        // For team_member_added, include relatedUserId in uniqueness check
+        duplicateQuery.relatedUserId = data.relatedUserId;
+      }
+
+      // Check if a duplicate notification exists
+      const existingNotification = await Notification.findOne(duplicateQuery);
+
+      if (existingNotification) {
+        // Delete the old notification
+        await Notification.findByIdAndDelete(existingNotification._id);
+        // Emit deletion event
+        this.emitNotificationEvent('notification-deleted', data.userId.toString(), existingNotification._id.toString());
+      }
+
+      // Create the new notification
       const notification = await Notification.create(data);
-      
+
       // Populate related fields for the socket event
       const populatedNotification = await Notification.findById(notification._id)
         .populate('relatedProjectId', 'name color')

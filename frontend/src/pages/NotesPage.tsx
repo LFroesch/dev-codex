@@ -237,6 +237,21 @@ const NotesPage: React.FC = () => {
     }
   }, [searchParams]);
 
+  // Auto-select todo from URL params (for notifications)
+  useEffect(() => {
+    const todoId = searchParams.get('todoId');
+    if (todoId && selectedProject?.todos && activeSection === 'todos') {
+      const todo = selectedProject.todos.find(t => t.id === todoId);
+      if (todo) {
+        setSelectedTodo(todo);
+        // Clear the todoId param after selecting to avoid re-selecting on page refresh
+        const newParams = new URLSearchParams(searchParams);
+        newParams.delete('todoId');
+        setSearchParams(newParams, { replace: true });
+      }
+    }
+  }, [searchParams, selectedProject?.todos, activeSection]);
+
   // Update URL when section changes (optional - for consistency)
   const handleSectionChange = (section: 'notes' | 'todos' | 'devlog') => {
     setActiveSection(section);

@@ -56,14 +56,8 @@ class ReminderService {
 
           // Send overdue notification
           if (isOverdue && !await this.hasRecentNotification(todo.assignedTo || project.ownerId, 'todo_overdue', todo.id)) {
-            // Remove any existing overdue notifications for this todo to ensure uniqueness
-            await Notification.deleteMany({
-              userId: todo.assignedTo || project.ownerId,
-              type: 'todo_overdue',
-              relatedTodoId: todo.id
-            });
-
-            await Notification.create({
+            const notificationService = NotificationService.getInstance();
+            await notificationService.createNotification({
               userId: todo.assignedTo || project.ownerId,
               type: 'todo_overdue',
               title: 'Todo Overdue',
@@ -76,7 +70,8 @@ class ReminderService {
 
           // Send due soon notification
           if (isDueSoon && !await this.hasRecentNotification(todo.assignedTo || project.ownerId, 'todo_due_soon', todo.id)) {
-            await Notification.create({
+            const notificationService = NotificationService.getInstance();
+            await notificationService.createNotification({
               userId: todo.assignedTo || project.ownerId,
               type: 'todo_due_soon',
               title: 'Todo Due Soon',
@@ -117,7 +112,8 @@ class ReminderService {
               );
 
               if (!hasRecent) {
-                await Notification.create({
+                const notificationService = NotificationService.getInstance();
+                await notificationService.createNotification({
                   userId: todo.assignedTo || project.ownerId,
                   type: 'todo_due_soon',
                   title: 'Todo Reminder',
@@ -142,7 +138,8 @@ class ReminderService {
               );
 
               if (!hasRecent) {
-                await Notification.create({
+                const notificationService = NotificationService.getInstance();
+                await notificationService.createNotification({
                   userId: todo.assignedTo || project.ownerId,
                   type: 'todo_due_soon',
                   title: 'Todo Due Soon',
@@ -209,7 +206,8 @@ class ReminderService {
             message += `You have ${dueTodayTodos} todo(s) due today.`;
           }
 
-          await Notification.create({
+          const notificationService = NotificationService.getInstance();
+          await notificationService.createNotification({
             userId: user._id,
             type: 'todo_due_soon',
             title: 'Daily Todo Summary',

@@ -24,17 +24,32 @@ export const NotesRenderer: React.FC<NotesRendererProps> = ({ notes, projectId, 
             key={index}
             className="p-3 bg-base-200 rounded-lg hover:bg-base-300/50 transition-colors border-thick"
           >
-            <div className="font-medium text-sm mb-1 text-base-content/80 break-words">{note.title}</div>
+            <div className="flex items-start gap-2 mb-1">
+              <span className="text-xs font-mono font-semibold text-secondary bg-secondary/10 px-1.5 py-0.5 rounded border border-secondary/30 flex-shrink-0">
+                #{index + 1}
+              </span>
+              <div className="font-medium text-sm text-base-content/80 break-words flex-1">
+                {note.title}
+              </div>
+            </div>
             {note.preview && (
-              <div className="text-xs text-base-content/70 line-clamp-3 break-words">
+              <div className="text-xs text-base-content/70 line-clamp-3 break-words ml-8">
                 {note.preview}
               </div>
             )}
-            <div className="text-xs text-base-content/60 mt-2">
+            <div className="text-xs text-base-content/60 mt-2 ml-8">
               {new Date(note.createdAt).toLocaleString()}
             </div>
           </div>
         ))}
+      </div>
+      <div className="text-xs text-base-content/60 mt-3 p-2 bg-base-200/50 rounded border-thick">
+        💡 <strong>Tip:</strong> Use the <code className="bg-base-300 px-1 rounded">#ID</code> to reference notes:
+        <div className="mt-1 space-y-0.5 ml-4">
+          <div>• <code className="bg-base-300 px-1 rounded">/edit note 1 new content</code></div>
+          <div>• <code className="bg-base-300 px-1 rounded">/edit note title to new content</code></div>
+          <div>• <code className="bg-base-300 px-1 rounded">/delete note 1 --confirm</code></div>
+        </div>
       </div>
       {projectId && (
         <button

@@ -5,6 +5,7 @@ import { getContrastTextColor } from '../utils/contrastTextColor';
 import { TodosRenderer, NotesRenderer, StackRenderer, DevLogRenderer, DocsRenderer } from './responses';
 import { authAPI } from '../api';
 import { hexToOklch, oklchToCssValue, generateFocusVariant, generateContrastingTextColor } from '../utils/colorUtils';
+import { toast } from '../services/toast';
 
 interface CommandResponseProps {
   response: CommandResponseType;
@@ -125,6 +126,19 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
     document.documentElement.setAttribute('data-theme', standardTheme);
   }, []);
 
+  // Handle page redirects from goto command
+  React.useEffect(() => {
+    if (response.data?.redirect) {
+      const redirectPath = response.data.redirect;
+      // If the response has a project ID and it's different from current, switch first
+      if (response.metadata?.projectId && response.metadata.projectId !== currentProjectId && onProjectSelect) {
+        onProjectSelect(response.metadata.projectId);
+      }
+      // Then navigate
+      navigate(redirectPath);
+    }
+  }, [response.data?.redirect, response.metadata?.projectId, currentProjectId, onProjectSelect, navigate]);
+
   // Handle theme changes
   React.useEffect(() => {
     const handleThemeChange = async () => {
@@ -218,6 +232,108 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
     // Render todos list
     if (response.data.todos && Array.isArray(response.data.todos)) {
       return <TodosRenderer todos={response.data.todos} projectId={response.metadata?.projectId} onNavigate={handleNavigateToProject} />;
+    }
+
+    // Render subtasks list
+    if (response.data.subtasks && Array.isArray(response.data.subtasks)) {
+      const subtasks = response.data.subtasks;
+      return (
+        <div className="mt-3 space-y-2">
+          {response.data.parentTodo && (
+            <div className="text-xs text-base-content/60 mb-2">
+              Parent: <span className="font-semibold">{response.data.parentTodo.text}</span>
+            </div>
+          )}
+          <div className="space-y-1">
+            {subtasks.map((subtask: any, index: number) => (
+              <div
+                key={index}
+                className={`p-2 rounded-lg transition-colors border-thick ${
+                  subtask.completed ? 'bg-success/10 border-success/30' : 'bg-base-200 border-base-content/20'
+                }`}
+              >
+                <div className="flex items-start gap-2">
+                  <div className="flex-shrink-0 mt-0.5">
+                    {subtask.completed ? '✓' : '○'}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className={`text-sm break-words ${
+                      subtask.completed ? 'line-through text-base-content/50' : 'text-base-content/80'
+                    }`}>
+                      {subtask.text}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-1 mt-1">
+                      {subtask.priority && (
+                        <span className={`badge badge-xs ${
+                          subtask.priority === 'high' ? 'badge-error' :
+                          subtask.priority === 'medium' ? 'badge-warning' :
+                          'badge-info'
+                        }`}>
+                          {subtask.priority}
+                        </span>
+                      )}
+                      {subtask.status && (
+                        <span className="badge badge-xs badge-ghost">{subtask.status}</span>
+                      )}
+                      {subtask.dueDate && (
+                        <span className="text-xs text-base-content/60">
+                          📅 {new Date(subtask.dueDate).toLocaleDateString()}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // Render batch command results
+    if (response.data.batch && response.data.results && Array.isArray(response.data.results)) {
+      const results = response.data.results;
+      return (
+        <div className="mt-3 space-y-2">
+          <div className="text-xs text-base-content/60">
+            Executed {response.data.executed} of {response.data.total} commands
+          </div>
+          <div className="space-y-2">
+            {results.map((result: any, index: number) => {
+              const resultIcon =
+                result.type === 'success' ? '✅' :
+                result.type === 'error' ? '❌' :
+                result.type === 'warning' ? '⚠️' :
+                result.type === 'info' ? 'ℹ️' :
+                '•';
+
+              return (
+                <div
+                  key={index}
+                  className={`p-2 rounded-lg border-2 ${
+                    result.type === 'success' ? 'bg-success/10 border-success/30' :
+                    result.type === 'error' ? 'bg-error/10 border-error/30' :
+                    result.type === 'warning' ? 'bg-warning/10 border-warning/30' :
+                    'bg-base-200 border-base-content/20'
+                  }`}
+                >
+                  <div className="flex items-start gap-2">
+                    <span className="flex-shrink-0 text-sm">{resultIcon}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-mono text-base-content/60 mb-1 break-all">
+                        {result.command}
+                      </div>
+                      <div className="text-sm text-base-content/80 break-words">
+                        {result.message}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      );
     }
 
     // Render notes list
@@ -314,8 +430,8 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
       );
     }
 
-    // Render deployment data
-    if (response.data.deployment) {
+    // Render deployment data (but not if it's part of /info response)
+    if (response.data.deployment && !response.data.basicInfo) {
       const dep = response.data.deployment;
       return (
         <div className="mt-3 space-y-2">
@@ -706,6 +822,242 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
       );
     }
 
+    // Render wizard for interactive project creation
+    if (response.data.wizardType === 'new_project' && response.data.steps) {
+      const [currentStep, setCurrentStep] = React.useState(0);
+      const [wizardData, setWizardData] = React.useState<Record<string, any>>({});
+      const [tags, setTags] = React.useState<string[]>([]);
+      const [tagInput, setTagInput] = React.useState('');
+      const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+      const steps = response.data.steps;
+      const step = steps[currentStep];
+
+      const handleNext = () => {
+        if (currentStep < steps.length - 1) {
+          setCurrentStep(currentStep + 1);
+        }
+      };
+
+      const handleBack = () => {
+        if (currentStep > 0) {
+          setCurrentStep(currentStep - 1);
+        }
+      };
+
+      const handleSubmit = async () => {
+        setIsSubmitting(true);
+        try {
+          const submitData = { ...wizardData, tags };
+          await fetch(response.data.submitEndpoint, {
+            method: response.data.submitMethod || 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify(submitData),
+            credentials: 'include'
+          });
+
+          toast.success(response.data.successMessage || 'Project created successfully!');
+          if (response.data.successRedirect) {
+            navigate(response.data.successRedirect);
+          }
+        } catch (error) {
+          toast.error('Failed to create project');
+        } finally {
+          setIsSubmitting(false);
+        }
+      };
+
+      const handleAddTag = () => {
+        if (tagInput.trim() && !tags.includes(tagInput.trim())) {
+          setTags([...tags, tagInput.trim()]);
+          setTagInput('');
+        }
+      };
+
+      const handleRemoveTag = (tagToRemove: string) => {
+        setTags(tags.filter(tag => tag !== tagToRemove));
+      };
+
+      const isStepValid = () => {
+        if (step.required) {
+          const value = step.id === 'tags' ? tags.length > 0 : wizardData[step.id];
+          return value !== undefined && value !== '' && value !== null;
+        }
+        return true;
+      };
+
+      return (
+        <div className="mt-3 space-y-4">
+          {/* Progress indicator */}
+          <div className="flex items-center justify-between">
+            <div className="text-xs text-base-content/60">
+              Step {currentStep + 1} of {steps.length}
+            </div>
+            <div className="flex gap-1">
+              {steps.map((_: any, idx: number) => (
+                <div
+                  key={idx}
+                  className={`w-2 h-2 rounded-full ${
+                    idx === currentStep ? 'bg-primary' :
+                    idx < currentStep ? 'bg-success' :
+                    'bg-base-300'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Step content */}
+          <div className="p-4 bg-base-200 rounded-lg border-thick">
+            <div className="text-sm font-semibold text-base-content mb-2">{step.label}</div>
+            {step.description && (
+              <div className="text-xs text-base-content/60 mb-3">{step.description}</div>
+            )}
+
+            {step.type === 'text' && (
+              <input
+                type="text"
+                value={wizardData[step.id] || step.defaultValue || ''}
+                onChange={(e) => setWizardData({ ...wizardData, [step.id]: e.target.value })}
+                placeholder={step.placeholder}
+                className="input input-bordered w-full"
+              />
+            )}
+
+            {step.type === 'textarea' && (
+              <textarea
+                value={wizardData[step.id] || step.defaultValue || ''}
+                onChange={(e) => setWizardData({ ...wizardData, [step.id]: e.target.value })}
+                placeholder={step.placeholder}
+                rows={4}
+                className="textarea textarea-bordered w-full resize-none"
+              />
+            )}
+
+            {step.type === 'select' && (
+              <select
+                value={wizardData[step.id] || step.defaultValue || ''}
+                onChange={(e) => setWizardData({ ...wizardData, [step.id]: e.target.value })}
+                className="select select-bordered w-full"
+              >
+                {step.options?.map((option: any) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+            )}
+
+            {step.type === 'color' && (
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={wizardData[step.id] || step.defaultValue || '#3B82F6'}
+                  onChange={(e) => setWizardData({ ...wizardData, [step.id]: e.target.value })}
+                  className="w-12 h-12 border border-base-300 rounded cursor-pointer"
+                />
+                <input
+                  type="text"
+                  value={wizardData[step.id] || step.defaultValue || '#3B82F6'}
+                  onChange={(e) => setWizardData({ ...wizardData, [step.id]: e.target.value })}
+                  className="input input-bordered flex-1 font-mono"
+                  placeholder={step.defaultValue}
+                />
+              </div>
+            )}
+
+            {step.type === 'tags' && (
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddTag();
+                      }
+                    }}
+                    placeholder={step.placeholder}
+                    className="input input-bordered flex-1"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddTag}
+                    className="btn btn-primary btn-square"
+                    style={{ color: getContrastTextColor('primary') }}
+                  >
+                    +
+                  </button>
+                </div>
+                {tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {tags.map((tag, index) => (
+                      <span
+                        key={`${tag}-${index}`}
+                        className="badge badge-info gap-2"
+                      >
+                        {tag}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveTag(tag)}
+                          className="text-info-content hover:text-error text-lg font-bold leading-none"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Navigation buttons */}
+          <div className="flex justify-between">
+            <button
+              type="button"
+              onClick={handleBack}
+              disabled={currentStep === 0}
+              className="btn btn-outline"
+            >
+              Back
+            </button>
+            {currentStep < steps.length - 1 ? (
+              <button
+                type="button"
+                onClick={handleNext}
+                disabled={!isStepValid()}
+                className="btn btn-primary"
+                style={{ color: getContrastTextColor('primary') }}
+              >
+                Next
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={!isStepValid() || isSubmitting}
+                className="btn btn-primary"
+                style={{ color: getContrastTextColor('primary') }}
+              >
+                {isSubmitting ? (
+                  <>
+                    <span className="loading loading-spinner loading-sm"></span>
+                    Creating...
+                  </>
+                ) : (
+                  'Create Project'
+                )}
+              </button>
+            )}
+          </div>
+        </div>
+      );
+    }
+
     // Render project selection
     if (response.data.projects && Array.isArray(response.data.projects)) {
       return (
@@ -745,9 +1097,22 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
     // Render help data
     if (response.data.grouped) {
       const [openSection, setOpenSection] = React.useState<string | null>(null);
+      const [openCommands, setOpenCommands] = React.useState<Set<string>>(new Set());
 
       const toggleSection = (category: string) => {
         setOpenSection(prev => prev === category ? null : category);
+      };
+
+      const toggleCommand = (commandKey: string) => {
+        setOpenCommands(prev => {
+          const next = new Set(prev);
+          if (next.has(commandKey)) {
+            next.delete(commandKey);
+          } else {
+            next.add(commandKey);
+          }
+          return next;
+        });
       };
 
       return (
@@ -773,36 +1138,87 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                   </svg>
                 </button>
                 {openSection === category && (
-                  <div className="px-3 pb-3 bg-base-100">
-                    <div className="overflow-x-auto">
-                      <table className="table table-xs table-zebra">
-                        <thead>
-                          <tr>
-                            <th className="text-xs">Command</th>
-                            <th className="text-xs">Description</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {cmds.map((cmd: any, index: number) => (
-                            <tr key={index} className="hover">
-                              <td>
+                  <div className="mt-3 px-3 pb-3 bg-base-100 space-y-1">
+                    {cmds.map((cmd: any, index: number) => {
+                      const commandKey = `${category}-${index}`;
+                      const isOpen = openCommands.has(commandKey);
+                      const isSyntaxTip = cmd.type === 'syntax_tip';
+
+                      return (
+                        <div key={index} className="border-thick rounded-lg overflow-hidden bg-base-200/50">
+                          <button
+                            type="button"
+                            onClick={() => !isSyntaxTip && toggleCommand(commandKey)}
+                            className={`w-full text-left p-2 flex items-center justify-between ${
+                              isSyntaxTip ? 'cursor-default' : 'hover:bg-base-300/30 cursor-pointer'
+                            } transition-colors`}
+                          >
+                            <div className="flex-1 min-w-0 flex items-center gap-2">
+                              {isSyntaxTip ? (
+                                <div className="text-xs font-semibold text-primary font-mono">
+                                  {cmd.syntax}
+                                </div>
+                              ) : (
                                 <button
                                   type="button"
-                                  onClick={() => onCommandClick?.(generateTemplate(cmd.syntax))}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onCommandClick?.(generateTemplate(cmd.syntax));
+                                  }}
                                   className="text-xs text-primary font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
                                   title="Click to use this command"
                                 >
                                   {cmd.syntax}
                                 </button>
-                              </td>
-                              <td className="text-xs text-base-content/70">
+                              )}
+                              <div className="text-xs text-base-content/70 break-words line-clamp-1 flex-1">
                                 {cmd.description}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                              </div>
+                            </div>
+                            {!isSyntaxTip && cmd.examples && cmd.examples.length > 0 && (
+                              <svg
+                                className={`w-3 h-3 flex-shrink-0 ml-2 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            )}
+                          </button>
+                          {!isSyntaxTip && isOpen && cmd.examples && cmd.examples.length > 0 && (
+                            <div className="px-3 pb-2 bg-base-100/50 space-y-1">
+                              <div className="text-xs font-semibold text-base-content/60 mb-1">
+                                Examples:
+                              </div>
+                              {cmd.examples.map((example: string, exIdx: number) => (
+                                <button
+                                  key={exIdx}
+                                  type="button"
+                                  onClick={() => onCommandClick?.(example)}
+                                  className="block w-full text-left text-xs bg-base-200 px-2 py-1 rounded border-thick hover:bg-base-300/50 cursor-pointer transition-colors text-primary"
+                                  title="Click to use this example"
+                                >
+                                  {example}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                          {isSyntaxTip && cmd.examples && cmd.examples.length > 0 && (
+                            <div className="px-3 pb-2 bg-base-100/50 space-y-1">
+                              {cmd.examples.map((example: string, exIdx: number) => (
+                                <div
+                                  key={exIdx}
+                                  className="text-xs bg-base-200 px-2 py-1 rounded border-thick text-base-content/70"
+                                >
+                                  {example}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -893,6 +1309,471 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
       );
     }
 
+    // Render /info command data
+    if (response.data.basicInfo && response.data.stats) {
+      const info = response.data;
+      return (
+        <div className="mt-3 space-y-2">
+          {/* Basic Info Card - Compact */}
+          <div className="p-3 bg-base-200 rounded-lg border-thick">
+            <div className="flex items-center gap-2">
+              {info.basicInfo.color && (
+                <div
+                  className="w-3 h-3 rounded-full border-thick flex-shrink-0"
+                  style={{ backgroundColor: info.basicInfo.color }}
+                />
+              )}
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm font-bold text-base-content break-words">{info.basicInfo.name}</h3>
+                {info.basicInfo.description && (
+                  <p className="text-xs text-base-content/60 break-words line-clamp-1">{info.basicInfo.description}</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Content Stats - Clickable Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <button
+              onClick={() => handleNavigateToProject('/notes?section=todos')}
+              className="p-2 bg-base-200 rounded-lg border-thick text-center hover:bg-base-300 transition-colors"
+            >
+              <div className="text-lg font-bold text-base-content">{info.stats.todos.total}</div>
+              <div className="text-xs text-base-content/60">Todos</div>
+              <div className="text-xs text-base-content/50">{info.stats.todos.completed} done</div>
+            </button>
+            <button
+              onClick={() => handleNavigateToProject('/notes')}
+              className="p-2 bg-base-200 rounded-lg border-thick text-center hover:bg-base-300 transition-colors"
+            >
+              <div className="text-lg font-bold text-base-content">{info.stats.notes.total}</div>
+              <div className="text-xs text-base-content/60">Notes</div>
+            </button>
+            <button
+              onClick={() => handleNavigateToProject('/notes?section=devlog')}
+              className="p-2 bg-base-200 rounded-lg border-thick text-center hover:bg-base-300 transition-colors"
+            >
+              <div className="text-lg font-bold text-base-content">{info.stats.devLog.total}</div>
+              <div className="text-xs text-base-content/60">Dev Logs</div>
+            </button>
+            <button
+              onClick={() => handleNavigateToProject('/docs')}
+              className="p-2 bg-base-200 rounded-lg border-thick text-center hover:bg-base-300 transition-colors"
+            >
+              <div className="text-lg font-bold text-base-content">{info.stats.docs.total}</div>
+              <div className="text-xs text-base-content/60">Docs</div>
+            </button>
+          </div>
+
+          {/* Quick Links Grid */}
+          <div className="grid grid-cols-2 gap-2">
+            {/* Tech Stack Card */}
+            <button
+              onClick={() => handleNavigateToProject('/stack')}
+              className="p-2 bg-base-200 rounded-lg border-thick hover:bg-base-300 transition-colors text-left"
+            >
+              <div className="text-xs font-semibold text-base-content mb-1">🛠️ Tech Stack</div>
+              <div className="text-xs text-base-content/60">
+                {info.stats.techStack ? (
+                  <>
+                    {info.stats.techStack.technologies || 0} tech • {info.stats.techStack.packages || 0} packages
+                  </>
+                ) : (
+                  'Not configured'
+                )}
+              </div>
+            </button>
+
+            {/* Deployment Card */}
+            <button
+              onClick={() => handleNavigateToProject('/deployment')}
+              className="p-2 bg-base-200 rounded-lg border-thick hover:bg-base-300 transition-colors text-left"
+            >
+              <div className="text-xs font-semibold text-base-content mb-1">🚀 Deployment</div>
+              <div className="text-xs text-base-content/60">
+                {info.deployment?.hasDeployment ? (
+                  <>
+                    {info.deployment.platform || 'Deployed'}
+                    {info.deployment.url && (
+                      <span className="block truncate text-primary">{info.deployment.url}</span>
+                    )}
+                  </>
+                ) : (
+                  'Not deployed'
+                )}
+              </div>
+            </button>
+
+            {/* Public Page Card */}
+            <button
+              onClick={() => handleNavigateToProject('/public')}
+              className="p-2 bg-base-200 rounded-lg border-thick hover:bg-base-300 transition-colors text-left"
+            >
+              <div className="text-xs font-semibold text-base-content mb-1">🌐 Public Page</div>
+              <div className="text-xs text-base-content/60">
+                {info.team?.isPublic ? 'Public' : 'Private'}
+              </div>
+            </button>
+
+            {/* Team/Sharing Card */}
+            <button
+              onClick={() => handleNavigateToProject('/sharing')}
+              className="p-2 bg-base-200 rounded-lg border-thick hover:bg-base-300 transition-colors text-left"
+            >
+              <div className="text-xs font-semibold text-base-content mb-1">👥 Team</div>
+              <div className="text-xs text-base-content/60">
+                {info.team?.members ? `${info.team.members} member${info.team.members !== 1 ? 's' : ''}` : 'Just you'}
+              </div>
+            </button>
+          </div>
+
+          {/* Timeline - Compact */}
+          {info.timeline && (
+            <div className="p-2 bg-base-200 rounded-lg border-thick">
+              <div className="flex justify-between text-xs">
+                <div className="text-base-content/60">
+                  Created <span className="text-base-content/80">{info.timeline.daysSinceCreated}d ago</span>
+                </div>
+                <div className="text-base-content/60">
+                  Updated <span className="text-base-content/80">{info.timeline.daysSinceUpdated}d ago</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Render /today command data
+    if (response.data.overdue !== undefined || response.data.dueToday !== undefined) {
+      const today = response.data;
+      return (
+        <div className="mt-3 space-y-3">
+          {/* Stats Summary */}
+          {today.stats && (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div className="p-2 bg-base-200 rounded-lg border-thick text-center">
+                <div className="text-xl font-bold text-base-content">{today.stats.totalOverdue}</div>
+                <div className="text-xs text-base-content/60">Overdue</div>
+              </div>
+              <div className="p-2 bg-base-200 rounded-lg border-thick text-center">
+                <div className="text-xl font-bold text-base-content">{today.stats.totalDueToday}</div>
+                <div className="text-xs text-base-content/60">Due Today</div>
+              </div>
+              <div className="p-2 bg-base-200 rounded-lg border-thick text-center">
+                <div className="text-xl font-bold text-base-content">{today.stats.totalActivity || 0}</div>
+                <div className="text-xs text-base-content/60">Activities</div>
+              </div>
+              <div className="p-2 bg-base-200 rounded-lg border-thick text-center">
+                <div className="text-xl font-bold text-base-content">{(today.stats.totalOverdue || 0) + (today.stats.totalDueToday || 0)}</div>
+                <div className="text-xs text-base-content/60">Total</div>
+              </div>
+            </div>
+          )}
+
+          {/* Overdue Tasks */}
+          {today.overdue && today.overdue.length > 0 && (
+            <div className="space-y-2">
+              <div className="text-sm font-semibold text-base-content">🚨 Overdue ({today.overdue.length})</div>
+              <div className="space-y-1">
+                {today.overdue.map((todo: any, idx: number) => (
+                  <div key={idx} className="p-2 bg-base-200 rounded-lg border-thick">
+                    <div className="flex items-start gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm text-base-content/80 break-words">{todo.text}</div>
+                        <div className="flex flex-wrap items-center gap-2 mt-1">
+                          {todo.priority && (
+                            <span className={`badge badge-xs ${
+                              todo.priority === 'high' ? 'badge-error' :
+                              todo.priority === 'medium' ? 'badge-warning' :
+                              'badge-info'
+                            }`}>
+                              {todo.priority}
+                            </span>
+                          )}
+                          {todo.dueDate && (
+                            <span className="text-xs text-base-content/60">
+                              📅 {new Date(todo.dueDate).toLocaleDateString()}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Due Today */}
+          {today.dueToday && today.dueToday.length > 0 && (
+            <div className="space-y-2">
+              <div className="text-sm font-semibold text-base-content">⏰ Due Today ({today.dueToday.length})</div>
+              <div className="space-y-1">
+                {today.dueToday.map((todo: any, idx: number) => (
+                  <div key={idx} className="p-2 bg-base-200 rounded-lg border-thick">
+                    <div className="flex items-start gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm text-base-content/80 break-words">{todo.text}</div>
+                        <div className="flex flex-wrap items-center gap-2 mt-1">
+                          {todo.priority && (
+                            <span className={`badge badge-xs ${
+                              todo.priority === 'high' ? 'badge-error' :
+                              todo.priority === 'medium' ? 'badge-warning' :
+                              'badge-info'
+                            }`}>
+                              {todo.priority}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Recent Activity */}
+          {today.activity && today.activity.length > 0 && (
+            <div className="space-y-2">
+              <div className="text-sm font-semibold text-base-content">📝 Recent Activity</div>
+              <div className="space-y-1">
+                {today.activity.slice(0, 3).map((item: any, idx: number) => (
+                  <div key={idx} className="p-2 bg-base-200 rounded-lg border-thick">
+                    <div className="text-xs text-base-content/70 break-words">{item.title || item.summary || item.entry}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* No tasks message */}
+          {(!today.overdue || today.overdue.length === 0) && (!today.dueToday || today.dueToday.length === 0) && (
+            <div className="p-4 bg-base-200 rounded-lg border-thick text-center">
+              <div className="text-2xl mb-2">🎉</div>
+              <div className="text-sm font-semibold text-base-content">All caught up!</div>
+              <div className="text-xs text-base-content/60 mt-1">No tasks due today</div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Render /week command data
+    if (response.data.upcomingTodos !== undefined) {
+      const week = response.data;
+      return (
+        <div className="mt-3 space-y-3">
+          {/* Stats Summary */}
+          {week.stats && (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div className="p-2 bg-base-200 rounded-lg border-thick text-center">
+                <div className="text-xl font-bold text-base-content">{week.stats.totalUpcoming}</div>
+                <div className="text-xs text-base-content/60">Upcoming</div>
+              </div>
+              <div className="p-2 bg-base-200 rounded-lg border-thick text-center">
+                <div className="text-xl font-bold text-base-content">{week.stats.totalCompleted}</div>
+                <div className="text-xs text-base-content/60">Completed</div>
+              </div>
+              <div className="p-2 bg-base-200 rounded-lg border-thick text-center">
+                <div className="text-xl font-bold text-base-content">{week.stats.totalActivity || 0}</div>
+                <div className="text-xs text-base-content/60">Activities</div>
+              </div>
+              <div className="p-2 bg-base-200 rounded-lg border-thick text-center">
+                <div className="text-xl font-bold text-base-content">{(week.stats.totalUpcoming || 0) + (week.stats.totalCompleted || 0)}</div>
+                <div className="text-xs text-base-content/60">Total</div>
+              </div>
+            </div>
+          )}
+
+          {/* Upcoming Tasks by Day */}
+          {week.upcomingTodos && Object.keys(week.upcomingTodos).length > 0 && (
+            <div className="space-y-3">
+              <div className="text-sm font-semibold text-base-content">📅 Upcoming This Week</div>
+              {Object.entries(week.upcomingTodos).map(([day, todos]: [string, any]) => (
+                <div key={day} className="space-y-1">
+                  <div className="text-xs font-semibold text-base-content/70 capitalize">{day}</div>
+                  <div className="space-y-1 ml-2">
+                    {todos.map((todo: any, idx: number) => (
+                      <div key={idx} className="p-2 bg-base-200 rounded-lg border-thick">
+                        <div className="flex items-start gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm text-base-content/80 break-words">{todo.text}</div>
+                            <div className="flex flex-wrap items-center gap-2 mt-1">
+                              {todo.priority && (
+                                <span className={`badge badge-xs ${
+                                  todo.priority === 'high' ? 'badge-error' :
+                                  todo.priority === 'medium' ? 'badge-warning' :
+                                  'badge-info'
+                                }`}>
+                                  {todo.priority}
+                                </span>
+                              )}
+                              {todo.dueDate && (
+                                <span className="text-xs text-base-content/60">
+                                  📅 {new Date(todo.dueDate).toLocaleDateString()}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Completed This Week */}
+          {week.completedThisWeek && week.completedThisWeek.length > 0 && (
+            <div className="space-y-2">
+              <div className="text-sm font-semibold text-base-content">✅ Completed This Week ({week.completedThisWeek.length})</div>
+              <div className="space-y-1">
+                {week.completedThisWeek.slice(0, 5).map((todo: any, idx: number) => (
+                  <div key={idx} className="p-2 bg-base-200 rounded-lg border-thick">
+                    <div className="text-sm text-base-content/70 line-through break-words">{todo.text}</div>
+                  </div>
+                ))}
+                {week.completedThisWeek.length > 5 && (
+                  <div className="text-xs text-base-content/60 text-center">
+                    + {week.completedThisWeek.length - 5} more
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* No upcoming tasks */}
+          {(!week.upcomingTodos || Object.keys(week.upcomingTodos).length === 0) && (
+            <div className="p-4 bg-base-200 rounded-lg border-thick text-center">
+              <div className="text-sm text-base-content/60">No upcoming tasks this week</div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Render /standup command data
+    if (response.data.yesterday && response.data.today) {
+      const standup = response.data;
+      return (
+        <div className="mt-3 space-y-3">
+          {/* Stats Summary */}
+          {standup.stats && (
+            <div className="grid grid-cols-3 gap-2">
+              <div className="p-2 bg-base-200 rounded-lg border-thick text-center">
+                <div className="text-xl font-bold text-base-content">{standup.stats.completedYesterday}</div>
+                <div className="text-xs text-base-content/60">Yesterday</div>
+              </div>
+              <div className="p-2 bg-base-200 rounded-lg border-thick text-center">
+                <div className="text-xl font-bold text-base-content">{standup.stats.tasksToday}</div>
+                <div className="text-xs text-base-content/60">Today</div>
+              </div>
+              <div className="p-2 bg-base-200 rounded-lg border-thick text-center">
+                <div className="text-xl font-bold text-base-content">{standup.stats.stuckOn}</div>
+                <div className="text-xs text-base-content/60">Stuck on</div>
+              </div>
+            </div>
+          )}
+
+          {/* Yesterday Section */}
+          <div className="space-y-2">
+            <div className="text-sm font-semibold text-base-content">✅ What I did yesterday</div>
+            {standup.yesterday.completed && standup.yesterday.completed.length > 0 ? (
+              <div className="space-y-1">
+                {standup.yesterday.completed.map((todo: any, idx: number) => (
+                  <div key={idx} className="p-2 bg-base-200 rounded-lg border-thick">
+                    <div className="text-sm text-base-content/70 break-words">{todo.text}</div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-2 bg-base-200 rounded-lg border-thick text-xs text-base-content/60">
+                No tasks completed yesterday
+              </div>
+            )}
+            {standup.yesterday.activity && standup.yesterday.activity.length > 0 && (
+              <div className="space-y-1 mt-2">
+                <div className="text-xs text-base-content/60">Activity:</div>
+                {standup.yesterday.activity.slice(0, 2).map((item: any, idx: number) => (
+                  <div key={idx} className="p-2 bg-base-200 rounded-lg border-thick">
+                    <div className="text-xs text-base-content/70 break-words">{item.summary || item.content}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Today Section */}
+          <div className="space-y-2">
+            <div className="text-sm font-semibold text-base-content">🎯 What I'm working on today</div>
+            {standup.today.tasks && standup.today.tasks.length > 0 ? (
+              <div className="space-y-1">
+                {standup.today.tasks.map((todo: any, idx: number) => (
+                  <div key={idx} className="p-2 bg-base-200 rounded-lg border-thick">
+                    <div className="flex items-start gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm text-base-content/80 break-words">{todo.text}</div>
+                        <div className="flex flex-wrap items-center gap-2 mt-1">
+                          {todo.priority && (
+                            <span className={`badge badge-xs ${
+                              todo.priority === 'high' ? 'badge-error' :
+                              todo.priority === 'medium' ? 'badge-warning' :
+                              'badge-info'
+                            }`}>
+                              {todo.priority}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-2 bg-base-200 rounded-lg border-thick text-xs text-base-content/60">
+                No tasks due today
+              </div>
+            )}
+          </div>
+
+          {/* Stuck On Section */}
+          <div className="space-y-2">
+            <div className="text-sm font-semibold text-base-content">🤔 What I'm stuck on</div>
+            {standup.stuckOn && standup.stuckOn.length > 0 ? (
+              <div className="space-y-1">
+                {standup.stuckOn.map((todo: any, idx: number) => (
+                  <div key={idx} className="p-2 bg-base-200 rounded-lg border-thick">
+                    <div className="flex items-start gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm text-base-content/80 break-words">{todo.text}</div>
+                        <div className="flex flex-wrap items-center gap-2 mt-1">
+                          {todo.priority && (
+                            <span className="badge badge-xs badge-error">{todo.priority}</span>
+                          )}
+                          {todo.dueDate && (
+                            <span className="text-xs text-base-content/60">
+                              📅 {new Date(todo.dueDate).toLocaleDateString()}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-2 bg-base-200 rounded-lg border-thick text-xs text-base-content/60 text-center">
+                Nothing stuck! 🎉
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
     // Generic data rendering
     return (
       <div className="mt-3 p-3 bg-base-200 rounded-lg border-thick overflow-x-auto">
@@ -925,11 +1806,14 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
               {/* Render data */}
               {renderData()}
 
-              {/* Success actions - add CTA for successful creations */}
+              {/* Success actions - add CTA for successful operations */}
               {response.type === 'success' && !response.data && response.metadata?.projectId && (
                 <div className="mt-3 flex gap-2 flex-wrap">
                   {/* Show specific button based on command type */}
-                  {command.toLowerCase().includes('add todo') || (command.toLowerCase().includes('todo') && !command.toLowerCase().includes('view')) ? (
+                  {command.toLowerCase().includes('add todo') || command.toLowerCase().includes('edit todo') ||
+                   command.toLowerCase().includes('delete todo') || command.toLowerCase().includes('complete') ||
+                   command.toLowerCase().includes('priority') || command.toLowerCase().includes('assign') ||
+                   command.toLowerCase().includes('due') || (command.toLowerCase().includes('todo') && !command.toLowerCase().includes('view')) ? (
                     <button
                       onClick={() => handleNavigateToProject('/notes?section=todos')}
                       className="btn-primary-sm gap-2 border-thick"
@@ -940,7 +1824,19 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                       </svg>
                       View Todos
                     </button>
-                  ) : command.toLowerCase().includes('add note') || command.toLowerCase().includes('note') ? (
+                  ) : command.toLowerCase().includes('subtask') ? (
+                    <button
+                      onClick={() => handleNavigateToProject('/notes?section=todos')}
+                      className="btn-primary-sm gap-2 border-thick"
+                      style={{ color: getContrastTextColor('primary') }}
+                    >
+                      <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                      </svg>
+                      View Todos
+                    </button>
+                  ) : command.toLowerCase().includes('add note') || command.toLowerCase().includes('edit note') ||
+                     command.toLowerCase().includes('delete note') || command.toLowerCase().includes('note') ? (
                     <button
                       onClick={() => handleNavigateToProject('/notes?section=notes')}
                       className="btn-primary-sm gap-2 border-thick"
@@ -951,7 +1847,8 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                       </svg>
                       View Notes
                     </button>
-                  ) : command.toLowerCase().includes('add devlog') || command.toLowerCase().includes('devlog') ? (
+                  ) : command.toLowerCase().includes('add devlog') || command.toLowerCase().includes('edit devlog') ||
+                     command.toLowerCase().includes('delete devlog') || command.toLowerCase().includes('devlog') ? (
                     <button
                       onClick={() => handleNavigateToProject('/notes?section=devlog')}
                       className="btn-primary-sm gap-2 border-thick"
@@ -962,7 +1859,8 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                       </svg>
                       View Dev Log
                     </button>
-                  ) : command.toLowerCase().includes('add doc') || (command.toLowerCase().includes('doc') && !command.toLowerCase().includes('view')) ? (
+                  ) : command.toLowerCase().includes('add doc') || command.toLowerCase().includes('edit doc') ||
+                     command.toLowerCase().includes('delete doc') || (command.toLowerCase().includes('doc') && !command.toLowerCase().includes('view')) ? (
                     <button
                       onClick={() => handleNavigateToProject('/docs')}
                       className="btn-primary-sm gap-2 border-thick"

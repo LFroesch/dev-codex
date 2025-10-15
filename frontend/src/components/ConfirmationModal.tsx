@@ -70,20 +70,20 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
           </svg>
         </div>
 
-        <h3 className="text-xl font-bold text-center mb-4" style={{ color: getContrastTextColor('base') }}>{title}</h3>
+        <h3 className="text-xl font-bold text-center mb-4" style={{ color: getContrastTextColor('primary') }}>{title}</h3>
 
-        <div className="text-center mb-6" style={{ color: getContrastTextColor('base') }} dangerouslySetInnerHTML={{ __html: message }} />
+        <div className="text-center mb-6" style={{ color: getContrastTextColor('primary') }} dangerouslySetInnerHTML={{ __html: message }} />
 
         <div className="flex gap-3">
           <button
             type="button"
-            className="btn btn-ghost flex-1 border-2 border-base-content/20"
+            className="bg-primary btn btn-ghost flex-1 border-2 border-base-content/20"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
               onCancel();
             }}
-            style={{ color: getContrastTextColor('base') }}
+            style={{ color: getContrastTextColor('primary') }}
           >
             {cancelText}
           </button>

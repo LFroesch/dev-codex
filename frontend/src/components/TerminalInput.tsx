@@ -508,8 +508,8 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
             </div>
             <span className="text-base-content/50 hidden md:inline">•</span>
             <div className="flex items-center gap-1 hidden md:flex">
-              <kbd className="kbd kbd-xs">Shift+Enter</kbd>
-              <span>new line</span>
+              <kbd className="kbd kbd-xs">&&</kbd>
+              <span>batch commands</span>
             </div>
             <span className="text-base-content/50 hidden md:inline">•</span>
             {/* runs /help in terminal on click */}

@@ -1,6 +1,6 @@
 import { BaseCommandHandler } from './BaseCommandHandler';
 import { CommandResponse, ResponseType } from '../commandExecutor';
-import { ParsedCommand, CommandParser, COMMAND_METADATA } from '../commandParser';
+import { ParsedCommand, CommandParser, COMMAND_METADATA, CommandType } from '../commandParser';
 import { User } from '../../models/User';
 import { Project } from '../../models/Project';
 import { logError } from '../../config/logger';
@@ -42,42 +42,171 @@ export class UtilityHandlers extends BaseCommandHandler {
     // General help
     const commands = CommandParser.getAllCommands();
     const grouped: Record<string, any[]> = {
-      'Add Items': [],
-      'Remove Items': [],
-      'View Items': [],
-      'Project Management': [],
-      'Other': []
+      '⚡ Command Syntax': [],
+      '📝 Create': [],
+      '👀 View & Search': [],
+      '✏️ Edit': [],
+      '🗑️ Delete': [],
+      '✅ Task Management': [],
+      '📊 Workflow & Planning': [],
+      '📦 Tech Stack': [],
+      '👥 Team': [],
+      '⚙️ Settings & Deployment': [],
+      '🔧 Utilities': []
     };
+
+    // Add syntax tips to the Command Syntax section
+    grouped['⚡ Command Syntax'] = [
+      {
+        type: 'syntax_tip',
+        syntax: '📖 Basic Syntax',
+        description: 'All commands start with / (e.g., /help, /add todo, /view notes)',
+        examples: []
+      },
+      {
+        type: 'syntax_tip',
+        syntax: '🔗 Chained Commands',
+        description: 'Chain multiple commands with && to execute them sequentially. Execution stops on first error.',
+        examples: [
+          '/add todo implement feature && /add note architecture decisions',
+          '/add tech React && /add package axios && /view stack',
+          '/complete 1 && /add devlog completed user authentication'
+        ]
+      },
+      {
+        type: 'syntax_tip',
+        syntax: '@ Project Mentions',
+        description: 'Reference projects using @projectname. Works with spaces in project names.',
+        examples: [
+          '/add todo fix bug @myproject',
+          '/swap @My Cool Project',
+          '/view todos @frontend'
+        ]
+      },
+      {
+        type: 'syntax_tip',
+        syntax: '-- Flags & Options',
+        description: 'Use flags to modify command behavior (e.g., --category=api, --role=editor)',
+        examples: [
+          '/add tech React --category=framework --version=18.2.0',
+          '/invite user@email.com --role=editor',
+          '/set deployment --url=https://myapp.com --platform=vercel'
+        ]
+      }
+    ];
 
     commands.forEach(cmd => {
       const cmdType = cmd.type.toString();
 
-      if (cmdType.startsWith('add_')) {
-        grouped['Add Items'].push(cmd);
-      } else if (cmdType.startsWith('remove_') && cmdType !== 'remove_member') {
-        grouped['Remove Items'].push(cmd);
-      } else if (cmdType.startsWith('view_')) {
-        grouped['View Items'].push(cmd);
-      } else if ([
-        'swap_project',
-        'export',
+      // Wizards go in Create
+      if (cmdType.startsWith('wizard_')) {
+        grouped['📝 Create'].push(cmd);
+      }
+      // Create operations
+      else if (cmdType.startsWith('add_')) {
+        grouped['📝 Create'].push(cmd);
+        // Also add task-related creates to Task Management
+        if (cmdType === 'add_todo' || cmdType === 'add_subtask') {
+          grouped['✅ Task Management'].push(cmd);
+        }
+        // Also add tech stack creates to Tech Stack
+        if (cmdType === 'add_tech' || cmdType === 'add_package') {
+          grouped['📦 Tech Stack'].push(cmd);
+        }
+      }
+      // View & Search
+      else if (cmdType.startsWith('view_') || cmdType === 'search') {
+        grouped['👀 View & Search'].push(cmd);
+        // Also add task views to Task Management
+        if (cmdType === 'view_todos' || cmdType === 'view_subtasks') {
+          grouped['✅ Task Management'].push(cmd);
+        }
+        // Also add tech stack views to Tech Stack
+        if (cmdType === 'view_stack') {
+          grouped['📦 Tech Stack'].push(cmd);
+        }
+        // Also add team/settings views to their sections
+        if (cmdType === 'view_team') {
+          grouped['👥 Team'].push(cmd);
+        }
+        if (cmdType === 'view_settings' || cmdType === 'view_deployment' || cmdType === 'view_public') {
+          grouped['⚙️ Settings & Deployment'].push(cmd);
+        }
+      }
+      // Edit operations
+      else if (cmdType.startsWith('edit_')) {
+        grouped['✏️ Edit'].push(cmd);
+        // Also add todo edits to Task Management
+        if (cmdType === 'edit_todo') {
+          grouped['✅ Task Management'].push(cmd);
+        }
+      }
+      // Delete operations
+      else if (cmdType.startsWith('delete_')) {
+        grouped['🗑️ Delete'].push(cmd);
+        // Also add todo/subtask deletes to Task Management
+        if (cmdType === 'delete_todo' || cmdType === 'delete_subtask') {
+          grouped['✅ Task Management'].push(cmd);
+        }
+      }
+      // Task management operations
+      else if ([
+        'complete_todo',
+        'assign_todo',
+        'set_priority',
+        'set_due_date'
+      ].includes(cmdType)) {
+        grouped['✅ Task Management'].push(cmd);
+      }
+      // Tech stack remove operations
+      else if (cmdType === 'remove_tech' || cmdType === 'remove_package') {
+        grouped['📦 Tech Stack'].push(cmd);
+        grouped['🗑️ Delete'].push(cmd);
+      }
+      // Team operations
+      else if ([
+        'invite_member',
+        'remove_member'
+      ].includes(cmdType)) {
+        grouped['👥 Team'].push(cmd);
+      }
+      // Settings & Deployment
+      else if ([
         'set_name',
         'set_description',
         'set_deployment',
         'set_public',
-        'invite_member',
-        'remove_member'
+        'add_tag',
+        'remove_tag'
       ].includes(cmdType)) {
-        grouped['Project Management'].push(cmd);
-      } else {
-        grouped['Other'].push(cmd);
+        grouped['⚙️ Settings & Deployment'].push(cmd);
+      }
+      // Workflow & Planning
+      else if ([
+        'today',
+        'week',
+        'standup',
+        'info'
+      ].includes(cmdType)) {
+        grouped['📊 Workflow & Planning'].push(cmd);
+      }
+      // Navigation (goto)
+      else if (cmdType === 'goto') {
+        grouped['🔧 Utilities'].push(cmd);
+      }
+      // Utilities (swap, export, themes, etc.)
+      else {
+        grouped['🔧 Utilities'].push(cmd);
       }
     });
 
     return {
       type: ResponseType.INFO,
-      message: '📚 Available Commands',
-      data: { grouped }
+      message: '📚 Available Commands - 50+ commands to manage your projects',
+      data: {
+        grouped,
+        tip: 'Use /help [command] for detailed help on a specific command. Chain commands with && for batch execution.'
+      }
     };
   }
 
@@ -918,13 +1047,769 @@ export class UtilityHandlers extends BaseCommandHandler {
   }
 
   /**
+   * Handle /llm command - Generate LLM context guide
+   */
+  handleLLMContext(): CommandResponse {
+    const guide = `# Terminal Command System - LLM Interaction Guide
+
+## Overview
+This is a project management terminal interface that accepts natural language-like commands to manage projects, tasks, notes, documentation, and more. All commands start with "/" and follow a structured syntax.
+
+## Core Command Syntax
+
+### Basic Structure
+\`\`\`
+/command [arguments] [@project] [--flags]
+\`\`\`
+
+- **Commands**: Start with "/" (e.g., /help, /add todo)
+- **Arguments**: Text or values following the command
+- **Project Mentions**: Reference projects using @ syntax (e.g., @myproject, @My Project Name)
+- **Flags**: Modify behavior with -- flags (e.g., --category=web, --priority=high)
+
+### Batch Commands
+Chain multiple commands with && to execute sequentially:
+\`\`\`
+/add todo implement feature && /add note architecture decisions && /view todos
+/add tech React --category=framework && /add package axios && /view stack
+\`\`\`
+Execution stops on first error.
+
+## Command Categories
+
+### 1. Project Management
+- \`/wizard new\` - Interactive project creation wizard
+- \`/swap [@project]\` - Switch to different project
+- \`/view settings [@project]\` - View project settings
+- \`/set name [new name] [@project]\` - Update project name
+- \`/set description [text] [@project]\` - Update description
+- \`/add tag [tag] [@project]\` - Add project tag
+- \`/remove tag [tag] [@project]\` - Remove project tag
+
+### 2. Task Management
+- \`/add todo [text] [@project]\` - Create new todo
+- \`/view todos [@project]\` - List all todos
+- \`/edit todo [id/text] [new text] [@project]\` - Edit todo
+- \`/delete todo [id/text] [@project]\` - Delete todo
+- \`/complete [id/text] [@project]\` - Mark todo complete
+- \`/priority [id/text] [low/medium/high] [@project]\` - Set priority
+- \`/due [id/text] [date] [@project]\` - Set due date
+- \`/assign [id/text] [email] [@project]\` - Assign to team member
+
+### 3. Subtasks
+- \`/add subtask [parent todo] [text] [@project]\` - Add subtask
+- \`/view subtasks [todo id/text] [@project]\` - View subtasks
+- \`/delete subtask [id/text] [@project]\` - Delete subtask
+
+### 4. Notes & Documentation
+- \`/add note [text] [@project]\` - Create note
+- \`/view notes [@project]\` - List notes
+- \`/edit note [id/title] [new content] [@project]\` - Edit note
+- \`/delete note [id/title] [@project]\` - Delete note
+- \`/add devlog [text] [@project]\` - Add dev log entry
+- \`/view devlog [@project]\` - View dev log
+- \`/add doc [type] [title] - [content] [@project]\` - Add documentation
+- \`/view docs [@project]\` - View documentation
+
+### 5. Tech Stack
+- \`/add tech [name] --category=[category] --version=[version] [@project]\` - Add technology
+- \`/add package [name] --category=[category] --version=[version] [@project]\` - Add package
+- \`/view stack [@project]\` - View tech stack
+- \`/remove tech [name] [@project]\` - Remove technology
+- \`/remove package [name] [@project]\` - Remove package
+
+### 6. Team & Collaboration
+- \`/view team [@project]\` - View team members
+- \`/invite [email/username] --role=[editor/viewer] [@project]\` - Invite member
+- \`/remove member [email/username] [@project]\` - Remove member
+
+### 7. Deployment & Public Settings
+- \`/view deployment [@project]\` - View deployment info
+- \`/set deployment --url=[url] --platform=[platform] [@project]\` - Set deployment
+- \`/view public [@project]\` - View public settings
+- \`/set public --enabled=[true/false] --slug=[slug] [@project]\` - Set public visibility
+
+### 8. Search & Export
+- \`/search [query] [@project]\` - Search across all content
+- \`/export [@project]\` - Export project data
+- \`/summary [markdown|json|prompt|text] [@project]\` - Generate downloadable summary
+
+### 9. Utilities
+- \`/help [command]\` - Show all commands or specific command help
+- \`/view themes\` - List available themes
+- \`/set theme [name]\` - Change theme
+- \`/view news\` - View latest updates
+- \`/view notifications\` - View notifications
+- \`/clear notifications\` - Clear all notifications
+
+## Usage Examples
+
+### Creating a Full Project Setup
+\`\`\`
+/wizard new
+/add tech React --category=framework --version=18.2.0 @MyProject
+/add package axios --category=api @MyProject
+/add todo setup authentication @MyProject
+/add todo create dashboard @MyProject
+/add note initial architecture decisions @MyProject
+\`\`\`
+
+### Managing Tasks
+\`\`\`
+/add todo fix login bug @Frontend
+/priority "fix login bug" high @Frontend
+/due "fix login bug" 2025-12-31 @Frontend
+/assign "fix login bug" dev@example.com @Frontend
+/add subtask "fix login bug" update validation @Frontend
+\`\`\`
+
+### Documentation Workflow
+\`\`\`
+/add doc API /auth/login - POST endpoint for authentication @Backend
+/add devlog implemented JWT token refresh @Backend
+/add note consider rate limiting for API endpoints @Backend
+\`\`\`
+
+### Batch Operations
+\`\`\`
+/add todo implement feature && /priority implement feature high && /view todos
+/add tech PostgreSQL --category=database && /add package pg --version=8.0.0 && /view stack
+\`\`\`
+
+## Project References
+- Use @ syntax: \`@projectname\` or \`@My Project Name\`
+- Works with spaces in project names
+- Can be placed anywhere in command
+- If omitted, uses current project context (if available)
+
+## Flags & Options
+Common flags:
+- \`--category=\` - Categorize items (tech, packages, etc.)
+- \`--version=\` - Specify version numbers
+- \`--role=\` - Set user roles (editor, viewer)
+- \`--enabled=\` - Enable/disable features (true, false)
+- \`--url=\` - Set URLs (deployment, etc.)
+- \`--platform=\` - Specify platforms
+- \`--slug=\` - Set URL slugs
+- \`--priority=\` - Set priorities (low, medium, high)
+- \`--unread\` - Filter unread items
+
+## Response Types
+The system returns different response types:
+- **success** ✅ - Operation completed successfully
+- **error** ❌ - Operation failed
+- **info** ℹ️ - Informational message
+- **data** 📊 - Data response (lists, etc.)
+- **prompt** ❓ - Interactive prompt for user input
+- **warning** ⚠️ - Warning message
+
+## Tips for LLMs
+1. Always include "/" before commands
+2. Use @ for project mentions: \`@ProjectName\`
+3. Chain related commands with && for efficiency
+4. Use flags to provide additional context
+5. Reference items by ID or text content
+6. Use quotes for multi-word arguments when needed
+7. Check /help for specific command syntax
+8. Use /search to find content across projects
+9. Generate summaries with /summary [format] for sharing project context
+10. Use /wizard new for interactive project creation
+
+## Common Patterns
+
+### Setting up a new feature
+\`\`\`
+/add todo [feature description] && /priority [feature] high && /add note [implementation details]
+\`\`\`
+
+### Documenting an API endpoint
+\`\`\`
+/add doc API [endpoint] - [description] && /add devlog [what was implemented]
+\`\`\`
+
+### Managing tech stack
+\`\`\`
+/add tech [technology] --category=[type] && /add package [package] --category=[type] && /view stack
+\`\`\`
+
+## Error Handling
+- Commands validate required arguments
+- Projects must exist for project-specific commands
+- Batch commands stop on first error
+- Suggestions provided for similar commands/projects
+- Use /help [command] for specific command help
+
+## Best Practices
+1. Use descriptive task and note names
+2. Set priorities for important tasks
+3. Add subtasks to break down complex todos
+4. Use dev log to track progress
+5. Document important decisions in notes
+6. Keep tech stack updated
+7. Use search to find content quickly
+8. Export/summarize projects for sharing
+9. Chain commands for related operations
+10. Use the wizard for guided workflows
+
+This terminal system is designed for efficient project management through a command-line interface. All operations are text-based and support natural language patterns while maintaining structured syntax.`;
+
+    return {
+      type: ResponseType.DATA,
+      message: '🤖 LLM Terminal Interaction Guide',
+      data: {
+        summary: guide,
+        format: 'text',
+        fileName: 'llm-terminal-guide.txt',
+        projectName: 'Terminal Guide',
+        downloadable: true
+      }
+    };
+  }
+
+  /**
    * Handle wizard commands
    */
-  handleWizard(parsed: ParsedCommand): CommandResponse {
+  async handleWizard(parsed: ParsedCommand): Promise<CommandResponse> {
+    switch (parsed.type) {
+      case CommandType.WIZARD_NEW:
+        return this.handleWizardNew();
+      case CommandType.WIZARD_SETUP:
+        return this.handleWizardSetup(parsed);
+      case CommandType.WIZARD_DEPLOY:
+        return this.handleWizardDeploy(parsed);
+      default:
+        return {
+          type: ResponseType.INFO,
+          message: `🧙 ${parsed.command} wizard coming soon!`,
+          suggestions: ['/help']
+        };
+    }
+  }
+
+  /**
+   * Handle /wizard new command - Interactive project creation wizard
+   */
+  private handleWizardNew(): CommandResponse {
+    return {
+      type: ResponseType.PROMPT,
+      message: '🧙 Project Creation Wizard',
+      data: {
+        wizardType: 'new_project',
+        steps: [
+          {
+            id: 'name',
+            type: 'text',
+            label: 'Project Name',
+            placeholder: 'Enter your project name...',
+            required: true,
+            description: 'Choose a descriptive name for your project'
+          },
+          {
+            id: 'description',
+            type: 'textarea',
+            label: 'Description',
+            placeholder: 'Describe your project...',
+            required: true,
+            description: 'Explain what your project is about'
+          },
+          {
+            id: 'category',
+            type: 'text',
+            label: 'Category',
+            placeholder: 'e.g., Web App, Mobile, API...',
+            defaultValue: 'general',
+            required: false,
+            description: 'Categorize your project type'
+          },
+          {
+            id: 'stagingEnvironment',
+            type: 'select',
+            label: 'Environment',
+            options: [
+              { value: 'development', label: 'Development' },
+              { value: 'staging', label: 'Staging' },
+              { value: 'production', label: 'Production' }
+            ],
+            defaultValue: 'development',
+            required: false,
+            description: 'Current staging environment'
+          },
+          {
+            id: 'color',
+            type: 'color',
+            label: 'Project Color',
+            defaultValue: '#3B82F6',
+            required: false,
+            description: 'Pick a color theme for your project'
+          },
+          {
+            id: 'tags',
+            type: 'tags',
+            label: 'Tags',
+            placeholder: 'Add tags...',
+            defaultValue: [],
+            required: false,
+            description: 'Add relevant tags (press Enter to add each tag)'
+          }
+        ],
+        submitEndpoint: '/api/projects',
+        submitMethod: 'POST',
+        successMessage: 'Project created successfully!',
+        successRedirect: '/'
+      }
+    };
+  }
+
+  /**
+   * Handle /wizard setup command - Interactive project setup wizard
+   */
+  private async handleWizardSetup(parsed: ParsedCommand): Promise<CommandResponse> {
+    const resolution = await this.resolveProject(parsed.projectMention);
+    if (!resolution.project) {
+      return this.buildProjectErrorResponse(resolution);
+    }
+
     return {
       type: ResponseType.INFO,
-      message: `🧙 ${parsed.command} wizard coming soon!`,
+      message: `🧙 Setup wizard for ${resolution.project.name} coming soon!`,
       suggestions: ['/help']
+    };
+  }
+
+  /**
+   * Handle /wizard deploy command - Interactive deployment wizard
+   */
+  private async handleWizardDeploy(parsed: ParsedCommand): Promise<CommandResponse> {
+    const resolution = await this.resolveProject(parsed.projectMention);
+    if (!resolution.project) {
+      return this.buildProjectErrorResponse(resolution);
+    }
+
+    return {
+      type: ResponseType.INFO,
+      message: `🧙 Deployment wizard for ${resolution.project.name} coming soon!`,
+      suggestions: ['/help']
+    };
+  }
+
+  /**
+   * Handle /goto command - Navigate to different pages
+   */
+  async handleGoto(parsed: ParsedCommand, currentProjectId?: string): Promise<CommandResponse> {
+    const pageName = parsed.args[0]?.toLowerCase();
+
+    if (!pageName) {
+      return {
+        type: ResponseType.ERROR,
+        message: 'Page name is required',
+        suggestions: ['/goto notes', '/goto stack', '/goto deployment']
+      };
+    }
+
+    // Map of page names to routes
+    const pageRoutes: Record<string, { path: string, needsProject: boolean, name: string }> = {
+      'notes': { path: '/notes', needsProject: true, name: 'Notes' },
+      'todos': { path: '/notes?section=todos', needsProject: true, name: 'Todos' },
+      'devlog': { path: '/notes?section=devlog', needsProject: true, name: 'Dev Log' },
+      'docs': { path: '/docs', needsProject: true, name: 'Documentation' },
+      'stack': { path: '/stack', needsProject: true, name: 'Tech Stack' },
+      'deployment': { path: '/deployment', needsProject: true, name: 'Deployment' },
+      'settings': { path: '/settings', needsProject: true, name: 'Settings' },
+      'sharing': { path: '/sharing', needsProject: true, name: 'Team & Sharing' },
+      'public': { path: '/public', needsProject: true, name: 'Public Page' },
+      'ideas': { path: '/ideas', needsProject: true, name: 'Ideas' },
+      'terminal': { path: '/terminal', needsProject: false, name: 'Terminal' },
+      'discover': { path: '/discover', needsProject: false, name: 'Discover' },
+      'help': { path: '/help', needsProject: false, name: 'Help' },
+      'news': { path: '/news', needsProject: false, name: 'News' },
+      'account': { path: '/account-settings', needsProject: false, name: 'Account Settings' },
+      'account-settings': { path: '/account-settings', needsProject: false, name: 'Account Settings' }
+    };
+
+    const route = pageRoutes[pageName];
+
+    if (!route) {
+      const suggestions = Object.keys(pageRoutes).slice(0, 5).map(p => `/goto ${p}`);
+      return {
+        type: ResponseType.ERROR,
+        message: `Page "${pageName}" not found`,
+        suggestions
+      };
+    }
+
+    // If page needs a project, resolve it
+    if (route.needsProject) {
+      const resolution = await this.resolveProject(parsed.projectMention, currentProjectId);
+      if (!resolution.project) {
+        return this.buildProjectErrorResponse(resolution);
+      }
+
+      return {
+        type: ResponseType.SUCCESS,
+        message: `📍 Navigating to ${route.name}`,
+        data: {
+          redirect: route.path,
+          page: pageName,
+          pageName: route.name
+        },
+        metadata: {
+          projectId: resolution.project._id.toString(),
+          projectName: resolution.project.name,
+          action: 'goto'
+        }
+      };
+    }
+
+    // Account-wide pages don't need project context
+    return {
+      type: ResponseType.SUCCESS,
+      message: `📍 Navigating to ${route.name}`,
+      data: {
+        redirect: route.path,
+        page: pageName,
+        pageName: route.name
+      },
+      metadata: {
+        action: 'goto'
+      }
+    };
+  }
+
+  /**
+   * Handle /today command - Show today's tasks and activity
+   */
+  async handleToday(parsed: ParsedCommand, currentProjectId?: string): Promise<CommandResponse> {
+    const resolution = await this.resolveProject(parsed.projectMention, currentProjectId);
+
+    if (!resolution.project) {
+      return this.buildProjectErrorResponse(resolution);
+    }
+
+    const project = resolution.project;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    // Get todos due today or overdue
+    const todaysTodos = project.todos?.filter((todo: any) => {
+      if (todo.completed) return false;
+      if (!todo.dueDate) return false;
+      const dueDate = new Date(todo.dueDate);
+      return dueDate <= tomorrow;
+    }) || [];
+
+    // Sort by priority and due date
+    const sortedTodos = todaysTodos.sort((a: any, b: any) => {
+      const priorityOrder = { high: 0, medium: 1, low: 2 };
+      const aPriority = priorityOrder[a.priority as keyof typeof priorityOrder] ?? 1;
+      const bPriority = priorityOrder[b.priority as keyof typeof priorityOrder] ?? 1;
+      if (aPriority !== bPriority) return aPriority - bPriority;
+      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+    });
+
+    const overdue = sortedTodos.filter((t: any) => new Date(t.dueDate) < today);
+    const dueToday = sortedTodos.filter((t: any) => {
+      const due = new Date(t.dueDate);
+      return due >= today && due < tomorrow;
+    });
+
+    // Get today's activity (devlog entries from today)
+    const todaysDevLog = project.devLog?.filter((entry: any) => {
+      const entryDate = new Date(entry.createdAt || entry.date);
+      return entryDate >= today;
+    }) || [];
+
+    return {
+      type: ResponseType.DATA,
+      message: `📅 Today's overview for ${project.name}`,
+      data: {
+        date: today.toLocaleDateString(),
+        overdue: overdue.map((t: any) => ({
+          text: t.text,
+          priority: t.priority,
+          dueDate: t.dueDate,
+          description: t.description
+        })),
+        dueToday: dueToday.map((t: any) => ({
+          text: t.text,
+          priority: t.priority,
+          dueDate: t.dueDate,
+          description: t.description
+        })),
+        activity: todaysDevLog.map((entry: any) => ({
+          title: entry.title,
+          entry: entry.entry,
+          date: entry.date
+        })),
+        stats: {
+          totalOverdue: overdue.length,
+          totalDueToday: dueToday.length,
+          totalActivity: todaysDevLog.length
+        }
+      },
+      metadata: {
+        projectId: project._id.toString(),
+        projectName: project.name,
+        action: 'today'
+      }
+    };
+  }
+
+  /**
+   * Handle /week command - Weekly summary and planning
+   */
+  async handleWeek(parsed: ParsedCommand, currentProjectId?: string): Promise<CommandResponse> {
+    const resolution = await this.resolveProject(parsed.projectMention, currentProjectId);
+
+    if (!resolution.project) {
+      return this.buildProjectErrorResponse(resolution);
+    }
+
+    const project = resolution.project;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const weekFromNow = new Date(today);
+    weekFromNow.setDate(weekFromNow.getDate() + 7);
+
+    // Get upcoming todos (due within the next 7 days)
+    const upcomingTodos = project.todos?.filter((todo: any) => {
+      if (todo.completed) return false;
+      if (!todo.dueDate) return false;
+      const dueDate = new Date(todo.dueDate);
+      return dueDate >= today && dueDate < weekFromNow;
+    }) || [];
+
+    // Group by day
+    const todosByDay: Record<string, any[]> = {};
+    upcomingTodos.forEach((todo: any) => {
+      const dueDate = new Date(todo.dueDate);
+      const dayKey = dueDate.toLocaleDateString();
+      if (!todosByDay[dayKey]) todosByDay[dayKey] = [];
+      todosByDay[dayKey].push(todo);
+    });
+
+    // Get week's activity
+    const weekStart = new Date(today);
+    weekStart.setDate(weekStart.getDate() - today.getDay()); // Start of week (Sunday)
+    const weekActivity = project.devLog?.filter((entry: any) => {
+      const entryDate = new Date(entry.createdAt || entry.date);
+      return entryDate >= weekStart;
+    }) || [];
+
+    // Get completed todos this week
+    const completedThisWeek = project.todos?.filter((todo: any) => {
+      if (!todo.completed || !todo.completedAt) return false;
+      const completedDate = new Date(todo.completedAt);
+      return completedDate >= weekStart;
+    }) || [];
+
+    return {
+      type: ResponseType.DATA,
+      message: `📊 Weekly overview for ${project.name}`,
+      data: {
+        weekStart: weekStart.toLocaleDateString(),
+        weekEnd: weekFromNow.toLocaleDateString(),
+        upcomingTodos: todosByDay,
+        completedThisWeek: completedThisWeek.map((t: any) => ({
+          text: t.text,
+          completedAt: t.completedAt
+        })),
+        activity: weekActivity.map((entry: any) => ({
+          title: entry.title,
+          date: entry.date
+        })),
+        stats: {
+          totalUpcoming: upcomingTodos.length,
+          totalCompleted: completedThisWeek.length,
+          totalActivity: weekActivity.length
+        }
+      },
+      metadata: {
+        projectId: project._id.toString(),
+        projectName: project.name,
+        action: 'week'
+      }
+    };
+  }
+
+  /**
+   * Handle /standup command - Generate standup report
+   */
+  async handleStandup(parsed: ParsedCommand, currentProjectId?: string): Promise<CommandResponse> {
+    const resolution = await this.resolveProject(parsed.projectMention, currentProjectId);
+
+    if (!resolution.project) {
+      return this.buildProjectErrorResponse(resolution);
+    }
+
+    const project = resolution.project;
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    // What I did yesterday (completed todos + devlog entries)
+    const completedYesterday = project.todos?.filter((todo: any) => {
+      if (!todo.completed || !todo.completedAt) return false;
+      const completedDate = new Date(todo.completedAt);
+      return completedDate >= yesterday && completedDate < today;
+    }) || [];
+
+    const yesterdayActivity = project.devLog?.filter((entry: any) => {
+      const entryDate = new Date(entry.createdAt || entry.date);
+      return entryDate >= yesterday && entryDate < today;
+    }) || [];
+
+    // What I'm working on today (todos due today or in progress)
+    const todaysTasks = project.todos?.filter((todo: any) => {
+      if (todo.completed) return false;
+      if (!todo.dueDate) return false;
+      const dueDate = new Date(todo.dueDate);
+      return dueDate >= today && dueDate < tomorrow;
+    }) || [];
+
+    // Stuck on / Need help (high priority overdue tasks)
+    const stuckTasks = project.todos?.filter((todo: any) => {
+      if (todo.completed) return false;
+      if (!todo.dueDate) return false;
+      const dueDate = new Date(todo.dueDate);
+      return dueDate < today && todo.priority === 'high';
+    }) || [];
+
+    return {
+      type: ResponseType.DATA,
+      message: `🗣️ Standup report for ${project.name}`,
+      data: {
+        date: today.toLocaleDateString(),
+        yesterday: {
+          completed: completedYesterday.map((t: any) => ({
+            text: t.text,
+            priority: t.priority
+          })),
+          activity: yesterdayActivity.map((entry: any) => ({
+            title: entry.title,
+            entry: entry.entry?.substring(0, 200)
+          }))
+        },
+        today: {
+          tasks: todaysTasks.map((t: any) => ({
+            text: t.text,
+            priority: t.priority,
+            dueDate: t.dueDate
+          }))
+        },
+        stuckOn: stuckTasks.map((t: any) => ({
+          text: t.text,
+          priority: t.priority,
+          dueDate: t.dueDate,
+          description: t.description
+        })),
+        stats: {
+          completedYesterday: completedYesterday.length,
+          activityYesterday: yesterdayActivity.length,
+          tasksToday: todaysTasks.length,
+          stuckOn: stuckTasks.length
+        }
+      },
+      metadata: {
+        projectId: project._id.toString(),
+        projectName: project.name,
+        action: 'standup'
+      },
+      suggestions: ['/view todos', '/add devlog']
+    };
+  }
+
+  /**
+   * Handle /info command - Quick project overview
+   */
+  async handleInfo(parsed: ParsedCommand, currentProjectId?: string): Promise<CommandResponse> {
+    const resolution = await this.resolveProject(parsed.projectMention, currentProjectId);
+
+    if (!resolution.project) {
+      return this.buildProjectErrorResponse(resolution);
+    }
+
+    const project = resolution.project;
+    const todos = project.todos || [];
+    const notes = project.notes || [];
+    const devLog = project.devLog || [];
+    const docs = project.docs || [];
+    const tech = project.selectedTechnologies || [];
+    const packages = project.selectedPackages || [];
+
+    const completedTodos = todos.filter((t: any) => t.completed).length;
+    const activeTodos = todos.filter((t: any) => !t.completed);
+    const highPriorityTodos = activeTodos.filter((t: any) => t.priority === 'high').length;
+    const overdueTodos = activeTodos.filter((t: any) => {
+      if (!t.dueDate) return false;
+      return new Date(t.dueDate) < new Date();
+    }).length;
+
+    const daysSinceCreated = Math.floor((Date.now() - new Date(project.createdAt).getTime()) / (1000 * 60 * 60 * 24));
+    const daysSinceUpdated = Math.floor((Date.now() - new Date(project.updatedAt).getTime()) / (1000 * 60 * 60 * 24));
+
+    return {
+      type: ResponseType.DATA,
+      message: `ℹ️ Project overview: ${project.name}`,
+      data: {
+        basicInfo: {
+          name: project.name,
+          description: project.description,
+          category: project.category,
+          stagingEnvironment: project.stagingEnvironment,
+          color: project.color,
+          tags: project.tags || []
+        },
+        stats: {
+          todos: {
+            total: todos.length,
+            completed: completedTodos,
+            active: activeTodos.length,
+            highPriority: highPriorityTodos,
+            overdue: overdueTodos
+          },
+          notes: {
+            total: notes.length
+          },
+          devLog: {
+            total: devLog.length
+          },
+          docs: {
+            total: docs.length
+          },
+          techStack: {
+            total: tech.length + packages.length,
+            technologies: tech.length,
+            packages: packages.length
+          }
+        },
+        timeline: {
+          created: project.createdAt,
+          updated: project.updatedAt,
+          daysSinceCreated,
+          daysSinceUpdated
+        },
+        team: {
+          members: project.team?.length || 0,
+          isPublic: project.publicPageData?.isPublic || false
+        },
+        deployment: {
+          hasDeployment: !!project.deploymentData?.liveUrl,
+          url: project.deploymentData?.liveUrl,
+          platform: project.deploymentData?.deploymentPlatform
+        }
+      },
+      metadata: {
+        projectId: project._id.toString(),
+        projectName: project.name,
+        action: 'info'
+      },
+      suggestions: ['/view todos', '/view notes', '/view stack']
     };
   }
 }

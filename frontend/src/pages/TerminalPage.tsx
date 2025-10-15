@@ -24,6 +24,7 @@ const TerminalPage: React.FC = () => {
   const [entries, setEntries] = useState<TerminalEntry[]>([]);
   const [isExecuting, setIsExecuting] = useState(false);
   const [showWelcome, setShowWelcome] = useState(true);
+  const [showCommands, setShowCommands] = useState(false);
   const [pendingCommand, setPendingCommand] = useState<string | null>(null);
   const terminalEndRef = useRef<HTMLDivElement>(null);
   const terminalOutputRef = useRef<HTMLDivElement>(null);
@@ -255,21 +256,60 @@ const TerminalPage: React.FC = () => {
                     Execute commands to manage your projects. Type <code className="px-1.5 py-0.5 bg-base-200 rounded text-xs text-primary">/help</code> for all available commands.
                   </p>
 
+                  {/* Command Syntax Guide */}
+                  <div className="mt-3 mb-3 p-3 bg-base-200/50 rounded-lg border-thick">
+                    <div className="space-y-2 text-xs text-base-content/70">
+                      <div>
+                        <span className="font-semibold text-primary">/ </span>
+                        <span>All commands start with a forward slash</span>
+                        <div className="text-xs text-base-content/60 mt-1 ml-3">
+                          Example: <code className="bg-base-200 px-1 rounded text-primary">/add todo</code>, <code className="bg-base-200 px-1 rounded text-primary">/view notes</code>
+                        </div>
+                      </div>
+                      <div>
+                        <span className="font-semibold text-primary">@project </span>
+                        <span>Reference projects using @ (supports spaces in names)</span>
+                        <div className="text-xs text-base-content/60 mt-1 ml-3">
+                          Example: <code className="bg-base-200 px-1 rounded text-primary">@MyProject</code>, <code className="bg-base-200 px-1 rounded text-primary">@My Cool Project</code>
+                        </div>
+                      </div>
+                      <div>
+                        <span className="font-semibold text-primary">--flag </span>
+                        <span>Use flags to add options to commands</span>
+                        <div className="text-xs text-base-content/60 mt-1 ml-3">
+                          Example: <code className="bg-base-200 px-1 rounded text-primary">--category=web</code>, <code className="bg-base-200 px-1 rounded text-primary">--role=editor</code>
+                        </div>
+                      </div>
+                      <div>
+                        <span className="font-semibold text-primary">&& </span>
+                        <span>Chain multiple commands together (executes sequentially)</span>
+                        <div className="text-xs text-base-content/60 mt-1 ml-3">
+                          Example: <code className="bg-base-200 px-1 rounded text-primary">/add todo task && /view todos</code>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Quick Actions */}
                   <div className="mt-3 mb-3">
-                    <div className="text-xs font-semibold text-base-content/70 mb-2 ml-1">Quick Actions:</div>
                     <div className="flex flex-wrap gap-2">
                       <button
-                        onClick={() => setPendingCommand('/help')}
+                        onClick={() => setPendingCommand('/wizard new')}
                         className="btn btn-xs btn-outline btn-primary border-2 hover:border-primary"
                       >
-                        <span className='font-bold'>📚 Help</span>
+                        <span className='font-bold'>🧙 New Project</span>
                       </button>
                       <button
-                        onClick={() => setPendingCommand('/view themes')}
+                        onClick={() => setPendingCommand('/info')}
                         className="btn btn-xs btn-outline btn-primary border-2 hover:border-primary"
                       >
-                        <span className='font-bold'>🎨 Themes</span>
+                        <span className='font-bold'>ℹ️ Project Info</span>
+                      </button>
+                      <button
+                        onClick={() => setPendingCommand('/today')}
+                        className="btn btn-xs btn-outline btn-primary border-2 hover:border-primary"
+                      >
+                        <span className='font-bold'>📅 Today</span>
                       </button>
                       <button
                         onClick={() => setPendingCommand('/view todos')}
@@ -290,65 +330,169 @@ const TerminalPage: React.FC = () => {
                         <span className='font-bold'>🔄 Switch</span>
                       </button>
                       <button
-                        onClick={() => setPendingCommand('/view news')}
+                        onClick={() => setPendingCommand('/help')}
                         className="btn btn-xs btn-outline btn-primary border-2 hover:border-primary"
                       >
-                        <span className='font-bold'>📰 News</span>
+                        <span className='font-bold'>📚 Help</span>
                       </button>
                     </div>
                   </div>
 
-                  {/* Common Commands */}
-                  <div className="mt-3">
-                    <div className="text-xs font-semibold text-base-content/70 mb-1 ml-1">Common Commands:</div>
-                    <div className="overflow-x-auto">
-                      <table className="table table-xs table-zebra">
-                        <thead>
-                          <tr>
-                            <th className="text-xs">Command</th>
-                            <th className="text-xs">Description</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr className="hover">
-                            <td>
-                              <button
-                                type="button"
-                                onClick={() => setPendingCommand('/add todo ')}
-                                className="text-xs text-primary font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
-                              >
-                                /add todo [text]
-                              </button>
-                            </td>
-                            <td className="text-xs text-base-content/70">Create a new todo item</td>
-                          </tr>
-                          <tr className="hover">
-                            <td>
-                              <button
-                                type="button"
-                                onClick={() => setPendingCommand('/view notes')}
-                                className="text-xs text-primary font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
-                              >
-                                /view notes
-                              </button>
-                            </td>
-                            <td className="text-xs text-base-content/70">List all notes</td>
-                          </tr>
-                          <tr className="hover">
-                            <td>
-                              <button
-                                type="button"
-                                onClick={() => setPendingCommand('/swap @')}
-                                className="text-xs text-primary font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
-                              >
-                                /swap @[project]
-                              </button>
-                            </td>
-                            <td className="text-xs text-base-content/70">Switch to a different project</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
+                  {/* Common Commands - Collapsible */}
+                  <div className="mt-3 border-thick rounded-lg overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => setShowCommands(!showCommands)}
+                      className="w-full text-left p-3 flex items-center justify-between bg-base-200 hover:bg-base-300/50 transition-colors"
+                    >
+                      <div className="text-sm font-semibold text-base-content">
+                        Common Commands (10)
+                      </div>
+                      <svg
+                        className={`w-4 h-4 transition-transform ${showCommands ? 'rotate-180' : ''}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    {showCommands && (
+                      <div className="px-3 pb-3 bg-base-100">
+                        <div className="overflow-x-auto">
+                          <table className="table table-xs table-zebra">
+                            <thead>
+                              <tr>
+                                <th className="text-xs">Command</th>
+                                <th className="text-xs">Description</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr className="hover">
+                                <td>
+                                  <button
+                                    type="button"
+                                    onClick={() => setPendingCommand('/wizard new')}
+                                    className="text-xs text-primary font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
+                                  >
+                                    /wizard new
+                                  </button>
+                                </td>
+                                <td className="text-xs text-base-content/70">Create a new project (interactive)</td>
+                              </tr>
+                              <tr className="hover">
+                                <td>
+                                  <button
+                                    type="button"
+                                    onClick={() => setPendingCommand('/info')}
+                                    className="text-xs text-primary font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
+                                  >
+                                    /info
+                                  </button>
+                                </td>
+                                <td className="text-xs text-base-content/70">Quick project overview & stats</td>
+                              </tr>
+                              <tr className="hover">
+                                <td>
+                                  <button
+                                    type="button"
+                                    onClick={() => setPendingCommand('/today')}
+                                    className="text-xs text-primary font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
+                                  >
+                                    /today
+                                  </button>
+                                </td>
+                                <td className="text-xs text-base-content/70">Show today's tasks & activity</td>
+                              </tr>
+                              <tr className="hover">
+                                <td>
+                                  <button
+                                    type="button"
+                                    onClick={() => setPendingCommand('/week')}
+                                    className="text-xs text-primary font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
+                                  >
+                                    /week
+                                  </button>
+                                </td>
+                                <td className="text-xs text-base-content/70">Weekly summary & planning</td>
+                              </tr>
+                              <tr className="hover">
+                                <td>
+                                  <button
+                                    type="button"
+                                    onClick={() => setPendingCommand('/standup')}
+                                    className="text-xs text-primary font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
+                                  >
+                                    /standup
+                                  </button>
+                                </td>
+                                <td className="text-xs text-base-content/70">Generate standup report</td>
+                              </tr>
+                              <tr className="hover">
+                                <td>
+                                  <button
+                                    type="button"
+                                    onClick={() => setPendingCommand('/add todo ')}
+                                    className="text-xs text-primary font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
+                                  >
+                                    /add todo [text]
+                                  </button>
+                                </td>
+                                <td className="text-xs text-base-content/70">Create a new todo item</td>
+                              </tr>
+                              <tr className="hover">
+                                <td>
+                                  <button
+                                    type="button"
+                                    onClick={() => setPendingCommand('/add note ')}
+                                    className="text-xs text-primary font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
+                                  >
+                                    /add note [text]
+                                  </button>
+                                </td>
+                                <td className="text-xs text-base-content/70">Create a new note</td>
+                              </tr>
+                              <tr className="hover">
+                                <td>
+                                  <button
+                                    type="button"
+                                    onClick={() => setPendingCommand('/view stack')}
+                                    className="text-xs text-primary font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
+                                  >
+                                    /view stack
+                                  </button>
+                                </td>
+                                <td className="text-xs text-base-content/70">View tech stack & packages</td>
+                              </tr>
+                              <tr className="hover">
+                                <td>
+                                  <button
+                                    type="button"
+                                    onClick={() => setPendingCommand('/search ')}
+                                    className="text-xs text-primary font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
+                                  >
+                                    /search [query]
+                                  </button>
+                                </td>
+                                <td className="text-xs text-base-content/70">Search across all content</td>
+                              </tr>
+                              <tr className="hover">
+                                <td>
+                                  <button
+                                    type="button"
+                                    onClick={() => setPendingCommand('/swap @')}
+                                    className="text-xs text-primary font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
+                                  >
+                                    /swap @[project]
+                                  </button>
+                                </td>
+                                <td className="text-xs text-base-content/70">Switch to a different project</td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="mt-3 text-xs text-base-content/60 ml-1">

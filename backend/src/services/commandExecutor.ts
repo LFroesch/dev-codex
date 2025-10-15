@@ -56,32 +56,120 @@ export class CommandExecutor {
   }
 
   /**
-   * Execute a command
+   * Execute a command (supports batch chaining with &&)
    * @param commandStr - Raw command string
    * @param currentProjectId - Optional current project context
    * @returns Command response
    */
   async execute(commandStr: string, currentProjectId?: string): Promise<CommandResponse> {
     try {
-      const parsed = CommandParser.parse(commandStr);
-
-      if (!parsed.isValid) {
-        return {
-          type: ResponseType.ERROR,
-          message: 'Invalid command',
-          data: { errors: parsed.errors },
-          suggestions: ['/help']
-        };
+      // Check for batch command chaining (&&)
+      if (commandStr.includes(' && ')) {
+        return await this.executeBatch(commandStr, currentProjectId);
       }
 
-      logInfo('Executing command', {
+      return await this.executeSingle(commandStr, currentProjectId);
+    } catch (error) {
+      logError('Command execution error', error as Error, {
         userId: this.userId,
-        type: parsed.type,
-        command: parsed.command
+        command: commandStr
       });
 
-      // Route to appropriate handler
-      switch (parsed.type) {
+      return {
+        type: ResponseType.ERROR,
+        message: 'An error occurred while executing the command',
+        data: { error: (error as Error).message }
+      };
+    }
+  }
+
+  /**
+   * Execute multiple chained commands
+   * @param commandStr - Command string with && separators
+   * @param currentProjectId - Optional current project context
+   * @returns Combined command response
+   */
+  private async executeBatch(commandStr: string, currentProjectId?: string): Promise<CommandResponse> {
+    const commands = commandStr.split(' && ').map(cmd => cmd.trim());
+
+    if (commands.length > 10) {
+      return {
+        type: ResponseType.ERROR,
+        message: 'Too many chained commands. Maximum is 10 commands per batch.',
+        suggestions: ['Break up your commands into smaller batches']
+      };
+    }
+
+    const results: CommandResponse[] = [];
+    let hasError = false;
+
+    logInfo('Executing batch commands', {
+      userId: this.userId,
+      count: commands.length
+    });
+
+    for (let i = 0; i < commands.length; i++) {
+      const command = commands[i];
+      const result = await this.executeSingle(command, currentProjectId);
+      results.push(result);
+
+      // Stop on error
+      if (result.type === ResponseType.ERROR) {
+        hasError = true;
+        break;
+      }
+    }
+
+    const successCount = results.filter(r => r.type === ResponseType.SUCCESS).length;
+    const errorCount = results.filter(r => r.type === ResponseType.ERROR).length;
+
+    return {
+      type: hasError ? ResponseType.WARNING : ResponseType.SUCCESS,
+      message: `Batch execution: ${successCount} succeeded, ${errorCount} failed`,
+      data: {
+        batch: true,
+        total: commands.length,
+        executed: results.length,
+        results: results.map((r, i) => ({
+          command: commands[i],
+          type: r.type,
+          message: r.message,
+          data: r.data
+        }))
+      },
+      metadata: {
+        action: 'batch_execute',
+        timestamp: new Date()
+      }
+    };
+  }
+
+  /**
+   * Execute a single command
+   * @param commandStr - Raw command string
+   * @param currentProjectId - Optional current project context
+   * @returns Command response
+   */
+  private async executeSingle(commandStr: string, currentProjectId?: string): Promise<CommandResponse> {
+    const parsed = CommandParser.parse(commandStr);
+
+    if (!parsed.isValid) {
+      return {
+        type: ResponseType.ERROR,
+        message: 'Invalid command',
+        data: { errors: parsed.errors },
+        suggestions: ['/help']
+      };
+    }
+
+    logInfo('Executing command', {
+      userId: this.userId,
+      type: parsed.type,
+      command: parsed.command
+    });
+
+    // Route to appropriate handler
+    switch (parsed.type) {
         // CRUD operations
         case CommandType.ADD_TODO:
           return await this.crudHandlers.handleAddTodo(parsed, currentProjectId);
@@ -112,6 +200,34 @@ export class CommandExecutor {
           return await this.crudHandlers.handleSetPriority(parsed, currentProjectId);
         case CommandType.SET_DUE_DATE:
           return await this.crudHandlers.handleSetDueDate(parsed, currentProjectId);
+
+        // Subtask operations
+        case CommandType.ADD_SUBTASK:
+          return await this.crudHandlers.handleAddSubtask(parsed, currentProjectId);
+        case CommandType.VIEW_SUBTASKS:
+          return await this.crudHandlers.handleViewSubtasks(parsed, currentProjectId);
+
+        // Edit operations
+        case CommandType.EDIT_TODO:
+          return await this.crudHandlers.handleEditTodo(parsed, currentProjectId);
+        case CommandType.EDIT_NOTE:
+          return await this.crudHandlers.handleEditNote(parsed, currentProjectId);
+        case CommandType.EDIT_DEVLOG:
+          return await this.crudHandlers.handleEditDevLog(parsed, currentProjectId);
+        case CommandType.EDIT_DOC:
+          return await this.crudHandlers.handleEditDoc(parsed, currentProjectId);
+
+        // Delete operations
+        case CommandType.DELETE_TODO:
+          return await this.crudHandlers.handleDeleteTodo(parsed, currentProjectId);
+        case CommandType.DELETE_NOTE:
+          return await this.crudHandlers.handleDeleteNote(parsed, currentProjectId);
+        case CommandType.DELETE_DEVLOG:
+          return await this.crudHandlers.handleDeleteDevLog(parsed, currentProjectId);
+        case CommandType.DELETE_DOC:
+          return await this.crudHandlers.handleDeleteDoc(parsed, currentProjectId);
+        case CommandType.DELETE_SUBTASK:
+          return await this.crudHandlers.handleDeleteSubtask(parsed, currentProjectId);
 
         // Stack operations
         case CommandType.ADD_TECH:
@@ -172,10 +288,22 @@ export class CommandExecutor {
           return await this.utilityHandlers.handleViewNotifications(parsed);
         case CommandType.CLEAR_NOTIFICATIONS:
           return await this.utilityHandlers.handleClearNotifications();
+        case CommandType.LLM_CONTEXT:
+          return this.utilityHandlers.handleLLMContext();
+        case CommandType.GOTO:
+          return await this.utilityHandlers.handleGoto(parsed, currentProjectId);
+        case CommandType.TODAY:
+          return await this.utilityHandlers.handleToday(parsed, currentProjectId);
+        case CommandType.WEEK:
+          return await this.utilityHandlers.handleWeek(parsed, currentProjectId);
+        case CommandType.STANDUP:
+          return await this.utilityHandlers.handleStandup(parsed, currentProjectId);
+        case CommandType.INFO:
+          return await this.utilityHandlers.handleInfo(parsed, currentProjectId);
         case CommandType.WIZARD_NEW:
         case CommandType.WIZARD_SETUP:
         case CommandType.WIZARD_DEPLOY:
-          return this.utilityHandlers.handleWizard(parsed);
+          return await this.utilityHandlers.handleWizard(parsed);
 
         default:
           return {
@@ -184,17 +312,5 @@ export class CommandExecutor {
             suggestions: ['/help']
           };
       }
-    } catch (error) {
-      logError('Command execution error', error as Error, {
-        userId: this.userId,
-        command: commandStr
-      });
-
-      return {
-        type: ResponseType.ERROR,
-        message: 'An error occurred while executing the command',
-        data: { error: (error as Error).message }
-      };
-    }
   }
 }

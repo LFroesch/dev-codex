@@ -19,6 +19,56 @@ interface TerminalEntry {
   timestamp: Date;
 }
 
+// Storage configuration
+const TERMINAL_ENTRIES_KEY = 'terminal_entries';
+const MAX_ENTRIES = 20;
+
+// Helper functions for localStorage
+const saveEntriesToStorage = (entries: TerminalEntry[]) => {
+  try {
+    // Cap at MAX_ENTRIES (keep most recent)
+    const entriesToSave = entries.slice(-MAX_ENTRIES);
+
+    // Convert dates to ISO strings and strip side-effect data for JSON serialization
+    const serialized = entriesToSave.map(entry => {
+      // Remove redirect data to prevent re-triggering navigation on load
+      const cleanResponse = { ...entry.response };
+      if (cleanResponse.data) {
+        const { redirect, successRedirect, ...cleanData } = cleanResponse.data;
+        cleanResponse.data = cleanData;
+      }
+
+      return {
+        ...entry,
+        response: cleanResponse,
+        timestamp: entry.timestamp.toISOString()
+      };
+    });
+
+    localStorage.setItem(TERMINAL_ENTRIES_KEY, JSON.stringify(serialized));
+  } catch (error) {
+    console.warn('Failed to save terminal entries to localStorage:', error);
+  }
+};
+
+const loadEntriesFromStorage = (): TerminalEntry[] => {
+  try {
+    const stored = localStorage.getItem(TERMINAL_ENTRIES_KEY);
+    if (!stored) return [];
+
+    const parsed = JSON.parse(stored);
+
+    // Convert ISO strings back to Date objects
+    return parsed.map((entry: any) => ({
+      ...entry,
+      timestamp: new Date(entry.timestamp)
+    }));
+  } catch (error) {
+    console.warn('Failed to load terminal entries from localStorage:', error);
+    return [];
+  }
+};
+
 const TerminalPage: React.FC = () => {
   const { currentProjectId, onProjectSwitch } = useOutletContext<ContextType>();
   const [entries, setEntries] = useState<TerminalEntry[]>([]);
@@ -28,6 +78,15 @@ const TerminalPage: React.FC = () => {
   const [pendingCommand, setPendingCommand] = useState<string | null>(null);
   const terminalEndRef = useRef<HTMLDivElement>(null);
   const terminalOutputRef = useRef<HTMLDivElement>(null);
+
+  // Load entries from localStorage on mount
+  useEffect(() => {
+    const loadedEntries = loadEntriesFromStorage();
+    if (loadedEntries.length > 0) {
+      setEntries(loadedEntries);
+      setShowWelcome(false);
+    }
+  }, []);
 
   // Auto-scroll to bottom when new entries are added
   useEffect(() => {
@@ -48,7 +107,11 @@ const TerminalPage: React.FC = () => {
         timestamp: new Date()
       };
 
-      setEntries(prev => [...prev, newEntry]);
+      setEntries(prev => {
+        const updated = [...prev, newEntry];
+        saveEntriesToStorage(updated);
+        return updated;
+      });
 
       // Handle project swap
       if (response.type === 'success' && response.data?.project && onProjectSwitch) {
@@ -72,7 +135,11 @@ const TerminalPage: React.FC = () => {
           },
           timestamp: new Date()
         };
-        setEntries(prev => [...prev, errorEntry]);
+        setEntries(prev => {
+          const updated = [...prev, errorEntry];
+          saveEntriesToStorage(updated);
+          return updated;
+        });
       } else {
         const errorEntry: TerminalEntry = {
           id: Date.now().toString(),
@@ -84,7 +151,11 @@ const TerminalPage: React.FC = () => {
           },
           timestamp: new Date()
         };
-        setEntries(prev => [...prev, errorEntry]);
+        setEntries(prev => {
+          const updated = [...prev, errorEntry];
+          saveEntriesToStorage(updated);
+          return updated;
+        });
       }
     } finally {
       setIsExecuting(false);
@@ -100,6 +171,11 @@ const TerminalPage: React.FC = () => {
   const handleClearTerminal = () => {
     setEntries([]);
     setShowWelcome(true);
+    try {
+      localStorage.removeItem(TERMINAL_ENTRIES_KEY);
+    } catch (error) {
+      console.warn('Failed to clear terminal entries from localStorage:', error);
+    }
   };
 
   const handleScrollToTop = () => {

@@ -1,5 +1,6 @@
 import express from 'express';
 import { requireAuth, AuthRequest } from '../middleware/auth';
+import { terminalRateLimit } from '../middleware/rateLimit';
 import { CommandExecutor } from '../services/commandExecutor';
 import { CommandParser } from '../services/commandParser';
 import { Project } from '../models/Project';
@@ -14,9 +15,9 @@ router.use(requireAuth);
 
 /**
  * POST /api/terminal/execute
- * Execute a terminal command
+ * Execute a terminal command - rate limited to prevent abuse
  */
-router.post('/execute', async (req: AuthRequest, res) => {
+router.post('/execute', terminalRateLimit, async (req: AuthRequest, res) => {
   try {
     const { command, currentProjectId } = req.body;
 

@@ -77,7 +77,7 @@ const NotificationBell: React.FC = () => {
     if (!notification.isRead) {
       await markAsRead(notification._id);
     }
-    
+
     setIsOpen(false);
 
     // Handle different notification types
@@ -86,7 +86,7 @@ const NotificationBell: React.FC = () => {
       try {
         const pendingInvitations = await invitationAPI.getPending();
         const invitation = pendingInvitations.invitations.find(inv => inv._id === notification.relatedInvitationId);
-        
+
         if (invitation) {
           // Show invitation modal for pending invitations
           setSelectedInvitation(notification);
@@ -109,15 +109,39 @@ const NotificationBell: React.FC = () => {
         setSelectedInvitation(notification);
         setShowInvitationModal(true);
       }
-    } else if (notification.relatedProjectId) {
-      // For other notification types, redirect to the associated project
-      // Check for unsaved changes before navigation
+    } else if (notification.type === 'team_member_added' || notification.type === 'team_member_removed') {
+      // Team-related notifications go to the sharing/team management page
       const canNavigate = await unsavedChangesManager.checkNavigationAllowed();
       if (canNavigate) {
-        // Trigger a custom event to select the project
+        if (notification.relatedProjectId) {
+          const projectId = typeof notification.relatedProjectId === 'string' ? notification.relatedProjectId : notification.relatedProjectId._id;
+          window.dispatchEvent(new CustomEvent('selectProject', { detail: { projectId } }));
+        }
+        navigate('/sharing');
+      }
+    } else if (['todo_assigned', 'todo_due_soon', 'todo_overdue', 'subtask_completed'].includes(notification.type)) {
+      // Todo-related notifications go to the todos section with the specific todo selected
+      const canNavigate = await unsavedChangesManager.checkNavigationAllowed();
+      if (canNavigate) {
+        if (notification.relatedProjectId) {
+          const projectId = typeof notification.relatedProjectId === 'string' ? notification.relatedProjectId : notification.relatedProjectId._id;
+          window.dispatchEvent(new CustomEvent('selectProject', { detail: { projectId } }));
+        }
+
+        // Navigate to todos section with todoId in URL
+        const todoId = (notification as any).relatedTodoId;
+        if (todoId) {
+          navigate(`/notes?section=todos&todoId=${todoId}`);
+        } else {
+          navigate('/notes?section=todos');
+        }
+      }
+    } else if (notification.relatedProjectId) {
+      // For other notification types, redirect to the notes section
+      const canNavigate = await unsavedChangesManager.checkNavigationAllowed();
+      if (canNavigate) {
         const projectId = typeof notification.relatedProjectId === 'string' ? notification.relatedProjectId : notification.relatedProjectId._id;
-        
-        // Dispatch custom event to notify Layout component
+
         window.dispatchEvent(new CustomEvent('selectProject', { detail: { projectId } }));
         navigate('/notes');
       }

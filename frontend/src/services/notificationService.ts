@@ -167,18 +167,53 @@ class NotificationService {
   }
 
   private addNotification(notification: Notification) {
+    // Check for duplicate notification based on type and related entities
+    const duplicateIndex = this.notifications.findIndex(n => {
+      if (n.type !== notification.type || n.userId !== notification.userId) {
+        return false;
+      }
+
+      // Check for matching related entities
+      if (notification.relatedTodoId) {
+        return n.relatedTodoId === notification.relatedTodoId;
+      }
+      if (notification.relatedInvitationId) {
+        return n.relatedInvitationId === notification.relatedInvitationId;
+      }
+      if (notification.relatedUserId && notification.type === 'team_member_added') {
+        return n.relatedUserId === notification.relatedUserId &&
+               n.relatedProjectId === notification.relatedProjectId;
+      }
+      if (notification.relatedProjectId && !notification.relatedInvitationId && !notification.relatedTodoId) {
+        return n.relatedProjectId === notification.relatedProjectId;
+      }
+
+      return false;
+    });
+
+    // If duplicate exists, remove it first
+    if (duplicateIndex !== -1) {
+      const oldNotification = this.notifications[duplicateIndex];
+      this.notifications.splice(duplicateIndex, 1);
+
+      // Adjust unread count if the old notification was unread
+      if (!oldNotification.isRead) {
+        this.unreadCount = Math.max(0, this.unreadCount - 1);
+      }
+    }
+
     // Add to beginning of array (newest first)
     this.notifications.unshift(notification);
-    
+
     // Limit to latest 10 notifications in memory
     if (this.notifications.length > 10) {
       this.notifications = this.notifications.slice(0, 10);
     }
-    
+
     if (!notification.isRead) {
       this.unreadCount++;
     }
-    
+
     this.notifyNotificationListeners();
     this.notifyUnreadCountListeners();
   }

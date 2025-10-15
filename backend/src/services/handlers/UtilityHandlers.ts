@@ -1089,7 +1089,7 @@ Execution stops on first error.
 ### 2. Task Management
 - \`/add todo [text] [@project]\` - Create new todo
 - \`/view todos [@project]\` - List all todos
-- \`/edit todo [id/text] [new text] [@project]\` - Edit todo
+- \`/edit todo [id] [@project]\` - Open interactive wizard to edit todo (or use --field= and --content= for direct updates)
 - \`/delete todo [id/text] [@project]\` - Delete todo
 - \`/complete [id/text] [@project]\` - Mark todo complete
 - \`/priority [id/text] [low/medium/high] [@project]\` - Set priority
@@ -1104,12 +1104,16 @@ Execution stops on first error.
 ### 4. Notes & Documentation
 - \`/add note [text] [@project]\` - Create note
 - \`/view notes [@project]\` - List notes
-- \`/edit note [id/title] [new content] [@project]\` - Edit note
+- \`/edit note [id] [@project]\` - Open interactive wizard to edit note title and content (or use --field= and --content= for direct updates)
 - \`/delete note [id/title] [@project]\` - Delete note
 - \`/add devlog [text] [@project]\` - Add dev log entry
 - \`/view devlog [@project]\` - View dev log
+- \`/edit devlog [id] [@project]\` - Open interactive wizard to edit dev log entry
+- \`/delete devlog [id] [@project]\` - Delete dev log entry
 - \`/add doc [type] [title] - [content] [@project]\` - Add documentation
 - \`/view docs [@project]\` - View documentation
+- \`/edit doc [id] [@project]\` - Open interactive wizard to edit documentation
+- \`/delete doc [id] [@project]\` - Delete documentation
 
 ### 5. Tech Stack
 - \`/add tech [name] --category=[category] --version=[version] [@project]\` - Add technology
@@ -1161,6 +1165,16 @@ Execution stops on first error.
 /due "fix login bug" 2025-12-31 @Frontend
 /assign "fix login bug" dev@example.com @Frontend
 /add subtask "fix login bug" update validation @Frontend
+/edit todo 1 @Frontend                                    # Opens interactive wizard
+/edit todo 1 --field=text --content="Updated task" @Frontend   # Direct field update
+\`\`\`
+
+### Editing Content
+\`\`\`
+/edit note 1                                              # Opens interactive wizard for editing all fields
+/edit note 2 --field=title --content="New Title"         # Direct field update
+/edit doc 1 --field=content --content="Updated docs"     # Update specific field
+/edit devlog 1 --field=entry --content="New entry text"  # Update devlog entry
 \`\`\`
 
 ### Documentation Workflow
@@ -1214,12 +1228,26 @@ The system returns different response types:
 8. Use /search to find content across projects
 9. Generate summaries with /summary [format] for sharing project context
 10. Use /wizard new for interactive project creation
+11. Use /edit [type] [id] for interactive editing wizards, or add --field and --content flags for direct updates
 
 ## Common Patterns
 
 ### Setting up a new feature
 \`\`\`
 /add todo [feature description] && /priority [feature] high && /add note [implementation details]
+\`\`\`
+
+### Editing content interactively
+\`\`\`
+/edit todo 1              # Opens wizard to edit all todo fields
+/edit note 1              # Opens wizard to edit note title and content
+\`\`\`
+
+### Editing specific fields directly
+\`\`\`
+/edit todo 1 --field=text --content="Updated task text"
+/edit note 1 --field=title --content="New Title"
+/edit note 1 --field=content --content="Updated note content"
 \`\`\`
 
 ### Documenting an API endpoint

@@ -933,78 +933,144 @@ export class CrudHandlers extends BaseCommandHandler {
     const { project, error } = await this.resolveProjectWithEditCheck(parsed.projectMention, currentProjectId);
     if (error) return error;
 
-    if (parsed.args.length < 2) {
+    // Require ID as first argument
+    if (parsed.args.length === 0) {
       return {
         type: ResponseType.ERROR,
-        message: '❌ Edit todo requires at least 2 arguments',
+        message: '❌ Todo ID is required',
         suggestions: [
-          '💡 Use #ID: /edit todo 1 new task text',
-          '💡 Use "to" separator: /edit todo old task to new task text',
+          '/view todos - See all todos with #IDs',
+          '💡 Edit with wizard: /edit todo 1',
+          '💡 Edit specific field: /edit todo 1 --field=text --content="new text"',
           '/help edit todo'
         ]
       };
     }
 
-    const fullText = parsed.args.join(' ');
-    let todo: any = null;
-    let newText = '';
-
-    // Check if using " to " separator
-    if (fullText.includes(' to ')) {
-      const parts = fullText.split(' to ');
-      if (parts.length >= 2) {
-        const identifier = parts[0].trim();
-        newText = parts.slice(1).join(' to ').trim();
-        todo = this.findTodo(project.todos, identifier);
-      }
-    } else {
-      // Try ID-based (first arg is number)
-      const firstArg = parsed.args[0];
-      const index = parseInt(firstArg);
-      if (!isNaN(index)) {
-        todo = this.findTodo(project.todos, firstArg);
-        newText = parsed.args.slice(1).join(' ');
-      }
-    }
+    const identifier = parsed.args[0];
+    const todo = this.findTodo(project.todos, identifier);
 
     if (!todo) {
       return {
         type: ResponseType.ERROR,
-        message: `❌ Todo not found: "${parsed.args.join(' ')}"`,
+        message: `❌ Todo not found: "${identifier}"`,
         suggestions: [
           '/view todos - See all todos with #IDs',
-          '💡 Use #ID: /edit todo 1 new task text',
-          '💡 Use "to" word: /edit todo old task to new task text'
+          '/help edit todo'
         ]
       };
     }
 
-    if (!newText || newText.trim().length === 0) {
-      return {
-        type: ResponseType.ERROR,
-        message: 'New text is required',
-        suggestions: ['/help edit todo']
-      };
+    // Check for field flags - direct update mode
+    const field = parsed.flags.get('field') as string;
+    const content = parsed.flags.get('content') as string;
+
+    if (field && content) {
+      // Direct field update
+      const validFields = ['text', 'description', 'priority', 'status'];
+
+      if (!validFields.includes(field)) {
+        return {
+          type: ResponseType.ERROR,
+          message: `❌ Invalid field: "${field}". Valid fields: ${validFields.join(', ')}`,
+          suggestions: ['/help edit todo']
+        };
+      }
+
+      // Validate and update based on field
+      if (field === 'text') {
+        const validation = validateTodoText(content);
+        if (!validation.isValid) {
+          return {
+            type: ResponseType.ERROR,
+            message: validation.error || 'Invalid todo text',
+            suggestions: ['/help edit todo']
+          };
+        }
+        todo.text = validation.sanitized!;
+      } else if (field === 'description') {
+        todo.description = sanitizeText(content);
+      } else if (field === 'priority') {
+        if (!['low', 'medium', 'high'].includes(content.toLowerCase())) {
+          return {
+            type: ResponseType.ERROR,
+            message: 'Priority must be: low, medium, or high',
+            suggestions: ['/help edit todo']
+          };
+        }
+        todo.priority = content.toLowerCase() as 'low' | 'medium' | 'high';
+      } else if (field === 'status') {
+        const validStatuses = ['not_started', 'in_progress', 'completed', 'blocked'];
+        if (!validStatuses.includes(content.toLowerCase())) {
+          return {
+            type: ResponseType.ERROR,
+            message: `Status must be one of: ${validStatuses.join(', ')}`,
+            suggestions: ['/help edit todo']
+          };
+        }
+        todo.status = content.toLowerCase() as any;
+      }
+
+      await project.save();
+
+      return this.buildSuccessResponse(
+        `✅ Updated todo ${field}: "${todo.text}"`,
+        project,
+        'edit_todo'
+      );
     }
 
-    const validation = validateTodoText(newText);
-    if (!validation.isValid) {
-      return {
-        type: ResponseType.ERROR,
-        message: validation.error || 'Invalid todo text',
-        suggestions: ['/help edit todo']
-      };
-    }
-
-    const oldText = todo.text;
-    todo.text = validation.sanitized;
-    await project.save();
-
-    return this.buildSuccessResponse(
-      `✅ Updated todo: "${oldText}" → "${validation.sanitized}"`,
-      project,
-      'edit_todo'
-    );
+    // No field flags - return interactive wizard
+    return {
+      type: ResponseType.PROMPT,
+      message: `✏️ Edit Todo: "${todo.text}"`,
+      data: {
+        wizardType: 'edit_todo',
+        todoId: todo.id,
+        currentValues: {
+          text: todo.text,
+          description: todo.description || '',
+          priority: todo.priority,
+          status: todo.status
+        },
+        steps: [
+          {
+            id: 'text',
+            label: 'Todo Text',
+            type: 'text',
+            required: true,
+            value: todo.text
+          },
+          {
+            id: 'description',
+            label: 'Description',
+            type: 'textarea',
+            required: false,
+            value: todo.description || ''
+          },
+          {
+            id: 'priority',
+            label: 'Priority',
+            type: 'select',
+            options: ['low', 'medium', 'high'],
+            required: true,
+            value: todo.priority
+          },
+          {
+            id: 'status',
+            label: 'Status',
+            type: 'select',
+            options: ['not_started', 'in_progress', 'completed', 'blocked'],
+            required: true,
+            value: todo.status
+          }
+        ]
+      },
+      metadata: {
+        projectId: project._id.toString(),
+        action: 'edit_todo'
+      }
+    };
   }
 
   /**
@@ -1014,70 +1080,101 @@ export class CrudHandlers extends BaseCommandHandler {
     const { project, error } = await this.resolveProjectWithEditCheck(parsed.projectMention, currentProjectId);
     if (error) return error;
 
-    if (parsed.args.length < 2) {
+    // Require ID as first argument
+    if (parsed.args.length === 0) {
       return {
         type: ResponseType.ERROR,
-        message: '❌ Edit note requires at least 2 arguments',
+        message: '❌ Note ID is required',
         suggestions: [
-          '💡 Use #ID: /edit note 1 new note content',
-          '💡 Use "to" separator: /edit note old title to new content',
+          '/view notes - See all notes with #IDs',
+          '💡 Edit with wizard: /edit note 1',
+          '💡 Edit specific field: /edit note 1 --field=content --content="new content"',
           '/help edit note'
         ]
       };
     }
 
-    const fullText = parsed.args.join(' ');
-    let note: any = null;
-    let newContent = '';
-
-    // Check if using " to " separator
-    if (fullText.includes(' to ')) {
-      const parts = fullText.split(' to ');
-      if (parts.length >= 2) {
-        const identifier = parts[0].trim();
-        newContent = parts.slice(1).join(' to ').trim();
-        note = this.findNote(project.notes, identifier);
-      }
-    } else {
-      // Try ID-based (first arg is number)
-      const firstArg = parsed.args[0];
-      const index = parseInt(firstArg);
-      if (!isNaN(index)) {
-        note = this.findNote(project.notes, firstArg);
-        newContent = parsed.args.slice(1).join(' ');
-      }
-    }
+    const identifier = parsed.args[0];
+    const note = this.findNote(project.notes, identifier);
 
     if (!note) {
       return {
         type: ResponseType.ERROR,
-        message: `❌ Note not found: "${parsed.args.join(' ')}"`,
+        message: `❌ Note not found: "${identifier}"`,
         suggestions: [
           '/view notes - See all notes with #IDs',
-          '💡 Use #ID: /edit note 1 new content',
-          '💡 Use "to" word: /edit note title to new content'
+          '/help edit note'
         ]
       };
     }
 
-    if (!newContent || newContent.trim().length === 0) {
-      return {
-        type: ResponseType.ERROR,
-        message: 'New content is required',
-        suggestions: ['/help edit note']
-      };
+    // Check for field flags - direct update mode
+    const field = parsed.flags.get('field') as string;
+    const content = parsed.flags.get('content') as string;
+
+    if (field && content) {
+      // Direct field update
+      const validFields = ['title', 'content'];
+
+      if (!validFields.includes(field)) {
+        return {
+          type: ResponseType.ERROR,
+          message: `❌ Invalid field: "${field}". Valid fields: ${validFields.join(', ')}`,
+          suggestions: ['/help edit note']
+        };
+      }
+
+      // Update the specified field
+      const sanitizedContent = sanitizeText(content);
+      if (field === 'title') {
+        note.title = sanitizedContent;
+      } else if (field === 'content') {
+        note.content = sanitizedContent;
+      }
+
+      note.updatedAt = new Date();
+      await project.save();
+
+      return this.buildSuccessResponse(
+        `📝 Updated note ${field}: "${note.title}"`,
+        project,
+        'edit_note'
+      );
     }
 
-    const sanitizedContent = sanitizeText(newContent);
-    note.content = sanitizedContent;
-    note.updatedAt = new Date();
-    await project.save();
-
-    return this.buildSuccessResponse(
-      `📝 Updated note: "${note.title}"`,
-      project,
-      'edit_note'
-    );
+    // No field flags - return interactive wizard
+    return {
+      type: ResponseType.PROMPT,
+      message: `✏️ Edit Note: "${note.title}"`,
+      data: {
+        wizardType: 'edit_note',
+        noteId: note.id,
+        currentValues: {
+          title: note.title,
+          content: note.content
+        },
+        steps: [
+          {
+            id: 'title',
+            label: 'Note Title',
+            type: 'text',
+            required: true,
+            value: note.title
+          },
+          {
+            id: 'content',
+            label: 'Content',
+            type: 'textarea',
+            required: true,
+            value: note.content
+          }
+        ]
+      },
+      metadata: {
+        projectId: project._id.toString(),
+        action: 'edit_note'
+      }
+    };
   }
 
   /**
@@ -1087,21 +1184,21 @@ export class CrudHandlers extends BaseCommandHandler {
     const { project, error } = await this.resolveProjectWithEditCheck(parsed.projectMention, currentProjectId);
     if (error) return error;
 
-    if (parsed.args.length < 2) {
+    // Require ID as first argument
+    if (parsed.args.length === 0) {
       return {
         type: ResponseType.ERROR,
-        message: '❌ Edit devlog requires at least 2 arguments',
+        message: '❌ Dev log entry ID is required',
         suggestions: [
-          '💡 Use #ID: /edit devlog 1 new entry content',
           '/view devlog - See all entries with #IDs',
+          '💡 Edit with wizard: /edit devlog 1',
+          '💡 Edit specific field: /edit devlog 1 --field=entry --content="new entry"',
           '/help edit devlog'
         ]
       };
     }
 
     const identifier = parsed.args[0];
-    const newContent = parsed.args.slice(1).join(' ');
-
     const entry = this.findDevLogEntry(project.devLog, identifier);
 
     if (!entry) {
@@ -1110,29 +1207,88 @@ export class CrudHandlers extends BaseCommandHandler {
         message: `❌ Dev log entry not found: "${identifier}"`,
         suggestions: [
           '/view devlog - See all entries with #IDs',
-          '💡 Use #ID: /edit devlog 1 new content'
+          '/help edit devlog'
         ]
       };
     }
 
-    if (!newContent || newContent.trim().length === 0) {
-      return {
-        type: ResponseType.ERROR,
-        message: 'New content is required',
-        suggestions: ['/help edit devlog']
-      };
+    // Check for field flags - direct update mode
+    const field = parsed.flags.get('field') as string;
+    const content = parsed.flags.get('content') as string;
+
+    if (field && content) {
+      // Direct field update
+      const validFields = ['title', 'description', 'entry'];
+
+      if (!validFields.includes(field)) {
+        return {
+          type: ResponseType.ERROR,
+          message: `❌ Invalid field: "${field}". Valid fields: ${validFields.join(', ')}`,
+          suggestions: ['/help edit devlog']
+        };
+      }
+
+      // Update the specified field
+      const sanitizedContent = sanitizeText(content);
+      if (field === 'title') {
+        entry.title = sanitizedContent;
+      } else if (field === 'description') {
+        entry.description = sanitizedContent;
+      } else if (field === 'entry') {
+        entry.entry = sanitizedContent;
+      }
+
+      entry.date = new Date();
+      await project.save();
+
+      return this.buildSuccessResponse(
+        `📋 Updated dev log ${field}`,
+        project,
+        'edit_devlog'
+      );
     }
 
-    const sanitizedContent = sanitizeText(newContent);
-    entry.entry = sanitizedContent;
-    entry.date = new Date();
-    await project.save();
-
-    return this.buildSuccessResponse(
-      `📋 Updated dev log entry`,
-      project,
-      'edit_devlog'
-    );
+    // No field flags - return interactive wizard
+    return {
+      type: ResponseType.PROMPT,
+      message: `✏️ Edit Dev Log Entry`,
+      data: {
+        wizardType: 'edit_devlog',
+        entryId: entry.id,
+        currentValues: {
+          title: entry.title || '',
+          description: entry.description || '',
+          entry: entry.entry
+        },
+        steps: [
+          {
+            id: 'title',
+            label: 'Title',
+            type: 'text',
+            required: false,
+            value: entry.title || ''
+          },
+          {
+            id: 'description',
+            label: 'Description',
+            type: 'text',
+            required: false,
+            value: entry.description || ''
+          },
+          {
+            id: 'entry',
+            label: 'Entry',
+            type: 'textarea',
+            required: true,
+            value: entry.entry
+          }
+        ]
+      },
+      metadata: {
+        projectId: project._id.toString(),
+        action: 'edit_devlog'
+      }
+    };
   }
 
   /**
@@ -1142,69 +1298,100 @@ export class CrudHandlers extends BaseCommandHandler {
     const { project, error } = await this.resolveProjectWithEditCheck(parsed.projectMention, currentProjectId);
     if (error) return error;
 
-    if (parsed.args.length < 2) {
+    // Require ID as first argument
+    if (parsed.args.length === 0) {
       return {
         type: ResponseType.ERROR,
-        message: '❌ Edit doc requires at least 2 arguments',
+        message: '❌ Doc ID is required',
         suggestions: [
-          '💡 Use #ID: /edit doc 1 new doc content',
-          '💡 Use "to" separator: /edit doc old title to new content',
+          '/view docs - See all docs with #IDs',
+          '💡 Edit with wizard: /edit doc 1',
+          '💡 Edit specific field: /edit doc 1 --field=content --content="new content"',
           '/help edit doc'
         ]
       };
     }
 
-    const fullText = parsed.args.join(' ');
-    let doc: any = null;
-    let newContent = '';
-
-    // Check if using " to " separator
-    if (fullText.includes(' to ')) {
-      const parts = fullText.split(' to ');
-      if (parts.length >= 2) {
-        const identifier = parts[0].trim();
-        newContent = parts.slice(1).join(' to ').trim();
-        doc = this.findDoc(project.docs, identifier);
-      }
-    } else {
-      // Try ID-based (first arg is number)
-      const firstArg = parsed.args[0];
-      const index = parseInt(firstArg);
-      if (!isNaN(index)) {
-        doc = this.findDoc(project.docs, firstArg);
-        newContent = parsed.args.slice(1).join(' ');
-      }
-    }
+    const identifier = parsed.args[0];
+    const doc = this.findDoc(project.docs, identifier);
 
     if (!doc) {
       return {
         type: ResponseType.ERROR,
-        message: `❌ Documentation entry not found: "${parsed.args.join(' ')}"`,
+        message: `❌ Documentation entry not found: "${identifier}"`,
         suggestions: [
           '/view docs - See all docs with #IDs',
-          '💡 Use #ID: /edit doc 1 new content',
-          '💡 Use "to" word: /edit doc title to new content'
+          '/help edit doc'
         ]
       };
     }
 
-    if (!newContent || newContent.trim().length === 0) {
-      return {
-        type: ResponseType.ERROR,
-        message: 'New content is required',
-        suggestions: ['/help edit doc']
-      };
+    // Check for field flags - direct update mode
+    const field = parsed.flags.get('field') as string;
+    const content = parsed.flags.get('content') as string;
+
+    if (field && content) {
+      // Direct field update
+      const validFields = ['title', 'content'];
+
+      if (!validFields.includes(field)) {
+        return {
+          type: ResponseType.ERROR,
+          message: `❌ Invalid field: "${field}". Valid fields: ${validFields.join(', ')}`,
+          suggestions: ['/help edit doc']
+        };
+      }
+
+      // Update the specified field
+      const sanitizedContent = sanitizeText(content);
+      if (field === 'title') {
+        doc.title = sanitizedContent;
+      } else if (field === 'content') {
+        doc.content = sanitizedContent;
+      }
+
+      await project.save();
+
+      return this.buildSuccessResponse(
+        `📚 Updated doc ${field}: "${doc.title}"`,
+        project,
+        'edit_doc'
+      );
     }
 
-    const sanitizedContent = sanitizeText(newContent);
-    doc.content = sanitizedContent;
-    await project.save();
-
-    return this.buildSuccessResponse(
-      `📚 Updated doc: "${doc.title}"`,
-      project,
-      'edit_doc'
-    );
+    // No field flags - return interactive wizard
+    return {
+      type: ResponseType.PROMPT,
+      message: `✏️ Edit Doc: "${doc.title}"`,
+      data: {
+        wizardType: 'edit_doc',
+        docId: doc.id,
+        currentValues: {
+          title: doc.title,
+          content: doc.content
+        },
+        steps: [
+          {
+            id: 'title',
+            label: 'Doc Title',
+            type: 'text',
+            required: true,
+            value: doc.title
+          },
+          {
+            id: 'content',
+            label: 'Content',
+            type: 'textarea',
+            required: true,
+            value: doc.content
+          }
+        ]
+      },
+      metadata: {
+        projectId: project._id.toString(),
+        action: 'edit_doc'
+      }
+    };
   }
 
   /**

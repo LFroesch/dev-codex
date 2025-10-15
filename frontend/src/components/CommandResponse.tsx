@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CommandResponse as CommandResponseType } from '../api/terminal';
+import { CommandResponse as CommandResponseType, terminalAPI } from '../api/terminal';
 import { getContrastTextColor } from '../utils/contrastTextColor';
 import { TodosRenderer, NotesRenderer, StackRenderer, DevLogRenderer, DocsRenderer } from './responses';
 import { authAPI } from '../api';
@@ -1050,6 +1050,176 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                   </>
                 ) : (
                   'Create Project'
+                )}
+              </button>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // Render wizard for editing todos, notes, docs, and devlog
+    if (['edit_todo', 'edit_note', 'edit_doc', 'edit_devlog'].includes(response.data.wizardType) && response.data.steps) {
+      const [currentStep, setCurrentStep] = React.useState(0);
+      const [wizardData, setWizardData] = React.useState<Record<string, any>>(response.data.currentValues || {});
+      const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+      const steps = response.data.steps;
+      const step = steps[currentStep];
+
+      const handleNext = () => {
+        if (currentStep < steps.length - 1) {
+          setCurrentStep(currentStep + 1);
+        }
+      };
+
+      const handleBack = () => {
+        if (currentStep > 0) {
+          setCurrentStep(currentStep - 1);
+        }
+      };
+
+      const handleSubmit = async () => {
+        setIsSubmitting(true);
+        try {
+          // Prepare command based on wizard type and data
+          const { wizardType, todoId, noteId, docId, entryId } = response.data;
+          const itemId = todoId || noteId || docId || entryId;
+
+          const commandMap: Record<string, string> = {
+            'edit_todo': 'todo',
+            'edit_note': 'note',
+            'edit_doc': 'doc',
+            'edit_devlog': 'devlog'
+          };
+
+          const itemType = commandMap[wizardType];
+
+          // Execute edit commands for each changed field
+          for (const [field, value] of Object.entries(wizardData)) {
+            // Only update if value differs from original or is non-empty
+            if (value !== undefined && value !== null) {
+              // Escape quotes in value
+              const escapedValue = String(value).replace(/"/g, '\\"');
+              const editCommand = `/edit ${itemType} ${itemId} --field=${field} --content="${escapedValue}"`;
+
+              // Execute the edit command directly via API (doesn't populate terminal input)
+              await terminalAPI.executeCommand(editCommand, currentProjectId);
+
+              // Small delay between commands to avoid race conditions
+              await new Promise(resolve => setTimeout(resolve, 100));
+            }
+          }
+
+          toast.success(`${itemType.charAt(0).toUpperCase() + itemType.slice(1)} updated successfully!`);
+        } catch {
+          toast.error('Failed to update item');
+        } finally {
+          setIsSubmitting(false);
+        }
+      };
+
+      const isStepValid = () => {
+        if (step.required) {
+          const value = wizardData[step.id];
+          return value !== undefined && value !== '' && value !== null;
+        }
+        return true;
+      };
+
+      return (
+        <div className="mt-3 space-y-4">
+          {/* Progress indicator */}
+          <div className="flex items-center justify-between">
+            <div className="text-xs text-base-content/60">
+              Step {currentStep + 1} of {steps.length}
+            </div>
+            <div className="flex gap-1">
+              {steps.map((_: any, idx: number) => (
+                <div
+                  key={idx}
+                  className={`w-2 h-2 rounded-full ${
+                    idx === currentStep ? 'bg-primary' :
+                    idx < currentStep ? 'bg-success' :
+                    'bg-base-300'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Step content */}
+          <div className="p-4 bg-base-200 rounded-lg border-thick">
+            <div className="text-sm font-semibold text-base-content mb-2">{step.label}</div>
+
+            {step.type === 'text' && (
+              <input
+                type="text"
+                value={wizardData[step.id] || step.value || ''}
+                onChange={(e) => setWizardData({ ...wizardData, [step.id]: e.target.value })}
+                placeholder={step.placeholder}
+                className="input input-bordered w-full"
+              />
+            )}
+
+            {step.type === 'textarea' && (
+              <textarea
+                value={wizardData[step.id] || step.value || ''}
+                onChange={(e) => setWizardData({ ...wizardData, [step.id]: e.target.value })}
+                placeholder={step.placeholder}
+                rows={6}
+                className="textarea textarea-bordered w-full resize-none font-mono text-sm"
+              />
+            )}
+
+            {step.type === 'select' && (
+              <select
+                value={wizardData[step.id] || step.value || ''}
+                onChange={(e) => setWizardData({ ...wizardData, [step.id]: e.target.value })}
+                className="select select-bordered w-full"
+              >
+                {step.options?.map((option: string) => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          {/* Navigation buttons */}
+          <div className="flex justify-between">
+            <button
+              type="button"
+              onClick={handleBack}
+              disabled={currentStep === 0}
+              className="btn btn-outline"
+            >
+              Back
+            </button>
+            {currentStep < steps.length - 1 ? (
+              <button
+                type="button"
+                onClick={handleNext}
+                disabled={!isStepValid()}
+                className="btn btn-primary"
+                style={{ color: getContrastTextColor('primary') }}
+              >
+                Next
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={!isStepValid() || isSubmitting}
+                className="btn btn-primary"
+                style={{ color: getContrastTextColor('primary') }}
+              >
+                {isSubmitting ? (
+                  <>
+                    <span className="loading loading-spinner loading-sm"></span>
+                    Updating...
+                  </>
+                ) : (
+                  'Update'
                 )}
               </button>
             )}

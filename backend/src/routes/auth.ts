@@ -192,8 +192,8 @@ if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
   });
 }
 
-// Check username availability
-router.get('/check-username/:username', async (req, res) => {
+// Check username availability - rate limited to prevent enumeration attacks
+router.get('/check-username/:username', authRateLimit, async (req, res) => {
   try {
     const { username } = req.params;
 

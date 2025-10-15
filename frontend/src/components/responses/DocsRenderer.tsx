@@ -23,10 +23,21 @@ export const DocsRenderer: React.FC<DocsRendererProps> = ({ docs, projectId, onN
             key={index}
             className="flex items-center gap-3 p-2 bg-base-200 rounded-lg hover:bg-base-300/50 transition-colors border-thick"
           >
+            <span className="text-xs font-mono font-semibold text-accent bg-accent/10 px-1.5 py-0.5 rounded border border-accent/30 flex-shrink-0">
+              #{index + 1}
+            </span>
             <span className="text-xs px-2 py-0.5 bg-primary/30 rounded border-2 border-primary/40 flex-shrink-0">{doc.type}</span>
             <div className="flex-1 min-w-0 text-sm font-medium text-base-content/80 break-words">{doc.title}</div>
           </div>
         ))}
+      </div>
+      <div className="text-xs text-base-content/60 mt-3 p-2 bg-base-200/50 rounded border-thick">
+        💡 <strong>Tip:</strong> Use the <code className="bg-base-300 px-1 rounded">#ID</code> to reference docs:
+        <div className="mt-1 space-y-0.5 ml-4">
+          <div>• <code className="bg-base-300 px-1 rounded">/edit doc 1 new content</code></div>
+          <div>• <code className="bg-base-300 px-1 rounded">/edit doc title to new content</code></div>
+          <div>• <code className="bg-base-300 px-1 rounded">/delete doc 1 --confirm</code></div>
+        </div>
       </div>
       {projectId && (
         <button

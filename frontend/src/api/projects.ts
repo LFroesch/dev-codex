@@ -95,17 +95,17 @@ class ProjectService extends BaseApiService {
     return this.delete(`/${projectId}/devlog/${entryId}`);
   }
 
-  // Docs management
-  async createDoc(projectId: string, data: CreateDocData): Promise<{ message: string; doc: BaseDoc }> {
-    return this.post(`/${projectId}/docs`, data);
+  // Components management
+  async createComponent(projectId: string, data: CreateDocData): Promise<{ message: string; component: BaseDoc }> {
+    return this.post(`/${projectId}/components`, data);
   }
 
-  async updateDoc(projectId: string, docId: string, data: UpdateDocData): Promise<{ message: string; doc: BaseDoc }> {
-    return this.put(`/${projectId}/docs/${docId}`, data);
+  async updateComponent(projectId: string, componentId: string, data: UpdateDocData): Promise<{ message: string; component: BaseDoc }> {
+    return this.put(`/${projectId}/components/${componentId}`, data);
   }
 
-  async deleteDoc(projectId: string, docId: string): Promise<{ message: string }> {
-    return this.delete(`/${projectId}/docs/${docId}`);
+  async deleteComponent(projectId: string, componentId: string): Promise<{ message: string }> {
+    return this.delete(`/${projectId}/components/${componentId}`);
   }
 
 

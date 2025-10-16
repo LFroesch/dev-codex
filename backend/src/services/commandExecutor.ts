@@ -177,8 +177,8 @@ export class CommandExecutor {
           return await this.crudHandlers.handleAddNote(parsed, currentProjectId);
         case CommandType.ADD_DEVLOG:
           return await this.crudHandlers.handleAddDevLog(parsed, currentProjectId);
-        case CommandType.ADD_DOC:
-          return await this.crudHandlers.handleAddDoc(parsed, currentProjectId);
+        case CommandType.ADD_COMPONENT:
+          return await this.crudHandlers.handleAddComponent(parsed, currentProjectId);
 
         case CommandType.VIEW_NOTES:
           return await this.crudHandlers.handleViewNotes(parsed, currentProjectId);
@@ -186,8 +186,8 @@ export class CommandExecutor {
           return await this.crudHandlers.handleViewTodos(parsed, currentProjectId);
         case CommandType.VIEW_DEVLOG:
           return await this.crudHandlers.handleViewDevLog(parsed, currentProjectId);
-        case CommandType.VIEW_DOCS:
-          return await this.crudHandlers.handleViewDocs(parsed, currentProjectId);
+        case CommandType.VIEW_COMPONENTS:
+          return await this.crudHandlers.handleViewComponents(parsed, currentProjectId);
         case CommandType.SEARCH:
           return await this.crudHandlers.handleSearch(parsed, currentProjectId);
 
@@ -214,8 +214,8 @@ export class CommandExecutor {
           return await this.crudHandlers.handleEditNote(parsed, currentProjectId);
         case CommandType.EDIT_DEVLOG:
           return await this.crudHandlers.handleEditDevLog(parsed, currentProjectId);
-        case CommandType.EDIT_DOC:
-          return await this.crudHandlers.handleEditDoc(parsed, currentProjectId);
+        case CommandType.EDIT_COMPONENT:
+          return await this.crudHandlers.handleEditComponent(parsed, currentProjectId);
 
         // Delete operations
         case CommandType.DELETE_TODO:
@@ -224,8 +224,8 @@ export class CommandExecutor {
           return await this.crudHandlers.handleDeleteNote(parsed, currentProjectId);
         case CommandType.DELETE_DEVLOG:
           return await this.crudHandlers.handleDeleteDevLog(parsed, currentProjectId);
-        case CommandType.DELETE_DOC:
-          return await this.crudHandlers.handleDeleteDoc(parsed, currentProjectId);
+        case CommandType.DELETE_COMPONENT:
+          return await this.crudHandlers.handleDeleteComponent(parsed, currentProjectId);
         case CommandType.DELETE_SUBTASK:
           return await this.crudHandlers.handleDeleteSubtask(parsed, currentProjectId);
 

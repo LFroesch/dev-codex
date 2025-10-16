@@ -120,7 +120,7 @@ export function validateImportData(data: any): void {
   }
   
   // Validate optional arrays
-  const arrayFields = ['notes', 'todos', 'devLog', 'docs', 'selectedTechnologies', 'selectedPackages', 'tags'];
+  const arrayFields = ['notes', 'todos', 'devLog', 'components', 'selectedTechnologies', 'selectedPackages', 'tags'];
   
   for (const field of arrayFields) {
     if (project[field] !== undefined && !Array.isArray(project[field])) {
@@ -209,11 +209,11 @@ export function validateAndSanitizeImport(req: Request, res: Response, next: Nex
         }));
       }
       
-      if (Array.isArray(project.docs)) {
-        project.docs = project.docs.map((doc: any) => ({
-          ...doc,
-          title: doc.title ? sanitizeString(doc.title) : '',
-          content: doc.content ? sanitizeString(doc.content) : ''
+      if (Array.isArray(project.components)) {
+        project.components = project.components.map((component: any) => ({
+          ...component,
+          title: component.title ? sanitizeString(component.title) : '',
+          content: component.content ? sanitizeString(component.content) : ''
         }));
       }
       

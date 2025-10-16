@@ -16,7 +16,7 @@ const BillingCancelPage = lazy(() => import('./pages/BillingCancelPage'));
 const CreateProject = lazy(() => import('./pages/CreateProject'));
 const NotesPage = lazy(() => import('./pages/NotesPage'));
 const StackPage = lazy(() => import('./pages/StackPage'));
-const DocsPage = lazy(() => import('./pages/DocsPage'));
+const FeaturesPage = lazy(() => import('./pages/FeaturesPage'));
 const DeploymentPage = lazy(() => import('./pages/DeploymentPage'));
 const PublicPage = lazy(() => import('./pages/PublicPage'));
 const SharingPage = lazy(() => import('./pages/SharingPage'));
@@ -86,7 +86,7 @@ const App: React.FC = () => {
               <Route path="projects" element={<div />} />
               <Route path="notes" element={<NotesPage />} />
               <Route path="stack" element={<StackPage />} />
-              <Route path="docs" element={<DocsPage />} />
+              <Route path="features" element={<FeaturesPage />} />
               <Route path="deployment" element={<DeploymentPage />} />
               <Route path="public" element={<PublicPage />} />
               <Route path="sharing" element={<SharingPage />} />

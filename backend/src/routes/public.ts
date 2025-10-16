@@ -33,7 +33,7 @@ router.get('/project/:identifier', async (req, res) => {
     const visibility = project.publicVisibility || {
       description: true,
       tags: true,
-      docs: true,
+      components: true,
       techStack: true,
       timestamps: true,
     };
@@ -70,8 +70,8 @@ router.get('/project/:identifier', async (req, res) => {
       publicProject.tags = project.tags;
     }
     
-    if (visibility.docs && project.docs?.length) {
-      publicProject.docs = project.docs;
+    if (visibility.components && project.components?.length) {
+      publicProject.components = project.components;
     }
     
     if (visibility.techStack) {

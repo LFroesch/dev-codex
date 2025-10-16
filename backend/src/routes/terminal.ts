@@ -271,8 +271,8 @@ function categorizeCommand(type: string): string {
   if (type.includes('note')) return 'Notes';
   if (type.includes('devlog')) return 'Dev Log';
 
-  // Documentation
-  if (type.includes('doc')) return 'Docs';
+  // Features & Components
+  if (type.includes('component') || type.includes('feature')) return 'Features';
 
   // Tech Stack
   if (type.includes('tech') || type.includes('package') || type.includes('stack')) return 'Stack';

@@ -36,11 +36,12 @@ export interface BaseDevLogEntry {
   updatedBy?: string | { _id: string; firstName: string; lastName: string };
 }
 
-export interface BaseDoc {
+export interface BaseComponent {
   id: string;
-  type: 'Model' | 'Route' | 'API' | 'Util' | 'ENV' | 'Auth' | 'Runtime' | 'Framework';
+  type: 'Core' | 'API' | 'Data' | 'UI' | 'Config' | 'Security' | 'Docs' | 'Dependencies';
   title: string;
   content: string;
+  feature: string; // Feature name is now required - components belong to features
   createdAt: string;
   updatedAt: string;
   createdBy?: string;
@@ -68,7 +69,7 @@ export interface BaseProject {
   notes: BaseNote[];
   todos: BaseTodo[];
   devLog: BaseDevLogEntry[];
-  docs: BaseDoc[];
+  components: BaseComponent[]; // Renamed from docs to components
   selectedTechnologies: BaseSelectedTechnology[];
   selectedPackages: BaseSelectedPackage[];
   stagingEnvironment: 'development' | 'staging' | 'production';
@@ -82,13 +83,13 @@ export interface BaseProject {
   publicDescription?: string;
   createdAt: string;
   updatedAt: string;
-  
+
   // Team-related fields
   isOwner?: boolean;
   userRole?: 'owner' | 'editor' | 'viewer';
   canEdit?: boolean;
   canManageTeam?: boolean;
-  
+
   // Additional features
   roadmapItems?: any[];
   deploymentData?: {
@@ -119,7 +120,7 @@ export interface ProjectTeamData {
 export interface ProjectVisibility {
   description: boolean;
   tags: boolean;
-  docs: boolean;
+  components: boolean; // Renamed from docs
   techStack: boolean;
   timestamps: boolean;
 }
@@ -174,16 +175,18 @@ export interface UpdateDevLogData {
   entry?: string;
 }
 
-export interface CreateDocData {
-  type: 'Model' | 'Route' | 'API' | 'Util' | 'ENV' | 'Auth' | 'Runtime' | 'Framework';
+export interface CreateComponentData {
+  type: 'Core' | 'API' | 'Data' | 'UI' | 'Config' | 'Security' | 'Docs' | 'Dependencies';
   title: string;
   content: string;
+  feature: string; // Feature is required when creating components
 }
 
-export interface UpdateDocData {
-  type?: 'Model' | 'Route' | 'API' | 'Util' | 'ENV' | 'Auth' | 'Runtime' | 'Framework';
+export interface UpdateComponentData {
+  type?: 'Core' | 'API' | 'Data' | 'UI' | 'Config' | 'Security' | 'Docs' | 'Dependencies';
   title?: string;
   content?: string;
+  feature?: string;
 }
 
 

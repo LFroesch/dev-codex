@@ -7,11 +7,11 @@ export enum CommandType {
   ADD_TODO = 'add_todo',
   ADD_NOTE = 'add_note',
   ADD_DEVLOG = 'add_devlog',
-  ADD_DOC = 'add_doc',
+  ADD_COMPONENT = 'add_component',
   VIEW_NOTES = 'view_notes',
   VIEW_TODOS = 'view_todos',
   VIEW_DEVLOG = 'view_devlog',
-  VIEW_DOCS = 'view_docs',
+  VIEW_COMPONENTS = 'view_components',
   ADD_TECH = 'add_tech',
   ADD_PACKAGE = 'add_package',
   VIEW_STACK = 'view_stack',
@@ -55,13 +55,13 @@ export enum CommandType {
   EDIT_TODO = 'edit_todo',
   EDIT_NOTE = 'edit_note',
   EDIT_DEVLOG = 'edit_devlog',
-  EDIT_DOC = 'edit_doc',
+  EDIT_COMPONENT = 'edit_component',
 
   // Delete commands
   DELETE_TODO = 'delete_todo',
   DELETE_NOTE = 'delete_note',
   DELETE_DEVLOG = 'delete_devlog',
-  DELETE_DOC = 'delete_doc',
+  DELETE_COMPONENT = 'delete_component',
   DELETE_SUBTASK = 'delete_subtask',
 
   // Navigation & Workflow
@@ -104,9 +104,9 @@ const COMMAND_ALIASES: Record<string, CommandType> = {
   'add devlog': CommandType.ADD_DEVLOG,
   'add-devlog': CommandType.ADD_DEVLOG,
   'devlog': CommandType.ADD_DEVLOG,
-  'add doc': CommandType.ADD_DOC,
-  'add-doc': CommandType.ADD_DOC,
-  'doc': CommandType.ADD_DOC,
+  'add component': CommandType.ADD_COMPONENT,
+  'add-component': CommandType.ADD_COMPONENT,
+  'component': CommandType.ADD_COMPONENT,
 
   // View commands
   'view notes': CommandType.VIEW_NOTES,
@@ -120,10 +120,11 @@ const COMMAND_ALIASES: Record<string, CommandType> = {
   'view devlog': CommandType.VIEW_DEVLOG,
   'view-devlog': CommandType.VIEW_DEVLOG,
   'list devlog': CommandType.VIEW_DEVLOG,
-  'view docs': CommandType.VIEW_DOCS,
-  'view-docs': CommandType.VIEW_DOCS,
-  'docs': CommandType.VIEW_DOCS,
-  'list docs': CommandType.VIEW_DOCS,
+  'view components': CommandType.VIEW_COMPONENTS,
+  'view-components': CommandType.VIEW_COMPONENTS,
+  'components': CommandType.VIEW_COMPONENTS,
+  'list components': CommandType.VIEW_COMPONENTS,
+  'features': CommandType.VIEW_COMPONENTS,
 
   // Project commands
   'swap-project': CommandType.SWAP_PROJECT,
@@ -278,8 +279,8 @@ const COMMAND_ALIASES: Record<string, CommandType> = {
   'edit-note': CommandType.EDIT_NOTE,
   'edit devlog': CommandType.EDIT_DEVLOG,
   'edit-devlog': CommandType.EDIT_DEVLOG,
-  'edit doc': CommandType.EDIT_DOC,
-  'edit-doc': CommandType.EDIT_DOC,
+  'edit component': CommandType.EDIT_COMPONENT,
+  'edit-component': CommandType.EDIT_COMPONENT,
 
   // Delete commands
   'delete todo': CommandType.DELETE_TODO,
@@ -294,10 +295,10 @@ const COMMAND_ALIASES: Record<string, CommandType> = {
   'delete-devlog': CommandType.DELETE_DEVLOG,
   'remove devlog': CommandType.DELETE_DEVLOG,
   'rm devlog': CommandType.DELETE_DEVLOG,
-  'delete doc': CommandType.DELETE_DOC,
-  'delete-doc': CommandType.DELETE_DOC,
-  'remove doc': CommandType.DELETE_DOC,
-  'rm doc': CommandType.DELETE_DOC,
+  'delete component': CommandType.DELETE_COMPONENT,
+  'delete-component': CommandType.DELETE_COMPONENT,
+  'remove component': CommandType.DELETE_COMPONENT,
+  'rm component': CommandType.DELETE_COMPONENT,
   'delete subtask': CommandType.DELETE_SUBTASK,
   'delete-subtask': CommandType.DELETE_SUBTASK,
   'remove subtask': CommandType.DELETE_SUBTASK,
@@ -371,14 +372,14 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
     requiresProject: true,
     requiresArgs: true
   },
-  [CommandType.ADD_DOC]: {
-    type: CommandType.ADD_DOC,
-    syntax: '/add doc [type] [title] - [content] [@project]',
-    description: 'Create a new documentation template',
+  [CommandType.ADD_COMPONENT]: {
+    type: CommandType.ADD_COMPONENT,
+    syntax: '/add component [feature] [type] [title] - [content] [@project]',
+    description: 'Add a component to a feature',
     examples: [
-      '/add doc Model User - id, name, email @myproject',
-      '/doc API /api/users - GET all users endpoint',
-      '/add-doc ENV DATABASE_URL - MongoDB connection string'
+      '/add component Auth Core Login - Handles user authentication @myproject',
+      '/component Users API GET - Retrieve all users endpoint',
+      '/add-component Dashboard UI Header - Top navigation bar'
     ],
     requiresProject: true,
     requiresArgs: true
@@ -419,14 +420,15 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
     requiresProject: true,
     requiresArgs: false
   },
-  [CommandType.VIEW_DOCS]: {
-    type: CommandType.VIEW_DOCS,
-    syntax: '/view docs [@project]',
-    description: 'List documentation',
+  [CommandType.VIEW_COMPONENTS]: {
+    type: CommandType.VIEW_COMPONENTS,
+    syntax: '/view components [@project]',
+    description: 'List components grouped by features',
     examples: [
-      '/view docs @myproject',
-      '/docs',
-      '/list docs @api'
+      '/view components @myproject',
+      '/components',
+      '/features @api',
+      '/list components'
     ],
     requiresProject: true,
     requiresArgs: false
@@ -742,7 +744,7 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
   [CommandType.SEARCH]: {
     type: CommandType.SEARCH,
     syntax: '/search [query] [@project]',
-    description: 'Search across all project content (todos, notes, devlog, docs)',
+    description: 'Search across all project content (todos, notes, devlog, components)',
     examples: [
       '/search authentication bug @myproject',
       '/find database schema',
@@ -899,14 +901,14 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
     requiresProject: true,
     requiresArgs: true
   },
-  [CommandType.EDIT_DOC]: {
-    type: CommandType.EDIT_DOC,
-    syntax: '/edit doc [doc id/title] [new content] [@project]',
-    description: 'Edit an existing documentation entry',
+  [CommandType.EDIT_COMPONENT]: {
+    type: CommandType.EDIT_COMPONENT,
+    syntax: '/edit component [component id/title] [new content] [@project]',
+    description: 'Edit an existing component',
     examples: [
-      '/edit doc "User Model" updated fields @myproject',
-      '/edit-doc 1 new API documentation',
-      '/edit doc API updated endpoint description'
+      '/edit component "Login" updated authentication flow @myproject',
+      '/edit-component 1 new API implementation',
+      '/edit component Header updated navigation'
     ],
     requiresProject: true,
     requiresArgs: true
@@ -949,14 +951,14 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
     requiresProject: true,
     requiresArgs: true
   },
-  [CommandType.DELETE_DOC]: {
-    type: CommandType.DELETE_DOC,
-    syntax: '/delete doc [doc id/title] [@project]',
-    description: 'Delete a documentation entry (with confirmation)',
+  [CommandType.DELETE_COMPONENT]: {
+    type: CommandType.DELETE_COMPONENT,
+    syntax: '/delete component [component id/title] [@project]',
+    description: 'Delete a component (with confirmation)',
     examples: [
-      '/delete doc "old API" @myproject',
-      '/delete-doc 1',
-      '/rm doc deprecated'
+      '/delete component "old Login" @myproject',
+      '/delete-component 1',
+      '/rm component deprecated'
     ],
     requiresProject: true,
     requiresArgs: true
@@ -984,7 +986,7 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
       '/goto stack',
       '/goto deployment',
       '/go settings',
-      '/navigate docs @myproject'
+      '/navigate features @myproject'
     ],
     requiresProject: false,
     requiresArgs: true

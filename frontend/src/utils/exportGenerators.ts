@@ -8,7 +8,7 @@ export interface ExportOptions {
   notes: boolean;
   todos: boolean;
   devLog: boolean;
-  docs: boolean;
+  components: boolean;
   techStack: boolean;
   deploymentData: boolean;
   publicPageData: boolean;
@@ -49,8 +49,8 @@ export function generateExportData(selectedProject: Project, exportOptions: Expo
     data.devLog = selectedProject.devLog;
   }
 
-  if (exportOptions.docs && selectedProject.docs?.length) {
-    data.docs = selectedProject.docs;
+  if (exportOptions.components && selectedProject.components?.length) {
+    data.components = selectedProject.components;
   }
 
   if (exportOptions.techStack && (selectedProject.selectedTechnologies?.length || selectedProject.selectedPackages?.length)) {
@@ -216,26 +216,27 @@ ${noteContent}`;
     });
   }
 
-  if (data.docs?.length) {
+  if (data.components?.length) {
     prompt += `
 
-## 📚 DOCUMENTATION`;
-    const docsByType = data.docs.reduce((acc: any, doc: any) => {
-      if (!acc[doc.type]) acc[doc.type] = [];
-      acc[doc.type].push(doc);
+## 🧩 FEATURE COMPONENTS`;
+    const componentsByFeature = data.components.reduce((acc: any, component: any) => {
+      const feature = component.feature || 'Ungrouped';
+      if (!acc[feature]) acc[feature] = [];
+      acc[feature].push(component);
       return acc;
     }, {});
 
-    Object.entries(docsByType).forEach(([type, docs]: [string, any]) => {
+    Object.entries(componentsByFeature).forEach(([feature, components]: [string, any]) => {
       prompt += `
 
-**${type} Documentation:**`;
-      docs.forEach((doc: any) => {
-        const docContent = doc.content?.length > 800 ? 
-          doc.content.substring(0, 800) + '...' : 
-          doc.content || '';
+**${feature}:**`;
+      components.forEach((component: any) => {
+        const componentContent = component.content?.length > 800 ?
+          component.content.substring(0, 800) + '...' :
+          component.content || '';
         prompt += `
-• **${doc.title || 'Untitled'}:** ${docContent}`;
+• **[${component.type}] ${component.title || 'Untitled'}:** ${componentContent}`;
       });
     });
   }
@@ -336,13 +337,23 @@ export function generateMarkdownFormat(data: any, selectedProject: Project): str
     });
   }
 
-  if (data.docs?.length) {
-    markdown += `## Documentation\n\n`;
-    data.docs.forEach((doc: any) => {
-      const docContent = doc.content?.length > 2000 ? 
-        doc.content.substring(0, 2000) + '...' : 
-        doc.content || '';
-      markdown += `### ${doc.title || 'Untitled'} (${doc.type})\n${docContent}\n\n`;
+  if (data.components?.length) {
+    markdown += `## Components\n\n`;
+    const componentsByFeature = data.components.reduce((acc: any, component: any) => {
+      const feature = component.feature || 'Ungrouped';
+      if (!acc[feature]) acc[feature] = [];
+      acc[feature].push(component);
+      return acc;
+    }, {});
+
+    Object.entries(componentsByFeature).forEach(([feature, components]: [string, any]) => {
+      markdown += `### ${feature}\n\n`;
+      (components as any[]).forEach((component: any) => {
+        const componentContent = component.content?.length > 2000 ?
+          component.content.substring(0, 2000) + '...' :
+          component.content || '';
+        markdown += `#### [${component.type}] ${component.title || 'Untitled'}\n${componentContent}\n\n`;
+      });
     });
   }
 

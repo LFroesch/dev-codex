@@ -125,64 +125,75 @@ export class CrudHandlers extends BaseCommandHandler {
   }
 
   /**
-   * Handle /add doc command
+   * Handle /add component command
    */
-  async handleAddDoc(parsed: ParsedCommand, currentProjectId?: string): Promise<CommandResponse> {
+  async handleAddComponent(parsed: ParsedCommand, currentProjectId?: string): Promise<CommandResponse> {
     const { project, error } = await this.resolveProjectWithEditCheck(parsed.projectMention, currentProjectId);
     if (error) return error;
 
     const fullText = parsed.args.join(' ').trim();
     const parts = fullText.split(' - ');
 
-    if (parts.length < 2) {
+    if (parts.length < 3) {
       return {
         type: ResponseType.ERROR,
-        message: 'Invalid format. Use: /add doc [type] [title] - [content]',
+        message: 'Invalid format. Use: /add component [feature] [type] [title] - [content]',
         suggestions: [
-          '/add doc Model User - id, name, email',
-          '/add doc API /users - GET all users endpoint',
-          '/help add doc'
+          '/add component Auth Core Login - Handles user authentication',
+          '/add component Users API GET - Retrieve all users endpoint',
+          '/help add component'
         ]
       };
     }
 
     const firstPart = parts[0].trim().split(' ');
-    const docType = firstPart[0];
-    const title = sanitizeText(firstPart.slice(1).join(' '));
+    if (firstPart.length < 3) {
+      return {
+        type: ResponseType.ERROR,
+        message: 'Feature, type, and title are required. Use: /add component [feature] [type] [title] - [content]',
+        suggestions: ['/help add component']
+      };
+    }
+
+    const feature = firstPart[0];
+    const componentType = firstPart[1];
+    const title = sanitizeText(firstPart.slice(2).join(' '));
     const content = sanitizeText(parts.slice(1).join(' - '));
 
-    if (!docType || !title || !content) {
+    if (!feature || !componentType || !title || !content) {
       return {
         type: ResponseType.ERROR,
-        message: 'Type, title, and content are all required',
-        suggestions: ['/help add doc']
+        message: 'Feature, type, title, and content are all required',
+        suggestions: ['/help add component']
       };
     }
 
-    const validTypes = ['Model', 'Route', 'API', 'Util', 'ENV', 'Auth', 'Runtime', 'Framework'];
-    if (!validTypes.includes(docType)) {
+    const validTypes = ['Core', 'API', 'Data', 'UI', 'Config', 'Security', 'Docs', 'Dependencies'];
+    if (!validTypes.includes(componentType)) {
       return {
         type: ResponseType.ERROR,
-        message: `Invalid doc type "${docType}". Valid types: ${validTypes.join(', ')}`,
-        suggestions: validTypes.map(t => `/add doc ${t} [title] - [content]`)
+        message: `Invalid component type "${componentType}". Valid types: ${validTypes.join(', ')}`,
+        suggestions: validTypes.map(t => `/add component [feature] ${t} [title] - [content]`)
       };
     }
 
-    const newDoc = {
+    const newComponent = {
       id: uuidv4(),
-      type: docType as any,
+      type: componentType as any,
       title,
       content,
-      createdAt: new Date()
+      feature: feature.trim(),
+      createdAt: new Date(),
+      updatedAt: new Date()
     };
 
-    project.docs.push(newDoc);
+    project.components.push(newComponent);
     await project.save();
 
     return this.buildSuccessResponse(
-      `📚 Added ${docType} doc: "${title}" to ${project.name}`,
+      `🧩 Added ${componentType} component "${title}" to feature "${feature}" in ${project.name}`,
       project,
-      'add_doc'
+      'add_component'
     );
   }
 
@@ -312,33 +323,52 @@ export class CrudHandlers extends BaseCommandHandler {
   }
 
   /**
-   * Handle /view docs command
+   * Handle /view components command - Shows structure by default, grouped by features
    */
-  async handleViewDocs(parsed: ParsedCommand, currentProjectId?: string): Promise<CommandResponse> {
+  async handleViewComponents(parsed: ParsedCommand, currentProjectId?: string): Promise<CommandResponse> {
     const resolution = await this.resolveProject(parsed.projectMention, currentProjectId);
     if (!resolution.project) {
       return this.buildProjectErrorResponse(resolution);
     }
 
-    const docs = resolution.project.docs || [];
+    const components = resolution.project.components || [];
 
-    if (docs.length === 0) {
+    if (components.length === 0) {
       return {
         type: ResponseType.INFO,
-        message: `📚 No documentation found in ${resolution.project.name}`
+        message: `🧩 No components found in ${resolution.project.name}`,
+        suggestions: [`/add component [feature] [type] [title] - [content]`]
       };
     }
 
+    // Group components by feature
+    const componentsByFeature: Record<string, any[]> = {};
+    components.forEach((component: any) => {
+      const featureKey = component.feature || 'Ungrouped';
+      if (!componentsByFeature[featureKey]) {
+        componentsByFeature[featureKey] = [];
+      }
+      componentsByFeature[featureKey].push({
+        id: component.id,
+        type: component.type,
+        title: component.title,
+        feature: component.feature,
+        createdAt: component.createdAt
+      });
+    });
+
     return this.buildDataResponse(
-      `📚 Documentation in ${resolution.project.name} (${docs.length} docs)`,
+      `🧩 Components in ${resolution.project.name} (${components.length} components, ${Object.keys(componentsByFeature).length} features)`,
       resolution.project,
-      'view_docs',
+      'view_components',
       {
-        docs: docs.map((doc: any) => ({
-          id: doc.id,
-          type: doc.type,
-          title: doc.title,
-          createdAt: doc.createdAt
+        structure: componentsByFeature,
+        components: components.map((component: any) => ({
+          id: component.id,
+          type: component.type,
+          title: component.title,
+          feature: component.feature,
+          createdAt: component.createdAt
         }))
       }
     );
@@ -425,16 +455,18 @@ export class CrudHandlers extends BaseCommandHandler {
       }
     });
 
-    // Search docs
-    (project.docs || []).forEach((doc: any) => {
-      if (doc.title.toLowerCase().includes(query) ||
-          doc.content.toLowerCase().includes(query)) {
+    // Search components
+    (project.components || []).forEach((component: any) => {
+      if (component.title.toLowerCase().includes(query) ||
+          component.content.toLowerCase().includes(query) ||
+          (component.feature && component.feature.toLowerCase().includes(query))) {
         results.push({
-          type: 'doc',
-          id: doc.id,
-          docType: doc.type,
-          title: doc.title,
-          preview: doc.content.substring(0, 100),
+          type: 'component',
+          id: component.id,
+          componentType: component.type,
+          title: component.title,
+          feature: component.feature,
+          preview: component.content.substring(0, 100),
           projectName: project.name,
           projectId: project._id.toString()
         });
@@ -473,7 +505,7 @@ export class CrudHandlers extends BaseCommandHandler {
     }, {
       score: { $meta: 'textScore' }
     })
-    .select('_id name todos notes devLog docs')
+    .select('_id name todos notes devLog components')
     .sort({ score: { $meta: 'textScore' } })
     .limit(10) // Limit to top 10 matching projects for performance
     .lean();
@@ -491,7 +523,7 @@ export class CrudHandlers extends BaseCommandHandler {
       }, {
         score: { $meta: 'textScore' }
       })
-      .select('_id name todos notes devLog docs')
+      .select('_id name todos notes devLog components')
       .sort({ score: { $meta: 'textScore' } })
       .limit(10)
       .lean();
@@ -550,16 +582,18 @@ export class CrudHandlers extends BaseCommandHandler {
         }
       });
 
-      // Search docs
-      (project.docs || []).forEach((doc: any) => {
-        if (doc.title.toLowerCase().includes(queryLower) ||
-            doc.content.toLowerCase().includes(queryLower)) {
+      // Search components
+      (project.components || []).forEach((component: any) => {
+        if (component.title.toLowerCase().includes(queryLower) ||
+            component.content.toLowerCase().includes(queryLower) ||
+            (component.feature && component.feature.toLowerCase().includes(queryLower))) {
           results.push({
-            type: 'doc',
-            id: doc.id,
-            docType: doc.type,
-            title: doc.title,
-            preview: doc.content.substring(0, 100),
+            type: 'component',
+            id: component.id,
+            componentType: component.type,
+            title: component.title,
+            feature: component.feature,
+            preview: component.content.substring(0, 100),
             projectName: project.name,
             projectId: project._id.toString()
           });
@@ -1292,9 +1326,9 @@ export class CrudHandlers extends BaseCommandHandler {
   }
 
   /**
-   * Handle /edit doc command - Edit an existing documentation entry
+   * Handle /edit component command - Edit an existing component
    */
-  async handleEditDoc(parsed: ParsedCommand, currentProjectId?: string): Promise<CommandResponse> {
+  async handleEditComponent(parsed: ParsedCommand, currentProjectId?: string): Promise<CommandResponse> {
     const { project, error } = await this.resolveProjectWithEditCheck(parsed.projectMention, currentProjectId);
     if (error) return error;
 
@@ -1302,26 +1336,26 @@ export class CrudHandlers extends BaseCommandHandler {
     if (parsed.args.length === 0) {
       return {
         type: ResponseType.ERROR,
-        message: '❌ Doc ID is required',
+        message: '❌ Component ID is required',
         suggestions: [
-          '/view docs - See all docs with #IDs',
-          '💡 Edit with wizard: /edit doc 1',
-          '💡 Edit specific field: /edit doc 1 --field=content --content="new content"',
-          '/help edit doc'
+          '/view components - See all components with #IDs',
+          '💡 Edit with wizard: /edit component 1',
+          '💡 Edit specific field: /edit component 1 --field=content --content="new content"',
+          '/help edit component'
         ]
       };
     }
 
     const identifier = parsed.args[0];
-    const doc = this.findDoc(project.docs, identifier);
+    const component = this.findComponent(project.components, identifier);
 
-    if (!doc) {
+    if (!component) {
       return {
         type: ResponseType.ERROR,
-        message: `❌ Documentation entry not found: "${identifier}"`,
+        message: `❌ Component not found: "${identifier}"`,
         suggestions: [
-          '/view docs - See all docs with #IDs',
-          '/help edit doc'
+          '/view components - See all components with #IDs',
+          '/help edit component'
         ]
       };
     }
@@ -1332,64 +1366,75 @@ export class CrudHandlers extends BaseCommandHandler {
 
     if (field && content) {
       // Direct field update
-      const validFields = ['title', 'content'];
+      const validFields = ['title', 'content', 'feature'];
 
       if (!validFields.includes(field)) {
         return {
           type: ResponseType.ERROR,
           message: `❌ Invalid field: "${field}". Valid fields: ${validFields.join(', ')}`,
-          suggestions: ['/help edit doc']
+          suggestions: ['/help edit component']
         };
       }
 
       // Update the specified field
       const sanitizedContent = sanitizeText(content);
       if (field === 'title') {
-        doc.title = sanitizedContent;
+        component.title = sanitizedContent;
       } else if (field === 'content') {
-        doc.content = sanitizedContent;
+        component.content = sanitizedContent;
+      } else if (field === 'feature') {
+        component.feature = sanitizedContent;
       }
 
+      component.updatedAt = new Date();
       await project.save();
 
       return this.buildSuccessResponse(
-        `📚 Updated doc ${field}: "${doc.title}"`,
+        `🧩 Updated component ${field}: "${component.title}"`,
         project,
-        'edit_doc'
+        'edit_component'
       );
     }
 
     // No field flags - return interactive wizard
     return {
       type: ResponseType.PROMPT,
-      message: `✏️ Edit Doc: "${doc.title}"`,
+      message: `✏️ Edit Component: "${component.title}"`,
       data: {
-        wizardType: 'edit_doc',
-        docId: doc.id,
+        wizardType: 'edit_component',
+        componentId: component.id,
         currentValues: {
-          title: doc.title,
-          content: doc.content
+          title: component.title,
+          content: component.content,
+          feature: component.feature
         },
         steps: [
           {
             id: 'title',
-            label: 'Doc Title',
+            label: 'Component Title',
             type: 'text',
             required: true,
-            value: doc.title
+            value: component.title
           },
           {
             id: 'content',
             label: 'Content',
             type: 'textarea',
             required: true,
-            value: doc.content
+            value: component.content
+          },
+          {
+            id: 'feature',
+            label: 'Feature',
+            type: 'text',
+            required: true,
+            value: component.feature
           }
         ]
       },
       metadata: {
         projectId: project._id.toString(),
-        action: 'edit_doc'
+        action: 'edit_component'
       }
     };
   }
@@ -1515,20 +1560,20 @@ export class CrudHandlers extends BaseCommandHandler {
   }
 
   /**
-   * Handle /delete doc command - Delete a documentation entry with confirmation
+   * Handle /delete component command - Delete a component with confirmation
    */
-  async handleDeleteDoc(parsed: ParsedCommand, currentProjectId?: string): Promise<CommandResponse> {
+  async handleDeleteComponent(parsed: ParsedCommand, currentProjectId?: string): Promise<CommandResponse> {
     const { project, error } = await this.resolveProjectWithEditCheck(parsed.projectMention, currentProjectId);
     if (error) return error;
 
-    const docIdentifier = parsed.args.join(' ').trim();
-    const doc = this.findDoc(project.docs, docIdentifier);
+    const componentIdentifier = parsed.args.join(' ').trim();
+    const component = this.findComponent(project.components, componentIdentifier);
 
-    if (!doc) {
+    if (!component) {
       return {
         type: ResponseType.ERROR,
-        message: `Documentation entry not found: "${docIdentifier}"`,
-        suggestions: ['/view docs', '/help delete doc']
+        message: `Component not found: "${componentIdentifier}"`,
+        suggestions: ['/view components', '/help delete component']
       };
     }
 
@@ -1537,19 +1582,19 @@ export class CrudHandlers extends BaseCommandHandler {
     if (!hasConfirmation) {
       return {
         type: ResponseType.PROMPT,
-        message: `⚠️  Are you sure you want to delete doc "${doc.title}"?\nUse --confirm to proceed: /delete doc "${doc.title}" --confirm`,
-        data: { doc: { id: doc.id, title: doc.title } }
+        message: `⚠️  Are you sure you want to delete component "${component.title}"?\nUse --confirm to proceed: /delete component "${component.title}" --confirm`,
+        data: { component: { id: component.id, title: component.title } }
       };
     }
 
-    const docTitle = doc.title;
-    project.docs = project.docs.filter((d: any) => d.id !== doc.id);
+    const componentTitle = component.title;
+    project.components = project.components.filter((c: any) => c.id !== component.id);
     await project.save();
 
     return this.buildSuccessResponse(
-      `🗑️  Deleted doc: "${docTitle}"`,
+      `🗑️  Deleted component: "${componentTitle}"`,
       project,
-      'delete_doc'
+      'delete_component'
     );
   }
 
@@ -1626,17 +1671,17 @@ export class CrudHandlers extends BaseCommandHandler {
   }
 
   /**
-   * Find a doc by ID or title
+   * Find a component by ID or title
    */
-  private findDoc(docs: any[], identifier: string): any | null {
+  private findComponent(components: any[], identifier: string): any | null {
     const index = parseInt(identifier);
-    if (!isNaN(index) && index > 0 && index <= docs.length) {
-      return docs[index - 1];
+    if (!isNaN(index) && index > 0 && index <= components.length) {
+      return components[index - 1];
     }
 
     const identifierLower = identifier.toLowerCase();
-    return docs.find((doc: any) =>
-      doc.title.toLowerCase().includes(identifierLower)
+    return components.find((component: any) =>
+      component.title.toLowerCase().includes(identifierLower)
     ) || null;
   }
 

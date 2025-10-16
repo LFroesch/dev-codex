@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CommandResponse as CommandResponseType, terminalAPI } from '../api/terminal';
 import { getContrastTextColor } from '../utils/contrastTextColor';
-import { TodosRenderer, NotesRenderer, StackRenderer, DevLogRenderer, DocsRenderer } from './responses';
+import { TodosRenderer, NotesRenderer, StackRenderer, DevLogRenderer, ComponentRenderer } from './responses';
 import { authAPI } from '../api';
 import { hexToOklch, oklchToCssValue, generateFocusVariant, generateContrastingTextColor } from '../utils/colorUtils';
 import { toast } from '../services/toast';
@@ -346,9 +346,9 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
       return <DevLogRenderer entries={response.data.entries} projectId={response.metadata?.projectId} onNavigate={handleNavigateToProject} />;
     }
 
-    // Render docs list
-    if (response.data.docs && Array.isArray(response.data.docs)) {
-      return <DocsRenderer docs={response.data.docs} projectId={response.metadata?.projectId} onNavigate={handleNavigateToProject} />;
+    // Render components (features)
+    if (response.data.structure || (response.data.components && Array.isArray(response.data.components))) {
+      return <ComponentRenderer structure={response.data.structure} components={response.data.components} projectId={response.metadata?.projectId} onNavigate={handleNavigateToProject} />;
     }
 
     // Render stack data
@@ -1058,8 +1058,8 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
       );
     }
 
-    // Render wizard for editing todos, notes, docs, and devlog
-    if (['edit_todo', 'edit_note', 'edit_doc', 'edit_devlog'].includes(response.data.wizardType) && response.data.steps) {
+    // Render wizard for editing todos, notes, devlog, and components
+    if (['edit_todo', 'edit_note', 'edit_devlog', 'edit_component'].includes(response.data.wizardType) && response.data.steps) {
       const [currentStep, setCurrentStep] = React.useState(0);
       const [wizardData, setWizardData] = React.useState<Record<string, any>>(response.data.currentValues || {});
       const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -1083,14 +1083,14 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
         setIsSubmitting(true);
         try {
           // Prepare command based on wizard type and data
-          const { wizardType, todoId, noteId, docId, entryId } = response.data;
-          const itemId = todoId || noteId || docId || entryId;
+          const { wizardType, todoId, noteId, entryId, componentId } = response.data;
+          const itemId = todoId || noteId || entryId || componentId;
 
           const commandMap: Record<string, string> = {
             'edit_todo': 'todo',
             'edit_note': 'note',
-            'edit_doc': 'doc',
-            'edit_devlog': 'devlog'
+            'edit_devlog': 'devlog',
+            'edit_component': 'component'
           };
 
           const itemType = commandMap[wizardType];

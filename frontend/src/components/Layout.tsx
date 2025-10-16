@@ -297,7 +297,7 @@ const Layout: React.FC = () => {
   const tabs = [
     { id: 'notes', label: 'Notes/To Dos', path: '/notes' },
     { id: 'stack', label: 'Stack', path: '/stack' },
-    { id: 'docs', label: 'Docs', path: '/docs' },
+    { id: 'features', label: 'Features', path: '/features' },
     { id: 'deployment', label: 'Deployment', path: '/deployment' },
     { id: 'public', label: 'Public', path: '/public' },
     { id: 'sharing', label: 'Sharing', path: '/sharing' },
@@ -572,8 +572,8 @@ const Layout: React.FC = () => {
                   <span className="text-xs sm:text-sm">Projects</span>
                 </button>
                 <button
-                  className={`tab tab-sm flex-shrink-0 min-h-10 ${(location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && location.pathname !== '/projects' ? 'tab-active' : ''} gap-1 sm:gap-2 font-bold whitespace-nowrap px-2 sm:px-4`}
-                  style={(location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && location.pathname !== '/projects' ? {color: getContrastTextColor()} : {}}
+                  className={`tab tab-sm flex-shrink-0 min-h-10 ${(location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/features' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && location.pathname !== '/projects' ? 'tab-active' : ''} gap-1 sm:gap-2 font-bold whitespace-nowrap px-2 sm:px-4`}
+                  style={(location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/features' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && location.pathname !== '/projects' ? {color: getContrastTextColor()} : {}}
                   onClick={() => handleNavigateWithCheck('/notes')}
                 >
                   <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -652,7 +652,7 @@ const Layout: React.FC = () => {
             )}
 
             {/* Project Details Submenu - Mobile */}
-            {selectedProject && (location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && location.pathname !== '/projects' && (
+            {selectedProject && (location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/features' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && location.pathname !== '/projects' && (
             <div className="flex justify-center">
               <div className="tabs-container">
                 {tabs.map((tab) => (
@@ -672,7 +672,7 @@ const Layout: React.FC = () => {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
                       </svg>
                     )}
-                    {tab.id === 'docs' && (
+                    {tab.id === 'features' && (
                       <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
@@ -701,7 +701,7 @@ const Layout: React.FC = () => {
                     <span>
                       {tab.id === 'notes' ? 'Notes' :
                        tab.id === 'stack' ? 'Stack' :
-                       tab.id === 'docs' ? 'Docs' :
+                       tab.id === 'features' ? 'Features' :
                        tab.id === 'deployment' ? 'Deploy' :
                        tab.id === 'public' ? 'Public' :
                        tab.id === 'sharing' ? 'Sharing' :
@@ -810,9 +810,9 @@ const Layout: React.FC = () => {
                 </svg>
                 My Projects
               </button>
-              <button 
-                className={`tab-button ${(location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && location.pathname !== '/projects' ? 'tab-active' : ''} gap-2`}
-                style={(location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && location.pathname !== '/projects' ? {color: getContrastTextColor()} : {}}
+              <button
+                className={`tab-button ${(location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/features' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && location.pathname !== '/projects' ? 'tab-active' : ''} gap-2`}
+                style={(location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/features' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && location.pathname !== '/projects' ? {color: getContrastTextColor()} : {}}
                 onClick={() => handleNavigateWithCheck('/notes')}
               >
                 <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -895,7 +895,7 @@ const Layout: React.FC = () => {
           <div className='mb-2'></div>
 
           {/* Second Navigation Bar - Desktop */}
-          {user && location.pathname !== '/support' && (location.pathname === '/projects' || (selectedProject && (location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && location.pathname !== '/projects') || (location.pathname === '/discover' || location.pathname.startsWith('/discover/'))) && (
+          {user && location.pathname !== '/support' && (location.pathname === '/projects' || (selectedProject && (location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/features' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && location.pathname !== '/projects') || (location.pathname === '/discover' || location.pathname.startsWith('/discover/'))) && (
           <div className="py-2">
             {/* Project Views Submenu - Desktop */}
             {location.pathname === '/projects' && (
@@ -940,7 +940,7 @@ const Layout: React.FC = () => {
             )}
 
             {/* Project Details Submenu - Desktop */}
-            {selectedProject && (location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/docs' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && location.pathname !== '/projects' && (
+            {selectedProject && (location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/features' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && location.pathname !== '/projects' && (
             <div className="flex justify-center">
               <div className="tabs-container">
                 {tabs.map((tab) => (
@@ -960,7 +960,7 @@ const Layout: React.FC = () => {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
                       </svg>
                     )}
-                    {tab.id === 'docs' && (
+                    {tab.id === 'features' && (
                       <svg className="icon-sm flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
@@ -989,7 +989,7 @@ const Layout: React.FC = () => {
                     <span>
                       {tab.id === 'notes' ? 'Notes' :
                        tab.id === 'stack' ? 'Stack' :
-                       tab.id === 'docs' ? 'Docs' :
+                       tab.id === 'features' ? 'Features' :
                        tab.id === 'deployment' ? 'Deploy' :
                        tab.id === 'public' ? 'Public' :
                        tab.id === 'sharing' ? 'Sharing' :

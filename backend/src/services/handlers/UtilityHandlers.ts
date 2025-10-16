@@ -355,7 +355,7 @@ export class UtilityHandlers extends BaseCommandHandler {
     const todos = project.todos || [];
     const notes = project.notes || [];
     const devLog = project.devLog || [];
-    const docs = project.docs || [];
+    const components = project.components || [];
     const tech = project.selectedTechnologies || [];
     const packages = project.selectedPackages || [];
 
@@ -384,12 +384,12 @@ export class UtilityHandlers extends BaseCommandHandler {
             },
             notes: notes.length,
             devLog: devLog.length,
-            docs: docs.length
+            components: components.length
           },
           notes: notes,
           todos: todos,
           devLog: devLog,
-          docs: docs,
+          components: components,
           techStack: {
             technologies: tech,
             packages: packages
@@ -481,22 +481,26 @@ export class UtilityHandlers extends BaseCommandHandler {
           });
         }
 
-        // Documentation
-        if (docs.length > 0) {
-          prompt += `\n## 📚 DOCUMENTATION\n`;
-          const docsByType = docs.reduce((acc: any, doc: any) => {
-            if (!acc[doc.type]) acc[doc.type] = [];
-            acc[doc.type].push(doc);
-            return acc;
-          }, {});
+        // Components - Grouped by features
+        if (components.length > 0) {
+          prompt += `\n## 🧩 COMPONENTS (Grouped by Features)\n`;
 
-          Object.entries(docsByType).forEach(([type, docList]: [string, any]) => {
-            prompt += `\n**${type} Documentation:**\n`;
-            docList.forEach((doc: any) => {
-              const docContent = doc.content?.length > 800 ?
-                doc.content.substring(0, 800) + '...' :
-                doc.content || '';
-              prompt += `• **${doc.title || 'Untitled'}:** ${docContent}\n`;
+          // Group components by feature
+          const componentsByFeature: Record<string, any[]> = {};
+          components.forEach((component: any) => {
+            const featureKey = component.feature || 'Ungrouped';
+            if (!componentsByFeature[featureKey]) componentsByFeature[featureKey] = [];
+            componentsByFeature[featureKey].push(component);
+          });
+
+          // Show all features with their components
+          Object.entries(componentsByFeature).sort().forEach(([feature, componentList]: [string, any]) => {
+            prompt += `\n**FEATURE: ${feature}**\n`;
+            componentList.forEach((component: any) => {
+              const componentContent = component.content?.length > 800 ?
+                component.content.substring(0, 800) + '...' :
+                component.content || '';
+              prompt += `• [${component.type}] **${component.title || 'Untitled'}:** ${componentContent}\n`;
             });
           });
         }
@@ -589,14 +593,14 @@ export class UtilityHandlers extends BaseCommandHandler {
           });
         }
 
-        // Documentation
-        if (docs.length > 0) {
-          md += `## Documentation\n\n`;
-          docs.forEach((doc: any) => {
-            const docContent = doc.content?.length > 2000 ?
-              doc.content.substring(0, 2000) + '...' :
-              doc.content || '';
-            md += `### ${doc.title || 'Untitled'} (${doc.type})\n${docContent}\n\n`;
+        // Components
+        if (components.length > 0) {
+          md += `## Components\n\n`;
+          components.forEach((component: any) => {
+            const componentContent = component.content?.length > 2000 ?
+              component.content.substring(0, 2000) + '...' :
+              component.content || '';
+            md += `### ${component.title || 'Untitled'} (${component.type}) - Feature: ${component.feature}\n${componentContent}\n\n`;
           });
         }
 
@@ -671,7 +675,7 @@ export class UtilityHandlers extends BaseCommandHandler {
         text += `High Priority: ${highPriorityTodos} remaining\n`;
         text += `Notes: ${notes.length}\n`;
         text += `Dev Log Entries: ${devLog.length}\n`;
-        text += `Docs: ${docs.length}\n\n`;
+        text += `Components: ${components.length}\n\n`;
 
         // Notes
         if (notes.length > 0) {
@@ -703,12 +707,12 @@ export class UtilityHandlers extends BaseCommandHandler {
           text += `\n`;
         }
 
-        // Documentation
-        if (docs.length > 0) {
-          text += `DOCUMENTATION\n`;
-          text += `-------------\n`;
-          docs.forEach((doc: any) => {
-            text += `${doc.title || 'Untitled'} (${doc.type}): ${doc.content?.substring(0, 150) || ''}${doc.content?.length > 150 ? '...' : ''}\n`;
+        // Components
+        if (components.length > 0) {
+          text += `COMPONENTS\n`;
+          text += `----------\n`;
+          components.forEach((component: any) => {
+            text += `${component.title || 'Untitled'} (${component.type}) [${component.feature}]: ${component.content?.substring(0, 150) || ''}${component.content?.length > 150 ? '...' : ''}\n`;
           });
           text += `\n`;
         }
@@ -1110,10 +1114,10 @@ Execution stops on first error.
 - \`/view devlog [@project]\` - View dev log
 - \`/edit devlog [id] [@project]\` - Open interactive wizard to edit dev log entry
 - \`/delete devlog [id] [@project]\` - Delete dev log entry
-- \`/add doc [type] [title] - [content] [@project]\` - Add documentation
-- \`/view docs [@project]\` - View documentation
-- \`/edit doc [id] [@project]\` - Open interactive wizard to edit documentation
-- \`/delete doc [id] [@project]\` - Delete documentation
+- \`/add component [feature] [type] [title] - [content] [@project]\` - Add component to feature
+- \`/view components [@project]\` - View components grouped by features
+- \`/edit component [id] [@project]\` - Open interactive wizard to edit component
+- \`/delete component [id] [@project]\` - Delete component
 
 ### 5. Tech Stack
 - \`/add tech [name] --category=[category] --version=[version] [@project]\` - Add technology
@@ -1173,13 +1177,13 @@ Execution stops on first error.
 \`\`\`
 /edit note 1                                              # Opens interactive wizard for editing all fields
 /edit note 2 --field=title --content="New Title"         # Direct field update
-/edit doc 1 --field=content --content="Updated docs"     # Update specific field
+/edit component 1 --field=content --content="Updated content"     # Update specific field
 /edit devlog 1 --field=entry --content="New entry text"  # Update devlog entry
 \`\`\`
 
-### Documentation Workflow
+### Component Documentation Workflow
 \`\`\`
-/add doc API /auth/login - POST endpoint for authentication @Backend
+/add component Auth API Login - POST endpoint for authentication @Backend
 /add devlog implemented JWT token refresh @Backend
 /add note consider rate limiting for API endpoints @Backend
 \`\`\`
@@ -1250,9 +1254,9 @@ The system returns different response types:
 /edit note 1 --field=content --content="Updated note content"
 \`\`\`
 
-### Documenting an API endpoint
+### Documenting a component
 \`\`\`
-/add doc API [endpoint] - [description] && /add devlog [what was implemented]
+/add component [feature] [type] [title] - [description] && /add devlog [what was implemented]
 \`\`\`
 
 ### Managing tech stack
@@ -1439,7 +1443,7 @@ This terminal system is designed for efficient project management through a comm
       'notes': { path: '/notes', needsProject: true, name: 'Notes' },
       'todos': { path: '/notes?section=todos', needsProject: true, name: 'Todos' },
       'devlog': { path: '/notes?section=devlog', needsProject: true, name: 'Dev Log' },
-      'docs': { path: '/docs', needsProject: true, name: 'Documentation' },
+      'features': { path: '/features', needsProject: true, name: 'Features' },
       'stack': { path: '/stack', needsProject: true, name: 'Tech Stack' },
       'deployment': { path: '/deployment', needsProject: true, name: 'Deployment' },
       'settings': { path: '/settings', needsProject: true, name: 'Settings' },
@@ -1766,7 +1770,7 @@ This terminal system is designed for efficient project management through a comm
     const todos = project.todos || [];
     const notes = project.notes || [];
     const devLog = project.devLog || [];
-    const docs = project.docs || [];
+    const components = project.components || [];
     const tech = project.selectedTechnologies || [];
     const packages = project.selectedPackages || [];
 
@@ -1807,8 +1811,8 @@ This terminal system is designed for efficient project management through a comm
           devLog: {
             total: devLog.length
           },
-          docs: {
-            total: docs.length
+          components: {
+            total: components.length
           },
           techStack: {
             total: tech.length + packages.length,

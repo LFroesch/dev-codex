@@ -44,7 +44,7 @@ router.post('/', checkProjectLimit, async (req: AuthRequest, res) => {
       notes: [], // Initialize as empty array
       todos: [],
       devLog: [],
-      docs: [],
+      components: [],
       selectedTechnologies: [],
       selectedPackages: [],
       stagingEnvironment: stagingEnvironment || 'development',
@@ -1145,18 +1145,18 @@ router.delete('/:id/devlog/:entryId', requireProjectAccess('edit'), async (req: 
   }
 });
 
-// DOCS MANAGEMENT
-router.post('/:id/docs', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
+// COMPONENT MANAGEMENT (Feature Components)
+router.post('/:id/components', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
-    const { type, title, content } = req.body;
-    
-    if (!type || !title || !content) {
-      return res.status(400).json({ message: 'Type, title, and content are required' });
+    const { type, title, content, feature } = req.body;
+
+    if (!type || !title || !content || !feature) {
+      return res.status(400).json({ message: 'Type, title, content, and feature are required' });
     }
 
-    const validTypes = ['Model', 'Route', 'API', 'Util', 'ENV', 'Auth', 'Runtime', 'Framework'];
+    const validTypes = ['Core', 'API', 'Data', 'UI', 'Config', 'Security', 'Docs', 'Dependencies'];
     if (!validTypes.includes(type)) {
-      return res.status(400).json({ message: 'Invalid doc type' });
+      return res.status(400).json({ message: 'Invalid component type' });
     }
 
     const project = await Project.findById(req.params.id);
@@ -1165,31 +1165,32 @@ router.post('/:id/docs', requireProjectAccess('edit'), async (req: AuthRequest, 
       return res.status(404).json({ message: 'Project not found' });
     }
 
-    const newDoc = {
+    const newComponent = {
       id: uuidv4(),
       type: type,
       title: title.trim(),
       content: content.trim(),
+      feature: feature.trim(),
       createdAt: new Date(),
       updatedAt: new Date()
     };
 
-    project.docs.push(newDoc);
+    project.components.push(newComponent);
     await project.save();
 
     res.json({
-      message: 'Doc added successfully',
-      doc: newDoc
+      message: 'Component added successfully',
+      component: newComponent
     });
   } catch (error) {
-    logError('Add doc error:', error as Error);
+    logError('Add component error:', error as Error);
     res.status(500).json({ message: 'Server error' });
   }
 });
 
-router.put('/:id/docs/:docId', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
+router.put('/:id/components/:componentId', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
-    const { type, title, content } = req.body;
+    const { type, title, content, feature } = req.body;
 
     const project = await Project.findById(req.params.id);
 
@@ -1197,35 +1198,36 @@ router.put('/:id/docs/:docId', requireProjectAccess('edit'), async (req: AuthReq
       return res.status(404).json({ message: 'Project not found' });
     }
 
-    const doc = project.docs.find(d => d.id === req.params.docId);
-    if (!doc) {
-      return res.status(404).json({ message: 'Doc not found' });
+    const component = project.components.find(c => c.id === req.params.componentId);
+    if (!component) {
+      return res.status(404).json({ message: 'Component not found' });
     }
 
     if (type !== undefined) {
-      const validTypes = ['Model', 'Route', 'API', 'Util', 'ENV', 'Auth', 'Runtime', 'Framework'];
+      const validTypes = ['Core', 'API', 'Data', 'UI', 'Config', 'Security', 'Docs', 'Dependencies'];
       if (!validTypes.includes(type)) {
-        return res.status(400).json({ message: 'Invalid doc type' });
+        return res.status(400).json({ message: 'Invalid component type' });
       }
-      doc.type = type;
+      component.type = type;
     }
-    if (title !== undefined) doc.title = title.trim();
-    if (content !== undefined) doc.content = content.trim();
-    doc.updatedAt = new Date();
+    if (title !== undefined) component.title = title.trim();
+    if (content !== undefined) component.content = content.trim();
+    if (feature !== undefined) component.feature = feature.trim();
+    component.updatedAt = new Date();
 
     await project.save();
 
     res.json({
-      message: 'Doc updated successfully',
-      doc: doc
+      message: 'Component updated successfully',
+      component: component
     });
   } catch (error) {
-    logError('Update doc error:', error as Error);
+    logError('Update component error:', error as Error);
     res.status(500).json({ message: 'Server error' });
   }
 });
 
-router.delete('/:id/docs/:docId', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
+router.delete('/:id/components/:componentId', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
     const project = await Project.findById(req.params.id);
 
@@ -1233,12 +1235,12 @@ router.delete('/:id/docs/:docId', requireProjectAccess('edit'), async (req: Auth
       return res.status(404).json({ message: 'Project not found' });
     }
 
-    project.docs = project.docs.filter(d => d.id !== req.params.docId);
+    project.components = project.components.filter(c => c.id !== req.params.componentId);
     await project.save();
 
-    res.json({ message: 'Doc deleted successfully' });
+    res.json({ message: 'Component deleted successfully' });
   } catch (error) {
-    logError('Delete doc error:', error as Error);
+    logError('Delete component error:', error as Error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -1253,7 +1255,7 @@ function formatProjectResponse(project: any) {
     notes: project.notes,
     todos: project.todos,
     devLog: project.devLog,
-    docs: project.docs,
+    components: project.components, // Renamed from docs
     selectedTechnologies: project.selectedTechnologies || [],
     selectedPackages: project.selectedPackages || [],
     stagingEnvironment: project.stagingEnvironment,
@@ -1620,7 +1622,7 @@ router.get('/:id/export',
           createdAt: todo.createdAt
         })) || [],
         devLog: project.devLog || [],
-        docs: project.docs || [],
+        components: project.components || [],
         
         // Tech stack
         selectedTechnologies: project.selectedTechnologies || [],
@@ -1755,14 +1757,15 @@ router.post('/import',
         date: log.date ? new Date(log.date) : new Date()
       })).slice(0, 200) : [],
       
-      docs: Array.isArray(projectData.docs) ? projectData.docs.map((doc: any) => ({
-        id: doc.id || uuidv4(),
-        type: ['Model', 'Route', 'API', 'Util', 'ENV', 'Auth', 'Runtime', 'Framework'].includes(doc.type) 
-          ? doc.type : 'API',
-        title: (doc.title || '').substring(0, 200),
-        content: (doc.content || '').substring(0, 50000),
-        createdAt: doc.createdAt ? new Date(doc.createdAt) : new Date(),
-        updatedAt: doc.updatedAt ? new Date(doc.updatedAt) : new Date()
+      components: Array.isArray(projectData.components) ? projectData.components.map((component: any) => ({
+        id: component.id || uuidv4(),
+        type: ['Core', 'API', 'Data', 'UI', 'Config', 'Security', 'Docs', 'Dependencies'].includes(component.type)
+          ? component.type : 'Core',
+        title: (component.title || '').substring(0, 200),
+        content: (component.content || '').substring(0, 50000),
+        feature: (component.feature || 'Ungrouped').substring(0, 100),
+        createdAt: component.createdAt ? new Date(component.createdAt) : new Date(),
+        updatedAt: component.updatedAt ? new Date(component.updatedAt) : new Date()
       })).slice(0, 100) : [],
       
       selectedTechnologies: Array.isArray(projectData.selectedTechnologies) 
@@ -1843,7 +1846,7 @@ router.post('/import',
               notes: sanitizedProject.notes.length,
               todos: sanitizedProject.todos.length,
               devLog: sanitizedProject.devLog.length,
-              docs: sanitizedProject.docs.length,
+              components: sanitizedProject.components.length,
               technologies: sanitizedProject.selectedTechnologies.length,
               packages: sanitizedProject.selectedPackages.length
             }

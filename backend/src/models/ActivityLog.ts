@@ -52,7 +52,8 @@ const activityLogSchema: Schema = new Schema({
       // Session actions
       'joined_project', 'left_project',
       // Management actions
-      'cleared_activity_log'
+      'cleared_activity_log',
+      'terminal_command' // For logging terminal commands executed
     ]
   },
   resourceType: {

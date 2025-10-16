@@ -47,15 +47,16 @@ const noteSchema = new Schema({
   updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 });
 
-const docSchema = new Schema({
+const componentSchema = new Schema({
   id: { type: String, required: true },
-  type: { 
-    type: String, 
-    enum: ['Model', 'Route', 'API', 'Util', 'ENV', 'Auth', 'Runtime', 'Framework'],
+  type: {
+    type: String,
+    enum: ['Core', 'API', 'Data', 'UI', 'Config', 'Security', 'Docs', 'Dependencies'],
     required: true
   },
   title: { type: String, required: true },
   content: { type: String, required: true },
+  feature: { type: String, required: true }, // Feature is required - components belong to features
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
@@ -120,7 +121,7 @@ export interface IProject extends Document {
   publicVisibility?: {
     description: boolean;
     tags: boolean;
-    docs: boolean;
+    components: boolean;
     techStack: boolean;
     timestamps: boolean;
   };
@@ -160,11 +161,12 @@ export interface IProject extends Document {
   }>;
   
   // Documentation Templates
-  docs: Array<{
+  components: Array<{
     id: string;
-    type: 'Model' | 'Route' | 'API' | 'Util' | 'ENV' | 'Auth' | 'Runtime' | 'Framework';
+    type: 'Core' | 'API' | 'Data' | 'UI' | 'Config' | 'Security' | 'Docs' | 'Dependencies';
     title: string;
     content: string;
+    feature: string; // Feature is required
     createdAt: Date;
     updatedAt: Date;
   }>;
@@ -222,9 +224,9 @@ const projectSchema = new Schema<IProject>({
   notes: [noteSchema],
   todos: [todoSchema],
   devLog: [devLogSchema],
-  
-  // Documentation Templates
-  docs: [docSchema],
+
+  // Feature Components
+  components: [componentSchema],
   
   // Tech Stack & Packages
   selectedTechnologies: [selectedTechSchema],
@@ -290,7 +292,7 @@ const projectSchema = new Schema<IProject>({
   publicVisibility: {
     description: { type: Boolean, default: true },
     tags: { type: Boolean, default: true },
-    docs: { type: Boolean, default: true },
+    components: { type: Boolean, default: true },
     techStack: { type: Boolean, default: true },
     timestamps: { type: Boolean, default: true }
   },
@@ -332,8 +334,9 @@ projectSchema.index({ stagingEnvironment: 1 });
 
 // Nested document indexes for efficient queries
 projectSchema.index({ 'notes.id': 1 });
-projectSchema.index({ 'docs.id': 1 });
-projectSchema.index({ 'docs.type': 1 });
+projectSchema.index({ 'components.id': 1 });
+projectSchema.index({ 'components.type': 1 });
+projectSchema.index({ 'components.feature': 1 }); // Index for feature grouping
 
 // Compound indexes for common filter patterns
 projectSchema.index({ userId: 1, category: 1, isArchived: 1 });
@@ -346,8 +349,9 @@ projectSchema.index({
   description: 'text',
   'notes.title': 'text',
   'notes.content': 'text',
-  'docs.title': 'text',
-  'docs.content': 'text',
+  'components.title': 'text',
+  'components.content': 'text',
+  'components.feature': 'text',
   'todos.text': 'text',
   'todos.description': 'text',
   'devLog.title': 'text',
@@ -358,8 +362,9 @@ projectSchema.index({
     description: 5,
     'notes.title': 3,
     'notes.content': 1,
-    'docs.title': 3,
-    'docs.content': 1,
+    'components.title': 3,
+    'components.content': 1,
+    'components.feature': 4, // Feature names are important for search
     'todos.text': 2,
     'todos.description': 1,
     'devLog.title': 2,

@@ -33,7 +33,7 @@
 - `/add subtask [parent todo] [subtask text] [@project]` - Add subtask to a todo
 - `/add note [text] [@project]` - Create note
 - `/add devlog [text] [@project]` - Create dev log entry
-- `/add doc [type] [title] - [content] [@project]` - Create documentation
+- `/add doc [type] [title] - [content] [@project] --feature="Feature Name"` - Create documentation (optional feature grouping)
 - `/add tech [name] --category=[category]` - Add technology to stack
 - `/add package [name]` - Add package to project
 - `/add tag [name]` - Add tag to project
@@ -43,7 +43,7 @@
 - `/view todos [@project]` - List todos
 - `/view subtasks [todo text/id] [@project]` - View subtasks for a todo
 - `/view devlog [@project]` - List dev log entries
-- `/view docs [@project]` - List documentation
+- `/view docs [@project]` - List documentation (grouped by feature)
 - `/view stack [@project]` - View tech stack
 - `/view deployment [@project]` - View deployment info
 - `/view public [@project]` - View public settings
@@ -63,6 +63,7 @@ Examples:
 /edit todo 1                              # Opens wizard for interactive editing
 /edit note 1 --field=title --content="New Title"  # Direct field update
 /edit doc 2 --field=content --content="Updated documentation"
+/edit doc 3 --field=feature --content="Authentication System"  # Update feature grouping
 ```
 
 ### Delete Commands (with confirmation)

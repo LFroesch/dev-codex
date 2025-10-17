@@ -1,15 +1,10 @@
 import React, { memo } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { Doc } from '../api';
+import { getCategoryByValue } from '../config/componentCategories';
 
 interface ComponentNodeData {
   component: Doc;
-  componentType: {
-    value: Doc['type'];
-    label: string;
-    emoji: string;
-    description: string;
-  };
   isRecent: boolean;
   isStale?: boolean;
   isIncomplete?: boolean;
@@ -18,27 +13,33 @@ interface ComponentNodeData {
 }
 
 const ComponentNode: React.FC<NodeProps<ComponentNodeData>> = ({ data, selected }) => {
-  const { component, componentType, isRecent, isStale, isIncomplete, isOrphaned, hasDuplicates } = data;
+  const { component, isRecent, isStale, isIncomplete, isOrphaned, hasDuplicates } = data;
 
-  // Calculate node size based on content length
+  // Get category configuration
+  const category = getCategoryByValue(component.category);
+  const typeInfo = category.types.find(t => t.value === component.type);
+
+  // Calculate width based on content length
   const contentLength = component.content.length;
-  const minWidth = 180;
-  const maxWidth = 280;
+  const minWidth = 200;
+  const maxWidth = 300;
   const width = Math.min(maxWidth, minWidth + Math.floor(contentLength / 100));
 
-  // Color mapping for component types
-  const typeColorMap: Record<Doc['type'], string> = {
-    'Core': 'bg-green-500/20 border-green-500',
-    'API': 'bg-blue-500/20 border-blue-500',
-    'Data': 'bg-orange-500/20 border-orange-500',
-    'UI': 'bg-purple-500/20 border-purple-500',
-    'Config': 'bg-yellow-500/20 border-yellow-500',
-    'Security': 'bg-red-500/20 border-red-500',
-    'Docs': 'bg-pink-500/20 border-pink-500',
-    'Dependencies': 'bg-cyan-500/20 border-cyan-500',
+  // Convert hex color to Tailwind-compatible format
+  const hexToRgb = (hex: string) => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+      r: parseInt(result[1], 16),
+      g: parseInt(result[2], 16),
+      b: parseInt(result[3], 16)
+    } : null;
   };
 
-  const colorClass = typeColorMap[component.type] || 'bg-base-300 border-base-content';
+  const rgb = hexToRgb(category.color);
+  const colorStyle = rgb ? {
+    backgroundColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.2)`,
+    borderColor: category.color
+  } : {};
 
   // Health indicator classes
   let healthRing = '';
@@ -58,27 +59,29 @@ const ComponentNode: React.FC<NodeProps<ComponentNodeData>> = ({ data, selected 
 
   return (
     <div
-      className={`rounded-lg border-2 transition-all duration-200 ${colorClass} ${healthRing} ${selectedClass}`}
-      style={{ width: `${width}px` }}
+      className={`rounded-lg border-2 transition-all duration-200 ${healthRing} ${selectedClass}`}
+      style={{ width: `${width}px`, ...colorStyle }}
     >
       {/* Input handle (top) */}
       <Handle
         type="target"
         position={Position.Top}
-        className="w-3 h-3 !bg-base-content/30 border-2 border-base-100"
+        className="w-3 h-3 !bg-base-content/20 border-2 border-base-100"
       />
 
       {/* Node content */}
       <div className="p-3">
-        {/* Header with emoji and type */}
+        {/* Header with category emoji and type */}
         <div className="flex items-center gap-2 mb-2">
-          <span className="text-2xl">{componentType.emoji}</span>
+          <div className="flex flex-col items-center">
+            <span className="text-2xl">{category.emoji}</span>
+          </div>
           <div className="flex-1 min-w-0">
             <div className="font-bold text-sm text-base-content truncate">
               {component.title}
             </div>
-            <div className="text-xs text-base-content/60">
-              {componentType.label}
+            <div className="text-xs text-base-content/60 truncate">
+              {category.label} • {typeInfo?.label || component.type}
             </div>
           </div>
         </div>
@@ -86,9 +89,25 @@ const ComponentNode: React.FC<NodeProps<ComponentNodeData>> = ({ data, selected 
         {/* Feature badge */}
         {component.feature && (
           <div className="mt-2">
-            <span className="badge badge-sm badge-primary">
+            <span className="badge badge-sm badge-primary border-thick p-2">
               {component.feature}
             </span>
+          </div>
+        )}
+
+        {/* Tags */}
+        {component.tags && component.tags.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1">
+            {component.tags.slice(0, 2).map((tag: string, i: number) => (
+              <span key={i} className="badge badge-xs badge-ghost border-thick p-2">
+                {tag}
+              </span>
+            ))}
+            {component.tags.length > 2 && (
+              <span className="badge badge-xs badge-ghost border-thick p-2">
+                +{component.tags.length - 2}
+              </span>
+            )}
           </div>
         )}
 
@@ -96,33 +115,33 @@ const ComponentNode: React.FC<NodeProps<ComponentNodeData>> = ({ data, selected 
         <div className="mt-2 flex items-center justify-between gap-2 flex-wrap">
           <div className="flex gap-1 flex-wrap">
             {hasDuplicates && (
-              <span className="badge badge-xs badge-warning" title="Similar to another component">
+              <span className="badge badge-xs badge-warning border-thick p-2" title="Similar to another component">
                 ⚠️ Dup
               </span>
             )}
             {isStale && (
-              <span className="badge badge-xs badge-error" title="Not updated in 90+ days">
+              <span className="badge badge-xs badge-error border-thick p-2" title="Not updated in 90+ days">
                 🕐 Stale
               </span>
             )}
             {isIncomplete && (
-              <span className="badge badge-xs badge-warning" title="Content < 100 chars">
+              <span className="badge badge-xs badge-warning border-thick p-2" title="Content < 100 chars">
                 📝 Short
               </span>
             )}
             {isOrphaned && (
-              <span className="badge badge-xs badge-ghost" title="No feature assigned">
+              <span className="badge badge-xs badge-ghost border-thick p-2" title="No feature assigned">
                 🏝️ Lone
               </span>
             )}
             {isRecent && !isStale && (
-              <span className="badge badge-xs badge-success" title="Updated in last 24h">
+              <span className="badge badge-xs badge-success border-thick p-2" title="Updated in last 24h">
                 ✨ New
               </span>
             )}
           </div>
         </div>
-        
+
         {/* Content preview */}
         <div className="mt-2 text-xs text-base-content/50 line-clamp-2">
           {component.content}

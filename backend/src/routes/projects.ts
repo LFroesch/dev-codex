@@ -1145,18 +1145,61 @@ router.delete('/:id/devlog/:entryId', requireProjectAccess('edit'), async (req: 
   }
 });
 
+// Helper function for calculating string similarity (Jaccard similarity)
+function calculateSimilarity(str1: string, str2: string): number {
+  const words1 = new Set(str1.toLowerCase().split(/\s+/));
+  const words2 = new Set(str2.toLowerCase().split(/\s+/));
+  const intersection = new Set([...words1].filter(x => words2.has(x)));
+  const union = new Set([...words1, ...words2]);
+  return intersection.size / union.size;
+}
+
+// Helper function to detect relationships between components (auto-detection on creation)
+function detectRelationships(newComponent: any, existingComponents: any[]): any[] {
+  const detectedRelationships: any[] = [];
+  const newContent = newComponent.content.toLowerCase();
+  const newTitle = newComponent.title.toLowerCase();
+
+  existingComponents.forEach((targetComponent) => {
+    const targetTitle = targetComponent.title.toLowerCase();
+
+    // Check if new component mentions target by title
+    if (newContent.includes(targetTitle) || newTitle.includes(targetTitle)) {
+      detectedRelationships.push({
+        id: uuidv4(),
+        targetId: targetComponent.id,
+        relationType: 'mentions',
+        description: 'Auto-detected: Component mentions this in content or title'
+      });
+    }
+
+    // Check for similar titles (potential duplicates)
+    const similarity = calculateSimilarity(newComponent.title, targetComponent.title);
+    if (similarity > 0.6) {
+      detectedRelationships.push({
+        id: uuidv4(),
+        targetId: targetComponent.id,
+        relationType: 'similar',
+        description: `Auto-detected: ${Math.round(similarity * 100)}% title similarity`
+      });
+    }
+  });
+
+  return detectedRelationships;
+}
+
 // COMPONENT MANAGEMENT (Feature Components)
 router.post('/:id/components', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
-    const { type, title, content, feature } = req.body;
+    const { category, type, title, content, feature, filePath, tags, relationships, metadata } = req.body;
 
-    if (!type || !title || !content || !feature) {
-      return res.status(400).json({ message: 'Type, title, content, and feature are required' });
+    if (!category || !type || !title || !content || !feature) {
+      return res.status(400).json({ message: 'Category, type, title, content, and feature are required' });
     }
 
-    const validTypes = ['Core', 'API', 'Data', 'UI', 'Config', 'Security', 'Docs', 'Dependencies'];
-    if (!validTypes.includes(type)) {
-      return res.status(400).json({ message: 'Invalid component type' });
+    const validCategories = ['frontend', 'backend', 'database', 'infrastructure', 'security', 'api', 'documentation', 'asset'];
+    if (!validCategories.includes(category)) {
+      return res.status(400).json({ message: 'Invalid component category' });
     }
 
     const project = await Project.findById(req.params.id);
@@ -1167,13 +1210,31 @@ router.post('/:id/components', requireProjectAccess('edit'), async (req: AuthReq
 
     const newComponent = {
       id: uuidv4(),
-      type: type,
+      category: category,
+      type: type.trim(),
       title: title.trim(),
       content: content.trim(),
       feature: feature.trim(),
+      filePath: filePath?.trim() || '',
+      tags: tags || [],
+      relationships: [] as any[],
+      metadata: metadata || {},
       createdAt: new Date(),
       updatedAt: new Date()
     };
+
+    // Auto-detect relationships with existing components (runs only on creation)
+    const autoDetectedRelationships = detectRelationships(newComponent, project.components);
+
+    // Combine manually provided relationships with auto-detected ones
+    const manualRelationships = (relationships || []).map((rel: any) => ({
+      id: uuidv4(),
+      targetId: rel.targetId,
+      relationType: rel.relationType,
+      description: rel.description || ''
+    }));
+
+    newComponent.relationships = [...manualRelationships, ...autoDetectedRelationships];
 
     project.components.push(newComponent);
     await project.save();
@@ -1190,7 +1251,7 @@ router.post('/:id/components', requireProjectAccess('edit'), async (req: AuthReq
 
 router.put('/:id/components/:componentId', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
-    const { type, title, content, feature } = req.body;
+    const { category, type, title, content, feature, filePath, tags, relationships, metadata } = req.body;
 
     const project = await Project.findById(req.params.id);
 
@@ -1203,16 +1264,28 @@ router.put('/:id/components/:componentId', requireProjectAccess('edit'), async (
       return res.status(404).json({ message: 'Component not found' });
     }
 
-    if (type !== undefined) {
-      const validTypes = ['Core', 'API', 'Data', 'UI', 'Config', 'Security', 'Docs', 'Dependencies'];
-      if (!validTypes.includes(type)) {
-        return res.status(400).json({ message: 'Invalid component type' });
+    if (category !== undefined) {
+      const validCategories = ['frontend', 'backend', 'database', 'infrastructure', 'security', 'api', 'documentation', 'asset'];
+      if (!validCategories.includes(category)) {
+        return res.status(400).json({ message: 'Invalid component category' });
       }
-      component.type = type;
+      component.category = category;
     }
+    if (type !== undefined) component.type = type.trim();
     if (title !== undefined) component.title = title.trim();
     if (content !== undefined) component.content = content.trim();
     if (feature !== undefined) component.feature = feature.trim();
+    if (filePath !== undefined) component.filePath = filePath.trim();
+    if (tags !== undefined) component.tags = tags;
+    if (relationships !== undefined) {
+      component.relationships = relationships.map((rel: any) => ({
+        id: rel.id || uuidv4(),
+        targetId: rel.targetId,
+        relationType: rel.relationType,
+        description: rel.description || ''
+      }));
+    }
+    if (metadata !== undefined) component.metadata = metadata;
     component.updatedAt = new Date();
 
     await project.save();
@@ -1241,6 +1314,135 @@ router.delete('/:id/components/:componentId', requireProjectAccess('edit'), asyn
     res.json({ message: 'Component deleted successfully' });
   } catch (error) {
     logError('Delete component error:', error as Error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// RELATIONSHIP MANAGEMENT
+router.post('/:id/components/:componentId/relationships', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
+  try {
+    const { targetId, relationType, description } = req.body;
+
+    if (!targetId || !relationType) {
+      return res.status(400).json({ message: 'targetId and relationType are required' });
+    }
+
+    const validRelationTypes = ['uses', 'implements', 'extends', 'depends_on', 'calls', 'contains'];
+    if (!validRelationTypes.includes(relationType)) {
+      return res.status(400).json({ message: 'Invalid relationship type' });
+    }
+
+    const project = await Project.findById(req.params.id);
+
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    const component = project.components.find(c => c.id === req.params.componentId);
+    if (!component) {
+      return res.status(404).json({ message: 'Component not found' });
+    }
+
+    // Verify target component exists
+    const targetComponent = project.components.find(c => c.id === targetId);
+    if (!targetComponent) {
+      return res.status(404).json({ message: 'Target component not found' });
+    }
+
+    // Check for duplicate relationship
+    const existingRelationship = component.relationships?.find(
+      r => r.targetId === targetId && r.relationType === relationType
+    );
+    if (existingRelationship) {
+      return res.status(400).json({ message: 'Relationship already exists' });
+    }
+
+    // Create shared relationship ID for bidirectional linking
+    const sharedRelationshipId = uuidv4();
+
+    // Create forward relationship (A -> B)
+    const forwardRelationship = {
+      id: sharedRelationshipId,
+      targetId,
+      relationType,
+      description: description || ''
+    };
+
+    // Create inverse relationship (B -> A)
+    const inverseRelationship = {
+      id: sharedRelationshipId, // Same ID for linking
+      targetId: req.params.componentId,
+      relationType,
+      description: description || ''
+    };
+
+    if (!component.relationships) {
+      component.relationships = [];
+    }
+    if (!targetComponent.relationships) {
+      targetComponent.relationships = [];
+    }
+
+    component.relationships.push(forwardRelationship);
+    targetComponent.relationships.push(inverseRelationship);
+
+    component.updatedAt = new Date();
+    targetComponent.updatedAt = new Date();
+
+    await project.save();
+
+    res.json({
+      message: 'Relationship added successfully',
+      relationship: forwardRelationship
+    });
+  } catch (error) {
+    logError('Add relationship error:', error as Error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+router.delete('/:id/components/:componentId/relationships/:relationshipId', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
+  try {
+    const project = await Project.findById(req.params.id);
+
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    const component = project.components.find(c => c.id === req.params.componentId);
+    if (!component) {
+      return res.status(404).json({ message: 'Component not found' });
+    }
+
+    if (!component.relationships) {
+      return res.status(404).json({ message: 'Relationship not found' });
+    }
+
+    const relationshipIndex = component.relationships.findIndex(r => r.id === req.params.relationshipId);
+    if (relationshipIndex === -1) {
+      return res.status(404).json({ message: 'Relationship not found' });
+    }
+
+    // Remove relationship from source component
+    component.relationships.splice(relationshipIndex, 1);
+    component.updatedAt = new Date();
+
+    // Remove the inverse relationship from all other components (since they share the same ID)
+    project.components.forEach(otherComponent => {
+      if (otherComponent.id !== req.params.componentId && otherComponent.relationships) {
+        const inverseIndex = otherComponent.relationships.findIndex(r => r.id === req.params.relationshipId);
+        if (inverseIndex !== -1) {
+          otherComponent.relationships.splice(inverseIndex, 1);
+          otherComponent.updatedAt = new Date();
+        }
+      }
+    });
+
+    await project.save();
+
+    res.json({ message: 'Relationship deleted successfully' });
+  } catch (error) {
+    logError('Delete relationship error:', error as Error);
     res.status(500).json({ message: 'Server error' });
   }
 });

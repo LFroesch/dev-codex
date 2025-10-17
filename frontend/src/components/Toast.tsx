@@ -59,7 +59,7 @@ const ToastContainer: React.FC = () => {
   };
 
   const toastContainer = (
-    <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[99999] space-y-2 px-4 w-full max-w-lg">
+    <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[99999] space-y-2 px-4 w-full max-w-lg border-thick">
       {toasts.map((toastItem) => (
         <div key={toastItem.id} className={`alert ${getToastClasses(toastItem.type)} shadow-xl w-full`}>
           {getToastIcon(toastItem.type)}

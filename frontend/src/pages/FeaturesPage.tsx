@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Project, Doc, projectAPI } from '../api';
+import { ComponentCategory } from '../../../shared/types/project';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { getContrastTextColor } from '../utils/contrastTextColor';
 import FeaturesGraph from '../components/FeaturesGraph';
+import { getAllCategories, getTypesForCategory } from '../config/componentCategories';
 
 interface ContextType {
   selectedProject: Project | null;
@@ -14,23 +16,27 @@ const FeaturesPage: React.FC = () => {
   const { selectedProject, onProjectRefresh } = useOutletContext<ContextType>();
 
   const [newComponent, setNewComponent] = useState({
-    type: 'Core' as Doc['type'],
+    category: 'backend' as ComponentCategory,
+    type: 'service',
     title: '',
     content: '',
-    feature: ''
+    feature: '',
+    tags: [] as string[]
   });
   const [addingComponent, setAddingComponent] = useState(false);
   const [editingComponent, setEditingComponent] = useState<string | null>(null);
   const [editData, setEditData] = useState({
-    type: 'Core' as Doc['type'],
+    category: 'backend' as ComponentCategory,
+    type: 'service',
     title: '',
     content: '',
-    feature: ''
+    feature: '',
+    tags: [] as string[]
   });
   const [expandedComponents, setExpandedComponents] = useState<Set<string>>(new Set());
   const [expandedFeatures, setExpandedFeatures] = useState<Set<string>>(new Set());
   const [error, setError] = useState('');
-  const [activeTab, setActiveTab] = useState<string>('structure');
+  const [activeTab, setActiveTab] = useState<string>('graph');
   const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean; componentId: string; componentTitle: string }>({
     isOpen: false,
     componentId: '',
@@ -57,16 +63,7 @@ const FeaturesPage: React.FC = () => {
     setExpandedFeatures(newExpanded);
   };
 
-  const componentTypes: Array<{ value: Doc['type']; label: string; emoji: string; description: string }> = [
-    { value: 'Core', label: 'Core', emoji: '🎯', description: 'Core functionality and business logic' },
-    { value: 'API', label: 'API', emoji: '🔌', description: 'API endpoints and contracts' },
-    { value: 'Data', label: 'Data', emoji: '🗃️', description: 'Data models and database schemas' },
-    { value: 'UI', label: 'UI', emoji: '🎨', description: 'User interface components' },
-    { value: 'Config', label: 'Config', emoji: '⚙️', description: 'Configuration and settings' },
-    { value: 'Security', label: 'Security', emoji: '🔐', description: 'Authentication and authorization' },
-    { value: 'Docs', label: 'Docs', emoji: '📚', description: 'Documentation and guides' },
-    { value: 'Dependencies', label: 'Dependencies', emoji: '📦', description: 'External dependencies and integrations' }
-  ];
+  const categories = getAllCategories();
 
   const handleAddComponent = async () => {
     if (!selectedProject || !newComponent.title.trim() || !newComponent.content.trim() || !newComponent.feature.trim()) return;
@@ -76,7 +73,7 @@ const FeaturesPage: React.FC = () => {
 
     try {
       await projectAPI.createComponent(selectedProject.id, newComponent);
-      setNewComponent({ type: 'Core', title: '', content: '', feature: '' });
+      setNewComponent({ category: 'backend', type: 'service', title: '', content: '', feature: '', tags: [] });
       setActiveTab('structure');
       await onProjectRefresh();
     } catch (err) {
@@ -89,10 +86,12 @@ const FeaturesPage: React.FC = () => {
   const handleEditComponent = (component: Doc) => {
     setEditingComponent(component.id);
     setEditData({
+      category: component.category,
       type: component.type,
       title: component.title,
       content: component.content,
-      feature: component.feature || ''
+      feature: component.feature || '',
+      tags: component.tags || []
     });
     if (!expandedComponents.has(component.id)) {
       toggleComponentExpanded(component.id);
@@ -129,7 +128,7 @@ const FeaturesPage: React.FC = () => {
 
   const handleCancelEdit = () => {
     setEditingComponent(null);
-    setEditData({ type: 'Core', title: '', content: '', feature: '' });
+    setEditData({ category: 'backend', type: 'service', title: '', content: '', feature: '', tags: [] });
   };
 
   if (!selectedProject) {
@@ -164,7 +163,8 @@ const FeaturesPage: React.FC = () => {
   const renderComponentCard = (component: Doc) => {
     const isExpanded = expandedComponents.has(component.id);
     const isEditing = editingComponent === component.id;
-    const componentType = componentTypes.find(t => t.value === component.type);
+    const category = categories.find(c => c.value === component.category);
+    const typeInfo = category ? category.types.find(t => t.value === component.type) : null;
 
     return (
       <div key={component.id} className="card-interactive group p-3">
@@ -183,9 +183,17 @@ const FeaturesPage: React.FC = () => {
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-1">
                 <h3 className="font-semibold text-base">{component.title}</h3>
-                {componentType && (
-                  <span className="px-2 py-1 rounded-md bg-base-300 text-xs font-medium">
-                    {componentType.emoji} {componentType.label}
+                {category && (
+                  <span
+                    className="px-2 py-1 rounded-md text-xs font-medium"
+                    style={{
+                      backgroundColor: `${category.color}20`,
+                      color: category.color,
+                      borderColor: category.color,
+                      border: '1px solid'
+                    }}
+                  >
+                    {category.emoji} {category.label} • {typeInfo?.emoji} {typeInfo?.label || component.type}
                   </span>
                 )}
               </div>
@@ -262,17 +270,37 @@ const FeaturesPage: React.FC = () => {
           <div className="mt-4 border-t border-base-content/20 pt-4">
             {isEditing ? (
               <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="form-control">
+                    <label className="label">
+                      <span className="label-text font-medium">Category</span>
+                    </label>
+                    <select
+                      value={editData.category}
+                      onChange={(e) => {
+                        const newCategory = e.target.value as ComponentCategory;
+                        const types = getTypesForCategory(newCategory);
+                        setEditData({...editData, category: newCategory, type: types[0]?.value || ''});
+                      }}
+                      className="select select-bordered select-sm"
+                    >
+                      {categories.map(cat => (
+                        <option key={cat.value} value={cat.value}>
+                          {cat.emoji} {cat.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                   <div className="form-control">
                     <label className="label">
                       <span className="label-text font-medium">Type</span>
                     </label>
                     <select
                       value={editData.type}
-                      onChange={(e) => setEditData({...editData, type: e.target.value as Doc['type']})}
+                      onChange={(e) => setEditData({...editData, type: e.target.value})}
                       className="select select-bordered select-sm"
                     >
-                      {componentTypes.map(type => (
+                      {getTypesForCategory(editData.category).map(type => (
                         <option key={type.value} value={type.value}>
                           {type.emoji} {type.label}
                         </option>
@@ -428,6 +456,7 @@ const FeaturesPage: React.FC = () => {
                 }
               }}
               creating={addingComponent}
+              onRefresh={onProjectRefresh}
             />
           </div>
         </div>
@@ -540,22 +569,46 @@ const FeaturesPage: React.FC = () => {
           </div>
           <div className="section-content">
             <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text font-medium">Component Type</span>
+                    <span className="label-text font-medium">Category</span>
                   </label>
                   <select
-                    value={newComponent.type}
-                    onChange={(e) => setNewComponent({...newComponent, type: e.target.value as Doc['type']})}
+                    value={newComponent.category}
+                    onChange={(e) => {
+                      const newCategory = e.target.value as ComponentCategory;
+                      const types = getTypesForCategory(newCategory);
+                      setNewComponent({...newComponent, category: newCategory, type: types[0]?.value || ''});
+                    }}
                     className="select select-bordered"
                   >
-                    {componentTypes.map(type => (
-                      <option key={type.value} value={type.value}>
-                        {type.emoji} {type.label} - {type.description}
+                    {categories.map(cat => (
+                      <option key={cat.value} value={cat.value}>
+                        {cat.emoji} {cat.label}
                       </option>
                     ))}
                   </select>
+                </div>
+
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-medium">Type</span>
+                  </label>
+                  <select
+                    value={newComponent.type}
+                    onChange={(e) => setNewComponent({...newComponent, type: e.target.value})}
+                    className="select select-bordered"
+                  >
+                    {getTypesForCategory(newComponent.category).map(type => (
+                      <option key={type.value} value={type.value}>
+                        {type.emoji} {type.label}
+                      </option>
+                    ))}
+                  </select>
+                  <label className="label">
+                    <span className="label-text-alt">{getTypesForCategory(newComponent.category).find(t => t.value === newComponent.type)?.description || ''}</span>
+                  </label>
                 </div>
 
                 <div className="form-control md:col-span-2">

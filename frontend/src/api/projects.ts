@@ -1,12 +1,13 @@
 import { BaseApiService, apiClient } from './base';
-import type { 
+import type {
   BaseProject, ProjectResponse, CreateProjectData, UpdateProjectData,
   CreateNoteData, UpdateNoteData, BaseNote,
   CreateTodoData, UpdateTodoData, BaseTodo,
   CreateDevLogData, UpdateDevLogData, BaseDevLogEntry,
   CreateDocData, UpdateDocData, BaseDoc,
   CreateTechnologyData, BaseSelectedTechnology,
-  CreatePackageData, BaseSelectedPackage
+  CreatePackageData, BaseSelectedPackage,
+  CreateRelationshipData, ComponentRelationship
 } from './types';
 
 class ProjectService extends BaseApiService {
@@ -108,6 +109,14 @@ class ProjectService extends BaseApiService {
     return this.delete(`/${projectId}/components/${componentId}`);
   }
 
+  // Relationship management
+  async createRelationship(projectId: string, componentId: string, data: CreateRelationshipData): Promise<{ message: string; relationship: ComponentRelationship }> {
+    return this.post(`/${projectId}/components/${componentId}/relationships`, data);
+  }
+
+  async deleteRelationship(projectId: string, componentId: string, relationshipId: string): Promise<{ message: string }> {
+    return this.delete(`/${projectId}/components/${componentId}/relationships/${relationshipId}`);
+  }
 
   // Tech stack management
   async addTechnology(projectId: string, data: CreateTechnologyData): Promise<{ message: string; technology: BaseSelectedTechnology }> {

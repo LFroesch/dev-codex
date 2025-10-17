@@ -1,38 +1,29 @@
 import React from 'react';
 import { Doc } from '../api';
+import { ComponentCategory, CreateComponentData } from '../../../shared/types/project';
 import { getContrastTextColor } from '../utils/contrastTextColor';
+import { getAllCategories, getTypesForCategory } from '../config/componentCategories';
 
 interface GraphControlsProps {
   docs: Doc[];
-  selectedTypes: Set<Doc['type']>;
+  selectedCategories: Set<ComponentCategory>;
   selectedFeatures: Set<string>;
-  onTypeToggle: (type: Doc['type']) => void;
+  onCategoryToggle: (category: ComponentCategory) => void;
   onFeatureToggle: (feature: string) => void;
   onAutoLayout: () => void;
   onResetView: () => void;
   onResetLayout: () => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
-  onCreateDoc?: (doc: { type: Doc['type']; title: string; content: string; feature?: string }) => Promise<void>;
+  onCreateDoc?: (doc: CreateComponentData) => Promise<void>;
   creating?: boolean;
 }
 
-const componentTypes: Array<{ value: Doc['type']; label: string; emoji: string; color: string }> = [
-  { value: 'Core', label: 'Core', emoji: '🎯', color: 'bg-green-500' },
-  { value: 'API', label: 'API', emoji: '🔌', color: 'bg-blue-500' },
-  { value: 'Data', label: 'Data', emoji: '🗃️', color: 'bg-orange-500' },
-  { value: 'UI', label: 'UI', emoji: '🎨', color: 'bg-purple-500' },
-  { value: 'Config', label: 'Config', emoji: '⚙️', color: 'bg-yellow-500' },
-  { value: 'Security', label: 'Security', emoji: '🔐', color: 'bg-red-500' },
-  { value: 'Docs', label: 'Docs', emoji: '📚', color: 'bg-pink-500' },
-  { value: 'Dependencies', label: 'Dependencies', emoji: '📦', color: 'bg-cyan-500' },
-];
-
 const GraphControls: React.FC<GraphControlsProps> = ({
   docs,
-  selectedTypes,
+  selectedCategories,
   selectedFeatures,
-  onTypeToggle,
+  onCategoryToggle,
   onFeatureToggle,
   onAutoLayout,
   onResetView,
@@ -42,48 +33,34 @@ const GraphControls: React.FC<GraphControlsProps> = ({
   onCreateDoc,
   creating,
 }) => {
-  const [showCoverage, setShowCoverage] = React.useState(false);
   const [showCreate, setShowCreate] = React.useState(false);
   const [newComponent, setNewComponent] = React.useState({
-    type: 'Core' as Doc['type'],
+    category: 'backend' as ComponentCategory,
+    type: 'service',
     title: '',
     content: '',
-    feature: ''
+    feature: '',
+    tags: [] as string[]
   });
+
+  const categories = getAllCategories();
 
   // Get unique features from components
   const features = Array.from(new Set(docs.map(d => d.feature).filter(Boolean))) as string[];
 
-  // Calculate coverage per feature
-  const coverage: Record<string, { has: Doc['type'][]; missing: Doc['type'][] }> = {};
-  const allComponentTypes = componentTypes.map(t => t.value);
-
-  // Group components by feature
-  const componentsByFeature: Record<string, Doc[]> = {};
-  docs.forEach(component => {
-    const feature = component.feature || 'Ungrouped';
-    if (!componentsByFeature[feature]) componentsByFeature[feature] = [];
-    componentsByFeature[feature].push(component);
-  });
-
-  // Calculate coverage
-  Object.entries(componentsByFeature).forEach(([feature, featureComponents]) => {
-    const has = [...new Set(featureComponents.map(d => d.type))];
-    const missing = allComponentTypes.filter(t => !has.includes(t));
-    coverage[feature] = { has, missing };
-  });
-
   const handleCreateComponent = async () => {
-    if (!onCreateDoc || !newComponent.title.trim() || !newComponent.content.trim()) return;
+    if (!onCreateDoc || !newComponent.title.trim() || !newComponent.content.trim() || !newComponent.feature.trim()) return;
 
     await onCreateDoc({
+      category: newComponent.category,
       type: newComponent.type,
       title: newComponent.title,
       content: newComponent.content,
-      feature: newComponent.feature || undefined
+      feature: newComponent.feature,
+      tags: newComponent.tags
     });
 
-    setNewComponent({ type: 'Core', title: '', content: '', feature: '' });
+    setNewComponent({ category: 'backend', type: 'service', title: '', content: '', feature: '', tags: [] });
     setShowCreate(false);
   };
 
@@ -110,11 +87,27 @@ const GraphControls: React.FC<GraphControlsProps> = ({
           {showCreate && (
             <div className="space-y-2">
               <select
-                value={newComponent.type}
-                onChange={(e) => setNewComponent({...newComponent, type: e.target.value as Doc['type']})}
+                value={newComponent.category}
+                onChange={(e) => {
+                  const newCategory = e.target.value as ComponentCategory;
+                  const types = getTypesForCategory(newCategory);
+                  setNewComponent({...newComponent, category: newCategory, type: types[0]?.value || ''});
+                }}
                 className="select select-bordered select-sm w-full"
               >
-                {componentTypes.map(type => (
+                {categories.map(cat => (
+                  <option key={cat.value} value={cat.value}>
+                    {cat.emoji} {cat.label}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={newComponent.type}
+                onChange={(e) => setNewComponent({...newComponent, type: e.target.value})}
+                className="select select-bordered select-sm w-full"
+              >
+                {getTypesForCategory(newComponent.category).map(type => (
                   <option key={type.value} value={type.value}>
                     {type.emoji} {type.label}
                   </option>
@@ -187,7 +180,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
       <div className="grid grid-cols-3 gap-2">
         <button
           onClick={onAutoLayout}
-          className="btn btn-sm btn-primary"
+          className="btn btn-sm h-12 btn-primary"
           style={{ color: getContrastTextColor('primary') }}
           title="Auto-arrange nodes"
         >
@@ -198,7 +191,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
         </button>
         <button
           onClick={onResetView}
-          className="btn btn-sm btn-ghost"
+          className="btn btn-sm h-12 btn-ghost"
           title="Reset zoom and position"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -208,7 +201,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
         </button>
         <button
           onClick={onResetLayout}
-          className="btn btn-sm btn-ghost"
+          className="btn btn-sm h-12 btn-ghost"
           title="Clear saved layout"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -218,42 +211,45 @@ const GraphControls: React.FC<GraphControlsProps> = ({
         </button>
       </div>
 
-      {/* Component Type Filters */}
+      {/* Category Filters */}
       <div>
         <div className="text-xs font-semibold text-base-content/60 mb-2 flex items-center justify-between">
-          <span>Component Types</span>
+          <span>Categories</span>
           <button
             onClick={() => {
-              if (selectedTypes.size === componentTypes.length) {
-                componentTypes.forEach(t => onTypeToggle(t.value));
+              if (selectedCategories.size === categories.length) {
+                categories.forEach(c => onCategoryToggle(c.value));
               } else {
-                componentTypes.forEach(t => {
-                  if (!selectedTypes.has(t.value)) {
-                    onTypeToggle(t.value);
+                categories.forEach(c => {
+                  if (!selectedCategories.has(c.value)) {
+                    onCategoryToggle(c.value);
                   }
                 });
               }
             }}
-            className="text-primary hover:underline"
+            className="text-primary border-thick rounded-lg p-1 hover:underline"
           >
-            {selectedTypes.size === componentTypes.length ? 'None' : 'All'}
+            {selectedCategories.size === categories.length ? 'None' : 'All'}
           </button>
         </div>
         <div className="flex flex-wrap gap-1">
-          {componentTypes.map(type => {
-            const isSelected = selectedTypes.has(type.value);
+          {categories.map(cat => {
+            const isSelected = selectedCategories.has(cat.value);
             return (
               <button
-                key={type.value}
-                onClick={() => onTypeToggle(type.value)}
-                className={`badge badge-sm cursor-pointer transition-all ${
-                  isSelected
-                    ? `${type.color} text-white`
-                    : 'badge-ghost opacity-40 hover:opacity-70'
-                }`}
-                title={type.label}
+                key={cat.value}
+                onClick={() => onCategoryToggle(cat.value)}
+                className={`badge badge-sm border-thick p-2 cursor-pointer transition-all`}
+                style={isSelected ? {
+                  backgroundColor: cat.color,
+                  color: 'white',
+                  borderColor: cat.color
+                } : {
+                  opacity: 0.4
+                }}
+                title={cat.description}
               >
-                {type.emoji} {type.label}
+                {cat.emoji} {cat.label}
               </button>
             );
           })}
@@ -277,7 +273,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
                   });
                 }
               }}
-              className="text-primary hover:underline"
+              className="text-primary border-thick rounded-lg p-1 hover:underline"
             >
               {selectedFeatures.size === features.length ? 'None' : 'All'}
             </button>
@@ -300,59 +296,6 @@ const GraphControls: React.FC<GraphControlsProps> = ({
               );
             })}
           </div>
-        </div>
-      )}
-
-      {/* Coverage Analysis */}
-      {features.length > 0 && (
-        <div className="border-t border-base-content/10 pt-4">
-          <button
-            onClick={() => setShowCoverage(!showCoverage)}
-            className="flex items-center justify-between w-full text-xs font-semibold text-base-content/60 mb-2 hover:text-base-content transition-colors"
-          >
-            <span>Coverage Analysis</span>
-            <svg
-              className={`w-4 h-4 transition-transform ${showCoverage ? 'rotate-90' : ''}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-
-          {showCoverage && (
-            <div className="space-y-2">
-              {Object.entries(coverage).map(([feature, { has, missing }]) => {
-                const completeness = (has.length / allComponentTypes.length) * 100;
-                return (
-                  <div key={feature} className="bg-base-200 p-2 rounded text-xs">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-semibold">{feature}</span>
-                      <span className="text-base-content/50">{has.length}/{allComponentTypes.length}</span>
-                    </div>
-                    <div className="w-full bg-base-300 rounded-full h-1.5 mb-2">
-                      <div
-                        className={`h-1.5 rounded-full ${
-                          completeness === 100
-                            ? 'bg-success'
-                            : completeness >= 50
-                            ? 'bg-warning'
-                            : 'bg-error'
-                        }`}
-                        style={{ width: `${completeness}%` }}
-                      ></div>
-                    </div>
-                    {missing.length > 0 && (
-                      <div className="text-base-content/50">
-                        Missing: {missing.map(t => componentTypes.find(dt => dt.value === t)?.emoji).join(' ')}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
         </div>
       )}
 

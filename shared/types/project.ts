@@ -36,12 +36,28 @@ export interface BaseDevLogEntry {
   updatedBy?: string | { _id: string; firstName: string; lastName: string };
 }
 
+export type ComponentCategory = 'frontend' | 'backend' | 'database' | 'infrastructure' | 'security' | 'api' | 'documentation' | 'asset';
+
+export type RelationshipType = 'uses' | 'implements' | 'extends' | 'depends_on' | 'calls' | 'contains';
+
+export interface ComponentRelationship {
+  id: string;
+  targetId: string;
+  relationType: RelationshipType;
+  description?: string;
+}
+
 export interface BaseComponent {
   id: string;
-  type: 'Core' | 'API' | 'Data' | 'UI' | 'Config' | 'Security' | 'Docs' | 'Dependencies';
+  category: ComponentCategory;
+  type: string; // Flexible type based on category (e.g., 'service', 'route', 'page', 'component')
   title: string;
   content: string;
-  feature: string; // Feature name is now required - components belong to features
+  feature: string; // Feature name is required - components belong to features
+  filePath?: string; // Optional: link to actual codebase files
+  tags?: string[]; // Additional flexible tagging
+  relationships?: ComponentRelationship[]; // Manual relationships between components
+  metadata?: Record<string, any>; // Template-populated or custom metadata
   createdAt: string;
   updatedAt: string;
   createdBy?: string;
@@ -176,17 +192,33 @@ export interface UpdateDevLogData {
 }
 
 export interface CreateComponentData {
-  type: 'Core' | 'API' | 'Data' | 'UI' | 'Config' | 'Security' | 'Docs' | 'Dependencies';
+  category: ComponentCategory;
+  type: string;
   title: string;
   content: string;
   feature: string; // Feature is required when creating components
+  filePath?: string;
+  tags?: string[];
+  relationships?: ComponentRelationship[];
+  metadata?: Record<string, any>;
 }
 
 export interface UpdateComponentData {
-  type?: 'Core' | 'API' | 'Data' | 'UI' | 'Config' | 'Security' | 'Docs' | 'Dependencies';
+  category?: ComponentCategory;
+  type?: string;
   title?: string;
   content?: string;
   feature?: string;
+  filePath?: string;
+  tags?: string[];
+  relationships?: ComponentRelationship[];
+  metadata?: Record<string, any>;
+}
+
+export interface CreateRelationshipData {
+  targetId: string;
+  relationType: RelationshipType;
+  description?: string;
 }
 
 

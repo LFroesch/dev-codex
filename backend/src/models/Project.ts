@@ -47,16 +47,32 @@ const noteSchema = new Schema({
   updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 });
 
-const componentSchema = new Schema({
+const relationshipSchema = new Schema({
   id: { type: String, required: true },
-  type: {
+  targetId: { type: String, required: true },
+  relationType: {
     type: String,
-    enum: ['Core', 'API', 'Data', 'UI', 'Config', 'Security', 'Docs', 'Dependencies'],
+    enum: ['uses', 'implements', 'extends', 'depends_on', 'calls', 'contains', 'mentions', 'similar'],
     required: true
   },
+  description: { type: String, default: '' }
+});
+
+const componentSchema = new Schema({
+  id: { type: String, required: true },
+  category: {
+    type: String,
+    enum: ['frontend', 'backend', 'database', 'infrastructure', 'security', 'api', 'documentation', 'asset'],
+    required: true
+  },
+  type: { type: String, required: true }, // Flexible type based on category
   title: { type: String, required: true },
   content: { type: String, required: true },
   feature: { type: String, required: true }, // Feature is required - components belong to features
+  filePath: { type: String, default: '' },
+  tags: [{ type: String }],
+  relationships: [relationshipSchema],
+  metadata: { type: mongoose.Schema.Types.Mixed, default: {} },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
@@ -163,10 +179,20 @@ export interface IProject extends Document {
   // Documentation Templates
   components: Array<{
     id: string;
-    type: 'Core' | 'API' | 'Data' | 'UI' | 'Config' | 'Security' | 'Docs' | 'Dependencies';
+    category: 'frontend' | 'backend' | 'database' | 'infrastructure' | 'security' | 'api' | 'documentation' | 'asset';
+    type: string; // Flexible type based on category
     title: string;
     content: string;
     feature: string; // Feature is required
+    filePath?: string;
+    tags?: string[];
+    relationships?: Array<{
+      id: string;
+      targetId: string;
+      relationType: 'uses' | 'implements' | 'extends' | 'depends_on' | 'calls' | 'contains' | 'mentions' | 'similar';
+      description?: string;
+    }>;
+    metadata?: Record<string, any>;
     createdAt: Date;
     updatedAt: Date;
   }>;
@@ -335,8 +361,10 @@ projectSchema.index({ stagingEnvironment: 1 });
 // Nested document indexes for efficient queries
 projectSchema.index({ 'notes.id': 1 });
 projectSchema.index({ 'components.id': 1 });
-projectSchema.index({ 'components.type': 1 });
+projectSchema.index({ 'components.category': 1 }); // Index for category filtering
+projectSchema.index({ 'components.type': 1 }); // Index for type filtering
 projectSchema.index({ 'components.feature': 1 }); // Index for feature grouping
+projectSchema.index({ 'components.tags': 1 }); // Index for tag filtering
 
 // Compound indexes for common filter patterns
 projectSchema.index({ userId: 1, category: 1, isArchived: 1 });
@@ -352,6 +380,7 @@ projectSchema.index({
   'components.title': 'text',
   'components.content': 'text',
   'components.feature': 'text',
+  'components.tags': 'text',
   'todos.text': 'text',
   'todos.description': 'text',
   'devLog.title': 'text',
@@ -365,6 +394,7 @@ projectSchema.index({
     'components.title': 3,
     'components.content': 1,
     'components.feature': 4, // Feature names are important for search
+    'components.tags': 2, // Tags are moderately important
     'todos.text': 2,
     'todos.description': 1,
     'devLog.title': 2,

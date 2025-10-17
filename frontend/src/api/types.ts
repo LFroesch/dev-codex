@@ -33,6 +33,9 @@ export type {
   UpdateDocData,
   CreateTechnologyData,
   CreatePackageData,
+  CreateRelationshipData,
+  RelationshipType,
+  ComponentRelationship,
   AuthResponse,
   LoginData,
   RegisterData

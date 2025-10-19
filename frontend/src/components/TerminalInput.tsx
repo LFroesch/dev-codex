@@ -148,7 +148,7 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
   // Generate command template from syntax
   const generateTemplate = (syntax: string): string => {
     // Extract command base and convert flags to empty placeholders
-    // Example: "/set deployment --url=[url] --platform=[platform]" → "/set deployment --url= --platform= --status="
+    // Example: "/set deployment --url=[url] --platform=[platform]" → "/set deployment --url= --platform="
 
     // Special handling for different command patterns
     if (syntax.includes('--')) {
@@ -157,17 +157,22 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
       const baseCommand = parts[0].trim();
 
       // Extract flag names from patterns like --url=[url] or --role=[editor/viewer]
+      // Remove [@project] from the end if present
       const flags = parts.slice(1).map(part => {
         const flagMatch = part.match(/^(\w+)/);
         return flagMatch ? `--${flagMatch[1]}=` : '';
       }).filter(Boolean);
 
-      return `${baseCommand} ${flags.join(' ')}`;
+      // Remove [@project] from base command if present
+      const cleanBase = baseCommand.replace(/\[@project\]$/, '').trim();
+
+      return `${cleanBase} ${flags.join(' ')}`;
     }
 
-    // No flags - return base command with space
+    // No flags - return base command with space (remove [@project] if present)
     const baseMatch = syntax.match(/^(\/[^\[]+)/);
-    return baseMatch ? `${baseMatch[1].trim()} ` : `${syntax} `;
+    const cleanedSyntax = baseMatch ? baseMatch[1].trim() : syntax.trim();
+    return `${cleanedSyntax} `;
   };
 
   // Handle autocomplete based on cursor position

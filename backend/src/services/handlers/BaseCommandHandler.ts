@@ -34,24 +34,22 @@ export class BaseCommandHandler {
     if (!bypassCache) {
       const cached = projectCache.get(this.userId);
       if (cached) {
-        // Return full project objects from cache
+        // Return full project objects from cache (NOT using .lean() so they can be saved)
         const projectIds = cached.map(c => new mongoose.Types.ObjectId(c._id));
-        return await Project.find({ _id: { $in: projectIds } }).lean();
+        return await Project.find({ _id: { $in: projectIds } });
       }
     }
 
-    // Cache miss - fetch from database
+    // Cache miss - fetch from database (NOTE: not using .lean() for summary to maintain consistency)
     const ownedProjects = await Project.find({
       $or: [
         { userId: this.userId },
         { ownerId: this.userId }
       ]
-    }).select('_id name ownerId userId isArchived updatedAt')
-      .lean();
+    }).select('_id name ownerId userId isArchived updatedAt');
 
     const teamProjectIds = await TeamMember.find({ userId: this.userId })
       .select('projectId')
-      .lean()
       .then(memberships => memberships.map(tm => tm.projectId));
 
     const teamProjects = teamProjectIds.length > 0
@@ -62,7 +60,6 @@ export class BaseCommandHandler {
             { ownerId: this.userId }
           ]
         }).select('_id name ownerId userId isArchived updatedAt')
-        .lean()
       : [];
 
     const allProjectsSummary = [...ownedProjects, ...teamProjects];
@@ -80,9 +77,9 @@ export class BaseCommandHandler {
       }))
     );
 
-    // Return full project objects for immediate use
+    // Return full project objects for immediate use (NOT using .lean() so they can be saved)
     const projectIds = allProjectsSummary.map(p => p._id);
-    return await Project.find({ _id: { $in: projectIds } }).lean();
+    return await Project.find({ _id: { $in: projectIds } });
   }
 
   /**

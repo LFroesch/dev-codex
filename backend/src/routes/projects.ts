@@ -785,7 +785,7 @@ router.post('/:id/todos', requireProjectAccess('edit'), async (req: AuthRequest,
 
     const newTodo = {
       id: uuidv4(),
-      text: text.trim(),
+      title: text.trim(),
       description: description?.trim() || '',
       priority: priority || 'medium',
       completed: false,
@@ -810,7 +810,7 @@ router.post('/:id/todos', requireProjectAccess('edit'), async (req: AuthRequest,
         'todo',
         newTodo.id,
         {
-          todoTitle: newTodo.text,
+          todoTitle: newTodo.title,
           priority: newTodo.priority,
           status: newTodo.status,
           isSubtask: !!parentTodoId,
@@ -857,7 +857,7 @@ router.post('/:id/todos', requireProjectAccess('edit'), async (req: AuthRequest,
           'assignedTo',
           null,
           assignedUserName,
-          newTodo.text,
+          newTodo.title,
           undefined,
           req.get('user-agent'),
           req.ip
@@ -906,7 +906,7 @@ router.put('/:id/todos/:todoId', requireProjectAccess('edit'), async (req: AuthR
 
     // Store original values for activity logging
     const originalValues = {
-      text: todo.text,
+      text: todo.title,
       description: todo.description,
       priority: todo.priority,
       completed: todo.completed,
@@ -919,7 +919,7 @@ router.put('/:id/todos/:todoId', requireProjectAccess('edit'), async (req: AuthR
 
     const previousAssignedTo = todo.assignedTo?.toString();
 
-    if (text !== undefined) todo.text = text.trim();
+    if (text !== undefined) todo.title = text.trim();
     if (description !== undefined) todo.description = description.trim();
     if (priority !== undefined) todo.priority = priority;
     if (completed !== undefined) todo.completed = completed;
@@ -972,7 +972,7 @@ router.put('/:id/todos/:todoId', requireProjectAccess('edit'), async (req: AuthR
             mapping.field,
             logOldValue,
             logNewValue,
-            todo.text,
+            todo.title,
             undefined,
             req.get('user-agent'),
             req.ip
@@ -989,7 +989,7 @@ router.put('/:id/todos/:todoId', requireProjectAccess('edit'), async (req: AuthR
         userId: assignedTo,
         type: 'todo_assigned',
         title: 'Todo Assigned',
-        message: `You have been assigned a todo: "${todo.text}"`,
+        message: `You have been assigned a todo: "${todo.title}"`,
         relatedProjectId: project._id,
         relatedTodoId: todo.id,
         actionUrl: `/projects/${project._id}`
@@ -1030,7 +1030,7 @@ router.delete('/:id/todos/:todoId', requireProjectAccess('edit'), async (req: Au
         'todo',
         req.params.todoId,
         {
-          todoTitle: todoToDelete.text,
+          todoTitle: todoToDelete.title,
           priority: todoToDelete.priority,
           status: todoToDelete.status,
           completed: todoToDelete.completed,
@@ -1059,10 +1059,10 @@ router.delete('/:id/todos/:todoId', requireProjectAccess('edit'), async (req: Au
 // DEV LOG MANAGEMENT
 router.post('/:id/devlog', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
-    const { title, description, entry } = req.body;
-    
-    if (!entry || !entry.trim()) {
-      return res.status(400).json({ message: 'Dev log entry is required' });
+    const { title, description} = req.body;
+
+    if (!description || !description.trim()) {
+      return res.status(400).json({ message: 'Dev log description is required' });
     }
 
     const project = await Project.findById(req.params.id);
@@ -1075,7 +1075,6 @@ router.post('/:id/devlog', requireProjectAccess('edit'), async (req: AuthRequest
       id: uuidv4(),
       title: title?.trim() || '',
       description: description?.trim() || '',
-      entry: entry.trim(),
       date: new Date()
     };
 
@@ -1094,10 +1093,10 @@ router.post('/:id/devlog', requireProjectAccess('edit'), async (req: AuthRequest
 
 router.put('/:id/devlog/:entryId', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
-    const { title, description, entry } = req.body;
-    
-    if (!entry || !entry.trim()) {
-      return res.status(400).json({ message: 'Dev log entry is required' });
+    const { title, description } = req.body;
+
+    if (!description || !description.trim()) {
+      return res.status(400).json({ message: 'Dev log description is required' });
     }
 
     const project = await Project.findById(req.params.id);
@@ -1113,8 +1112,7 @@ router.put('/:id/devlog/:entryId', requireProjectAccess('edit'), async (req: Aut
 
     if (title !== undefined) devLogEntry.title = title.trim();
     if (description !== undefined) devLogEntry.description = description.trim();
-    devLogEntry.entry = entry.trim();
-
+    
     await project.save();
 
     res.json({
@@ -1813,7 +1811,7 @@ router.get('/:id/export',
         notes: project.notes || [],
         todos: project.todos?.map(todo => ({
           id: todo.id,
-          text: todo.text,
+          title: todo.title,
           description: todo.description,
           priority: todo.priority,
           completed: todo.completed,
@@ -1938,7 +1936,7 @@ router.post('/import',
       
       todos: Array.isArray(projectData.todos) ? projectData.todos.map((todo: any) => ({
         id: todo.id || uuidv4(),
-        text: (todo.text || '').substring(0, 500),
+        title: (todo.title || '').substring(0, 500),
         description: (todo.description || '').substring(0, 1000),
         priority: ['low', 'medium', 'high'].includes(todo.priority) ? todo.priority : 'medium',
         completed: Boolean(todo.completed),
@@ -1955,7 +1953,6 @@ router.post('/import',
         id: log.id || uuidv4(),
         title: (log.title || '').substring(0, 200),
         description: (log.description || '').substring(0, 500),
-        entry: (log.entry || '').substring(0, 10000),
         date: log.date ? new Date(log.date) : new Date()
       })).slice(0, 200) : [],
       

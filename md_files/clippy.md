@@ -254,7 +254,7 @@
         const todos = await Todo.find({ projectId }).limit(50).sort('-createdAt');
         context += `Recent Todos:\n`;
         todos.forEach(todo => {
-          context += `- [${todo.status}] ${todo.text} (${todo.priority})\n`;
+          context += `- [${todo.status}] ${todo.title} (${todo.priority})\n`;
         });
         context += '\n';
       }

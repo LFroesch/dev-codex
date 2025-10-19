@@ -96,9 +96,8 @@ const NotesPage: React.FC = () => {
     try {
       // Create dev log entry from todo
       await projectAPI.createDevLogEntry(selectedProject.id, {
-        title: `${todo.text}`,
+        title: `${todo.title}`,
         description: todo.description || ' ',
-        entry: `${todo.text}` // Keep backward compatibility
       });
       
       // Delete the todo
@@ -401,7 +400,6 @@ const NotesPage: React.FC = () => {
       await projectAPI.createDevLogEntry(selectedProject.id, {
         title: newDevLogTitle.trim(),
         description: newDevLogDescription.trim(),
-        entry: newDevLogTitle.trim()
       });
       
       await activityTracker.trackCreate(
@@ -842,7 +840,7 @@ const NotesPage: React.FC = () => {
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-2 mb-1">
                                     <span className={`text-sm font-medium truncate ${todo.completed ? 'line-through text-base-content/50' : ''}`}>
-                                      {todo.text}
+                                      {todo.title}
                                     </span>
                                     <span className="text-xs flex-shrink-0">
                                       {todo.priority === 'high' ? '🔴' : todo.priority === 'medium' ? '🟡' : '🟢'}
@@ -1003,7 +1001,7 @@ const NotesPage: React.FC = () => {
                             color: getContrastTextColor()
                           }}
                         >
-                          {entry.title || entry.entry}
+                          {entry.title}
                         </h3>
                         <div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           <svg className="w-4 h-4 text-base-content/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1047,7 +1045,7 @@ const NotesPage: React.FC = () => {
         <NoteModal
           note={{
             id: selectedDevLog.id,
-            title: selectedDevLog.title || selectedDevLog.entry,
+            title: selectedDevLog.title,
             content: selectedDevLog.description || '',
             createdAt: selectedDevLog.date,
             updatedAt: selectedDevLog.date

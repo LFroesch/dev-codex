@@ -128,7 +128,7 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
       if (document.visibilityState === 'visible') {
         fetchAnalytics(selectedPeriod, false);
       }
-    }, 30000);
+    }, 300000); // Refresh every 5 minutes
 
     return () => clearInterval(interval);
   }, [selectedPeriod]);

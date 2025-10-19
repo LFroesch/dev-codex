@@ -3,7 +3,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 // Sub-schemas for complex nested data
 const todoSchema = new Schema({
   id: { type: String, required: true },
-  text: { type: String, required: true },
+  title: { type: String, required: true },
   description: { type: String, default: '' },
   priority: { 
     type: String, 
@@ -29,7 +29,6 @@ const devLogSchema = new Schema({
   id: { type: String, required: true },
   title: { type: String, default: '' },
   description: { type: String, default: '' },
-  entry: { type: String, required: true },
   date: { type: Date, default: Date.now },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
@@ -155,7 +154,7 @@ export interface IProject extends Document {
   }>;
   todos: Array<{
     id: string;
-    text: string;
+    title: string;
     description: string;
     priority: 'low' | 'medium' | 'high';
     completed: boolean;
@@ -172,7 +171,6 @@ export interface IProject extends Document {
     id: string;
     title: string;
     description: string;
-    entry: string;
     date: Date;
   }>;
   
@@ -381,10 +379,10 @@ projectSchema.index({
   'components.content': 'text',
   'components.feature': 'text',
   'components.tags': 'text',
-  'todos.text': 'text',
+  'todos.title': 'text',
   'todos.description': 'text',
   'devLog.title': 'text',
-  'devLog.entry': 'text'
+  'devLog.description': 'text'
 }, {
   weights: {
     name: 10,
@@ -395,10 +393,10 @@ projectSchema.index({
     'components.content': 1,
     'components.feature': 4, // Feature names are important for search
     'components.tags': 2, // Tags are moderately important
-    'todos.text': 2,
+    'todos.title': 2,
     'todos.description': 1,
     'devLog.title': 2,
-    'devLog.entry': 1
+    'devLog.description': 1
   }
 });
 

@@ -21,7 +21,7 @@ import ComponentNode from './ComponentNode';
 import AreaNode from './AreaNode';
 import GraphControls from './GraphControls';
 import { getContrastTextColor } from '../utils/contrastTextColor';
-import { getAllCategories, getCategoryColor } from '../config/componentCategories';
+import { getAllCategories, getCategoryColor, getTypesForCategory } from '../config/componentCategories';
 
 // Define nodeTypes outside component to prevent recreation and React Flow warnings
 const NODE_TYPES = {
@@ -53,13 +53,36 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
   const [viewMode, setViewMode] = useState<ViewMode>('graph');
   const [layoutMode, setLayoutMode] = useState<LayoutMode>('feature');
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
-  const { fitView } = useReactFlow();
+  const { fitView, setCenter } = useReactFlow();
 
   // Relationship management state
   const [relationshipSearch, setRelationshipSearch] = useState('');
   const [selectedRelationType, setSelectedRelationType] = useState<RelationshipType>('uses');
   const [relationshipDescription, setRelationshipDescription] = useState('');
   const [isAddingRelationship, setIsAddingRelationship] = useState(false);
+
+  // Relationship editing state
+  const [editingRelationshipId, setEditingRelationshipId] = useState<string | null>(null);
+  const [editRelationshipData, setEditRelationshipData] = useState<{
+    relationType: RelationshipType;
+    description: string;
+  }>({ relationType: 'uses', description: '' });
+
+  // Component editing and deletion state
+  const [isEditingComponent, setIsEditingComponent] = useState(false);
+  const [editComponentData, setEditComponentData] = useState<{
+    category: ComponentCategory;
+    type: string;
+    title: string;
+    content: string;
+    feature: string;
+  } | null>(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    isOpen: boolean;
+    type: 'component' | 'relationship';
+    id: string;
+    name: string;
+  }>({ isOpen: false, type: 'component', id: '', name: '' });
 
   // Toast notification state
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
@@ -94,15 +117,24 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
     if (selectedNode) {
       const updatedComponent = docs.find(d => d.id === selectedNode.id);
       if (updatedComponent) {
-        setSelectedNode({
+        // Create new node object with updated component data
+        const newNode = {
           ...selectedNode,
           data: {
             ...selectedNode.data,
             component: updatedComponent,
           },
-        });
+        };
+
+        // Only update if the component data actually changed
+        const currentComponent = (selectedNode.data as any).component as Doc;
+        if (JSON.stringify(currentComponent.relationships) !== JSON.stringify(updatedComponent.relationships) ||
+            currentComponent.updatedAt !== updatedComponent.updatedAt) {
+          setSelectedNode(newNode);
+        }
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [docs]); // Only depend on docs, not selectedNode to avoid infinite loop
 
   // Generate nodes and edges from components
@@ -343,6 +375,19 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
     []
   );
 
+  const handleMinimapNodeClick = useCallback(
+    (_event: React.MouseEvent, node: Node) => {
+      // Center the viewport on the clicked node
+      const x = node.position.x + (node.width || 200) / 2;
+      const y = node.position.y + (node.height || 150) / 2;
+      setCenter(x, y, { zoom: 1, duration: 800 });
+
+      // Also select the node
+      setSelectedNode(node);
+    },
+    [setCenter]
+  );
+
   const handleCategoryToggle = useCallback((category: ComponentCategory) => {
     setSelectedCategories(prev => {
       const newSet = new Set(prev);
@@ -427,6 +472,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
       await projectAPI.deleteRelationship(projectId, selectedComponent.id, relationshipId);
 
       setToast({ message: 'Relationship deleted', type: 'success' });
+      setDeleteConfirmation({ isOpen: false, type: 'relationship', id: '', name: '' });
 
       // Refresh data from parent to get updated relationships
       if (onRefresh) {
@@ -435,6 +481,110 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
     } catch (error) {
       console.error('Failed to delete relationship:', error);
       setToast({ message: 'Failed to delete relationship', type: 'error' });
+    }
+  }, [selectedNode, projectId, onRefresh]);
+
+  const handleEditRelationship = useCallback((relationshipId: string, relationType: RelationshipType, description: string) => {
+    setEditingRelationshipId(relationshipId);
+    setEditRelationshipData({ relationType, description: description || '' });
+  }, []);
+
+  const handleSaveRelationship = useCallback(async () => {
+    const selectedComponent = selectedNode ? (selectedNode.data as any).component as Doc : null;
+    if (!selectedComponent || !editingRelationshipId) return;
+
+    // For now, we need to delete and recreate the relationship since there's no update endpoint
+    // Find the relationship to get the target
+    const relationship = selectedComponent.relationships?.find(r => r.id === editingRelationshipId);
+    if (!relationship) return;
+
+    try {
+      // Delete old relationship
+      await projectAPI.deleteRelationship(projectId, selectedComponent.id, editingRelationshipId);
+
+      // Create new relationship with updated data
+      await projectAPI.createRelationship(projectId, selectedComponent.id, {
+        targetId: relationship.targetId,
+        relationType: editRelationshipData.relationType,
+        description: editRelationshipData.description || undefined,
+      });
+
+      setToast({ message: 'Relationship updated', type: 'success' });
+      setEditingRelationshipId(null);
+
+      // Refresh data
+      if (onRefresh) {
+        await onRefresh();
+      }
+    } catch (error) {
+      console.error('Failed to update relationship:', error);
+      setToast({ message: 'Failed to update relationship', type: 'error' });
+    }
+  }, [selectedNode, editingRelationshipId, editRelationshipData, projectId, onRefresh]);
+
+  const handleCancelEditRelationship = useCallback(() => {
+    setEditingRelationshipId(null);
+    setEditRelationshipData({ relationType: 'uses', description: '' });
+  }, []);
+
+  const handleEditComponent = useCallback(() => {
+    const selectedComponent = selectedNode ? (selectedNode.data as any).component as Doc : null;
+    if (!selectedComponent) return;
+
+    setIsEditingComponent(true);
+    setEditComponentData({
+      category: selectedComponent.category,
+      type: selectedComponent.type,
+      title: selectedComponent.title,
+      content: selectedComponent.content,
+      feature: selectedComponent.feature || '',
+    });
+  }, [selectedNode]);
+
+  const handleSaveComponent = useCallback(async () => {
+    const selectedComponent = selectedNode ? (selectedNode.data as any).component as Doc : null;
+    if (!selectedComponent || !editComponentData) return;
+
+    try {
+      await projectAPI.updateComponent(projectId, selectedComponent.id, editComponentData);
+
+      setToast({ message: 'Component updated', type: 'success' });
+      setIsEditingComponent(false);
+      setEditComponentData(null);
+
+      // Refresh data
+      if (onRefresh) {
+        await onRefresh();
+      }
+    } catch (error) {
+      console.error('Failed to update component:', error);
+      setToast({ message: 'Failed to update component', type: 'error' });
+    }
+  }, [selectedNode, editComponentData, projectId, onRefresh]);
+
+  const handleCancelEditComponent = useCallback(() => {
+    setIsEditingComponent(false);
+    setEditComponentData(null);
+  }, []);
+
+  const handleDeleteComponent = useCallback(async () => {
+    const selectedComponent = selectedNode ? (selectedNode.data as any).component as Doc : null;
+    if (!selectedComponent) return;
+
+    try {
+      await projectAPI.deleteComponent(projectId, selectedComponent.id);
+
+      setToast({ message: 'Component deleted', type: 'success' });
+      setDeleteConfirmation({ isOpen: false, type: 'component', id: '', name: '' });
+      setSelectedNode(null);
+
+      // Refresh data
+      if (onRefresh) {
+        await onRefresh();
+      }
+    } catch (error) {
+      console.error('Failed to delete component:', error);
+      setToast({ message: 'Failed to delete component', type: 'error' });
     }
   }, [selectedNode, projectId, onRefresh]);
 
@@ -549,8 +699,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
                   return getCategoryColor(component.category);
                 }}
                 maskColor="rgba(0, 0, 0, 0.6)"
-
-                // TODO on clicking node, use hook centerOnNode
+                nodeClick={handleMinimapNodeClick}
               />
             </ReactFlow>
           </div>
@@ -704,13 +853,35 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
               <div className="text-sm font-semibold text-base-content/60 mb-1">Selected Component</div>
-              <h3 className="font-bold text-lg">{selectedComponent.title}</h3>
-              {selectedComponent.feature && (
+              {isEditingComponent && editComponentData ? (
+                <input
+                  type="text"
+                  value={editComponentData.title}
+                  onChange={(e) => setEditComponentData({ ...editComponentData, title: e.target.value })}
+                  className="input input-bordered input-sm w-full font-bold"
+                />
+              ) : (
+                <h3 className="font-bold text-lg">{selectedComponent.title}</h3>
+              )}
+              {selectedComponent.feature && !isEditingComponent && (
                 <span className="badge badge-sm badge-primary mt-1">{selectedComponent.feature}</span>
+              )}
+              {isEditingComponent && editComponentData && (
+                <input
+                  type="text"
+                  value={editComponentData.feature}
+                  onChange={(e) => setEditComponentData({ ...editComponentData, feature: e.target.value })}
+                  className="input input-bordered input-sm w-full mt-1"
+                  placeholder="Feature name"
+                />
               )}
             </div>
             <button
-              onClick={() => setSelectedNode(null)}
+              onClick={() => {
+                setSelectedNode(null);
+                setIsEditingComponent(false);
+                setEditComponentData(null);
+              }}
               className="btn btn-ghost btn-sm btn-circle"
             >
               ✕
@@ -718,20 +889,73 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
           </div>
 
           <div className="space-y-2">
-            <div>
-              <div className="text-xs font-semibold text-base-content/60">Category & Type</div>
-              <div className="text-sm">
-                {getAllCategories().find(c => c.value === selectedComponent.category)?.emoji} {selectedComponent.category} • {selectedComponent.type}
-              </div>
-            </div>
+            {isEditingComponent && editComponentData ? (
+              <>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <div className="text-xs font-semibold text-base-content/60 mb-1">Category</div>
+                    <select
+                      value={editComponentData.category}
+                      onChange={(e) => {
+                        const newCategory = e.target.value as ComponentCategory;
+                        const types = getTypesForCategory(newCategory);
+                        setEditComponentData({
+                          ...editComponentData,
+                          category: newCategory,
+                          type: types[0]?.value || ''
+                        });
+                      }}
+                      className="select select-bordered select-sm w-full"
+                    >
+                      {getAllCategories().map(cat => (
+                        <option key={cat.value} value={cat.value}>
+                          {cat.emoji} {cat.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <div className="text-xs font-semibold text-base-content/60 mb-1">Type</div>
+                    <select
+                      value={editComponentData.type}
+                      onChange={(e) => setEditComponentData({ ...editComponentData, type: e.target.value })}
+                      className="select select-bordered select-sm w-full"
+                    >
+                      {getTypesForCategory(editComponentData.category).map(type => (
+                        <option key={type.value} value={type.value}>
+                          {type.emoji} {type.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs font-semibold text-base-content/60 mb-1">Content</div>
+                  <textarea
+                    value={editComponentData.content}
+                    onChange={(e) => setEditComponentData({ ...editComponentData, content: e.target.value })}
+                    className="textarea textarea-bordered textarea-sm w-full h-32"
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <div>
+                  <div className="text-xs font-semibold text-base-content/60">Category & Type</div>
+                  <div className="text-sm">
+                    {getAllCategories().find(c => c.value === selectedComponent.category)?.emoji} {selectedComponent.category} • {selectedComponent.type}
+                  </div>
+                </div>
 
-            <div>
-              <div className="text-xs font-semibold text-base-content/60">Content Preview</div>
-              <div className="text-sm bg-base-200 p-2 rounded max-h-32 overflow-y-auto">
-                {selectedComponent.content.substring(0, 200)}
-                {selectedComponent.content.length > 200 && '...'}
-              </div>
-            </div>
+                <div>
+                  <div className="text-xs font-semibold text-base-content/60">Content Preview</div>
+                  <div className="text-sm bg-base-200 p-2 rounded max-h-32 overflow-y-auto">
+                    {selectedComponent.content.substring(0, 200)}
+                    {selectedComponent.content.length > 200 && '...'}
+                  </div>
+                </div>
+              </>
+            )}
 
             <div>
               <div className="text-xs font-semibold text-base-content/60">Stats</div>
@@ -766,28 +990,83 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
                       contains: '#6b7280',
                     };
 
+                    const isEditing = editingRelationshipId === rel.id;
+
                     return (
                       <div key={rel.id} className="bg-base-200 p-2 rounded space-y-1">
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2 min-w-0 flex-1">
-                            <span
-                              className="badge badge-xs"
-                              style={{ backgroundColor: relationshipColors[rel.relationType], color: 'white', borderColor: relationshipColors[rel.relationType] }}
+                        {isEditing ? (
+                          <>
+                            <div className="flex items-center justify-between gap-2 mb-2">
+                              <span className="text-xs font-medium truncate">{targetComponent.title}</span>
+                              <div className="flex gap-1">
+                                <button
+                                  onClick={handleSaveRelationship}
+                                  className="btn btn-ghost btn-xs text-success"
+                                  title="Save changes"
+                                >
+                                  ✓
+                                </button>
+                                <button
+                                  onClick={handleCancelEditRelationship}
+                                  className="btn btn-ghost btn-xs text-error"
+                                  title="Cancel"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            </div>
+                            <select
+                              value={editRelationshipData.relationType}
+                              onChange={(e) => setEditRelationshipData({ ...editRelationshipData, relationType: e.target.value as RelationshipType })}
+                              className="select select-bordered select-xs w-full"
                             >
-                              {rel.relationType}
-                            </span>
-                            <span className="text-xs font-medium truncate">{targetComponent.title}</span>
-                          </div>
-                          <button
-                            onClick={() => handleDeleteRelationship(rel.id)}
-                            className="btn btn-ghost btn-xs text-error"
-                            title="Delete relationship"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                        {rel.description && (
-                          <div className="text-xs text-base-content/60 pl-1">{rel.description}</div>
+                              <option value="uses">Uses</option>
+                              <option value="implements">Implements</option>
+                              <option value="extends">Extends</option>
+                              <option value="depends_on">Depends On</option>
+                              <option value="calls">Calls</option>
+                              <option value="contains">Contains</option>
+                            </select>
+                            <textarea
+                              value={editRelationshipData.description}
+                              onChange={(e) => setEditRelationshipData({ ...editRelationshipData, description: e.target.value })}
+                              placeholder="Optional description..."
+                              className="textarea textarea-bordered textarea-xs w-full h-12"
+                            />
+                          </>
+                        ) : (
+                          <>
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2 min-w-0 flex-1">
+                                <span
+                                  className="badge badge-xs"
+                                  style={{ backgroundColor: relationshipColors[rel.relationType], color: 'white', borderColor: relationshipColors[rel.relationType] }}
+                                >
+                                  {rel.relationType}
+                                </span>
+                                <span className="text-xs font-medium truncate">{targetComponent.title}</span>
+                              </div>
+                              <div className="flex gap-1">
+                                <button
+                                  onClick={() => handleEditRelationship(rel.id, rel.relationType, rel.description || '')}
+                                  className="btn btn-ghost btn-xs"
+                                  title="Edit relationship"
+                                >
+                                  ✎
+                                </button>
+                                <button
+                                  onClick={() => setDeleteConfirmation({ isOpen: true, type: 'relationship', id: rel.id, name: targetComponent.title })}
+                                  className="btn btn-ghost btn-xs text-error"
+                                  title="Delete relationship"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            </div>
+                            {rel.description && (
+                              <div className="text-xs text-base-content/60 pl-1">{rel.description}</div>
+                            )}
+                          </>
                         )}
                       </div>
                     );
@@ -856,21 +1135,52 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
             </div>
           </div>
 
-          <div className="flex gap-2 pt-2">
-            <button
-              onClick={() => onDocEdit && onDocEdit(selectedComponent)}
-              className="btn btn-sm btn-primary flex-1"
-              style={{ color: getContrastTextColor('primary') }}
-            >
-              Edit
-            </button>
-            <button
-              onClick={() => onDocClick && onDocClick(selectedComponent)}
-              className="btn btn-sm btn-ghost flex-1"
-            >
-              View Full
-            </button>
-          </div>
+          {!isEditingComponent ? (
+            <div className="flex gap-2 pt-2 border-t border-base-content/10">
+              <button
+                onClick={handleEditComponent}
+                className="btn btn-sm btn-primary flex-1"
+                style={{ color: getContrastTextColor('primary') }}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                Edit
+              </button>
+              <button
+                onClick={() => setDeleteConfirmation({ isOpen: true, type: 'component', id: selectedComponent.id, name: selectedComponent.title })}
+                className="btn btn-sm btn-error btn-outline"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                Delete
+              </button>
+            </div>
+          ) : (
+            <div className="flex gap-2 pt-2 border-t border-base-content/10">
+              <button
+                onClick={handleSaveComponent}
+                disabled={!editComponentData?.title.trim() || !editComponentData?.content.trim() || !editComponentData?.feature.trim()}
+                className="btn btn-sm btn-success flex-1"
+                style={{ color: getContrastTextColor('primary') }}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Save
+              </button>
+              <button
+                onClick={handleCancelEditComponent}
+                className="btn btn-sm btn-ghost flex-1"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Cancel
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -882,6 +1192,42 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
               <span>{toast.message}</span>
             </div>
             <button onClick={() => setToast(null)} className="btn btn-sm btn-ghost btn-circle">✕</button>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {deleteConfirmation.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-base-100 rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-bold mb-2">
+              {deleteConfirmation.type === 'component' ? 'Delete Component' : 'Delete Relationship'}
+            </h3>
+            <p className="text-base-content/70 mb-4">
+              {deleteConfirmation.type === 'component'
+                ? `Are you sure you want to delete "${deleteConfirmation.name}"? This action cannot be undone.`
+                : `Are you sure you want to delete the relationship to "${deleteConfirmation.name}"?`}
+            </p>
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setDeleteConfirmation({ isOpen: false, type: 'component', id: '', name: '' })}
+                className="btn btn-ghost"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (deleteConfirmation.type === 'component') {
+                    handleDeleteComponent();
+                  } else {
+                    handleDeleteRelationship(deleteConfirmation.id);
+                  }
+                }}
+                className="btn btn-error"
+              >
+                Delete
+              </button>
+            </div>
           </div>
         </div>
       )}

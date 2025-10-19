@@ -1,11 +1,12 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CommandResponse as CommandResponseType, terminalAPI } from '../api/terminal';
+import { CommandResponse as CommandResponseType } from '../api/terminal';
 import { getContrastTextColor } from '../utils/contrastTextColor';
 import { TodosRenderer, NotesRenderer, StackRenderer, DevLogRenderer, ComponentRenderer } from './responses';
 import { authAPI } from '../api';
 import { hexToOklch, oklchToCssValue, generateFocusVariant, generateContrastingTextColor } from '../utils/colorUtils';
 import { toast } from '../services/toast';
+import EditWizard from './EditWizard';
 
 interface CommandResponseProps {
   response: CommandResponseType;
@@ -241,7 +242,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
         <div className="mt-3 space-y-2">
           {response.data.parentTodo && (
             <div className="text-xs text-base-content/60 mb-2">
-              Parent: <span className="font-semibold">{response.data.parentTodo.text}</span>
+              Parent: <span className="font-semibold">{response.data.parentTodo.title}</span>
             </div>
           )}
           <div className="space-y-1">
@@ -1013,6 +1014,144 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                 )}
               </div>
             )}
+
+            {step.type === 'relationships' && (
+              <div className="space-y-3">
+                {/* Current relationships */}
+                {(wizardData[step.id] || step.value || []).length > 0 && (
+                  <div className="space-y-2">
+                    <div className="text-xs font-semibold text-base-content/70">Current Relationships</div>
+                    {(wizardData[step.id] || step.value || []).map((rel: any, index: number) => {
+                      const targetComp = (step as any).availableComponents?.find((c: any) => c.id === rel.targetId);
+                      return (
+                        <div key={rel.id || index} className="bg-base-300 p-2 rounded flex items-center justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium truncate">{targetComp?.title || 'Unknown'}</div>
+                            <div className="flex items-center gap-2 text-xs text-base-content/60">
+                              <span className="badge badge-xs">{rel.relationType}</span>
+                              {rel.description && <span className="truncate">{rel.description}</span>}
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = (wizardData[step.id] || step.value || []).filter((_: any, i: number) => i !== index);
+                              setWizardData({ ...wizardData, [step.id]: updated });
+                            }}
+                            className="btn btn-ghost btn-xs text-error"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Add new relationship */}
+                <div className="border-t border-base-content/10 pt-3">
+                  <div className="text-xs font-semibold text-base-content/70 mb-2">Add Relationship</div>
+                  <div className="space-y-2">
+                    <select
+                      className="select select-bordered select-sm w-full"
+                      value={wizardData[`${step.id}_temp`]?.targetId || ""}
+                      onChange={(e) => {
+                        if (!e.target.value) return;
+                        const targetId = e.target.value;
+                        const targetComp = (step as any).availableComponents?.find((c: any) => c.id === targetId);
+
+                        // Initialize temp relationship data
+                        const tempData = {
+                          targetId,
+                          targetTitle: targetComp?.title || '',
+                          relationType: 'uses',
+                          description: ''
+                        };
+                        setWizardData({ ...wizardData, [`${step.id}_temp`]: tempData });
+                      }}
+                    >
+                      <option value="">Select component...</option>
+                      {(step as any).availableComponents?.map((comp: any) => (
+                        <option key={comp.id} value={comp.id}>
+                          {comp.category} • {comp.title}
+                        </option>
+                      ))}
+                    </select>
+
+                    {wizardData[`${step.id}_temp`] && (
+                      <>
+                        <select
+                          className="select select-bordered select-sm w-full"
+                          value={wizardData[`${step.id}_temp`].relationType}
+                          onChange={(e) => {
+                            setWizardData({
+                              ...wizardData,
+                              [`${step.id}_temp`]: { ...wizardData[`${step.id}_temp`], relationType: e.target.value }
+                            });
+                          }}
+                        >
+                          <option value="uses">Uses</option>
+                          <option value="implements">Implements</option>
+                          <option value="extends">Extends</option>
+                          <option value="depends_on">Depends On</option>
+                          <option value="calls">Calls</option>
+                          <option value="contains">Contains</option>
+                          <option value="mentions">Mentions</option>
+                          <option value="similar">Similar</option>
+                        </select>
+
+                        <input
+                          type="text"
+                          placeholder="Description (optional)"
+                          className="input input-bordered input-sm w-full"
+                          value={wizardData[`${step.id}_temp`].description || ''}
+                          onChange={(e) => {
+                            setWizardData({
+                              ...wizardData,
+                              [`${step.id}_temp`]: { ...wizardData[`${step.id}_temp`], description: e.target.value }
+                            });
+                          }}
+                        />
+
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const temp = wizardData[`${step.id}_temp`];
+                              const newRel = {
+                                id: `temp-${Date.now()}`,
+                                targetId: temp.targetId,
+                                relationType: temp.relationType,
+                                description: temp.description
+                              };
+                              const updated = [...(wizardData[step.id] || step.value || []), newRel];
+                              const newData: any = { ...wizardData, [step.id]: updated };
+                              delete newData[`${step.id}_temp`];
+                              setWizardData(newData);
+                            }}
+                            className="btn btn-primary btn-sm flex-1"
+                            style={{ color: getContrastTextColor('primary') }}
+                          >
+                            Add
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newData: any = { ...wizardData };
+                              delete newData[`${step.id}_temp`];
+                              setWizardData(newData);
+                            }}
+                            className="btn btn-ghost btn-sm"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Navigation buttons */}
@@ -1060,172 +1199,19 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
 
     // Render wizard for editing todos, notes, devlog, and components
     if (['edit_todo', 'edit_note', 'edit_devlog', 'edit_component'].includes(response.data.wizardType) && response.data.steps) {
-      const [currentStep, setCurrentStep] = React.useState(0);
-      const [wizardData, setWizardData] = React.useState<Record<string, any>>(response.data.currentValues || {});
-      const [isSubmitting, setIsSubmitting] = React.useState(false);
+      // Use projectId from response metadata as fallback if currentProjectId is not set
+      const projectId = currentProjectId || response.metadata?.projectId;
 
-      const steps = response.data.steps;
-      const step = steps[currentStep];
+      console.log('🔍 CommandResponse rendering EditWizard:', {
+        hasCurrentProjectId: !!currentProjectId,
+        currentProjectId,
+        hasResponseMetadata: !!response.metadata,
+        metadataProjectId: response.metadata?.projectId,
+        finalProjectId: projectId,
+        wizardType: response.data.wizardType
+      });
 
-      const handleNext = () => {
-        if (currentStep < steps.length - 1) {
-          setCurrentStep(currentStep + 1);
-        }
-      };
-
-      const handleBack = () => {
-        if (currentStep > 0) {
-          setCurrentStep(currentStep - 1);
-        }
-      };
-
-      const handleSubmit = async () => {
-        setIsSubmitting(true);
-        try {
-          // Prepare command based on wizard type and data
-          const { wizardType, todoId, noteId, entryId, componentId } = response.data;
-          const itemId = todoId || noteId || entryId || componentId;
-
-          const commandMap: Record<string, string> = {
-            'edit_todo': 'todo',
-            'edit_note': 'note',
-            'edit_devlog': 'devlog',
-            'edit_component': 'component'
-          };
-
-          const itemType = commandMap[wizardType];
-
-          // Execute edit commands for each changed field
-          for (const [field, value] of Object.entries(wizardData)) {
-            // Only update if value differs from original or is non-empty
-            if (value !== undefined && value !== null) {
-              // Escape quotes in value
-              const escapedValue = String(value).replace(/"/g, '\\"');
-              const editCommand = `/edit ${itemType} ${itemId} --field=${field} --content="${escapedValue}"`;
-
-              // Execute the edit command directly via API (doesn't populate terminal input)
-              await terminalAPI.executeCommand(editCommand, currentProjectId);
-
-              // Small delay between commands to avoid race conditions
-              await new Promise(resolve => setTimeout(resolve, 100));
-            }
-          }
-
-          toast.success(`${itemType.charAt(0).toUpperCase() + itemType.slice(1)} updated successfully!`);
-        } catch {
-          toast.error('Failed to update item');
-        } finally {
-          setIsSubmitting(false);
-        }
-      };
-
-      const isStepValid = () => {
-        if (step.required) {
-          const value = wizardData[step.id];
-          return value !== undefined && value !== '' && value !== null;
-        }
-        return true;
-      };
-
-      return (
-        <div className="mt-3 space-y-4">
-          {/* Progress indicator */}
-          <div className="flex items-center justify-between">
-            <div className="text-xs text-base-content/60">
-              Step {currentStep + 1} of {steps.length}
-            </div>
-            <div className="flex gap-1">
-              {steps.map((_: any, idx: number) => (
-                <div
-                  key={idx}
-                  className={`w-2 h-2 rounded-full ${
-                    idx === currentStep ? 'bg-primary' :
-                    idx < currentStep ? 'bg-success' :
-                    'bg-base-300'
-                  }`}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Step content */}
-          <div className="p-4 bg-base-200 rounded-lg border-thick">
-            <div className="text-sm font-semibold text-base-content mb-2">{step.label}</div>
-
-            {step.type === 'text' && (
-              <input
-                type="text"
-                value={wizardData[step.id] || step.value || ''}
-                onChange={(e) => setWizardData({ ...wizardData, [step.id]: e.target.value })}
-                placeholder={step.placeholder}
-                className="input input-bordered w-full"
-              />
-            )}
-
-            {step.type === 'textarea' && (
-              <textarea
-                value={wizardData[step.id] || step.value || ''}
-                onChange={(e) => setWizardData({ ...wizardData, [step.id]: e.target.value })}
-                placeholder={step.placeholder}
-                rows={6}
-                className="textarea textarea-bordered w-full resize-none font-mono text-sm"
-              />
-            )}
-
-            {step.type === 'select' && (
-              <select
-                value={wizardData[step.id] || step.value || ''}
-                onChange={(e) => setWizardData({ ...wizardData, [step.id]: e.target.value })}
-                className="select select-bordered w-full"
-              >
-                {step.options?.map((option: string) => (
-                  <option key={option} value={option}>{option}</option>
-                ))}
-              </select>
-            )}
-          </div>
-
-          {/* Navigation buttons */}
-          <div className="flex justify-between">
-            <button
-              type="button"
-              onClick={handleBack}
-              disabled={currentStep === 0}
-              className="btn btn-outline"
-            >
-              Back
-            </button>
-            {currentStep < steps.length - 1 ? (
-              <button
-                type="button"
-                onClick={handleNext}
-                disabled={!isStepValid()}
-                className="btn btn-primary"
-                style={{ color: getContrastTextColor('primary') }}
-              >
-                Next
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={handleSubmit}
-                disabled={!isStepValid() || isSubmitting}
-                className="btn btn-primary"
-                style={{ color: getContrastTextColor('primary') }}
-              >
-                {isSubmitting ? (
-                  <>
-                    <span className="loading loading-spinner loading-sm"></span>
-                    Updating...
-                  </>
-                ) : (
-                  'Update'
-                )}
-              </button>
-            )}
-          </div>
-        </div>
-      );
+      return <EditWizard wizardData={response.data} currentProjectId={projectId} />;
     }
 
     // Render project selection
@@ -1650,7 +1636,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                   <div key={idx} className="p-2 bg-base-200 rounded-lg border-thick">
                     <div className="flex items-start gap-2">
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm text-base-content/80 break-words">{todo.text}</div>
+                        <div className="text-sm text-base-content/80 break-words">{todo.title}</div>
                         <div className="flex flex-wrap items-center gap-2 mt-1">
                           {todo.priority && (
                             <span className={`badge badge-xs ${
@@ -1684,7 +1670,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                   <div key={idx} className="p-2 bg-base-200 rounded-lg border-thick">
                     <div className="flex items-start gap-2">
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm text-base-content/80 break-words">{todo.text}</div>
+                        <div className="text-sm text-base-content/80 break-words">{todo.title}</div>
                         <div className="flex flex-wrap items-center gap-2 mt-1">
                           {todo.priority && (
                             <span className={`badge badge-xs ${
@@ -1769,7 +1755,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                       <div key={idx} className="p-2 bg-base-200 rounded-lg border-thick">
                         <div className="flex items-start gap-2">
                           <div className="flex-1 min-w-0">
-                            <div className="text-sm text-base-content/80 break-words">{todo.text}</div>
+                            <div className="text-sm text-base-content/80 break-words">{todo.title}</div>
                             <div className="flex flex-wrap items-center gap-2 mt-1">
                               {todo.priority && (
                                 <span className={`badge badge-xs ${
@@ -1803,7 +1789,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
               <div className="space-y-1">
                 {week.completedThisWeek.slice(0, 5).map((todo: any, idx: number) => (
                   <div key={idx} className="p-2 bg-base-200 rounded-lg border-thick">
-                    <div className="text-sm text-base-content/70 line-through break-words">{todo.text}</div>
+                    <div className="text-sm text-base-content/70 line-through break-words">{todo.title}</div>
                   </div>
                 ))}
                 {week.completedThisWeek.length > 5 && (
@@ -1855,7 +1841,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
               <div className="space-y-1">
                 {standup.yesterday.completed.map((todo: any, idx: number) => (
                   <div key={idx} className="p-2 bg-base-200 rounded-lg border-thick">
-                    <div className="text-sm text-base-content/70 break-words">{todo.text}</div>
+                    <div className="text-sm text-base-content/70 break-words">{todo.title}</div>
                   </div>
                 ))}
               </div>
@@ -1885,7 +1871,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                   <div key={idx} className="p-2 bg-base-200 rounded-lg border-thick">
                     <div className="flex items-start gap-2">
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm text-base-content/80 break-words">{todo.text}</div>
+                        <div className="text-sm text-base-content/80 break-words">{todo.title}</div>
                         <div className="flex flex-wrap items-center gap-2 mt-1">
                           {todo.priority && (
                             <span className={`badge badge-xs ${
@@ -1918,7 +1904,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                   <div key={idx} className="p-2 bg-base-200 rounded-lg border-thick">
                     <div className="flex items-start gap-2">
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm text-base-content/80 break-words">{todo.text}</div>
+                        <div className="text-sm text-base-content/80 break-words">{todo.title}</div>
                         <div className="flex flex-wrap items-center gap-2 mt-1">
                           {todo.priority && (
                             <span className="badge badge-xs badge-error">{todo.priority}</span>

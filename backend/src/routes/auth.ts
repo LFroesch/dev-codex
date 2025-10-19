@@ -50,7 +50,7 @@ const createLoginNotifications = async (userId: string) => {
         const dueDate = new Date(todo.dueDate);
         if (dueDate >= startOfDay && dueDate <= endOfDay) {
           dueTodayCount++;
-          dueTodayTasks.push(`"${todo.text}" in ${project.name}`);
+          dueTodayTasks.push(`"${todo.title}" in ${project.name}`);
         }
       }
     }

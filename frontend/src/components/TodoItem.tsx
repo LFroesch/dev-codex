@@ -29,7 +29,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [showAddSubtask, setShowAddSubtask] = useState(false);
-  const [editTitle, setEditTitle] = useState(todo.text);
+  const [editTitle, setEditTitle] = useState(todo.title);
   const [editDescription, setEditDescription] = useState(todo.description || '');
   const [editPriority, setEditPriority] = useState(todo.priority || 'medium');
   const [editDueDate, setEditDueDate] = useState(todo.dueDate || '');
@@ -235,7 +235,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
                 color: getContrastTextColor()
               }}
             >
-              {todo.text}
+              {todo.title}
             </h3>
             
             <span className={`text-sm ${getPriorityColor(todo.priority || 'medium')}`}>
@@ -333,7 +333,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
         onConfirm={handleDelete}
         onCancel={() => setShowDeleteConfirm(false)}
         title="Delete Todo"
-        message={`Are you sure you want to delete "${todo.text}"?`}
+        message={`Are you sure you want to delete "${todo.title}"?`}
         confirmText="Delete"
         variant="error"
       />

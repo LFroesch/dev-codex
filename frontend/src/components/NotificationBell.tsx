@@ -29,7 +29,7 @@ const NotificationBell: React.FC = () => {
     };
 
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 10000); // Check every 10 seconds for testing
+    const interval = setInterval(fetchNotifications, 30000); // Check every 30 seconds for testing
     return () => clearInterval(interval);
   }, []);
 

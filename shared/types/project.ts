@@ -11,7 +11,7 @@ export interface BaseNote {
 
 export interface BaseTodo {
   id: string;
-  text: string;
+  title: string;
   description?: string;
   priority: 'low' | 'medium' | 'high';
   completed: boolean;
@@ -30,7 +30,6 @@ export interface BaseDevLogEntry {
   id: string;
   title?: string;
   description?: string;
-  entry: string;
   date: string;
   createdBy?: string | { _id: string; firstName: string; lastName: string };
   updatedBy?: string | { _id: string; firstName: string; lastName: string };
@@ -182,13 +181,11 @@ export interface UpdateTodoData {
 export interface CreateDevLogData {
   title?: string;
   description?: string;
-  entry: string;
 }
 
 export interface UpdateDevLogData {
   title?: string;
   description?: string;
-  entry?: string;
 }
 
 export interface CreateComponentData {

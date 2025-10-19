@@ -64,6 +64,12 @@ export enum CommandType {
   DELETE_COMPONENT = 'delete_component',
   DELETE_SUBTASK = 'delete_subtask',
 
+  // Relationship commands
+  ADD_RELATIONSHIP = 'add_relationship',
+  EDIT_RELATIONSHIP = 'edit_relationship',
+  DELETE_RELATIONSHIP = 'delete_relationship',
+  VIEW_RELATIONSHIPS = 'view_relationships',
+
   // Navigation & Workflow
   GOTO = 'goto',
   TODAY = 'today',
@@ -94,37 +100,50 @@ export interface ParsedCommand {
  * Command aliases for easier typing
  */
 const COMMAND_ALIASES: Record<string, CommandType> = {
-  // Add commands
+  // Add commands - with plural/singular support
   'add todo': CommandType.ADD_TODO,
+  'add todos': CommandType.ADD_TODO,
   'add-todo': CommandType.ADD_TODO,
-  'todo': CommandType.ADD_TODO,
   'add note': CommandType.ADD_NOTE,
+  'add notes': CommandType.ADD_NOTE,
   'add-note': CommandType.ADD_NOTE,
-  'note': CommandType.ADD_NOTE,
   'add devlog': CommandType.ADD_DEVLOG,
+  'add devlogs': CommandType.ADD_DEVLOG,
   'add-devlog': CommandType.ADD_DEVLOG,
   'devlog': CommandType.ADD_DEVLOG,
   'add component': CommandType.ADD_COMPONENT,
+  'add components': CommandType.ADD_COMPONENT,
   'add-component': CommandType.ADD_COMPONENT,
-  'component': CommandType.ADD_COMPONENT,
-
-  // View commands
+  
+  // View commands - with plural/singular support
   'view notes': CommandType.VIEW_NOTES,
+  'view note': CommandType.VIEW_NOTES,
   'view-notes': CommandType.VIEW_NOTES,
   'notes': CommandType.VIEW_NOTES,
+  'note': CommandType.VIEW_NOTES,
   'list notes': CommandType.VIEW_NOTES,
+  'list note': CommandType.VIEW_NOTES,
   'view todos': CommandType.VIEW_TODOS,
+  'view todo': CommandType.VIEW_TODOS,
   'view-todos': CommandType.VIEW_TODOS,
   'todos': CommandType.VIEW_TODOS,
+  'todo': CommandType.VIEW_TODOS,
   'list todos': CommandType.VIEW_TODOS,
+  'list todo': CommandType.VIEW_TODOS,
   'view devlog': CommandType.VIEW_DEVLOG,
+  'view devlogs': CommandType.VIEW_DEVLOG,
   'view-devlog': CommandType.VIEW_DEVLOG,
   'list devlog': CommandType.VIEW_DEVLOG,
+  'list devlogs': CommandType.VIEW_DEVLOG,
   'view components': CommandType.VIEW_COMPONENTS,
+  'view component': CommandType.VIEW_COMPONENTS,
   'view-components': CommandType.VIEW_COMPONENTS,
+  'component': CommandType.VIEW_COMPONENTS,
   'components': CommandType.VIEW_COMPONENTS,
   'list components': CommandType.VIEW_COMPONENTS,
+  'list component': CommandType.VIEW_COMPONENTS,
   'features': CommandType.VIEW_COMPONENTS,
+  'feature': CommandType.VIEW_COMPONENTS,
 
   // Project commands
   'swap-project': CommandType.SWAP_PROJECT,
@@ -263,46 +282,89 @@ const COMMAND_ALIASES: Record<string, CommandType> = {
   'ai': CommandType.LLM_CONTEXT,
   'ai context': CommandType.LLM_CONTEXT,
 
-  // Subtask commands
+  // Subtask commands - with plural/singular support
   'add subtask': CommandType.ADD_SUBTASK,
+  'add subtasks': CommandType.ADD_SUBTASK,
   'add-subtask': CommandType.ADD_SUBTASK,
   'subtask': CommandType.ADD_SUBTASK,
   'view subtasks': CommandType.VIEW_SUBTASKS,
+  'view subtask': CommandType.VIEW_SUBTASKS,
   'view-subtasks': CommandType.VIEW_SUBTASKS,
   'subtasks': CommandType.VIEW_SUBTASKS,
   'list subtasks': CommandType.VIEW_SUBTASKS,
+  'list subtask': CommandType.VIEW_SUBTASKS,
 
-  // Edit commands
+  // Edit commands - with plural/singular support
   'edit todo': CommandType.EDIT_TODO,
+  'edit todos': CommandType.EDIT_TODO,
   'edit-todo': CommandType.EDIT_TODO,
   'edit note': CommandType.EDIT_NOTE,
+  'edit notes': CommandType.EDIT_NOTE,
   'edit-note': CommandType.EDIT_NOTE,
   'edit devlog': CommandType.EDIT_DEVLOG,
+  'edit devlogs': CommandType.EDIT_DEVLOG,
   'edit-devlog': CommandType.EDIT_DEVLOG,
   'edit component': CommandType.EDIT_COMPONENT,
+  'edit components': CommandType.EDIT_COMPONENT,
   'edit-component': CommandType.EDIT_COMPONENT,
 
-  // Delete commands
+  // Delete commands - with plural/singular and rm support
   'delete todo': CommandType.DELETE_TODO,
+  'delete todos': CommandType.DELETE_TODO,
   'delete-todo': CommandType.DELETE_TODO,
   'remove todo': CommandType.DELETE_TODO,
+  'remove todos': CommandType.DELETE_TODO,
   'rm todo': CommandType.DELETE_TODO,
+  'rm todos': CommandType.DELETE_TODO,
   'delete note': CommandType.DELETE_NOTE,
+  'delete notes': CommandType.DELETE_NOTE,
   'delete-note': CommandType.DELETE_NOTE,
   'remove note': CommandType.DELETE_NOTE,
+  'remove notes': CommandType.DELETE_NOTE,
   'rm note': CommandType.DELETE_NOTE,
+  'rm notes': CommandType.DELETE_NOTE,
   'delete devlog': CommandType.DELETE_DEVLOG,
+  'delete devlogs': CommandType.DELETE_DEVLOG,
   'delete-devlog': CommandType.DELETE_DEVLOG,
   'remove devlog': CommandType.DELETE_DEVLOG,
+  'remove devlogs': CommandType.DELETE_DEVLOG,
   'rm devlog': CommandType.DELETE_DEVLOG,
+  'rm devlogs': CommandType.DELETE_DEVLOG,
   'delete component': CommandType.DELETE_COMPONENT,
+  'delete components': CommandType.DELETE_COMPONENT,
   'delete-component': CommandType.DELETE_COMPONENT,
   'remove component': CommandType.DELETE_COMPONENT,
+  'remove components': CommandType.DELETE_COMPONENT,
   'rm component': CommandType.DELETE_COMPONENT,
+  'rm components': CommandType.DELETE_COMPONENT,
   'delete subtask': CommandType.DELETE_SUBTASK,
+  'delete subtasks': CommandType.DELETE_SUBTASK,
   'delete-subtask': CommandType.DELETE_SUBTASK,
   'remove subtask': CommandType.DELETE_SUBTASK,
+  'remove subtasks': CommandType.DELETE_SUBTASK,
   'rm subtask': CommandType.DELETE_SUBTASK,
+  'rm subtasks': CommandType.DELETE_SUBTASK,
+
+  // Relationship commands - with plural/singular and rm support
+  'add relationship': CommandType.ADD_RELATIONSHIP,
+  'add relationships': CommandType.ADD_RELATIONSHIP,
+  'add-relationship': CommandType.ADD_RELATIONSHIP,
+  'relationship add': CommandType.ADD_RELATIONSHIP,
+  'view relationships': CommandType.VIEW_RELATIONSHIPS,
+  'view relationship': CommandType.VIEW_RELATIONSHIPS,
+  'view-relationships': CommandType.VIEW_RELATIONSHIPS,
+  'relationships': CommandType.VIEW_RELATIONSHIPS,
+  'list relationships': CommandType.VIEW_RELATIONSHIPS,
+  'edit relationship': CommandType.EDIT_RELATIONSHIP,
+  'edit relationships': CommandType.EDIT_RELATIONSHIP,
+  'edit-relationship': CommandType.EDIT_RELATIONSHIP,
+  'delete relationship': CommandType.DELETE_RELATIONSHIP,
+  'delete relationships': CommandType.DELETE_RELATIONSHIP,
+  'delete-relationship': CommandType.DELETE_RELATIONSHIP,
+  'remove relationship': CommandType.DELETE_RELATIONSHIP,
+  'remove relationships': CommandType.DELETE_RELATIONSHIP,
+  'rm relationship': CommandType.DELETE_RELATIONSHIP,
+  'rm relationships': CommandType.DELETE_RELATIONSHIP,
 
   // Navigation & Workflow
   'goto': CommandType.GOTO,
@@ -338,48 +400,48 @@ export interface CommandMetadata {
 export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
   [CommandType.ADD_TODO]: {
     type: CommandType.ADD_TODO,
-    syntax: '/add todo [text] [@project]',
-    description: 'Create a new todo item',
+    syntax: '/add todo --title=[text] [--content=[text]] [--priority=low|medium|high] [--status=not_started|in_progress|blocked] [@project]',
+    description: 'Create a new todo item with flags',
     examples: [
-      '/add todo fix authentication bug @myproject',
-      '/todo implement user dashboard',
-      '/add-todo review pull request @frontend'
+      '/add todo --title="fix authentication bug" @myproject',
+      '/add todo --title="implement user dashboard" --priority=high --content="Add responsive design"',
+      '/add todo --title="review pull request" --status=in_progress @frontend'
     ],
     requiresProject: true,
     requiresArgs: true
   },
   [CommandType.ADD_NOTE]: {
     type: CommandType.ADD_NOTE,
-    syntax: '/add note [text] [@project]',
-    description: 'Create a new note',
+    syntax: '/add note --title=[text] --content=[text] [@project]',
+    description: 'Create a new note with title and content',
     examples: [
-      '/add note API architecture decisions @backend',
-      '/note meeting notes from standup',
-      '/add-note database schema design @myproject'
+      '/add note --title="API Architecture" --content="REST API design decisions..." @backend',
+      '/add note --title="Meeting Notes" --content="Discussed project timeline and milestones"',
+      '/add note --title="Database Schema" --content="User table structure and relationships" @myproject'
     ],
     requiresProject: true,
     requiresArgs: true
   },
   [CommandType.ADD_DEVLOG]: {
     type: CommandType.ADD_DEVLOG,
-    syntax: '/add devlog [text] [@project]',
-    description: 'Create a new dev log entry',
+    syntax: '/add devlog --title=[text] --content=[text] [@project]',
+    description: 'Create a new dev log entry with title and content',
     examples: [
-      '/add devlog fixed memory leak in user service @backend',
-      '/devlog optimized database queries',
-      '/add-devlog refactored authentication flow @myproject'
+      '/add devlog --title="Memory Leak Fix" --content="Fixed memory leak in user service by clearing event listeners" @backend',
+      '/add devlog --title="Query Optimization" --content="Optimized database queries, reduced load time by 40%"',
+      '/add devlog --title="Auth Refactor" --content="Refactored authentication flow to use JWT tokens" @myproject'
     ],
     requiresProject: true,
     requiresArgs: true
   },
   [CommandType.ADD_COMPONENT]: {
     type: CommandType.ADD_COMPONENT,
-    syntax: '/add component [feature] [type] [title] - [content] [@project]',
-    description: 'Add a component to a feature',
+    syntax: '/add component --feature=[name] --category=[category] --type=[type] --title=[title] --content=[content] [@project]',
+    description: 'Add a component to a feature (categories: frontend, backend, database, infrastructure, security, api, documentation, asset)',
     examples: [
-      '/add component Auth Core Login - Handles user authentication @myproject',
-      '/component Users API GET - Retrieve all users endpoint',
-      '/add-component Dashboard UI Header - Top navigation bar'
+      '/add component --feature="Auth" --category=backend --type=service --title="Login Service" --content="Handles user authentication" @myproject',
+      '/add component --feature="Users" --category=api --type=endpoint --title="GET /users" --content="Retrieve all users endpoint"',
+      '/add component --feature="Dashboard" --category=frontend --type=component --title="Header" --content="Top navigation bar with user menu"'
     ],
     requiresProject: true,
     requiresArgs: true
@@ -976,6 +1038,56 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
     requiresArgs: true
   },
 
+  // Relationship commands
+  [CommandType.ADD_RELATIONSHIP]: {
+    type: CommandType.ADD_RELATIONSHIP,
+    syntax: '/add relationship [component id/title] [target id/title] [type] [@project]',
+    description: 'Add a relationship between two components',
+    examples: [
+      '/add relationship "Login" "Auth Service" uses @myproject',
+      '/add relationship 1 2 implements',
+      '/relationship add Header Footer contains'
+    ],
+    requiresProject: true,
+    requiresArgs: true
+  },
+  [CommandType.VIEW_RELATIONSHIPS]: {
+    type: CommandType.VIEW_RELATIONSHIPS,
+    syntax: '/view relationships [component id/title] [@project]',
+    description: 'View all relationships for a component',
+    examples: [
+      '/view relationships "Login" @myproject',
+      '/relationships 1',
+      '/list relationships "Auth Service"'
+    ],
+    requiresProject: true,
+    requiresArgs: true
+  },
+  [CommandType.EDIT_RELATIONSHIP]: {
+    type: CommandType.EDIT_RELATIONSHIP,
+    syntax: '/edit relationship [component id/title] [relationship id] [new type] [@project]',
+    description: 'Edit an existing relationship',
+    examples: [
+      '/edit relationship "Login" 1 depends_on @myproject',
+      '/edit-relationship 1 abc123 implements',
+      '/edit relationship Header 2 contains'
+    ],
+    requiresProject: true,
+    requiresArgs: true
+  },
+  [CommandType.DELETE_RELATIONSHIP]: {
+    type: CommandType.DELETE_RELATIONSHIP,
+    syntax: '/delete relationship [component id/title] [relationship id] [@project]',
+    description: 'Delete a relationship (with confirmation)',
+    examples: [
+      '/delete relationship "Login" 1 @myproject',
+      '/rm relationship 1 abc123',
+      '/remove-relationship Header 2'
+    ],
+    requiresProject: true,
+    requiresArgs: true
+  },
+
   // Navigation & Workflow
   [CommandType.GOTO]: {
     type: CommandType.GOTO,
@@ -1067,6 +1179,146 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
  */
 export class CommandParser {
   /**
+   * Tokenize a string respecting quotes and escape sequences
+   * @param str - String to tokenize
+   * @returns Array of tokens
+   */
+  private static tokenize(str: string): string[] {
+    const tokens: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    let quoteChar = '';
+    let escaped = false;
+
+    for (let i = 0; i < str.length; i++) {
+      const char = str[i];
+
+      if (escaped) {
+        // Add escaped character literally
+        current += char;
+        escaped = false;
+        continue;
+      }
+
+      if (char === '\\') {
+        // Next character is escaped
+        escaped = true;
+        continue;
+      }
+
+      if ((char === '"' || char === "'") && !inQuotes) {
+        // Start of quoted string
+        inQuotes = true;
+        quoteChar = char;
+        continue;
+      }
+
+      if (char === quoteChar && inQuotes) {
+        // End of quoted string
+        inQuotes = false;
+        quoteChar = '';
+        continue;
+      }
+
+      if (char === ' ' && !inQuotes) {
+        // Space outside quotes = token boundary
+        if (current.length > 0) {
+          tokens.push(current);
+          current = '';
+        }
+        continue;
+      }
+
+      // Regular character
+      current += char;
+    }
+
+    // Add final token
+    if (current.length > 0) {
+      tokens.push(current);
+    }
+
+    return tokens;
+  }
+
+  /**
+   * Extract @project mention from tokens, handling spaces in project names
+   * @param tokens - Array of tokens
+   * @returns Object with projectMention and remaining tokens
+   */
+  private static extractProjectMention(tokens: string[]): { projectMention?: string; tokens: string[] } {
+    const remainingTokens: string[] = [];
+    let projectMention: string | undefined = undefined;
+    let inProjectName = false;
+    let projectTokens: string[] = [];
+
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i];
+
+      // Check if this token starts with @
+      if (token.startsWith('@') && !inProjectName) {
+        inProjectName = true;
+        projectTokens = [token.slice(1)]; // Remove @ and start collecting
+        continue;
+      }
+
+      // If we're in a project name, keep collecting until we hit a flag or end
+      if (inProjectName) {
+        // Check if this token is a flag (starts with --)
+        if (token.startsWith('--') || token.startsWith('-')) {
+          // End of project name
+          projectMention = projectTokens.join(' ').trim();
+          inProjectName = false;
+          projectTokens = [];
+          remainingTokens.push(token); // Add the flag to remaining
+          continue;
+        }
+        // Otherwise, it's part of the project name
+        projectTokens.push(token);
+        continue;
+      }
+
+      // Not part of project mention
+      remainingTokens.push(token);
+    }
+
+    // Handle case where project mention goes to end of string
+    if (inProjectName && projectTokens.length > 0) {
+      projectMention = projectTokens.join(' ').trim();
+    }
+
+    return { projectMention, tokens: remainingTokens };
+  }
+
+  /**
+   * Extract flags from tokens
+   * @param tokens - Array of tokens
+   * @returns Object with flags map and remaining tokens
+   */
+  private static extractFlags(tokens: string[]): { flags: Map<string, string | boolean>; tokens: string[] } {
+    const flags = new Map<string, string | boolean>();
+    const remainingTokens: string[] = [];
+
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i];
+
+      // Check for --flag=value or -f=value
+      const flagMatch = token.match(/^--?(\w+)(?:=(.+))?$/);
+      if (flagMatch) {
+        const flagName = flagMatch[1];
+        const flagValue = flagMatch[2] !== undefined ? flagMatch[2] : true;
+        flags.set(flagName, flagValue);
+        continue;
+      }
+
+      // Not a flag
+      remainingTokens.push(token);
+    }
+
+    return { flags, tokens: remainingTokens };
+  }
+
+  /**
    * Parse a command string
    * @param commandStr - Raw command string from user input
    * @returns Parsed command object with validation
@@ -1091,35 +1343,27 @@ export class CommandParser {
       return result;
     }
 
-    // Remove leading /
+    // Remove leading / and tokenize
     const withoutSlash = trimmed.slice(1);
+    let tokens = this.tokenize(withoutSlash);
 
-    // Extract @project mention if present (handles spaces in project names)
-    // Must be preceded by whitespace or start of string to avoid matching emails
-    // Captures everything after @ until we hit --, another @, or end of string
-    const projectMatch = withoutSlash.match(/(?:^|\s)@([^@]+?)(?:\s+--|\s+@|$)/);
-    if (projectMatch) {
-      result.projectMention = projectMatch[1].trim();
+    if (tokens.length === 0) {
+      result.errors.push('No command specified');
+      return result;
     }
 
-    // Remove @project mention to parse rest of command (only those preceded by whitespace/start)
-    const withoutProject = withoutSlash.replace(/(?:^|\s)@[^@]+?(?=\s+--|@|$)/g, '').trim();
+    // Extract @project mention (handles spaces in project names)
+    const projectExtraction = this.extractProjectMention(tokens);
+    result.projectMention = projectExtraction.projectMention;
+    tokens = projectExtraction.tokens;
 
-    // Extract flags (--flag or -f) - only match if preceded by whitespace or at start
-    const flagMatches = withoutProject.matchAll(/(?:^|\s)(--?(\w+)(?:=(\S+))?)/g);
-    for (const match of flagMatches) {
-      const flagName = match[2];
-      const flagValue = match[3] || true;
-      result.flags.set(flagName, flagValue);
-    }
+    // Extract flags (preserves quoted values)
+    const flagExtraction = this.extractFlags(tokens);
+    result.flags = flagExtraction.flags;
+    tokens = flagExtraction.tokens;
 
-    // Remove flags to parse command and args - only remove if preceded by whitespace or at start
-    const withoutFlags = withoutProject.replace(/(?:^|\s)--?\w+(?:=\S+)?/g, '').trim();
-
-    // Split into words for command detection
-    const words = withoutFlags.split(/\s+/).filter(w => w.length > 0);
-
-    if (words.length === 0) {
+    // Now tokens contains only command and arguments
+    if (tokens.length === 0) {
       result.errors.push('No command specified');
       return result;
     }
@@ -1129,19 +1373,19 @@ export class CommandParser {
     let commandLength = 0;
 
     // Try matching 2-word commands first (e.g., "add todo")
-    if (words.length >= 2) {
-      const twoWordCmd = `${words[0]} ${words[1]}`.toLowerCase();
+    if (tokens.length >= 2) {
+      const twoWordCmd = `${tokens[0]} ${tokens[1]}`.toLowerCase();
       if (COMMAND_ALIASES[twoWordCmd]) {
         commandMatch = COMMAND_ALIASES[twoWordCmd];
         commandLength = 2;
         result.command = twoWordCmd;
-        result.subcommand = words[1];
+        result.subcommand = tokens[1];
       }
     }
 
     // Try matching 1-word commands
-    if (!commandMatch && words.length >= 1) {
-      const oneWordCmd = words[0].toLowerCase();
+    if (!commandMatch && tokens.length >= 1) {
+      const oneWordCmd = tokens[0].toLowerCase();
       if (COMMAND_ALIASES[oneWordCmd]) {
         commandMatch = COMMAND_ALIASES[oneWordCmd];
         commandLength = 1;
@@ -1150,20 +1394,21 @@ export class CommandParser {
     }
 
     if (!commandMatch) {
-      result.errors.push(`Unknown command: ${words[0]}. Type /help for available commands.`);
+      result.errors.push(`Unknown command: ${tokens[0]}. Type /help for available commands.`);
       return result;
     }
 
     result.type = commandMatch;
 
-    // Extract remaining words as arguments
-    const remainingWords = words.slice(commandLength);
-    result.args = remainingWords;
+    // Extract remaining tokens as arguments
+    const remainingTokens = tokens.slice(commandLength);
+    result.args = remainingTokens;
 
     // Validate command based on metadata
     const metadata = COMMAND_METADATA[result.type];
 
-    if (metadata.requiresArgs && result.args.length === 0) {
+    // For requiresArgs, check both args AND flags (flags count as arguments too)
+    if (metadata.requiresArgs && result.args.length === 0 && result.flags.size === 0) {
       result.errors.push(`Command requires arguments. Usage: ${metadata.syntax}`);
     }
 
@@ -1179,6 +1424,7 @@ export class CommandParser {
       type: result.type,
       command: result.command,
       args: result.args,
+      flags: Array.from(result.flags.entries()),
       projectMention: result.projectMention,
       isValid: result.isValid
     });

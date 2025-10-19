@@ -22,17 +22,14 @@ class ReminderService {
 
 
     // Check for due/overdue todos every 15 minutes
+    // Check for reminder notifications every 15 minutes
     cron.schedule('*/15 * * * *', () => {
       this.checkDueTodos();
-    });
-
-    // Check for reminder notifications every 5 minutes
-    cron.schedule('*/5 * * * *', () => {
       this.checkReminderNotifications();
     });
 
-    // Daily summary at 9 AM
-    cron.schedule('0 9 * * *', () => {
+    // Daily summary at 8 AM
+    cron.schedule('0 8 * * *', () => {
       this.sendDailySummary();
     });
 
@@ -61,7 +58,7 @@ class ReminderService {
               userId: todo.assignedTo || project.ownerId,
               type: 'todo_overdue',
               title: 'Todo Overdue',
-              message: `Todo "${todo.text}" in project "${project.name}" is overdue`,
+              message: `Todo "${todo.title}" in project "${project.name}" is overdue`,
               relatedProjectId: project._id,
               relatedTodoId: todo.id,
               actionUrl: `/projects/${project._id}`
@@ -75,7 +72,7 @@ class ReminderService {
               userId: todo.assignedTo || project.ownerId,
               type: 'todo_due_soon',
               title: 'Todo Due Soon',
-              message: `Todo "${todo.text}" in project "${project.name}" is due within 24 hours`,
+              message: `Todo "${todo.title}" in project "${project.name}" is due within 24 hours`,
               relatedProjectId: project._id,
               relatedTodoId: todo.id,
               actionUrl: `/projects/${project._id}`
@@ -117,7 +114,7 @@ class ReminderService {
                   userId: todo.assignedTo || project.ownerId,
                   type: 'todo_due_soon',
                   title: 'Todo Reminder',
-                  message: `Reminder: "${todo.text}" in project "${project.name}"`,
+                  message: `Reminder: "${todo.title}" in project "${project.name}"`,
                   relatedProjectId: project._id,
                   relatedTodoId: todo.id,
                   actionUrl: `/projects/${project._id}`
@@ -143,7 +140,7 @@ class ReminderService {
                   userId: todo.assignedTo || project.ownerId,
                   type: 'todo_due_soon',
                   title: 'Todo Due Soon',
-                  message: `Todo "${todo.text}" in project "${project.name}" is due soon`,
+                  message: `Todo "${todo.title}" in project "${project.name}" is due soon`,
                   relatedProjectId: project._id,
                   relatedTodoId: todo.id,
                   actionUrl: `/projects/${project._id}`

@@ -1,0 +1,738 @@
+import React, { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { projectAPI, terminalAPI } from '../api';
+import { getContrastTextColor } from '../utils/contrastTextColor';
+import { toast } from '../services/toast';
+import { RelationshipType } from '../../../shared/types/project';
+import ConfirmationModal from './ConfirmationModal';
+
+interface EditWizardProps {
+  wizardData: {
+    wizardType: 'edit_todo' | 'edit_note' | 'edit_devlog' | 'edit_component';
+    todoId?: string;
+    noteId?: string;
+    entryId?: string;
+    componentId?: string;
+    currentValues: Record<string, any>;
+    steps: Array<{
+      id: string;
+      label: string;
+      type: string;
+      required?: boolean;
+      value?: any;
+      options?: string[];
+      placeholder?: string;
+      availableComponents?: any[];
+      dependsOn?: string;
+    }>;
+  };
+  currentProjectId?: string;
+}
+
+const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId }) => {
+  const navigate = useNavigate();
+  const [currentStep, setCurrentStep] = useState(0);
+  const [formData, setFormData] = useState<Record<string, any>>(wizardData.currentValues || {});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(false);
+
+  // Confirmation modal state for delete relationship
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    isOpen: boolean;
+    relationshipId: string | null;
+    targetTitle: string;
+  }>({
+    isOpen: false,
+    relationshipId: null,
+    targetTitle: ''
+  });
+
+  // Relationship editing state (for inline edit)
+  const [editingRelIndex, setEditingRelIndex] = useState<number | null>(null);
+  const [editRelData, setEditRelData] = useState<{ relationType: RelationshipType; description: string }>({
+    relationType: 'uses',
+    description: ''
+  });
+
+  const steps = wizardData.steps;
+  const step = steps[currentStep];
+
+  const handleNext = () => {
+    if (currentStep < steps.length - 1) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+
+  const handleBack = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  const handleEditRelationship = useCallback((index: number, relationType: RelationshipType, description: string) => {
+    console.log('📝 EDIT RELATIONSHIP CLICKED', { index, relationType, description });
+    setEditingRelIndex(index);
+    setEditRelData({ relationType, description: description || '' });
+  }, []);
+
+  const handleSaveRelationship = useCallback(async () => {
+    if (editingRelIndex === null || !currentProjectId) return;
+
+    const { componentId } = wizardData;
+    if (!componentId) return;
+
+    const currentRelationships = formData[step.id] || step.value || [];
+    const relationship = currentRelationships[editingRelIndex];
+    if (!relationship) {
+      console.error('Relationship not found at index:', editingRelIndex);
+      toast.error('Relationship not found');
+      return;
+    }
+
+    // OPTIMISTIC UPDATE - Update local state immediately
+    const updatedRelationships = [...currentRelationships];
+    updatedRelationships[editingRelIndex] = {
+      ...relationship,
+      relationType: editRelData.relationType,
+      description: editRelData.description || ''
+    };
+    setFormData({ ...formData, [step.id]: updatedRelationships });
+
+    try {
+      // Delete old relationship
+      await projectAPI.deleteRelationship(currentProjectId, componentId, relationship.id);
+
+      // Create new relationship with updated data
+      const newRelationship = await projectAPI.createRelationship(currentProjectId, componentId, {
+        targetId: relationship.targetId,
+        relationType: editRelData.relationType,
+        description: editRelData.description || undefined,
+      });
+
+      // Update with real relationship ID from server
+      const finalRelationships = [...updatedRelationships];
+      finalRelationships[editingRelIndex] = {
+        ...finalRelationships[editingRelIndex],
+        id: newRelationship.id || relationship.id
+      };
+      setFormData({ ...formData, [step.id]: finalRelationships });
+
+      toast.success('Relationship updated');
+      setEditingRelIndex(null);
+      setEditRelData({ relationType: 'uses', description: '' });
+
+    } catch (error) {
+      console.error('Failed to update relationship:', error);
+      toast.error('Failed to update relationship');
+
+      // ROLLBACK - Restore original state on error
+      setFormData({ ...formData, [step.id]: currentRelationships });
+    }
+  }, [editingRelIndex, currentProjectId, wizardData, formData, step.id, step.value, editRelData]);
+
+  const handleCancelEditRelationship = useCallback(() => {
+    setEditingRelIndex(null);
+    setEditRelData({ relationType: 'uses', description: '' });
+  }, []);
+
+  const handleDeleteRelationship = useCallback(async () => {
+    if (!currentProjectId || !deleteConfirmation.relationshipId) return;
+
+    const { componentId } = wizardData;
+    if (!componentId) return;
+
+    const relationshipId = deleteConfirmation.relationshipId;
+    const currentRelationships = formData[step.id] || step.value || [];
+
+    // Close modal
+    setDeleteConfirmation({ isOpen: false, relationshipId: null, targetTitle: '' });
+
+    // OPTIMISTIC UPDATE - Remove from local state immediately
+    const updatedRelationships = currentRelationships.filter((r: any) => r.id !== relationshipId);
+    setFormData({ ...formData, [step.id]: updatedRelationships });
+
+    try {
+      await projectAPI.deleteRelationship(currentProjectId, componentId, relationshipId);
+      toast.success('Relationship deleted');
+
+    } catch (error) {
+      console.error('Failed to delete relationship:', error);
+      toast.error('Failed to delete relationship');
+
+      // ROLLBACK - Restore original state on error
+      setFormData({ ...formData, [step.id]: currentRelationships });
+    }
+  }, [currentProjectId, wizardData, formData, step.id, step.value, deleteConfirmation.relationshipId]);
+
+  /**
+   * Escape special characters for command construction
+   * Handles both backslashes and quotes to work with the command parser
+   */
+  const escapeForCommand = (value: string): string => {
+    return String(value)
+      .replace(/\\/g, '\\\\')  // Escape backslashes first
+      .replace(/"/g, '\\"');    // Then escape quotes
+  };
+
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+
+    // Validate that we have a project context
+    if (!currentProjectId) {
+      console.error('❌ No currentProjectId provided to EditWizard!');
+      toast.error('No project context. Please refresh and try again.');
+      setIsSubmitting(false);
+      return;
+    }
+
+    try {
+      const { wizardType, todoId, noteId, entryId, componentId } = wizardData;
+      const itemId = todoId || noteId || entryId || componentId;
+
+      console.log('🔧 EditWizard submitting:', {
+        wizardType,
+        itemId,
+        currentProjectId,
+        hasFormData: Object.keys(formData).length > 0
+      });
+
+      const commandMap: Record<string, string> = {
+        'edit_todo': 'todo',
+        'edit_note': 'note',
+        'edit_devlog': 'devlog',
+        'edit_component': 'component'
+      };
+
+      const itemType = commandMap[wizardType];
+      let successCount = 0;
+      let errorCount = 0;
+
+      // Execute edit commands for each changed field
+      for (const [field, value] of Object.entries(formData)) {
+        // Skip temp fields and relationships (handled separately)
+        if (field.includes('_temp') || field === 'relationships') continue;
+
+        // Only update if value differs from original or is non-empty
+        if (value !== undefined && value !== null && String(value).trim() !== '') {
+          try {
+            // Escape special characters for command parser
+            const escapedValue = escapeForCommand(String(value));
+            const editCommand = `/edit ${itemType} ${itemId} --field=${field} --content="${escapedValue}"`;
+
+            console.log('Executing edit command:', editCommand);
+
+            // Execute the edit command directly via API
+            const response = await terminalAPI.executeCommand(editCommand, currentProjectId);
+
+            if (response.type === 'error') {
+              console.error('Command failed:', response.message);
+              errorCount++;
+              toast.error(`Failed to update ${field}: ${response.message}`);
+            } else {
+              successCount++;
+            }
+
+            // Small delay between commands to avoid race conditions
+            await new Promise(resolve => setTimeout(resolve, 100));
+          } catch (cmdError) {
+            console.error(`Failed to execute command for field ${field}:`, cmdError);
+            errorCount++;
+            toast.error(`Failed to update ${field}`);
+          }
+        }
+      }
+
+      // Handle relationships separately for components
+      // Note: Modified relationships are saved immediately via handleSaveRelationship
+      // Deleted relationships are removed immediately via handleDeleteRelationship
+      // Here we only handle new additions (temp IDs)
+      if (wizardType === 'edit_component' && formData.relationships) {
+        const newRels = formData.relationships || [];
+
+        console.log('📊 Processing relationships:', {
+          totalRelationships: newRels.length,
+          tempRelationships: newRels.filter((r: any) => r.id?.startsWith('temp-')).length,
+          componentId: itemId,
+          currentProjectId
+        });
+
+        // Find new relationships (temp IDs only - everything else already saved)
+        for (const newRel of newRels) {
+          if (newRel.id?.startsWith('temp-')) {
+            try {
+              const desc = newRel.description
+                ? ` --description="${escapeForCommand(newRel.description)}"`
+                : '';
+              const addCmd = `/edit component ${itemId} --field=relationship --action=add --target=${newRel.targetId} --type=${newRel.relationType}${desc}`;
+
+              console.log('📤 Executing relationship command:', {
+                command: addCmd,
+                projectId: currentProjectId,
+                sourceId: itemId,
+                targetId: newRel.targetId
+              });
+
+              const response = await terminalAPI.executeCommand(addCmd, currentProjectId);
+
+              if (response.type === 'error') {
+                console.error('Relationship command failed:', response.message);
+                errorCount++;
+                toast.error(`Failed to add relationship: ${response.message}`);
+              } else {
+                successCount++;
+              }
+
+              await new Promise(resolve => setTimeout(resolve, 100));
+            } catch (relError) {
+              console.error('Failed to add relationship:', relError);
+              errorCount++;
+              toast.error('Failed to add relationship');
+            }
+          }
+        }
+      }
+
+      // Show final result and mark as completed
+      // TODO - Lock local storage version as complete in TerminalPage.tsx for when you return to the page
+      if (errorCount === 0 && successCount > 0) {
+        toast.success(`${itemType.charAt(0).toUpperCase() + itemType.slice(1)} updated successfully!`);
+        setIsCompleted(true);
+      } else if (successCount > 0) {
+        toast.warning(`Updated with ${errorCount} error(s). ${successCount} field(s) succeeded.`);
+        setIsCompleted(true);
+      } else {
+        toast.error('Failed to update item');
+      }
+
+    } catch (error) {
+      console.error('Failed to update item:', error);
+      toast.error(`Failed to update: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const isStepValid = () => {
+    if (step.required) {
+      const value = formData[step.id];
+      return value !== undefined && value !== '' && value !== null;
+    }
+    return true;
+  };
+
+  // Get navigation path based on wizard type
+  const getNavigationPath = () => {
+    const { wizardType } = wizardData;
+    switch (wizardType) {
+      case 'edit_todo':
+        return '/notes?section=todos';
+      case 'edit_note':
+        return '/notes';
+      case 'edit_devlog':
+        return '/notes?section=devlog';
+      case 'edit_component':
+        return '/features';
+      default:
+        return '/';
+    }
+  };
+
+  // Get display name for the item type
+  const getItemTypeName = () => {
+    const { wizardType } = wizardData;
+    switch (wizardType) {
+      case 'edit_todo':
+        return 'Todo';
+      case 'edit_note':
+        return 'Note';
+      case 'edit_devlog':
+        return 'Dev Log Entry';
+      case 'edit_component':
+        return 'Component';
+      default:
+        return 'Item';
+    }
+  };
+
+  // If completed, show success screen
+  if (isCompleted) {
+    return (
+      <div className="mt-3 space-y-4">
+        <div className="p-6 bg-success/10 rounded-lg border-2 border-success/30 text-center">
+          <div className="text-5xl mb-4">✅</div>
+          <h3 className="text-xl font-bold mb-2">Update Complete!</h3>
+          <p className="text-sm text-base-content/70 mb-4">
+            Your {getItemTypeName().toLowerCase()} has been updated successfully.
+          </p>
+
+          {/* Show updated data preview */}
+          <div className="p-4 bg-base-200 rounded-lg border-thick text-left mb-4">
+            <div className="text-xs font-semibold text-base-content/60 mb-2">Updated Fields:</div>
+            <div className="space-y-1">
+              {Object.entries(formData).filter(([key]) => !key.includes('_temp') && key !== 'relationships').map(([key, value]) => (
+                <div key={key} className="text-sm">
+                  <span className="font-semibold capitalize">{key}:</span>{' '}
+                  <span className="text-base-content/80">{String(value).slice(0, 50)}{String(value).length > 50 ? '...' : ''}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => navigate(getNavigationPath())}
+            className="btn btn-primary w-full"
+            style={{ color: getContrastTextColor('primary') }}
+          >
+            View {getItemTypeName()}s Page
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-3 space-y-4">
+      {/* Progress indicator */}
+      <div className="flex items-center justify-between">
+        <div className="text-xs text-base-content/60">
+          Step {currentStep + 1} of {steps.length}
+        </div>
+        <div className="flex gap-1">
+          {steps.map((_: any, idx: number) => (
+            <div
+              key={idx}
+              className={`w-2 h-2 rounded-full ${
+                idx === currentStep ? 'bg-primary' :
+                idx < currentStep ? 'bg-success' :
+                'bg-base-300'
+              }`}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Step content */}
+      <div className="p-4 bg-base-200 rounded-lg border-thick">
+        <div className="text-sm font-semibold text-base-content mb-2">{step.label}</div>
+
+        {step.type === 'text' && (
+          <input
+            type="text"
+            value={formData[step.id] || step.value || ''}
+            onChange={(e) => setFormData({ ...formData, [step.id]: e.target.value })}
+            placeholder={step.placeholder}
+            className="input input-bordered w-full"
+          />
+        )}
+
+        {step.type === 'textarea' && (
+          <textarea
+            value={formData[step.id] || step.value || ''}
+            onChange={(e) => setFormData({ ...formData, [step.id]: e.target.value })}
+            placeholder={step.placeholder}
+            rows={6}
+            className="textarea textarea-bordered w-full resize-none font-mono text-sm"
+          />
+        )}
+
+        {step.type === 'select' && (
+          <select
+            value={formData[step.id] || step.value || ''}
+            onChange={(e) => setFormData({ ...formData, [step.id]: e.target.value })}
+            className="select select-bordered w-full"
+          >
+            {step.options?.map((option: string) => (
+              <option key={option} value={option}>{option}</option>
+            ))}
+          </select>
+        )}
+
+        {step.type === 'relationships' && (
+          <div className="space-y-3">
+            {/* Current relationships */}
+            {(formData[step.id] || step.value || []).length > 0 ? (
+              <div className="space-y-2">
+                <div className="text-xs font-semibold text-base-content/70">Current Relationships ({(formData[step.id] || step.value || []).length})</div>
+                {(formData[step.id] || step.value || []).map((rel: any, index: number) => {
+                  const targetComp = step.availableComponents?.find((c: any) => c.id === rel.targetId);
+                  const isEditing = editingRelIndex === index;
+
+                  // Relationship type colors
+                  const relationshipColors: Record<string, string> = {
+                    mentions: '#3b82f6',
+                    similar: '#eab308',
+                    uses: '#3b82f6',
+                    implements: '#10b981',
+                    extends: '#8b5cf6',
+                    depends_on: '#f97316',
+                    calls: '#06b6d4',
+                    contains: '#6b7280',
+                  };
+
+                  return (
+                    <div key={rel.id || index} className="bg-base-300 p-2.5 rounded space-y-1.5 border border-base-content/10">
+                      {isEditing ? (
+                        <>
+                          <div className="flex items-center justify-between gap-2 mb-2">
+                            <span className="text-xs font-medium truncate">{targetComp?.title || rel.targetId || 'Unknown'}</span>
+                            <div className="flex gap-1">
+                              <button
+                                type="button"
+                                onClick={handleSaveRelationship}
+                                className="btn btn-ghost btn-xs text-success hover:bg-success/20"
+                                title="Save changes"
+                              >
+                                ✓
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handleCancelEditRelationship}
+                                className="btn btn-ghost btn-xs text-error hover:bg-error/20"
+                                title="Cancel"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          </div>
+                          <select
+                            value={editRelData.relationType}
+                            onChange={(e) => setEditRelData({ ...editRelData, relationType: e.target.value as RelationshipType })}
+                            className="select select-bordered select-xs w-full"
+                          >
+                            <option value="uses">Uses</option>
+                            <option value="implements">Implements</option>
+                            <option value="extends">Extends</option>
+                            <option value="depends_on">Depends On</option>
+                            <option value="calls">Calls</option>
+                            <option value="contains">Contains</option>
+                            <option value="mentions">Mentions</option>
+                            <option value="similar">Similar</option>
+                          </select>
+                          <textarea
+                            value={editRelData.description}
+                            onChange={(e) => setEditRelData({ ...editRelData, description: e.target.value })}
+                            placeholder="Optional description..."
+                            className="textarea textarea-bordered textarea-xs w-full h-12 resize-none"
+                          />
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium truncate">{targetComp?.title || rel.targetId || 'Unknown'}</div>
+                              <div className="flex items-center gap-2 text-xs text-base-content/60 mt-0.5">
+                                <span
+                                  className="badge badge-xs"
+                                  style={{
+                                    backgroundColor: relationshipColors[rel.relationType] || '#3b82f6',
+                                    color: 'white',
+                                    borderColor: relationshipColors[rel.relationType] || '#3b82f6'
+                                  }}
+                                >
+                                  {rel.relationType}
+                                </span>
+                                {rel.description && <span className="truncate italic">{rel.description}</span>}
+                              </div>
+                            </div>
+                            <div className="flex gap-1 flex-shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  console.log('📝 Edit clicked for relationship:', { index, rel });
+                                  handleEditRelationship(index, rel.relationType, rel.description || '');
+                                }}
+                                className="btn btn-ghost btn-xs hover:bg-primary/20"
+                                title="Edit relationship"
+                              >
+                                ✎
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  console.log('🗑️ Delete clicked for relationship:', { index, rel });
+                                  setDeleteConfirmation({
+                                    isOpen: true,
+                                    relationshipId: rel.id,
+                                    targetTitle: targetComp?.title || rel.targetId || 'Unknown'
+                                  });
+                                }}
+                                className="btn btn-ghost btn-xs text-error hover:bg-error/20"
+                                title="Delete relationship"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-xs text-base-content/50 italic py-2">No relationships yet</div>
+            )}
+
+            {/* Add new relationship */}
+            <div className="border-t border-base-content/10 pt-3">
+              <div className="text-xs font-semibold text-base-content/70 mb-2">Add Relationship</div>
+              <div className="space-y-2">
+                <select
+                  className="select select-bordered select-sm w-full"
+                  value={formData[`${step.id}_temp`]?.targetId || ""}
+                  onChange={(e) => {
+                    if (!e.target.value) return;
+                    const targetId = e.target.value;
+                    const targetComp = step.availableComponents?.find((c: any) => c.id === targetId);
+
+                    // Initialize temp relationship data
+                    const tempData = {
+                      targetId,
+                      targetTitle: targetComp?.title || '',
+                      relationType: 'uses',
+                      description: ''
+                    };
+                    setFormData({ ...formData, [`${step.id}_temp`]: tempData });
+                  }}
+                >
+                  <option value="">Select component...</option>
+                  {step.availableComponents?.map((comp: any) => (
+                    <option key={comp.id} value={comp.id}>
+                      {comp.category} • {comp.title}
+                    </option>
+                  ))}
+                </select>
+
+                {formData[`${step.id}_temp`] && (
+                  <>
+                    <select
+                      className="select select-bordered select-sm w-full"
+                      value={formData[`${step.id}_temp`].relationType}
+                      onChange={(e) => {
+                        setFormData({
+                          ...formData,
+                          [`${step.id}_temp`]: { ...formData[`${step.id}_temp`], relationType: e.target.value }
+                        });
+                      }}
+                    >
+                      <option value="uses">Uses</option>
+                      <option value="implements">Implements</option>
+                      <option value="extends">Extends</option>
+                      <option value="depends_on">Depends On</option>
+                      <option value="calls">Calls</option>
+                      <option value="contains">Contains</option>
+                      <option value="mentions">Mentions</option>
+                      <option value="similar">Similar</option>
+                    </select>
+
+                    <input
+                      type="text"
+                      placeholder="Description (optional)"
+                      className="input input-bordered input-sm w-full"
+                      value={formData[`${step.id}_temp`].description || ''}
+                      onChange={(e) => {
+                        setFormData({
+                          ...formData,
+                          [`${step.id}_temp`]: { ...formData[`${step.id}_temp`], description: e.target.value }
+                        });
+                      }}
+                    />
+
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const temp = formData[`${step.id}_temp`];
+                          const newRel = {
+                            id: `temp-${Date.now()}`,
+                            targetId: temp.targetId,
+                            relationType: temp.relationType,
+                            description: temp.description
+                          };
+                          const updated = [...(formData[step.id] || step.value || []), newRel];
+                          const newData = { ...formData, [step.id]: updated };
+                          delete newData[`${step.id}_temp`];
+                          setFormData(newData);
+                        }}
+                        className="btn btn-primary btn-sm flex-1"
+                        style={{ color: getContrastTextColor('primary') }}
+                      >
+                        Add
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newData = { ...formData };
+                          delete newData[`${step.id}_temp`];
+                          setFormData(newData);
+                        }}
+                        className="btn btn-ghost btn-sm"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Navigation buttons */}
+      <div className="flex justify-between">
+        <button
+          type="button"
+          onClick={handleBack}
+          disabled={currentStep === 0}
+          className="btn btn-outline"
+        >
+          Back
+        </button>
+        {currentStep < steps.length - 1 ? (
+          <button
+            type="button"
+            onClick={handleNext}
+            disabled={!isStepValid()}
+            className="btn btn-primary"
+            style={{ color: getContrastTextColor('primary') }}
+          >
+            Next
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={!isStepValid() || isSubmitting}
+            className="btn btn-primary"
+            style={{ color: getContrastTextColor('primary') }}
+          >
+            {isSubmitting ? (
+              <>
+                <span className="loading loading-spinner loading-sm"></span>
+                Updating...
+              </>
+            ) : (
+              'Update'
+            )}
+          </button>
+        )}
+      </div>
+
+      {/* Confirmation Modal for Delete Relationship */}
+      <ConfirmationModal
+        isOpen={deleteConfirmation.isOpen}
+        onConfirm={handleDeleteRelationship}
+        onCancel={() => setDeleteConfirmation({ isOpen: false, relationshipId: null, targetTitle: '' })}
+        title="Delete Relationship"
+        message={`Are you sure you want to delete the relationship to "<strong>${deleteConfirmation.targetTitle}</strong>"?<br/><br/>This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="error"
+      />
+    </div>
+  );
+};
+
+export default EditWizard;

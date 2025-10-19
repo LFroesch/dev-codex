@@ -3,7 +3,7 @@ import { getContrastTextColor } from '../../utils/contrastTextColor';
 
 interface Subtask {
   id: string;
-  text: string;
+  title: string;
   priority?: string;
   status?: string;
   completed: boolean;
@@ -12,7 +12,7 @@ interface Subtask {
 
 interface Todo {
   id: string;
-  text: string;
+  title: string;
   priority?: string;
   status?: string;
   completed: boolean;
@@ -52,7 +52,7 @@ export const TodosRenderer: React.FC<TodosRendererProps> = ({ todos, projectId, 
               </div>
               <div className="flex-1 min-w-0">
                 <div className={`text-sm font-medium text-base-content/80 break-words ${todo.completed ? 'line-through opacity-60' : ''}`}>
-                  {todo.text}
+                  {todo.title}
                   {todo.subtasks && todo.subtasks.length > 0 && (
                     <span className="ml-2 text-xs text-base-content/60">
                       ({todo.subtasks.filter(s => s.completed).length}/{todo.subtasks.length})
@@ -86,7 +86,7 @@ export const TodosRenderer: React.FC<TodosRendererProps> = ({ todos, projectId, 
                     key={subIndex}
                     className="flex items-start gap-2 p-2 bg-base-100 rounded-lg hover:bg-base-200/50 transition-colors border-2 border-base-content/10"
                   >
-                    <div className="flex-shrink-0 mt-0.5 text-xs">
+                    <div className="flex-shrink-0 mt-0.5 text-sm">
                       {subtask.completed ? (
                         <span className="text-success">✓</span>
                       ) : (
@@ -94,8 +94,8 @@ export const TodosRenderer: React.FC<TodosRendererProps> = ({ todos, projectId, 
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className={`text-xs text-base-content/70 break-words ${subtask.completed ? 'line-through opacity-60' : ''}`}>
-                        {subtask.text}
+                      <div className={`text-sm text-base-content/70 break-words ${subtask.completed ? 'line-through opacity-60' : ''}`}>
+                        {subtask.title}
                       </div>
                       {(subtask.priority || subtask.status) && (
                         <div className="flex items-center gap-1 mt-0.5">

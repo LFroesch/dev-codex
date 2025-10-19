@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import { NodeProps } from 'reactflow';
+import { Handle, Position, NodeProps } from 'reactflow';
 import { Doc } from '../api';
 
 interface AreaNodeData {
@@ -19,6 +19,12 @@ const AreaNode: React.FC<NodeProps<AreaNodeData>> = ({ data, selected }) => {
         height: '150px',
       }}
     >
+      {/* Input handle (top) */}
+      <Handle
+        type="target"
+        position={Position.Top}
+        className="w-3 h-3 !bg-base-content/20 border-2 border-base-100"
+      />
 
       {/* Node content */}
       <div className="p-4 h-full flex flex-col items-center justify-center">
@@ -41,6 +47,13 @@ const AreaNode: React.FC<NodeProps<AreaNodeData>> = ({ data, selected }) => {
           )}
         </div>
       </div>
+
+      {/* Output handle (bottom) */}
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        className="w-3 h-3 !bg-base-content/30 border-2 border-base-100"
+      />
     </div>
   );
 };

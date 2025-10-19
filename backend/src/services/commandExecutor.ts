@@ -229,6 +229,16 @@ export class CommandExecutor {
         case CommandType.DELETE_SUBTASK:
           return await this.crudHandlers.handleDeleteSubtask(parsed, currentProjectId);
 
+        // Relationship operations
+        case CommandType.ADD_RELATIONSHIP:
+          return await this.crudHandlers.handleAddRelationship(parsed, currentProjectId);
+        case CommandType.VIEW_RELATIONSHIPS:
+          return await this.crudHandlers.handleViewRelationships(parsed, currentProjectId);
+        case CommandType.EDIT_RELATIONSHIP:
+          return await this.crudHandlers.handleEditRelationship(parsed, currentProjectId);
+        case CommandType.DELETE_RELATIONSHIP:
+          return await this.crudHandlers.handleDeleteRelationship(parsed, currentProjectId);
+
         // Stack operations
         case CommandType.ADD_TECH:
           return await this.stackHandlers.handleAddTech(parsed, currentProjectId);

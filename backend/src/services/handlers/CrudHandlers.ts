@@ -11,29 +11,80 @@ import { sanitizeText, validateTodoText } from '../../utils/validation';
 export class CrudHandlers extends BaseCommandHandler {
   /**
    * Handle /add todo command
+   * Now requires flag-based syntax: /add todo --title="..." [--content="..."] [--priority=...] [--status=...]
    */
   async handleAddTodo(parsed: ParsedCommand, currentProjectId?: string): Promise<CommandResponse> {
     const { project, error } = await this.resolveProjectWithEditCheck(parsed.projectMention, currentProjectId);
     if (error) return error;
 
-    const todoText = parsed.args.join(' ').trim();
-    const validation = validateTodoText(todoText);
+    // Check if using old syntax (args without flags)
+    if (parsed.args.length > 0 && parsed.flags.size === 0) {
+      return {
+        type: ResponseType.ERROR,
+        message: '❌ Legacy syntax no longer supported. Please use flag-based syntax.',
+        suggestions: [
+          '/add todo --title="your todo title"',
+          '/add todo --title="fix bug" --content="detailed description" --priority=high',
+          '/help add todo'
+        ]
+      };
+    }
 
+    // Get flags
+    const title = parsed.flags.get('title') as string;
+    const content = parsed.flags.get('content') as string;
+    const priority = parsed.flags.get('priority') as string;
+    const status = parsed.flags.get('status') as string;
+
+    // Validate required flags
+    if (!title) {
+      return {
+        type: ResponseType.ERROR,
+        message: '❌ --title flag is required',
+        suggestions: [
+          '/add todo --title="your todo title"',
+          '/add todo --title="fix authentication bug" --priority=high',
+          '/help add todo'
+        ]
+      };
+    }
+
+    // Validate title
+    const validation = validateTodoText(title);
     if (!validation.isValid) {
       return {
         type: ResponseType.ERROR,
-        message: validation.error || 'Invalid todo text',
+        message: validation.error || 'Invalid todo title',
         suggestions: ['/help add todo']
+      };
+    }
+
+    // Validate priority if provided
+    if (priority && !['low', 'medium', 'high'].includes(priority.toLowerCase())) {
+      return {
+        type: ResponseType.ERROR,
+        message: '❌ Invalid priority. Must be: low, medium, or high',
+        suggestions: ['/add todo --title="task" --priority=high']
+      };
+    }
+
+    // Validate status if provided
+    const validStatuses = ['not_started', 'in_progress', 'completed', 'blocked'];
+    if (status && !validStatuses.includes(status.toLowerCase())) {
+      return {
+        type: ResponseType.ERROR,
+        message: `❌ Invalid status. Must be one of: ${validStatuses.join(', ')}`,
+        suggestions: ['/add todo --title="task" --status=in_progress']
       };
     }
 
     const newTodo = {
       id: uuidv4(),
-      text: validation.sanitized!,
-      description: '',
-      priority: 'medium' as const,
+      title: validation.sanitized!,
+      description: content ? sanitizeText(content) : '',
+      priority: (priority?.toLowerCase() as 'low' | 'medium' | 'high') || 'medium',
       completed: false,
-      status: 'not_started' as const,
+      status: (status?.toLowerCase() as 'not_started' | 'in_progress' | 'completed' | 'blocked') || 'not_started',
       createdAt: new Date(),
       createdBy: new mongoose.Types.ObjectId(this.userId)
     };
@@ -50,28 +101,68 @@ export class CrudHandlers extends BaseCommandHandler {
 
   /**
    * Handle /add note command
+   * Now requires flag-based syntax: /add note --title="..." --content="..."
    */
   async handleAddNote(parsed: ParsedCommand, currentProjectId?: string): Promise<CommandResponse> {
     const { project, error } = await this.resolveProjectWithEditCheck(parsed.projectMention, currentProjectId);
     if (error) return error;
 
-    const noteText = sanitizeText(parsed.args.join(' ').trim());
-    if (!noteText) {
+    // Check if using old syntax (args without flags)
+    if (parsed.args.length > 0 && parsed.flags.size === 0) {
       return {
         type: ResponseType.ERROR,
-        message: 'Note text is required',
+        message: '❌ Legacy syntax no longer supported. Please use flag-based syntax.',
+        suggestions: [
+          '/add note --title="Note Title" --content="Note content"',
+          '/add note --title="Meeting Notes" --content="Discussed project architecture..."',
+          '/help add note'
+        ]
+      };
+    }
+
+    // Get flags
+    const title = parsed.flags.get('title') as string;
+    const content = parsed.flags.get('content') as string;
+
+    // Validate required flags
+    if (!title) {
+      return {
+        type: ResponseType.ERROR,
+        message: '❌ --title flag is required',
+        suggestions: [
+          '/add note --title="Note Title" --content="Note content"',
+          '/help add note'
+        ]
+      };
+    }
+
+    if (!content) {
+      return {
+        type: ResponseType.ERROR,
+        message: '❌ --content flag is required',
+        suggestions: [
+          '/add note --title="Note Title" --content="Note content"',
+          '/help add note'
+        ]
+      };
+    }
+
+    const sanitizedTitle = sanitizeText(title);
+    const sanitizedContent = sanitizeText(content);
+
+    if (!sanitizedTitle || !sanitizedContent) {
+      return {
+        type: ResponseType.ERROR,
+        message: '❌ Title and content cannot be empty',
         suggestions: ['/help add note']
       };
     }
 
-    const words = noteText.split(' ');
-    const title = words.slice(0, 5).join(' ') + (words.length > 5 ? '...' : '');
-
     const newNote = {
       id: uuidv4(),
-      title,
+      title: sanitizedTitle,
       description: '',
-      content: noteText,
+      content: sanitizedContent,
       createdAt: new Date(),
       updatedAt: new Date(),
       createdBy: new mongoose.Types.ObjectId(this.userId)
@@ -81,34 +172,76 @@ export class CrudHandlers extends BaseCommandHandler {
     await project.save();
 
     return this.buildSuccessResponse(
-      `📝 Added note to ${project.name}`,
+      `📝 Added note "${sanitizedTitle}" to ${project.name}`,
       project,
       'add_note',
-      { title, preview: noteText.slice(0, 50) + (noteText.length > 50 ? '...' : '') }
+      { title: sanitizedTitle, preview: sanitizedContent.slice(0, 50) + (sanitizedContent.length > 50 ? '...' : '') }
     );
   }
 
   /**
    * Handle /add devlog command
+   * Now requires flag-based syntax: /add devlog --title="..." --content="..."
    */
   async handleAddDevLog(parsed: ParsedCommand, currentProjectId?: string): Promise<CommandResponse> {
     const { project, error } = await this.resolveProjectWithEditCheck(parsed.projectMention, currentProjectId);
     if (error) return error;
 
-    const entryText = sanitizeText(parsed.args.join(' ').trim());
-    if (!entryText) {
+    // Check if using old syntax (args without flags)
+    if (parsed.args.length > 0 && parsed.flags.size === 0) {
       return {
         type: ResponseType.ERROR,
-        message: 'Dev log entry is required',
+        message: '❌ Legacy syntax no longer supported. Please use flag-based syntax.',
+        suggestions: [
+          '/add devlog --title="Entry Title" --content="What I worked on today..."',
+          '/add devlog --title="Bug Fix" --content="Fixed memory leak in user service"',
+          '/help add devlog'
+        ]
+      };
+    }
+
+    // Get flags
+    const title = parsed.flags.get('title') as string;
+    const content = parsed.flags.get('content') as string;
+
+    // Validate required flags
+    if (!title) {
+      return {
+        type: ResponseType.ERROR,
+        message: '❌ --title flag is required',
+        suggestions: [
+          '/add devlog --title="Entry Title" --content="Entry content"',
+          '/help add devlog'
+        ]
+      };
+    }
+
+    if (!content) {
+      return {
+        type: ResponseType.ERROR,
+        message: '❌ --content flag is required',
+        suggestions: [
+          '/add devlog --title="Entry Title" --content="Entry content"',
+          '/help add devlog'
+        ]
+      };
+    }
+
+    const sanitizedTitle = sanitizeText(title);
+    const sanitizedContent = sanitizeText(content);
+
+    if (!sanitizedTitle || !sanitizedContent) {
+      return {
+        type: ResponseType.ERROR,
+        message: '❌ Title and content cannot be empty',
         suggestions: ['/help add devlog']
       };
     }
 
     const newEntry = {
       id: uuidv4(),
-      title: '',
-      description: '',
-      entry: entryText,
+      title: sanitizedTitle,
+      description: sanitizedContent,
       date: new Date(),
       createdBy: new mongoose.Types.ObjectId(this.userId)
     };
@@ -117,72 +250,131 @@ export class CrudHandlers extends BaseCommandHandler {
     await project.save();
 
     return this.buildSuccessResponse(
-      `📋 Added dev log entry to ${project.name}`,
+      `📋 Added dev log entry "${sanitizedTitle}" to ${project.name}`,
       project,
       'add_devlog',
-      { preview: entryText.slice(0, 50) + (entryText.length > 50 ? '...' : '') }
+      { preview: sanitizedContent.slice(0, 50) + (sanitizedContent.length > 50 ? '...' : '') }
     );
   }
 
   /**
    * Handle /add component command
+   * Now requires flag-based syntax: /add component --feature="..." --category=... --type=... --title="..." --content="..."
    */
   async handleAddComponent(parsed: ParsedCommand, currentProjectId?: string): Promise<CommandResponse> {
     const { project, error } = await this.resolveProjectWithEditCheck(parsed.projectMention, currentProjectId);
     if (error) return error;
 
-    const fullText = parsed.args.join(' ').trim();
-    const parts = fullText.split(' - ');
-
-    if (parts.length < 3) {
+    // Check if using old syntax (looking for "-" separator or args without flags)
+    const separatorIndex = parsed.args.indexOf('-');
+    if (separatorIndex !== -1 || (parsed.args.length > 0 && parsed.flags.size === 0)) {
       return {
         type: ResponseType.ERROR,
-        message: 'Invalid format. Use: /add component [feature] [type] [title] - [content]',
+        message: '❌ Legacy syntax no longer supported. Please use flag-based syntax.',
         suggestions: [
-          '/add component Auth Core Login - Handles user authentication',
-          '/add component Users API GET - Retrieve all users endpoint',
+          '/add component --feature="Auth" --category=backend --type=service --title="Login Service" --content="Handles user authentication"',
+          '/add component --feature="Dashboard" --category=frontend --type=component --title="UserCard" --content="Displays user information"',
           '/help add component'
         ]
       };
     }
 
-    const firstPart = parts[0].trim().split(' ');
-    if (firstPart.length < 3) {
+    // Get flags
+    const feature = parsed.flags.get('feature') as string;
+    const category = parsed.flags.get('category') as string;
+    const type = parsed.flags.get('type') as string;
+    const title = parsed.flags.get('title') as string;
+    const content = parsed.flags.get('content') as string;
+
+    // Validate required flags
+    if (!feature) {
       return {
         type: ResponseType.ERROR,
-        message: 'Feature, type, and title are required. Use: /add component [feature] [type] [title] - [content]',
-        suggestions: ['/help add component']
+        message: '❌ --feature flag is required',
+        suggestions: [
+          '/add component --feature="FeatureName" --category=backend --type=service --title="Title" --content="Description"',
+          '/help add component'
+        ]
       };
     }
 
-    const feature = firstPart[0];
-    const componentType = firstPart[1];
-    const title = sanitizeText(firstPart.slice(2).join(' '));
-    const content = sanitizeText(parts.slice(1).join(' - '));
-
-    if (!feature || !componentType || !title || !content) {
+    if (!category) {
       return {
         type: ResponseType.ERROR,
-        message: 'Feature, type, title, and content are all required',
-        suggestions: ['/help add component']
+        message: '❌ --category flag is required',
+        suggestions: [
+          'Valid categories: frontend, backend, database, infrastructure, security, api, documentation, asset',
+          '/add component --feature="Auth" --category=backend --type=service --title="Login" --content="..."',
+          '/help add component'
+        ]
       };
     }
 
-    const validTypes = ['Core', 'API', 'Data', 'UI', 'Config', 'Security', 'Docs', 'Dependencies'];
-    if (!validTypes.includes(componentType)) {
+    if (!type) {
       return {
         type: ResponseType.ERROR,
-        message: `Invalid component type "${componentType}". Valid types: ${validTypes.join(', ')}`,
-        suggestions: validTypes.map(t => `/add component [feature] ${t} [title] - [content]`)
+        message: '❌ --type flag is required',
+        suggestions: [
+          'Common types: component, service, schema, config, auth, client, guide, dependency',
+          '/add component --feature="Auth" --category=backend --type=service --title="Login" --content="..."',
+          '/help add component'
+        ]
+      };
+    }
+
+    if (!title) {
+      return {
+        type: ResponseType.ERROR,
+        message: '❌ --title flag is required',
+        suggestions: [
+          '/add component --feature="Auth" --category=backend --type=service --title="Login Service" --content="..."',
+          '/help add component'
+        ]
+      };
+    }
+
+    if (!content) {
+      return {
+        type: ResponseType.ERROR,
+        message: '❌ --content flag is required',
+        suggestions: [
+          '/add component --feature="Auth" --category=backend --type=service --title="Login" --content="Handles authentication"',
+          '/help add component'
+        ]
+      };
+    }
+
+    // Validate category
+    const validCategories = ['frontend', 'backend', 'database', 'infrastructure', 'security', 'api', 'documentation', 'asset'];
+    if (!validCategories.includes(category.toLowerCase())) {
+      return {
+        type: ResponseType.ERROR,
+        message: `❌ Invalid category "${category}". Valid categories: ${validCategories.join(', ')}`,
+        suggestions: ['/add component --feature="Auth" --category=backend --type=service --title="Login" --content="..."']
+      };
+    }
+
+    // Sanitize inputs
+    const sanitizedFeature = sanitizeText(feature);
+    const sanitizedTitle = sanitizeText(title);
+    const sanitizedContent = sanitizeText(content);
+    const sanitizedType = sanitizeText(type);
+
+    if (!sanitizedFeature || !sanitizedTitle || !sanitizedContent || !sanitizedType) {
+      return {
+        type: ResponseType.ERROR,
+        message: '❌ Feature, title, type, and content cannot be empty',
+        suggestions: ['/help add component']
       };
     }
 
     const newComponent = {
       id: uuidv4(),
-      type: componentType as any,
-      title,
-      content,
-      feature: feature.trim(),
+      category: category.toLowerCase() as any,
+      type: sanitizedType,
+      title: sanitizedTitle,
+      content: sanitizedContent,
+      feature: sanitizedFeature,
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -191,7 +383,7 @@ export class CrudHandlers extends BaseCommandHandler {
     await project.save();
 
     return this.buildSuccessResponse(
-      `🧩 Added ${componentType} component "${title}" to feature "${feature}" in ${project.name}`,
+      `🧩 Added ${category.toLowerCase()} component "${sanitizedTitle}" to feature "${sanitizedFeature}" in ${project.name}`,
       project,
       'add_component'
     );
@@ -257,14 +449,14 @@ export class CrudHandlers extends BaseCommandHandler {
       const subtasks = allTodos.filter((t: any) => t.parentTodoId === todo.id);
       return {
         id: todo.id,
-        text: todo.text,
+        title: todo.title,
         priority: todo.priority,
         status: todo.status,
         completed: todo.completed,
         dueDate: todo.dueDate,
         subtasks: subtasks.map((sub: any) => ({
           id: sub.id,
-          text: sub.text,
+          title: sub.title,
           priority: sub.priority,
           status: sub.status,
           completed: sub.completed,
@@ -315,7 +507,7 @@ export class CrudHandlers extends BaseCommandHandler {
         entries: devLog.map((entry: any) => ({
           id: entry.id,
           title: entry.title,
-          entry: entry.entry,
+          description: entry.description,
           date: entry.date
         })).reverse()
       }
@@ -410,12 +602,12 @@ export class CrudHandlers extends BaseCommandHandler {
 
     // Search todos
     (project.todos || []).forEach((todo: any) => {
-      if (todo.text.toLowerCase().includes(query) ||
+      if (todo.title.toLowerCase().includes(query) ||
           (todo.description && todo.description.toLowerCase().includes(query))) {
         results.push({
           type: 'todo',
           id: todo.id,
-          text: todo.text,
+          title: todo.title,
           priority: todo.priority,
           status: todo.status,
           projectName: project.name,
@@ -442,12 +634,12 @@ export class CrudHandlers extends BaseCommandHandler {
     // Search devlog
     (project.devLog || []).forEach((entry: any) => {
       if (entry.title.toLowerCase().includes(query) ||
-          entry.entry.toLowerCase().includes(query)) {
+          (entry.description && entry.description.toLowerCase().includes(query))) {
         results.push({
           type: 'devlog',
           id: entry.id,
           title: entry.title,
-          preview: entry.entry.substring(0, 100),
+          preview: entry.description ? entry.description.substring(0, 100) : '',
           date: entry.date,
           projectName: project.name,
           projectId: project._id.toString()
@@ -537,12 +729,12 @@ export class CrudHandlers extends BaseCommandHandler {
     for (const project of projects) {
       // Search todos
       (project.todos || []).forEach((todo: any) => {
-        if (todo.text.toLowerCase().includes(queryLower) ||
+        if (todo.title.toLowerCase().includes(queryLower) ||
             (todo.description && todo.description.toLowerCase().includes(queryLower))) {
           results.push({
             type: 'todo',
             id: todo.id,
-            text: todo.text,
+            title: todo.title,
             priority: todo.priority,
             status: todo.status,
             projectName: project.name,
@@ -569,12 +761,12 @@ export class CrudHandlers extends BaseCommandHandler {
       // Search devlog
       (project.devLog || []).forEach((entry: any) => {
         if (entry.title.toLowerCase().includes(queryLower) ||
-            entry.entry.toLowerCase().includes(queryLower)) {
+            (entry.description && entry.description.toLowerCase().includes(queryLower))) {
           results.push({
             type: 'devlog',
             id: entry.id,
             title: entry.title,
-            preview: entry.entry.substring(0, 100),
+            preview: entry.description ? entry.description.substring(0, 100) : '',
             date: entry.date,
             projectName: project.name,
             projectId: project._id.toString()
@@ -646,7 +838,7 @@ export class CrudHandlers extends BaseCommandHandler {
     await project.save();
 
     return this.buildSuccessResponse(
-      `✅ Marked todo as completed: "${todo.text}"`,
+      `✅ Marked todo as completed: "${todo.title}"`,
       project,
       'complete_todo'
     );
@@ -709,7 +901,7 @@ export class CrudHandlers extends BaseCommandHandler {
     await project.save();
 
     return this.buildSuccessResponse(
-      `✅ Assigned todo "${todo.text}" to ${user.firstName} ${user.lastName}`,
+      `✅ Assigned todo "${todo.title}" to ${user.firstName} ${user.lastName}`,
       project,
       'assign_todo'
     );
@@ -756,7 +948,7 @@ export class CrudHandlers extends BaseCommandHandler {
     await project.save();
 
     return this.buildSuccessResponse(
-      `✅ Set priority to ${priorityStr} for todo: "${todo.text}"`,
+      `✅ Set priority to ${priorityStr} for todo: "${todo.title}"`,
       project,
       'set_priority'
     );
@@ -816,7 +1008,7 @@ export class CrudHandlers extends BaseCommandHandler {
     await project.save();
 
     return this.buildSuccessResponse(
-      `✅ Set due date to ${dueDate.toLocaleDateString()} for todo: "${todo.text}"`,
+      `✅ Set due date to ${dueDate.toLocaleDateString()} for todo: "${todo.title}"`,
       project,
       'set_due_date'
     );
@@ -882,7 +1074,7 @@ export class CrudHandlers extends BaseCommandHandler {
 
     const newSubtask = {
       id: uuidv4(),
-      text: validation.sanitized!,
+      title: validation.sanitized!,
       description: '',
       priority: parentTodo.priority || 'medium' as const,
       completed: false,
@@ -896,10 +1088,10 @@ export class CrudHandlers extends BaseCommandHandler {
     await project.save();
 
     return this.buildSuccessResponse(
-      `✅ Added subtask "${validation.sanitized}" to "${parentTodo.text}"`,
+      `✅ Added subtask "${validation.sanitized}" to "${parentTodo.title}"`,
       project,
       'add_subtask',
-      { parentTodo: parentTodo.text, subtask: validation.sanitized }
+      { parentTodo: parentTodo.title, subtask: validation.sanitized }
     );
   }
 
@@ -931,8 +1123,8 @@ export class CrudHandlers extends BaseCommandHandler {
     if (subtasks.length === 0) {
       return {
         type: ResponseType.INFO,
-        message: `No subtasks found for "${parentTodo.text}"`,
-        suggestions: [`/add subtask "${parentTodo.text}" [subtask text]`]
+        message: `No subtasks found for "${parentTodo.title}"`,
+        suggestions: [`/add subtask "${parentTodo.title}" [subtask text]`]
       };
     }
 
@@ -940,17 +1132,17 @@ export class CrudHandlers extends BaseCommandHandler {
     const pending = subtasks.length - completed;
 
     return this.buildDataResponse(
-      `📋 Subtasks for "${parentTodo.text}" (${pending} pending, ${completed} completed)`,
+      `📋 Subtasks for "${parentTodo.title}" (${pending} pending, ${completed} completed)`,
       resolution.project,
       'view_subtasks',
       {
         parentTodo: {
           id: parentTodo.id,
-          text: parentTodo.text
+          title: parentTodo.title
         },
         subtasks: subtasks.map((subtask: any) => ({
           id: subtask.id,
-          text: subtask.text,
+          title: subtask.title,
           priority: subtask.priority,
           status: subtask.status,
           completed: subtask.completed,
@@ -975,7 +1167,7 @@ export class CrudHandlers extends BaseCommandHandler {
         suggestions: [
           '/view todos - See all todos with #IDs',
           '💡 Edit with wizard: /edit todo 1',
-          '💡 Edit specific field: /edit todo 1 --field=text --content="new text"',
+          '💡 Edit specific field: /edit todo 1 --field=title --content="new title"',
           '/help edit todo'
         ]
       };
@@ -1001,7 +1193,7 @@ export class CrudHandlers extends BaseCommandHandler {
 
     if (field && content) {
       // Direct field update
-      const validFields = ['text', 'description', 'priority', 'status'];
+      const validFields = ['title', 'content', 'priority', 'status'];
 
       if (!validFields.includes(field)) {
         return {
@@ -1012,17 +1204,19 @@ export class CrudHandlers extends BaseCommandHandler {
       }
 
       // Validate and update based on field
-      if (field === 'text') {
+      if (field === 'title') {
         const validation = validateTodoText(content);
         if (!validation.isValid) {
           return {
             type: ResponseType.ERROR,
-            message: validation.error || 'Invalid todo text',
+            message: validation.error || 'Invalid todo title',
             suggestions: ['/help edit todo']
           };
         }
-        todo.text = validation.sanitized!;
-      } else if (field === 'description') {
+        console.log(`[EDIT TODO] Updating title from "${todo.title}" to "${validation.sanitized}"`);
+        todo.title = validation.sanitized!;
+      } else if (field === 'content') {
+        console.log(`[EDIT TODO] Updating description for todo "${todo.title}"`);
         todo.description = sanitizeText(content);
       } else if (field === 'priority') {
         if (!['low', 'medium', 'high'].includes(content.toLowerCase())) {
@@ -1032,6 +1226,7 @@ export class CrudHandlers extends BaseCommandHandler {
             suggestions: ['/help edit todo']
           };
         }
+        console.log(`[EDIT TODO] Updating priority for todo "${todo.title}" to ${content.toLowerCase()}`);
         todo.priority = content.toLowerCase() as 'low' | 'medium' | 'high';
       } else if (field === 'status') {
         const validStatuses = ['not_started', 'in_progress', 'completed', 'blocked'];
@@ -1042,13 +1237,25 @@ export class CrudHandlers extends BaseCommandHandler {
             suggestions: ['/help edit todo']
           };
         }
+        console.log(`[EDIT TODO] Updating status for todo "${todo.title}" to ${content.toLowerCase()}`);
         todo.status = content.toLowerCase() as any;
       }
 
-      await project.save();
+      try {
+        console.log(`[EDIT TODO] Saving project "${project.name}" (ID: ${project._id})`);
+        await project.save();
+        console.log(`[EDIT TODO] Save successful for todo "${todo.title}"`);
+      } catch (saveError) {
+        console.error('[EDIT TODO] Save failed:', saveError);
+        return {
+          type: ResponseType.ERROR,
+          message: `Failed to save todo: ${saveError instanceof Error ? saveError.message : 'Unknown error'}`,
+          suggestions: ['/help edit todo']
+        };
+      }
 
       return this.buildSuccessResponse(
-        `✅ Updated todo ${field}: "${todo.text}"`,
+        `✅ Updated todo ${field}: "${todo.title}"`,
         project,
         'edit_todo'
       );
@@ -1057,27 +1264,27 @@ export class CrudHandlers extends BaseCommandHandler {
     // No field flags - return interactive wizard
     return {
       type: ResponseType.PROMPT,
-      message: `✏️ Edit Todo: "${todo.text}"`,
+      message: `✏️ Edit Todo: "${todo.title}"`,
       data: {
         wizardType: 'edit_todo',
         todoId: todo.id,
         currentValues: {
-          text: todo.text,
-          description: todo.description || '',
+          title: todo.title,
+          content: todo.description || '',
           priority: todo.priority,
           status: todo.status
         },
         steps: [
           {
-            id: 'text',
-            label: 'Todo Text',
+            id: 'title',
+            label: 'Title',
             type: 'text',
             required: true,
-            value: todo.text
+            value: todo.title
           },
           {
-            id: 'description',
-            label: 'Description',
+            id: 'content',
+            label: 'Content',
             type: 'textarea',
             required: false,
             value: todo.description || ''
@@ -1161,13 +1368,27 @@ export class CrudHandlers extends BaseCommandHandler {
       // Update the specified field
       const sanitizedContent = sanitizeText(content);
       if (field === 'title') {
+        console.log(`[EDIT NOTE] Updating title from "${note.title}" to "${sanitizedContent}"`);
         note.title = sanitizedContent;
       } else if (field === 'content') {
+        console.log(`[EDIT NOTE] Updating content for note "${note.title}"`);
         note.content = sanitizedContent;
       }
 
       note.updatedAt = new Date();
-      await project.save();
+
+      try {
+        console.log(`[EDIT NOTE] Saving project "${project.name}" (ID: ${project._id})`);
+        await project.save();
+        console.log(`[EDIT NOTE] Save successful for note "${note.title}"`);
+      } catch (saveError) {
+        console.error('[EDIT NOTE] Save failed:', saveError);
+        return {
+          type: ResponseType.ERROR,
+          message: `Failed to save note: ${saveError instanceof Error ? saveError.message : 'Unknown error'}`,
+          suggestions: ['/help edit note']
+        };
+      }
 
       return this.buildSuccessResponse(
         `📝 Updated note ${field}: "${note.title}"`,
@@ -1226,7 +1447,7 @@ export class CrudHandlers extends BaseCommandHandler {
         suggestions: [
           '/view devlog - See all entries with #IDs',
           '💡 Edit with wizard: /edit devlog 1',
-          '💡 Edit specific field: /edit devlog 1 --field=entry --content="new entry"',
+          '💡 Edit specific field: /edit devlog 1 --field=content --content="new content"',
           '/help edit devlog'
         ]
       };
@@ -1252,7 +1473,7 @@ export class CrudHandlers extends BaseCommandHandler {
 
     if (field && content) {
       // Direct field update
-      const validFields = ['title', 'description', 'entry'];
+      const validFields = ['title', 'content'];
 
       if (!validFields.includes(field)) {
         return {
@@ -1265,15 +1486,27 @@ export class CrudHandlers extends BaseCommandHandler {
       // Update the specified field
       const sanitizedContent = sanitizeText(content);
       if (field === 'title') {
+        console.log(`[EDIT DEVLOG] Updating title to "${sanitizedContent}"`);
         entry.title = sanitizedContent;
-      } else if (field === 'description') {
+      } else if (field === 'content') {
+        console.log(`[EDIT DEVLOG] Updating description`);
         entry.description = sanitizedContent;
-      } else if (field === 'entry') {
-        entry.entry = sanitizedContent;
       }
 
       entry.date = new Date();
-      await project.save();
+
+      try {
+        console.log(`[EDIT DEVLOG] Saving project "${project.name}" (ID: ${project._id})`);
+        await project.save();
+        console.log(`[EDIT DEVLOG] Save successful`);
+      } catch (saveError) {
+        console.error('[EDIT DEVLOG] Save failed:', saveError);
+        return {
+          type: ResponseType.ERROR,
+          message: `Failed to save dev log: ${saveError instanceof Error ? saveError.message : 'Unknown error'}`,
+          suggestions: ['/help edit devlog']
+        };
+      }
 
       return this.buildSuccessResponse(
         `📋 Updated dev log ${field}`,
@@ -1291,8 +1524,7 @@ export class CrudHandlers extends BaseCommandHandler {
         entryId: entry.id,
         currentValues: {
           title: entry.title || '',
-          description: entry.description || '',
-          entry: entry.entry
+          content: entry.description || ''
         },
         steps: [
           {
@@ -1303,18 +1535,11 @@ export class CrudHandlers extends BaseCommandHandler {
             value: entry.title || ''
           },
           {
-            id: 'description',
-            label: 'Description',
-            type: 'text',
-            required: false,
-            value: entry.description || ''
-          },
-          {
-            id: 'entry',
-            label: 'Entry',
+            id: 'content',
+            label: 'Content',
             type: 'textarea',
             required: true,
-            value: entry.entry
+            value: entry.description || ''
           }
         ]
       },
@@ -1364,14 +1589,205 @@ export class CrudHandlers extends BaseCommandHandler {
     const field = parsed.flags.get('field') as string;
     const content = parsed.flags.get('content') as string;
 
+    // Check for relationship management flags
+    if (field === 'relationship' || field === 'relationships') {
+      const action = parsed.flags.get('action') as string;
+      const relId = parsed.flags.get('id') as string;
+      const target = parsed.flags.get('target') as string;
+      const relType = parsed.flags.get('type') as string;
+      const description = parsed.flags.get('description') as string;
+
+      if (!action || !['add', 'edit', 'delete'].includes(action.toLowerCase())) {
+        return {
+          type: ResponseType.ERROR,
+          message: '❌ Relationship management requires --action=add|edit|delete (note: edit = delete + add)',
+          suggestions: [
+            '/edit component 1 --field=relationship --action=add --target=2 --type=uses',
+            '/edit component 1 --field=relationship --action=delete --id=1'
+          ]
+        };
+      }
+
+      const actionLower = action.toLowerCase();
+
+      // Add relationship
+      if (actionLower === 'add') {
+        if (!target || !relType) {
+          return {
+            type: ResponseType.ERROR,
+            message: '❌ Adding relationship requires --target and --type',
+            suggestions: ['/edit component 1 --field=relationship --action=add --target=2 --type=uses']
+          };
+        }
+
+        const targetComponent = this.findComponent(project.components, target);
+        if (!targetComponent) {
+          return {
+            type: ResponseType.ERROR,
+            message: `❌ Target component not found: "${target}"`,
+            suggestions: ['/view components']
+          };
+        }
+
+        const validTypes = ['uses', 'implements', 'extends', 'depends_on', 'calls', 'contains', 'mentions', 'similar'];
+        if (!validTypes.includes(relType.toLowerCase())) {
+          return {
+            type: ResponseType.ERROR,
+            message: `❌ Invalid relationship type. Valid: ${validTypes.join(', ')}`,
+            suggestions: ['/help edit component']
+          };
+        }
+
+        if (!component.relationships) {
+          component.relationships = [];
+        }
+
+        if (component.relationships.some((r: any) => r.targetId === targetComponent.id)) {
+          return {
+            type: ResponseType.ERROR,
+            message: `❌ Relationship already exists to "${targetComponent.title}". To change it, delete and re-add with new type.`,
+            suggestions: [
+              `/edit component "${component.title}" --field=relationship --action=delete --id=<relationship-id>`,
+              `/edit component "${component.title}" --field=relationship --action=add --target=${targetComponent.id} --type=${relType}`
+            ]
+          };
+        }
+
+        component.relationships.push({
+          id: uuidv4(),
+          targetId: targetComponent.id,
+          relationType: relType.toLowerCase() as any,
+          description: sanitizeText(description || '')
+        });
+
+        component.updatedAt = new Date();
+        await project.save();
+
+        return this.buildSuccessResponse(
+          `✅ Added ${relType} relationship: "${component.title}" → "${targetComponent.title}"`,
+          project,
+          'edit_component'
+        );
+      }
+
+      // Edit relationship (implemented as delete + add)
+      if (actionLower === 'edit') {
+        if (!relId) {
+          return {
+            type: ResponseType.ERROR,
+            message: '❌ Editing relationship requires --id. Note: This performs delete + add behind the scenes.',
+            suggestions: ['/edit component 1 --field=relationship --action=edit --id=1 --type=depends_on']
+          };
+        }
+
+        if (!component.relationships || component.relationships.length === 0) {
+          return {
+            type: ResponseType.ERROR,
+            message: `❌ No relationships found for "${component.title}"`,
+            suggestions: []
+          };
+        }
+
+        let relationship: any = null;
+        const relIndex = parseInt(relId);
+        if (!isNaN(relIndex) && relIndex > 0 && relIndex <= component.relationships.length) {
+          relationship = component.relationships[relIndex - 1];
+        } else {
+          relationship = component.relationships.find((r: any) => r.id === relId);
+        }
+
+        if (!relationship) {
+          return {
+            type: ResponseType.ERROR,
+            message: `❌ Relationship not found: "${relId}"`,
+            suggestions: [`/view relationships "${component.title}"`]
+          };
+        }
+
+        if (relType) {
+          const validTypes = ['uses', 'implements', 'extends', 'depends_on', 'calls', 'contains', 'mentions', 'similar'];
+          if (!validTypes.includes(relType.toLowerCase())) {
+            return {
+              type: ResponseType.ERROR,
+              message: `❌ Invalid relationship type. Valid: ${validTypes.join(', ')}`,
+              suggestions: ['/help edit component']
+            };
+          }
+          relationship.relationType = relType.toLowerCase();
+        }
+
+        if (description) {
+          relationship.description = sanitizeText(description);
+        }
+
+        component.updatedAt = new Date();
+        await project.save();
+
+        const targetComp = project.components.find((c: any) => c.id === relationship.targetId);
+        return this.buildSuccessResponse(
+          `✅ Updated relationship to "${targetComp?.title || 'unknown'}"`,
+          project,
+          'edit_component'
+        );
+      }
+
+      // Delete relationship
+      if (actionLower === 'delete') {
+        if (!relId) {
+          return {
+            type: ResponseType.ERROR,
+            message: '❌ Deleting relationship requires --id',
+            suggestions: ['/edit component 1 --field=relationship --action=delete --id=1']
+          };
+        }
+
+        if (!component.relationships || component.relationships.length === 0) {
+          return {
+            type: ResponseType.ERROR,
+            message: `❌ No relationships found for "${component.title}"`,
+            suggestions: []
+          };
+        }
+
+        let relationshipIndex = -1;
+        const relIndex = parseInt(relId);
+        if (!isNaN(relIndex) && relIndex > 0 && relIndex <= component.relationships.length) {
+          relationshipIndex = relIndex - 1;
+        } else {
+          relationshipIndex = component.relationships.findIndex((r: any) => r.id === relId);
+        }
+
+        if (relationshipIndex === -1) {
+          return {
+            type: ResponseType.ERROR,
+            message: `❌ Relationship not found: "${relId}"`,
+            suggestions: []
+          };
+        }
+
+        const relationship = component.relationships[relationshipIndex];
+        const targetComp = project.components.find((c: any) => c.id === relationship.targetId);
+
+        component.relationships.splice(relationshipIndex, 1);
+        component.updatedAt = new Date();
+        await project.save();
+
+        return this.buildSuccessResponse(
+          `🗑️  Deleted ${relationship.relationType} relationship to "${targetComp?.title || 'unknown'}"`,
+          project,
+          'edit_component'
+        );
+      }
+    }
+
     if (field && content) {
       // Direct field update
-      const validFields = ['title', 'content', 'feature'];
+      const validFields = ['title', 'content', 'feature', 'category', 'type'];
 
       if (!validFields.includes(field)) {
         return {
           type: ResponseType.ERROR,
-          message: `❌ Invalid field: "${field}". Valid fields: ${validFields.join(', ')}`,
+          message: `❌ Invalid field: "${field}". Valid fields: ${validFields.join(', ')}, relationship`,
           suggestions: ['/help edit component']
         };
       }
@@ -1379,15 +1795,44 @@ export class CrudHandlers extends BaseCommandHandler {
       // Update the specified field
       const sanitizedContent = sanitizeText(content);
       if (field === 'title') {
+        console.log(`[EDIT COMPONENT] Updating title from "${component.title}" to "${sanitizedContent}"`);
         component.title = sanitizedContent;
       } else if (field === 'content') {
+        console.log(`[EDIT COMPONENT] Updating content for component "${component.title}"`);
         component.content = sanitizedContent;
       } else if (field === 'feature') {
+        console.log(`[EDIT COMPONENT] Updating feature for component "${component.title}" to "${sanitizedContent}"`);
         component.feature = sanitizedContent;
+      } else if (field === 'category') {
+        const validCategories = ['frontend', 'backend', 'database', 'infrastructure', 'security', 'api', 'documentation', 'asset'];
+        if (!validCategories.includes(sanitizedContent.toLowerCase())) {
+          return {
+            type: ResponseType.ERROR,
+            message: `❌ Invalid category: "${sanitizedContent}". Valid categories: ${validCategories.join(', ')}`,
+            suggestions: ['/help edit component']
+          };
+        }
+        console.log(`[EDIT COMPONENT] Updating category for component "${component.title}" to "${sanitizedContent.toLowerCase()}"`);
+        component.category = sanitizedContent.toLowerCase() as any;
+      } else if (field === 'type') {
+        console.log(`[EDIT COMPONENT] Updating type for component "${component.title}" to "${sanitizedContent}"`);
+        component.type = sanitizedContent;
       }
 
       component.updatedAt = new Date();
-      await project.save();
+
+      try {
+        console.log(`[EDIT COMPONENT] Saving project "${project.name}" (ID: ${project._id})`);
+        await project.save();
+        console.log(`[EDIT COMPONENT] Save successful for component "${component.title}"`);
+      } catch (saveError) {
+        console.error('[EDIT COMPONENT] Save failed:', saveError);
+        return {
+          type: ResponseType.ERROR,
+          message: `Failed to save component: ${saveError instanceof Error ? saveError.message : 'Unknown error'}`,
+          suggestions: ['/help edit component']
+        };
+      }
 
       return this.buildSuccessResponse(
         `🧩 Updated component ${field}: "${component.title}"`,
@@ -1396,7 +1841,23 @@ export class CrudHandlers extends BaseCommandHandler {
       );
     }
 
-    // No field flags - return interactive wizard
+    // No field flags - return interactive wizard with all fields including category, type, and relationships
+    const validCategories = ['frontend', 'backend', 'database', 'infrastructure', 'security', 'api', 'documentation', 'asset'];
+
+    // Get available types based on current category (simplified - frontend will use these as examples)
+    const typesByCategory: Record<string, string[]> = {
+      frontend: ['page', 'component', 'hook', 'context', 'layout', 'util', 'custom'],
+      backend: ['service', 'route', 'model', 'controller', 'middleware', 'util', 'custom'],
+      database: ['schema', 'migration', 'seed', 'query', 'index', 'custom'],
+      infrastructure: ['deployment', 'cicd', 'env', 'config', 'monitoring', 'docker', 'custom'],
+      security: ['auth', 'authz', 'encryption', 'validation', 'sanitization', 'custom'],
+      api: ['client', 'integration', 'webhook', 'contract', 'graphql', 'custom'],
+      documentation: ['area', 'section', 'guide', 'architecture', 'api-doc', 'readme', 'changelog', 'custom'],
+      asset: ['image', 'font', 'video', 'audio', 'document', 'dependency', 'custom']
+    };
+
+    const currentTypes = typesByCategory[component.category] || ['custom'];
+
     return {
       type: ResponseType.PROMPT,
       message: `✏️ Edit Component: "${component.title}"`,
@@ -1406,7 +1867,10 @@ export class CrudHandlers extends BaseCommandHandler {
         currentValues: {
           title: component.title,
           content: component.content,
-          feature: component.feature
+          feature: component.feature,
+          category: component.category,
+          type: component.type,
+          relationships: component.relationships || []
         },
         steps: [
           {
@@ -1417,6 +1881,30 @@ export class CrudHandlers extends BaseCommandHandler {
             value: component.title
           },
           {
+            id: 'feature',
+            label: 'Feature',
+            type: 'text',
+            required: true,
+            value: component.feature
+          },
+          {
+            id: 'category',
+            label: 'Category',
+            type: 'select',
+            options: validCategories,
+            required: true,
+            value: component.category
+          },
+          {
+            id: 'type',
+            label: 'Type',
+            type: 'select',
+            options: currentTypes,
+            required: true,
+            value: component.type,
+            dependsOn: 'category'
+          },
+          {
             id: 'content',
             label: 'Content',
             type: 'textarea',
@@ -1424,11 +1912,14 @@ export class CrudHandlers extends BaseCommandHandler {
             value: component.content
           },
           {
-            id: 'feature',
-            label: 'Feature',
-            type: 'text',
-            required: true,
-            value: component.feature
+            id: 'relationships',
+            label: 'Relationships',
+            type: 'relationships',
+            required: false,
+            value: component.relationships || [],
+            availableComponents: project.components
+              .filter((c: any) => c.id !== component.id)
+              .map((c: any) => ({ id: c.id, title: c.title, category: c.category, type: c.type }))
           }
         ]
       },
@@ -1463,20 +1954,20 @@ export class CrudHandlers extends BaseCommandHandler {
     if (!hasConfirmation) {
       return {
         type: ResponseType.PROMPT,
-        message: `⚠️  Are you sure you want to delete todo "${todo.text}"?\nUse --confirm to proceed: /delete todo "${todo.text}" --confirm`,
-        data: { todo: { id: todo.id, text: todo.text } }
+        message: `⚠️  Are you sure you want to delete todo "${todo.title}"?\nUse --confirm to proceed: /delete todo "${todo.title}" --confirm`,
+        data: { todo: { id: todo.id, title: todo.title } }
       };
     }
 
     // Delete the todo and any subtasks
-    const todoText = todo.text;
+    const todoTitle = todo.title;
     project.todos = project.todos.filter((t: any) =>
       t.id !== todo.id && t.parentTodoId !== todo.id
     );
     await project.save();
 
     return this.buildSuccessResponse(
-      `🗑️  Deleted todo: "${todoText}"`,
+      `🗑️  Deleted todo: "${todoTitle}"`,
       project,
       'delete_todo'
     );
@@ -1545,7 +2036,7 @@ export class CrudHandlers extends BaseCommandHandler {
       return {
         type: ResponseType.PROMPT,
         message: `⚠️  Are you sure you want to delete this dev log entry?\nUse --confirm to proceed: /delete devlog ${identifier} --confirm`,
-        data: { entry: { id: entry.id, preview: entry.entry.substring(0, 50) } }
+        data: { entry: { id: entry.id, preview: entry.description ? entry.description.substring(0, 50) : '' } }
       };
     }
 
@@ -1624,61 +2115,99 @@ export class CrudHandlers extends BaseCommandHandler {
     if (!hasConfirmation) {
       return {
         type: ResponseType.PROMPT,
-        message: `⚠️  Are you sure you want to delete subtask "${subtask.text}"?\nUse --confirm to proceed: /delete subtask "${subtask.text}" --confirm`,
-        data: { subtask: { id: subtask.id, text: subtask.text } }
+        message: `⚠️  Are you sure you want to delete subtask "${subtask.title}"?\nUse --confirm to proceed: /delete subtask "${subtask.title}" --confirm`,
+        data: { subtask: { id: subtask.id, title: subtask.title } }
       };
     }
 
-    const subtaskText = subtask.text;
+    const subtaskTitle = subtask.title;
     project.todos = project.todos.filter((t: any) => t.id !== subtask.id);
     await project.save();
 
     return this.buildSuccessResponse(
-      `🗑️  Deleted subtask: "${subtaskText}"`,
+      `🗑️  Deleted subtask: "${subtaskTitle}"`,
       project,
       'delete_subtask'
     );
   }
 
   /**
-   * Find a note by ID or title
+   * Find a note by UUID, index, or title
    */
   private findNote(notes: any[], identifier: string): any | null {
+    // Try to find by UUID (exact match) - PRIORITY 1
+    const byUuid = notes.find((note: any) => note.id === identifier);
+    if (byUuid) {
+      console.log(`[FIND NOTE] Found by UUID: ${identifier}`);
+      return byUuid;
+    }
+
+    // Try to find by index (1-based) - PRIORITY 2
     const index = parseInt(identifier);
     if (!isNaN(index) && index > 0 && index <= notes.length) {
+      console.log(`[FIND NOTE] Found by index: ${index}`);
       return notes[index - 1];
     }
 
+    // Try to find by partial title match (case insensitive) - PRIORITY 3
     const identifierLower = identifier.toLowerCase();
-    return notes.find((note: any) =>
+    const byTitle = notes.find((note: any) =>
       note.title.toLowerCase().includes(identifierLower)
-    ) || null;
+    );
+    if (byTitle) {
+      console.log(`[FIND NOTE] Found by title match: ${identifier}`);
+    } else {
+      console.log(`[FIND NOTE] Not found: ${identifier}`);
+    }
+    return byTitle || null;
   }
 
   /**
-   * Find a dev log entry by index or content
+   * Find a dev log entry by UUID, index, or content
    */
   private findDevLogEntry(devLog: any[], identifier: string): any | null {
+    // Try to find by UUID (exact match) - PRIORITY 1
+    const byUuid = devLog.find((entry: any) => entry.id === identifier);
+    if (byUuid) {
+      console.log(`[FIND DEVLOG] Found by UUID: ${identifier}`);
+      return byUuid;
+    }
+
+    // Try to find by index (1-based) - PRIORITY 2
     const index = parseInt(identifier);
     if (!isNaN(index) && index > 0 && index <= devLog.length) {
+      console.log(`[FIND DEVLOG] Found by index: ${index}`);
       return devLog[index - 1];
     }
 
+    // Try to find by partial description match (case insensitive) - PRIORITY 3
     const identifierLower = identifier.toLowerCase();
-    return devLog.find((entry: any) =>
-      entry.entry.toLowerCase().includes(identifierLower)
-    ) || null;
+    const byDescription = devLog.find((entry: any) =>
+      entry.description && entry.description.toLowerCase().includes(identifierLower)
+    );
+    if (byDescription) {
+      console.log(`[FIND DEVLOG] Found by description match: ${identifier}`);
+    } else {
+      console.log(`[FIND DEVLOG] Not found: ${identifier}`);
+    }
+    return byDescription || null;
   }
 
   /**
-   * Find a component by ID or title
+   * Find a component by ID, UUID, index, or title
    */
   private findComponent(components: any[], identifier: string): any | null {
+    // Try to find by UUID (exact match)
+    const byUuid = components.find((component: any) => component.id === identifier);
+    if (byUuid) return byUuid;
+
+    // Try to find by numeric index (1-based)
     const index = parseInt(identifier);
     if (!isNaN(index) && index > 0 && index <= components.length) {
       return components[index - 1];
     }
 
+    // Try to find by partial title match (case insensitive)
     const identifierLower = identifier.toLowerCase();
     return components.find((component: any) =>
       component.title.toLowerCase().includes(identifierLower)
@@ -1686,19 +2215,359 @@ export class CrudHandlers extends BaseCommandHandler {
   }
 
   /**
-   * Find a todo by text or index
+   * Find a todo by UUID, index, or text
    */
   private findTodo(todos: any[], identifier: string): any | null {
-    // Try to find by index (1-based)
+    // Try to find by UUID (exact match) - PRIORITY 1
+    const byUuid = todos.find((todo: any) => todo.id === identifier);
+    if (byUuid) {
+      console.log(`[FIND TODO] Found by UUID: ${identifier}`);
+      return byUuid;
+    }
+
+    // Try to find by index (1-based) - PRIORITY 2
     const index = parseInt(identifier);
     if (!isNaN(index) && index > 0 && index <= todos.length) {
+      console.log(`[FIND TODO] Found by index: ${index}`);
       return todos[index - 1];
     }
 
-    // Try to find by partial text match (case insensitive)
+    // Try to find by partial title match (case insensitive) - PRIORITY 3
     const identifierLower = identifier.toLowerCase();
-    return todos.find((todo: any) =>
-      todo.text.toLowerCase().includes(identifierLower)
-    ) || null;
+    const byTitle = todos.find((todo: any) =>
+      todo.title.toLowerCase().includes(identifierLower)
+    );
+    if (byTitle) {
+      console.log(`[FIND TODO] Found by title match: ${identifier}`);
+    } else {
+      console.log(`[FIND TODO] Not found: ${identifier}`);
+    }
+    return byTitle || null;
+  }
+
+  /**
+   * Handle /add relationship command - Add a relationship between components
+   */
+  async handleAddRelationship(parsed: ParsedCommand, currentProjectId?: string): Promise<CommandResponse> {
+    const { project, error } = await this.resolveProjectWithEditCheck(parsed.projectMention, currentProjectId);
+    if (error) return error;
+
+    if (parsed.args.length < 3) {
+      return {
+        type: ResponseType.ERROR,
+        message: 'Usage: /add relationship [component id/title] [target id/title] [type]',
+        suggestions: [
+          '/add relationship "Login" "Auth Service" uses',
+          '/add relationship 1 2 implements',
+          '/help add relationship'
+        ]
+      };
+    }
+
+    // Parse args: source component, target component, relationship type
+    const sourceIdentifier = parsed.args[0];
+    const targetIdentifier = parsed.args[1];
+    const relationshipType = parsed.args[2].toLowerCase();
+
+    // Find source component
+    const sourceComponent = this.findComponent(project.components, sourceIdentifier);
+    if (!sourceComponent) {
+      return {
+        type: ResponseType.ERROR,
+        message: `Source component not found: "${sourceIdentifier}"`,
+        suggestions: ['/view components']
+      };
+    }
+
+    // Find target component
+    const targetComponent = this.findComponent(project.components, targetIdentifier);
+    if (!targetComponent) {
+      return {
+        type: ResponseType.ERROR,
+        message: `Target component not found: "${targetIdentifier}"`,
+        suggestions: ['/view components']
+      };
+    }
+
+    // Validate relationship type
+    const validTypes = ['uses', 'implements', 'extends', 'depends_on', 'calls', 'contains', 'mentions', 'similar'];
+    if (!validTypes.includes(relationshipType)) {
+      return {
+        type: ResponseType.ERROR,
+        message: `Invalid relationship type "${relationshipType}". Valid types: ${validTypes.join(', ')}`,
+        suggestions: ['/help add relationship']
+      };
+    }
+
+    // Check if relationship already exists
+    if (sourceComponent.relationships && sourceComponent.relationships.some((r: any) => r.targetId === targetComponent.id)) {
+      return {
+        type: ResponseType.ERROR,
+        message: `Relationship already exists between "${sourceComponent.title}" and "${targetComponent.title}"`,
+        suggestions: [`/view relationships "${sourceComponent.title}"`]
+      };
+    }
+
+    // Get description if provided (rest of args)
+    const description = parsed.args.slice(3).join(' ') || '';
+
+    // Add relationship
+    if (!sourceComponent.relationships) {
+      sourceComponent.relationships = [];
+    }
+
+    const newRelationship = {
+      id: uuidv4(),
+      targetId: targetComponent.id,
+      relationType: relationshipType as any,
+      description: sanitizeText(description)
+    };
+
+    sourceComponent.relationships.push(newRelationship);
+    sourceComponent.updatedAt = new Date();
+    await project.save();
+
+    return this.buildSuccessResponse(
+      `✅ Added ${relationshipType} relationship: "${sourceComponent.title}" → "${targetComponent.title}"`,
+      project,
+      'add_relationship'
+    );
+  }
+
+  /**
+   * Handle /view relationships command - View all relationships for a component
+   */
+  async handleViewRelationships(parsed: ParsedCommand, currentProjectId?: string): Promise<CommandResponse> {
+    const resolution = await this.resolveProject(parsed.projectMention, currentProjectId);
+    if (!resolution.project) {
+      return this.buildProjectErrorResponse(resolution);
+    }
+
+    const componentIdentifier = parsed.args.join(' ').trim();
+    const component = this.findComponent(resolution.project.components, componentIdentifier);
+
+    if (!component) {
+      return {
+        type: ResponseType.ERROR,
+        message: `Component not found: "${componentIdentifier}"`,
+        suggestions: ['/view components']
+      };
+    }
+
+    const relationships = component.relationships || [];
+
+    if (relationships.length === 0) {
+      return {
+        type: ResponseType.INFO,
+        message: `🔗 No relationships found for "${component.title}"`,
+        suggestions: [`/add relationship "${component.title}" [target] [type]`]
+      };
+    }
+
+    // Enrich relationships with target component info
+    const enrichedRelationships = relationships.map((rel: any) => {
+      const target = resolution.project!.components.find((c: any) => c.id === rel.targetId);
+      return {
+        id: rel.id,
+        relationType: rel.relationType,
+        description: rel.description,
+        target: target ? {
+          id: target.id,
+          title: target.title,
+          category: target.category,
+          type: target.type
+        } : null
+      };
+    }).filter((rel: any) => rel.target !== null);
+
+    return this.buildDataResponse(
+      `🔗 Relationships for "${component.title}" (${enrichedRelationships.length})`,
+      resolution.project,
+      'view_relationships',
+      {
+        component: {
+          id: component.id,
+          title: component.title,
+          category: component.category,
+          type: component.type
+        },
+        relationships: enrichedRelationships
+      }
+    );
+  }
+
+  /**
+   * Handle /edit relationship command - Edit an existing relationship
+   */
+  async handleEditRelationship(parsed: ParsedCommand, currentProjectId?: string): Promise<CommandResponse> {
+    const { project, error } = await this.resolveProjectWithEditCheck(parsed.projectMention, currentProjectId);
+    if (error) return error;
+
+    if (parsed.args.length < 3) {
+      return {
+        type: ResponseType.ERROR,
+        message: 'Usage: /edit relationship [component id/title] [relationship id] [new type]',
+        suggestions: [
+          '/edit relationship "Login" 1 depends_on',
+          '/view relationships "Login" - to see relationship IDs',
+          '/help edit relationship'
+        ]
+      };
+    }
+
+    const componentIdentifier = parsed.args[0];
+    const relationshipIdentifier = parsed.args[1];
+    const newType = parsed.args[2].toLowerCase();
+
+    // Find component
+    const component = this.findComponent(project.components, componentIdentifier);
+    if (!component) {
+      return {
+        type: ResponseType.ERROR,
+        message: `Component not found: "${componentIdentifier}"`,
+        suggestions: ['/view components']
+      };
+    }
+
+    if (!component.relationships || component.relationships.length === 0) {
+      return {
+        type: ResponseType.ERROR,
+        message: `No relationships found for "${component.title}"`,
+        suggestions: [`/add relationship "${component.title}" [target] [type]`]
+      };
+    }
+
+    // Find relationship by ID or index
+    let relationship: any = null;
+    const relIndex = parseInt(relationshipIdentifier);
+    if (!isNaN(relIndex) && relIndex > 0 && relIndex <= component.relationships.length) {
+      relationship = component.relationships[relIndex - 1];
+    } else {
+      relationship = component.relationships.find((r: any) => r.id === relationshipIdentifier);
+    }
+
+    if (!relationship) {
+      return {
+        type: ResponseType.ERROR,
+        message: `Relationship not found: "${relationshipIdentifier}"`,
+        suggestions: [`/view relationships "${component.title}"`]
+      };
+    }
+
+    // Validate new type
+    const validTypes = ['uses', 'implements', 'extends', 'depends_on', 'calls', 'contains', 'mentions', 'similar'];
+    if (!validTypes.includes(newType)) {
+      return {
+        type: ResponseType.ERROR,
+        message: `Invalid relationship type "${newType}". Valid types: ${validTypes.join(', ')}`,
+        suggestions: ['/help edit relationship']
+      };
+    }
+
+    // Get target component for display
+    const targetComponent = project.components.find((c: any) => c.id === relationship.targetId);
+    const oldType = relationship.relationType;
+
+    // Update relationship type
+    relationship.relationType = newType;
+
+    // Update description if provided
+    if (parsed.args.length > 3) {
+      relationship.description = sanitizeText(parsed.args.slice(3).join(' '));
+    }
+
+    component.updatedAt = new Date();
+    await project.save();
+
+    return this.buildSuccessResponse(
+      `✅ Updated relationship: "${component.title}" ${oldType} → ${newType} "${targetComponent?.title || 'unknown'}"`,
+      project,
+      'edit_relationship'
+    );
+  }
+
+  /**
+   * Handle /delete relationship command - Delete a relationship with confirmation
+   */
+  async handleDeleteRelationship(parsed: ParsedCommand, currentProjectId?: string): Promise<CommandResponse> {
+    const { project, error } = await this.resolveProjectWithEditCheck(parsed.projectMention, currentProjectId);
+    if (error) return error;
+
+    if (parsed.args.length < 2) {
+      return {
+        type: ResponseType.ERROR,
+        message: 'Usage: /delete relationship [component id/title] [relationship id]',
+        suggestions: [
+          '/delete relationship "Login" 1 --confirm',
+          '/view relationships "Login" - to see relationship IDs',
+          '/help delete relationship'
+        ]
+      };
+    }
+
+    const componentIdentifier = parsed.args[0];
+    const relationshipIdentifier = parsed.args[1];
+
+    // Find component
+    const component = this.findComponent(project.components, componentIdentifier);
+    if (!component) {
+      return {
+        type: ResponseType.ERROR,
+        message: `Component not found: "${componentIdentifier}"`,
+        suggestions: ['/view components']
+      };
+    }
+
+    if (!component.relationships || component.relationships.length === 0) {
+      return {
+        type: ResponseType.ERROR,
+        message: `No relationships found for "${component.title}"`,
+        suggestions: []
+      };
+    }
+
+    // Find relationship by ID or index
+    let relationshipIndex = -1;
+    const relIndex = parseInt(relationshipIdentifier);
+    if (!isNaN(relIndex) && relIndex > 0 && relIndex <= component.relationships.length) {
+      relationshipIndex = relIndex - 1;
+    } else {
+      relationshipIndex = component.relationships.findIndex((r: any) => r.id === relationshipIdentifier);
+    }
+
+    if (relationshipIndex === -1) {
+      return {
+        type: ResponseType.ERROR,
+        message: `Relationship not found: "${relationshipIdentifier}"`,
+        suggestions: [`/view relationships "${component.title}"`]
+      };
+    }
+
+    const relationship = component.relationships[relationshipIndex];
+    const targetComponent = project.components.find((c: any) => c.id === relationship.targetId);
+
+    // Check for confirmation flag
+    const hasConfirmation = parsed.flags.has('confirm') || parsed.flags.has('yes') || parsed.flags.has('y');
+
+    if (!hasConfirmation) {
+      return {
+        type: ResponseType.PROMPT,
+        message: `⚠️  Are you sure you want to delete the ${relationship.relationType} relationship from "${component.title}" to "${targetComponent?.title || 'unknown'}"?\nUse --confirm to proceed: /delete relationship "${component.title}" ${relationshipIdentifier} --confirm`,
+        data: { relationship: { id: relationship.id, type: relationship.relationType } }
+      };
+    }
+
+    // Delete the relationship
+    component.relationships.splice(relationshipIndex, 1);
+    component.updatedAt = new Date();
+    await project.save();
+
+    // TODO : Also remove any inverse relationships if applicable
+
+    return this.buildSuccessResponse(
+      `🗑️  Deleted ${relationship.relationType} relationship: "${component.title}" → "${targetComponent?.title || 'unknown'}"`,
+      project,
+      'delete_relationship'
+    );
   }
 }

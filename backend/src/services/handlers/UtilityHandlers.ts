@@ -432,9 +432,9 @@ export class UtilityHandlers extends BaseCommandHandler {
           if (activeTodos.length > 0) {
             prompt += `**🚧 Pending Tasks:**\n`;
             activeTodos.forEach((todo: any) => {
-              if (todo?.text) {
-                prompt += `• ${todo.text}`;
-                if (todo.description) prompt += ` - ${todo.description}`;
+              if (todo?.title) {
+                prompt += `• ${todo.title}`;
+                if (todo.content) prompt += ` - ${todo.content}`;
                 if (todo.priority) prompt += ` [${todo.priority.toUpperCase()} PRIORITY]`;
                 if (todo.dueDate) prompt += ` (Due: ${new Date(todo.dueDate).toLocaleDateString()})`;
                 prompt += `\n`;
@@ -444,9 +444,9 @@ export class UtilityHandlers extends BaseCommandHandler {
           if (completedTodos > 0) {
             prompt += `\n**✅ Completed Tasks:**\n`;
             todos.filter((t: any) => t.completed).forEach((todo: any) => {
-              if (todo?.text) {
-                prompt += `• ${todo.text}`;
-                if (todo.description) prompt += ` - ${todo.description}`;
+              if (todo?.title) {
+                prompt += `• ${todo.title}`;
+                if (todo.content) prompt += ` - ${todo.content}`;
                 prompt += `\n`;
               }
             });
@@ -458,9 +458,9 @@ export class UtilityHandlers extends BaseCommandHandler {
           const recentEntries = devLog.slice(-5);
           prompt += `\n## 📝 RECENT DEVELOPMENT LOG\n`;
           recentEntries.forEach((entry: any) => {
-            const entryContent = entry.entry?.length > 500 ?
-              entry.entry.substring(0, 500) + '...' :
-              entry.entry || '';
+            const entryContent = entry.content?.length > 500 ?
+              entry.content.substring(0, 500) + '...' :
+              entry.content || '';
             prompt += `\n**${entry.date}${entry.title ? ' - ' + entry.title : ''}**\n`;
             prompt += `${entryContent}\n`;
           });
@@ -572,10 +572,10 @@ export class UtilityHandlers extends BaseCommandHandler {
         if (todos.length > 0) {
           md += `## Todo Items\n\n`;
           todos.forEach((todo: any) => {
-            const todoDesc = todo.description?.length > 200 ?
-              todo.description.substring(0, 200) + '...' :
-              todo.description;
-            md += `- [${todo.completed ? 'x' : ' '}] **${todo.text || 'Untitled Task'}**${todoDesc ? `: ${todoDesc}` : ''}`;
+            const todoDesc = todo.content?.length > 200 ?
+              todo.content.substring(0, 200) + '...' :
+              todo.content;
+            md += `- [${todo.completed ? 'x' : ' '}] **${todo.title || 'Untitled Task'}**${todoDesc ? `: ${todoDesc}` : ''}`;
             if (todo.priority) md += ` [${todo.priority.toUpperCase()}]`;
             md += `\n`;
           });
@@ -586,9 +586,9 @@ export class UtilityHandlers extends BaseCommandHandler {
         if (devLog.length > 0) {
           md += `## Development Log\n\n`;
           devLog.forEach((entry: any) => {
-            const entryContent = entry.entry?.length > 1500 ?
-              entry.entry.substring(0, 1500) + '...' :
-              entry.entry || '';
+            const entryContent = entry.content?.length > 1500 ?
+              entry.content.substring(0, 1500) + '...' :
+              entry.content || '';
             md += `### ${entry.date} - ${entry.title || 'Development Entry'}\n${entryContent}\n\n`;
           });
         }
@@ -692,7 +692,7 @@ export class UtilityHandlers extends BaseCommandHandler {
           text += `TODO ITEMS\n`;
           text += `----------\n`;
           todos.forEach((todo: any) => {
-            text += `[${todo.completed ? 'X' : ' '}] [${todo.priority?.toUpperCase() || 'MED'}] ${todo.text}\n`;
+            text += `[${todo.completed ? 'X' : ' '}] [${todo.priority?.toUpperCase() || 'MED'}] ${todo.title}\n`;
           });
           text += `\n`;
         }
@@ -702,7 +702,7 @@ export class UtilityHandlers extends BaseCommandHandler {
           text += `DEVELOPMENT LOG\n`;
           text += `---------------\n`;
           devLog.forEach((entry: any) => {
-            text += `${entry.date} - ${entry.title || 'Entry'}: ${entry.entry?.substring(0, 150) || ''}${entry.entry?.length > 150 ? '...' : ''}\n`;
+            text += `${entry.date} - ${entry.title || 'Entry'}: ${entry.content?.substring(0, 150) || ''}${entry.content?.length > 150 ? '...' : ''}\n`;
           });
           text += `\n`;
         }
@@ -1091,7 +1091,7 @@ Execution stops on first error.
 - \`/remove tag [tag] [@project]\` - Remove project tag
 
 ### 2. Task Management
-- \`/add todo [text] [@project]\` - Create new todo
+- \`/add todo --title=[text] [--content=...] [--priority=...] [--status=...] [@project]\` - Create new todo with flags
 - \`/view todos [@project]\` - List all todos
 - \`/edit todo [id] [@project]\` - Open interactive wizard to edit todo (or use --field= and --content= for direct updates)
 - \`/delete todo [id/text] [@project]\` - Delete todo
@@ -1106,15 +1106,15 @@ Execution stops on first error.
 - \`/delete subtask [id/text] [@project]\` - Delete subtask
 
 ### 4. Notes & Documentation
-- \`/add note [text] [@project]\` - Create note
+- \`/add note --title=[text] --content=[text] [@project]\` - Create note with title and content
 - \`/view notes [@project]\` - List notes
 - \`/edit note [id] [@project]\` - Open interactive wizard to edit note title and content (or use --field= and --content= for direct updates)
 - \`/delete note [id/title] [@project]\` - Delete note
-- \`/add devlog [text] [@project]\` - Add dev log entry
+- \`/add devlog --title=[text] --content=[text] [@project]\` - Add dev log entry with title and content
 - \`/view devlog [@project]\` - View dev log
 - \`/edit devlog [id] [@project]\` - Open interactive wizard to edit dev log entry
 - \`/delete devlog [id] [@project]\` - Delete dev log entry
-- \`/add component [feature] [type] [title] - [content] [@project]\` - Add component to feature
+- \`/add component --feature=[name] --category=[category] --type=[type] --title=[title] --content=[content] [@project]\` - Add component to feature
 - \`/view components [@project]\` - View components grouped by features
 - \`/edit component [id] [@project]\` - Open interactive wizard to edit component
 - \`/delete component [id] [@project]\` - Delete component
@@ -1157,20 +1157,20 @@ Execution stops on first error.
 /wizard new
 /add tech React --category=framework --version=18.2.0 @MyProject
 /add package axios --category=api @MyProject
-/add todo setup authentication @MyProject
-/add todo create dashboard @MyProject
-/add note initial architecture decisions @MyProject
+/add todo --title="setup authentication" --priority=high @MyProject
+/add todo --title="create dashboard" --priority=medium @MyProject
+/add note --title="Architecture Decisions" --content="Initial architecture decisions and technology choices" @MyProject
 \`\`\`
 
 ### Managing Tasks
 \`\`\`
-/add todo fix login bug @Frontend
+/add todo --title="fix login bug" --priority=high --content="Fix validation issues in login form" @Frontend
 /priority "fix login bug" high @Frontend
 /due "fix login bug" 2025-12-31 @Frontend
 /assign "fix login bug" dev@example.com @Frontend
 /add subtask "fix login bug" update validation @Frontend
 /edit todo 1 @Frontend                                    # Opens interactive wizard
-/edit todo 1 --field=text --content="Updated task" @Frontend   # Direct field update
+/edit todo 1 --field=title --content="Updated task title" @Frontend   # Direct field update
 \`\`\`
 
 ### Editing Content
@@ -1181,16 +1181,29 @@ Execution stops on first error.
 /edit devlog 1 --field=entry --content="New entry text"  # Update devlog entry
 \`\`\`
 
+### Managing Component Relationships
+Component relationships can be added or removed. "Editing" a relationship means deleting the old one and adding a new one:
+\`\`\`
+/edit component 1 --field=relationship --action=add --target=2 --type=uses
+/edit component 1 --field=relationship --action=delete --id=<relationship-id>
+
+# To "edit" a relationship: delete it, then add the updated version
+/edit component 1 --field=relationship --action=delete --id=abc123
+/edit component 1 --field=relationship --action=add --target=2 --type=depends_on
+\`\`\`
+
+Note: The interactive component wizard provides inline editing UI for relationships, but behind the scenes it performs delete+add operations.
+
 ### Component Documentation Workflow
 \`\`\`
-/add component Auth API Login - POST endpoint for authentication @Backend
-/add devlog implemented JWT token refresh @Backend
-/add note consider rate limiting for API endpoints @Backend
+/add component --feature="Auth" --category=api --type=endpoint --title="Login" --content="POST endpoint for user authentication with JWT tokens" @Backend
+/add devlog --title="JWT Token Refresh" --content="Implemented JWT token refresh mechanism for persistent sessions" @Backend
+/add note --title="API Rate Limiting" --content="Consider adding rate limiting to prevent abuse of authentication endpoints" @Backend
 \`\`\`
 
 ### Batch Operations
 \`\`\`
-/add todo implement feature && /priority implement feature high && /view todos
+/add todo --title="implement feature" --priority=high && /view todos
 /add tech PostgreSQL --category=database && /add package pg --version=8.0.0 && /view stack
 \`\`\`
 
@@ -1238,7 +1251,7 @@ The system returns different response types:
 
 ### Setting up a new feature
 \`\`\`
-/add todo [feature description] && /priority [feature] high && /add note [implementation details]
+/add todo --title="implement new feature" --priority=high --content="Feature description and requirements" && /add note --title="Implementation Details" --content="Technical approach and considerations"
 \`\`\`
 
 ### Editing content interactively
@@ -1249,14 +1262,14 @@ The system returns different response types:
 
 ### Editing specific fields directly
 \`\`\`
-/edit todo 1 --field=text --content="Updated task text"
+/edit todo 1 --field=title --content="Updated task text"
 /edit note 1 --field=title --content="New Title"
 /edit note 1 --field=content --content="Updated note content"
 \`\`\`
 
 ### Documenting a component
 \`\`\`
-/add component [feature] [type] [title] - [description] && /add devlog [what was implemented]
+/add component --feature="Auth" --category=backend --type=service --title="OAuth Service" --content="Handles OAuth authentication flow" && /add devlog --title="OAuth Implementation" --content="Implemented OAuth 2.0 authentication service"
 \`\`\`
 
 ### Managing tech stack
@@ -1558,20 +1571,20 @@ This terminal system is designed for efficient project management through a comm
       data: {
         date: today.toLocaleDateString(),
         overdue: overdue.map((t: any) => ({
-          text: t.text,
+          title: t.title,
           priority: t.priority,
           dueDate: t.dueDate,
-          description: t.description
+          content: t.content
         })),
         dueToday: dueToday.map((t: any) => ({
-          text: t.text,
+          title: t.title,
           priority: t.priority,
           dueDate: t.dueDate,
-          description: t.description
+          content: t.content
         })),
         activity: todaysDevLog.map((entry: any) => ({
           title: entry.title,
-          entry: entry.entry,
+          content: entry.content,
           date: entry.date
         })),
         stats: {
@@ -1644,7 +1657,7 @@ This terminal system is designed for efficient project management through a comm
         weekEnd: weekFromNow.toLocaleDateString(),
         upcomingTodos: todosByDay,
         completedThisWeek: completedThisWeek.map((t: any) => ({
-          text: t.text,
+          title: t.title,
           completedAt: t.completedAt
         })),
         activity: weekActivity.map((entry: any) => ({
@@ -1719,26 +1732,26 @@ This terminal system is designed for efficient project management through a comm
         date: today.toLocaleDateString(),
         yesterday: {
           completed: completedYesterday.map((t: any) => ({
-            text: t.text,
+            title: t.title,
             priority: t.priority
           })),
           activity: yesterdayActivity.map((entry: any) => ({
             title: entry.title,
-            entry: entry.entry?.substring(0, 200)
+            content: entry.content?.substring(0, 200)
           }))
         },
         today: {
           tasks: todaysTasks.map((t: any) => ({
-            text: t.text,
+            title: t.title,
             priority: t.priority,
             dueDate: t.dueDate
           }))
         },
         stuckOn: stuckTasks.map((t: any) => ({
-          text: t.text,
+          title: t.title,
           priority: t.priority,
           dueDate: t.dueDate,
-          description: t.description
+          content: t.content
         })),
         stats: {
           completedYesterday: completedYesterday.length,

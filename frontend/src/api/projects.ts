@@ -1,10 +1,10 @@
+import { BaseComponent, CreateComponentData, UpdateComponentData } from '@shared/types';
 import { BaseApiService, apiClient } from './base';
 import type {
   BaseProject, ProjectResponse, CreateProjectData, UpdateProjectData,
   CreateNoteData, UpdateNoteData, BaseNote,
   CreateTodoData, UpdateTodoData, BaseTodo,
   CreateDevLogData, UpdateDevLogData, BaseDevLogEntry,
-  CreateDocData, UpdateDocData, BaseDoc,
   CreateTechnologyData, BaseSelectedTechnology,
   CreatePackageData, BaseSelectedPackage,
   CreateRelationshipData, ComponentRelationship
@@ -97,11 +97,11 @@ class ProjectService extends BaseApiService {
   }
 
   // Components management
-  async createComponent(projectId: string, data: CreateDocData): Promise<{ message: string; component: BaseDoc }> {
+  async createComponent(projectId: string, data: CreateComponentData): Promise<{ message: string; component: BaseComponent }> {
     return this.post(`/${projectId}/components`, data);
   }
 
-  async updateComponent(projectId: string, componentId: string, data: UpdateDocData): Promise<{ message: string; component: BaseDoc }> {
+  async updateComponent(projectId: string, componentId: string, data: UpdateComponentData): Promise<{ message: string; component: BaseComponent }> {
     return this.put(`/${projectId}/components/${componentId}`, data);
   }
 
@@ -110,7 +110,9 @@ class ProjectService extends BaseApiService {
   }
 
   // Relationship management
-  async createRelationship(projectId: string, componentId: string, data: CreateRelationshipData): Promise<{ message: string; relationship: ComponentRelationship }> {
+  async createRelationship(projectId: string, componentId: string, data: CreateRelationshipData): Promise<{
+    id: any; message: string; relationship: ComponentRelationship 
+}> {
     return this.post(`/${projectId}/components/${componentId}/relationships`, data);
   }
 

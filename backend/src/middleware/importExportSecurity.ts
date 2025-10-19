@@ -195,7 +195,7 @@ export function validateAndSanitizeImport(req: Request, res: Response, next: Nex
       if (Array.isArray(project.todos)) {
         project.todos = project.todos.map((todo: any) => ({
           ...todo,
-          text: todo.text ? sanitizeString(todo.text) : '',
+          title: todo.title ? sanitizeString(todo.title) : '',
           description: todo.description ? sanitizeString(todo.description) : ''
         }));
       }
@@ -205,7 +205,6 @@ export function validateAndSanitizeImport(req: Request, res: Response, next: Nex
           ...log,
           title: log.title ? sanitizeString(log.title) : '',
           description: log.description ? sanitizeString(log.description) : '',
-          entry: log.entry ? sanitizeString(log.entry) : ''
         }));
       }
       

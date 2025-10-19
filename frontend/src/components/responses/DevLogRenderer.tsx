@@ -4,7 +4,7 @@ import { getContrastTextColor } from '../../utils/contrastTextColor';
 interface DevLogEntry {
   id: string;
   title?: string;
-  entry: string;
+  description: string;
   date: Date;
 }
 
@@ -31,7 +31,7 @@ export const DevLogRenderer: React.FC<DevLogRendererProps> = ({ entries, project
                 {new Date(entry.date).toLocaleString()}
               </div>
             </div>
-            <div className="text-sm text-base-content/80 break-words ml-8">{entry.entry}</div>
+            <div className="text-sm text-base-content/80 break-words ml-8">{entry.title} - {entry.description}</div>
           </div>
         ))}
       </div>

@@ -29,6 +29,8 @@ const saveEntriesToStorage = (entries: TerminalEntry[]) => {
     // Cap at MAX_ENTRIES (keep most recent)
     const entriesToSave = entries.slice(-MAX_ENTRIES);
 
+    // Force any wizard entries to be previews only
+
     // Convert dates to ISO strings and strip side-effect data for JSON serialization
     const serialized = entriesToSave.map(entry => {
       // Remove redirect data to prevent re-triggering navigation on load
@@ -508,25 +510,25 @@ const TerminalPage: React.FC = () => {
                                 <td>
                                   <button
                                     type="button"
-                                    onClick={() => setPendingCommand('/add todo ')}
+                                    onClick={() => setPendingCommand('/add todo --title= --content= --priority=')}
                                     className="text-xs text-primary font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
                                   >
-                                    /add todo [text]
+                                    /add todo --title=
                                   </button>
                                 </td>
-                                <td className="text-xs text-base-content/70">Create a new todo item</td>
+                                <td className="text-xs text-base-content/70">Create a new todo (use flags)</td>
                               </tr>
                               <tr className="hover">
                                 <td>
                                   <button
                                     type="button"
-                                    onClick={() => setPendingCommand('/add note ')}
+                                    onClick={() => setPendingCommand('/add note --title= --content=')}
                                     className="text-xs text-primary font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
                                   >
-                                    /add note [text]
+                                    /add note --title=
                                   </button>
                                 </td>
-                                <td className="text-xs text-base-content/70">Create a new note</td>
+                                <td className="text-xs text-base-content/70">Create a new note (use flags)</td>
                               </tr>
                               <tr className="hover">
                                 <td>

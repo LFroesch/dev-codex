@@ -161,7 +161,7 @@ ${requestSection}
       pendingTodos.forEach((todo: any) => {
         if (todo?.text) {
           prompt += `
-• ${todo.text}${todo.description ? ` - ${todo.description}` : ''}`;
+• ${todo.title}${todo.description ? ` - ${todo.description}` : ''}`;
           if (todo.priority) prompt += ` [${todo.priority.toUpperCase()} PRIORITY]`;
         }
       });
@@ -174,7 +174,7 @@ ${requestSection}
       completedTodos.forEach((todo: any) => {
         if (todo?.text) {
           prompt += `
-• ${todo.text}${todo.description ? ` - ${todo.description}` : ''}`;
+• ${todo.title}${todo.description ? ` - ${todo.description}` : ''}`;
         }
       });
     }
@@ -186,7 +186,7 @@ ${requestSection}
 
 ## 📝 RECENT DEVELOPMENT LOG`;
     recentEntries.forEach((entry: any) => {
-      const entryContent = entry.entry?.length > 500 ? 
+      const entryContent = entry.description?.length > 500 ? 
         entry.entry.substring(0, 500) + '...' : 
         entry.entry || '';
       prompt += `
@@ -322,7 +322,7 @@ export function generateMarkdownFormat(data: any, selectedProject: Project): str
       const todoDesc = todo.description?.length > 200 ? 
         todo.description.substring(0, 200) + '...' : 
         todo.description;
-      markdown += `- [${todo.completed ? 'x' : ' '}] **${todo.text || 'Untitled Task'}**${todoDesc ? `: ${todoDesc}` : ''}\n`;
+      markdown += `- [${todo.completed ? 'x' : ' '}] **${todo.title || 'Untitled Task'}**${todoDesc ? `: ${todoDesc}` : ''}\n`;
     });
     markdown += `\n`;
   }
@@ -330,7 +330,7 @@ export function generateMarkdownFormat(data: any, selectedProject: Project): str
   if (data.devLog?.length) {
     markdown += `## Development Log\n\n`;
     data.devLog.forEach((entry: any) => {
-      const entryContent = entry.entry?.length > 1500 ? 
+      const entryContent = entry.description?.length > 1500 ? 
         entry.entry.substring(0, 1500) + '...' : 
         entry.entry || '';
       markdown += `### ${entry.date} - ${entry.title || 'Development Entry'}\n${entryContent}\n\n`;

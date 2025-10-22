@@ -196,10 +196,6 @@ export class CommandExecutor {
           return await this.crudHandlers.handleCompleteTodo(parsed, currentProjectId);
         case CommandType.ASSIGN_TODO:
           return await this.crudHandlers.handleAssignTodo(parsed, currentProjectId);
-        case CommandType.SET_PRIORITY:
-          return await this.crudHandlers.handleSetPriority(parsed, currentProjectId);
-        case CommandType.SET_DUE_DATE:
-          return await this.crudHandlers.handleSetDueDate(parsed, currentProjectId);
 
         // Subtask operations
         case CommandType.ADD_SUBTASK:
@@ -239,17 +235,13 @@ export class CommandExecutor {
         case CommandType.DELETE_RELATIONSHIP:
           return await this.crudHandlers.handleDeleteRelationship(parsed, currentProjectId);
 
-        // Stack operations
-        case CommandType.ADD_TECH:
-          return await this.stackHandlers.handleAddTech(parsed, currentProjectId);
-        case CommandType.ADD_PACKAGE:
-          return await this.stackHandlers.handleAddPackage(parsed, currentProjectId);
+        // Stack operations - unified
+        case CommandType.ADD_STACK:
+          return await this.stackHandlers.handleAddStack(parsed, currentProjectId);
+        case CommandType.REMOVE_STACK:
+          return await this.stackHandlers.handleRemoveStack(parsed, currentProjectId);
         case CommandType.VIEW_STACK:
           return await this.stackHandlers.handleViewStack(parsed, currentProjectId);
-        case CommandType.REMOVE_TECH:
-          return await this.stackHandlers.handleRemoveTech(parsed, currentProjectId);
-        case CommandType.REMOVE_PACKAGE:
-          return await this.stackHandlers.handleRemovePackage(parsed, currentProjectId);
 
         // Team operations
         case CommandType.VIEW_TEAM:

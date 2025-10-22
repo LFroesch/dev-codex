@@ -79,22 +79,21 @@ const componentSchema = new Schema({
 });
 
 
-// Tech stack selection schemas
-const selectedTechSchema = new Schema({
-  category: { 
-    type: String, 
+// Unified stack item schema
+const stackItemSchema = new Schema({
+  category: {
+    type: String,
     required: true,
-    enum: ['styling', 'database', 'framework', 'runtime', 'deployment', 'testing', 'tooling']
-  },
-  name: { type: String, required: true },
-  version: { type: String, default: '' }
-});
-
-const selectedPackageSchema = new Schema({
-  category: { 
-    type: String, 
-    required: true,
-    enum: ['ui', 'state', 'routing', 'forms', 'animation', 'utility', 'api', 'auth', 'data']
+    enum: [
+      // Core technologies
+      'framework', 'runtime', 'database', 'styling', 'deployment', 'testing', 'tooling',
+      // Frontend/UI specific
+      'ui', 'state', 'routing', 'forms', 'animation',
+      // Backend/API specific
+      'api', 'auth',
+      // Data/utility
+      'data', 'utility'
+    ]
   },
   name: { type: String, required: true },
   version: { type: String, default: '' },
@@ -195,14 +194,10 @@ export interface IProject extends Document {
     updatedAt: Date;
   }>;
   
-  // Tech Stack & Packages
-  selectedTechnologies: Array<{
-    category: 'styling' | 'database' | 'framework' | 'runtime' | 'deployment' | 'testing' | 'tooling';
-    name: string;
-    version: string;
-  }>;
-  selectedPackages: Array<{
-    category: 'ui' | 'state' | 'routing' | 'forms' | 'animation' | 'utility' | 'api' | 'auth' | 'data';
+  // Unified Tech Stack
+  stack: Array<{
+    category: 'framework' | 'runtime' | 'database' | 'styling' | 'deployment' | 'testing' | 'tooling' |
+              'ui' | 'state' | 'routing' | 'forms' | 'animation' | 'api' | 'auth' | 'data' | 'utility';
     name: string;
     version: string;
     description: string;
@@ -251,11 +246,10 @@ const projectSchema = new Schema<IProject>({
 
   // Feature Components
   components: [componentSchema],
-  
-  // Tech Stack & Packages
-  selectedTechnologies: [selectedTechSchema],
-  selectedPackages: [selectedPackageSchema],
-  
+
+  // Unified Tech Stack
+  stack: [stackItemSchema],
+
   // Settings Section
   stagingEnvironment: {
     type: String,

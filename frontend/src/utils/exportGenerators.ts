@@ -53,11 +53,8 @@ export function generateExportData(selectedProject: Project, exportOptions: Expo
     data.components = selectedProject.components;
   }
 
-  if (exportOptions.techStack && (selectedProject.selectedTechnologies?.length || selectedProject.selectedPackages?.length)) {
-    data.techStack = {
-      technologies: selectedProject.selectedTechnologies || [],
-      packages: selectedProject.selectedPackages || []
-    };
+  if (exportOptions.techStack && selectedProject.stack?.length) {
+    data.techStack = selectedProject.stack;
   }
 
   if (exportOptions.deploymentData && selectedProject.deploymentData) {
@@ -132,18 +129,11 @@ ${requestSection}
 **Tags/Keywords:** ${data.tags.length ? data.tags.join(' • ') : 'None'}`;
   }
 
-  if (data.techStack) {
+  if (data.techStack?.length) {
     prompt += `
 
-## ⚡ TECH STACK`;
-    if (data.techStack.technologies?.length) {
-      prompt += `
-**Technologies:** ${data.techStack.technologies.map((tech: any) => tech.name).join(' • ')}`;
-    }
-    if (data.techStack.packages?.length) {
-      prompt += `
-**Packages/Dependencies:** ${data.techStack.packages.map((pkg: any) => pkg.name).join(' • ')}`;
-    }
+## ⚡ TECH STACK
+**Stack:** ${data.techStack.map((item: any) => `${item.name} (${item.category})`).join(' • ')}`;
   }
 
   if (data.todos?.length) {
@@ -357,14 +347,9 @@ export function generateMarkdownFormat(data: any, selectedProject: Project): str
     });
   }
 
-  if (data.techStack) {
+  if (data.techStack?.length) {
     markdown += `## Tech Stack\n\n`;
-    if (data.techStack.technologies?.length) {
-      markdown += `### Technologies\n${data.techStack.technologies.map((tech: any) => `- ${tech.name}`).join('\n')}\n\n`;
-    }
-    if (data.techStack.packages?.length) {
-      markdown += `### Packages\n${data.techStack.packages.map((pkg: any) => `- ${pkg.name}`).join('\n')}\n\n`;
-    }
+    markdown += `${data.techStack.map((item: any) => `- **${item.name}** (${item.category})${item.version ? ` - v${item.version}` : ''}`).join('\n')}\n\n`;
   }
 
   if (data.deploymentData) {

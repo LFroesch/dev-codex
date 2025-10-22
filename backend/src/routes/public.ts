@@ -75,11 +75,8 @@ router.get('/project/:identifier', async (req, res) => {
     }
     
     if (visibility.techStack) {
-      if (project.selectedTechnologies?.length || project.selectedPackages?.length) {
-        publicProject.technologies = [
-          ...(project.selectedTechnologies || []),
-          ...(project.selectedPackages || [])
-        ];
+      if (project.stack?.length) {
+        publicProject.technologies = project.stack;
       }
     }
     
@@ -132,11 +129,11 @@ router.get('/user/:identifier', async (req, res) => {
     }
 
     // Get user's public projects
-    const publicProjects = await Project.find({ 
-      ownerId: user._id, 
+    const publicProjects = await Project.find({
+      ownerId: user._id,
       isPublic: true,
       isArchived: false
-    }).select('name description publicDescription color category tags publicSlug createdAt updatedAt selectedTechnologies');
+    }).select('name description publicDescription color category tags publicSlug createdAt updatedAt stack');
 
     // Return sanitized public user data
     const publicUser = {
@@ -163,7 +160,7 @@ router.get('/user/:identifier', async (req, res) => {
         publicSlug: project.publicSlug,
         createdAt: project.createdAt,
         updatedAt: project.updatedAt,
-        technologies: project.selectedTechnologies?.slice(0, 5) || [] // Limit for preview
+        technologies: project.stack?.slice(0, 5) || [] // Limit for preview
       }))
     };
 
@@ -265,7 +262,7 @@ router.get('/projects', async (req, res) => {
             publicSlug: 1,
             createdAt: 1,
             updatedAt: 1,
-            selectedTechnologies: 1,
+            stack: 1,
             'ownerId.firstName': 1,
             'ownerId.lastName': 1,
             'ownerId.username': 1,
@@ -297,7 +294,7 @@ router.get('/projects', async (req, res) => {
       [projects, total] = await Promise.all([
         Project.find(query)
           .populate('ownerId', 'firstName lastName username displayPreference publicSlug isPublic')
-          .select('name description publicDescription color category tags publicSlug createdAt updatedAt selectedTechnologies')
+          .select('name description publicDescription color category tags publicSlug createdAt updatedAt stack')
           .sort({ updatedAt: -1 })
           .skip(skip)
           .limit(parseInt(limit as string)),
@@ -319,7 +316,7 @@ router.get('/projects', async (req, res) => {
         publicSlug: project.publicSlug,
         createdAt: project.createdAt,
         updatedAt: project.updatedAt,
-        technologies: project.selectedTechnologies?.slice(0, 3) || [],
+        technologies: project.stack?.slice(0, 3) || [],
         owner: (owner?.isPublic) ? {
           id: owner._id,
           firstName: owner.firstName,

@@ -395,7 +395,7 @@ const Layout: React.FC = () => {
 
               {/* Navigation tabs - Terminal page only */}
               {location.pathname === '/terminal' && (
-                <div className="tabs-container">
+                <div className="tabs-container p-1">
                   <button
                     className={`tab tab-sm flex-shrink-0 min-h-10 ${location.pathname === '/projects' ? 'tab-active' : ''} gap-1 sm:gap-2 font-bold whitespace-nowrap px-2 sm:px-4`}
                     style={location.pathname === '/projects' ? {color: getContrastTextColor()} : {}}
@@ -560,7 +560,7 @@ const Layout: React.FC = () => {
             {/* Navigation buttons */}
             {location.pathname !== '/support' && location.pathname !== '/terminal' && (
             <div className="flex justify-center">
-              <div className="tabs-container">
+              <div className="tabs-container p-1">
                 <button
                   className={`tab tab-sm flex-shrink-0 min-h-10 ${location.pathname === '/projects' ? 'tab-active' : ''} gap-1 sm:gap-2 font-bold whitespace-nowrap px-2 sm:px-4`}
                   style={location.pathname === '/projects' ? {color: getContrastTextColor()} : {}}
@@ -612,7 +612,7 @@ const Layout: React.FC = () => {
             {/* Project Views Submenu - Mobile */}
             {location.pathname === '/projects' && location.pathname !== '/terminal' && (
             <div className="flex justify-center">
-              <div className="tabs-container">
+              <div className="tabs-container p-1">
                 <button
                   onClick={() => {
                     setActiveProjectTab('active');
@@ -654,7 +654,7 @@ const Layout: React.FC = () => {
             {/* Project Details Submenu - Mobile */}
             {selectedProject && (location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/features' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && location.pathname !== '/projects' && (
             <div className="flex justify-center">
-              <div className="tabs-container">
+              <div className="tabs-container p-1">
                 {tabs.map((tab) => (
                   <button
                     key={tab.id}
@@ -716,7 +716,7 @@ const Layout: React.FC = () => {
             {/* Discover Submenu - Mobile */}
             {(location.pathname === '/discover' || location.pathname.startsWith('/discover/')) && location.pathname !== '/terminal' && (
             <div className="flex justify-center">
-              <div className="tabs-container">
+              <div className="tabs-container p-1">
                 <button
                   onClick={() => handleNavigateWithCheck('/discover')}
                   className={`tab-button ${location.pathname === '/discover' ? 'tab-active' : ''}`}
@@ -799,7 +799,7 @@ const Layout: React.FC = () => {
             </div>
 
             <div className="absolute left-1/2 transform -translate-x-1/2">
-              <div className="tabs-container">
+              <div className="tabs-container p-1">
               <button 
                 className={`tab-button ${location.pathname === '/projects' ? 'tab-active' : ''} gap-2`}
                 style={location.pathname === '/projects' ? {color: getContrastTextColor()} : {}}
@@ -900,7 +900,7 @@ const Layout: React.FC = () => {
             {/* Project Views Submenu - Desktop */}
             {location.pathname === '/projects' && (
             <div className="flex justify-center">
-              <div className="tabs-container">
+              <div className="tabs-container p-1">
                 <button
                   onClick={() => {
                     setActiveProjectTab('active');
@@ -942,7 +942,7 @@ const Layout: React.FC = () => {
             {/* Project Details Submenu - Desktop */}
             {selectedProject && (location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/features' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && location.pathname !== '/projects' && (
             <div className="flex justify-center">
-              <div className="tabs-container">
+              <div className="tabs-container p-1">
                 {tabs.map((tab) => (
                   <button
                     key={tab.id}
@@ -1004,7 +1004,7 @@ const Layout: React.FC = () => {
             {/* Discover Submenu - Desktop */}
             {(location.pathname === '/discover' || location.pathname.startsWith('/discover/')) && (
             <div className="flex justify-center">
-              <div className="tabs-container">
+              <div className="tabs-container p-1">
                 <button
                   onClick={() => handleNavigateWithCheck('/discover')}
                   className={`tab-button ${location.pathname === '/discover' ? 'tab-active' : ''}`}
@@ -1035,7 +1035,7 @@ const Layout: React.FC = () => {
           <>
 
             {/* Tab Content */}
-            <div className="flex-1 overflow-auto border-2 border-base-content/20 bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-none container-height-fix">
+            <div className="flex-1 overflow-auto border-2 border-base-content/20 bg-gradient-to-br from-base-50 to-base-100/50 rounded-lg shadow-2xl backdrop-blur-none container-height-fix">
               <div className="p-2">
                 <div className="space-y-4">
                 {(activeProjectTab === 'active' || activeProjectTab === 'archived' || activeProjectTab === 'shared') && (
@@ -1092,7 +1092,7 @@ const Layout: React.FC = () => {
                       <>
                         {/* Category Selector */}
                         <div className="flex justify-center">
-                          <div className="tabs-container opacity-90 max-w-full">
+                          <div className="tabs-container p-1 opacity-90 max-w-full">
                             <button
                               onClick={() => setSelectedCategory(null)}
                               className={`tab-button-xs ${
@@ -1248,7 +1248,7 @@ const Layout: React.FC = () => {
           /* Discover Tab - With sub-tabs */
           <>
             
-            <div className="flex-1 overflow-auto border-2 border-base-content/20 bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-none container-height-fix">
+            <div className="flex-1 overflow-auto border-2 border-base-content/20 bg-gradient-to-br from-base-50 to-base-100/50 rounded-lg shadow-2xl backdrop-blur-none container-height-fix">
               <div className="p-2">
                 <Outlet />
               </div>
@@ -1256,7 +1256,7 @@ const Layout: React.FC = () => {
           </>
         ) : location.pathname.startsWith('/project/') || location.pathname.startsWith('/user/') ? (
           /* Public Pages - Same styling as discover */
-          <div className="flex-1 overflow-auto border-2 border-base-content/20 bg-gradient-to-br from-base-50 to-base-100/50 mx-4 rounded-2xl shadow-2xl backdrop-blur-none container-height-fix">
+          <div className="flex-1 overflow-auto border-2 border-base-content/20 bg-gradient-to-br from-base-50 to-base-100/50 mx-4 rounded-lg shadow-2xl backdrop-blur-none container-height-fix">
             <div className="p-2">
               <Outlet />
             </div>
@@ -1266,7 +1266,7 @@ const Layout: React.FC = () => {
           <>
             {/* Admin Dashboard Tab Navigation */}
             <div className="flex justify-center mb-2">
-              <div className="tabs-container tabs bg-base-200 max-w-4xl">
+              <div className="tabs-container p-1 tabs bg-base-200 max-w-4xl">
                 <button 
                   className={`tab tab-sm font-bold text-xs sm:text-base px-3 sm:px-4 whitespace-nowrap ${activeAdminTab === 'users' ? 'tab-active' : ''}`}
                   style={activeAdminTab === 'users' ? {color: getContrastTextColor()} : {}}
@@ -1313,8 +1313,8 @@ const Layout: React.FC = () => {
                 </button>
               </div>
             </div>
-            
-            <div className="flex-1 overflow-auto border-2 border-base-content/20 bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-none container-height-fix">
+
+            <div className="flex-1 overflow-auto border-2 border-base-content/20 bg-gradient-to-br from-base-50 to-base-100/50 rounded-lg shadow-2xl backdrop-blur-none container-height-fix">
               <div className="p-1">
                 <Outlet context={{
                   selectedProject,
@@ -1330,7 +1330,7 @@ const Layout: React.FC = () => {
           </>
         ) : location.pathname === '/terminal' ? (
           /* Terminal - Command Interface */
-          <div className="flex-1 min-h-0 overflow-hidden border-2 border-base-content/20 bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-none">
+          <div className="flex-1 min-h-0 overflow-hidden border-2 border-base-content/20 bg-gradient-to-br from-base-50 to-base-100/50 rounded-lg shadow-2xl backdrop-blur-none">
             <div className="h-full">
               <Outlet context={{
                 user,
@@ -1347,7 +1347,7 @@ const Layout: React.FC = () => {
           </div>
         ) : location.pathname === '/billing' || location.pathname === '/account-settings' || location.pathname === '/support' || location.pathname === '/help' || location.pathname === '/news' ? (
           /* Billing, Account Settings, Support, Help, and News - No sub-menu */
-          <div className="flex-1 border-2 border-base-content/20 bg-gradient-to-br from-base-50 to-base-100/50 mx-4 rounded-2xl shadow-2xl backdrop-blur-none">
+          <div className="flex-1 border-2 border-base-content/20 bg-gradient-to-br from-base-50 to-base-100/50 mx-4 rounded-lg shadow-2xl backdrop-blur-none">
             <div className="p-2">
               <Outlet />
             </div>
@@ -1356,7 +1356,7 @@ const Layout: React.FC = () => {
           /* Project Details Tab - Show project content with tabs */
           <>
             {/* Page Content */}
-            <div className={`flex-1 overflow-auto border-2 border-base-content/20 bg-gradient-to-br from-base-50 to-base-100/50 rounded-2xl shadow-2xl backdrop-blur-none container-height-fix ${location.pathname === '/support' ? 'mt-4' : ''}`}>
+            <div className={`flex-1 overflow-auto border-2 border-base-content/20 bg-gradient-to-br from-base-50 to-base-100/50 rounded-lg shadow-2xl backdrop-blur-none container-height-fix ${location.pathname === '/support' ? 'mt-4' : ''}`}>
               {selectedProject ? (
                 <div className="p-2">
                   <Outlet context={{

@@ -21,7 +21,7 @@ export class CrudHandlers extends BaseCommandHandler {
     if (parsed.args.length > 0 && parsed.flags.size === 0) {
       return {
         type: ResponseType.ERROR,
-        message: '❌ Legacy syntax no longer supported. Please use flag-based syntax.',
+        message: '❌ Please use flag-based syntax.',
         suggestions: [
           '/add todo --title="your todo title"',
           '/add todo --title="fix bug" --content="detailed description" --priority=high',
@@ -111,7 +111,7 @@ export class CrudHandlers extends BaseCommandHandler {
     if (parsed.args.length > 0 && parsed.flags.size === 0) {
       return {
         type: ResponseType.ERROR,
-        message: '❌ Legacy syntax no longer supported. Please use flag-based syntax.',
+        message: '❌ Please use flag-based syntax.',
         suggestions: [
           '/add note --title="Note Title" --content="Note content"',
           '/add note --title="Meeting Notes" --content="Discussed project architecture..."',
@@ -191,7 +191,7 @@ export class CrudHandlers extends BaseCommandHandler {
     if (parsed.args.length > 0 && parsed.flags.size === 0) {
       return {
         type: ResponseType.ERROR,
-        message: '❌ Legacy syntax no longer supported. Please use flag-based syntax.',
+        message: '❌ Please use flag-based syntax.',
         suggestions: [
           '/add devlog --title="Entry Title" --content="What I worked on today..."',
           '/add devlog --title="Bug Fix" --content="Fixed memory leak in user service"',
@@ -270,7 +270,7 @@ export class CrudHandlers extends BaseCommandHandler {
     if (separatorIndex !== -1 || (parsed.args.length > 0 && parsed.flags.size === 0)) {
       return {
         type: ResponseType.ERROR,
-        message: '❌ Legacy syntax no longer supported. Please use flag-based syntax.',
+        message: '❌ Please use flag-based syntax.',
         suggestions: [
           '/add component --feature="Auth" --category=backend --type=service --title="Login Service" --content="Handles user authentication"',
           '/add component --feature="Dashboard" --category=frontend --type=component --title="UserCard" --content="Displays user information"',

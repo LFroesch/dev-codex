@@ -39,8 +39,6 @@ export enum CommandType {
   SET_DUE_DATE = 'set_due_date',
   SWAP_PROJECT = 'swap_project',
   WIZARD_NEW = 'wizard_new',
-  WIZARD_SETUP = 'wizard_setup',
-  WIZARD_DEPLOY = 'wizard_deploy',
   EXPORT = 'export',
   SUMMARY = 'summary',
   VIEW_NOTIFICATIONS = 'view_notifications',
@@ -162,12 +160,6 @@ const COMMAND_ALIASES: Record<string, CommandType> = {
   'wizard-new': CommandType.WIZARD_NEW,
   'new': CommandType.WIZARD_NEW,
   'create': CommandType.WIZARD_NEW,
-  'wizard setup': CommandType.WIZARD_SETUP,
-  'wizard-setup': CommandType.WIZARD_SETUP,
-  'setup': CommandType.WIZARD_SETUP,
-  'wizard deploy': CommandType.WIZARD_DEPLOY,
-  'wizard-deploy': CommandType.WIZARD_DEPLOY,
-  'deploy-wizard': CommandType.WIZARD_DEPLOY,
 
   // Export commands
   'export': CommandType.EXPORT,
@@ -517,30 +509,6 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
       '/create'
     ],
     requiresProject: false,
-    requiresArgs: false
-  },
-  [CommandType.WIZARD_SETUP]: {
-    type: CommandType.WIZARD_SETUP,
-    syntax: '/wizard setup [@project]',
-    description: 'Start interactive wizard to setup project',
-    examples: [
-      '/wizard setup @myproject',
-      '/setup',
-      '/wizard-setup @frontend'
-    ],
-    requiresProject: true,
-    requiresArgs: false
-  },
-  [CommandType.WIZARD_DEPLOY]: {
-    type: CommandType.WIZARD_DEPLOY,
-    syntax: '/wizard deploy [@project]',
-    description: 'Start interactive deployment wizard',
-    examples: [
-      '/wizard deploy @myproject',
-      '/deploy-wizard',
-      '/wizard-deploy @backend'
-    ],
-    requiresProject: true,
     requiresArgs: false
   },
   [CommandType.EXPORT]: {

@@ -289,7 +289,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
             id: rel.id, // Use the relationship ID directly (same for both directions)
             source: component.id,
             target: rel.targetId,
-            type: 'smoothstep', // Options: 'default', 'straight', 'step', 'smoothstep', 'bezier'
+            type: 'default', // Options: 'default', 'straight', 'step', 'smoothstep', 'bezier'
             animated: style.animated,
             style: {
               stroke: style.stroke,
@@ -297,7 +297,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
               strokeDasharray: style.dasharray,
             },
             label: rel.relationType,
-            labelStyle: { fontSize: 11, fill: '#cbd5e1', fontWeight: 600 },
+            labelStyle: { fontSize: 16, fill: '#cbd5e1', fontWeight: 600 },
             labelBgStyle: { fill: '#1e293b', fillOpacity: 0.9, rx: 4, ry: 4 },
             labelBgPadding: [8, 4] as [number, number],
             data: { relationshipId: rel.id, componentId: component.id }, // Store for deletion
@@ -691,7 +691,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
               minZoom={0.1}
               maxZoom={2}
             >
-              <Background color="#94a3b8" gap={16} />
+              <Background color="#94a3b8" gap={32} />
               <Controls />
               <MiniMap
                 nodeColor={(node) => {

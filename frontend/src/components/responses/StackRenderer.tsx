@@ -23,12 +23,11 @@ export const StackRenderer: React.FC<StackRendererProps> = ({ stack, projectId, 
     <div className="mt-3 space-y-3">
       {technologies.length > 0 && (
         <div>
-          <div className="text-xs font-semibold text-primary mb-2">Technologies ({technologies.length})</div>
-          <div className="space-y-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
             {technologies.map((tech, index) => (
               <div
                 key={index}
-                className="flex items-center gap-3 p-2 bg-base-200 rounded-lg hover:bg-base-300/50 transition-colors border-thick"
+                className="h-16 flex items-center gap-3 p-2 bg-base-200 rounded-lg hover:bg-base-300/50 transition-colors border-thick"
               >
                 <span className="text-xs px-2 py-0.5 bg-primary/30 rounded border-2 border-primary/40 flex-shrink-0">{tech.category}</span>
                 <div className="flex-1 min-w-0 text-sm font-medium text-base-content/80 break-words">{tech.name}</div>
@@ -44,7 +43,7 @@ export const StackRenderer: React.FC<StackRendererProps> = ({ stack, projectId, 
       {packages.length > 0 && (
         <div>
           <div className="text-xs font-semibold text-primary mb-2">Packages ({packages.length})</div>
-          <div className="space-y-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
             {packages.map((pkg, index) => (
               <div
                 key={index}

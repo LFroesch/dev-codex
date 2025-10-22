@@ -293,7 +293,7 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId })
       }
 
       // Show final result and mark as completed
-      // TODO - Lock local storage version as complete in TerminalPage.tsx for when you return to the page
+      // TODO - Lock local storage version as completed in TerminalPage.tsx for when you return to the page
       if (errorCount === 0 && successCount > 0) {
         toast.success(`${itemType.charAt(0).toUpperCase() + itemType.slice(1)} updated successfully!`);
         setIsCompleted(true);

@@ -180,7 +180,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
       <div className="grid grid-cols-3 gap-2">
         <button
           onClick={onAutoLayout}
-          className="btn btn-sm h-12 btn-primary"
+          className="btn btn-sm h-14 btn-primary border-thick"
           style={{ color: getContrastTextColor('primary') }}
           title="Auto-arrange nodes"
         >
@@ -191,7 +191,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
         </button>
         <button
           onClick={onResetView}
-          className="btn btn-sm h-12 btn-ghost"
+          className="btn btn-sm h-14 btn-ghost"
           title="Reset zoom and position"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -201,7 +201,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
         </button>
         <button
           onClick={onResetLayout}
-          className="btn btn-sm h-12 btn-ghost"
+          className="btn btn-sm h-14 btn-ghost"
           title="Clear saved layout"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -751,7 +751,7 @@ const AccountSettingsPage: React.FC = () => {
 
       {/* Tabs */}
       <div className="flex justify-center">
-        <div className="tabs-container">
+        <div className="tabs-container p-1">
           <button
             className={`tab-button ${activeTab === 'profile' ? 'tab-active' : ''}`}
             style={activeTab === 'profile' ? {color: getContrastTextColor()} : {}}
@@ -800,7 +800,7 @@ const AccountSettingsPage: React.FC = () => {
 
                 {/* Theme Sub-tabs */}
                 <div className="flex justify-center">
-                  <div className="tabs-container">
+                  <div className="tabs-container p-1">
                     <button
                       className={`tab-button ${themeSubTab === 'preset' ? 'tab-active' : ''}`}
                       style={themeSubTab === 'preset' ? {color: getContrastTextColor()} : {}}
@@ -1371,7 +1371,7 @@ const AccountSettingsPage: React.FC = () => {
               <div className="space-y-6">
                 {/* Sub-navigation for Profile sections */}
                 <div className="flex justify-center">
-                  <div className="tabs-container">
+                  <div className="tabs-container p-1">
                     <button
                       className={`tab-button ${profileSubTab === 'personal' ? 'tab-active' : ''}`}
                       style={profileSubTab === 'personal' ? {color: getContrastTextColor()} : {}}

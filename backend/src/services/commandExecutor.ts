@@ -311,10 +311,6 @@ export class CommandExecutor {
         case CommandType.INFO:
           return await this.utilityHandlers.handleInfo(parsed, currentProjectId);
         case CommandType.WIZARD_NEW:
-        case CommandType.WIZARD_SETUP:
-        case CommandType.WIZARD_DEPLOY:
-          return await this.utilityHandlers.handleWizard(parsed);
-
         default:
           return {
             type: ResponseType.ERROR,

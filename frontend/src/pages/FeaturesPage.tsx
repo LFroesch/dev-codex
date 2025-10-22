@@ -368,7 +368,7 @@ const FeaturesPage: React.FC = () => {
 
       {/* Tab Navigation */}
       <div className="flex justify-center px-2">
-        <div className="tabs-container overflow-x-auto">
+        <div className="tabs-container p-1 overflow-x-auto">
           <button
             className={`tab-button ${activeTab === 'graph' ? 'tab-active' : ''}`}
             style={activeTab === 'graph' ? {color: getContrastTextColor()} : {}}

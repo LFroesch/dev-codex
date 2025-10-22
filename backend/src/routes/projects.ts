@@ -45,8 +45,7 @@ router.post('/', checkProjectLimit, async (req: AuthRequest, res) => {
       todos: [],
       devLog: [],
       components: [],
-      selectedTechnologies: [],
-      selectedPackages: [],
+      stack: [], // Unified tech stack
       stagingEnvironment: stagingEnvironment || 'development',
       color: color || '#3B82F6',
       category: category || 'general',
@@ -549,11 +548,11 @@ router.delete('/:id/notes/:noteId', requireProjectAccess('edit'), async (req: Au
   }
 });
 
-// TECH STACK MANAGEMENT
+// TECH STACK MANAGEMENT (Unified Stack)
 router.post('/:id/technologies', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
-    const { category, name, version } = req.body;
-    
+    const { category, name, version, description } = req.body;
+
     if (!category || !name) {
       return res.status(400).json({ message: 'Category and name are required' });
     }
@@ -569,26 +568,27 @@ router.post('/:id/technologies', requireProjectAccess('edit'), async (req: AuthR
       return res.status(404).json({ message: 'Project not found' });
     }
 
-    const existingTech = project.selectedTechnologies.find(
-      tech => tech.category === category && tech.name === name
+    const existingItem = project.stack.find(
+      item => item.category === category && item.name === name
     );
 
-    if (existingTech) {
+    if (existingItem) {
       return res.status(400).json({ message: 'Technology already added to this category' });
     }
 
-    const newTech = {
+    const newItem = {
       category,
       name: name.trim(),
-      version: version?.trim() || ''
+      version: version?.trim() || '',
+      description: description?.trim() || ''
     };
 
-    project.selectedTechnologies.push(newTech);
+    project.stack.push(newItem);
     await project.save();
 
     res.json({
       message: 'Technology added successfully',
-      technology: newTech
+      technology: newItem
     });
   } catch (error) {
     logError('Add technology error', error as Error);
@@ -606,8 +606,8 @@ router.delete('/:id/technologies/:category/:name', requireProjectAccess('edit'),
       return res.status(404).json({ message: 'Project not found' });
     }
 
-    project.selectedTechnologies = project.selectedTechnologies.filter(
-      tech => !(tech.category === category && tech.name === decodeURIComponent(name))
+    project.stack = project.stack.filter(
+      item => !(item.category === category && item.name === decodeURIComponent(name))
     );
     await project.save();
 
@@ -629,22 +629,22 @@ router.put('/:id/technologies/:category/:name', requireProjectAccess('edit'), as
       return res.status(404).json({ message: 'Project not found' });
     }
 
-    const technology = project.selectedTechnologies.find(
-      tech => tech.category === category && tech.name === decodeURIComponent(name)
+    const stackItem = project.stack.find(
+      item => item.category === category && item.name === decodeURIComponent(name)
     );
 
-    if (!technology) {
+    if (!stackItem) {
       return res.status(404).json({ message: 'Technology not found' });
     }
 
     // Update the technology version
-    if (version !== undefined) technology.version = version;
+    if (version !== undefined) stackItem.version = version;
 
     await project.save();
 
-    res.json({ 
+    res.json({
       message: 'Technology updated successfully',
-      technology: technology
+      technology: stackItem
     });
   } catch (error) {
     logError('Update technology error', error as Error);
@@ -652,11 +652,11 @@ router.put('/:id/technologies/:category/:name', requireProjectAccess('edit'), as
   }
 });
 
-// PACKAGES MANAGEMENT
+// PACKAGES MANAGEMENT (Unified Stack)
 router.post('/:id/packages', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
     const { category, name, version, description } = req.body;
-    
+
     if (!category || !name) {
       return res.status(400).json({ message: 'Category and name are required' });
     }
@@ -672,27 +672,27 @@ router.post('/:id/packages', requireProjectAccess('edit'), async (req: AuthReque
       return res.status(404).json({ message: 'Project not found' });
     }
 
-    const existingPackage = project.selectedPackages.find(
-      pkg => pkg.category === category && pkg.name === name
+    const existingItem = project.stack.find(
+      item => item.category === category && item.name === name
     );
 
-    if (existingPackage) {
+    if (existingItem) {
       return res.status(400).json({ message: 'Package already added to this category' });
     }
 
-    const newPackage = {
+    const newItem = {
       category,
       name: name.trim(),
       version: version?.trim() || '',
       description: description?.trim() || ''
     };
 
-    project.selectedPackages.push(newPackage);
+    project.stack.push(newItem);
     await project.save();
 
     res.json({
       message: 'Package added successfully',
-      package: newPackage
+      package: newItem
     });
   } catch (error) {
     logError('Add package error', error as Error);
@@ -710,8 +710,8 @@ router.delete('/:id/packages/:category/:name', requireProjectAccess('edit'), asy
       return res.status(404).json({ message: 'Project not found' });
     }
 
-    project.selectedPackages = project.selectedPackages.filter(
-      pkg => !(pkg.category === category && pkg.name === decodeURIComponent(name))
+    project.stack = project.stack.filter(
+      item => !(item.category === category && item.name === decodeURIComponent(name))
     );
     await project.save();
 
@@ -733,22 +733,22 @@ router.put('/:id/packages/:category/:name', requireProjectAccess('edit'), async 
       return res.status(404).json({ message: 'Project not found' });
     }
 
-    const packageItem = project.selectedPackages.find(
-      pkg => pkg.category === category && pkg.name === decodeURIComponent(name)
+    const stackItem = project.stack.find(
+      item => item.category === category && item.name === decodeURIComponent(name)
     );
 
-    if (!packageItem) {
+    if (!stackItem) {
       return res.status(404).json({ message: 'Package not found' });
     }
 
     // Update the package version
-    if (version !== undefined) packageItem.version = version;
+    if (version !== undefined) stackItem.version = version;
 
     await project.save();
 
-    res.json({ 
+    res.json({
       message: 'Package updated successfully',
-      package: packageItem
+      package: stackItem
     });
   } catch (error) {
     logError('Update package error', error as Error);
@@ -1455,9 +1455,8 @@ function formatProjectResponse(project: any) {
     notes: project.notes,
     todos: project.todos,
     devLog: project.devLog,
-    components: project.components, // Renamed from docs
-    selectedTechnologies: project.selectedTechnologies || [],
-    selectedPackages: project.selectedPackages || [],
+    components: project.components,
+    stack: project.stack || [], // Unified tech stack
     stagingEnvironment: project.stagingEnvironment,
     color: project.color,
     category: project.category,
@@ -1823,11 +1822,10 @@ router.get('/:id/export',
         })) || [],
         devLog: project.devLog || [],
         components: project.components || [],
-        
-        // Tech stack
-        selectedTechnologies: project.selectedTechnologies || [],
-        selectedPackages: project.selectedPackages || [],
-        
+
+        // Tech stack (unified)
+        stack: project.stack || [],
+
         // Deployment (sanitized - no sensitive data)
         deploymentData: {
           liveUrl: project.deploymentData?.liveUrl || '',
@@ -1966,28 +1964,41 @@ router.post('/import',
         createdAt: component.createdAt ? new Date(component.createdAt) : new Date(),
         updatedAt: component.updatedAt ? new Date(component.updatedAt) : new Date()
       })).slice(0, 100) : [],
-      
-      selectedTechnologies: Array.isArray(projectData.selectedTechnologies) 
-        ? projectData.selectedTechnologies.filter((tech: any) => 
-            tech && typeof tech === 'object' && tech.category && tech.name
-          ).map((tech: any) => ({
-            category: ['styling', 'database', 'framework', 'runtime', 'deployment', 'testing', 'tooling'].includes(tech.category)
-              ? tech.category : 'tooling',
-            name: tech.name.substring(0, 100),
-            version: (tech.version || '').substring(0, 20)
-          })).slice(0, 50) : [],
-          
-      selectedPackages: Array.isArray(projectData.selectedPackages)
-        ? projectData.selectedPackages.filter((pkg: any) => 
-            pkg && typeof pkg === 'object' && pkg.category && pkg.name
-          ).map((pkg: any) => ({
-            category: ['ui', 'state', 'routing', 'forms', 'animation', 'utility', 'api', 'auth', 'data'].includes(pkg.category)
-              ? pkg.category : 'utility',
-            name: pkg.name.substring(0, 100),
-            version: (pkg.version || '').substring(0, 20),
-            description: (pkg.description || '').substring(0, 200)
-          })).slice(0, 100) : [],
-      
+
+      // Unified stack (supports both old format and new)
+      stack: Array.isArray(projectData.stack)
+        ? projectData.stack.filter((item: any) =>
+            item && typeof item === 'object' && item.category && item.name
+          ).map((item: any) => ({
+            category: item.category,
+            name: item.name.substring(0, 100),
+            version: (item.version || '').substring(0, 20),
+            description: (item.description || '').substring(0, 200)
+          })).slice(0, 150)
+        : [
+            // Legacy: Merge selectedTechnologies and selectedPackages if present
+            ...(Array.isArray(projectData.selectedTechnologies)
+              ? projectData.selectedTechnologies.filter((tech: any) =>
+                  tech && typeof tech === 'object' && tech.category && tech.name
+                ).map((tech: any) => ({
+                  category: tech.category,
+                  name: tech.name.substring(0, 100),
+                  version: (tech.version || '').substring(0, 20),
+                  description: ''
+                }))
+              : []),
+            ...(Array.isArray(projectData.selectedPackages)
+              ? projectData.selectedPackages.filter((pkg: any) =>
+                  pkg && typeof pkg === 'object' && pkg.category && pkg.name
+                ).map((pkg: any) => ({
+                  category: pkg.category,
+                  name: pkg.name.substring(0, 100),
+                  version: (pkg.version || '').substring(0, 20),
+                  description: (pkg.description || '').substring(0, 200)
+                }))
+              : [])
+          ].slice(0, 150),
+
       // Deployment data (excluding sensitive environment variables)
       deploymentData: projectData.deploymentData && typeof projectData.deploymentData === 'object' ? {
         liveUrl: (projectData.deploymentData.liveUrl || '').substring(0, 200),
@@ -2046,8 +2057,7 @@ router.post('/import',
               todos: sanitizedProject.todos.length,
               devLog: sanitizedProject.devLog.length,
               components: sanitizedProject.components.length,
-              technologies: sanitizedProject.selectedTechnologies.length,
-              packages: sanitizedProject.selectedPackages.length
+              stack: sanitizedProject.stack.length
             }
           }
         }

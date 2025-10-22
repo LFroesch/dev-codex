@@ -157,19 +157,18 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
       const baseCommand = parts[0].trim();
 
       // Extract flag names from patterns like --url=[url] or --role=[editor/viewer]
-      // Remove [@project] from the end if present
       const flags = parts.slice(1).map(part => {
         const flagMatch = part.match(/^(\w+)/);
         return flagMatch ? `--${flagMatch[1]}=` : '';
       }).filter(Boolean);
 
-      // Remove [@project] from base command if present
-      const cleanBase = baseCommand.replace(/\[@project\]$/, '').trim();
+      // Remove @project from base command if present
+      const cleanBase = baseCommand.replace(/@project$/, '').trim();
 
       return `${cleanBase} ${flags.join(' ')}`;
     }
 
-    // No flags - return base command with space (remove [@project] if present)
+    // No flags - return base command with space (remove @project if present)
     const baseMatch = syntax.match(/^(\/[^\[]+)/);
     const cleanedSyntax = baseMatch ? baseMatch[1].trim() : syntax.trim();
     return `${cleanedSyntax} `;
@@ -297,7 +296,7 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
         return;
       }
 
-      if (e.key === 'Tab' || e.key === 'Enter') {
+      if (e.key === 'Tab') {
         if (autocompleteItems.length > 0) {
           e.preventDefault();
           selectAutocompleteItem(autocompleteItems[selectedIndex]);

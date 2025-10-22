@@ -31,11 +31,10 @@ const StackPage: React.FC = () => {
   const [activeSection, setActiveSection] = useState<'current' | 'add'>('current');
   const [selectedGroup, setSelectedGroup] = useState<string>('Frontend');
   const [activeCategory, setActiveCategory] = useState<string>('');
-  const [editingVersion, setEditingVersion] = useState<{type: 'tech' | 'package', category: string, name: string, version: string} | null>(null);
+  const [editingVersion, setEditingVersion] = useState<{category: string, name: string, version: string} | null>(null);
 
-  // Local state for instant UI updates
-  const [localTechnologies, setLocalTechnologies] = useState<any[]>([]);
-  const [localPackages, setLocalPackages] = useState<any[]>([]);
+  // Local state for instant UI updates - unified stack
+  const [localStack, setLocalStack] = useState<any[]>([]);
 
   // Load tech stack data and set up activity tracking
   useEffect(() => {
@@ -53,10 +52,9 @@ const StackPage: React.FC = () => {
   // Sync local state from selectedProject (server is source of truth)
   useEffect(() => {
     if (selectedProject) {
-      setLocalTechnologies(selectedProject.selectedTechnologies || []);
-      setLocalPackages(selectedProject.selectedPackages || []);
+      setLocalStack(selectedProject.stack || []);
     }
-  }, [selectedProject?.selectedTechnologies, selectedProject?.selectedPackages]);
+  }, [selectedProject?.stack]);
 
   // Map frontend categories to valid backend categories
   const getBackendCategory = (frontendCategory: string): { techCategory: string, packageCategory: string } => {
@@ -101,60 +99,24 @@ const StackPage: React.FC = () => {
     setError('');
 
     try {
-      const { techCategory, packageCategory } = getBackendCategory(category);
+      const { techCategory } = getBackendCategory(category);
 
       // OPTIMISTIC UPDATE - Add to local state immediately
-      const newTech = {
+      const newItem = {
         category: techCategory,
         name: tech.name,
-        version: tech.latestVersion || ''
+        version: tech.latestVersion || '',
+        description: tech.description || ''
       };
-      setLocalTechnologies(prev => [...prev, newTech]);
+      setLocalStack(prev => [...prev, newItem]);
 
-      // Try adding as technology first, fallback to package
-      let success = false;
-      let lastError: any = null;
-
-      try {
-        await projectAPI.addTechnology(selectedProject.id, {
-          category: techCategory as any,
-          name: tech.name,
-          version: tech.latestVersion || ''
-        });
-        success = true;
-      } catch (techErr: any) {
-        lastError = techErr;
-        // If already exists as technology, that's fine
-        if (techErr.response?.status !== 400) {
-          // Try adding as package instead - move from tech to package in local state
-          setLocalTechnologies(prev => prev.filter(t => t.name !== tech.name));
-          const newPkg = {
-            category: packageCategory,
-            name: tech.name,
-            version: tech.latestVersion || '',
-            description: tech.description
-          };
-          setLocalPackages(prev => [...prev, newPkg]);
-
-          try {
-            await projectAPI.addPackage(selectedProject.id, {
-              category: packageCategory as any,
-              name: tech.name,
-              version: tech.latestVersion || '',
-              description: tech.description
-            });
-            success = true;
-          } catch (pkgErr: any) {
-            // Complete failure - remove from local state
-            setLocalPackages(prev => prev.filter(p => p.name !== tech.name));
-            lastError = pkgErr;
-          }
-        }
-      }
-
-      if (!success) {
-        throw lastError || new Error('Failed to add technology');
-      }
+      // Add to unified stack via technology endpoint
+      await projectAPI.addTechnology(selectedProject.id, {
+        category: techCategory as any,
+        name: tech.name,
+        version: tech.latestVersion || '',
+        description: tech.description
+      });
 
       // Track activity
       await activityTracker.trackCreate(
@@ -162,11 +124,14 @@ const StackPage: React.FC = () => {
         'add-technology',
         tech.name,
         undefined,
-        { category: techCategory, packageCategory }
+        { category: techCategory }
       );
 
       await onProjectRefresh();
     } catch (err: any) {
+      // Rollback optimistic update on error
+      setLocalStack(prev => prev.filter(item => item.name !== tech.name));
+
       handleAPIError(err, {
         component: 'StackPage',
         action: 'add_technology',
@@ -180,37 +145,29 @@ const StackPage: React.FC = () => {
 
 
   const isSelected = useCallback((name: string) => {
-    // Check if this item exists by name in either technologies or packages
-    // (regardless of category since backend categories might be different)
-    const isInTech = localTechnologies?.some(tech => tech.name === name);
-    const isInPackages = localPackages?.some(pkg => pkg.name === name);
+    // Check if this item exists by name in the unified stack
+    return localStack?.some(item => item.name === name);
+  }, [localStack]);
 
-    return isInTech || isInPackages;
-  }, [localTechnologies, localPackages]);
-
-  const handleUpdateVersion = useCallback(async (type: 'tech' | 'package', category: string, name: string, newVersion: string) => {
+  const handleUpdateVersion = useCallback(async (category: string, name: string, newVersion: string) => {
     if (!selectedProject) return;
-    
+
     const loadingKey = `update-${category}-${name}`;
     setLoadingStates(prev => ({ ...prev, [loadingKey]: true }));
     setError('');
 
     try {
-      if (type === 'tech') {
-        await projectAPI.updateTechnology(selectedProject.id, category, name, { version: newVersion });
-      } else {
-        await projectAPI.updatePackage(selectedProject.id, category, name, { version: newVersion });
-      }
-      
+      await projectAPI.updateTechnology(selectedProject.id, category, name, { version: newVersion });
+
       // Track activity
       await activityTracker.trackUpdate(
-        type,
+        'tech',
         'update-version',
         name,
         undefined,
         { category, oldVersion: editingVersion?.version, newVersion }
       );
-      
+
       onProjectRefresh();
       setEditingVersion(null);
     } catch (err: any) {
@@ -234,18 +191,12 @@ const StackPage: React.FC = () => {
 
     try {
       // Find in local state and remove immediately for instant UI update
-      const techItem = localTechnologies?.find(tech => tech.name === name);
-      const packageItem = localPackages?.find(pkg => pkg.name === name);
+      const stackItem = localStack?.find(item => item.name === name);
 
-      if (techItem) {
+      if (stackItem) {
         // OPTIMISTIC UPDATE - Remove from local state immediately
-        setLocalTechnologies(prev => prev.filter(t => t.name !== name));
-        await projectAPI.removeTechnology(selectedProject.id, techItem.category, name);
-        await onProjectRefresh();
-      } else if (packageItem) {
-        // OPTIMISTIC UPDATE - Remove from local state immediately
-        setLocalPackages(prev => prev.filter(p => p.name !== name));
-        await projectAPI.removePackage(selectedProject.id, packageItem.category, name);
+        setLocalStack(prev => prev.filter(item => item.name !== name));
+        await projectAPI.removeTechnology(selectedProject.id, stackItem.category, name);
         await onProjectRefresh();
       } else {
         // Item not found - shouldn't happen but handle it
@@ -265,33 +216,22 @@ const StackPage: React.FC = () => {
     } finally {
       setLoadingStates(prev => ({ ...prev, [loadingKey]: false }));
     }
-  }, [selectedProject, onProjectRefresh, localTechnologies, localPackages]);
+  }, [selectedProject, onProjectRefresh, localStack]);
 
   // Memoize filtered categories for selected stack display
-  const selectedTechsByCategory = useMemo(() => {
-    if (!localTechnologies) return {};
-    return localTechnologies.reduce((acc, tech) => {
-      if (!acc[tech.category]) acc[tech.category] = [];
-      acc[tech.category].push(tech);
+  const selectedStackByCategory = useMemo(() => {
+    if (!localStack) return {};
+    return localStack.reduce((acc, item) => {
+      if (!acc[item.category]) acc[item.category] = [];
+      acc[item.category].push(item);
       return acc;
     }, {} as { [key: string]: any[] });
-  }, [localTechnologies]);
-
-  const selectedPackagesByCategory = useMemo(() => {
-    if (!localPackages) return {};
-    return localPackages.reduce((acc, pkg) => {
-      if (!acc[pkg.category]) acc[pkg.category] = [];
-      acc[pkg.category].push(pkg);
-      return acc;
-    }, {} as { [key: string]: any[] });
-  }, [localPackages]);
+  }, [localStack]);
 
   // Memoize total count
   const totalSelectedCount = useMemo(() => {
-    const techCount = localTechnologies?.length || 0;
-    const packageCount = localPackages?.length || 0;
-    return techCount + packageCount;
-  }, [localTechnologies, localPackages]);
+    return localStack?.length || 0;
+  }, [localStack]);
 
   // Filter categories based on selected platforms
   const filteredCategories = useMemo(() => {
@@ -326,15 +266,14 @@ const StackPage: React.FC = () => {
     });
   }, []);
 
-  const VersionBadge: React.FC<{ 
-    type: 'tech' | 'package', 
-    category: string, 
-    name: string, 
-    version?: string 
-  }> = React.memo(({ type, category, name, version }) => {
+  const VersionBadge: React.FC<{
+    category: string,
+    name: string,
+    version?: string
+  }> = React.memo(({ category, name, version }) => {
     if (!version) return null;
 
-    const isEditing = editingVersion?.type === type && editingVersion?.category === category && editingVersion?.name === name;
+    const isEditing = editingVersion?.category === category && editingVersion?.name === name;
     const loadingKey = `update-${category}-${name}`;
     const isLoading = loadingStates[loadingKey];
 
@@ -347,7 +286,7 @@ const StackPage: React.FC = () => {
           onChange={(e) => setEditingVersion(prev => prev ? { ...prev, version: e.target.value } : null)}
           onBlur={() => {
             if (editingVersion.version.trim() !== version) {
-              handleUpdateVersion(type, category, name, editingVersion.version.trim());
+              handleUpdateVersion(category, name, editingVersion.version.trim());
             } else {
               setEditingVersion(null);
             }
@@ -366,9 +305,9 @@ const StackPage: React.FC = () => {
     }
 
     return (
-      <span 
+      <span
         className="badge badge-xs badge-ghost h-6 border-2 border-base-content/20 px-2 py-1 text-xs font-mono cursor-pointer select-none"
-        onDoubleClick={() => setEditingVersion({ type, category, name, version })}
+        onDoubleClick={() => setEditingVersion({ category, name, version })}
         title="Double-click to edit version"
       >
         v{version}
@@ -639,7 +578,7 @@ const StackPage: React.FC = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {/* Technologies */}
-              {(Object.entries(selectedTechsByCategory) as [string, any[]][]).map(([categoryId, techs]) => {
+              {(Object.entries(selectedStackByCategory) as [string, any[]][]).map(([categoryId, techs]) => {
                 if (!techs?.length) return null;
                 const category = stackCategories.find(c => c.id === categoryId) || {
                   id: categoryId,
@@ -672,7 +611,6 @@ const StackPage: React.FC = () => {
                             </h3>
                             <div className="flex items-center gap-2">
                               <VersionBadge
-                                type="tech"
                                 category={tech.category}
                                 name={tech.name}
                                 version={tech.version}
@@ -708,80 +646,6 @@ const StackPage: React.FC = () => {
                       {techOption?.description && (
                         <p className="text-sm text-base-content/70">
                           {techOption.description}
-                        </p>
-                      )}
-                    </div>
-                  );
-                });
-              })}
-
-              {/* Packages */}
-              {(Object.entries(selectedPackagesByCategory) as [string, any[]][]).map(([categoryId, packages]) => {
-                if (!packages?.length) return null;
-                const category = stackCategories.find(c => c.id === categoryId) || {
-                  id: categoryId,
-                  name: categoryId.charAt(0).toUpperCase() + categoryId.slice(1),
-                  shortName: categoryId.charAt(0).toUpperCase() + categoryId.slice(1),
-                  emoji: '📦',
-                  color: '#6B7280',
-                  description: '',
-                  options: []
-                };
-                
-                return packages.map((pkg) => {
-                  const loadingKey = `remove-${pkg.category}-${pkg.name}`;
-                  const isLoading = loadingStates[loadingKey];
-                  const pkgOption = techOptionsLookup.get(pkg.name);
-                  
-                  return (
-                    <div
-                      key={`${categoryId}-${pkg.name}`}
-                      className="card-interactive group cursor-default p-4"
-                    >
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                          <div className="flex flex-col md:flex-row md:items-center gap-2 mb-2">
-                            <h3 className="font-semibold text-base-content group-hover:text-primary transition-colors duration-200 px-2 py-1 rounded-md bg-base-300 inline-block w-fit">
-                              {pkg.name}
-                            </h3>
-                            <div className="flex items-center gap-2">
-                              <VersionBadge
-                                type="package"
-                                category={pkg.category}
-                                name={pkg.name}
-                                version={pkg.version}
-                              />
-                              <div className="flex items-center gap-1">
-                                <span className="text-sm bg-base-300 px-1.5 py-0.5 rounded">{category.emoji}</span>
-                                <p className="text-xs text-base-content/60">{category.shortName}</p>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {pkgOption?.url && (
-                            <a
-                              href={pkgOption.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="btn btn-ghost btn-sm text-primary hover:bg-primary/10 border-2 border-base-content/20 opacity-0 group-hover:opacity-100 transition-opacity"
-                              title="View documentation"
-                            >
-                              🔗
-                            </a>
-                          )}
-                          <button
-                            onClick={() => handleRemoveTechnology(pkg.category, pkg.name)}
-                            className={`btn btn-ghost btn-sm text-error hover:bg-error/10 border border-base-content/20 opacity-0 group-hover:opacity-100 transition-opacity ${isLoading ? 'loading' : ''}`}
-                            disabled={isLoading}
-                          >
-                            {isLoading ? '' : '×'}
-                          </button>
-                        </div>
-                      </div>
-                      {pkgOption?.description && (
-                        <p className="text-sm text-base-content/70">
-                          {pkgOption.description}
                         </p>
                       )}
                     </div>

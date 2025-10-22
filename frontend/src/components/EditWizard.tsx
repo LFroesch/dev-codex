@@ -14,6 +14,8 @@ interface EditWizardProps {
     entryId?: string;
     componentId?: string;
     currentValues: Record<string, any>;
+    wizardCompleted?: boolean;
+    wizardData?: Record<string, any>;
     steps: Array<{
       id: string;
       label: string;
@@ -27,14 +29,16 @@ interface EditWizardProps {
     }>;
   };
   currentProjectId?: string;
+  entryId?: string;
+  onWizardComplete?: (entryId: string, wizardData: Record<string, any>) => void;
 }
 
-const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId }) => {
+const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, entryId, onWizardComplete }) => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
-  const [formData, setFormData] = useState<Record<string, any>>(wizardData.currentValues || {});
+  const [formData, setFormData] = useState<Record<string, any>>(wizardData.wizardData || wizardData.currentValues || {});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isCompleted, setIsCompleted] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(wizardData.wizardCompleted || false);
 
   // Confirmation modal state for delete relationship
   const [deleteConfirmation, setDeleteConfirmation] = useState<{
@@ -293,13 +297,20 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId })
       }
 
       // Show final result and mark as completed
-      // TODO - Lock local storage version as completed in TerminalPage.tsx for when you return to the page
       if (errorCount === 0 && successCount > 0) {
         toast.success(`${itemType.charAt(0).toUpperCase() + itemType.slice(1)} updated successfully!`);
         setIsCompleted(true);
+        // Update the entry in parent to persist completion state
+        if (onWizardComplete && entryId) {
+          onWizardComplete(entryId, formData);
+        }
       } else if (successCount > 0) {
         toast.warning(`Updated with ${errorCount} error(s). ${successCount} field(s) succeeded.`);
         setIsCompleted(true);
+        // Update the entry in parent to persist completion state
+        if (onWizardComplete && entryId) {
+          onWizardComplete(entryId, formData);
+        }
       } else {
         toast.error('Failed to update item');
       }

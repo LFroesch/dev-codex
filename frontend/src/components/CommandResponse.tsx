@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { CommandResponse as CommandResponseType } from '../api/terminal';
 import { getContrastTextColor } from '../utils/contrastTextColor';
 import { TodosRenderer, NotesRenderer, StackRenderer, DevLogRenderer, ComponentRenderer } from './responses';
-import { authAPI } from '../api';
+import { authAPI, terminalAPI } from '../api';
 import { hexToOklch, oklchToCssValue, generateFocusVariant, generateContrastingTextColor } from '../utils/colorUtils';
 import { toast } from '../services/toast';
 import EditWizard from './EditWizard';
 
 interface CommandResponseProps {
+  entryId: string;
   response: CommandResponseType;
   command: string;
   timestamp: Date;
@@ -16,16 +17,19 @@ interface CommandResponseProps {
   currentProjectId?: string;
   onCommandClick?: (command: string) => void;
   onDirectThemeChange?: (themeName: string) => Promise<void>;
+  onWizardComplete?: (entryId: string, wizardData: Record<string, any>) => void;
 }
 
 const CommandResponse: React.FC<CommandResponseProps> = ({
+  entryId,
   response,
   command,
   timestamp,
   onProjectSelect,
   currentProjectId,
   onCommandClick,
-  onDirectThemeChange
+  onDirectThemeChange,
+  onWizardComplete
 }) => {
   const navigate = useNavigate();
 
@@ -826,10 +830,11 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
     // Render wizard for interactive project creation
     if (response.data.wizardType === 'new_project' && response.data.steps) {
       const [currentStep, setCurrentStep] = React.useState(0);
-      const [wizardData, setWizardData] = React.useState<Record<string, any>>({});
-      const [tags, setTags] = React.useState<string[]>([]);
+      const [wizardData, setWizardData] = React.useState<Record<string, any>>(response.data.wizardData || {});
+      const [tags, setTags] = React.useState<string[]>(response.data.wizardData?.tags || []);
       const [tagInput, setTagInput] = React.useState('');
       const [isSubmitting, setIsSubmitting] = React.useState(false);
+      const [isCompleted, setIsCompleted] = React.useState(response.data.wizardCompleted || false);
 
       const steps = response.data.steps;
       const step = steps[currentStep];
@@ -862,8 +867,13 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
           });
 
           toast.success(response.data.successMessage || 'Project created successfully!');
+          setIsCompleted(true);
+          // Update the entry in parent to persist completion state
+          if (onWizardComplete) {
+            onWizardComplete(entryId, { ...wizardData, tags });
+          }
           if (response.data.successRedirect) {
-            navigate(response.data.successRedirect);
+            setTimeout(() => navigate(response.data.successRedirect), 1500);
           }
         } catch (error) {
           toast.error('Failed to create project');
@@ -890,6 +900,49 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
         }
         return true;
       };
+
+      // If completed, show success screen
+      if (isCompleted) {
+        return (
+          <div className="mt-3 space-y-4">
+            <div className="p-6 bg-success/10 rounded-lg border-2 border-success/30 text-center">
+              <div className="text-5xl mb-4">✅</div>
+              <h3 className="text-xl font-bold mb-2">Project Created Successfully!</h3>
+              <p className="text-sm text-base-content/70 mb-4">
+                Your new project has been created.
+              </p>
+
+              {/* Show created data preview */}
+              <div className="p-4 bg-base-200 rounded-lg border-thick text-left mb-4">
+                <div className="text-xs font-semibold text-base-content/60 mb-2">Created:</div>
+                <div className="space-y-1">
+                  {Object.entries(wizardData).map(([key, value]) => (
+                    <div key={key} className="text-sm">
+                      <span className="font-semibold capitalize">{key}:</span>{' '}
+                      <span className="text-base-content/80">{String(value).slice(0, 50)}{String(value).length > 50 ? '...' : ''}</span>
+                    </div>
+                  ))}
+                  {tags.length > 0 && (
+                    <div className="text-sm">
+                      <span className="font-semibold">Tags:</span>{' '}
+                      <span className="text-base-content/80">{tags.join(', ')}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => navigate(response.data.successRedirect || '/projects')}
+                className="btn btn-primary w-full"
+                style={{ color: getContrastTextColor('primary') }}
+              >
+                View Project
+              </button>
+            </div>
+          </div>
+        );
+      }
 
       return (
         <div className="mt-3 space-y-4">
@@ -1198,6 +1251,262 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
       );
     }
 
+    // Render wizard for adding todos, notes, devlog, components, and stack items
+    if (['add_todo', 'add_note', 'add_devlog', 'add_component', 'add_stack'].includes(response.data.wizardType) && response.data.steps) {
+      const [currentStep, setCurrentStep] = React.useState(0);
+      const [wizardData, setWizardData] = React.useState<Record<string, any>>(response.data.wizardData || {});
+      const [isSubmitting, setIsSubmitting] = React.useState(false);
+      const [isCompleted, setIsCompleted] = React.useState(response.data.wizardCompleted || false);
+
+      const steps = response.data.steps;
+      const step = steps[currentStep];
+      const projectId = currentProjectId || response.metadata?.projectId;
+
+      const handleNext = () => {
+        if (currentStep < steps.length - 1) {
+          setCurrentStep(currentStep + 1);
+        }
+      };
+
+      const handleBack = () => {
+        if (currentStep > 0) {
+          setCurrentStep(currentStep - 1);
+        }
+      };
+
+      const escapeForCommand = (value: string): string => {
+        return String(value)
+          .replace(/\\/g, '\\\\')
+          .replace(/"/g, '\\"');
+      };
+
+      const handleSubmit = async () => {
+        setIsSubmitting(true);
+        try {
+          const { wizardType } = response.data;
+
+          // Build command string with flags
+          const commandMap: Record<string, string> = {
+            'add_todo': 'add todo',
+            'add_note': 'add note',
+            'add_devlog': 'add devlog',
+            'add_component': 'add component',
+            'add_stack': 'add stack'
+          };
+
+          const baseCommand = commandMap[wizardType];
+          const flags = Object.entries(wizardData)
+            .filter(([, value]) => value !== undefined && value !== null && String(value).trim() !== '')
+            .map(([key, value]) => `--${key}="${escapeForCommand(String(value))}"`)
+            .join(' ');
+
+          const command = `/${baseCommand} ${flags}`;
+
+          console.log('🚀 Executing add command:', { command, projectId, wizardData });
+
+          // Execute the command
+          const result = await terminalAPI.executeCommand(command, projectId);
+
+          if (result.type === 'error') {
+            toast.error(result.message || 'Failed to create item');
+            setIsSubmitting(false);
+          } else {
+            toast.success(result.message || 'Item created successfully!');
+            setIsCompleted(true);
+            // Update the entry in parent to persist completion state
+            if (onWizardComplete) {
+              onWizardComplete(entryId, wizardData);
+            }
+          }
+        } catch (error) {
+          console.error('Failed to create item:', error);
+          toast.error(`Failed to create: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          setIsSubmitting(false);
+        }
+      };
+
+      const isStepValid = () => {
+        if (step.required) {
+          const value = wizardData[step.id] || step.value;
+          return value !== undefined && value !== '' && value !== null;
+        }
+        return true;
+      };
+
+      const getNavigationPath = () => {
+        const { wizardType } = response.data;
+        switch (wizardType) {
+          case 'add_todo':
+            return '/notes?section=todos';
+          case 'add_note':
+            return '/notes';
+          case 'add_devlog':
+            return '/notes?section=devlog';
+          case 'add_component':
+            return '/features';
+          case 'add_stack':
+            return '/stack';
+          default:
+            return '/';
+        }
+      };
+
+      const getItemTypeName = () => {
+        const { wizardType } = response.data;
+        switch (wizardType) {
+          case 'add_todo':
+            return 'Todo';
+          case 'add_note':
+            return 'Note';
+          case 'add_devlog':
+            return 'Dev Log Entry';
+          case 'add_component':
+            return 'Component';
+          case 'add_stack':
+            return 'Stack Item';
+          default:
+            return 'Item';
+        }
+      };
+
+      // If completed, show success screen
+      if (isCompleted) {
+        return (
+          <div className="mt-3 space-y-4">
+            <div className="p-6 bg-success/10 rounded-lg border-2 border-success/30 text-center">
+              <div className="text-5xl mb-4">✅</div>
+              <h3 className="text-xl font-bold mb-2">Created Successfully!</h3>
+              <p className="text-sm text-base-content/70 mb-4">
+                Your {getItemTypeName().toLowerCase()} has been created.
+              </p>
+
+              {/* Show created data preview */}
+              <div className="p-4 bg-base-200 rounded-lg border-thick text-left mb-4">
+                <div className="text-xs font-semibold text-base-content/60 mb-2">Created:</div>
+                <div className="space-y-1">
+                  {Object.entries(wizardData).map(([key, value]) => (
+                    <div key={key} className="text-sm">
+                      <span className="font-semibold capitalize">{key}:</span>{' '}
+                      <span className="text-base-content/80">{String(value).slice(0, 50)}{String(value).length > 50 ? '...' : ''}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => navigate(getNavigationPath())}
+                className="btn btn-primary w-full"
+                style={{ color: getContrastTextColor('primary') }}
+              >
+                View {getItemTypeName()}s Page
+              </button>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="mt-3 space-y-4">
+          {/* Progress indicator */}
+          <div className="flex items-center justify-between">
+            <div className="text-xs text-base-content/60">
+              Step {currentStep + 1} of {steps.length}
+            </div>
+            <div className="flex gap-1">
+              {steps.map((_step: any, idx: number) => (
+                <div
+                  key={idx}
+                  className={`w-2 h-2 rounded-full ${
+                    idx === currentStep ? 'bg-primary' :
+                    idx < currentStep ? 'bg-success' :
+                    'bg-base-300'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Step content */}
+          <div className="p-4 bg-base-200 rounded-lg border-thick">
+            <div className="text-sm font-semibold text-base-content mb-2">{step.label}</div>
+
+            {step.type === 'text' && (
+              <input
+                type="text"
+                value={wizardData[step.id] || step.value || ''}
+                onChange={(e) => setWizardData({ ...wizardData, [step.id]: e.target.value })}
+                placeholder={step.placeholder}
+                className="input input-bordered w-full"
+              />
+            )}
+
+            {step.type === 'textarea' && (
+              <textarea
+                value={wizardData[step.id] || step.value || ''}
+                onChange={(e) => setWizardData({ ...wizardData, [step.id]: e.target.value })}
+                placeholder={step.placeholder}
+                rows={6}
+                className="textarea textarea-bordered w-full resize-none font-mono text-sm"
+              />
+            )}
+
+            {step.type === 'select' && (
+              <select
+                value={wizardData[step.id] || step.value || ''}
+                onChange={(e) => setWizardData({ ...wizardData, [step.id]: e.target.value })}
+                className="select select-bordered w-full"
+              >
+                {step.options?.map((option: string) => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          {/* Navigation buttons */}
+          <div className="flex justify-between">
+            <button
+              type="button"
+              onClick={handleBack}
+              disabled={currentStep === 0}
+              className="btn btn-outline"
+            >
+              Back
+            </button>
+            {currentStep < steps.length - 1 ? (
+              <button
+                type="button"
+                onClick={handleNext}
+                disabled={!isStepValid()}
+                className="btn btn-primary"
+                style={{ color: getContrastTextColor('primary') }}
+              >
+                Next
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={!isStepValid() || isSubmitting}
+                className="btn btn-primary"
+                style={{ color: getContrastTextColor('primary') }}
+              >
+                {isSubmitting ? (
+                  <>
+                    <span className="loading loading-spinner loading-sm"></span>
+                    Creating...
+                  </>
+                ) : (
+                  `Create ${getItemTypeName()}`
+                )}
+              </button>
+            )}
+          </div>
+        </div>
+      );
+    }
+
     // Render wizard for editing todos, notes, devlog, and components
     if (['edit_todo', 'edit_note', 'edit_devlog', 'edit_component'].includes(response.data.wizardType) && response.data.steps) {
       // Use projectId from response metadata as fallback if currentProjectId is not set
@@ -1212,38 +1521,45 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
         wizardType: response.data.wizardType
       });
 
-      return <EditWizard wizardData={response.data} currentProjectId={projectId} />;
+      return (
+        <EditWizard
+          wizardData={response.data}
+          currentProjectId={projectId}
+          entryId={entryId}
+          onWizardComplete={onWizardComplete}
+        />
+      );
     }
 
-    // Render project selection
+    // Render project selection as a grid
     if (response.data.projects && Array.isArray(response.data.projects)) {
       return (
-        <div className="mt-3 space-y-2">
+        <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
           {response.data.projects.map((project: any, index: number) => (
             <button
               key={index}
               type="button"
               onClick={() => onProjectSelect?.(project.id)}
-              className="w-full p-3 bg-base-200 rounded-lg hover:bg-primary/20 hover:border-primary/50 border-thick transition-all text-left"
+              className="h-30 w-full p-3 bg-base-200 rounded-lg hover:bg-primary/20 hover:border-primary/50 border-thick transition-all text-left"
             >
               <div className="flex items-center gap-3">
                 {project.color && (
                   <div
-                    className="w-3 h-3 rounded-full border-thick"
-                    style={{ backgroundColor: project.color }}
+                  className="w-3 h-3 rounded-full border-thick"
+                  style={{ backgroundColor: project.color }}
                   />
                 )}
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-sm text-base-content/80 break-words">{project.name}</div>
+                  {project.category && (
+                    <span className="badge badge-sm border-thick">{project.category}</span>
+                  )}
                   {project.description && (
                     <div className="text-xs text-base-content/70 break-words">
                       {project.description}
                     </div>
                   )}
                 </div>
-                {project.category && (
-                  <span className="badge badge-sm border-thick">{project.category}</span>
-                )}
               </div>
             </button>
           ))}
@@ -2049,6 +2365,17 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                       </svg>
                       View Features
+                    </button>
+                  ) : command.toLowerCase().includes('add stack') || command.toLowerCase().includes('remove stack') || command.toLowerCase().includes('edit stack') ? (
+                    <button
+                      onClick={() => handleNavigateToProject('/stack')}
+                      className="btn-primary-sm gap-2 border-thick"
+                      style={{ color: getContrastTextColor('primary') }}
+                    >
+                      <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                      </svg>
+                      View Stack
                     </button>
                   ) : (
                     <button

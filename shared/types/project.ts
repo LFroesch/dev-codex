@@ -64,14 +64,10 @@ export interface BaseComponent {
 }
 
 
-export interface BaseSelectedTechnology {
-  category: 'styling' | 'database' | 'framework' | 'runtime' | 'deployment' | 'testing' | 'tooling';
-  name: string;
-  version: string;
-}
-
-export interface BaseSelectedPackage {
-  category: 'ui' | 'state' | 'routing' | 'forms' | 'animation' | 'utility' | 'api' | 'auth' | 'data';
+// Unified stack item type
+export interface BaseStackItem {
+  category: 'framework' | 'runtime' | 'database' | 'styling' | 'deployment' | 'testing' | 'tooling' |
+            'ui' | 'state' | 'routing' | 'forms' | 'animation' | 'api' | 'auth' | 'data' | 'utility';
   name: string;
   version: string;
   description: string;
@@ -85,8 +81,7 @@ export interface BaseProject {
   todos: BaseTodo[];
   devLog: BaseDevLogEntry[];
   components: BaseComponent[]; // Renamed from docs to components
-  selectedTechnologies: BaseSelectedTechnology[];
-  selectedPackages: BaseSelectedPackage[];
+  stack: BaseStackItem[]; // Unified tech stack
   stagingEnvironment: 'development' | 'staging' | 'production';
   color: string;
   category: string;
@@ -219,14 +214,10 @@ export interface CreateRelationshipData {
 }
 
 
-export interface CreateTechnologyData {
-  category: 'styling' | 'database' | 'framework' | 'runtime' | 'deployment' | 'testing' | 'tooling';
-  name: string;
-  version?: string;
-}
-
-export interface CreatePackageData {
-  category: 'ui' | 'state' | 'routing' | 'forms' | 'animation' | 'utility' | 'api' | 'auth' | 'data';
+// Unified stack item creation
+export interface CreateStackItemData {
+  category: 'framework' | 'runtime' | 'database' | 'styling' | 'deployment' | 'testing' | 'tooling' |
+            'ui' | 'state' | 'routing' | 'forms' | 'animation' | 'api' | 'auth' | 'data' | 'utility';
   name: string;
   version?: string;
   description?: string;
@@ -248,8 +239,7 @@ export interface UpdateProjectData {
   color?: string;
   category?: string;
   tags?: string[];
-  selectedTechnologies?: BaseSelectedTechnology[];
-  selectedPackages?: BaseSelectedPackage[];
+  stack?: BaseStackItem[]; // Unified stack
   deploymentData?: {
     liveUrl?: string;
     githubRepo?: string;

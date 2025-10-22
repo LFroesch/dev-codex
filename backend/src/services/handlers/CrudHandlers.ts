@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { BaseCommandHandler } from './BaseCommandHandler';
 import { CommandResponse, ResponseType } from '../commandExecutor';
 import { ParsedCommand } from '../commandParser';
-import { sanitizeText, validateTodoText } from '../../utils/validation';
+import { sanitizeText, validateTodoText, parseDueDate, formatDueDate, formatTime12Hour } from '../../utils/validation';
 
 /**
  * Handlers for CRUD operations on todos, notes, devlog, and docs
@@ -12,17 +12,19 @@ export class CrudHandlers extends BaseCommandHandler {
   /**
    * Handle /add todo command
    * Now requires flag-based syntax: /add todo --title="..." [--content="..."] [--priority=...] [--status=...]
+   * Or use without flags to pull up an interactive wizard: /add todo
    */
   async handleAddTodo(parsed: ParsedCommand, currentProjectId?: string): Promise<CommandResponse> {
     const { project, error } = await this.resolveProjectWithEditCheck(parsed.projectMention, currentProjectId);
     if (error) return error;
 
-    // Check if using old syntax (args without flags)
+    // Check if using old syntax (args without flags) - this is an error
     if (parsed.args.length > 0 && parsed.flags.size === 0) {
       return {
         type: ResponseType.ERROR,
-        message: '❌ Please use flag-based syntax.',
+        message: '❌ Please use flag-based syntax or no arguments for wizard.',
         suggestions: [
+          '/add todo - Interactive wizard',
           '/add todo --title="your todo title"',
           '/add todo --title="fix bug" --content="detailed description" --priority=high',
           '/help add todo'
@@ -35,6 +37,61 @@ export class CrudHandlers extends BaseCommandHandler {
     const content = parsed.flags.get('content') as string;
     const priority = parsed.flags.get('priority') as string;
     const status = parsed.flags.get('status') as string;
+    const due = parsed.flags.get('due') as string;
+
+    // No args and no flags - pull up wizard
+    if (parsed.args.length === 0 && parsed.flags.size === 0) {
+      return {
+        type: ResponseType.PROMPT,
+        message: `✨ Add New Todo`,
+        data: {
+          wizardType: 'add_todo',
+          steps: [
+            {
+              id: 'title',
+              label: 'Title',
+              type: 'text',
+              required: true,
+              placeholder: 'Enter todo title'
+            },
+            {
+              id: 'content',
+              label: 'Description',
+              type: 'textarea',
+              required: false,
+              placeholder: 'Optional description'
+            },
+            {
+              id: 'priority',
+              label: 'Priority',
+              type: 'select',
+              options: ['low', 'medium', 'high'],
+              required: true,
+              value: 'medium'
+            },
+            {
+              id: 'status',
+              label: 'Status',
+              type: 'select',
+              options: ['not_started', 'in_progress', 'completed', 'blocked'],
+              required: true,
+              value: 'not_started'
+            },
+            {
+              id: 'due',
+              label: 'Due Date',
+              type: 'text',
+              required: false,
+              placeholder: 'MM-DD-YYYY 8:00PM or MM-DD 21:00 (optional)'
+            }
+          ]
+        },
+        metadata: {
+          projectId: project._id.toString(),
+          action: 'add_todo'
+        }
+      };
+    }
 
     // Validate required flags
     if (!title) {
@@ -42,6 +99,7 @@ export class CrudHandlers extends BaseCommandHandler {
         type: ResponseType.ERROR,
         message: '❌ --title flag is required',
         suggestions: [
+          '/add todo - Use wizard instead',
           '/add todo --title="your todo title"',
           '/add todo --title="fix authentication bug" --priority=high',
           '/help add todo'
@@ -78,6 +136,25 @@ export class CrudHandlers extends BaseCommandHandler {
       };
     }
 
+    // Parse and validate due date if provided
+    let dueDate: Date | undefined;
+    if (due) {
+      const dueDateParse = parseDueDate(due);
+      if (!dueDateParse.isValid) {
+        return {
+          type: ResponseType.ERROR,
+          message: `❌ ${dueDateParse.error}`,
+          suggestions: [
+            '/add todo --title="task" --due="12-25-2025 8:00PM"',
+            '/add todo --title="task" --due="3-15 9:30AM" (defaults to current year)',
+            '/add todo --title="task" --due="12-31 21:00" (24-hour format)',
+            '/help add todo'
+          ]
+        };
+      }
+      dueDate = dueDateParse.date;
+    }
+
     const newTodo = {
       id: uuidv4(),
       title: validation.sanitized!,
@@ -85,6 +162,7 @@ export class CrudHandlers extends BaseCommandHandler {
       priority: (priority?.toLowerCase() as 'low' | 'medium' | 'high') || 'medium',
       completed: false,
       status: (status?.toLowerCase() as 'not_started' | 'in_progress' | 'completed' | 'blocked') || 'not_started',
+      dueDate,
       createdAt: new Date(),
       createdBy: new mongoose.Types.ObjectId(this.userId)
     };
@@ -92,8 +170,9 @@ export class CrudHandlers extends BaseCommandHandler {
     project.todos.push(newTodo);
     await project.save();
 
+    const dueDateMsg = dueDate ? ` (due: ${formatDueDate(dueDate)})` : '';
     return this.buildSuccessResponse(
-      `✅ Added todo: "${validation.sanitized}" to ${project.name}`,
+      `✅ Added todo: "${validation.sanitized}"${dueDateMsg} to ${project.name}`,
       project,
       'add_todo'
     );
@@ -102,17 +181,19 @@ export class CrudHandlers extends BaseCommandHandler {
   /**
    * Handle /add note command
    * Now requires flag-based syntax: /add note --title="..." --content="..."
+   * Or use without flags to pull up an interactive wizard: /add note
    */
   async handleAddNote(parsed: ParsedCommand, currentProjectId?: string): Promise<CommandResponse> {
     const { project, error } = await this.resolveProjectWithEditCheck(parsed.projectMention, currentProjectId);
     if (error) return error;
 
-    // Check if using old syntax (args without flags)
+    // Check if using old syntax (args without flags) - this is an error
     if (parsed.args.length > 0 && parsed.flags.size === 0) {
       return {
         type: ResponseType.ERROR,
-        message: '❌ Please use flag-based syntax.',
+        message: '❌ Please use flag-based syntax or no arguments for wizard.',
         suggestions: [
+          '/add note - Interactive wizard',
           '/add note --title="Note Title" --content="Note content"',
           '/add note --title="Meeting Notes" --content="Discussed project architecture..."',
           '/help add note'
@@ -124,12 +205,44 @@ export class CrudHandlers extends BaseCommandHandler {
     const title = parsed.flags.get('title') as string;
     const content = parsed.flags.get('content') as string;
 
+    // No args and no flags - pull up wizard
+    if (parsed.args.length === 0 && parsed.flags.size === 0) {
+      return {
+        type: ResponseType.PROMPT,
+        message: `✨ Add New Note`,
+        data: {
+          wizardType: 'add_note',
+          steps: [
+            {
+              id: 'title',
+              label: 'Note Title',
+              type: 'text',
+              required: true,
+              placeholder: 'Enter note title'
+            },
+            {
+              id: 'content',
+              label: 'Content',
+              type: 'textarea',
+              required: true,
+              placeholder: 'Enter note content'
+            }
+          ]
+        },
+        metadata: {
+          projectId: project._id.toString(),
+          action: 'add_note'
+        }
+      };
+    }
+
     // Validate required flags
     if (!title) {
       return {
         type: ResponseType.ERROR,
         message: '❌ --title flag is required',
         suggestions: [
+          '/add note - Use wizard instead',
           '/add note --title="Note Title" --content="Note content"',
           '/help add note'
         ]
@@ -141,6 +254,7 @@ export class CrudHandlers extends BaseCommandHandler {
         type: ResponseType.ERROR,
         message: '❌ --content flag is required',
         suggestions: [
+          '/add note - Use wizard instead',
           '/add note --title="Note Title" --content="Note content"',
           '/help add note'
         ]
@@ -182,17 +296,19 @@ export class CrudHandlers extends BaseCommandHandler {
   /**
    * Handle /add devlog command
    * Now requires flag-based syntax: /add devlog --title="..." --content="..."
+   * Or use without flags to pull up an interactive wizard: /add devlog
    */
   async handleAddDevLog(parsed: ParsedCommand, currentProjectId?: string): Promise<CommandResponse> {
     const { project, error } = await this.resolveProjectWithEditCheck(parsed.projectMention, currentProjectId);
     if (error) return error;
 
-    // Check if using old syntax (args without flags)
+    // Check if using old syntax (args without flags) - this is an error
     if (parsed.args.length > 0 && parsed.flags.size === 0) {
       return {
         type: ResponseType.ERROR,
-        message: '❌ Please use flag-based syntax.',
+        message: '❌ Please use flag-based syntax or no arguments for wizard.',
         suggestions: [
+          '/add devlog - Interactive wizard',
           '/add devlog --title="Entry Title" --content="What I worked on today..."',
           '/add devlog --title="Bug Fix" --content="Fixed memory leak in user service"',
           '/help add devlog'
@@ -204,12 +320,44 @@ export class CrudHandlers extends BaseCommandHandler {
     const title = parsed.flags.get('title') as string;
     const content = parsed.flags.get('content') as string;
 
+    // No args and no flags - pull up wizard
+    if (parsed.args.length === 0 && parsed.flags.size === 0) {
+      return {
+        type: ResponseType.PROMPT,
+        message: `✨ Add New Dev Log Entry`,
+        data: {
+          wizardType: 'add_devlog',
+          steps: [
+            {
+              id: 'title',
+              label: 'Title',
+              type: 'text',
+              required: false,
+              placeholder: 'Optional entry title'
+            },
+            {
+              id: 'content',
+              label: 'Content',
+              type: 'textarea',
+              required: true,
+              placeholder: 'What did you work on today?'
+            }
+          ]
+        },
+        metadata: {
+          projectId: project._id.toString(),
+          action: 'add_devlog'
+        }
+      };
+    }
+
     // Validate required flags
     if (!title) {
       return {
         type: ResponseType.ERROR,
         message: '❌ --title flag is required',
         suggestions: [
+          '/add devlog - Use wizard instead',
           '/add devlog --title="Entry Title" --content="Entry content"',
           '/help add devlog'
         ]
@@ -221,6 +369,7 @@ export class CrudHandlers extends BaseCommandHandler {
         type: ResponseType.ERROR,
         message: '❌ --content flag is required',
         suggestions: [
+          '/add devlog - Use wizard instead',
           '/add devlog --title="Entry Title" --content="Entry content"',
           '/help add devlog'
         ]
@@ -260,18 +409,20 @@ export class CrudHandlers extends BaseCommandHandler {
   /**
    * Handle /add component command
    * Now requires flag-based syntax: /add component --feature="..." --category=... --type=... --title="..." --content="..."
+   * Or use without flags to pull up an interactive wizard: /add component
    */
   async handleAddComponent(parsed: ParsedCommand, currentProjectId?: string): Promise<CommandResponse> {
     const { project, error } = await this.resolveProjectWithEditCheck(parsed.projectMention, currentProjectId);
     if (error) return error;
 
-    // Check if using old syntax (looking for "-" separator or args without flags)
+    // Check if using old syntax (looking for "-" separator or args without flags) - this is an error
     const separatorIndex = parsed.args.indexOf('-');
     if (separatorIndex !== -1 || (parsed.args.length > 0 && parsed.flags.size === 0)) {
       return {
         type: ResponseType.ERROR,
-        message: '❌ Please use flag-based syntax.',
+        message: '❌ Please use flag-based syntax or no arguments for wizard.',
         suggestions: [
+          '/add component - Interactive wizard',
           '/add component --feature="Auth" --category=backend --type=service --title="Login Service" --content="Handles user authentication"',
           '/add component --feature="Dashboard" --category=frontend --type=component --title="UserCard" --content="Displays user information"',
           '/help add component'
@@ -286,12 +437,81 @@ export class CrudHandlers extends BaseCommandHandler {
     const title = parsed.flags.get('title') as string;
     const content = parsed.flags.get('content') as string;
 
+    // No args and no flags - pull up wizard
+    if (parsed.args.length === 0 && parsed.flags.size === 0) {
+      const validCategories = ['frontend', 'backend', 'database', 'infrastructure', 'security', 'api', 'documentation', 'asset'];
+      const typesByCategory: Record<string, string[]> = {
+        frontend: ['page', 'component', 'hook', 'context', 'layout', 'util', 'custom'],
+        backend: ['service', 'route', 'model', 'controller', 'middleware', 'util', 'custom'],
+        database: ['schema', 'migration', 'seed', 'query', 'index', 'custom'],
+        infrastructure: ['deployment', 'cicd', 'env', 'config', 'monitoring', 'docker', 'custom'],
+        security: ['auth', 'authz', 'encryption', 'validation', 'sanitization', 'custom'],
+        api: ['client', 'integration', 'webhook', 'contract', 'graphql', 'custom'],
+        documentation: ['area', 'section', 'guide', 'architecture', 'api-doc', 'readme', 'changelog', 'custom'],
+        asset: ['image', 'font', 'video', 'audio', 'document', 'dependency', 'custom']
+      };
+
+      return {
+        type: ResponseType.PROMPT,
+        message: `✨ Add New Component`,
+        data: {
+          wizardType: 'add_component',
+          typesByCategory,
+          steps: [
+            {
+              id: 'feature',
+              label: 'Feature',
+              type: 'text',
+              required: true,
+              placeholder: 'Enter feature name'
+            },
+            {
+              id: 'category',
+              label: 'Category',
+              type: 'select',
+              options: validCategories,
+              required: true,
+              value: 'frontend'
+            },
+            {
+              id: 'type',
+              label: 'Type',
+              type: 'select',
+              options: typesByCategory.frontend,
+              required: true,
+              value: 'component',
+              dependsOn: 'category'
+            },
+            {
+              id: 'title',
+              label: 'Component Title',
+              type: 'text',
+              required: true,
+              placeholder: 'Enter component title'
+            },
+            {
+              id: 'content',
+              label: 'Content',
+              type: 'textarea',
+              required: true,
+              placeholder: 'Enter component description'
+            }
+          ]
+        },
+        metadata: {
+          projectId: project._id.toString(),
+          action: 'add_component'
+        }
+      };
+    }
+
     // Validate required flags
     if (!feature) {
       return {
         type: ResponseType.ERROR,
         message: '❌ --feature flag is required',
         suggestions: [
+          '/add component - Use wizard instead',
           '/add component --feature="FeatureName" --category=backend --type=service --title="Title" --content="Description"',
           '/help add component'
         ]
@@ -303,6 +523,7 @@ export class CrudHandlers extends BaseCommandHandler {
         type: ResponseType.ERROR,
         message: '❌ --category flag is required',
         suggestions: [
+          '/add component - Use wizard instead',
           'Valid categories: frontend, backend, database, infrastructure, security, api, documentation, asset',
           '/add component --feature="Auth" --category=backend --type=service --title="Login" --content="..."',
           '/help add component'
@@ -315,6 +536,7 @@ export class CrudHandlers extends BaseCommandHandler {
         type: ResponseType.ERROR,
         message: '❌ --type flag is required',
         suggestions: [
+          '/add component - Use wizard instead',
           'Common types: component, service, schema, config, auth, client, guide, dependency',
           '/add component --feature="Auth" --category=backend --type=service --title="Login" --content="..."',
           '/help add component'
@@ -327,6 +549,7 @@ export class CrudHandlers extends BaseCommandHandler {
         type: ResponseType.ERROR,
         message: '❌ --title flag is required',
         suggestions: [
+          '/add component - Use wizard instead',
           '/add component --feature="Auth" --category=backend --type=service --title="Login Service" --content="..."',
           '/help add component'
         ]
@@ -338,6 +561,7 @@ export class CrudHandlers extends BaseCommandHandler {
         type: ResponseType.ERROR,
         message: '❌ --content flag is required',
         suggestions: [
+          '/add component - Use wizard instead',
           '/add component --feature="Auth" --category=backend --type=service --title="Login" --content="Handles authentication"',
           '/help add component'
         ]
@@ -404,7 +628,7 @@ export class CrudHandlers extends BaseCommandHandler {
       return {
         type: ResponseType.INFO,
         message: `📝 No notes found in ${resolution.project.name}`,
-        suggestions: [`/add note [text] @${resolution.project.name}`]
+        suggestions: [`/add note`, `/add note --title="Note Title" --content="Content" @${resolution.project.name}`]
       };
     }
 
@@ -440,7 +664,7 @@ export class CrudHandlers extends BaseCommandHandler {
       return {
         type: ResponseType.INFO,
         message: `✅ No todos found in ${resolution.project.name}`,
-        suggestions: [`/add todo [text] @${resolution.project.name}`]
+        suggestions: [`/add todo`, `/add todo --title="Task" --priority=high @${resolution.project.name}`]
       };
     }
 
@@ -495,7 +719,7 @@ export class CrudHandlers extends BaseCommandHandler {
       return {
         type: ResponseType.INFO,
         message: `📋 No dev log entries found in ${resolution.project.name}`,
-        suggestions: [`/add devlog [text] @${resolution.project.name}`]
+        suggestions: [`/add devlog @${resolution.project.name}`]
       };
     }
 
@@ -529,7 +753,7 @@ export class CrudHandlers extends BaseCommandHandler {
       return {
         type: ResponseType.INFO,
         message: `🧩 No components found in ${resolution.project.name}`,
-        suggestions: [`/add component [feature] [type] [title] - [content]`]
+        suggestions: [`/add component @${resolution.project.name}`]
       };
     }
 
@@ -908,113 +1132,6 @@ export class CrudHandlers extends BaseCommandHandler {
   }
 
   /**
-   * Handle /priority command - Set todo priority
-   */
-  async handleSetPriority(parsed: ParsedCommand, currentProjectId?: string): Promise<CommandResponse> {
-    const { project, error } = await this.resolveProjectWithEditCheck(parsed.projectMention, currentProjectId);
-    if (error) return error;
-
-    if (parsed.args.length < 2) {
-      return {
-        type: ResponseType.ERROR,
-        message: 'Usage: /priority [todo] [low/medium/high]',
-        suggestions: ['/help priority']
-      };
-    }
-
-    // Last arg is the priority, everything before is the todo identifier
-    const priorityStr = parsed.args[parsed.args.length - 1].toLowerCase();
-    const todoIdentifier = parsed.args.slice(0, -1).join(' ').trim();
-
-    if (!['low', 'medium', 'high'].includes(priorityStr)) {
-      return {
-        type: ResponseType.ERROR,
-        message: 'Priority must be: low, medium, or high',
-        suggestions: ['/help priority']
-      };
-    }
-
-    const todo = this.findTodo(project.todos, todoIdentifier);
-
-    if (!todo) {
-      return {
-        type: ResponseType.ERROR,
-        message: `Todo not found: "${todoIdentifier}"`,
-        suggestions: ['/view todos', '/help priority']
-      };
-    }
-
-    todo.priority = priorityStr as 'low' | 'medium' | 'high';
-    await project.save();
-
-    return this.buildSuccessResponse(
-      `✅ Set priority to ${priorityStr} for todo: "${todo.title}"`,
-      project,
-      'set_priority'
-    );
-  }
-
-  /**
-   * Handle /due command - Set todo due date
-   */
-  async handleSetDueDate(parsed: ParsedCommand, currentProjectId?: string): Promise<CommandResponse> {
-    const { project, error } = await this.resolveProjectWithEditCheck(parsed.projectMention, currentProjectId);
-    if (error) return error;
-
-    if (parsed.args.length < 2) {
-      return {
-        type: ResponseType.ERROR,
-        message: 'Usage: /due [todo] [date]',
-        suggestions: ['/help due']
-      };
-    }
-
-    // Last arg is the date, everything before is the todo identifier
-    const dateStr = parsed.args[parsed.args.length - 1];
-    const todoIdentifier = parsed.args.slice(0, -1).join(' ').trim();
-
-    const todo = this.findTodo(project.todos, todoIdentifier);
-
-    if (!todo) {
-      return {
-        type: ResponseType.ERROR,
-        message: `Todo not found: "${todoIdentifier}"`,
-        suggestions: ['/view todos', '/help due']
-      };
-    }
-
-    // Parse date - support YYYY-MM-DD, relative dates like "tomorrow", etc.
-    let dueDate: Date;
-
-    if (dateStr.toLowerCase() === 'today') {
-      dueDate = new Date();
-      dueDate.setHours(23, 59, 59, 999);
-    } else if (dateStr.toLowerCase() === 'tomorrow') {
-      dueDate = new Date();
-      dueDate.setDate(dueDate.getDate() + 1);
-      dueDate.setHours(23, 59, 59, 999);
-    } else {
-      dueDate = new Date(dateStr);
-      if (isNaN(dueDate.getTime())) {
-        return {
-          type: ResponseType.ERROR,
-          message: `Invalid date format: ${dateStr}. Use YYYY-MM-DD, "today", or "tomorrow"`,
-          suggestions: ['/help due']
-        };
-      }
-    }
-
-    todo.dueDate = dueDate;
-    await project.save();
-
-    return this.buildSuccessResponse(
-      `✅ Set due date to ${dueDate.toLocaleDateString()} for todo: "${todo.title}"`,
-      project,
-      'set_due_date'
-    );
-  }
-
-  /**
    * Handle /add subtask command - Add subtask to a todo
    */
   async handleAddSubtask(parsed: ParsedCommand, currentProjectId?: string): Promise<CommandResponse> {
@@ -1024,7 +1141,7 @@ export class CrudHandlers extends BaseCommandHandler {
     if (parsed.args.length < 2) {
       return {
         type: ResponseType.ERROR,
-        message: 'Usage: /add subtask [parent todo] [subtask text]',
+        message: 'Usage: /add subtask "parent todo" "subtask text"',
         suggestions: ['/help add subtask']
       };
     }
@@ -1050,7 +1167,7 @@ export class CrudHandlers extends BaseCommandHandler {
     if (!parentTodo) {
       return {
         type: ResponseType.ERROR,
-        message: `Parent todo not found. Try: /add subtask "[parent todo text]" [subtask text]`,
+        message: `Parent todo not found. Try: /add subtask "parent todo text" "subtask text"`,
         suggestions: ['/view todos', '/help add subtask']
       };
     }
@@ -1124,7 +1241,7 @@ export class CrudHandlers extends BaseCommandHandler {
       return {
         type: ResponseType.INFO,
         message: `No subtasks found for "${parentTodo.title}"`,
-        suggestions: [`/add subtask "${parentTodo.title}" [subtask text]`]
+        suggestions: [`/add subtask "${parentTodo.title}" "subtask text"`]
       };
     }
 
@@ -1167,7 +1284,7 @@ export class CrudHandlers extends BaseCommandHandler {
         suggestions: [
           '/view todos - See all todos with #IDs',
           '💡 Edit with wizard: /edit todo 1',
-          '💡 Edit specific field: /edit todo 1 --field=title --content="new title"',
+          '💡 Edit specific fields: /edit todo 1 --title="new title" --priority="high"',
           '/help edit todo'
         ]
       };
@@ -1187,25 +1304,19 @@ export class CrudHandlers extends BaseCommandHandler {
       };
     }
 
-    // Check for field flags - direct update mode
-    const field = parsed.flags.get('field') as string;
+    // Check for direct flags (new syntax)
+    const title = parsed.flags.get('title') as string;
     const content = parsed.flags.get('content') as string;
+    const priority = parsed.flags.get('priority') as string;
+    const status = parsed.flags.get('status') as string;
+    const due = parsed.flags.get('due') as string;
 
-    if (field && content) {
-      // Direct field update
-      const validFields = ['title', 'content', 'priority', 'status'];
+    // If any flags are provided, update those fields
+    if (title || content || priority || status || due) {
+      let updated = false;
 
-      if (!validFields.includes(field)) {
-        return {
-          type: ResponseType.ERROR,
-          message: `❌ Invalid field: "${field}". Valid fields: ${validFields.join(', ')}`,
-          suggestions: ['/help edit todo']
-        };
-      }
-
-      // Validate and update based on field
-      if (field === 'title') {
-        const validation = validateTodoText(content);
+      if (title) {
+        const validation = validateTodoText(title);
         if (!validation.isValid) {
           return {
             type: ResponseType.ERROR,
@@ -1215,53 +1326,99 @@ export class CrudHandlers extends BaseCommandHandler {
         }
         console.log(`[EDIT TODO] Updating title from "${todo.title}" to "${validation.sanitized}"`);
         todo.title = validation.sanitized!;
-      } else if (field === 'content') {
+        updated = true;
+      }
+
+      if (content) {
         console.log(`[EDIT TODO] Updating description for todo "${todo.title}"`);
         todo.description = sanitizeText(content);
-      } else if (field === 'priority') {
-        if (!['low', 'medium', 'high'].includes(content.toLowerCase())) {
+        updated = true;
+      }
+
+      if (priority) {
+        if (!['low', 'medium', 'high'].includes(priority.toLowerCase())) {
           return {
             type: ResponseType.ERROR,
             message: 'Priority must be: low, medium, or high',
             suggestions: ['/help edit todo']
           };
         }
-        console.log(`[EDIT TODO] Updating priority for todo "${todo.title}" to ${content.toLowerCase()}`);
-        todo.priority = content.toLowerCase() as 'low' | 'medium' | 'high';
-      } else if (field === 'status') {
+        console.log(`[EDIT TODO] Updating priority for todo "${todo.title}" to ${priority.toLowerCase()}`);
+        todo.priority = priority.toLowerCase() as 'low' | 'medium' | 'high';
+        updated = true;
+      }
+
+      if (status) {
         const validStatuses = ['not_started', 'in_progress', 'completed', 'blocked'];
-        if (!validStatuses.includes(content.toLowerCase())) {
+        if (!validStatuses.includes(status.toLowerCase())) {
           return {
             type: ResponseType.ERROR,
             message: `Status must be one of: ${validStatuses.join(', ')}`,
             suggestions: ['/help edit todo']
           };
         }
-        console.log(`[EDIT TODO] Updating status for todo "${todo.title}" to ${content.toLowerCase()}`);
-        todo.status = content.toLowerCase() as any;
+        console.log(`[EDIT TODO] Updating status for todo "${todo.title}" to ${status.toLowerCase()}`);
+        todo.status = status.toLowerCase() as any;
+        updated = true;
       }
 
-      try {
-        console.log(`[EDIT TODO] Saving project "${project.name}" (ID: ${project._id})`);
-        await project.save();
-        console.log(`[EDIT TODO] Save successful for todo "${todo.title}"`);
-      } catch (saveError) {
-        console.error('[EDIT TODO] Save failed:', saveError);
-        return {
-          type: ResponseType.ERROR,
-          message: `Failed to save todo: ${saveError instanceof Error ? saveError.message : 'Unknown error'}`,
-          suggestions: ['/help edit todo']
-        };
+      if (due) {
+        const dueDateParse = parseDueDate(due);
+        if (!dueDateParse.isValid) {
+          return {
+            type: ResponseType.ERROR,
+            message: `❌ ${dueDateParse.error}`,
+            suggestions: [
+              '/edit todo 1 --due="12-25-2025 8:00PM"',
+              '/edit todo 1 --due="3-15 9:30AM" (defaults to current year)',
+              '/edit todo 1 --due="12-31 21:00" (24-hour format)',
+              '/help edit todo'
+            ]
+          };
+        }
+        console.log(`[EDIT TODO] Updating due date for todo "${todo.title}" to ${formatDueDate(dueDateParse.date!)}`);
+        todo.dueDate = dueDateParse.date;
+        updated = true;
       }
 
-      return this.buildSuccessResponse(
-        `✅ Updated todo ${field}: "${todo.title}"`,
-        project,
-        'edit_todo'
-      );
+      if (updated) {
+        try {
+          console.log(`[EDIT TODO] Saving project "${project.name}" (ID: ${project._id})`);
+          await project.save();
+          console.log(`[EDIT TODO] Save successful for todo "${todo.title}"`);
+        } catch (saveError) {
+          console.error('[EDIT TODO] Save failed:', saveError);
+          return {
+            type: ResponseType.ERROR,
+            message: `Failed to save todo: ${saveError instanceof Error ? saveError.message : 'Unknown error'}`,
+            suggestions: ['/help edit todo']
+          };
+        }
+
+        return this.buildSuccessResponse(
+          `✅ Updated todo: "${todo.title}"`,
+          project,
+          'edit_todo'
+        );
+      }
     }
 
-    // No field flags - return interactive wizard
+    // No flags - return interactive wizard
+    // Format dueDate for display if it exists
+    let dueDateStr = '';
+    if (todo.dueDate) {
+      const month = todo.dueDate.getMonth() + 1;
+      const day = todo.dueDate.getDate();
+      const year = todo.dueDate.getFullYear();
+      const hasTime = todo.dueDate.getHours() !== 0 || todo.dueDate.getMinutes() !== 0;
+
+      dueDateStr = `${month}-${day}-${year}`;
+      if (hasTime) {
+        const timeStr = formatTime12Hour(todo.dueDate.getHours(), todo.dueDate.getMinutes());
+        dueDateStr += ` ${timeStr}`;
+      }
+    }
+
     return {
       type: ResponseType.PROMPT,
       message: `✏️ Edit Todo: "${todo.title}"`,
@@ -1272,7 +1429,8 @@ export class CrudHandlers extends BaseCommandHandler {
           title: todo.title,
           content: todo.description || '',
           priority: todo.priority,
-          status: todo.status
+          status: todo.status,
+          due: dueDateStr
         },
         steps: [
           {
@@ -1304,6 +1462,14 @@ export class CrudHandlers extends BaseCommandHandler {
             options: ['not_started', 'in_progress', 'completed', 'blocked'],
             required: true,
             value: todo.status
+          },
+          {
+            id: 'due',
+            label: 'Due Date',
+            type: 'text',
+            required: false,
+            value: dueDateStr,
+            placeholder: 'MM-DD-YYYY 8:00PM or MM-DD 21:00 (optional)'
           }
         ]
       },
@@ -1329,7 +1495,7 @@ export class CrudHandlers extends BaseCommandHandler {
         suggestions: [
           '/view notes - See all notes with #IDs',
           '💡 Edit with wizard: /edit note 1',
-          '💡 Edit specific field: /edit note 1 --field=content --content="new content"',
+          '💡 Edit specific fields: /edit note 1 --title="new title" --content="new content"',
           '/help edit note'
         ]
       };
@@ -1349,55 +1515,52 @@ export class CrudHandlers extends BaseCommandHandler {
       };
     }
 
-    // Check for field flags - direct update mode
-    const field = parsed.flags.get('field') as string;
+    // Check for direct flags (new syntax)
+    const title = parsed.flags.get('title') as string;
     const content = parsed.flags.get('content') as string;
 
-    if (field && content) {
-      // Direct field update
-      const validFields = ['title', 'content'];
+    // If any flags are provided, update those fields
+    if (title || content) {
+      let updated = false;
 
-      if (!validFields.includes(field)) {
-        return {
-          type: ResponseType.ERROR,
-          message: `❌ Invalid field: "${field}". Valid fields: ${validFields.join(', ')}`,
-          suggestions: ['/help edit note']
-        };
+      if (title) {
+        const sanitizedTitle = sanitizeText(title);
+        console.log(`[EDIT NOTE] Updating title from "${note.title}" to "${sanitizedTitle}"`);
+        note.title = sanitizedTitle;
+        updated = true;
       }
 
-      // Update the specified field
-      const sanitizedContent = sanitizeText(content);
-      if (field === 'title') {
-        console.log(`[EDIT NOTE] Updating title from "${note.title}" to "${sanitizedContent}"`);
-        note.title = sanitizedContent;
-      } else if (field === 'content') {
+      if (content) {
         console.log(`[EDIT NOTE] Updating content for note "${note.title}"`);
-        note.content = sanitizedContent;
+        note.content = sanitizeText(content);
+        updated = true;
       }
 
-      note.updatedAt = new Date();
+      if (updated) {
+        note.updatedAt = new Date();
 
-      try {
-        console.log(`[EDIT NOTE] Saving project "${project.name}" (ID: ${project._id})`);
-        await project.save();
-        console.log(`[EDIT NOTE] Save successful for note "${note.title}"`);
-      } catch (saveError) {
-        console.error('[EDIT NOTE] Save failed:', saveError);
-        return {
-          type: ResponseType.ERROR,
-          message: `Failed to save note: ${saveError instanceof Error ? saveError.message : 'Unknown error'}`,
-          suggestions: ['/help edit note']
-        };
+        try {
+          console.log(`[EDIT NOTE] Saving project "${project.name}" (ID: ${project._id})`);
+          await project.save();
+          console.log(`[EDIT NOTE] Save successful for note "${note.title}"`);
+        } catch (saveError) {
+          console.error('[EDIT NOTE] Save failed:', saveError);
+          return {
+            type: ResponseType.ERROR,
+            message: `Failed to save note: ${saveError instanceof Error ? saveError.message : 'Unknown error'}`,
+            suggestions: ['/help edit note']
+          };
+        }
+
+        return this.buildSuccessResponse(
+          `📝 Updated note: "${note.title}"`,
+          project,
+          'edit_note'
+        );
       }
-
-      return this.buildSuccessResponse(
-        `📝 Updated note ${field}: "${note.title}"`,
-        project,
-        'edit_note'
-      );
     }
 
-    // No field flags - return interactive wizard
+    // No flags - return interactive wizard
     return {
       type: ResponseType.PROMPT,
       message: `✏️ Edit Note: "${note.title}"`,
@@ -1447,7 +1610,7 @@ export class CrudHandlers extends BaseCommandHandler {
         suggestions: [
           '/view devlog - See all entries with #IDs',
           '💡 Edit with wizard: /edit devlog 1',
-          '💡 Edit specific field: /edit devlog 1 --field=content --content="new content"',
+          '💡 Edit specific fields: /edit devlog 1 --title="new title" --content="new content"',
           '/help edit devlog'
         ]
       };
@@ -1467,55 +1630,52 @@ export class CrudHandlers extends BaseCommandHandler {
       };
     }
 
-    // Check for field flags - direct update mode
-    const field = parsed.flags.get('field') as string;
+    // Check for direct flags (new syntax)
+    const title = parsed.flags.get('title') as string;
     const content = parsed.flags.get('content') as string;
 
-    if (field && content) {
-      // Direct field update
-      const validFields = ['title', 'content'];
+    // If any flags are provided, update those fields
+    if (title || content) {
+      let updated = false;
 
-      if (!validFields.includes(field)) {
-        return {
-          type: ResponseType.ERROR,
-          message: `❌ Invalid field: "${field}". Valid fields: ${validFields.join(', ')}`,
-          suggestions: ['/help edit devlog']
-        };
+      if (title) {
+        const sanitizedTitle = sanitizeText(title);
+        console.log(`[EDIT DEVLOG] Updating title to "${sanitizedTitle}"`);
+        entry.title = sanitizedTitle;
+        updated = true;
       }
 
-      // Update the specified field
-      const sanitizedContent = sanitizeText(content);
-      if (field === 'title') {
-        console.log(`[EDIT DEVLOG] Updating title to "${sanitizedContent}"`);
-        entry.title = sanitizedContent;
-      } else if (field === 'content') {
+      if (content) {
         console.log(`[EDIT DEVLOG] Updating description`);
-        entry.description = sanitizedContent;
+        entry.description = sanitizeText(content);
+        updated = true;
       }
 
-      entry.date = new Date();
+      if (updated) {
+        entry.date = new Date();
 
-      try {
-        console.log(`[EDIT DEVLOG] Saving project "${project.name}" (ID: ${project._id})`);
-        await project.save();
-        console.log(`[EDIT DEVLOG] Save successful`);
-      } catch (saveError) {
-        console.error('[EDIT DEVLOG] Save failed:', saveError);
-        return {
-          type: ResponseType.ERROR,
-          message: `Failed to save dev log: ${saveError instanceof Error ? saveError.message : 'Unknown error'}`,
-          suggestions: ['/help edit devlog']
-        };
+        try {
+          console.log(`[EDIT DEVLOG] Saving project "${project.name}" (ID: ${project._id})`);
+          await project.save();
+          console.log(`[EDIT DEVLOG] Save successful`);
+        } catch (saveError) {
+          console.error('[EDIT DEVLOG] Save failed:', saveError);
+          return {
+            type: ResponseType.ERROR,
+            message: `Failed to save dev log: ${saveError instanceof Error ? saveError.message : 'Unknown error'}`,
+            suggestions: ['/help edit devlog']
+          };
+        }
+
+        return this.buildSuccessResponse(
+          `📋 Updated dev log entry`,
+          project,
+          'edit_devlog'
+        );
       }
-
-      return this.buildSuccessResponse(
-        `📋 Updated dev log ${field}`,
-        project,
-        'edit_devlog'
-      );
     }
 
-    // No field flags - return interactive wizard
+    // No flags - return interactive wizard
     return {
       type: ResponseType.PROMPT,
       message: `✏️ Edit Dev Log Entry`,
@@ -1780,65 +1940,102 @@ export class CrudHandlers extends BaseCommandHandler {
       }
     }
 
-    if (field && content) {
-      // Direct field update
-      const validFields = ['title', 'content', 'feature', 'category', 'type'];
+    // Check for direct flags (new syntax) - basic field editing
+    const title = parsed.flags.get('title') as string;
+    const contentFlag = parsed.flags.get('content') as string;
+    const feature = parsed.flags.get('feature') as string;
+    const category = parsed.flags.get('category') as string;
+    const type = parsed.flags.get('type') as string;
 
-      if (!validFields.includes(field)) {
-        return {
-          type: ResponseType.ERROR,
-          message: `❌ Invalid field: "${field}". Valid fields: ${validFields.join(', ')}, relationship`,
-          suggestions: ['/help edit component']
-        };
+    // If any basic field flags are provided, update those fields
+    if (title || contentFlag || feature || category || type) {
+      let updated = false;
+      const updatedFields: string[] = [];
+
+      if (title) {
+        const sanitizedTitle = sanitizeText(title);
+        console.log(`[EDIT COMPONENT] Updating title from "${component.title}" to "${sanitizedTitle}"`);
+        component.title = sanitizedTitle;
+        updated = true;
+        updatedFields.push('title');
       }
 
-      // Update the specified field
-      const sanitizedContent = sanitizeText(content);
-      if (field === 'title') {
-        console.log(`[EDIT COMPONENT] Updating title from "${component.title}" to "${sanitizedContent}"`);
-        component.title = sanitizedContent;
-      } else if (field === 'content') {
+      if (contentFlag) {
         console.log(`[EDIT COMPONENT] Updating content for component "${component.title}"`);
-        component.content = sanitizedContent;
-      } else if (field === 'feature') {
-        console.log(`[EDIT COMPONENT] Updating feature for component "${component.title}" to "${sanitizedContent}"`);
-        component.feature = sanitizedContent;
-      } else if (field === 'category') {
+        component.content = sanitizeText(contentFlag);
+        updated = true;
+        updatedFields.push('content');
+      }
+
+      if (feature) {
+        const sanitizedFeature = sanitizeText(feature);
+        console.log(`[EDIT COMPONENT] Updating feature for component "${component.title}" to "${sanitizedFeature}"`);
+        component.feature = sanitizedFeature;
+        updated = true;
+        updatedFields.push('feature');
+      }
+
+      if (category) {
         const validCategories = ['frontend', 'backend', 'database', 'infrastructure', 'security', 'api', 'documentation', 'asset'];
-        if (!validCategories.includes(sanitizedContent.toLowerCase())) {
+        if (!validCategories.includes(category.toLowerCase())) {
           return {
             type: ResponseType.ERROR,
-            message: `❌ Invalid category: "${sanitizedContent}". Valid categories: ${validCategories.join(', ')}`,
+            message: `❌ Invalid category: "${category}". Valid categories: ${validCategories.join(', ')}`,
             suggestions: ['/help edit component']
           };
         }
-        console.log(`[EDIT COMPONENT] Updating category for component "${component.title}" to "${sanitizedContent.toLowerCase()}"`);
-        component.category = sanitizedContent.toLowerCase() as any;
-      } else if (field === 'type') {
-        console.log(`[EDIT COMPONENT] Updating type for component "${component.title}" to "${sanitizedContent}"`);
-        component.type = sanitizedContent;
+        console.log(`[EDIT COMPONENT] Updating category for component "${component.title}" to "${category.toLowerCase()}"`);
+        component.category = category.toLowerCase() as any;
+        updated = true;
+        updatedFields.push('category');
       }
 
-      component.updatedAt = new Date();
-
-      try {
-        console.log(`[EDIT COMPONENT] Saving project "${project.name}" (ID: ${project._id})`);
-        await project.save();
-        console.log(`[EDIT COMPONENT] Save successful for component "${component.title}"`);
-      } catch (saveError) {
-        console.error('[EDIT COMPONENT] Save failed:', saveError);
-        return {
-          type: ResponseType.ERROR,
-          message: `Failed to save component: ${saveError instanceof Error ? saveError.message : 'Unknown error'}`,
-          suggestions: ['/help edit component']
-        };
+      if (type) {
+        const sanitizedType = sanitizeText(type);
+        console.log(`[EDIT COMPONENT] Updating type for component "${component.title}" to "${sanitizedType}"`);
+        component.type = sanitizedType;
+        updated = true;
+        updatedFields.push('type');
       }
 
-      return this.buildSuccessResponse(
-        `🧩 Updated component ${field}: "${component.title}"`,
-        project,
-        'edit_component'
-      );
+      if (updated) {
+        component.updatedAt = new Date();
+
+        try {
+          console.log(`[EDIT COMPONENT] Saving project "${project.name}" (ID: ${project._id})`);
+          await project.save();
+          console.log(`[EDIT COMPONENT] Save successful for component "${component.title}"`);
+        } catch (saveError) {
+          console.error('[EDIT COMPONENT] Save failed:', saveError);
+          return {
+            type: ResponseType.ERROR,
+            message: `Failed to save component: ${saveError instanceof Error ? saveError.message : 'Unknown error'}`,
+            suggestions: ['/help edit component']
+          };
+        }
+
+        return this.buildSuccessResponse(
+          `🧩 Updated component (${updatedFields.join(', ')}): "${component.title}"`,
+          project,
+          'edit_component'
+        );
+      }
+    }
+
+    // Old --field=... --content=... syntax is now deprecated for basic fields
+    // Keep it only for relationship management (already handled above)
+    if (field && content && !['relationship', 'relationships'].includes(field)) {
+      return {
+        type: ResponseType.ERROR,
+        message: '❌ Please use direct flag syntax for basic fields.',
+        suggestions: [
+          '/edit component 1 --title="new title"',
+          '/edit component 1 --content="new content" --category=backend',
+          '/edit component 1 --feature="NewFeature" --type=service',
+          '💡 For relationships, use: --field=relationship --action=add|edit|delete',
+          '/help edit component'
+        ]
+      };
     }
 
     // No field flags - return interactive wizard with all fields including category, type, and relationships
@@ -2255,7 +2452,7 @@ export class CrudHandlers extends BaseCommandHandler {
     if (parsed.args.length < 3) {
       return {
         type: ResponseType.ERROR,
-        message: 'Usage: /add relationship [component id/title] [target id/title] [type]',
+        message: 'Usage: /add relationship "component id/title" "target id/title" "type"',
         suggestions: [
           '/add relationship "Login" "Auth Service" uses',
           '/add relationship 1 2 implements',
@@ -2360,7 +2557,7 @@ export class CrudHandlers extends BaseCommandHandler {
       return {
         type: ResponseType.INFO,
         message: `🔗 No relationships found for "${component.title}"`,
-        suggestions: [`/add relationship "${component.title}" [target] [type]`]
+        suggestions: [`/add relationship "${component.title}" "target" "type"`]
       };
     }
 
@@ -2433,7 +2630,7 @@ export class CrudHandlers extends BaseCommandHandler {
       return {
         type: ResponseType.ERROR,
         message: `No relationships found for "${component.title}"`,
-        suggestions: [`/add relationship "${component.title}" [target] [type]`]
+        suggestions: [`/add relationship "${component.title}" "target" "type"`]
       };
     }
 

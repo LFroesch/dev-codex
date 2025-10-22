@@ -153,8 +153,6 @@ export class UtilityHandlers extends BaseCommandHandler {
       else if ([
         'complete_todo',
         'assign_todo',
-        'set_priority',
-        'set_due_date'
       ].includes(cmdType)) {
         grouped['✅ Task Management'].push(cmd);
       }
@@ -205,7 +203,7 @@ export class UtilityHandlers extends BaseCommandHandler {
       message: '📚 Available Commands - 50+ commands to manage your projects',
       data: {
         grouped,
-        tip: 'Use /help [command] for detailed help on a specific command. Chain commands with && for batch execution.'
+        tip: 'Use /help "command" for detailed help on a specific command. Chain commands with && for batch execution.'
       }
     };
   }
@@ -356,8 +354,7 @@ export class UtilityHandlers extends BaseCommandHandler {
     const notes = project.notes || [];
     const devLog = project.devLog || [];
     const components = project.components || [];
-    const tech = project.selectedTechnologies || [];
-    const packages = project.selectedPackages || [];
+    const stack = project.stack || [];
 
     // Count stats
     const completedTodos = todos.filter((t: any) => t.completed).length;
@@ -391,8 +388,7 @@ export class UtilityHandlers extends BaseCommandHandler {
           devLog: devLog,
           components: components,
           techStack: {
-            technologies: tech,
-            packages: packages
+            stack: stack,
           },
           deploymentData: project.deploymentData || null,
           publicPageData: project.publicPageData || null,
@@ -416,14 +412,9 @@ export class UtilityHandlers extends BaseCommandHandler {
         }
 
         // Tech Stack
-        if (tech.length > 0 || packages.length > 0) {
+        if (stack.length > 0) {
           prompt += `\n## ⚡ TECH STACK\n\n`;
-          if (tech.length > 0) {
-            prompt += `**Technologies:** ${tech.map((t: any) => t.name).join(' • ')}\n`;
-          }
-          if (packages.length > 0) {
-            prompt += `**Packages/Dependencies:** ${packages.map((p: any) => p.name).join(' • ')}\n`;
-          }
+          prompt += `**Stack:** ${stack.map((t: any) => t.name).join(' • ')}\n`;
         }
 
         // Tasks
@@ -605,14 +596,9 @@ export class UtilityHandlers extends BaseCommandHandler {
         }
 
         // Tech Stack
-        if (tech.length > 0 || packages.length > 0) {
+        if (stack.length > 0) {
           md += `## Tech Stack\n\n`;
-          if (tech.length > 0) {
-            md += `### Technologies\n${tech.map((t: any) => `- ${t.name}`).join('\n')}\n\n`;
-          }
-          if (packages.length > 0) {
-            md += `### Packages\n${packages.map((p: any) => `- ${p.name}`).join('\n')}\n\n`;
-          }
+          md += `### Stack\n${stack.map((t: any) => `- ${t.name}`).join('\n')}\n\n`;
         }
 
         // Deployment
@@ -718,19 +704,13 @@ export class UtilityHandlers extends BaseCommandHandler {
         }
 
         // Tech Stack
-        if (tech.length > 0 || packages.length > 0) {
+        if (stack.length > 0) {
           text += `TECH STACK\n`;
           text += `----------\n`;
-          if (tech.length > 0) {
+          if (stack.length > 0) {
             text += `Technologies:\n`;
-            tech.forEach((t: any) => {
+            stack.forEach((t: any) => {
               text += `- ${t.name}\n`;
-            });
-          }
-          if (packages.length > 0) {
-            text += `Packages:\n`;
-            packages.forEach((p: any) => {
-              text += `- ${p.name}\n`;
             });
           }
           text += `\n`;
@@ -1063,13 +1043,13 @@ This is a project management terminal interface that accepts natural language-li
 
 ### Basic Structure
 \`\`\`
-/command [arguments] [@project] [--flags]
+/command "arguments" @project --flags="value"
 \`\`\`
 
 - **Commands**: Start with "/" (e.g., /help, /add todo)
-- **Arguments**: Text or values following the command
+- **Arguments**: Text or values following the command (use quotes for multi-word arguments)
 - **Project Mentions**: Reference projects using @ syntax (e.g., @myproject, @My Project Name)
-- **Flags**: Modify behavior with -- flags (e.g., --category=web, --priority=high)
+- **Flags**: Modify behavior with -- flags (e.g., --category="api", --role="editor")
 
 ### Batch Commands
 Chain multiple commands with && to execute sequentially:
@@ -1083,69 +1063,65 @@ Execution stops on first error.
 
 ### 1. Project Management
 - \`/wizard new\` - Interactive project creation wizard
-- \`/swap [@project]\` - Switch to different project
-- \`/view settings [@project]\` - View project settings
-- \`/set name [new name] [@project]\` - Update project name
-- \`/set description [text] [@project]\` - Update description
-- \`/add tag [tag] [@project]\` - Add project tag
-- \`/remove tag [tag] [@project]\` - Remove project tag
+- \`/swap @project\` - Switch to different project
+- \`/view settings @project\` - View project settings
+- \`/set name "new name" @project\` - Update project name
+- \`/set description "text" @project\` - Update description
+- \`/add tag "tag" @project\` - Add project tag
+- \`/remove tag "tag" @project\` - Remove project tag
 
 ### 2. Task Management
-- \`/add todo --title=[text] [--content=...] [--priority=...] [--status=...] [@project]\` - Create new todo with flags
-- \`/view todos [@project]\` - List all todos
-- \`/edit todo [id] [@project]\` - Open interactive wizard to edit todo (or use --field= and --content= for direct updates)
-- \`/delete todo [id/text] [@project]\` - Delete todo
-- \`/complete [id/text] [@project]\` - Mark todo complete
-- \`/priority [id/text] [low/medium/high] [@project]\` - Set priority
-- \`/due [id/text] [date] [@project]\` - Set due date
-- \`/assign [id/text] [email] [@project]\` - Assign to team member
+- \`/add todo\` or \`/add todo --title="text" --content="text" --priority="low|medium|high" --status="not_started|in_progress|blocked" @project\` - Create new todo (with wizard or flags)
+- \`/view todos @project\` - List all todos
+- \`/edit todo "id" @project\` - Open interactive wizard to edit todo (or use --field= and --content= for direct updates)
+- \`/delete todo "id/text" @project\` - Delete todo
+- \`/complete "id/text" @project\` - Mark todo complete
+- \`/assign "id/text" "email" @project\` - Assign to team member
 
 ### 3. Subtasks
-- \`/add subtask [parent todo] [text] [@project]\` - Add subtask
-- \`/view subtasks [todo id/text] [@project]\` - View subtasks
-- \`/delete subtask [id/text] [@project]\` - Delete subtask
+- \`/add subtask "parent todo" "text" @project\` - Add subtask
+- \`/view subtasks "todo id/text" @project\` - View subtasks
+- \`/delete subtask "id/text" @project\` - Delete subtask
 
 ### 4. Notes & Documentation
-- \`/add note --title=[text] --content=[text] [@project]\` - Create note with title and content
-- \`/view notes [@project]\` - List notes
-- \`/edit note [id] [@project]\` - Open interactive wizard to edit note title and content (or use --field= and --content= for direct updates)
-- \`/delete note [id/title] [@project]\` - Delete note
-- \`/add devlog --title=[text] --content=[text] [@project]\` - Add dev log entry with title and content
-- \`/view devlog [@project]\` - View dev log
-- \`/edit devlog [id] [@project]\` - Open interactive wizard to edit dev log entry
-- \`/delete devlog [id] [@project]\` - Delete dev log entry
-- \`/add component --feature=[name] --category=[category] --type=[type] --title=[title] --content=[content] [@project]\` - Add component to feature
-- \`/view components [@project]\` - View components grouped by features
-- \`/edit component [id] [@project]\` - Open interactive wizard to edit component
-- \`/delete component [id] [@project]\` - Delete component
+- \`/add note\` or \`/add note --title="text" --content="text" @project\` - Create note (with wizard or flags)
+- \`/view notes @project\` - List notes
+- \`/edit note "id" @project\` - Open interactive wizard to edit note title and content (or use --field= and --content= for direct updates)
+- \`/delete note "id/title" @project\` - Delete note
+- \`/add devlog\` or \`/add devlog --title="text" --content="text" @project\` - Add dev log entry (with wizard or flags)
+- \`/view devlog @project\` - View dev log
+- \`/edit devlog "id" @project\` - Open interactive wizard to edit dev log entry
+- \`/delete devlog "id" @project\` - Delete dev log entry
+- \`/add component\` or \`/add component --feature="name" --category="category" --type="type" --title="title" --content="content" @project\` - Add component (with wizard or flags)
+- \`/view components @project\` - View components grouped by features
+- \`/edit component "id" @project\` - Open interactive wizard to edit component
+- \`/delete component "id" @project\` - Delete component
 
 ### 5. Tech Stack
-- \`/add tech [name] --category=[category] --version=[version] [@project]\` - Add technology
-- \`/add package [name] --category=[category] --version=[version] [@project]\` - Add package
-- \`/view stack [@project]\` - View tech stack
-- \`/remove tech [name] [@project]\` - Remove technology
-- \`/remove package [name] [@project]\` - Remove package
+- \`/add stack\` or \`/add stack --name="name" --category="category" --version="version" @project\` - Add to tech stack (with wizard or flags)
+- \`/view stack @project\` - View tech stack
+- \`/remove stack --name="name" @project\` - Remove from stack
 
 ### 6. Team & Collaboration
-- \`/view team [@project]\` - View team members
-- \`/invite [email/username] --role=[editor/viewer] [@project]\` - Invite member
-- \`/remove member [email/username] [@project]\` - Remove member
+- \`/view team @project\` - View team members
+- \`/invite "email/username" --role="editor/viewer" @project\` - Invite member
+- \`/remove member "email/username" @project\` - Remove member
 
 ### 7. Deployment & Public Settings
-- \`/view deployment [@project]\` - View deployment info
-- \`/set deployment --url=[url] --platform=[platform] [@project]\` - Set deployment
-- \`/view public [@project]\` - View public settings
-- \`/set public --enabled=[true/false] --slug=[slug] [@project]\` - Set public visibility
+- \`/view deployment @project\` - View deployment info
+- \`/set deployment --url="url" --platform="platform" @project\` - Set deployment
+- \`/view public @project\` - View public settings
+- \`/set public --enabled="true/false" --slug="slug" @project\` - Set public visibility
 
 ### 8. Search & Export
-- \`/search [query] [@project]\` - Search across all content
-- \`/export [@project]\` - Export project data
-- \`/summary [markdown|json|prompt|text] [@project]\` - Generate downloadable summary
+- \`/search "query" @project\` - Search across all content
+- \`/export @project\` - Export project data
+- \`/summary "markdown|json|prompt|text" @project\` - Generate downloadable summary
 
 ### 9. Utilities
-- \`/help [command]\` - Show all commands or specific command help
+- \`/help "command"\` - Show all commands or specific command help
 - \`/view themes\` - List available themes
-- \`/set theme [name]\` - Change theme
+- \`/set theme "name"\` - Change theme
 - \`/view news\` - View latest updates
 - \`/view notifications\` - View notifications
 - \`/clear notifications\` - Clear all notifications
@@ -1155,18 +1131,17 @@ Execution stops on first error.
 ### Creating a Full Project Setup
 \`\`\`
 /wizard new
-/add tech React --category=framework --version=18.2.0 @MyProject
-/add package axios --category=api @MyProject
+/add stack --name="React" --category=framework --version=18.2.0 @MyProject
+/add stack --name="axios" --category=api @MyProject
 /add todo --title="setup authentication" --priority=high @MyProject
 /add todo --title="create dashboard" --priority=medium @MyProject
 /add note --title="Architecture Decisions" --content="Initial architecture decisions and technology choices" @MyProject
 \`\`\`
 
-### Managing Tasks
+### Managing Tasks (Wizard or Flags)
 \`\`\`
+/add todo                          # Opens wizard
 /add todo --title="fix login bug" --priority=high --content="Fix validation issues in login form" @Frontend
-/priority "fix login bug" high @Frontend
-/due "fix login bug" 2025-12-31 @Frontend
 /assign "fix login bug" dev@example.com @Frontend
 /add subtask "fix login bug" update validation @Frontend
 /edit todo 1 @Frontend                                    # Opens interactive wizard
@@ -1194,8 +1169,9 @@ Component relationships can be added or removed. "Editing" a relationship means 
 
 Note: The interactive component wizard provides inline editing UI for relationships, but behind the scenes it performs delete+add operations.
 
-### Component Documentation Workflow
+### Component Documentation Workflow (Wizard or Flags)
 \`\`\`
+/add component                     # Opens wizard
 /add component --feature="Auth" --category=api --type=endpoint --title="Login" --content="POST endpoint for user authentication with JWT tokens" @Backend
 /add devlog --title="JWT Token Refresh" --content="Implemented JWT token refresh mechanism for persistent sessions" @Backend
 /add note --title="API Rate Limiting" --content="Consider adding rate limiting to prevent abuse of authentication endpoints" @Backend
@@ -1204,7 +1180,7 @@ Note: The interactive component wizard provides inline editing UI for relationsh
 ### Batch Operations
 \`\`\`
 /add todo --title="implement feature" --priority=high && /view todos
-/add tech PostgreSQL --category=database && /add package pg --version=8.0.0 && /view stack
+/add stack --name="PostgreSQL" --category=database && /add stack --name="pg" --version=8.0.0 && /view stack
 \`\`\`
 
 ## Project References
@@ -1243,9 +1219,9 @@ The system returns different response types:
 6. Use quotes for multi-word arguments when needed
 7. Check /help for specific command syntax
 8. Use /search to find content across projects
-9. Generate summaries with /summary [format] for sharing project context
+9. Generate summaries with /summary "format" for sharing project context
 10. Use /wizard new for interactive project creation
-11. Use /edit [type] [id] for interactive editing wizards, or add --field and --content flags for direct updates
+11. Use /edit "type" "id" for interactive editing wizards, or add --field and --content flags for direct updates
 
 ## Common Patterns
 
@@ -1272,9 +1248,11 @@ The system returns different response types:
 /add component --feature="Auth" --category=backend --type=service --title="OAuth Service" --content="Handles OAuth authentication flow" && /add devlog --title="OAuth Implementation" --content="Implemented OAuth 2.0 authentication service"
 \`\`\`
 
-### Managing tech stack
+### Managing tech stack (Wizard or Flags)
 \`\`\`
-/add tech [technology] --category=[type] && /add package [package] --category=[type] && /view stack
+/add stack                         # Opens wizard
+/add stack --name="technology" --category="type" --version="1.0" && /view stack
+/remove stack --name="old-package"
 \`\`\`
 
 ## Error Handling
@@ -1282,7 +1260,7 @@ The system returns different response types:
 - Projects must exist for project-specific commands
 - Batch commands stop on first error
 - Suggestions provided for similar commands/projects
-- Use /help [command] for specific command help
+- Use /help "command" for specific command help
 
 ## Best Practices
 1. Use descriptive task and note names

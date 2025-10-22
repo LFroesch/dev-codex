@@ -96,8 +96,6 @@ Examples:
 - `/search [query] [@project]` - Full-text search across all content
 - `/complete [todo] [@project]` - Mark todo as completed
 - `/assign [todo] [email] [@project]` - Assign todo to team member
-- `/priority [todo] [low/medium/high] [@project]` - Set todo priority
-- `/due [todo] [date] [@project]` - Set due date (supports "today", "tomorrow", YYYY-MM-DD)
 
 ### Export & Summary
 - `/summary [format] [@project]` - Generate downloadable project summary

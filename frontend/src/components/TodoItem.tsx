@@ -243,19 +243,19 @@ const TodoItem: React.FC<TodoItemProps> = ({
             </span>
             
             {hasSubtasks && (
-              <span className="text-xs bg-info/20 text-info px-2 py-0.5 rounded-full border-thick">
+              <span className="text-sm font-semibold bg-info/20 text-info px-2 py-0.5 rounded-full border-thick">
                 {completedSubtasks}/{subtasks.length}
               </span>
             )}
             
-            {isOverdue(todo.dueDate) && (
-              <span className="text-xs bg-error/20 text-error px-2 py-0.5 rounded-full border-thick">
+            {isOverdue(todo.dueDate) && !todo.completed && (
+              <span className="text-sm font-semibold bg-error/20 text-error px-2 py-0.5 rounded-full border-thick">
                 Overdue
               </span>
             )}
             
             {!isOverdue(todo.dueDate) && isDueSoon(todo.dueDate) && (
-              <span className="text-xs bg-warning/20 text-warning px-2 py-0.5 rounded-full border-thick">
+              <span className="text-sm font-semibold bg-warning/20 text-warning px-2 py-0.5 rounded-full border-thick">
                 Due soon
               </span>
             )}

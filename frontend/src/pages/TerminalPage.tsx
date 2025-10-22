@@ -85,9 +85,14 @@ const TerminalPage: React.FC = () => {
   useEffect(() => {
     const loadedEntries = loadEntriesFromStorage();
 
-    // Filter out wizard entries so they are not shown on reload
-    // TODO: Change to show the wizard preview mode instead of filtering out entirely
-    const visibleEntries = loadedEntries.filter(entry => !entry.response?.data?.wizardType);
+    // Filter out in-progress wizard entries, but keep completed ones
+    const visibleEntries = loadedEntries.filter(entry => {
+      // If it's a wizard entry, only show it if it's been completed
+      if (entry.response?.data?.wizardType) {
+        return entry.response.data.wizardCompleted === true;
+      }
+      return true;
+    });
 
     if (visibleEntries.length > 0) {
       setEntries(visibleEntries);
@@ -196,6 +201,29 @@ const TerminalPage: React.FC = () => {
 
   const handleCommandClick = (command: string) => {
     setPendingCommand(command);
+  };
+
+  const handleWizardComplete = (entryId: string, wizardData: Record<string, any>) => {
+    setEntries(prev => {
+      const updated = prev.map(entry => {
+        if (entry.id === entryId) {
+          return {
+            ...entry,
+            response: {
+              ...entry.response,
+              data: {
+                ...entry.response.data,
+                wizardCompleted: true,
+                wizardData
+              }
+            }
+          };
+        }
+        return entry;
+      });
+      saveEntriesToStorage(updated);
+      return updated;
+    });
   };
 
   const handleDirectThemeChange = async (themeName: string) => {
@@ -518,25 +546,25 @@ const TerminalPage: React.FC = () => {
                                 <td>
                                   <button
                                     type="button"
-                                    onClick={() => setPendingCommand('/add todo --title= --content= --priority=')}
+                                    onClick={() => setPendingCommand('/add todo')}
                                     className="text-xs text-base-content/70 font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
                                   >
-                                    /add todo --title=
+                                    /add todo
                                   </button>
                                 </td>
-                                <td className="text-xs text-base-content/70">Create a new todo (use flags)</td>
+                                <td className="text-xs text-base-content/70">Create a new todo (wizard or use --title= --content= flags)</td>
                               </tr>
                               <tr className="hover">
                                 <td>
                                   <button
                                     type="button"
-                                    onClick={() => setPendingCommand('/add note --title= --content=')}
+                                    onClick={() => setPendingCommand('/add note')}
                                     className="text-xs text-base-content/70 font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
                                   >
-                                    /add note --title=
+                                    /add note
                                   </button>
                                 </td>
-                                <td className="text-xs text-base-content/70">Create a new note (use flags)</td>
+                                <td className="text-xs text-base-content/70">Create a new note (wizard or use --title= --content= flags)</td>
                               </tr>
                               <tr className="hover">
                                 <td>
@@ -594,6 +622,7 @@ const TerminalPage: React.FC = () => {
         {entries.map(entry => (
           <CommandResponse
             key={entry.id}
+            entryId={entry.id}
             response={entry.response}
             command={entry.command}
             timestamp={entry.timestamp}
@@ -601,6 +630,7 @@ const TerminalPage: React.FC = () => {
             currentProjectId={currentProjectId}
             onCommandClick={handleCommandClick}
             onDirectThemeChange={handleDirectThemeChange}
+            onWizardComplete={handleWizardComplete}
           />
         ))}
 

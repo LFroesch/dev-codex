@@ -1318,10 +1318,6 @@ This terminal system is designed for efficient project management through a comm
     switch (parsed.type) {
       case CommandType.WIZARD_NEW:
         return this.handleWizardNew();
-      case CommandType.WIZARD_SETUP:
-        return this.handleWizardSetup(parsed);
-      case CommandType.WIZARD_DEPLOY:
-        return this.handleWizardDeploy(parsed);
       default:
         return {
           type: ResponseType.INFO,
@@ -1402,38 +1398,6 @@ This terminal system is designed for efficient project management through a comm
         successMessage: 'Project created successfully!',
         successRedirect: '/'
       }
-    };
-  }
-
-  /**
-   * Handle /wizard setup command - Interactive project setup wizard
-   */
-  private async handleWizardSetup(parsed: ParsedCommand): Promise<CommandResponse> {
-    const resolution = await this.resolveProject(parsed.projectMention);
-    if (!resolution.project) {
-      return this.buildProjectErrorResponse(resolution);
-    }
-
-    return {
-      type: ResponseType.INFO,
-      message: `🧙 Setup wizard for ${resolution.project.name} coming soon!`,
-      suggestions: ['/help']
-    };
-  }
-
-  /**
-   * Handle /wizard deploy command - Interactive deployment wizard
-   */
-  private async handleWizardDeploy(parsed: ParsedCommand): Promise<CommandResponse> {
-    const resolution = await this.resolveProject(parsed.projectMention);
-    if (!resolution.project) {
-      return this.buildProjectErrorResponse(resolution);
-    }
-
-    return {
-      type: ResponseType.INFO,
-      message: `🧙 Deployment wizard for ${resolution.project.name} coming soon!`,
-      suggestions: ['/help']
     };
   }
 

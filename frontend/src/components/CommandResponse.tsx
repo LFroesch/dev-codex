@@ -297,7 +297,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
       return (
         <div className="mt-3 space-y-2">
           <div className="text-xs text-base-content/60">
-            Executed {response.data.executed} of {response.data.total} commands
+            Executed {response.data.executed || 0} of {response.data.total || 0} commands
           </div>
           <div className="space-y-2">
             {results.map((result: any, index: number) => {
@@ -488,7 +488,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
           {pub.url && pub.url !== 'Not available (project is private)' && (
             <div className="p-2 bg-base-200 rounded-lg border-thick">
               <div className="text-xs text-base-content/60">Public URL</div>
-              <a href={pub.url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline break-all block">
+              <a href={pub.url} target="_blank" rel="noopener noreferrer" className="text-sm text-base-content/70 hover:underline break-all block">
                 {pub.url}
               </a>
             </div>
@@ -693,7 +693,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
         <div className="mt-3 space-y-3">
           {Object.entries(groupedResults).map(([type, items]: [string, any]) => (
             <div key={type} className="space-y-1">
-              <div className="text-xs font-semibold text-primary capitalize">
+              <div className="text-xs font-semibold text-base-content/70 capitalize">
                 {type}s ({items.length})
               </div>
               <div className="space-y-1">
@@ -755,7 +755,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
         <div className="mt-3 space-y-4">
           {/* Preset Themes */}
           <div>
-            <div className="text-xs font-semibold text-primary mb-2">Preset Themes ({response.data.themes.length})</div>
+            <div className="text-xs font-semibold text-base-content/70 mb-2">Preset Themes ({response.data.themes.length})</div>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
               {response.data.themes.map((theme: any, index: number) => (
                 <div
@@ -785,12 +785,12 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
           {/* Custom Themes */}
           {customThemes.length > 0 && (
             <div>
-              <div className="text-xs font-semibold text-secondary mb-2">Custom Themes ({customThemes.length})</div>
+              <div className="text-xs font-semibold text-base-content/70 mb-2">Custom Themes ({customThemes.length})</div>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                 {customThemes.map((theme: any, index: number) => (
                   <div
                     key={index}
-                    className="p-2 bg-base-200 rounded-lg hover:bg-secondary/20 hover:border-secondary/50 transition-all border-2 border-secondary/30 cursor-pointer flex items-center gap-2"
+                    className="p-2 bg-base-200 rounded-lg hover:bg-secondary/20 hover:border-secondary/50 transition-all border-2 border-base-content/20 cursor-pointer flex items-center gap-2"
                     onClick={() => onDirectThemeChange?.(theme.name)}
                     title={`Click to apply ${theme.displayName} theme`}
                   >
@@ -837,6 +837,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
       const handleNext = () => {
         if (currentStep < steps.length - 1) {
           setCurrentStep(currentStep + 1);
+          // Scroll to bottom on step changed
         }
       };
 
@@ -1311,8 +1312,8 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                           >
                             <div className="flex-1 min-w-0 flex items-center gap-2">
                               {isSyntaxTip ? (
-                                <div className="text-xs font-semibold text-primary font-mono">
-                                  {cmd.syntax}
+                                <div className="text-xs font-semibold text-base-content/70 font-mono">
+                                  {cmd.syntax} - 
                                 </div>
                               ) : (
                                 <button
@@ -1321,7 +1322,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                                     e.stopPropagation();
                                     onCommandClick?.(generateTemplate(cmd.syntax));
                                   }}
-                                  className="text-xs text-primary font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
+                                  className="text-xs text-base-content/70 font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
                                   title="Click to use this command"
                                 >
                                   {cmd.syntax}
@@ -1344,7 +1345,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                           </button>
                           {!isSyntaxTip && isOpen && cmd.examples && cmd.examples.length > 0 && (
                             <div className="px-3 pb-2 bg-base-100/50 space-y-1">
-                              <div className="text-xs font-semibold text-base-content/60 mb-1">
+                              <div className="mt-1 text-xs font-semibold text-base-content/60 mb-1">
                                 Examples:
                               </div>
                               {cmd.examples.map((example: string, exIdx: number) => (
@@ -1352,7 +1353,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                                   key={exIdx}
                                   type="button"
                                   onClick={() => onCommandClick?.(example)}
-                                  className="block w-full text-left text-xs bg-base-200 px-2 py-1 rounded border-thick hover:bg-base-300/50 cursor-pointer transition-colors text-primary"
+                                  className="block w-full text-left text-xs bg-base-200 px-2 py-1 rounded border-thick hover:bg-base-300/50 cursor-pointer transition-colors text-base-content/70"
                                   title="Click to use this example"
                                 >
                                   {example}
@@ -1390,7 +1391,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
         <div className="mt-3 space-y-3">
           <div>
             <div className="text-xs font-semibold text-base-content/70 mb-1">Syntax:</div>
-            <code className="text-sm text-primary bg-base-200 px-2 py-1 rounded border-thick">
+            <code className="text-sm text-base-content/80 bg-base-200 px-2 py-1 rounded border-thick">
               {response.data.syntax}
             </code>
           </div>
@@ -1494,29 +1495,28 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
               onClick={() => handleNavigateToProject('/notes?section=todos')}
               className="p-2 bg-base-200 rounded-lg border-thick text-center hover:bg-base-300 transition-colors"
             >
-              <div className="text-lg font-bold text-base-content">{info.stats.todos.total}</div>
+              <div className="text-lg font-bold text-base-content">{info.stats.todos?.total - info.stats.todos?.completed || 0}</div>
               <div className="text-xs text-base-content/60">Todos</div>
-              <div className="text-xs text-base-content/50">{info.stats.todos.completed} done</div>
             </button>
             <button
               onClick={() => handleNavigateToProject('/notes')}
               className="p-2 bg-base-200 rounded-lg border-thick text-center hover:bg-base-300 transition-colors"
             >
-              <div className="text-lg font-bold text-base-content">{info.stats.notes.total}</div>
+              <div className="text-lg font-bold text-base-content">{info.stats.notes?.total || 0}</div>
               <div className="text-xs text-base-content/60">Notes</div>
             </button>
             <button
               onClick={() => handleNavigateToProject('/notes?section=devlog')}
               className="p-2 bg-base-200 rounded-lg border-thick text-center hover:bg-base-300 transition-colors"
             >
-              <div className="text-lg font-bold text-base-content">{info.stats.devLog.total}</div>
+              <div className="text-lg font-bold text-base-content">{info.stats.devLog?.total || 0}</div>
               <div className="text-xs text-base-content/60">Dev Logs</div>
             </button>
             <button
               onClick={() => handleNavigateToProject('/docs')}
               className="p-2 bg-base-200 rounded-lg border-thick text-center hover:bg-base-300 transition-colors"
             >
-              <div className="text-lg font-bold text-base-content">{info.stats.docs.total}</div>
+              <div className="text-lg font-bold text-base-content">{info.stats.docs?.total || 0}</div>
               <div className="text-xs text-base-content/60">Docs</div>
             </button>
           </div>
@@ -1549,9 +1549,8 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
               <div className="text-xs text-base-content/60">
                 {info.deployment?.hasDeployment ? (
                   <>
-                    {info.deployment.platform || 'Deployed'}
                     {info.deployment.url && (
-                      <span className="block truncate text-primary">{info.deployment.url}</span>
+                      <span className="block truncate text-base-content/60">{info.deployment.url}</span>
                     )}
                   </>
                 ) : (
@@ -1970,7 +1969,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                    command.toLowerCase().includes('delete todo') || command.toLowerCase().includes('complete') ||
                    command.toLowerCase().includes('priority') || command.toLowerCase().includes('assign') ||
                    command.toLowerCase().includes('due') || (command.toLowerCase().includes('todo') && !command.toLowerCase().includes('view')) ? (
-                    <button
+                    <button 
                       onClick={() => handleNavigateToProject('/notes?section=todos')}
                       className="btn-primary-sm gap-2 border-thick"
                       style={{ color: getContrastTextColor('primary') }}
@@ -2018,7 +2017,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                   ) : command.toLowerCase().includes('add doc') || command.toLowerCase().includes('edit doc') ||
                      command.toLowerCase().includes('delete doc') || (command.toLowerCase().includes('doc') && !command.toLowerCase().includes('view')) ? (
                     <button
-                      onClick={() => handleNavigateToProject('/docs')}
+                      onClick={() => handleNavigateToProject('/features')}
                       className="btn-primary-sm gap-2 border-thick"
                       style={{ color: getContrastTextColor('primary') }}
                     >
@@ -2039,6 +2038,17 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                       </svg>
                       View Stack
+                    </button>
+                  ) : command.toLowerCase().includes('delete component') || command.toLowerCase().includes('add component') || command.toLowerCase().includes('edit component') ? (
+                    <button
+                      onClick={() => handleNavigateToProject('/features')}
+                      className="btn-primary-sm gap-2 border-thick"
+                      style={{ color: getContrastTextColor('primary') }}
+                    >
+                      <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                      </svg>
+                      View Features
                     </button>
                   ) : (
                     <button

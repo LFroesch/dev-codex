@@ -434,7 +434,7 @@ const NotesPage: React.FC = () => {
 
       {/* Category Navigation */}
       <div className="flex justify-center px-2">
-        <div className="tabs-container">
+        <div className="tabs-container p-1">
           <button
             className={`tab-button ${activeSection === 'notes' ? 'tab-active' : ''}`}
             style={activeSection === 'notes' ? {color: getContrastTextColor()} : {}}

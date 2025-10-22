@@ -453,7 +453,7 @@ const StackPage: React.FC = () => {
       <div className="space-y-4">
         {/* Category Navigation */}
         <div className="flex justify-center px-2">
-          <div className="tabs-container max-w-full overflow-x-auto">
+          <div className="tabs-container p-1 max-w-full overflow-x-auto">
             {group.categories.map((category) => (
               <button
                 key={category.id}
@@ -599,7 +599,7 @@ const StackPage: React.FC = () => {
 
       {/* Section Navigation */}
       <div className="flex justify-center px-2">
-        <div className="tabs-container">
+        <div className="tabs-container p-1">
           <button 
             className={`tab-button ${activeSection === 'add' ? 'tab-active' : ''}`}
             style={activeSection === 'add' ? {color: getContrastTextColor()} : {}}

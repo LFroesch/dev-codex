@@ -138,7 +138,7 @@ const DeploymentPage: React.FC = () => {
     <div className="space-y-4">
       {/* Section Navigation */}
       <div className="flex justify-center px-2">
-        <div className="tabs-container">
+        <div className="tabs-container p-1">
         <button 
           className={`tab-button ${activeSection === 'overview' ? 'tab-active' : ''}`}
           style={activeSection === 'overview' ? {color: getContrastTextColor()} : {}}

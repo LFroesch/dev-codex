@@ -21,15 +21,15 @@ interface TerminalEntry {
 
 // Storage configuration
 const TERMINAL_ENTRIES_KEY = 'terminal_entries';
-const MAX_ENTRIES = 20;
+const MAX_ENTRIES = 50; // Make editable to change max stored entries
+
 
 // Helper functions for localStorage
+// Wizard entries should be stored in preview mode rather than wizard mode to avoid re-triggering the wizard on load
 const saveEntriesToStorage = (entries: TerminalEntry[]) => {
   try {
     // Cap at MAX_ENTRIES (keep most recent)
     const entriesToSave = entries.slice(-MAX_ENTRIES);
-
-    // Force any wizard entries to be previews only
 
     // Convert dates to ISO strings and strip side-effect data for JSON serialization
     const serialized = entriesToSave.map(entry => {
@@ -84,9 +84,17 @@ const TerminalPage: React.FC = () => {
   // Load entries from localStorage on mount
   useEffect(() => {
     const loadedEntries = loadEntriesFromStorage();
-    if (loadedEntries.length > 0) {
-      setEntries(loadedEntries);
+
+    // Filter out wizard entries so they are not shown on reload
+    // TODO: Change to show the wizard preview mode instead of filtering out entirely
+    const visibleEntries = loadedEntries.filter(entry => !entry.response?.data?.wizardType);
+
+    if (visibleEntries.length > 0) {
+      setEntries(visibleEntries);
       setShowWelcome(false);
+    } else {
+      setEntries([]);
+      setShowWelcome(true);
     }
   }, []);
 
@@ -331,87 +339,87 @@ const TerminalPage: React.FC = () => {
                   </div>
 
                   <p className="text-sm text-base-content/70 mb-3 ml-1">
-                    Execute commands to manage your projects. Type <code className="px-1.5 py-0.5 bg-base-200 rounded text-xs text-primary">/help</code> for all available commands.
+                    Execute commands to manage your projects. Type <code className="px-1.5 py-0.5 bg-base-200 rounded text-xs text-base-content/70">/help</code> for all available commands.
                   </p>
 
                   {/* Command Syntax Guide */}
                   <div className="mt-3 mb-3 p-3 bg-base-200/50 rounded-lg border-thick">
                     <div className="space-y-2 text-xs text-base-content/70">
                       <div>
-                        <span className="font-semibold text-primary">/ </span>
+                        <span className="font-semibold text-base-content/70">/ </span>
                         <span>All commands start with a forward slash</span>
                         <div className="text-xs text-base-content/60 mt-1 ml-3">
-                          Example: <code className="bg-base-200 px-1 rounded text-primary">/add todo</code>, <code className="bg-base-200 px-1 rounded text-primary">/view notes</code>
+                          Example: <code className="bg-base-200 px-1 rounded text-base-content/70">/add todo</code>, <code className="bg-base-200 px-1 rounded text-base-content/70">/view notes</code>
                         </div>
                       </div>
                       <div>
-                        <span className="font-semibold text-primary">@project </span>
+                        <span className="font-semibold text-base-content/70">@project </span>
                         <span>Reference projects using @ (supports spaces in names)</span>
                         <div className="text-xs text-base-content/60 mt-1 ml-3">
-                          Example: <code className="bg-base-200 px-1 rounded text-primary">@MyProject</code>, <code className="bg-base-200 px-1 rounded text-primary">@My Cool Project</code>
+                          Example: <code className="bg-base-200 px-1 rounded text-base-content/70">@MyProject</code>, <code className="bg-base-200 px-1 rounded text-base-content/70">@My Cool Project</code>
                         </div>
                       </div>
                       <div>
-                        <span className="font-semibold text-primary">--flag </span>
+                        <span className="font-semibold text-base-content/70">--flag </span>
                         <span>Use flags to add options to commands</span>
                         <div className="text-xs text-base-content/60 mt-1 ml-3">
-                          Example: <code className="bg-base-200 px-1 rounded text-primary">--category=web</code>, <code className="bg-base-200 px-1 rounded text-primary">--role=editor</code>
+                          Example: <code className="bg-base-200 px-1 rounded text-base-content/70">--category=web</code>, <code className="bg-base-200 px-1 rounded text-base-content/70">--role=editor</code>
                         </div>
                       </div>
                       <div>
-                        <span className="font-semibold text-primary">&& </span>
+                        <span className="font-semibold text-base-content/70">&& </span>
                         <span>Chain multiple commands together (executes sequentially)</span>
                         <div className="text-xs text-base-content/60 mt-1 ml-3">
-                          Example: <code className="bg-base-200 px-1 rounded text-primary">/add todo task && /view todos</code>
+                          Example: <code className="bg-base-200 px-1 rounded text-base-content/70">/add todo task && /view todos</code>
                         </div>
                       </div>
                     </div>
                   </div>
 
                   {/* Quick Actions */}
-                  <div className="mt-3 mb-3">
+                  <div className="mt-3 mb-3 ">
                     <div className="flex flex-wrap gap-2">
                       <button
                         onClick={() => setPendingCommand('/wizard new')}
                         className="btn btn-xs btn-outline btn-primary border-2 hover:border-primary"
                       >
-                        <span className='font-bold'>🧙 New Project</span>
+                        <span className='font-bold text-base-content/70'>🧙 New Project</span>
                       </button>
                       <button
                         onClick={() => setPendingCommand('/info')}
                         className="btn btn-xs btn-outline btn-primary border-2 hover:border-primary"
                       >
-                        <span className='font-bold'>ℹ️ Project Info</span>
+                        <span className='font-bold text-base-content/70'>ℹ️ Project Info</span>
                       </button>
                       <button
                         onClick={() => setPendingCommand('/today')}
                         className="btn btn-xs btn-outline btn-primary border-2 hover:border-primary"
                       >
-                        <span className='font-bold'>📅 Today</span>
+                        <span className='font-bold text-base-content/70'>📅 Today</span>
                       </button>
                       <button
                         onClick={() => setPendingCommand('/view todos')}
                         className="btn btn-xs btn-outline btn-primary border-2 hover:border-primary"
                       >
-                        <span className='font-bold'>✅ Todos</span>
+                        <span className='font-bold text-base-content/70'>✅ Todos</span>
                       </button>
                       <button
                         onClick={() => setPendingCommand('/view notes')}
                         className="btn btn-xs btn-outline btn-primary border-2 hover:border-primary"
                       >
-                        <span className='font-bold'>📝 Notes</span>
+                        <span className='font-bold text-base-content/70'>📝 Notes</span>
                       </button>
                       <button
                         onClick={() => setPendingCommand('/swap')}
                         className="btn btn-xs btn-outline btn-primary border-2 hover:border-primary"
                       >
-                        <span className='font-bold'>🔄 Switch</span>
+                        <span className='font-bold text-base-content/70'>🔄 Switch</span>
                       </button>
                       <button
                         onClick={() => setPendingCommand('/help')}
                         className="btn btn-xs btn-outline btn-primary border-2 hover:border-primary"
                       >
-                        <span className='font-bold'>📚 Help</span>
+                        <span className='font-bold text-base-content/70'>📚 Help</span>
                       </button>
                     </div>
                   </div>
@@ -451,7 +459,7 @@ const TerminalPage: React.FC = () => {
                                   <button
                                     type="button"
                                     onClick={() => setPendingCommand('/wizard new')}
-                                    className="text-xs text-primary font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
+                                    className="text-xs text-base-content/70 font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
                                   >
                                     /wizard new
                                   </button>
@@ -463,7 +471,7 @@ const TerminalPage: React.FC = () => {
                                   <button
                                     type="button"
                                     onClick={() => setPendingCommand('/info')}
-                                    className="text-xs text-primary font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
+                                    className="text-xs text-base-content/70 font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
                                   >
                                     /info
                                   </button>
@@ -475,7 +483,7 @@ const TerminalPage: React.FC = () => {
                                   <button
                                     type="button"
                                     onClick={() => setPendingCommand('/today')}
-                                    className="text-xs text-primary font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
+                                    className="text-xs text-base-content/70 font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
                                   >
                                     /today
                                   </button>
@@ -487,7 +495,7 @@ const TerminalPage: React.FC = () => {
                                   <button
                                     type="button"
                                     onClick={() => setPendingCommand('/week')}
-                                    className="text-xs text-primary font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
+                                    className="text-xs text-base-content/70 font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
                                   >
                                     /week
                                   </button>
@@ -499,7 +507,7 @@ const TerminalPage: React.FC = () => {
                                   <button
                                     type="button"
                                     onClick={() => setPendingCommand('/standup')}
-                                    className="text-xs text-primary font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
+                                    className="text-xs text-base-content/70 font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
                                   >
                                     /standup
                                   </button>
@@ -511,7 +519,7 @@ const TerminalPage: React.FC = () => {
                                   <button
                                     type="button"
                                     onClick={() => setPendingCommand('/add todo --title= --content= --priority=')}
-                                    className="text-xs text-primary font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
+                                    className="text-xs text-base-content/70 font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
                                   >
                                     /add todo --title=
                                   </button>
@@ -523,7 +531,7 @@ const TerminalPage: React.FC = () => {
                                   <button
                                     type="button"
                                     onClick={() => setPendingCommand('/add note --title= --content=')}
-                                    className="text-xs text-primary font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
+                                    className="text-xs text-base-content/70 font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
                                   >
                                     /add note --title=
                                   </button>
@@ -535,7 +543,7 @@ const TerminalPage: React.FC = () => {
                                   <button
                                     type="button"
                                     onClick={() => setPendingCommand('/view stack')}
-                                    className="text-xs text-primary font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
+                                    className="text-xs text-base-content/70 font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
                                   >
                                     /view stack
                                   </button>
@@ -547,7 +555,7 @@ const TerminalPage: React.FC = () => {
                                   <button
                                     type="button"
                                     onClick={() => setPendingCommand('/search ')}
-                                    className="text-xs text-primary font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
+                                    className="text-xs text-base-content/70 font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
                                   >
                                     /search [query]
                                   </button>
@@ -559,7 +567,7 @@ const TerminalPage: React.FC = () => {
                                   <button
                                     type="button"
                                     onClick={() => setPendingCommand('/swap @')}
-                                    className="text-xs text-primary font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
+                                    className="text-xs text-base-content/70 font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
                                   >
                                     /swap @[project]
                                   </button>

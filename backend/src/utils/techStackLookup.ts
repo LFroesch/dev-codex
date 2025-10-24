@@ -18,9 +18,25 @@ export function lookupTech(name: string): TechLookupResult {
 
   // Search through all categories for a matching tech
   for (const category of STACK_CATEGORIES) {
-    const match = category.options.find(
+    // First try exact match
+    let match = category.options.find(
       (option: TechOption) => option.name.toLowerCase() === lowerName
     );
+
+    // If no exact match, try fuzzy matching (remove common suffixes)
+    if (!match) {
+      match = category.options.find((option: TechOption) => {
+        const optionLower = option.name.toLowerCase();
+        const inputWithoutSuffix = removeTechSuffix(lowerName);
+        const optionWithoutSuffix = removeTechSuffix(optionLower);
+
+        // Match if either the full names match after removing suffixes
+        // or if the input matches the option without suffix
+        return optionWithoutSuffix === inputWithoutSuffix ||
+               optionWithoutSuffix === lowerName ||
+               optionLower === inputWithoutSuffix;
+      });
+    }
 
     if (match) {
       // Map frontend category to backend category
@@ -41,6 +57,23 @@ export function lookupTech(name: string): TechLookupResult {
     found: false,
     name: name // Return the name as provided
   };
+}
+
+/**
+ * Remove common tech suffixes for fuzzy matching
+ */
+function removeTechSuffix(name: string): string {
+  const suffixes = ['.js', '.ts', ' js', ' css', '.css', '.io', ' ui', '-ui'];
+  let result = name;
+
+  for (const suffix of suffixes) {
+    if (result.endsWith(suffix)) {
+      result = result.slice(0, -suffix.length);
+      break; // Only remove one suffix
+    }
+  }
+
+  return result;
 }
 
 /**

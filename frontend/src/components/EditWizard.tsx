@@ -8,11 +8,13 @@ import ConfirmationModal from './ConfirmationModal';
 
 interface EditWizardProps {
   wizardData: {
-    wizardType: 'edit_todo' | 'edit_note' | 'edit_devlog' | 'edit_component';
+    wizardType: 'edit_todo' | 'edit_note' | 'edit_devlog' | 'edit_component' | 'edit_subtask';
     todoId?: string;
     noteId?: string;
     entryId?: string;
     componentId?: string;
+    subtaskId?: string;
+    parentTodoId?: string;
     currentValues: Record<string, any>;
     wizardCompleted?: boolean;
     wizardData?: Record<string, any>;
@@ -56,6 +58,31 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
   const [editRelData, setEditRelData] = useState<{ relationType: RelationshipType; description: string }>({
     relationType: 'uses',
     description: ''
+  });
+
+  // Confirmation modal state for delete subtask
+  const [deleteSubtaskConfirmation, setDeleteSubtaskConfirmation] = useState<{
+    isOpen: boolean;
+    subtaskId: string | null;
+    subtaskTitle: string;
+  }>({
+    isOpen: false,
+    subtaskId: null,
+    subtaskTitle: ''
+  });
+
+  // Subtask editing state (for inline edit)
+  const [editingSubtaskIndex, setEditingSubtaskIndex] = useState<number | null>(null);
+  const [editSubtaskData, setEditSubtaskData] = useState<{
+    title: string;
+    description: string;
+    priority: 'low' | 'medium' | 'high';
+    status: 'not_started' | 'in_progress' | 'completed' | 'blocked';
+  }>({
+    title: '',
+    description: '',
+    priority: 'medium',
+    status: 'not_started'
   });
 
   const steps = wizardData.steps;
@@ -138,6 +165,98 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
     setEditingRelIndex(null);
     setEditRelData({ relationType: 'uses', description: '' });
   }, []);
+
+  const handleEditSubtask = useCallback((index: number, subtask: any) => {
+    console.log('📝 EDIT SUBTASK CLICKED', { index, subtask });
+    setEditingSubtaskIndex(index);
+    setEditSubtaskData({
+      title: subtask.title || '',
+      description: subtask.description || '',
+      priority: subtask.priority || 'medium',
+      status: subtask.status || 'not_started'
+    });
+  }, []);
+
+  const handleSaveSubtask = useCallback(async () => {
+    if (editingSubtaskIndex === null || !currentProjectId) return;
+
+    const { todoId } = wizardData;
+    if (!todoId) return;
+
+    const currentSubtasks = formData[step.id] || step.value || [];
+    const subtask = currentSubtasks[editingSubtaskIndex];
+    if (!subtask) {
+      console.error('Subtask not found at index:', editingSubtaskIndex);
+      toast.error('Subtask not found');
+      return;
+    }
+
+    // OPTIMISTIC UPDATE - Update local state immediately
+    const updatedSubtasks = [...currentSubtasks];
+    updatedSubtasks[editingSubtaskIndex] = {
+      ...subtask,
+      title: editSubtaskData.title,
+      description: editSubtaskData.description,
+      priority: editSubtaskData.priority,
+      status: editSubtaskData.status
+    };
+    setFormData({ ...formData, [step.id]: updatedSubtasks });
+
+    try {
+      // Update subtask via API
+      await projectAPI.updateTodo(currentProjectId, subtask.id, {
+        text: editSubtaskData.title,
+        description: editSubtaskData.description,
+        priority: editSubtaskData.priority,
+        status: editSubtaskData.status
+      });
+
+      toast.success('Subtask updated');
+      setEditingSubtaskIndex(null);
+      setEditSubtaskData({ title: '', description: '', priority: 'medium', status: 'not_started' });
+
+    } catch (error) {
+      console.error('Failed to update subtask:', error);
+      toast.error('Failed to update subtask');
+
+      // ROLLBACK - Restore original state on error
+      setFormData({ ...formData, [step.id]: currentSubtasks });
+    }
+  }, [editingSubtaskIndex, currentProjectId, wizardData, formData, step.id, step.value, editSubtaskData]);
+
+  const handleCancelEditSubtask = useCallback(() => {
+    setEditingSubtaskIndex(null);
+    setEditSubtaskData({ title: '', description: '', priority: 'medium', status: 'not_started' });
+  }, []);
+
+  const handleDeleteSubtask = useCallback(async () => {
+    if (!currentProjectId || !deleteSubtaskConfirmation.subtaskId) return;
+
+    const { todoId } = wizardData;
+    if (!todoId) return;
+
+    const subtaskId = deleteSubtaskConfirmation.subtaskId;
+    const currentSubtasks = formData[step.id] || step.value || [];
+
+    // Close modal
+    setDeleteSubtaskConfirmation({ isOpen: false, subtaskId: null, subtaskTitle: '' });
+
+    // OPTIMISTIC UPDATE - Remove from local state immediately
+    const updatedSubtasks = currentSubtasks.filter((s: any) => s.id !== subtaskId);
+    setFormData({ ...formData, [step.id]: updatedSubtasks });
+
+    try {
+      await projectAPI.deleteTodo(currentProjectId, subtaskId);
+      toast.success('Subtask deleted');
+
+    } catch (error) {
+      console.error('Failed to delete subtask:', error);
+      toast.error('Failed to delete subtask');
+
+      // ROLLBACK - Restore original state on error
+      setFormData({ ...formData, [step.id]: currentSubtasks });
+    }
+  }, [currentProjectId, wizardData, formData, step.id, step.value, deleteSubtaskConfirmation.subtaskId]);
 
   const handleDeleteRelationship = useCallback(async () => {
     if (!currentProjectId || !deleteConfirmation.relationshipId) return;
@@ -689,6 +808,286 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
             </div>
           </div>
         )}
+
+        {step.type === 'subtasks' && (
+          <div className="space-y-3">
+            {/* Current subtasks */}
+            {(formData[step.id] || step.value || []).length > 0 ? (
+              <div className="space-y-2">
+                <div className="text-xs font-semibold text-base-content/70">Current Subtasks ({(formData[step.id] || step.value || []).length})</div>
+                {(formData[step.id] || step.value || []).map((subtask: any, index: number) => {
+                  const isEditing = editingSubtaskIndex === index;
+
+                  // Priority colors
+                  const priorityColors: Record<string, string> = {
+                    low: '#3b82f6',
+                    medium: '#eab308',
+                    high: '#ef4444',
+                  };
+
+                  // Status colors
+                  const statusColors: Record<string, string> = {
+                    not_started: '#6b7280',
+                    in_progress: '#3b82f6',
+                    completed: '#10b981',
+                    blocked: '#ef4444',
+                  };
+
+                  return (
+                    <div key={subtask.id || index} className="bg-base-300 p-2.5 rounded space-y-1.5 border border-base-content/10">
+                      {isEditing ? (
+                        <>
+                          <div className="flex items-center justify-between gap-2 mb-2">
+                            <span className="text-xs font-medium">Edit Subtask</span>
+                            <div className="flex gap-1">
+                              <button
+                                type="button"
+                                onClick={handleSaveSubtask}
+                                className="btn btn-ghost btn-xs text-success hover:bg-success/20"
+                                title="Save changes"
+                              >
+                                ✓
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handleCancelEditSubtask}
+                                className="btn btn-ghost btn-xs text-error hover:bg-error/20"
+                                title="Cancel"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          </div>
+                          <input
+                            type="text"
+                            value={editSubtaskData.title}
+                            onChange={(e) => setEditSubtaskData({ ...editSubtaskData, title: e.target.value })}
+                            placeholder="Subtask title"
+                            className="input input-bordered input-xs w-full"
+                          />
+                          <textarea
+                            value={editSubtaskData.description}
+                            onChange={(e) => setEditSubtaskData({ ...editSubtaskData, description: e.target.value })}
+                            placeholder="Optional description..."
+                            className="textarea textarea-bordered textarea-xs w-full h-12 resize-none"
+                          />
+                          <div className="grid grid-cols-2 gap-2">
+                            <select
+                              value={editSubtaskData.priority}
+                              onChange={(e) => setEditSubtaskData({ ...editSubtaskData, priority: e.target.value as any })}
+                              className="select select-bordered select-xs w-full"
+                            >
+                              <option value="low">Low Priority</option>
+                              <option value="medium">Medium Priority</option>
+                              <option value="high">High Priority</option>
+                            </select>
+                            <select
+                              value={editSubtaskData.status}
+                              onChange={(e) => setEditSubtaskData({ ...editSubtaskData, status: e.target.value as any })}
+                              className="select select-bordered select-xs w-full"
+                            >
+                              <option value="not_started">Not Started</option>
+                              <option value="in_progress">In Progress</option>
+                              <option value="completed">Completed</option>
+                              <option value="blocked">Blocked</option>
+                            </select>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium truncate">{subtask.title || 'Untitled'}</div>
+                              {subtask.description && (
+                                <div className="text-xs text-base-content/60 mt-0.5 truncate italic">{subtask.description}</div>
+                              )}
+                              <div className="flex items-center gap-2 text-xs text-base-content/60 mt-1">
+                                <span
+                                  className="badge badge-xs"
+                                  style={{
+                                    backgroundColor: priorityColors[subtask.priority] || '#eab308',
+                                    color: 'white',
+                                    borderColor: priorityColors[subtask.priority] || '#eab308'
+                                  }}
+                                >
+                                  {subtask.priority}
+                                </span>
+                                <span
+                                  className="badge badge-xs"
+                                  style={{
+                                    backgroundColor: statusColors[subtask.status] || '#6b7280',
+                                    color: 'white',
+                                    borderColor: statusColors[subtask.status] || '#6b7280'
+                                  }}
+                                >
+                                  {subtask.status.replace('_', ' ')}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex gap-1 flex-shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  console.log('📝 Edit clicked for subtask:', { index, subtask });
+                                  handleEditSubtask(index, subtask);
+                                }}
+                                className="btn btn-ghost btn-xs hover:bg-primary/20"
+                                title="Edit subtask"
+                              >
+                                ✎
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  console.log('🗑️ Delete clicked for subtask:', { index, subtask });
+                                  setDeleteSubtaskConfirmation({
+                                    isOpen: true,
+                                    subtaskId: subtask.id,
+                                    subtaskTitle: subtask.title || 'Untitled'
+                                  });
+                                }}
+                                className="btn btn-ghost btn-xs text-error hover:bg-error/20"
+                                title="Delete subtask"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-xs text-base-content/50 italic py-2">No subtasks yet</div>
+            )}
+
+            {/* Add new subtask */}
+            <div className="border-t border-base-content/10 pt-3">
+              <div className="text-xs font-semibold text-base-content/70 mb-2">Add Subtask</div>
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  placeholder="Subtask title"
+                  className="input input-bordered input-sm w-full"
+                  value={formData[`${step.id}_temp`]?.title || ''}
+                  onChange={(e) => {
+                    setFormData({
+                      ...formData,
+                      [`${step.id}_temp`]: {
+                        title: e.target.value,
+                        description: formData[`${step.id}_temp`]?.description || '',
+                        priority: formData[`${step.id}_temp`]?.priority || 'medium',
+                        status: formData[`${step.id}_temp`]?.status || 'not_started'
+                      }
+                    });
+                  }}
+                />
+
+                {formData[`${step.id}_temp`]?.title && (
+                  <>
+                    <textarea
+                      placeholder="Optional description..."
+                      className="textarea textarea-bordered textarea-sm w-full h-16 resize-none"
+                      value={formData[`${step.id}_temp`]?.description || ''}
+                      onChange={(e) => {
+                        setFormData({
+                          ...formData,
+                          [`${step.id}_temp`]: { ...formData[`${step.id}_temp`], description: e.target.value }
+                        });
+                      }}
+                    />
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <select
+                        className="select select-bordered select-sm w-full"
+                        value={formData[`${step.id}_temp`]?.priority || 'medium'}
+                        onChange={(e) => {
+                          setFormData({
+                            ...formData,
+                            [`${step.id}_temp`]: { ...formData[`${step.id}_temp`], priority: e.target.value }
+                          });
+                        }}
+                      >
+                        <option value="low">Low Priority</option>
+                        <option value="medium">Medium Priority</option>
+                        <option value="high">High Priority</option>
+                      </select>
+
+                      <select
+                        className="select select-bordered select-sm w-full"
+                        value={formData[`${step.id}_temp`]?.status || 'not_started'}
+                        onChange={(e) => {
+                          setFormData({
+                            ...formData,
+                            [`${step.id}_temp`]: { ...formData[`${step.id}_temp`], status: e.target.value }
+                          });
+                        }}
+                      >
+                        <option value="not_started">Not Started</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                        <option value="blocked">Blocked</option>
+                      </select>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const temp = formData[`${step.id}_temp`];
+
+                          // Create subtask via API
+                          try {
+                            const newSubtask = await projectAPI.createTodo(currentProjectId!, {
+                              text: temp.title,
+                              description: temp.description || '',
+                              priority: temp.priority,
+                              status: temp.status,
+                              parentTodoId: wizardData.todoId
+                            });
+
+                            // Add to local state
+                            const updated = [...(formData[step.id] || step.value || []), {
+                              id: newSubtask.id,
+                              title: temp.title,
+                              description: temp.description || '',
+                              priority: temp.priority,
+                              status: temp.status
+                            }];
+                            const newData = { ...formData, [step.id]: updated };
+                            delete newData[`${step.id}_temp`];
+                            setFormData(newData);
+                            toast.success('Subtask added');
+                          } catch (error) {
+                            console.error('Failed to add subtask:', error);
+                            toast.error('Failed to add subtask');
+                          }
+                        }}
+                        className="btn btn-primary btn-sm flex-1"
+                        style={{ color: getContrastTextColor('primary') }}
+                      >
+                        Add
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newData = { ...formData };
+                          delete newData[`${step.id}_temp`];
+                          setFormData(newData);
+                        }}
+                        className="btn btn-ghost btn-sm"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Navigation buttons */}
@@ -738,6 +1137,18 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
         onCancel={() => setDeleteConfirmation({ isOpen: false, relationshipId: null, targetTitle: '' })}
         title="Delete Relationship"
         message={`Are you sure you want to delete the relationship to "<strong>${deleteConfirmation.targetTitle}</strong>"?<br/><br/>This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="error"
+      />
+
+      {/* Confirmation Modal for Delete Subtask */}
+      <ConfirmationModal
+        isOpen={deleteSubtaskConfirmation.isOpen}
+        onConfirm={handleDeleteSubtask}
+        onCancel={() => setDeleteSubtaskConfirmation({ isOpen: false, subtaskId: null, subtaskTitle: '' })}
+        title="Delete Subtask"
+        message={`Are you sure you want to delete the subtask "<strong>${deleteSubtaskConfirmation.subtaskTitle}</strong>"?<br/><br/>This action cannot be undone.`}
         confirmText="Delete"
         cancelText="Cancel"
         variant="error"

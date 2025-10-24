@@ -150,37 +150,43 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
     // Extract command base and convert flags to empty placeholders
     // Example: "/set deployment --url=[url] --platform=[platform]" → "/set deployment --url= --platform="
 
+    // Remove @project from syntax if present
+    const cleanedSyntax = syntax.replace(/@project\s*$/, '').trim();
+
     // Special handling for different command patterns
-    if (syntax.includes('--')) {
+    if (cleanedSyntax.includes('--')) {
       // Has flags - extract them and create template
-      const parts = syntax.split('--');
+      const parts = cleanedSyntax.split(/\s+--/);
       const baseCommand = parts[0].trim();
 
-      // Extract flag names from patterns like --url=[url] or --role=[editor/viewer]
+      // Extract flag names from patterns like url=[url], role=[editor/viewer], or just flagname
       const flags = parts.slice(1).map(part => {
         const flagMatch = part.match(/^(\w+)/);
         return flagMatch ? `--${flagMatch[1]}=` : '';
       }).filter(Boolean);
 
-      // Remove @project from base command if present
-      const cleanBase = baseCommand.replace(/@project$/, '').trim();
-
-      return `${cleanBase} ${flags.join(' ')}`;
+      return flags.length > 0 ? `${baseCommand} ${flags.join(' ')}` : `${baseCommand} `;
     }
 
-    // No flags - return base command with space (remove @project if present)
-    const baseMatch = syntax.match(/^(\/[^\[]+)/);
-    const cleanedSyntax = baseMatch ? baseMatch[1].trim() : syntax.trim();
-    return `${cleanedSyntax} `;
+    // No flags - return base command with space, removing anything in brackets
+    const baseMatch = cleanedSyntax.match(/^(\/[^\[]+)/);
+    const cleanBase = baseMatch ? baseMatch[1].trim() : cleanedSyntax.trim();
+    return `${cleanBase} `;
   };
 
   // Handle autocomplete based on cursor position
   useEffect(() => {
     const textBeforeCursor = input.slice(0, cursorPosition);
 
+    // Check if we're in a chained command (after &&)
+    const lastAndAndIndex = textBeforeCursor.lastIndexOf('&& ');
+    const workingText = lastAndAndIndex !== -1
+      ? textBeforeCursor.slice(lastAndAndIndex + 3) // Get text after "&& "
+      : textBeforeCursor;
+
     // Check for / command autocomplete
-    if (textBeforeCursor.startsWith('/')) {
-      const commandText = textBeforeCursor.slice(1);
+    if (workingText.startsWith('/')) {
+      const commandText = workingText.slice(1);
 
       // Match and prioritize commands
       const matchingCommands = commands
@@ -237,12 +243,12 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
     }
 
     // Check for @ project autocomplete
-    const lastAtIndex = textBeforeCursor.lastIndexOf('@');
+    const lastAtIndex = workingText.lastIndexOf('@');
     if (lastAtIndex !== -1) {
       // Only show autocomplete if @ is at the start or preceded by a space
-      const charBeforeAt = lastAtIndex > 0 ? textBeforeCursor[lastAtIndex - 1] : ' ';
+      const charBeforeAt = lastAtIndex > 0 ? workingText[lastAtIndex - 1] : ' ';
       if (charBeforeAt === ' ' || lastAtIndex === 0) {
-        const afterAt = textBeforeCursor.slice(lastAtIndex + 1);
+        const afterAt = workingText.slice(lastAtIndex + 1);
 
         // Only show autocomplete if no space after @ and we're still at the cursor position near it
         if (!afterAt.includes(' ') && afterAt.length >= 0) {
@@ -343,15 +349,35 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
 
   const selectAutocompleteItem = (item: AutocompleteItem) => {
     if (item.type === 'command') {
+      // Check if we're in a chained command (after &&)
+      const textBeforeCursor = input.slice(0, cursorPosition);
+      const lastAndAndIndex = textBeforeCursor.lastIndexOf('&& ');
+
       // Use template if available, otherwise use value with space
-      const newInput = item.template || `${item.value} `;
+      const commandText = item.template || `${item.value} `;
+
+      let newInput: string;
+      let baseOffset: number;
+
+      if (lastAndAndIndex !== -1) {
+        // We're after a &&, preserve everything before it
+        const beforeAndAnd = input.slice(0, lastAndAndIndex + 3);
+        const afterCursor = input.slice(cursorPosition);
+        newInput = `${beforeAndAnd}${commandText}${afterCursor}`;
+        baseOffset = beforeAndAnd.length;
+      } else {
+        // Normal case, replace entire input
+        newInput = commandText;
+        baseOffset = 0;
+      }
+
       setInput(newInput);
 
-      // Position cursor at first = sign if template has flags, otherwise at end
-      let cursorPos = newInput.length;
-      if (item.template && newInput.includes('=')) {
-        const firstEqualPos = newInput.indexOf('=');
-        cursorPos = firstEqualPos + 1; // Position right after first =
+      // Position cursor at first = sign if template has flags, otherwise at end of command
+      let cursorPos = baseOffset + commandText.length;
+      if (item.template && commandText.includes('=')) {
+        const firstEqualPos = commandText.indexOf('=');
+        cursorPos = baseOffset + firstEqualPos + 1; // Position right after first =
       }
 
       setCursorPosition(cursorPos);

@@ -21,7 +21,7 @@ export class StackHandlers extends BaseCommandHandler {
         type: ResponseType.ERROR,
         message: '❌ Please use flag-based syntax or no arguments for wizard.',
         suggestions: [
-          '/add stack - Interactive wizard',
+          '/add stack',
           '/add stack --name="React" --category=framework --version=18.2.0',
           '/add stack --name="Express" --category=api',
           '/help add stack'
@@ -111,7 +111,7 @@ export class StackHandlers extends BaseCommandHandler {
           type: ResponseType.ERROR,
           message: `"${name}" not found in tech database. Please specify --category`,
           suggestions: [
-            '/add stack MyTech --category=framework --version=1.0',
+            '/add stack --name="MyTech" --category=framework --version=1.0',
             'Valid categories: framework, runtime, database, styling, deployment, testing, tooling, ui, state, routing, forms, animation, api, auth, data, utility'
           ]
         };

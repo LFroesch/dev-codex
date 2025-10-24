@@ -38,6 +38,9 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
     // Extract command base and convert flags to empty placeholders
     // Example: "/set deployment --url=[url] --platform=[platform]" → "/set deployment --url= --platform= --status="
 
+    // Remove @project from syntax if present
+    syntax = syntax.replace(/@[\w-]+/g, '').trim();
+    
     // Special handling for different command patterns
     if (syntax.includes('--')) {
       // Has flags - extract them and create template
@@ -265,7 +268,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                     <div className={`text-sm break-words ${
                       subtask.completed ? 'line-through text-base-content/50' : 'text-base-content/80'
                     }`}>
-                      {subtask.text}
+                      {subtask.title} {}
                     </div>
                     <div className="flex flex-wrap items-center gap-1 mt-1">
                       {subtask.priority && (
@@ -1251,8 +1254,8 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
       );
     }
 
-    // Render wizard for adding todos, notes, devlog, components, and stack items
-    if (['add_todo', 'add_note', 'add_devlog', 'add_component', 'add_stack'].includes(response.data.wizardType) && response.data.steps) {
+    // Render wizard for adding todos, notes, devlog, components, stack items, subtasks, and relationships
+    if (['add_todo', 'add_note', 'add_devlog', 'add_component', 'add_stack', 'add_subtask', 'add_relationship'].includes(response.data.wizardType) && response.data.steps) {
       const [currentStep, setCurrentStep] = React.useState(0);
       const [wizardData, setWizardData] = React.useState<Record<string, any>>(response.data.wizardData || {});
       const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -1291,18 +1294,29 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
             'add_note': 'add note',
             'add_devlog': 'add devlog',
             'add_component': 'add component',
-            'add_stack': 'add stack'
+            'add_stack': 'add stack',
+            'add_subtask': 'add subtask',
+            'add_relationship': 'add relationship'
           };
 
           const baseCommand = commandMap[wizardType];
-          const flags = Object.entries(wizardData)
+
+          // Collect all data including defaults from steps
+          const allData: Record<string, any> = { ...wizardData };
+          steps.forEach((s: any) => {
+            if (s.value && !allData[s.id]) {
+              allData[s.id] = s.value;
+            }
+          });
+
+          const flags = Object.entries(allData)
             .filter(([, value]) => value !== undefined && value !== null && String(value).trim() !== '')
             .map(([key, value]) => `--${key}="${escapeForCommand(String(value))}"`)
             .join(' ');
 
           const command = `/${baseCommand} ${flags}`;
 
-          console.log('🚀 Executing add command:', { command, projectId, wizardData });
+          console.log('🚀 Executing add command:', { command, projectId, wizardData, allData });
 
           // Execute the command
           const result = await terminalAPI.executeCommand(command, projectId);
@@ -1337,12 +1351,14 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
         const { wizardType } = response.data;
         switch (wizardType) {
           case 'add_todo':
+          case 'add_subtask':
             return '/notes?section=todos';
           case 'add_note':
             return '/notes';
           case 'add_devlog':
             return '/notes?section=devlog';
           case 'add_component':
+          case 'add_relationship':
             return '/features';
           case 'add_stack':
             return '/stack';
@@ -1356,12 +1372,16 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
         switch (wizardType) {
           case 'add_todo':
             return 'Todo';
+          case 'add_subtask':
+            return 'Subtask';
           case 'add_note':
             return 'Note';
           case 'add_devlog':
             return 'Dev Log Entry';
           case 'add_component':
             return 'Component';
+          case 'add_relationship':
+            return 'Relationship';
           case 'add_stack':
             return 'Stack Item';
           default:
@@ -1457,9 +1477,15 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                 onChange={(e) => setWizardData({ ...wizardData, [step.id]: e.target.value })}
                 className="select select-bordered w-full"
               >
-                {step.options?.map((option: string) => (
-                  <option key={option} value={option}>{option}</option>
-                ))}
+                {step.placeholder && <option value="">{step.placeholder}</option>}
+                {step.options?.map((option: string | { value: string; label: string }) => {
+                  // Handle both string options and object options with value/label
+                  if (typeof option === 'string') {
+                    return <option key={option} value={option}>{option}</option>;
+                  } else {
+                    return <option key={option.value} value={option.value}>{option.label}</option>;
+                  }
+                })}
               </select>
             )}
           </div>
@@ -1507,8 +1533,8 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
       );
     }
 
-    // Render wizard for editing todos, notes, devlog, and components
-    if (['edit_todo', 'edit_note', 'edit_devlog', 'edit_component'].includes(response.data.wizardType) && response.data.steps) {
+    // Render wizard for editing todos, notes, devlog, components, and subtasks
+    if (['edit_todo', 'edit_note', 'edit_devlog', 'edit_component', 'edit_subtask'].includes(response.data.wizardType) && response.data.steps) {
       // Use projectId from response metadata as fallback if currentProjectId is not set
       const projectId = currentProjectId || response.metadata?.projectId;
 
@@ -1531,6 +1557,86 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
       );
     }
 
+    // Render wizard for delete selectors (delete_component_selector, etc.)
+    if (response.data.wizardType === 'delete_component_selector' && response.data.steps) {
+      const [isSubmitting, setIsSubmitting] = React.useState(false);
+      const [selectedValue, setSelectedValue] = React.useState<string>('');
+      const projectId = currentProjectId || response.metadata?.projectId;
+
+      const step = response.data.steps[0]; // Delete selectors are single-step
+
+      const handleDelete = async () => {
+        if (!selectedValue) return;
+
+        setIsSubmitting(true);
+        try {
+          const command = `/delete component --id="${selectedValue}"`;
+
+          console.log('🗑️ Executing delete command:', { command, projectId });
+
+          const result = await terminalAPI.executeCommand(command, projectId);
+
+          if (result.type === 'error') {
+            toast.error(result.message || 'Failed to delete component');
+            setIsSubmitting(false);
+          } else {
+            toast.success(result.message || 'Component deleted successfully!');
+            // Optionally refresh or navigate
+            if (onWizardComplete) {
+              onWizardComplete(entryId, { componentId: selectedValue });
+            }
+          }
+        } catch (error) {
+          console.error('Failed to delete component:', error);
+          toast.error(`Failed to delete: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          setIsSubmitting(false);
+        }
+      };
+
+      return (
+        <div className="mt-3 p-4 bg-base-200 rounded-lg border-thick">
+          <div className="space-y-4">
+            <div className="form-control w-full">
+              <label className="label">
+                <span className="label-text font-semibold">{step.label}</span>
+              </label>
+              <select
+                className="select select-bordered w-full border-thick"
+                value={selectedValue}
+                onChange={(e) => setSelectedValue(e.target.value)}
+                disabled={isSubmitting}
+              >
+                <option value="">{step.placeholder || 'Select an option...'}</option>
+                {step.options?.map((option: { value: string; label: string }) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex gap-2 justify-end">
+              <button
+                type="button"
+                className="btn btn-error btn-sm border-thick"
+                onClick={handleDelete}
+                disabled={!selectedValue || isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <span className="loading loading-spinner loading-xs"></span>
+                    Deleting...
+                  </>
+                ) : (
+                  'Delete'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     // Render project selection as a grid
     if (response.data.projects && Array.isArray(response.data.projects)) {
       return (
@@ -1542,22 +1648,22 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
               onClick={() => onProjectSelect?.(project.id)}
               className="h-30 w-full p-3 bg-base-200 rounded-lg hover:bg-primary/20 hover:border-primary/50 border-thick transition-all text-left"
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-start gap-3">
                 {project.color && (
                   <div
-                  className="w-3 h-3 rounded-full border-thick"
-                  style={{ backgroundColor: project.color }}
+                    className="w-3 h-3 rounded-full border-thick flex-shrink-0 mt-1"
+                    style={{ backgroundColor: project.color }}
                   />
                 )}
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium text-sm text-base-content/80 break-words">{project.name}</div>
+                <div className="flex-1 min-w-0 space-y-1">
+                  <div className="font-semibold text-sm text-base-content truncate">{project.name}</div>
                   {project.category && (
-                    <span className="badge badge-sm border-thick">{project.category}</span>
+                    <div className="badge h-5 badge-xs border-thick">{project.category}</div>
                   )}
                   {project.description && (
-                    <div className="text-xs text-base-content/70 break-words">
+                    <p className="text-xs text-base-content/60 line-clamp-2">
                       {project.description}
-                    </div>
+                    </p>
                   )}
                 </div>
               </div>
@@ -1570,22 +1676,16 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
     // Render help data
     if (response.data.grouped) {
       const [openSection, setOpenSection] = React.useState<string | null>(null);
-      const [openCommands, setOpenCommands] = React.useState<Set<string>>(new Set());
+      const [openCommand, setOpenCommand] = React.useState<string | null>(null);
 
       const toggleSection = (category: string) => {
         setOpenSection(prev => prev === category ? null : category);
+        // Close any open command when switching sections
+        setOpenCommand(null);
       };
 
       const toggleCommand = (commandKey: string) => {
-        setOpenCommands(prev => {
-          const next = new Set(prev);
-          if (next.has(commandKey)) {
-            next.delete(commandKey);
-          } else {
-            next.add(commandKey);
-          }
-          return next;
-        });
+        setOpenCommand(prev => prev === commandKey ? null : commandKey);
       };
 
       return (
@@ -1614,7 +1714,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                   <div className="mt-3 px-3 pb-3 bg-base-100 space-y-1">
                     {cmds.map((cmd: any, index: number) => {
                       const commandKey = `${category}-${index}`;
-                      const isOpen = openCommands.has(commandKey);
+                      const isOpen = openCommand === commandKey;
                       const isSyntaxTip = cmd.type === 'syntax_tip';
 
                       return (
@@ -1629,7 +1729,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                             <div className="flex-1 min-w-0 flex items-center gap-2">
                               {isSyntaxTip ? (
                                 <div className="text-xs font-semibold text-base-content/70 font-mono">
-                                  {cmd.syntax} - 
+                                  {cmd.syntax} -
                                 </div>
                               ) : (
                                 <button
@@ -1641,7 +1741,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                                   className="text-xs text-base-content/70 font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
                                   title="Click to use this command"
                                 >
-                                  {cmd.syntax}
+                                  {cmd.simpleSyntax || cmd.syntax}
                                 </button>
                               )}
                               <div className="text-xs text-base-content/70 break-words line-clamp-1 flex-1">
@@ -1661,6 +1761,17 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                           </button>
                           {!isSyntaxTip && isOpen && cmd.examples && cmd.examples.length > 0 && (
                             <div className="px-3 pb-2 bg-base-100/50 space-y-1">
+                              <div className="mt-1 text-xs font-semibold text-base-content/60 mb-1">
+                                Full syntax:
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => onCommandClick?.(generateTemplate(cmd.syntax))}
+                                className="block w-full text-left text-xs bg-base-200 px-2 py-1 rounded border-thick text-base-content/70 font-mono mb-2 hover:bg-base-300/50 cursor-pointer transition-colors"
+                                title="Click to use this command"
+                              >
+                                {cmd.syntax}
+                              </button>
                               <div className="mt-1 text-xs font-semibold text-base-content/60 mb-1">
                                 Examples:
                               </div>
@@ -2245,7 +2356,84 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
       );
     }
 
-    // Generic data rendering
+    // Render relationships list
+    if (response.data.component && response.data.relationships && Array.isArray(response.data.relationships)) {
+      const { component, relationships } = response.data;
+      return (
+        <div className="mt-3 space-y-2">
+          <div className="text-xs text-base-content/60 mb-2">
+            Showing relationships for: <span className="font-semibold">{component.title}</span> ({component.category})
+          </div>
+          {relationships.length > 0 ? (
+            <div className="space-y-1">
+              {relationships.map((rel: any, index: number) => (
+                <div
+                  key={rel.id || index}
+                  className="p-2 bg-base-200 rounded-lg border-thick"
+                >
+                  <div className="flex items-start gap-2">
+                    <span className="text-base-content/50 flex-shrink-0">→</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm text-base-content/80 break-words">
+                        <span className="font-semibold">{rel.target?.title || 'Unknown'}</span>
+                        {rel.target?.category && (
+                          <span className="text-base-content/60 ml-2">({rel.target.category})</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="badge badge-xs badge-ghost">{rel.relationType}</span>
+                        {rel.description && (
+                          <span className="text-xs text-base-content/60">{rel.description}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-2 bg-base-200 rounded-lg border-thick text-xs text-base-content/60 text-center">
+              No relationships found
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Generic data rendering - show nicely formatted data like EditWizard
+    // Check if it's success response with simple object data (not arrays)
+    if (response.type === 'success' && response.data && typeof response.data === 'object' && !Array.isArray(response.data)) {
+      const entries = Object.entries(response.data).filter(([key]) => !key.includes('_temp'));
+      if (entries.length > 0) {
+        const formatValue = (value: any): string => {
+          if (value === null || value === undefined) return 'N/A';
+          if (typeof value === 'object') {
+            if (Array.isArray(value)) {
+              return value.length > 0 ? `[${value.length} items]` : '[]';
+            }
+            return JSON.stringify(value, null, 2);
+          }
+          const stringValue = String(value);
+          return stringValue.slice(0, 100) + (stringValue.length > 100 ? '...' : '');
+        };
+
+        return (
+          <div className="mt-3 p-4 bg-base-200 rounded-lg border-thick text-left">
+            <div className="text-xs font-semibold text-base-content/60 mb-2">Details:</div>
+            <div className="space-y-1">
+              {entries.map(([key, value]) => (
+                <div key={key} className="text-sm">
+                  <span className="font-semibold capitalize">{key.replace(/_/g, ' ')}:</span>{' '}
+                  <span className="text-base-content/80 whitespace-pre-wrap break-words">{formatValue(value)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      }
+    }
+
+    // Fallback: raw JSON for complex data
     return (
       <div className="mt-3 p-3 bg-base-200 rounded-lg border-thick overflow-x-auto">
         <pre className="text-xs text-base-content/80 whitespace-pre-wrap break-words">
@@ -2278,7 +2466,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
               {renderData()}
 
               {/* Success actions - add CTA for successful operations */}
-              {response.type === 'success' && !response.data && response.metadata?.projectId && (
+              {response.type === 'success' && response.metadata?.projectId && (
                 <div className="mt-3 flex gap-2 flex-wrap">
                   {/* Show specific button based on command type */}
                   {command.toLowerCase().includes('add todo') || command.toLowerCase().includes('edit todo') ||

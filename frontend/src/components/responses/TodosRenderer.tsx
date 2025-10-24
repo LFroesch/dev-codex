@@ -100,7 +100,7 @@ export const TodosRenderer: React.FC<TodosRendererProps> = ({ todos, projectId, 
                       {(subtask.priority || subtask.status) && (
                         <div className="flex items-center gap-1 mt-0.5">
                           {subtask.priority && (
-                            <span className={`badge badge-xs ${
+                            <span className={`badge badge-xs mr-1 ${
                               subtask.priority === 'high' ? 'badge-error' :
                               subtask.priority === 'medium' ? 'badge-warning' :
                               'badge-info'

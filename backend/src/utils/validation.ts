@@ -25,7 +25,10 @@ export function isValidUrl(url: string): boolean {
 /**
  * Sanitize text input (remove potentially harmful characters)
  */
-export function sanitizeText(text: string): string {
+export function sanitizeText(text: string | undefined | null): string {
+  if (!text || typeof text !== 'string') {
+    return '';
+  }
   return text
     .replace(/[<>]/g, '') // Remove angle brackets
     .trim();

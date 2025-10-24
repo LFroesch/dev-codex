@@ -40,7 +40,7 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<Record<string, any>>(wizardData.wizardData || wizardData.currentValues || {});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isCompleted, setIsCompleted] = useState(wizardData.wizardCompleted || false);
+  const [isCompleted, setIsCompleted] = useState(false);
 
   // Confirmation modal state for delete relationship
   const [deleteConfirmation, setDeleteConfirmation] = useState<{
@@ -330,38 +330,38 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
       let successCount = 0;
       let errorCount = 0;
 
-      // Execute edit commands for each changed field
+      // Build a single edit command with all flags
+      const flags: string[] = [];
       for (const [field, value] of Object.entries(formData)) {
-        // Skip temp fields and relationships (handled separately)
-        if (field.includes('_temp') || field === 'relationships') continue;
+        // Skip temp fields, relationships, and subtasks (handled separately)
+        if (field.includes('_temp') || field === 'relationships' || field === 'subtasks') continue;
 
-        // Only update if value differs from original or is non-empty
+        // Only include if value differs from original or is non-empty
         if (value !== undefined && value !== null && String(value).trim() !== '') {
-          try {
-            // Escape special characters for command parser
-            const escapedValue = escapeForCommand(String(value));
-            const editCommand = `/edit ${itemType} ${itemId} --field=${field} --content="${escapedValue}"`;
+          const escapedValue = escapeForCommand(String(value));
+          flags.push(`--${field}="${escapedValue}"`);
+        }
+      }
 
-            console.log('Executing edit command:', editCommand);
+      // Execute single edit command if there are changes
+      if (flags.length > 0) {
+        try {
+          const editCommand = `/edit ${itemType} ${itemId} ${flags.join(' ')}`;
+          console.log('Executing edit command:', editCommand);
 
-            // Execute the edit command directly via API
-            const response = await terminalAPI.executeCommand(editCommand, currentProjectId);
+          const response = await terminalAPI.executeCommand(editCommand, currentProjectId);
 
-            if (response.type === 'error') {
-              console.error('Command failed:', response.message);
-              errorCount++;
-              toast.error(`Failed to update ${field}: ${response.message}`);
-            } else {
-              successCount++;
-            }
-
-            // Small delay between commands to avoid race conditions
-            await new Promise(resolve => setTimeout(resolve, 100));
-          } catch (cmdError) {
-            console.error(`Failed to execute command for field ${field}:`, cmdError);
+          if (response.type === 'error') {
+            console.error('Command failed:', response.message);
             errorCount++;
-            toast.error(`Failed to update ${field}`);
+            toast.error(`Failed to update: ${response.message}`);
+          } else {
+            successCount++;
           }
+        } catch (cmdError) {
+          console.error('Failed to execute edit command:', cmdError);
+          errorCount++;
+          toast.error('Failed to update');
         }
       }
 
@@ -499,12 +499,37 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
           <div className="p-4 bg-base-200 rounded-lg border-thick text-left mb-4">
             <div className="text-xs font-semibold text-base-content/60 mb-2">Updated Fields:</div>
             <div className="space-y-1">
-              {Object.entries(formData).filter(([key]) => !key.includes('_temp') && key !== 'relationships').map(([key, value]) => (
-                <div key={key} className="text-sm">
-                  <span className="font-semibold capitalize">{key}:</span>{' '}
-                  <span className="text-base-content/80">{String(value).slice(0, 50)}{String(value).length > 50 ? '...' : ''}</span>
-                </div>
-              ))}
+              {Object.entries(formData).filter(([key]) => !key.includes('_temp') && key !== 'relationships' && key !== 'subtasks').map(([key, value]) => {
+                const formatValue = (val: any): string => {
+                  if (val === null || val === undefined) return 'N/A';
+                  if (typeof val === 'object') {
+                    if (Array.isArray(val)) return `[${val.length} items]`;
+                    return JSON.stringify(val, null, 2);
+                  }
+                  const str = String(val);
+                  return str.slice(0, 50) + (str.length > 50 ? '...' : '');
+                };
+                return (
+                  <div key={key} className="text-sm">
+                    <span className="font-semibold capitalize">{key}:</span>{' '}
+                    <span className="text-base-content/80">{formatValue(value)}</span>
+                  </div>
+                );
+              })}
+              {/* Always show subtasks count for todos, even if not edited */}
+              {wizardData.wizardType === 'edit_todo' && (() => {
+                // Get subtasks from either formData or the original step value
+                const subtasksStep = wizardData.steps.find((s: any) => s.id === 'subtasks');
+                const subtasks = formData.subtasks || subtasksStep?.value || [];
+                return (
+                  <div className="text-sm">
+                    <span className="font-semibold capitalize">subtasks:</span>{' '}
+                    <span className="text-base-content/80">
+                      {`[${subtasks.length} item${subtasks.length !== 1 ? 's' : ''}]`}
+                    </span>
+                  </div>
+                );
+              })()}
             </div>
           </div>
 

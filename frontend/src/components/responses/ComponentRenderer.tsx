@@ -14,13 +14,15 @@ interface ComponentRendererProps {
   components?: Component[]; // Fallback: flat list of components
   projectId?: string;
   onNavigate: (path: string) => void;
+  onCommandClick?: (command: string) => void;
 }
 
 export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
   structure,
   components,
   projectId,
-  onNavigate
+  onNavigate,
+  onCommandClick
 }) => {
   // Create an index map for component numbers across all features
   const allComponents = components || (structure ? Object.values(structure).flat() : []);
@@ -30,32 +32,35 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
     <div className="mt-3 space-y-3">
       {/* Render components grouped by feature if structure is provided */}
       {structure && Object.keys(structure).length > 0 ? (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {Object.entries(structure).map(([feature, featureComponents]) => (
-            <div key={feature} className="space-y-2">
+            <div key={feature} className="space-y-1">
               {/* Feature header */}
-              <div className="flex items-center gap-2 px-2 py-1 bg-primary/10 rounded border border-primary/30">
-                <span className="text-sm font-semibold text-primary">📦 {feature}</span>
-                <span className="text-xs text-base-content/60">({featureComponents.length})</span>
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-base-300 rounded-lg border-2 border-base-content/10">
+                <span className="text-sm font-semibold text-base-content">📦 {feature}</span>
+                <span className="text-xs text-base-content/60">({featureComponents.length} component{featureComponents.length !== 1 ? 's' : ''})</span>
               </div>
 
               {/* Components in this feature */}
-              <div className="space-y-1 ml-2">
+              <div className="space-y-1">
                 {featureComponents.map((component) => (
-                  <div
+                  <button
                     key={component.id}
-                    className="flex items-center gap-3 p-2 bg-base-200 rounded-lg hover:bg-base-300/50 transition-colors border-thick"
+                    onClick={() => onCommandClick?.(`/edit component ${componentIndexMap.get(component.id)}`)}
+                    className="w-full text-left flex items-center gap-3 p-2 bg-base-200 rounded-lg hover:bg-primary/10 hover:border-primary/50 transition-colors border-thick cursor-pointer"
                   >
-                    <span className="text-xs font-mono font-semibold text-accent bg-accent/10 px-1.5 py-0.5 rounded border border-accent/30 flex-shrink-0">
-                      #{componentIndexMap.get(component.id)}
-                    </span>
-                    <span className="text-xs px-2 py-0.5 bg-primary/30 rounded border-2 border-primary/40 flex-shrink-0">
+                    <div className="flex-shrink-0">
+                      <span className="text-xs font-mono font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded border border-primary/30">
+                        #{componentIndexMap.get(component.id)}
+                      </span>
+                    </div>
+                    <span className="text-xs px-2 py-0.5 bg-base-300 rounded border border-base-content/20 flex-shrink-0">
                       {component.type}
                     </span>
                     <div className="flex-1 min-w-0 text-sm font-medium text-base-content/80 break-words">
                       {component.title}
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
@@ -66,20 +71,23 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
         components && components.length > 0 && (
           <div className="space-y-1">
             {components.map((component, index) => (
-              <div
+              <button
                 key={component.id || index}
-                className="flex items-center gap-3 p-2 bg-base-200 rounded-lg hover:bg-base-300/50 transition-colors border-thick"
+                onClick={() => onCommandClick?.(`/edit component ${index + 1}`)}
+                className="w-full text-left flex items-center gap-3 p-2 bg-base-200 rounded-lg hover:bg-primary/10 hover:border-primary/50 transition-colors border-thick cursor-pointer"
               >
-                <span className="text-xs font-mono font-semibold text-accent bg-accent/10 px-1.5 py-0.5 rounded border border-accent/30 flex-shrink-0">
-                  #{index + 1}
-                </span>
-                <span className="text-xs px-2 py-0.5 bg-primary/30 rounded border-2 border-primary/40 flex-shrink-0">
+                <div className="flex-shrink-0">
+                  <span className="text-xs font-mono font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded border border-primary/30">
+                    #{index + 1}
+                  </span>
+                </div>
+                <span className="text-xs px-2 py-0.5 bg-base-300 rounded border border-base-content/20 flex-shrink-0">
                   {component.type}
                 </span>
                 <div className="flex-1 min-w-0 text-sm font-medium text-base-content/80 break-words">
                   {component.title}
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         )

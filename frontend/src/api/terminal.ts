@@ -25,6 +25,7 @@ export interface CommandMetadata {
   description: string;
   examples: string[];
   category: string;
+  aliases?: string[]; // Command aliases for matching
 }
 
 /**
@@ -50,7 +51,7 @@ class TerminalService extends BaseApiService {
 
   /**
    * Execute a terminal command
-   * @param command - Command string (e.g., "/add todo fix bug @myproject")
+   * @param command - Command string (e.g., "/add todo fix bug @project")
    * @param currentProjectId - Optional current project context
    * @returns Command response
    */

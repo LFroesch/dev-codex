@@ -3,20 +3,27 @@ import { getContrastTextColor } from '../../utils/contrastTextColor';
 
 interface Subtask {
   id: string;
+  index?: number;
   title: string;
+  description?: string;
   priority?: string;
   status?: string;
   completed: boolean;
   dueDate?: Date;
+  reminderDate?: Date;
+  assignedTo?: any;
 }
 
 interface Todo {
   id: string;
   title: string;
+  description?: string;
   priority?: string;
   status?: string;
   completed: boolean;
   dueDate?: Date;
+  reminderDate?: Date;
+  assignedTo?: any;
   subtasks?: Subtask[];
 }
 
@@ -24,17 +31,19 @@ interface TodosRendererProps {
   todos: Todo[];
   projectId?: string;
   onNavigate: (path: string) => void;
+  onCommandClick?: (command: string) => void;
 }
 
-export const TodosRenderer: React.FC<TodosRendererProps> = ({ todos, projectId, onNavigate }) => {
+export const TodosRenderer: React.FC<TodosRendererProps> = ({ todos, projectId, onNavigate, onCommandClick }) => {
   return (
     <div className="mt-3 space-y-2">
       <div className="space-y-1">
         {todos.map((todo, index) => (
           <div key={index} className="space-y-1">
             {/* Parent Todo */}
-            <div
-              className="flex items-start gap-3 p-2 bg-base-200 rounded-lg hover:bg-base-300/50 transition-colors border-thick"
+            <button
+              onClick={() => onCommandClick?.(`/edit todo ${index + 1}`)}
+              className="w-full text-left flex items-start gap-3 p-2 bg-base-200 rounded-lg hover:bg-primary/10 hover:border-primary/50 transition-colors border-thick cursor-pointer"
             >
               <div className="flex-shrink-0">
                 <div className="flex items-center gap-2">
@@ -59,7 +68,12 @@ export const TodosRenderer: React.FC<TodosRendererProps> = ({ todos, projectId, 
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-2 mt-1">
+                {todo.description && (
+                  <div className="text-xs text-base-content/60 mt-1 break-words whitespace-pre-wrap">
+                    {todo.description}
+                  </div>
+                )}
+                <div className="flex flex-wrap items-center gap-2 mt-1">
                   {todo.priority && (
                     <span className={`badge badge-xs ${
                       todo.priority === 'high' ? 'badge-error' :
@@ -74,17 +88,35 @@ export const TodosRenderer: React.FC<TodosRendererProps> = ({ todos, projectId, 
                       {todo.status.replace('_', ' ')}
                     </span>
                   )}
+                  {todo.dueDate && (
+                    <span className="text-xs text-base-content/60">
+                      📅 {new Date(todo.dueDate).toLocaleDateString()}
+                    </span>
+                  )}
+                  {todo.reminderDate && (
+                    <span className="text-xs text-base-content/60">
+                      🔔 {new Date(todo.reminderDate).toLocaleDateString()}
+                    </span>
+                  )}
+                  {todo.assignedTo && (
+                    <span className="text-xs text-base-content/60">
+                      👤 {typeof todo.assignedTo === 'object' && todo.assignedTo.firstName
+                        ? `${todo.assignedTo.firstName} ${todo.assignedTo.lastName}`
+                        : 'Assigned'}
+                    </span>
+                  )}
                 </div>
               </div>
-            </div>
+            </button>
 
             {/* Subtasks (indented) */}
             {todo.subtasks && todo.subtasks.length > 0 && (
               <div className="ml-8 space-y-1">
                 {todo.subtasks.map((subtask, subIndex) => (
-                  <div
+                  <button
                     key={subIndex}
-                    className="flex items-start gap-2 p-2 bg-base-100 rounded-lg hover:bg-base-200/50 transition-colors border-2 border-base-content/10"
+                    onClick={() => subtask.index && onCommandClick?.(`/edit subtask ${subtask.index}`)}
+                    className="w-full text-left flex items-start gap-2 p-2 bg-base-100 rounded-lg hover:bg-primary/10 hover:border-primary/50 transition-colors border-2 border-base-content/10 cursor-pointer"
                   >
                     <div className="flex-shrink-0 mt-0.5 text-sm">
                       {subtask.completed ? (
@@ -97,8 +129,13 @@ export const TodosRenderer: React.FC<TodosRendererProps> = ({ todos, projectId, 
                       <div className={`text-sm text-base-content/70 break-words ${subtask.completed ? 'line-through opacity-60' : ''}`}>
                         {subtask.title}
                       </div>
-                      {(subtask.priority || subtask.status) && (
-                        <div className="flex items-center gap-1 mt-0.5">
+                      {subtask.description && (
+                        <div className="text-xs text-base-content/50 mt-1 break-words whitespace-pre-wrap">
+                          {subtask.description}
+                        </div>
+                      )}
+                      {(subtask.priority || subtask.status || subtask.dueDate || subtask.reminderDate || subtask.assignedTo) && (
+                        <div className="flex flex-wrap items-center gap-1 mt-0.5">
                           {subtask.priority && (
                             <span className={`badge badge-xs mr-1 ${
                               subtask.priority === 'high' ? 'badge-error' :
@@ -113,10 +150,27 @@ export const TodosRenderer: React.FC<TodosRendererProps> = ({ todos, projectId, 
                               {subtask.status.replace('_', ' ')}
                             </span>
                           )}
+                          {subtask.dueDate && (
+                            <span className="text-xs text-base-content/50">
+                              📅 {new Date(subtask.dueDate).toLocaleDateString()}
+                            </span>
+                          )}
+                          {subtask.reminderDate && (
+                            <span className="text-xs text-base-content/50">
+                              🔔 {new Date(subtask.reminderDate).toLocaleDateString()}
+                            </span>
+                          )}
+                          {subtask.assignedTo && (
+                            <span className="text-xs text-base-content/50">
+                              👤 {typeof subtask.assignedTo === 'object' && subtask.assignedTo.firstName
+                                ? `${subtask.assignedTo.firstName} ${subtask.assignedTo.lastName}`
+                                : 'Assigned'}
+                            </span>
+                          )}
                         </div>
                       )}
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             )}

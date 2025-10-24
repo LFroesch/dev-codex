@@ -110,7 +110,13 @@ const COMMAND_ALIASES: Record<string, CommandType> = {
   'add component': CommandType.ADD_COMPONENT,
   'add components': CommandType.ADD_COMPONENT,
   'add-component': CommandType.ADD_COMPONENT,
-  
+
+  // Natural action verbs for adding
+  'create todo': CommandType.ADD_TODO,
+  'create note': CommandType.ADD_NOTE,
+  'create devlog': CommandType.ADD_DEVLOG,
+  'create component': CommandType.ADD_COMPONENT,
+
   // View commands - with plural/singular support
   'view notes': CommandType.VIEW_NOTES,
   'view note': CommandType.VIEW_NOTES,
@@ -140,6 +146,49 @@ const COMMAND_ALIASES: Record<string, CommandType> = {
   'list component': CommandType.VIEW_COMPONENTS,
   'features': CommandType.VIEW_COMPONENTS,
   'feature': CommandType.VIEW_COMPONENTS,
+
+  // Natural viewing aliases
+  'show notes': CommandType.VIEW_NOTES,
+  'show note': CommandType.VIEW_NOTES,
+  'show todos': CommandType.VIEW_TODOS,
+  'show todo': CommandType.VIEW_TODOS,
+  'show devlog': CommandType.VIEW_DEVLOG,
+  'show devlogs': CommandType.VIEW_DEVLOG,
+  'show components': CommandType.VIEW_COMPONENTS,
+  'show component': CommandType.VIEW_COMPONENTS,
+  'display notes': CommandType.VIEW_NOTES,
+  'display note': CommandType.VIEW_NOTES,
+  'display todos': CommandType.VIEW_TODOS,
+  'display todo': CommandType.VIEW_TODOS,
+  'display devlog': CommandType.VIEW_DEVLOG,
+  'display devlogs': CommandType.VIEW_DEVLOG,
+  'display components': CommandType.VIEW_COMPONENTS,
+  'display component': CommandType.VIEW_COMPONENTS,
+  'ls notes': CommandType.VIEW_NOTES,
+  'ls todos': CommandType.VIEW_TODOS,
+  'ls devlog': CommandType.VIEW_DEVLOG,
+  'ls components': CommandType.VIEW_COMPONENTS,
+
+  // Short form aliases
+  't': CommandType.VIEW_TODOS,
+  'n': CommandType.VIEW_NOTES,
+  'dl': CommandType.VIEW_DEVLOG,
+  'c': CommandType.VIEW_COMPONENTS,
+  's': CommandType.VIEW_STACK,
+
+  // Natural phrases
+  'show me notes': CommandType.VIEW_NOTES,
+  'show me todos': CommandType.VIEW_TODOS,
+  'show me devlog': CommandType.VIEW_DEVLOG,
+  'show me components': CommandType.VIEW_COMPONENTS,
+  'give me notes': CommandType.VIEW_NOTES,
+  'give me todos': CommandType.VIEW_TODOS,
+  'give me devlog': CommandType.VIEW_DEVLOG,
+  'give me components': CommandType.VIEW_COMPONENTS,
+  'get notes': CommandType.VIEW_NOTES,
+  'get todos': CommandType.VIEW_TODOS,
+  'get devlog': CommandType.VIEW_DEVLOG,
+  'get components': CommandType.VIEW_COMPONENTS,
 
   // Project commands
   'swap-project': CommandType.SWAP_PROJECT,
@@ -291,6 +340,18 @@ const COMMAND_ALIASES: Record<string, CommandType> = {
   'edit subtasks': CommandType.EDIT_SUBTASK,
   'edit-subtask': CommandType.EDIT_SUBTASK,
 
+  // Natural edit aliases
+  'update todo': CommandType.EDIT_TODO,
+  'update note': CommandType.EDIT_NOTE,
+  'update devlog': CommandType.EDIT_DEVLOG,
+  'update component': CommandType.EDIT_COMPONENT,
+  'update subtask': CommandType.EDIT_SUBTASK,
+  'modify todo': CommandType.EDIT_TODO,
+  'modify note': CommandType.EDIT_NOTE,
+  'modify devlog': CommandType.EDIT_DEVLOG,
+  'modify component': CommandType.EDIT_COMPONENT,
+  'modify subtask': CommandType.EDIT_SUBTASK,
+
   // Delete commands - with plural/singular and rm support
   'delete todo': CommandType.DELETE_TODO,
   'delete todos': CommandType.DELETE_TODO,
@@ -327,6 +388,13 @@ const COMMAND_ALIASES: Record<string, CommandType> = {
   'remove subtasks': CommandType.DELETE_SUBTASK,
   'rm subtask': CommandType.DELETE_SUBTASK,
   'rm subtasks': CommandType.DELETE_SUBTASK,
+
+  // Short delete aliases
+  'del todo': CommandType.DELETE_TODO,
+  'del note': CommandType.DELETE_NOTE,
+  'del devlog': CommandType.DELETE_DEVLOG,
+  'del component': CommandType.DELETE_COMPONENT,
+  'del subtask': CommandType.DELETE_SUBTASK,
 
   // Relationship commands - with plural/singular and rm support
   'add relationship': CommandType.ADD_RELATIONSHIP,
@@ -401,9 +469,9 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
     simpleSyntax: '/add note',
     description: 'Create a new note with title and content',
     examples: [
-      '/add note --title="API Architecture" --content="REST API design decisions..." @backend',
+      '/add note --title="API Architecture" --content="REST API design decisions..." @project',
       '/add note --title="Meeting Notes" --content="Discussed project timeline and milestones"',
-      '/add note --title="Database Schema" --content="User table structure and relationships" @myproject'
+      '/add note --title="Database Schema" --content="User table structure and relationships" @project'
     ],
     requiresProject: true,
     requiresArgs: false
@@ -414,9 +482,9 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
     simpleSyntax: '/add devlog',
     description: 'Create a new dev log entry with title and content',
     examples: [
-      '/add devlog --title="Memory Leak Fix" --content="Fixed memory leak in user service by clearing event listeners" @backend',
+      '/add devlog --title="Memory Leak Fix" --content="Fixed memory leak in user service by clearing event listeners" @project',
       '/add devlog --title="Query Optimization" --content="Optimized database queries, reduced load time by 40%"',
-      '/add devlog --title="Auth Refactor" --content="Refactored authentication flow to use JWT tokens" @myproject'
+      '/add devlog --title="Auth Refactor" --content="Refactored authentication flow to use JWT tokens" @project'
     ],
     requiresProject: true,
     requiresArgs: false
@@ -427,7 +495,7 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
     simpleSyntax: '/add component',
     description: 'Add a component to a feature (categories: frontend, backend, database, infrastructure, security, api, documentation, asset)',
     examples: [
-      '/add component --feature="Auth" --category=backend --type=service --title="Login Service" --content="Handles user authentication" @myproject',
+      '/add component --feature="Auth" --category=backend --type=service --title="Login Service" --content="Handles user authentication" @project',
       '/add component --feature="Users" --category=api --type=endpoint --title="GET /users" --content="Retrieve all users endpoint"',
       '/add component --feature="Dashboard" --category=frontend --type=component --title="Header" --content="Top navigation bar with user menu"'
     ],
@@ -440,9 +508,9 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
     simpleSyntax: '/view notes',
     description: 'List all notes in a project',
     examples: [
-      '/view notes @myproject',
+      '/view notes @project',
       '/notes',
-      '/list notes @frontend'
+      '/list notes @project'
     ],
     requiresProject: true,
     requiresArgs: false
@@ -453,9 +521,9 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
     simpleSyntax: '/view todos',
     description: 'List all todos in a project',
     examples: [
-      '/view todos @myproject',
+      '/view todos @project',
       '/todos',
-      '/list todos @backend'
+      '/list todos @project'
     ],
     requiresProject: true,
     requiresArgs: false
@@ -466,9 +534,9 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
     simpleSyntax: '/view devlog',
     description: 'List dev log entries',
     examples: [
-      '/view devlog @myproject',
+      '/view devlog @project',
       '/devlog',
-      '/list devlog @backend'
+      '/list devlog @project'
     ],
     requiresProject: true,
     requiresArgs: false
@@ -480,7 +548,7 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
     description: 'List components grouped by features',
     examples: [
       '/view components',
-      '/components @myproject',
+      '/components @project',
       '/features'
     ],
     requiresProject: true,
@@ -492,7 +560,7 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
     simpleSyntax: '/swap',
     description: 'Switch to a different project',
     examples: [
-      '/swap @myproject',
+      '/swap @project',
       '/swap frontend',
       '/switch backend'
     ],
@@ -518,22 +586,20 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
     simpleSyntax: '/export',
     description: 'Export project data',
     examples: [
-      '/export @myproject',
+      '/export @project',
       '/export',
-      '/download @frontend'
+      '/download @project'
     ],
     requiresProject: true,
     requiresArgs: false
   },
   [CommandType.SUMMARY]: {
     type: CommandType.SUMMARY,
-    syntax: '/summary "markdown|json|prompt|text" @project',
+    syntax: '/summary "[format]" @project',
     simpleSyntax: '/summary',
-    description: 'Generate downloadable project summary in various formats',
+    description: 'Generate downloadable project summary in various formats (markdown/json/prompt/text)',
     examples: [
-      '/summary markdown',
-      '/summary prompt',
-      '/summary json @myproject'
+      '/summary "[format]"'
     ],
     requiresProject: true,
     requiresArgs: false
@@ -544,8 +610,8 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
     simpleSyntax: '/add stack',
     description: 'Add a technology or package to the stack (unified command)',
     examples: [
-      '/add stack --name="React" --category=framework --version=18.2.0 --type=tech @myproject',
-      '/add stack --name="express" --category=api --version=4.18.0 --type=package @backend',
+      '/add stack --name="React" --category=framework --version=18.2.0 --type=tech @project',
+      '/add stack --name="express" --category=api --version=4.18.0 --type=package @project',
       '/add-stack --name="PostgreSQL" --category=database --type=tech'
     ],
     requiresProject: true,
@@ -557,8 +623,8 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
     simpleSyntax: '/remove stack',
     description: 'Remove a technology or package from the stack (unified command)',
     examples: [
-      '/remove stack --name="React" @myproject',
-      '/rm stack --name="express" @backend',
+      '/remove stack --name="React" @project',
+      '/rm stack --name="express" @project',
       '/remove-stack --name="PostgreSQL"'
     ],
     requiresProject: true,
@@ -570,9 +636,9 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
     simpleSyntax: '/view stack',
     description: 'View the tech stack and packages',
     examples: [
-      '/view stack @myproject',
+      '/view stack @project',
       '/stack',
-      '/view-stack @backend'
+      '/view-stack @project'
     ],
     requiresProject: true,
     requiresArgs: false
@@ -583,7 +649,7 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
     simpleSyntax: '/view deployment',
     description: 'View deployment information',
     examples: [
-      '/view deployment @myproject',
+      '/view deployment @project',
       '/deployment',
       '/deploy'
     ],
@@ -598,7 +664,7 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
     examples: [
       '/set deployment --url=https://myapp.com --platform=vercel',
       '/set-deployment --status=active --branch=main',
-      '/set deployment --url=https://api.example.com @backend'
+      '/set deployment --url=https://api.example.com @project'
     ],
     requiresProject: true,
     requiresArgs: false
@@ -609,7 +675,7 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
     simpleSyntax: '/view public',
     description: 'View public settings',
     examples: [
-      '/view public @myproject',
+      '/view public @project',
       '/public'
     ],
     requiresProject: true,
@@ -622,8 +688,8 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
     description: 'Toggle public visibility and set slug',
     examples: [
       '/set public --enabled=true --slug=my-awesome-project',
-      '/make public --slug=my-project @myproject',
-      '/make private @myproject'
+      '/make public --slug=my-project @project',
+      '/make private @project'
     ],
     requiresProject: true,
     requiresArgs: false
@@ -634,7 +700,7 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
     simpleSyntax: '/view team',
     description: 'View team members',
     examples: [
-      '/view team @myproject',
+      '/view team @project',
       '/team'
     ],
     requiresProject: true,
@@ -642,26 +708,22 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
   },
   [CommandType.INVITE_MEMBER]: {
     type: CommandType.INVITE_MEMBER,
-    syntax: '/invite "email/username" --role="editor/viewer" @project',
+    syntax: '/invite "[email/username]" --role="editor/viewer" @project',
     simpleSyntax: '/invite',
     description: 'Invite a user to the project by email or username',
     examples: [
-      '/invite user@example.com --role=editor',
-      '/invite johndoe --role=viewer',
-      '/invite colleague@company.com'
+      '/invite "[email/username]"'
     ],
     requiresProject: true,
     requiresArgs: true
   },
   [CommandType.REMOVE_MEMBER]: {
     type: CommandType.REMOVE_MEMBER,
-    syntax: '/remove member "email/username" @project',
+    syntax: '/remove member "[email/username]" @project',
     simpleSyntax: '/remove member',
     description: 'Remove a team member by email or username',
     examples: [
-      '/remove member "user@example.com" @myproject',
-      '/kick "johndoe" @myproject',
-      '/kick "colleague@company.com"'
+      '/remove member "[email/username]"'
     ],
     requiresProject: true,
     requiresArgs: true
@@ -672,7 +734,7 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
     simpleSyntax: '/view settings',
     description: 'View project settings',
     examples: [
-      '/view settings @myproject',
+      '/view settings @project',
       '/settings'
     ],
     requiresProject: true,
@@ -680,49 +742,44 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
   },
   [CommandType.SET_NAME]: {
     type: CommandType.SET_NAME,
-    syntax: '/set name "new name" @project',
+    syntax: '/set name "[new name]" @project',
     simpleSyntax: '/set name',
     description: 'Update project name',
     examples: [
-      '/set name "My Awesome Project" @myproject',
-      '/rename "New Project Name"'
+      '/set name "[new name]"'
     ],
     requiresProject: true,
     requiresArgs: true
   },
   [CommandType.SET_DESCRIPTION]: {
     type: CommandType.SET_DESCRIPTION,
-    syntax: '/set description "new description" @project',
+    syntax: '/set description "[new description]" @project',
     simpleSyntax: '/set description',
     description: 'Update project description',
     examples: [
-      '/set description "A web app for managing tasks" @myproject',
-      '/describe "This is my new project"'
+      '/set description "[new description]"'
     ],
     requiresProject: true,
     requiresArgs: true
   },
   [CommandType.ADD_TAG]: {
     type: CommandType.ADD_TAG,
-    syntax: '/add tag "tag name" @project',
+    syntax: '/add tag "[tag name]" @project',
     simpleSyntax: '/add tag',
     description: 'Add a tag to the project',
     examples: [
-      '/add tag "react" @myproject',
-      '/tag "typescript"',
-      '/add-tag "web-app"'
+      '/add tag "[tag name]"'
     ],
     requiresProject: true,
     requiresArgs: true
   },
   [CommandType.REMOVE_TAG]: {
     type: CommandType.REMOVE_TAG,
-    syntax: '/remove tag "tag name" @project',
+    syntax: '/remove tag "[tag name]" @project',
     simpleSyntax: '/remove tag',
     description: 'Remove a tag from the project',
     examples: [
-      '/remove tag "react" @myproject',
-      '/untag "typescript"'
+      '/remove tag "[tag name]"'
     ],
     requiresProject: true,
     requiresArgs: true
@@ -742,13 +799,11 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
   },
   [CommandType.SET_THEME]: {
     type: CommandType.SET_THEME,
-    syntax: '/set theme "theme name"',
+    syntax: '/set theme "[theme name]"',
     simpleSyntax: '/set theme',
     description: 'Change the application theme',
     examples: [
-      '/set theme "dark"',
-      '/theme "light"',
-      '/set-theme "cyberpunk"'
+      '/set theme "[theme name]"'
     ],
     requiresProject: false,
     requiresArgs: true
@@ -767,51 +822,47 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
   },
   [CommandType.SEARCH]: {
     type: CommandType.SEARCH,
-    syntax: '/search "query" @project',
+    syntax: '/search "[query]" @project',
     simpleSyntax: '/search',
     description: 'Search across all project content (todos, notes, devlog, components)',
     examples: [
-      '/search "authentication bug" @myproject',
-      '/find "database schema"',
-      '/search "api design"'
+      '/search "[query]"'
     ],
     requiresProject: false,
     requiresArgs: true
   },
   [CommandType.COMPLETE_TODO]: {
     type: CommandType.COMPLETE_TODO,
-    syntax: '/complete "todo text/id" @project',
+    syntax: '/complete "[todo text/id]" @project',
     simpleSyntax: '/complete',
     description: 'Mark a todo as completed',
     examples: [
-      '/complete "fix authentication bug" @myproject',
-      '/done "implement user dashboard"',
-      '/complete 1'
+      '/complete "[todo text/id]"',
+      '/complete [#]'
     ],
     requiresProject: true,
     requiresArgs: true
   },
   [CommandType.ASSIGN_TODO]: {
     type: CommandType.ASSIGN_TODO,
-    syntax: '/assign "todo text/id" "user email" @project',
+    syntax: '/assign "[todo text/id]" "[user email]" @project',
     simpleSyntax: '/assign',
     description: 'Assign a todo to a team member',
     examples: [
-      '/assign "fix bug" "user@example.com" @myproject',
-      '/assign 1 "john@example.com"'
+      '/assign "[todo text/id]" "[user email]"',
+      '/assign [#] "[user email]"'
     ],
     requiresProject: true,
     requiresArgs: true
   },
   [CommandType.PUSH_TODO]: {
     type: CommandType.PUSH_TODO,
-    syntax: '/push "todo text/id" @project',
+    syntax: '/push "[todo text/id]" @project',
     simpleSyntax: '/push',
     description: 'Push a completed todo to devlog (converts todo to dev log entry)',
     examples: [
-      '/push "fix authentication bug" @myproject',
-      '/push 1',
-      '/todo2devlog "implement user dashboard"'
+      '/push "[todo text/id]"',
+      '/push [#]'
     ],
     requiresProject: true,
     requiresArgs: true
@@ -859,26 +910,24 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
   // Subtask commands
   [CommandType.ADD_SUBTASK]: {
     type: CommandType.ADD_SUBTASK,
-    syntax: '/add subtask "parent todo" "subtask text" @project',
+    syntax: '/add subtask "[parent todo]" "[subtask text]" @project',
     simpleSyntax: '/add subtask',
     description: 'Add a subtask to an existing todo',
     examples: [
-      '/add subtask "fix bug" "add tests" @myproject',
-      '/subtask "implement feature" "write documentation"',
-      '/add-subtask 1 "review code"'
+      '/add subtask "[parent todo]" "[subtask text]"',
+      '/add subtask [#] "[subtask text]"'
     ],
     requiresProject: true,
     requiresArgs: false
   },
   [CommandType.VIEW_SUBTASKS]: {
     type: CommandType.VIEW_SUBTASKS,
-    syntax: '/view subtasks "todo text/id" @project',
+    syntax: '/view subtasks "[todo text/id]" @project',
     simpleSyntax: '/view subtasks',
     description: 'View all subtasks for a todo',
     examples: [
-      '/view subtasks "fix bug" @myproject',
-      '/subtasks implement feature',
-      '/list subtasks 1'
+      '/view subtasks "[todo text/id]"',
+      '/view subtasks [#]'
     ],
     requiresProject: true,
     requiresArgs: true
@@ -887,65 +936,60 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
   // Edit commands
   [CommandType.EDIT_TODO]: {
     type: CommandType.EDIT_TODO,
-    syntax: '/edit todo "todo id" --title= --priority= --due= --status= @project',
+    syntax: '/edit todo "[todo id]" --title= --priority= --due= --status= @project',
     simpleSyntax: '/edit todo',
     description: 'Open interactive wizard to edit an existing todo, or use flags for direct updates',
     examples: [
-      '/edit todo 1',
-      '/edit todo 1 --title="Updated title" --priority=high',
-      '/edit todo 1 --due="12-25-2025 8:00PM"'
+      '/edit todo "[todo id]"',
+      '/edit todo [#]'
     ],
     requiresProject: true,
     requiresArgs: false
   },
   [CommandType.EDIT_SUBTASK]: {
     type: CommandType.EDIT_SUBTASK,
-    syntax: '/edit subtask "subtask id" --title= --priority= --due= --status= @project',
+    syntax: '/edit subtask "[parent_index]" "[subtask_index]" --title= --priority= --due= --status= @project',
     simpleSyntax: '/edit subtask',
-    description: 'Open interactive wizard to edit an existing subtask, or use flags for direct updates',
+    description: 'Open interactive wizard to edit a subtask, or use flags for direct updates (per-parent indexing)',
     examples: [
-      '/edit subtask 1',
-      '/edit subtask 1 --title="Updated subtask title" --priority=high',
-      '/edit subtask 1 --status=in_progress'
+      '/edit subtask "[parent #]" "[subtask #]"',
+      '/edit subtask [#] [#]'
     ],
     requiresProject: true,
     requiresArgs: false
   },
   [CommandType.EDIT_NOTE]: {
     type: CommandType.EDIT_NOTE,
-    syntax: '/edit note "note id" @project',
+    syntax: '/edit note "[note id]" @project',
     simpleSyntax: '/edit note',
     description: 'Open interactive wizard to edit an existing note, or use --field and --content for direct updates',
     examples: [
-      '/edit note 1 @myproject',
-      '/edit-note 1',
-      '/edit note 1 --field=content --content="Updated content" @myproject'
+      '/edit note "[note id]"',
+      '/edit note [#]'
     ],
     requiresProject: true,
     requiresArgs: false
   },
   [CommandType.EDIT_DEVLOG]: {
     type: CommandType.EDIT_DEVLOG,
-    syntax: '/edit devlog "entry id" @project',
+    syntax: '/edit devlog "[entry id]" @project',
     simpleSyntax: '/edit devlog',
     description: 'Open interactive wizard to edit an existing dev log entry, or use --field and --content for direct updates',
     examples: [
-      '/edit devlog 1 @myproject',
-      '/edit-devlog 2',
-      '/edit devlog 1 --field=content --content="Updated entry" @myproject'
+      '/edit devlog "[entry id]"',
+      '/edit devlog [#]'
     ],
     requiresProject: true,
     requiresArgs: false
   },
   [CommandType.EDIT_COMPONENT]: {
     type: CommandType.EDIT_COMPONENT,
-    syntax: '/edit component "component id" @project',
+    syntax: '/edit component "[component id]" @project',
     simpleSyntax: '/edit component',
     description: 'Open interactive wizard to edit an existing component, or use --field and --content for direct updates',
     examples: [
-      '/edit component 1 @myproject',
-      '/edit-component 1',
-      '/edit component 1 --field=title --content="Updated title" @myproject'
+      '/edit component "[component id]"',
+      '/edit component [#]'
     ],
     requiresProject: true,
     requiresArgs: false
@@ -954,65 +998,60 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
   // Delete commands
   [CommandType.DELETE_TODO]: {
     type: CommandType.DELETE_TODO,
-    syntax: '/delete todo "todo text/id" @project',
+    syntax: '/delete todo "[todo text/id]" @project',
     simpleSyntax: '/delete todo',
     description: 'Delete a todo (with confirmation)',
     examples: [
-      '/delete todo "fix bug" @myproject',
-      '/delete-todo 1',
-      '/rm todo "implement feature"'
+      '/delete todo "[todo text/id]"',
+      '/delete todo [#]'
     ],
     requiresProject: true,
     requiresArgs: false
   },
   [CommandType.DELETE_NOTE]: {
     type: CommandType.DELETE_NOTE,
-    syntax: '/delete note "note id/title" @project',
+    syntax: '/delete note "[note id/title]" @project',
     simpleSyntax: '/delete note',
     description: 'Delete a note (with confirmation)',
     examples: [
-      '/delete note "meeting notes" @myproject',
-      '/delete-note 1',
-      '/rm note "old note"'
+      '/delete note "[note id/title]"',
+      '/delete note [#]'
     ],
     requiresProject: true,
     requiresArgs: false
   },
   [CommandType.DELETE_DEVLOG]: {
     type: CommandType.DELETE_DEVLOG,
-    syntax: '/delete devlog "entry id" @project',
+    syntax: '/delete devlog "[entry id]" @project',
     simpleSyntax: '/delete devlog',
     description: 'Delete a dev log entry (with confirmation)',
     examples: [
-      '/delete devlog 1 @myproject',
-      '/delete-devlog 2',
-      '/rm devlog "old entry"'
+      '/delete devlog "[entry id]"',
+      '/delete devlog [#]'
     ],
     requiresProject: true,
     requiresArgs: false
   },
   [CommandType.DELETE_COMPONENT]: {
     type: CommandType.DELETE_COMPONENT,
-    syntax: '/delete component "component id/title" @project',
+    syntax: '/delete component "[component id/title]" @project',
     simpleSyntax: '/delete component',
     description: 'Delete a component (with confirmation)',
     examples: [
-      '/delete component "old Login" @myproject',
-      '/delete-component 1',
-      '/rm component "deprecated"'
+      '/delete component "[component id/title]"',
+      '/delete component [#]'
     ],
     requiresProject: true,
     requiresArgs: false
   },
   [CommandType.DELETE_SUBTASK]: {
     type: CommandType.DELETE_SUBTASK,
-    syntax: '/delete subtask "subtask text/id" @project',
+    syntax: '/delete subtask "[parent_index]" "[subtask_index]" @project',
     simpleSyntax: '/delete subtask',
-    description: 'Delete a subtask (with confirmation)',
+    description: 'Delete a subtask (with confirmation, per-parent indexing)',
     examples: [
-      '/delete subtask "old subtask" @myproject',
-      '/delete-subtask 1',
-      '/rm subtask "completed task"'
+      '/delete subtask "[parent #]" "[subtask #]"',
+      '/delete subtask [#] [#]'
     ],
     requiresProject: true,
     requiresArgs: false
@@ -1021,52 +1060,48 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
   // Relationship commands
   [CommandType.ADD_RELATIONSHIP]: {
     type: CommandType.ADD_RELATIONSHIP,
-    syntax: '/add relationship "component id/title" "target id/title" "type" @project',
+    syntax: '/add relationship "[component id/title]" "[target id/title]" "[type]" @project',
     simpleSyntax: '/add relationship',
     description: 'Add a relationship between two components',
     examples: [
-      '/add relationship "Login" "Auth Service" uses @myproject',
-      '/add relationship 1 2 implements',
-      '/relationship add "Header" "Footer" contains'
+      '/add relationship "[component id/title]" "[target id/title]" "[type]"',
+      '/add relationship [#] [#] "[type]"'
     ],
     requiresProject: true,
     requiresArgs: false
   },
   [CommandType.VIEW_RELATIONSHIPS]: {
     type: CommandType.VIEW_RELATIONSHIPS,
-    syntax: '/view relationships "component id/title" @project',
+    syntax: '/view relationships "[component id/title]" @project',
     simpleSyntax: '/view relationships',
     description: 'View all relationships for a component',
     examples: [
-      '/view relationships "Login" @myproject',
-      '/relationships 1',
-      '/list relationships "Auth Service"'
+      '/view relationships "[component id/title]"',
+      '/view relationships [#]'
     ],
     requiresProject: true,
     requiresArgs: false
   },
   [CommandType.EDIT_RELATIONSHIP]: {
     type: CommandType.EDIT_RELATIONSHIP,
-    syntax: '/edit relationship "component id/title" "relationship id" "new type" @project',
+    syntax: '/edit relationship "[component id/title]" "[relationship id]" "[new type]" @project',
     simpleSyntax: '/edit relationship',
     description: 'Edit an existing relationship',
     examples: [
-      '/edit relationship "Login" 1 depends_on @myproject',
-      '/edit-relationship 1 abc123 implements',
-      '/edit relationship "Header" 2 contains'
+      '/edit relationship "[component id/title]" "[relationship id]" "[new type]"',
+      '/edit relationship [#] "[relationship id]" "[new type]"'
     ],
     requiresProject: true,
     requiresArgs: false
   },
   [CommandType.DELETE_RELATIONSHIP]: {
     type: CommandType.DELETE_RELATIONSHIP,
-    syntax: '/delete relationship "component id/title" "relationship id" @project',
+    syntax: '/delete relationship "[component id/title]" "[relationship id]" @project',
     simpleSyntax: '/delete relationship',
     description: 'Delete a relationship (with confirmation)',
     examples: [
-      '/delete relationship "Login" 1 @myproject',
-      '/rm relationship 1 abc123',
-      '/remove-relationship "Header" 2'
+      '/delete relationship "[component id/title]" "[relationship id]"',
+      '/delete relationship [#] "[relationship id]"'
     ],
     requiresProject: true,
     requiresArgs: false
@@ -1075,13 +1110,11 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
   // Navigation & Workflow
   [CommandType.GOTO]: {
     type: CommandType.GOTO,
-    syntax: '/goto "page" @project',
+    syntax: '/goto "[page]" @project',
     simpleSyntax: '/goto',
     description: 'Navigate to a specific page in the app',
     examples: [
-      '/goto notes',
-      '/goto stack',
-      '/goto deployment'
+      '/goto "[page]"'
     ],
     requiresProject: false,
     requiresArgs: true
@@ -1093,7 +1126,7 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
     description: 'View today\'s tasks and activity',
     examples: [
       '/today',
-      '/today @myproject'
+      '/today @project'
     ],
     requiresProject: false,
     requiresArgs: false
@@ -1105,7 +1138,7 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
     description: 'View weekly summary and upcoming tasks',
     examples: [
       '/week',
-      '/week @myproject',
+      '/week @project',
       '/weekly'
     ],
     requiresProject: false,
@@ -1118,8 +1151,8 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
     description: 'Generate standup report (what I did yesterday, working on today, stuck on)',
     examples: [
       '/standup',
-      '/standup @myproject',
-      '/daily @myproject'
+      '/standup @project',
+      '/daily @project'
     ],
     requiresProject: false,
     requiresArgs: false
@@ -1131,7 +1164,7 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
     description: 'Quick project overview and statistics',
     examples: [
       '/info',
-      '/info @myproject',
+      '/info @project',
       '/overview'
     ],
     requiresProject: false,
@@ -1140,13 +1173,12 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
 
   [CommandType.HELP]: {
     type: CommandType.HELP,
-    syntax: '/help "command"',
+    syntax: '/help "[command]"',
     simpleSyntax: '/help',
     description: 'Show help for all commands or a specific command',
     examples: [
       '/help',
-      '/help "add todo"',
-      '/?'
+      '/help "[command]"'
     ],
     requiresProject: false,
     requiresArgs: false
@@ -1429,6 +1461,25 @@ export class CommandParser {
     return Object.values(COMMAND_METADATA).filter(
       cmd => cmd.type !== CommandType.UNKNOWN
     );
+  }
+
+  /**
+   * Get all command aliases mapped to their command types
+   * @returns Map of alias to command type
+   */
+  static getAllAliases(): Record<string, CommandType> {
+    return { ...COMMAND_ALIASES };
+  }
+
+  /**
+   * Get aliases for a specific command type
+   * @param type - Command type
+   * @returns Array of aliases for the command type
+   */
+  static getAliasesForType(type: CommandType): string[] {
+    return Object.entries(COMMAND_ALIASES)
+      .filter(([_, cmdType]) => cmdType === type)
+      .map(([alias, _]) => alias);
   }
 
   /**

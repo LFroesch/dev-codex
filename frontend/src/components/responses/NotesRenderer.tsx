@@ -13,16 +13,18 @@ interface NotesRendererProps {
   notes: Note[];
   projectId?: string;
   onNavigate: (path: string) => void;
+  onCommandClick?: (command: string) => void;
 }
 
-export const NotesRenderer: React.FC<NotesRendererProps> = ({ notes, projectId, onNavigate }) => {
+export const NotesRenderer: React.FC<NotesRendererProps> = ({ notes, projectId, onNavigate, onCommandClick }) => {
   return (
     <div className="mt-3 space-y-2">
       <div className="space-y-2">
         {notes.map((note, index) => (
-          <div
+          <button
             key={index}
-            className="p-3 bg-base-200 rounded-lg hover:bg-base-300/50 transition-colors border-thick"
+            onClick={() => onCommandClick?.(`/edit note ${index + 1}`)}
+            className="w-full text-left p-3 bg-base-200 rounded-lg hover:bg-primary/10 hover:border-primary/50 transition-colors border-thick cursor-pointer"
           >
             <div className="flex items-start gap-2 mb-1">
               <span className="text-xs font-mono font-semibold text-secondary bg-secondary/10 px-1.5 py-0.5 rounded border border-secondary/30 flex-shrink-0">
@@ -40,7 +42,7 @@ export const NotesRenderer: React.FC<NotesRendererProps> = ({ notes, projectId, 
             <div className="text-xs text-base-content/60 mt-2 ml-8">
               {new Date(note.createdAt).toLocaleString()}
             </div>
-          </div>
+          </button>
         ))}
       </div>
       <div className="text-xs text-base-content/60 mt-3 p-2 bg-base-200/50 rounded border-thick">

@@ -77,9 +77,9 @@ export class UtilityHandlers extends BaseCommandHandler {
         syntax: '@ Project Mentions',
         description: 'Reference projects using @projectname. Works with spaces in project names.',
         examples: [
-          '/add todo fix bug @myproject',
+          '/add todo fix bug @project',
           '/swap @My Cool Project',
-          '/view todos @frontend'
+          '/view todos @project'
         ]
       },
       {
@@ -93,12 +93,101 @@ export class UtilityHandlers extends BaseCommandHandler {
         ]
       },
       {
+        type: 'syntax_tip',
+        syntax: '🧙 Interactive Wizards',
+        description: 'Many commands support interactive wizards. Trigger wizards by omitting arguments or IDs.',
+        examples: [
+          '/wizard new - Interactive project creation',
+          '/add todo - Opens wizard to create todo with form fields',
+          '/edit todo 1 - Opens wizard to edit todo #1 with subtask management',
+          '/edit subtask 1 2 - Opens wizard to edit subtask',
+          '/add note - Opens wizard for adding notes',
+          '/delete todo 1 - Opens confirmation wizard before deleting'
+        ]
+      },
+      {
         type: 'command',
         syntax: COMMAND_METADATA[CommandType.HELP].syntax,
         description: COMMAND_METADATA[CommandType.HELP].description,
         examples: COMMAND_METADATA[CommandType.HELP].examples
       }
     ];
+
+    // Define sort order for commands within each group
+    const sortOrder: Record<string, number> = {
+      // Tasks & Todos - CRUD for todos, then actions, then CRUD for subtasks
+      'add_todo': 1,
+      'view_todos': 2,
+      'edit_todo': 3,
+      'delete_todo': 4,
+      'complete_todo': 5,
+      'assign_todo': 6,
+      'add_subtask': 7,
+      'view_subtasks': 8,
+      'edit_subtask': 9,
+      'delete_subtask': 10,
+
+      // Notes & Dev Log - CRUD for notes, then CRUD for devlog
+      'add_note': 1,
+      'view_notes': 2,
+      'edit_note': 3,
+      'delete_note': 4,
+      'add_devlog': 5,
+      'view_devlog': 6,
+      'edit_devlog': 7,
+      'delete_devlog': 8,
+
+      // Features & Components - CRUD for components, then CRUD for relationships
+      'add_component': 1,
+      'view_components': 2,
+      'edit_component': 3,
+      'delete_component': 4,
+      'add_relationship': 5,
+      'view_relationships': 6,
+      'edit_relationship': 7,
+      'delete_relationship': 8,
+
+      // Tech Stack - add, view, remove
+      'add_stack': 1,
+      'view_stack': 2,
+      'remove_stack': 3,
+
+      // Project Insights - info first, time-based views, then summary/search
+      'info': 1,
+      'today': 2,
+      'week': 3,
+      'standup': 4,
+      'summary': 5,
+      'search': 6,
+
+      // Team & Deployment - team first, then deployment, then public
+      'view_team': 1,
+      'invite_member': 2,
+      'remove_member': 3,
+      'view_deployment': 4,
+      'set_deployment': 5,
+      'view_public': 6,
+      'set_public': 7,
+
+      // Project Management - wizard, swap, view settings, update settings, tags, export
+      'wizard_new': 1,
+      'swap_project': 2,
+      'view_settings': 3,
+      'set_name': 4,
+      'set_description': 5,
+      'add_tag': 6,
+      'remove_tag': 7,
+      'export': 8,
+
+      // System & Preferences - themes, notifications, navigation
+      'view_themes': 1,
+      'set_theme': 2,
+      'view_notifications': 3,
+      'clear_notifications': 4,
+      'view_news': 5,
+      'goto': 6,
+      'llm_context': 7
+    };
 
     commands.forEach(cmd => {
       const cmdType = cmd.type.toString();
@@ -214,12 +303,23 @@ export class UtilityHandlers extends BaseCommandHandler {
       }
     });
 
+    // Sort commands within each group based on the defined order
+    Object.keys(grouped).forEach(groupKey => {
+      grouped[groupKey].sort((a, b) => {
+        const aType = a.type?.toString() || '';
+        const bType = b.type?.toString() || '';
+        const aOrder = sortOrder[aType] || 999;
+        const bOrder = sortOrder[bType] || 999;
+        return aOrder - bOrder;
+      });
+    });
+
     return {
       type: ResponseType.INFO,
       message: '📚 Available Commands - 50+ commands to manage your projects',
       data: {
         grouped,
-        tip: 'Use /help "command" for detailed help on a specific command. Chain commands with && for batch execution.'
+        tip: 'Use /help "command" for detailed help. Most add/edit commands support interactive wizards - just omit the arguments to trigger the wizard UI!'
       }
     };
   }
@@ -791,6 +891,9 @@ export class UtilityHandlers extends BaseCommandHandler {
             summary: post.summary,
             date: post.publishedAt
           }))
+        },
+        metadata: {
+          action: 'view_news'
         }
       };
     } catch (error) {
@@ -1064,6 +1167,7 @@ A command-line interface for managing projects, tasks, notes, and documentation.
 - **Project References**: @projectname or @My Project Name
 - **Flags**: --key="value" or --key for boolean flags
 - **Chaining**: Use && to chain commands (e.g., /add todo fix bug && /view todos)
+- **Wizards**: Many commands support interactive wizards - omit arguments to trigger step-by-step forms
 
 ## Command Categories (9 Groups)
 
@@ -1080,8 +1184,8 @@ A command-line interface for managing projects, tasks, notes, and documentation.
 - \`/assign "id/text" "email"\` - Assign to team member
 - \`/add subtask "parent" "text"\` - Add subtask
 - \`/view subtasks "id"\` - View subtasks
-- \`/edit subtask "id"\` - Edit subtask (wizard or use --title= --content= --priority= --status= --due=)
-- \`/delete subtask "id"\` - Delete subtask
+- \`/edit subtask "parent_idx" "subtask_idx"\` - Edit subtask (per-parent indexing, wizard or use --title= --content= --priority= --status= --due=)
+- \`/delete subtask "parent_idx" "subtask_idx"\` - Delete subtask (per-parent indexing)
 
 ### 3. 📝 Notes & Dev Log
 - \`/add note --title="text" --content="text"\` - Create note
@@ -1142,6 +1246,22 @@ A command-line interface for managing projects, tasks, notes, and documentation.
 - \`/goto "page"\` - Navigate to page
 - \`/llm\` - Show this guide
 
+## Interactive Wizards
+
+Most add/edit/delete commands support **interactive wizards** - step-by-step forms that guide you through the process:
+
+**Trigger wizards by omitting arguments:**
+- \`/wizard new\` - Interactive project creation wizard
+- \`/add todo\` - Opens wizard with form fields for title, content, priority, status, due date
+- \`/add note\` - Wizard for creating notes
+- \`/edit todo 1\` - Opens wizard to edit todo #1 with subtask management
+- \`/edit subtask 1 2\` - Wizard to edit 2nd subtask of parent #1
+- \`/delete todo 1\` - Opens confirmation wizard before deletion
+
+**Or use direct mode with flags for instant execution:**
+- \`/add todo --title="fix bug" --priority=high\` - Creates todo without wizard
+- \`/edit todo 1 --title="new title"\` - Direct edit without wizard
+
 ## Key Usage Patterns
 
 **Create todo with wizard:**
@@ -1149,7 +1269,7 @@ A command-line interface for managing projects, tasks, notes, and documentation.
 /add todo
 \`\`\`
 
-**Create todo with flags:**
+**Create todo with flags (skip wizard):**
 \`\`\`
 /add todo --title="fix login bug" --priority=high --content="Fix validation" --due="12-25-2025 8:00PM"
 \`\`\`
@@ -1161,20 +1281,20 @@ A command-line interface for managing projects, tasks, notes, and documentation.
 
 **Project references:**
 \`\`\`
-/add todo --title="fix bug" @frontend
+/add todo --title="fix bug" @project
 /swap @My Cool Project
 \`\`\`
 
 **Edit interactively:**
 \`\`\`
 /edit todo 1              # Opens wizard with subtask management
-/edit subtask 5           # Opens subtask edit wizard
+/edit subtask 1 2         # Opens edit wizard for 2nd subtask of parent todo #1
 \`\`\`
 
 **Edit directly:**
 \`\`\`
 /edit todo 1 --title="new title" --priority=high
-/edit subtask 5 --title="Updated subtask" --status=in_progress
+/edit subtask 1 2 --title="Updated subtask" --status=in_progress
 \`\`\`
 
 **Search and summarize:**
@@ -1215,13 +1335,15 @@ A command-line interface for managing projects, tasks, notes, and documentation.
 1. Use /help to see all available commands organized by category
 2. Chain related commands with && for efficiency
 3. Use @project syntax for project references (works with spaces)
-4. Most commands support both wizard mode (no flags) and direct mode (with flags)
-5. Use /summary prompt to generate AI-friendly project context
-6. Use /search to find items across project before editing/deleting
-7. /info, /today, /week, /standup provide different views of project status
-8. Batch operations stop on first error
-9. Use quotes for multi-word arguments
-10. Reference items by ID or text content (system will fuzzy match)
+4. **Most commands support BOTH wizard mode (no args) and direct mode (with flags)**
+5. Wizards are triggered by omitting arguments - great for interactive use
+6. Use flags for automation/scripting - skips wizards and executes directly
+7. Use /summary prompt to generate AI-friendly project context
+8. Use /search to find items across project before editing/deleting
+9. /info, /today, /week, /standup provide different views of project status
+10. Batch operations stop on first error
+11. Use quotes for multi-word arguments
+12. Reference items by ID or text content (system will fuzzy match)
 
 ## Error Handling
 

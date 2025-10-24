@@ -17,6 +17,7 @@ interface TerminalEntry {
   command: string;
   response: CommandResponseType;
   timestamp: Date;
+  fromStorage?: boolean;
 }
 
 // Storage configuration
@@ -60,10 +61,11 @@ const loadEntriesFromStorage = (): TerminalEntry[] => {
 
     const parsed = JSON.parse(stored);
 
-    // Convert ISO strings back to Date objects
+    // Convert ISO strings back to Date objects and mark as loaded from storage
     return parsed.map((entry: any) => ({
       ...entry,
-      timestamp: new Date(entry.timestamp)
+      timestamp: new Date(entry.timestamp),
+      fromStorage: true
     }));
   } catch (error) {
     console.warn('Failed to load terminal entries from localStorage:', error);
@@ -85,17 +87,8 @@ const TerminalPage: React.FC = () => {
   useEffect(() => {
     const loadedEntries = loadEntriesFromStorage();
 
-    // Filter out in-progress wizard entries, but keep completed ones
-    const visibleEntries = loadedEntries.filter(entry => {
-      // If it's a wizard entry, only show it if it's been completed
-      if (entry.response?.data?.wizardType) {
-        return entry.response.data.wizardCompleted === true;
-      }
-      return true;
-    });
-
-    if (visibleEntries.length > 0) {
-      setEntries(visibleEntries);
+    if (loadedEntries.length > 0) {
+      setEntries(loadedEntries);
       setShowWelcome(false);
     } else {
       setEntries([]);
@@ -224,6 +217,30 @@ const TerminalPage: React.FC = () => {
       saveEntriesToStorage(updated);
       return updated;
     });
+  };
+
+  const handleSelectorTransition = async (entryId: string, itemType: string, itemId: string) => {
+    // Fetch the edit wizard data for the selected item
+    try {
+      const response = await terminalAPI.executeCommand(`/edit ${itemType} ${itemId}`, currentProjectId);
+
+      setEntries(prev => {
+        const updated = prev.map(entry => {
+          if (entry.id === entryId) {
+            return {
+              ...entry,
+              command: `/edit ${itemType} ${itemId}`,
+              response
+            };
+          }
+          return entry;
+        });
+        saveEntriesToStorage(updated);
+        return updated;
+      });
+    } catch (error) {
+      console.error('Failed to transition to edit wizard:', error);
+    }
   };
 
   const handleDirectThemeChange = async (themeName: string) => {
@@ -631,6 +648,8 @@ const TerminalPage: React.FC = () => {
             onCommandClick={handleCommandClick}
             onDirectThemeChange={handleDirectThemeChange}
             onWizardComplete={handleWizardComplete}
+            onSelectorTransition={handleSelectorTransition}
+            fromStorage={entry.fromStorage}
           />
         ))}
 

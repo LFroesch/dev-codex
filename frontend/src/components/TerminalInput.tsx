@@ -105,9 +105,16 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
     if (pendingCommand) {
       setInput(pendingCommand);
 
-      // Position cursor at first = sign if template has flags, otherwise at end
+      // Position cursor intelligently based on template type
       let cursorPos = pendingCommand.length;
-      if (pendingCommand.includes('=')) {
+
+      // Priority 1: Position inside first quote if present (for quoted arguments)
+      if (pendingCommand.includes('"')) {
+        const firstQuotePos = pendingCommand.indexOf('"');
+        cursorPos = firstQuotePos + 1; // Position right after first quote (inside quotes)
+      }
+      // Priority 2: Position after first = sign if template has flags
+      else if (pendingCommand.includes('=')) {
         const firstEqualPos = pendingCommand.indexOf('=');
         cursorPos = firstEqualPos + 1; // Position right after first =
       }
@@ -153,10 +160,14 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
     // Remove @project from syntax if present
     const cleanedSyntax = syntax.replace(/@project\s*$/, '').trim();
 
+    // Remove content inside [...] brackets (placeholder text)
+    // Example: "/add subtask "[parent todo]" "[subtask text]"" → "/add subtask "" ""
+    const withoutBrackets = cleanedSyntax.replace(/\[([^\]]*)\]/g, '');
+
     // Special handling for different command patterns
-    if (cleanedSyntax.includes('--')) {
+    if (withoutBrackets.includes('--')) {
       // Has flags - extract them and create template
-      const parts = cleanedSyntax.split(/\s+--/);
+      const parts = withoutBrackets.split(/\s+--/);
       const baseCommand = parts[0].trim();
 
       // Extract flag names from patterns like url=[url], role=[editor/viewer], or just flagname
@@ -169,8 +180,8 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
     }
 
     // No flags - return base command with space, removing anything in brackets
-    const baseMatch = cleanedSyntax.match(/^(\/[^\[]+)/);
-    const cleanBase = baseMatch ? baseMatch[1].trim() : cleanedSyntax.trim();
+    const baseMatch = withoutBrackets.match(/^(\/[^\[]+)/);
+    const cleanBase = baseMatch ? baseMatch[1].trim() : withoutBrackets.trim();
     return `${cleanBase} `;
   };
 
@@ -194,13 +205,34 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
           const cmdValue = cmd.value.toLowerCase();
           const typedCmd = commandText.toLowerCase();
 
-          // Match anything that contains the typed text
-          return cmdValue.includes(typedCmd);
+          // Match if command value contains the typed text
+          if (cmdValue.includes(typedCmd)) {
+            return true;
+          }
+
+          // Also match if any alias starts with the typed text
+          if (cmd.aliases && cmd.aliases.length > 0) {
+            return cmd.aliases.some(alias =>
+              alias.toLowerCase().startsWith(typedCmd)
+            );
+          }
+
+          return false;
         })
         .sort((a, b) => {
           const aValue = a.value.toLowerCase();
           const bValue = b.value.toLowerCase();
           const typedCmd = commandText.toLowerCase();
+
+          // Check if aliases match
+          const aAliasMatch = a.aliases?.some(alias => alias.toLowerCase().startsWith(typedCmd));
+          const bAliasMatch = b.aliases?.some(alias => alias.toLowerCase().startsWith(typedCmd));
+
+          // Priority 0: Alias exact match (e.g., "/create" when typing "create")
+          const aAliasExact = a.aliases?.some(alias => alias.toLowerCase() === typedCmd);
+          const bAliasExact = b.aliases?.some(alias => alias.toLowerCase() === typedCmd);
+          if (aAliasExact && !bAliasExact) return -1;
+          if (!aAliasExact && bAliasExact) return 1;
 
           // Priority 1: Exact start match with space (e.g., "/set deployment" when typing "set")
           const aStartsWithSpace = aValue.startsWith(`/${typedCmd} `);
@@ -214,27 +246,40 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
           if (aExact && !bExact) return -1;
           if (!aExact && bExact) return 1;
 
-          // Priority 3: Starts with typed text (e.g., "/settings" when typing "set")
+          // Priority 3: Alias match (e.g., "create todo" when typing "create")
+          if (aAliasMatch && !bAliasMatch) return -1;
+          if (!aAliasMatch && bAliasMatch) return 1;
+
+          // Priority 4: Starts with typed text (e.g., "/settings" when typing "set")
           const aStarts = aValue.startsWith(`/${typedCmd}`);
           const bStarts = bValue.startsWith(`/${typedCmd}`);
           if (aStarts && !bStarts) return -1;
           if (!aStarts && bStarts) return 1;
 
-          // Priority 4: Contains typed text (e.g., "/wizard setup" when typing "set")
+          // Priority 5: Contains typed text (e.g., "/wizard setup" when typing "set")
           return 0;
         });
 
       if (matchingCommands.length > 0 && commandText.length > 0) {
         setAutocompleteItems(
-          matchingCommands.map(cmd => ({
-            value: cmd.value,
-            label: cmd.label,
-            description: cmd.description,
-            category: cmd.category,
-            type: 'command' as const,
-            template: generateTemplate(cmd.label),
-            syntax: cmd.label
-          }))
+          matchingCommands.map(cmd => {
+            // Find matching alias to show in the UI
+            const matchingAlias = cmd.aliases?.find(alias =>
+              alias.toLowerCase().startsWith(commandText.toLowerCase())
+            );
+
+            return {
+              value: cmd.value,
+              label: cmd.label,
+              description: matchingAlias
+                ? `${cmd.description} (alias: /${matchingAlias})`
+                : cmd.description,
+              category: cmd.category,
+              type: 'command' as const,
+              template: generateTemplate(cmd.label),
+              syntax: cmd.label
+            };
+          })
         );
         setShowAutocomplete(true);
         setSelectedIndex(0);
@@ -373,9 +418,16 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
 
       setInput(newInput);
 
-      // Position cursor at first = sign if template has flags, otherwise at end of command
+      // Position cursor intelligently based on template type
       let cursorPos = baseOffset + commandText.length;
-      if (item.template && commandText.includes('=')) {
+
+      // Priority 1: Position inside first quote if present (for quoted arguments)
+      if (commandText.includes('"')) {
+        const firstQuotePos = commandText.indexOf('"');
+        cursorPos = baseOffset + firstQuotePos + 1; // Position right after first quote (inside quotes)
+      }
+      // Priority 2: Position after first = sign if template has flags
+      else if (commandText.includes('=')) {
         const firstEqualPos = commandText.indexOf('=');
         cursorPos = baseOffset + firstEqualPos + 1; // Position right after first =
       }

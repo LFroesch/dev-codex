@@ -7,6 +7,8 @@ import { authAPI, terminalAPI } from '../api';
 import { hexToOklch, oklchToCssValue, generateFocusVariant, generateContrastingTextColor } from '../utils/colorUtils';
 import { toast } from '../services/toast';
 import EditWizard from './EditWizard';
+import SelectorWizard from './SelectorWizard';
+import ConfirmationWizard from './ConfirmationWizard';
 
 interface CommandResponseProps {
   entryId: string;
@@ -18,6 +20,8 @@ interface CommandResponseProps {
   onCommandClick?: (command: string) => void;
   onDirectThemeChange?: (themeName: string) => Promise<void>;
   onWizardComplete?: (entryId: string, wizardData: Record<string, any>) => void;
+  onSelectorTransition?: (entryId: string, itemType: string, itemId: string) => Promise<void>;
+  fromStorage?: boolean;
 }
 
 const CommandResponse: React.FC<CommandResponseProps> = ({
@@ -29,7 +33,9 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
   currentProjectId,
   onCommandClick,
   onDirectThemeChange,
-  onWizardComplete
+  onWizardComplete,
+  onSelectorTransition,
+  fromStorage
 }) => {
   const navigate = useNavigate();
 
@@ -40,7 +46,11 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
 
     // Remove @project from syntax if present
     syntax = syntax.replace(/@[\w-]+/g, '').trim();
-    
+
+    // Remove content inside [...] brackets (placeholder text)
+    // Example: "/add subtask "[parent todo]" "[subtask text]"" → "/add subtask "" ""
+    syntax = syntax.replace(/\[([^\]]*)\]/g, '');
+
     // Special handling for different command patterns
     if (syntax.includes('--')) {
       // Has flags - extract them and create template
@@ -56,9 +66,101 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
       return `${baseCommand} ${flags.join(' ')}`;
     }
 
-    // No flags - return base command with space
+    // No flags - return base command with space (or with empty quotes if present)
     const baseMatch = syntax.match(/^(\/[^\[]+)/);
     return baseMatch ? `${baseMatch[1].trim()} ` : `${syntax} `;
+  };
+
+  // Render readonly wizard summary for entries loaded from storage
+  const renderArchivedWizard = () => {
+    const wizardType = response.data.wizardType;
+    const isCompleted = response.data.wizardCompleted;
+
+    // Get a friendly name for the wizard type
+    const getWizardTypeName = () => {
+      if (wizardType === 'new_project') return 'New Project';
+      if (wizardType?.includes('add_')) return wizardType.replace('add_', 'Add ').replace(/_/g, ' ');
+      if (wizardType?.includes('edit_')) return wizardType.replace('edit_', 'Edit ').replace(/_/g, ' ');
+      if (wizardType?.includes('delete_')) return wizardType.replace('delete_', 'Delete ').replace(/_/g, ' ');
+      if (wizardType?.includes('_selector')) return wizardType.replace('_selector', ' Selector').replace(/_/g, ' ');
+      return wizardType?.replace(/_/g, ' ') || 'Wizard';
+    };
+
+    // Get navigation path based on wizard type
+    const getNavigationPath = () => {
+      if (wizardType?.includes('todo')) return '/todos';
+      if (wizardType?.includes('note')) return '/notes';
+      if (wizardType?.includes('devlog')) return '/devlog';
+      if (wizardType?.includes('component')) return '/components';
+      if (wizardType === 'new_project') return '/projects';
+      return '/';
+    };
+
+    return (
+      <div className="mt-3 p-4 bg-base-200/50 rounded-lg border-thick">
+        <div className="flex items-start gap-3">
+          <div className="text-2xl flex-shrink-0">📜</div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-2">
+              <h3 className="text-sm font-semibold text-base-content capitalize">
+                {getWizardTypeName()}
+              </h3>
+              {isCompleted && (
+                <span className="badge badge-success border-thick p-2 badge-sm">Completed</span>
+              )}
+              {!isCompleted && (
+                <span className="badge badge-warning border-thick p-2 badge-sm">Incomplete</span>
+              )}
+            </div>
+
+            <div className="text-xs text-base-content/70 mb-3 mt-3">
+              <span className="font-mono bg-base-300 border-thick px-2 py-1 rounded">
+                {command}
+              </span>
+            </div>
+
+            {/* Show any data that was entered */}
+            {response.data.wizardData && Object.keys(response.data.wizardData).length > 0 && (
+              <div className="mb-3 p-2 bg-base-100 rounded border-thick">
+                <div className="text-xs font-semibold text-base-content/60 mb-1">Data entered:</div>
+                <div className="space-y-1">
+                  {Object.entries(response.data.wizardData).map(([key, value]: [string, any]) => {
+                    if (!value || (Array.isArray(value) && value.length === 0)) return null;
+                    const displayValue = typeof value === 'object'
+                      ? JSON.stringify(value).slice(0, 100)
+                      : String(value).slice(0, 100);
+                    return (
+                      <div key={key} className="text-xs">
+                        <span className="font-semibold capitalize">{key.replace(/_/g, ' ')}:</span>{' '}
+                        <span className="text-base-content/70">{displayValue}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Action buttons */}
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => onCommandClick?.(command)}
+                className="btn btn-xs border-thick btn-primary font-semibold"
+              >
+                🔄 Run Again
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate(getNavigationPath())}
+                className="btn btn-xs border-thick btn-outline font-semibold"
+              >
+                🔗 Go to Page
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   // Apply custom theme by updating tailwind config dynamically
@@ -239,7 +341,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
 
     // Render todos list
     if (response.data.todos && Array.isArray(response.data.todos)) {
-      return <TodosRenderer todos={response.data.todos} projectId={response.metadata?.projectId} onNavigate={handleNavigateToProject} />;
+      return <TodosRenderer todos={response.data.todos} projectId={response.metadata?.projectId} onNavigate={handleNavigateToProject} onCommandClick={onCommandClick} />;
     }
 
     // Render subtasks list
@@ -346,17 +448,17 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
 
     // Render notes list
     if (response.data.notes && Array.isArray(response.data.notes)) {
-      return <NotesRenderer notes={response.data.notes} projectId={response.metadata?.projectId} onNavigate={handleNavigateToProject} />;
+      return <NotesRenderer notes={response.data.notes} projectId={response.metadata?.projectId} onNavigate={handleNavigateToProject} onCommandClick={onCommandClick} />;
     }
 
     // Render dev log entries
     if (response.data.entries && Array.isArray(response.data.entries)) {
-      return <DevLogRenderer entries={response.data.entries} projectId={response.metadata?.projectId} onNavigate={handleNavigateToProject} />;
+      return <DevLogRenderer entries={response.data.entries} projectId={response.metadata?.projectId} onNavigate={handleNavigateToProject} onCommandClick={onCommandClick} />;
     }
 
     // Render components (features)
     if (response.data.structure || (response.data.components && Array.isArray(response.data.components))) {
-      return <ComponentRenderer structure={response.data.structure} components={response.data.components} projectId={response.metadata?.projectId} onNavigate={handleNavigateToProject} />;
+      return <ComponentRenderer structure={response.data.structure} components={response.data.components} projectId={response.metadata?.projectId} onNavigate={handleNavigateToProject} onCommandClick={onCommandClick} />;
     }
 
     // Render stack data
@@ -832,6 +934,10 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
 
     // Render wizard for interactive project creation
     if (response.data.wizardType === 'new_project' && response.data.steps) {
+      // If loaded from storage, show archived/readonly summary instead
+      if (fromStorage) {
+        return renderArchivedWizard();
+      }
       const [currentStep, setCurrentStep] = React.useState(0);
       const [wizardData, setWizardData] = React.useState<Record<string, any>>(response.data.wizardData || {});
       const [tags, setTags] = React.useState<string[]>(response.data.wizardData?.tags || []);
@@ -919,12 +1025,23 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
               <div className="p-4 bg-base-200 rounded-lg border-thick text-left mb-4">
                 <div className="text-xs font-semibold text-base-content/60 mb-2">Created:</div>
                 <div className="space-y-1">
-                  {Object.entries(wizardData).map(([key, value]) => (
-                    <div key={key} className="text-sm">
-                      <span className="font-semibold capitalize">{key}:</span>{' '}
-                      <span className="text-base-content/80">{String(value).slice(0, 50)}{String(value).length > 50 ? '...' : ''}</span>
-                    </div>
-                  ))}
+                  {Object.entries(wizardData).filter(([key]) => key !== 'tags').map(([key, value]) => {
+                    const formatValue = (val: any): string => {
+                      if (val === null || val === undefined) return 'N/A';
+                      if (typeof val === 'object') {
+                        if (Array.isArray(val)) return `[${val.length} items]`;
+                        return JSON.stringify(val, null, 2);
+                      }
+                      const str = String(val);
+                      return str.slice(0, 50) + (str.length > 50 ? '...' : '');
+                    };
+                    return (
+                      <div key={key} className="text-sm">
+                        <span className="font-semibold capitalize">{key}:</span>{' '}
+                        <span className="text-base-content/80">{formatValue(value)}</span>
+                      </div>
+                    );
+                  })}
                   {tags.length > 0 && (
                     <div className="text-sm">
                       <span className="font-semibold">Tags:</span>{' '}
@@ -1254,10 +1371,15 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
       );
     }
 
-    // Render wizard for adding todos, notes, devlog, components, stack items, subtasks, and relationships
-    if (['add_todo', 'add_note', 'add_devlog', 'add_component', 'add_stack', 'add_subtask', 'add_relationship'].includes(response.data.wizardType) && response.data.steps) {
+    // Render wizard for adding/editing todos, notes, devlog, components, stack items, subtasks, and relationships
+    if (['add_todo', 'add_note', 'add_devlog', 'add_component', 'add_stack', 'add_subtask', 'add_relationship', 'edit_relationship_type'].includes(response.data.wizardType) && response.data.steps) {
+      // If loaded from storage, show archived/readonly summary instead
+      if (fromStorage) {
+        return renderArchivedWizard();
+      }
       const [currentStep, setCurrentStep] = React.useState(0);
       const [wizardData, setWizardData] = React.useState<Record<string, any>>(response.data.wizardData || {});
+      const [responseData, setResponseData] = React.useState<Record<string, any> | null>(null);
       const [isSubmitting, setIsSubmitting] = React.useState(false);
       const [isCompleted, setIsCompleted] = React.useState(response.data.wizardCompleted || false);
 
@@ -1288,44 +1410,60 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
         try {
           const { wizardType } = response.data;
 
-          // Build command string with flags
-          const commandMap: Record<string, string> = {
-            'add_todo': 'add todo',
-            'add_note': 'add note',
-            'add_devlog': 'add devlog',
-            'add_component': 'add component',
-            'add_stack': 'add stack',
-            'add_subtask': 'add subtask',
-            'add_relationship': 'add relationship'
-          };
+          let command: string;
 
-          const baseCommand = commandMap[wizardType];
+          // Special handling for edit_relationship_type
+          if (wizardType === 'edit_relationship_type') {
+            const componentTitle = response.data.componentTitle;
+            const targetTitle = response.data.targetTitle;
+            const relationType = wizardData.relationType || steps[0]?.value;
+            const description = wizardData.description || '';
 
-          // Collect all data including defaults from steps
-          const allData: Record<string, any> = { ...wizardData };
-          steps.forEach((s: any) => {
-            if (s.value && !allData[s.id]) {
-              allData[s.id] = s.value;
+            command = `/edit relationship "${escapeForCommand(componentTitle)}" "${escapeForCommand(targetTitle)}" ${relationType}`;
+            if (description) {
+              command += ` --description="${escapeForCommand(description)}"`;
             }
-          });
+          } else {
+            // Build command string with flags for add commands
+            const commandMap: Record<string, string> = {
+              'add_todo': 'add todo',
+              'add_note': 'add note',
+              'add_devlog': 'add devlog',
+              'add_component': 'add component',
+              'add_stack': 'add stack',
+              'add_subtask': 'add subtask',
+              'add_relationship': 'add relationship'
+            };
 
-          const flags = Object.entries(allData)
-            .filter(([, value]) => value !== undefined && value !== null && String(value).trim() !== '')
-            .map(([key, value]) => `--${key}="${escapeForCommand(String(value))}"`)
-            .join(' ');
+            const baseCommand = commandMap[wizardType];
 
-          const command = `/${baseCommand} ${flags}`;
+            // Collect all data including defaults from steps
+            const allData: Record<string, any> = { ...wizardData };
+            steps.forEach((s: any) => {
+              if (s.value && !allData[s.id]) {
+                allData[s.id] = s.value;
+              }
+            });
 
-          console.log('🚀 Executing add command:', { command, projectId, wizardData, allData });
+            const flags = Object.entries(allData)
+              .filter(([, value]) => value !== undefined && value !== null && String(value).trim() !== '')
+              .map(([key, value]) => `--${key}="${escapeForCommand(String(value))}"`)
+              .join(' ');
+
+            command = `/${baseCommand} ${flags}`;
+          }
+
+          console.log('🚀 Executing command:', { command, projectId, wizardData });
 
           // Execute the command
           const result = await terminalAPI.executeCommand(command, projectId);
 
           if (result.type === 'error') {
-            toast.error(result.message || 'Failed to create item');
+            toast.error(result.message || 'Failed to execute command');
             setIsSubmitting(false);
           } else {
-            toast.success(result.message || 'Item created successfully!');
+            toast.success(result.message || 'Command executed successfully!');
+            setResponseData(result.data || {});
             setIsCompleted(true);
             // Update the entry in parent to persist completion state
             if (onWizardComplete) {
@@ -1333,8 +1471,8 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
             }
           }
         } catch (error) {
-          console.error('Failed to create item:', error);
-          toast.error(`Failed to create: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          console.error('Failed to execute command:', error);
+          toast.error(`Failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
           setIsSubmitting(false);
         }
       };
@@ -1359,6 +1497,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
             return '/notes?section=devlog';
           case 'add_component':
           case 'add_relationship':
+          case 'edit_relationship_type':
             return '/features';
           case 'add_stack':
             return '/stack';
@@ -1382,6 +1521,8 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
             return 'Component';
           case 'add_relationship':
             return 'Relationship';
+          case 'edit_relationship_type':
+            return 'Relationship';
           case 'add_stack':
             return 'Stack Item';
           default:
@@ -1395,23 +1536,36 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
           <div className="mt-3 space-y-4">
             <div className="p-6 bg-success/10 rounded-lg border-2 border-success/30 text-center">
               <div className="text-5xl mb-4">✅</div>
-              <h3 className="text-xl font-bold mb-2">Created Successfully!</h3>
+              <h3 className="text-xl font-bold mb-2">{response.data.wizardType === 'edit_relationship_type' ? 'Updated Successfully!' : 'Created Successfully!'}</h3>
               <p className="text-sm text-base-content/70 mb-4">
-                Your {getItemTypeName().toLowerCase()} has been created.
+                Your {getItemTypeName().toLowerCase()} has been {response.data.wizardType === 'edit_relationship_type' ? 'updated' : 'created'}.
               </p>
 
               {/* Show created data preview */}
-              <div className="p-4 bg-base-200 rounded-lg border-thick text-left mb-4">
-                <div className="text-xs font-semibold text-base-content/60 mb-2">Created:</div>
-                <div className="space-y-1">
-                  {Object.entries(wizardData).map(([key, value]) => (
-                    <div key={key} className="text-sm">
-                      <span className="font-semibold capitalize">{key}:</span>{' '}
-                      <span className="text-base-content/80">{String(value).slice(0, 50)}{String(value).length > 50 ? '...' : ''}</span>
-                    </div>
-                  ))}
+              {responseData && Object.keys(responseData).length > 0 && (
+                <div className="p-4 bg-base-200 rounded-lg border-thick text-left mb-4">
+                  <div className="text-xs font-semibold text-base-content/60 mb-2">Created:</div>
+                  <div className="space-y-1">
+                    {Object.entries(responseData).map(([key, value]) => {
+                      const formatValue = (val: any): string => {
+                        if (val === null || val === undefined) return 'N/A';
+                        if (typeof val === 'object') {
+                          if (Array.isArray(val)) return `[${val.length} items]`;
+                          return JSON.stringify(val, null, 2);
+                        }
+                        const str = String(val);
+                        return str.slice(0, 50) + (str.length > 50 ? '...' : '');
+                      };
+                      return (
+                        <div key={key} className="text-sm">
+                          <span className="font-semibold capitalize">{key.replace(/_/g, ' ')}:</span>{' '}
+                          <span className="text-base-content/80">{formatValue(value)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+              )}
 
               <button
                 type="button"
@@ -1419,7 +1573,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                 className="btn btn-primary w-full"
                 style={{ color: getContrastTextColor('primary') }}
               >
-                View {getItemTypeName()}s Page
+                {response.data.wizardType === 'edit_relationship_type' ? 'View Components' : `View ${getItemTypeName()}s Page`}
               </button>
             </div>
           </div>
@@ -1533,8 +1687,30 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
       );
     }
 
+    // Render confirmation wizard for delete operations
+    if (['delete_relationship_confirm', 'delete_todo_confirm', 'delete_note_confirm', 'delete_devlog_confirm', 'delete_component_confirm', 'delete_subtask_confirm'].includes(response.data.wizardType) && response.data.confirmationData) {
+      // If loaded from storage, show archived/readonly summary instead
+      if (fromStorage) {
+        return renderArchivedWizard();
+      }
+      const projectId = currentProjectId || response.metadata?.projectId;
+
+      return (
+        <ConfirmationWizard
+          message={response.message}
+          confirmationData={response.data.confirmationData}
+          projectId={projectId}
+          onCommandClick={onCommandClick}
+        />
+      );
+    }
+
     // Render wizard for editing todos, notes, devlog, components, and subtasks
     if (['edit_todo', 'edit_note', 'edit_devlog', 'edit_component', 'edit_subtask'].includes(response.data.wizardType) && response.data.steps) {
+      // If loaded from storage, show archived/readonly summary instead
+      if (fromStorage) {
+        return renderArchivedWizard();
+      }
       // Use projectId from response metadata as fallback if currentProjectId is not set
       const projectId = currentProjectId || response.metadata?.projectId;
 
@@ -1557,83 +1733,24 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
       );
     }
 
-    // Render wizard for delete selectors (delete_component_selector, etc.)
-    if (response.data.wizardType === 'delete_component_selector' && response.data.steps) {
-      const [isSubmitting, setIsSubmitting] = React.useState(false);
-      const [selectedValue, setSelectedValue] = React.useState<string>('');
+    // Render wizard for delete/edit selectors (delete_component_selector, edit_note_selector, etc.)
+    if (response.data.wizardType?.includes('_selector') && response.data.steps) {
+      // If loaded from storage, show archived/readonly summary instead
+      if (fromStorage) {
+        return renderArchivedWizard();
+      }
       const projectId = currentProjectId || response.metadata?.projectId;
-
-      const step = response.data.steps[0]; // Delete selectors are single-step
-
-      const handleDelete = async () => {
-        if (!selectedValue) return;
-
-        setIsSubmitting(true);
-        try {
-          const command = `/delete component --id="${selectedValue}"`;
-
-          console.log('🗑️ Executing delete command:', { command, projectId });
-
-          const result = await terminalAPI.executeCommand(command, projectId);
-
-          if (result.type === 'error') {
-            toast.error(result.message || 'Failed to delete component');
-            setIsSubmitting(false);
-          } else {
-            toast.success(result.message || 'Component deleted successfully!');
-            // Optionally refresh or navigate
-            if (onWizardComplete) {
-              onWizardComplete(entryId, { componentId: selectedValue });
-            }
-          }
-        } catch (error) {
-          console.error('Failed to delete component:', error);
-          toast.error(`Failed to delete: ${error instanceof Error ? error.message : 'Unknown error'}`);
-          setIsSubmitting(false);
-        }
-      };
+      const step = response.data.steps[0]; // Selectors are single-step
 
       return (
-        <div className="mt-3 p-4 bg-base-200 rounded-lg border-thick">
-          <div className="space-y-4">
-            <div className="form-control w-full">
-              <label className="label">
-                <span className="label-text font-semibold">{step.label}</span>
-              </label>
-              <select
-                className="select select-bordered w-full border-thick"
-                value={selectedValue}
-                onChange={(e) => setSelectedValue(e.target.value)}
-                disabled={isSubmitting}
-              >
-                <option value="">{step.placeholder || 'Select an option...'}</option>
-                {step.options?.map((option: { value: string; label: string }) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex gap-2 justify-end">
-              <button
-                type="button"
-                className="btn btn-error btn-sm border-thick"
-                onClick={handleDelete}
-                disabled={!selectedValue || isSubmitting}
-              >
-                {isSubmitting ? (
-                  <>
-                    <span className="loading loading-spinner loading-xs"></span>
-                    Deleting...
-                  </>
-                ) : (
-                  'Delete'
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
+        <SelectorWizard
+          wizardType={response.data.wizardType}
+          step={step}
+          projectId={projectId}
+          entryId={entryId}
+          onSelectorTransition={onSelectorTransition}
+          onCommandClick={onCommandClick}
+        />
       );
     }
 
@@ -1779,7 +1896,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                                 <button
                                   key={exIdx}
                                   type="button"
-                                  onClick={() => onCommandClick?.(example)}
+                                  onClick={() => onCommandClick?.(generateTemplate(example))}
                                   className="block w-full text-left text-xs bg-base-200 px-2 py-1 rounded border-thick hover:bg-base-300/50 cursor-pointer transition-colors text-base-content/70"
                                   title="Click to use this example"
                                 >
@@ -1833,7 +1950,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                 <button
                   key={index}
                   type="button"
-                  onClick={() => onCommandClick?.(example)}
+                  onClick={() => onCommandClick?.(generateTemplate(example))}
                   className="block w-full text-left text-xs bg-base-200 px-2 py-1 rounded border-thick text-base-content/80 hover:bg-base-300/50 cursor-pointer transition-colors"
                   title="Click to use this example"
                 >
@@ -2367,9 +2484,10 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
           {relationships.length > 0 ? (
             <div className="space-y-1">
               {relationships.map((rel: any, index: number) => (
-                <div
+                <button
                   key={rel.id || index}
-                  className="p-2 bg-base-200 rounded-lg border-thick"
+                  onClick={() => onCommandClick?.(`/edit relationship "${component.title}" "${rel.target?.title || 'Unknown'}"`)}
+                  className="w-full text-left p-2 bg-base-200 rounded-lg border-thick hover:bg-primary/10 hover:border-primary/50 transition-colors cursor-pointer"
                 >
                   <div className="flex items-start gap-2">
                     <span className="text-base-content/50 flex-shrink-0">→</span>
@@ -2388,7 +2506,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                       </div>
                     </div>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           ) : (
@@ -2402,6 +2520,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
 
     // Generic data rendering - show nicely formatted data like EditWizard
     // Check if it's success response with simple object data (not arrays)
+    // Don't show data for PROMPT responses (like confirmation prompts) - just show the message
     if (response.type === 'success' && response.data && typeof response.data === 'object' && !Array.isArray(response.data)) {
       const entries = Object.entries(response.data).filter(([key]) => !key.includes('_temp'));
       if (entries.length > 0) {
@@ -2431,6 +2550,11 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
           </div>
         );
       }
+    }
+
+    // Don't render data for PROMPT responses (confirmation prompts, etc.) - message is sufficient
+    if (response.type === 'prompt') {
+      return null;
     }
 
     // Fallback: raw JSON for complex data
@@ -2507,7 +2631,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                       View Notes
                     </button>
                   ) : command.toLowerCase().includes('add devlog') || command.toLowerCase().includes('edit devlog') ||
-                     command.toLowerCase().includes('delete devlog') || command.toLowerCase().includes('devlog') ? (
+                     command.toLowerCase().includes('delete devlog') || command.toLowerCase().includes('devlog') || command.toLowerCase().includes('push') ? (
                     <button
                       onClick={() => handleNavigateToProject('/notes?section=devlog')}
                       className="btn-primary-sm gap-2 border-thick"
@@ -2581,6 +2705,22 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                 </div>
               )}
 
+              {/* Data type actions - buttons for data views */}
+              {response.type === 'data' && response.metadata?.action === 'view_news' && (
+                <div className="mt-3 flex gap-2 flex-wrap">
+                  <button
+                    onClick={() => navigate('/news')}
+                    className="btn-primary-sm gap-2 border-thick"
+                    style={{ color: getContrastTextColor('primary') }}
+                  >
+                    <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                    </svg>
+                    Go to News
+                  </button>
+                </div>
+              )}
+
               {/* Suggestions */}
               {response.suggestions && response.suggestions.length > 0 && (
                 <div className="mt-3 space-y-1">
@@ -2591,7 +2731,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                     <button
                       key={index}
                       type="button"
-                      onClick={() => onCommandClick?.(suggestion)}
+                      onClick={() => onCommandClick?.(generateTemplate(suggestion))}
                       className="block w-full text-left text-xs bg-base-200 px-2 py-1 rounded hover:bg-base-300/50 cursor-pointer transition-colors border-thick text-base-content/80"
                       title="Click to use this suggestion"
                     >

@@ -64,7 +64,7 @@ export class TeamHandlers extends BaseCommandHandler {
       return {
         type: ResponseType.ERROR,
         message: 'Email or username is required',
-        suggestions: ['/invite user@example.com --role=editor @myproject', '/invite username --role=editor']
+        suggestions: ['/invite user@example.com --role=editor @project', '/invite username --role=editor']
       };
     }
 

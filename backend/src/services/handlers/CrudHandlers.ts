@@ -669,23 +669,36 @@ export class CrudHandlers extends BaseCommandHandler {
     }
 
     // Build hierarchical structure with subtasks
-    const todosWithSubtasks = parentTodos.map((todo: any) => {
+    // Include index for each todo in the global list (for command usage)
+    const todosWithSubtasks = parentTodos.map((todo: any, parentIndex: number) => {
       const subtasks = allTodos.filter((t: any) => t.parentTodoId === todo.id);
       return {
         id: todo.id,
+        index: parentIndex + 1, // 1-based index for parent todos
         title: todo.title,
+        description: todo.description,
         priority: todo.priority,
         status: todo.status,
         completed: todo.completed,
         dueDate: todo.dueDate,
-        subtasks: subtasks.map((sub: any) => ({
-          id: sub.id,
-          title: sub.title,
-          priority: sub.priority,
-          status: sub.status,
-          completed: sub.completed,
-          dueDate: sub.dueDate
-        }))
+        reminderDate: todo.reminderDate,
+        assignedTo: todo.assignedTo,
+        subtasks: subtasks.map((sub: any) => {
+          // Find the global index of this subtask in allTodos
+          const globalIndex = allTodos.findIndex((t: any) => t.id === sub.id);
+          return {
+            id: sub.id,
+            index: globalIndex + 1, // 1-based index for subtasks in global todos list
+            title: sub.title,
+            description: sub.description,
+            priority: sub.priority,
+            status: sub.status,
+            completed: sub.completed,
+            dueDate: sub.dueDate,
+            reminderDate: sub.reminderDate,
+            assignedTo: sub.assignedTo
+          };
+        })
       };
     });
 
@@ -1153,7 +1166,11 @@ export class CrudHandlers extends BaseCommandHandler {
       };
     }
 
-    const todo = this.findTodo(project.todos, todoIdentifier);
+    // Filter out subtasks - only allow pushing parent todos via numeric index
+    const todo = this.findTodo(
+      project.todos.filter((t: any) => !t.parentTodoId),
+      todoIdentifier
+    );
     if (!todo) {
       return {
         type: ResponseType.ERROR,
@@ -1162,34 +1179,55 @@ export class CrudHandlers extends BaseCommandHandler {
       };
     }
 
-    // Create devlog entry from todo
+    // Create devlog entry from todo - preserve todo's description
+    let todoDescription = typeof todo.description === 'object'
+      ? JSON.stringify(todo.description, null, 2)
+      : (todo.description || '');
+
+    // Find and aggregate subtask descriptions
+    const subtasks = project.todos.filter((t: any) => t.parentTodoId === todo.id);
+    if (subtasks.length > 0) {
+      const subtaskDescriptions = subtasks
+        .map((st: any) => {
+          const stDesc = typeof st.description === 'object'
+            ? JSON.stringify(st.description, null, 2)
+            : (st.description || '');
+          return `- ${st.title}${stDesc ? ': ' + stDesc : ''}`;
+        })
+        .join('\n');
+
+      if (todoDescription) {
+        todoDescription += '\n\nSubtasks:\n' + subtaskDescriptions;
+      } else {
+        todoDescription = 'Subtasks:\n' + subtaskDescriptions;
+      }
+    }
+
     const devlogEntry = {
+      id: uuidv4(),
       title: todo.title,
-      content: todo.description || `Completed: ${todo.title}`,
-      timestamp: new Date(),
-      category: 'feature', // Default category
-      tags: todo.tags || []
+      description: todoDescription,
+      date: new Date()
     };
 
     project.devLog.push(devlogEntry);
 
-    // Mark todo as completed if not already
-    if (!todo.completed) {
-      todo.completed = true;
-      todo.status = 'completed';
-    }
+    // Remove todo and all its subtasks from list
+    project.todos = project.todos.filter((t: any) =>
+      t.id !== todo.id && t.parentTodoId !== todo.id
+    );
 
     await project.save();
 
     return this.buildSuccessResponse(
-      `✅ Pushed todo to devlog: "${todo.title}"`,
+      `✅ Pushed todo to devlog and removed: "${todo.title}"`,
       project,
       'push_todo',
       {
         devlogEntry: {
           title: devlogEntry.title,
-          content: devlogEntry.content,
-          timestamp: devlogEntry.timestamp
+          description: devlogEntry.description,
+          date: devlogEntry.date
         }
       }
     );
@@ -1365,7 +1403,10 @@ export class CrudHandlers extends BaseCommandHandler {
       `✅ Added subtask "${validation.sanitized}" to "${parentTodo.title}"`,
       project,
       'add_subtask',
-      { parentTodo: parentTodo.title, subtask: validation.sanitized }
+      {
+        parentTodo: parentTodo.title,
+        subtask: validation.sanitized
+      }
     );
   }
 
@@ -1417,10 +1458,13 @@ export class CrudHandlers extends BaseCommandHandler {
         subtasks: subtasks.map((subtask: any) => ({
           id: subtask.id,
           title: subtask.title,
+          description: subtask.description,
           priority: subtask.priority,
           status: subtask.status,
           completed: subtask.completed,
-          dueDate: subtask.dueDate
+          dueDate: subtask.dueDate,
+          reminderDate: subtask.reminderDate,
+          assignedTo: subtask.assignedTo
         }))
       }
     );
@@ -1433,17 +1477,63 @@ export class CrudHandlers extends BaseCommandHandler {
     const { project, error } = await this.resolveProjectWithEditCheck(parsed.projectMention, currentProjectId);
     if (error) return error;
 
-    // Require ID as first argument
+    // If no args, show selector wizard
     if (parsed.args.length === 0) {
+      const todos = project.todos || [];
+
+      if (todos.length === 0) {
+        return {
+          type: ResponseType.INFO,
+          message: `📋 No todos found in ${project.name}`,
+          suggestions: [`/add todo`, `/add todo "Task description"`]
+        };
+      }
+
+      // Build todo options with parent context for subtasks
+      const todoOptions = todos.map((todo: any) => {
+        let label = `${todo.completed ? '✓' : '○'} `;
+
+        // If it's a subtask, show parent title
+        if (todo.parentTodoId) {
+          const parent = todos.find((t: any) => t.id === todo.parentTodoId);
+          if (parent) {
+            label += `subtask [${parent.title}] - ${todo.title}`;
+          } else {
+            label += `subtask - ${todo.title}`;
+          }
+        } else {
+          label += todo.title;
+        }
+
+        if (todo.priority) {
+          label += ` [${todo.priority}]`;
+        }
+
+        return {
+          value: todo.id,
+          label
+        };
+      });
+
       return {
-        type: ResponseType.ERROR,
-        message: '❌ Todo ID is required',
-        suggestions: [
-          '/view todos - See all todos with #IDs',
-          '💡 Edit with wizard: /edit todo 1',
-          '💡 Edit specific fields: /edit todo 1 --title="new title" --priority="high"',
-          '/help edit todo'
-        ]
+        type: ResponseType.PROMPT,
+        message: `✏️  Select Todo to Edit`,
+        data: {
+          wizardType: 'edit_todo_selector',
+          steps: [
+            {
+              id: 'todoId',
+              label: 'Select Todo',
+              type: 'select',
+              required: true,
+              options: todoOptions
+            }
+          ]
+        },
+        metadata: {
+          projectId: project._id.toString(),
+          action: 'edit_todo_selector'
+        }
       };
     }
 
@@ -1576,12 +1666,71 @@ export class CrudHandlers extends BaseCommandHandler {
       }
     }
 
-    // Get subtasks for this todo
-    const subtasks = project.todos.filter((t: any) => t.parentTodoId === todo.id);
+    // Build steps array - only include subtasks if this is NOT a subtask itself
+    const steps: any[] = [
+      {
+        id: 'title',
+        label: 'Title',
+        type: 'text',
+        required: true,
+        value: todo.title
+      },
+      {
+        id: 'content',
+        label: 'Content',
+        type: 'textarea',
+        required: false,
+        value: todo.description || ''
+      },
+      {
+        id: 'priority',
+        label: 'Priority',
+        type: 'select',
+        options: ['low', 'medium', 'high'],
+        required: true,
+        value: todo.priority
+      },
+      {
+        id: 'status',
+        label: 'Status',
+        type: 'select',
+        options: ['not_started', 'in_progress', 'completed', 'blocked'],
+        required: true,
+        value: todo.status
+      },
+      {
+        id: 'due',
+        label: 'Due Date',
+        type: 'text',
+        required: false,
+        value: dueDateStr,
+        placeholder: 'MM-DD-YYYY 8:00PM or MM-DD 21:00 (optional)'
+      }
+    ];
+
+    // Only add subtasks field if this is a parent todo (not a subtask itself)
+    if (!todo.parentTodoId) {
+      const subtasks = project.todos.filter((t: any) => t.parentTodoId === todo.id);
+      steps.push({
+        id: 'subtasks',
+        label: 'Subtasks',
+        type: 'subtasks',
+        required: false,
+        value: subtasks.map((subtask: any) => ({
+          id: subtask.id,
+          title: subtask.title,
+          description: subtask.description || '',
+          priority: subtask.priority,
+          status: subtask.status,
+          completed: subtask.completed,
+          dueDate: subtask.dueDate
+        }))
+      });
+    }
 
     return {
       type: ResponseType.PROMPT,
-      message: `✏️ Edit Todo: "${todo.title}"`,
+      message: `✏️ Edit ${todo.parentTodoId ? 'Subtask' : 'Todo'}: "${todo.title}"`,
       data: {
         wizardType: 'edit_todo',
         todoId: todo.id,
@@ -1592,61 +1741,7 @@ export class CrudHandlers extends BaseCommandHandler {
           status: todo.status,
           due: dueDateStr
         },
-        steps: [
-          {
-            id: 'title',
-            label: 'Title',
-            type: 'text',
-            required: true,
-            value: todo.title
-          },
-          {
-            id: 'content',
-            label: 'Content',
-            type: 'textarea',
-            required: false,
-            value: todo.description || ''
-          },
-          {
-            id: 'priority',
-            label: 'Priority',
-            type: 'select',
-            options: ['low', 'medium', 'high'],
-            required: true,
-            value: todo.priority
-          },
-          {
-            id: 'status',
-            label: 'Status',
-            type: 'select',
-            options: ['not_started', 'in_progress', 'completed', 'blocked'],
-            required: true,
-            value: todo.status
-          },
-          {
-            id: 'due',
-            label: 'Due Date',
-            type: 'text',
-            required: false,
-            value: dueDateStr,
-            placeholder: 'MM-DD-YYYY 8:00PM or MM-DD 21:00 (optional)'
-          },
-          {
-            id: 'subtasks',
-            label: 'Subtasks',
-            type: 'subtasks',
-            required: false,
-            value: subtasks.map((subtask: any) => ({
-              id: subtask.id,
-              title: subtask.title,
-              description: subtask.description || '',
-              priority: subtask.priority,
-              status: subtask.status,
-              completed: subtask.completed,
-              dueDate: subtask.dueDate
-            }))
-          }
-        ]
+        steps
       },
       metadata: {
         projectId: project._id.toString(),
@@ -1662,34 +1757,129 @@ export class CrudHandlers extends BaseCommandHandler {
     const { project, error } = await this.resolveProjectWithEditCheck(parsed.projectMention, currentProjectId);
     if (error) return error;
 
-    // Require ID as first argument
+    // No args provided - show selector wizard
     if (parsed.args.length === 0) {
+      const subtasks = project.todos.filter((t: any) => t.parentTodoId);
+
+      if (subtasks.length === 0) {
+        return {
+          type: ResponseType.INFO,
+          message: 'No subtasks to edit',
+          suggestions: ['/add subtask']
+        };
+      }
+
+      return {
+        type: ResponseType.PROMPT,
+        message: `✏️  Select Subtask to Edit`,
+        data: {
+          wizardType: 'edit_subtask_selector',
+          steps: [
+            {
+              id: 'subtaskId',
+              label: 'Select Subtask',
+              type: 'select',
+              options: subtasks.map((s: any) => {
+                const parent = project.todos.find((t: any) => t.id === s.parentTodoId);
+                return {
+                  value: s.id,
+                  label: `${s.title} (parent: ${parent?.title || 'unknown'})`
+                };
+              }),
+              required: true,
+              placeholder: 'Select subtask to edit'
+            }
+          ]
+        },
+        metadata: {
+          projectId: project._id.toString(),
+          action: 'edit_subtask_selector'
+        }
+      };
+    }
+
+    // Need both parent index and subtask index
+    if (parsed.args.length < 2) {
       return {
         type: ResponseType.ERROR,
-        message: '❌ Subtask ID is required',
+        message: `❌ Invalid syntax. Usage: /edit subtask <parent_index> <subtask_index>`,
         suggestions: [
-          '/view todos - See all subtasks with #IDs',
-          '💡 Edit with wizard: /edit subtask 1',
-          '💡 Edit specific fields: /edit subtask 1 --title="new title" --priority="high"',
+          '/edit subtask 1 2 - Edit 2nd subtask of todo #1',
+          '/edit subtask 1 2 --title="Updated title" - Direct edit',
           '/help edit subtask'
         ]
       };
     }
 
-    const identifier = parsed.args[0];
-    // Find subtask (todos with parentTodoId)
-    const subtask = this.findTodo(project.todos.filter((t: any) => t.parentTodoId), identifier);
+    const parentIndex = parseInt(parsed.args[0]);
+    const subtaskIndex = parseInt(parsed.args[1]);
 
-    if (!subtask) {
+    // Validate parent index
+    if (isNaN(parentIndex) || parentIndex < 1) {
       return {
         type: ResponseType.ERROR,
-        message: `❌ Subtask not found: "${identifier}"`,
+        message: `❌ Invalid parent todo index: "${parsed.args[0]}"`,
         suggestions: [
-          '/view todos - See all subtasks with #IDs',
+          '/view todos - See all todos with indices',
+          '/edit subtask 1 2 - Example syntax',
           '/help edit subtask'
         ]
       };
     }
+
+    // Get all parent todos (excluding subtasks)
+    const parentTodos = project.todos.filter((t: any) => !t.parentTodoId);
+
+    if (parentIndex > parentTodos.length) {
+      return {
+        type: ResponseType.ERROR,
+        message: `❌ Parent todo #${parentIndex} not found (only ${parentTodos.length} parent todos exist)`,
+        suggestions: ['/view todos', '/help edit subtask']
+      };
+    }
+
+    const parentTodo = parentTodos[parentIndex - 1];
+
+    // Get subtasks for this parent
+    const parentSubtasks = project.todos.filter((t: any) => t.parentTodoId === parentTodo.id);
+
+    if (parentSubtasks.length === 0) {
+      return {
+        type: ResponseType.ERROR,
+        message: `❌ Parent todo #${parentIndex} "${parentTodo.title}" has no subtasks`,
+        suggestions: [
+          `/add subtask "${parentTodo.title}" "subtask text"`,
+          '/view todos',
+          '/help edit subtask'
+        ]
+      };
+    }
+
+    // Validate subtask index
+    if (isNaN(subtaskIndex) || subtaskIndex < 1) {
+      return {
+        type: ResponseType.ERROR,
+        message: `❌ Invalid subtask index: "${parsed.args[1]}"`,
+        suggestions: [
+          `/view todos - Parent #${parentIndex} has ${parentSubtasks.length} subtask(s)`,
+          '/edit subtask 1 2 - Example syntax',
+          '/help edit subtask'
+        ]
+      };
+    }
+
+    if (subtaskIndex > parentSubtasks.length) {
+      return {
+        type: ResponseType.ERROR,
+        message: `❌ Subtask #${subtaskIndex} not found (parent #${parentIndex} only has ${parentSubtasks.length} subtask(s))`,
+        suggestions: [
+          '/view todos',
+          '/help edit subtask'
+        ]
+      };
+    }
+
+    const subtask = parentSubtasks[subtaskIndex - 1];
 
     // Check for direct flags (new syntax)
     const title = parsed.flags.get('title') as string;
@@ -1875,17 +2065,40 @@ export class CrudHandlers extends BaseCommandHandler {
     const { project, error } = await this.resolveProjectWithEditCheck(parsed.projectMention, currentProjectId);
     if (error) return error;
 
-    // Require ID as first argument
+    // If no args, show selector wizard
     if (parsed.args.length === 0) {
+      const notes = project.notes || [];
+
+      if (notes.length === 0) {
+        return {
+          type: ResponseType.INFO,
+          message: `📝 No notes found in ${project.name}`,
+          suggestions: [`/add note`, `/add note --title="Note Title" --content="Content"`]
+        };
+      }
+
       return {
-        type: ResponseType.ERROR,
-        message: '❌ Note ID is required',
-        suggestions: [
-          '/view notes - See all notes with #IDs',
-          '💡 Edit with wizard: /edit note 1',
-          '💡 Edit specific fields: /edit note 1 --title="new title" --content="new content"',
-          '/help edit note'
-        ]
+        type: ResponseType.PROMPT,
+        message: `✏️  Select Note to Edit`,
+        data: {
+          wizardType: 'edit_note_selector',
+          steps: [
+            {
+              id: 'noteId',
+              label: 'Select Note',
+              type: 'select',
+              required: true,
+              options: notes.map((note: any) => ({
+                value: note.id,
+                label: `${note.title} - ${note.content?.slice(0, 50) || ''}${note.content?.length > 50 ? '...' : ''}`
+              }))
+            }
+          ]
+        },
+        metadata: {
+          projectId: project._id.toString(),
+          action: 'edit_note_selector'
+        }
       };
     }
 
@@ -1990,17 +2203,40 @@ export class CrudHandlers extends BaseCommandHandler {
     const { project, error } = await this.resolveProjectWithEditCheck(parsed.projectMention, currentProjectId);
     if (error) return error;
 
-    // Require ID as first argument
+    // If no args, show selector wizard
     if (parsed.args.length === 0) {
+      const entries = project.devLog || [];
+
+      if (entries.length === 0) {
+        return {
+          type: ResponseType.INFO,
+          message: `📓 No dev log entries found in ${project.name}`,
+          suggestions: [`/add devlog`, `/push "Implemented feature X"`]
+        };
+      }
+
       return {
-        type: ResponseType.ERROR,
-        message: '❌ Dev log entry ID is required',
-        suggestions: [
-          '/view devlog - See all entries with #IDs',
-          '💡 Edit with wizard: /edit devlog 1',
-          '💡 Edit specific fields: /edit devlog 1 --title="new title" --content="new content"',
-          '/help edit devlog'
-        ]
+        type: ResponseType.PROMPT,
+        message: `✏️  Select Dev Log Entry to Edit`,
+        data: {
+          wizardType: 'edit_devlog_selector',
+          steps: [
+            {
+              id: 'entryId',
+              label: 'Select Entry',
+              type: 'select',
+              required: true,
+              options: entries.map((entry: any) => ({
+                value: entry.id,
+                label: `${entry.title ? entry.title + ' - ' : ''}${entry.description?.slice(0, 50) || ''}${entry.description?.length > 50 ? '...' : ''}`
+              }))
+            }
+          ]
+        },
+        metadata: {
+          projectId: project._id.toString(),
+          action: 'edit_devlog_selector'
+        }
       };
     }
 
@@ -2105,17 +2341,40 @@ export class CrudHandlers extends BaseCommandHandler {
     const { project, error } = await this.resolveProjectWithEditCheck(parsed.projectMention, currentProjectId);
     if (error) return error;
 
-    // Require ID as first argument
+    // If no args, show selector wizard
     if (parsed.args.length === 0) {
+      const components = project.components || [];
+
+      if (components.length === 0) {
+        return {
+          type: ResponseType.INFO,
+          message: `📦 No components found in ${project.name}`,
+          suggestions: [`/add component`, `/add component --title="Component Name" --type="feature"`]
+        };
+      }
+
       return {
-        type: ResponseType.ERROR,
-        message: '❌ Component ID is required',
-        suggestions: [
-          '/view components - See all components with #IDs',
-          '💡 Edit with wizard: /edit component 1',
-          '💡 Edit specific field: /edit component 1 --field=content --content="new content"',
-          '/help edit component'
-        ]
+        type: ResponseType.PROMPT,
+        message: `✏️  Select Component to Edit`,
+        data: {
+          wizardType: 'edit_component_selector',
+          steps: [
+            {
+              id: 'componentId',
+              label: 'Select Component',
+              type: 'select',
+              required: true,
+              options: components.map((comp: any) => ({
+                value: comp.id,
+                label: `${comp.category || 'Uncategorized'} • ${comp.title} [${comp.type}]`
+              }))
+            }
+          ]
+        },
+        metadata: {
+          projectId: project._id.toString(),
+          action: 'edit_component_selector'
+        }
       };
     }
 
@@ -2562,13 +2821,17 @@ export class CrudHandlers extends BaseCommandHandler {
       };
     }
 
-    const todo = this.findTodo(project.todos, todoIdentifier);
+    // Filter out subtasks - only allow deleting parent todos via numeric index
+    const todo = this.findTodo(
+      project.todos.filter((t: any) => !t.parentTodoId),
+      todoIdentifier
+    );
 
     if (!todo) {
       return {
         type: ResponseType.ERROR,
         message: `Todo not found: "${todoIdentifier}"`,
-        suggestions: ['/view todos', '/help delete todo']
+        suggestions: ['/view todos', '/delete subtask', '/help delete todo']
       };
     }
 
@@ -2578,8 +2841,27 @@ export class CrudHandlers extends BaseCommandHandler {
     if (!hasConfirmation) {
       return {
         type: ResponseType.PROMPT,
-        message: `⚠️  Are you sure you want to delete todo "${todo.title}"?\nUse --confirm to proceed: /delete todo "${todo.title}" --confirm`,
-        data: { todo: { id: todo.id, title: todo.title } }
+        message: `⚠️  Confirm Deletion`,
+        data: {
+          wizardType: 'delete_todo_confirm',
+          confirmationData: {
+            itemTitle: todo.title,
+            itemType: 'todo',
+            command: `/delete todo "${todo.title}" --confirm`
+          },
+          steps: [
+            {
+              id: 'confirmation',
+              label: `Are you sure you want to delete the todo "${todo.title}"?`,
+              type: 'confirmation',
+              required: true
+            }
+          ]
+        },
+        metadata: {
+          projectId: project._id.toString(),
+          action: 'delete_todo_confirm'
+        }
       };
     }
 
@@ -2657,8 +2939,27 @@ export class CrudHandlers extends BaseCommandHandler {
     if (!hasConfirmation) {
       return {
         type: ResponseType.PROMPT,
-        message: `⚠️  Are you sure you want to delete note "${note.title}"?\nUse --confirm to proceed: /delete note "${note.title}" --confirm`,
-        data: { note: { id: note.id, title: note.title } }
+        message: `⚠️  Confirm Deletion`,
+        data: {
+          wizardType: 'delete_note_confirm',
+          confirmationData: {
+            itemTitle: note.title,
+            itemType: 'note',
+            command: `/delete note "${note.title}" --confirm`
+          },
+          steps: [
+            {
+              id: 'confirmation',
+              label: `Are you sure you want to delete the note "${note.title}"?`,
+              type: 'confirmation',
+              required: true
+            }
+          ]
+        },
+        metadata: {
+          projectId: project._id.toString(),
+          action: 'delete_note_confirm'
+        }
       };
     }
 
@@ -2731,10 +3032,30 @@ export class CrudHandlers extends BaseCommandHandler {
     const hasConfirmation = parsed.flags.has('confirm') || parsed.flags.has('yes') || parsed.flags.has('y');
 
     if (!hasConfirmation) {
+      const entryTitle = entry.title || entry.description?.substring(0, 50) || 'Untitled entry';
       return {
         type: ResponseType.PROMPT,
-        message: `⚠️  Are you sure you want to delete this dev log entry?\nUse --confirm to proceed: /delete devlog ${identifier} --confirm`,
-        data: { entry: { id: entry.id, preview: entry.description ? entry.description.substring(0, 50) : '' } }
+        message: `⚠️  Confirm Deletion`,
+        data: {
+          wizardType: 'delete_devlog_confirm',
+          confirmationData: {
+            itemTitle: entryTitle,
+            itemType: 'dev log entry',
+            command: `/delete devlog ${identifier} --confirm`
+          },
+          steps: [
+            {
+              id: 'confirmation',
+              label: `Are you sure you want to delete this dev log entry?`,
+              type: 'confirmation',
+              required: true
+            }
+          ]
+        },
+        metadata: {
+          projectId: project._id.toString(),
+          action: 'delete_devlog_confirm'
+        }
       };
     }
 
@@ -2808,17 +3129,58 @@ export class CrudHandlers extends BaseCommandHandler {
     if (!hasConfirmation) {
       return {
         type: ResponseType.PROMPT,
-        message: `⚠️  Are you sure you want to delete component "${component.title}"?\nUse --confirm to proceed: /delete component "${component.title}" --confirm`,
-        data: { component: { id: component.id, title: component.title } }
+        message: `⚠️  Confirm Deletion`,
+        data: {
+          wizardType: 'delete_component_confirm',
+          confirmationData: {
+            itemTitle: component.title,
+            itemType: 'component',
+            command: `/delete component "${component.title}" --confirm`
+          },
+          steps: [
+            {
+              id: 'confirmation',
+              label: `Are you sure you want to delete the component "${component.title}"?`,
+              type: 'confirmation',
+              required: true
+            }
+          ]
+        },
+        metadata: {
+          projectId: project._id.toString(),
+          action: 'delete_component_confirm'
+        }
       };
     }
 
     const componentTitle = component.title;
-    project.components = project.components.filter((c: any) => c.id !== component.id);
+    const componentId = component.id;
+
+    // Remove the component itself
+    project.components = project.components.filter((c: any) => c.id !== componentId);
+
+    // Clean up orphaned relationships: remove all relationships FROM other components TO this deleted component
+    let orphanedRelationshipsCount = 0;
+    project.components.forEach((c: any) => {
+      if (c.relationships && c.relationships.length > 0) {
+        const originalCount = c.relationships.length;
+        c.relationships = c.relationships.filter((r: any) => r.targetId !== componentId);
+        const removedCount = originalCount - c.relationships.length;
+        if (removedCount > 0) {
+          orphanedRelationshipsCount += removedCount;
+          c.updatedAt = new Date();
+        }
+      }
+    });
+
     await project.save();
 
+    const message = orphanedRelationshipsCount > 0
+      ? `🗑️  Deleted component: "${componentTitle}" and removed ${orphanedRelationshipsCount} orphaned relationship${orphanedRelationshipsCount > 1 ? 's' : ''}`
+      : `🗑️  Deleted component: "${componentTitle}"`;
+
     return this.buildSuccessResponse(
-      `🗑️  Deleted component: "${componentTitle}"`,
+      message,
       project,
       'delete_component'
     );
@@ -2831,10 +3193,8 @@ export class CrudHandlers extends BaseCommandHandler {
     const { project, error } = await this.resolveProjectWithEditCheck(parsed.projectMention, currentProjectId);
     if (error) return error;
 
-    const subtaskIdentifier = parsed.args.join(' ').trim();
-
-    // No identifier provided - show selector wizard
-    if (!subtaskIdentifier) {
+    // No args provided - show selector wizard
+    if (parsed.args.length === 0) {
       const subtasks = project.todos.filter((t: any) => t.parentTodoId);
 
       if (subtasks.length === 0) {
@@ -2874,26 +3234,114 @@ export class CrudHandlers extends BaseCommandHandler {
       };
     }
 
-    const subtask = this.findTodo(
-      project.todos.filter((t: any) => t.parentTodoId),
-      subtaskIdentifier
-    );
-
-    if (!subtask) {
+    // Need both parent index and subtask index
+    if (parsed.args.length < 2) {
       return {
         type: ResponseType.ERROR,
-        message: `Subtask not found: "${subtaskIdentifier}"`,
-        suggestions: ['/help delete subtask']
+        message: `❌ Invalid syntax. Usage: /delete subtask <parent_index> <subtask_index>`,
+        suggestions: [
+          '/delete subtask 1 2 - Delete 2nd subtask of todo #1',
+          '/delete subtask 1 2 --confirm - Skip confirmation',
+          '/help delete subtask'
+        ]
       };
     }
+
+    const parentIndex = parseInt(parsed.args[0]);
+    const subtaskIndex = parseInt(parsed.args[1]);
+
+    // Validate parent index
+    if (isNaN(parentIndex) || parentIndex < 1) {
+      return {
+        type: ResponseType.ERROR,
+        message: `❌ Invalid parent todo index: "${parsed.args[0]}"`,
+        suggestions: [
+          '/view todos - See all todos with indices',
+          '/delete subtask 1 2 - Example syntax',
+          '/help delete subtask'
+        ]
+      };
+    }
+
+    // Get all parent todos (excluding subtasks)
+    const parentTodos = project.todos.filter((t: any) => !t.parentTodoId);
+
+    if (parentIndex > parentTodos.length) {
+      return {
+        type: ResponseType.ERROR,
+        message: `❌ Parent todo #${parentIndex} not found (only ${parentTodos.length} parent todos exist)`,
+        suggestions: ['/view todos', '/help delete subtask']
+      };
+    }
+
+    const parentTodo = parentTodos[parentIndex - 1];
+
+    // Get subtasks for this parent
+    const parentSubtasks = project.todos.filter((t: any) => t.parentTodoId === parentTodo.id);
+
+    if (parentSubtasks.length === 0) {
+      return {
+        type: ResponseType.ERROR,
+        message: `❌ Parent todo #${parentIndex} "${parentTodo.title}" has no subtasks`,
+        suggestions: [
+          '/view todos',
+          '/help delete subtask'
+        ]
+      };
+    }
+
+    // Validate subtask index
+    if (isNaN(subtaskIndex) || subtaskIndex < 1) {
+      return {
+        type: ResponseType.ERROR,
+        message: `❌ Invalid subtask index: "${parsed.args[1]}"`,
+        suggestions: [
+          `/view todos - Parent #${parentIndex} has ${parentSubtasks.length} subtask(s)`,
+          '/delete subtask 1 2 - Example syntax',
+          '/help delete subtask'
+        ]
+      };
+    }
+
+    if (subtaskIndex > parentSubtasks.length) {
+      return {
+        type: ResponseType.ERROR,
+        message: `❌ Subtask #${subtaskIndex} not found (parent #${parentIndex} only has ${parentSubtasks.length} subtask(s))`,
+        suggestions: [
+          '/view todos',
+          '/help delete subtask'
+        ]
+      };
+    }
+
+    const subtask = parentSubtasks[subtaskIndex - 1];
 
     const hasConfirmation = parsed.flags.has('confirm') || parsed.flags.has('yes') || parsed.flags.has('y');
 
     if (!hasConfirmation) {
       return {
         type: ResponseType.PROMPT,
-        message: `⚠️  Are you sure you want to delete subtask "${subtask.title}"?\nUse --confirm to proceed: /delete subtask "${subtask.title}" --confirm`,
-        data: { subtask: { id: subtask.id, title: subtask.title } }
+        message: `⚠️  Confirm Deletion`,
+        data: {
+          wizardType: 'delete_subtask_confirm',
+          confirmationData: {
+            itemTitle: subtask.title,
+            itemType: 'subtask',
+            command: `/delete subtask ${parentIndex} ${subtaskIndex} --confirm`
+          },
+          steps: [
+            {
+              id: 'confirmation',
+              label: `Are you sure you want to delete the subtask "${subtask.title}"?`,
+              type: 'confirmation',
+              required: true
+            }
+          ]
+        },
+        metadata: {
+          projectId: project._id.toString(),
+          action: 'delete_subtask_confirm'
+        }
       };
     }
 
@@ -3176,7 +3624,13 @@ export class CrudHandlers extends BaseCommandHandler {
     return this.buildSuccessResponse(
       `✅ Added ${relationshipType} relationship: "${sourceComponent.title}" → "${targetComponent.title}"`,
       project,
-      'add_relationship'
+      'add_relationship',
+      {
+        source: sourceComponent.title,
+        target: targetComponent.title,
+        type: relationshipType,
+        description: description || ''
+      }
     );
   }
 
@@ -3190,6 +3644,47 @@ export class CrudHandlers extends BaseCommandHandler {
     }
 
     const componentIdentifier = parsed.args.join(' ').trim();
+
+    // No identifier provided - show selector wizard for components with relationships
+    if (!componentIdentifier) {
+      const componentsWithRelationships = resolution.project.components.filter(
+        (c: any) => c.relationships && c.relationships.length > 0
+      );
+
+      if (componentsWithRelationships.length === 0) {
+        return {
+          type: ResponseType.INFO,
+          message: 'No components with relationships found',
+          suggestions: ['/add relationship']
+        };
+      }
+
+      return {
+        type: ResponseType.PROMPT,
+        message: `🔗 Select Component to View Relationships`,
+        data: {
+          wizardType: 'view_relationships_selector',
+          steps: [
+            {
+              id: 'componentId',
+              label: 'Select Component',
+              type: 'select',
+              options: componentsWithRelationships.map((c: any) => ({
+                value: c.id,
+                label: `${c.title} (${c.relationships.length} relationship${c.relationships.length > 1 ? 's' : ''})`
+              })),
+              required: true,
+              placeholder: 'Select component'
+            }
+          ]
+        },
+        metadata: {
+          projectId: resolution.project._id.toString(),
+          action: 'view_relationships_selector'
+        }
+      };
+    }
+
     const component = this.findComponent(resolution.project.components, componentIdentifier);
 
     if (!component) {
@@ -3249,20 +3744,155 @@ export class CrudHandlers extends BaseCommandHandler {
     const { project, error } = await this.resolveProjectWithEditCheck(parsed.projectMention, currentProjectId);
     if (error) return error;
 
-    if (parsed.args.length < 3) {
+    // No args - show selector to choose which relationship to edit
+    if (parsed.args.length === 0) {
+      // Collect all relationships from all components
+      const allRelationships: Array<{
+        componentId: string;
+        componentTitle: string;
+        relationshipIndex: number;
+        relationship: any;
+        targetTitle: string;
+      }> = [];
+
+      project.components.forEach((comp: any) => {
+        if (comp.relationships && comp.relationships.length > 0) {
+          comp.relationships.forEach((rel: any, index: number) => {
+            const target = project.components.find((c: any) => c.id === rel.targetId);
+            allRelationships.push({
+              componentId: comp.id,
+              componentTitle: comp.title,
+              relationshipIndex: index + 1,
+              relationship: rel,
+              targetTitle: target?.title || 'unknown'
+            });
+          });
+        }
+      });
+
+      if (allRelationships.length === 0) {
+        return {
+          type: ResponseType.INFO,
+          message: 'No relationships to edit',
+          suggestions: ['/add relationship']
+        };
+      }
+
       return {
-        type: ResponseType.ERROR,
-        message: 'Usage: /edit relationship [component id/title] [relationship id] [new type]',
-        suggestions: [
-          '/edit relationship "Login" 1 depends_on',
-          '/view relationships "Login" - to see relationship IDs',
-          '/help edit relationship'
-        ]
+        type: ResponseType.PROMPT,
+        message: `✏️  Select Relationship to Edit`,
+        data: {
+          wizardType: 'edit_relationship_selector',
+          steps: [
+            {
+              id: 'relationshipData',
+              label: 'Select Relationship',
+              type: 'select',
+              options: allRelationships.map((r) => ({
+                value: `${r.componentId}|${r.relationshipIndex}`,
+                label: `${r.componentTitle} ${r.relationship.relationType} ${r.targetTitle}`
+              })),
+              required: true,
+              placeholder: 'Select relationship to edit'
+            }
+          ]
+        },
+        metadata: {
+          projectId: project._id.toString(),
+          action: 'edit_relationship_selector'
+        }
       };
     }
 
     const componentIdentifier = parsed.args[0];
     const relationshipIdentifier = parsed.args[1];
+
+    // If only 2 args provided, show wizard to select new type
+    if (parsed.args.length === 2) {
+      // Find component
+      const component = this.findComponent(project.components, componentIdentifier);
+      if (!component) {
+        return {
+          type: ResponseType.ERROR,
+          message: `Component not found: "${componentIdentifier}"`,
+          suggestions: ['/view components']
+        };
+      }
+
+      // Find relationship
+      let relationship: any = null;
+      const relIndex = parseInt(relationshipIdentifier);
+      if (!isNaN(relIndex) && relIndex > 0 && relIndex <= component.relationships.length) {
+        relationship = component.relationships[relIndex - 1];
+      } else {
+        relationship = component.relationships.find((r: any) => r.id === relationshipIdentifier);
+        if (!relationship) {
+          relationship = component.relationships.find((r: any) => {
+            const targetComp = project.components.find((c: any) => c.id === r.targetId);
+            return targetComp && targetComp.title.toLowerCase() === relationshipIdentifier.toLowerCase();
+          });
+        }
+      }
+
+      if (!relationship) {
+        return {
+          type: ResponseType.ERROR,
+          message: `Relationship not found: "${relationshipIdentifier}"`,
+          suggestions: [`/view relationships "${component.title}"`]
+        };
+      }
+
+      const targetComponent = project.components.find((c: any) => c.id === relationship.targetId);
+
+      // Show wizard to select new relationship type
+      return {
+        type: ResponseType.PROMPT,
+        message: `✏️  Edit Relationship: "${component.title}" → "${targetComponent?.title || 'unknown'}"`,
+        data: {
+          wizardType: 'edit_relationship_type',
+          steps: [
+            {
+              id: 'relationType',
+              label: `Current: ${relationship.relationType}. Select new type:`,
+              type: 'select',
+              options: ['uses', 'implements', 'extends', 'depends_on', 'calls', 'contains', 'mentions', 'similar'],
+              required: true,
+              value: relationship.relationType,
+              placeholder: 'Select relationship type'
+            },
+            {
+              id: 'description',
+              label: 'Description (optional)',
+              type: 'text',
+              required: false,
+              value: relationship.description || '',
+              placeholder: 'Optional description'
+            }
+          ],
+          componentTitle: component.title,
+          targetTitle: targetComponent?.title || 'unknown',
+          relationshipId: relationship.id
+        },
+        metadata: {
+          projectId: project._id.toString(),
+          action: 'edit_relationship_type'
+        }
+      };
+    }
+
+    if (parsed.args.length < 3) {
+      return {
+        type: ResponseType.ERROR,
+        message: 'Usage: /edit relationship [source component] [target component] [new type]',
+        suggestions: [
+          '/edit relationship "Login" "Database" depends_on',
+          '/edit relationship "Login" 1 depends_on',
+          '/view relationships "Login" - to see relationships',
+          '/help edit relationship'
+        ]
+      };
+    }
+
     const newType = parsed.args[2].toLowerCase();
 
     // Find component
@@ -3283,13 +3913,23 @@ export class CrudHandlers extends BaseCommandHandler {
       };
     }
 
-    // Find relationship by ID or index
+    // Find relationship by ID, index, or target component title
     let relationship: any = null;
     const relIndex = parseInt(relationshipIdentifier);
     if (!isNaN(relIndex) && relIndex > 0 && relIndex <= component.relationships.length) {
+      // Find by index
       relationship = component.relationships[relIndex - 1];
     } else {
+      // Try to find by UUID
       relationship = component.relationships.find((r: any) => r.id === relationshipIdentifier);
+
+      // If not found, try to find by target component title
+      if (!relationship) {
+        relationship = component.relationships.find((r: any) => {
+          const targetComp = project.components.find((c: any) => c.id === r.targetId);
+          return targetComp && targetComp.title.toLowerCase() === relationshipIdentifier.toLowerCase();
+        });
+      }
     }
 
     if (!relationship) {
@@ -3453,8 +4093,28 @@ export class CrudHandlers extends BaseCommandHandler {
     if (!hasConfirmation) {
       return {
         type: ResponseType.PROMPT,
-        message: `⚠️  Are you sure you want to delete the ${relationship.relationType} relationship from "${component.title}" to "${targetComponent?.title || 'unknown'}"?\nUse --confirm to proceed: /delete relationship "${component.title}" ${relationshipIdentifier} --confirm`,
-        data: { relationship: { id: relationship.id, type: relationship.relationType } }
+        message: `⚠️  Confirm Deletion`,
+        data: {
+          wizardType: 'delete_relationship_confirm',
+          confirmationData: {
+            componentTitle: component.title,
+            targetTitle: targetComponent?.title || 'unknown',
+            relationType: relationship.relationType,
+            command: `/delete relationship "${component.title}" ${relationshipIdentifier} --confirm`
+          },
+          steps: [
+            {
+              id: 'confirmation',
+              label: `Are you sure you want to delete the ${relationship.relationType} relationship from "${component.title}" to "${targetComponent?.title || 'unknown'}"?`,
+              type: 'confirmation',
+              required: true
+            }
+          ]
+        },
+        metadata: {
+          projectId: project._id.toString(),
+          action: 'delete_relationship_confirm'
+        }
       };
     }
 

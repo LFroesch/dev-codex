@@ -57,7 +57,7 @@
 - `/edit note [id] [@project]` - Opens interactive wizard to edit note (or use `--field=` and `--content=` for direct updates)
 - `/edit devlog [id] [@project]` - Opens interactive wizard to edit dev log entry (or use `--field=` and `--content=` for direct updates)
 - `/edit doc [id] [@project]` - Opens interactive wizard to edit documentation (or use `--field=` and `--content=` for direct updates)
-- `/edit subtask [id] [@project]` - Opens interactive wizard to edit subtask (or use `--title=`, `--content=`, `--priority=`, `--status=`, `--due=` for direct updates)
+- `/edit subtask [parent_idx] [subtask_idx] [@project]` - Opens interactive wizard to edit subtask (per-parent indexing, or use `--title=`, `--content=`, `--priority=`, `--status=`, `--due=` for direct updates)
 
 Examples:
 ```bash
@@ -65,9 +65,9 @@ Examples:
 /edit note 1 --field=title --content="New Title"  # Direct field update
 /edit doc 2 --field=content --content="Updated documentation"
 /edit doc 3 --field=feature --content="Authentication System"  # Update feature grouping
-/edit subtask 5                           # Opens wizard for interactive subtask editing
-/edit subtask 5 --title="Updated subtask title" --priority=high  # Direct subtask update
-/edit subtask 5 --status=in_progress      # Update subtask status
+/edit subtask 1 2                         # Opens wizard for editing 2nd subtask of parent todo #1
+/edit subtask 1 2 --title="Updated subtask title" --priority=high  # Direct subtask update
+/edit subtask 2 3 --status=in_progress    # Update 3rd subtask of parent todo #2
 ```
 
 ### Delete Commands (with confirmation)
@@ -75,7 +75,7 @@ Examples:
 - `/delete note [note id/title] [@project] --confirm` - Delete a note
 - `/delete devlog [entry id] [@project] --confirm` - Delete a dev log entry
 - `/delete doc [doc id/title] [@project] --confirm` - Delete documentation
-- `/delete subtask [subtask text/id] [@project] --confirm` - Delete a subtask
+- `/delete subtask [parent_idx] [subtask_idx] [@project] --confirm` - Delete a subtask (per-parent indexing)
 
 ### Set Commands
 - `/set deployment --url=[url] --platform=[platform]` - Update deployment
@@ -173,7 +173,7 @@ api/
 ## Command Flow
 
 ```
-User: "/add todo fix bug @myproject"
+User: "/add todo fix bug @project"
          ↓
 TerminalInput (autocomplete / and @)
          ↓

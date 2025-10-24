@@ -87,17 +87,22 @@ router.post('/execute', terminalRateLimit, async (req: AuthRequest, res) => {
 router.get('/commands', async (req: AuthRequest, res) => {
   try {
     const commands = CommandParser.getAllCommands();
+    const aliases = CommandParser.getAllAliases();
 
-    // Format for autocomplete
-    const formatted = commands.map(cmd => ({
-      value: cmd.syntax.split('[')[0].trim(), // e.g., "/add todo"
-      label: cmd.syntax,
-      description: cmd.description,
-      examples: cmd.examples,
-      category: categorizeCommand(cmd.type.toString())
-    }));
+    // Format for autocomplete - include both canonical commands and aliases
+    const formatted = commands.map(cmd => {
+      const cmdAliases = CommandParser.getAliasesForType(cmd.type);
+      return {
+        value: cmd.syntax.split('[')[0].trim(), // e.g., "/add todo"
+        label: cmd.syntax,
+        description: cmd.description,
+        examples: cmd.examples,
+        category: categorizeCommand(cmd.type.toString()),
+        aliases: cmdAliases // Include aliases for matching
+      };
+    });
 
-    res.json({ commands: formatted });
+    res.json({ commands: formatted, aliases });
   } catch (error) {
     logError('Get commands error', error as Error, {
       userId: req.userId,

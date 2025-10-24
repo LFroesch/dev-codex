@@ -12,16 +12,18 @@ interface DevLogRendererProps {
   entries: DevLogEntry[];
   projectId?: string;
   onNavigate: (path: string) => void;
+  onCommandClick?: (command: string) => void;
 }
 
-export const DevLogRenderer: React.FC<DevLogRendererProps> = ({ entries, projectId, onNavigate }) => {
+export const DevLogRenderer: React.FC<DevLogRendererProps> = ({ entries, projectId, onNavigate, onCommandClick }) => {
   return (
     <div className="mt-3 space-y-2">
       <div className="space-y-2">
         {entries.map((entry, index) => (
-          <div
+          <button
             key={index}
-            className="p-3 bg-base-200 rounded-lg hover:bg-base-300/50 transition-colors border-l-4 border-primary/50"
+            onClick={() => onCommandClick?.(`/edit devlog ${index + 1}`)}
+            className="w-full text-left p-3 bg-base-200 rounded-lg hover:bg-primary/10 hover:border-primary transition-colors border-l-4 border-primary/50 cursor-pointer"
           >
             <div className="flex items-start gap-2 mb-2">
               <span className="text-xs font-mono font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded border border-primary/30 flex-shrink-0">
@@ -31,8 +33,20 @@ export const DevLogRenderer: React.FC<DevLogRendererProps> = ({ entries, project
                 {new Date(entry.date).toLocaleString()}
               </div>
             </div>
-            <div className="text-sm text-base-content/80 break-words ml-8">{entry.title} - {entry.description}</div>
-          </div>
+            {entry.title && (
+              <div className="text-sm font-medium text-base-content/90 break-words ml-8 mb-2">
+                {entry.title}
+              </div>
+            )}
+            {entry.description && (
+              <div className="text-sm text-base-content/70 break-words ml-8 whitespace-pre-wrap">
+                {entry.description}
+              </div>
+            )}
+            {!entry.title && !entry.description && (
+              <div className="text-sm text-base-content/50 italic ml-8">No content</div>
+            )}
+          </button>
         ))}
       </div>
       <div className="text-xs text-base-content/60 mt-3 p-2 bg-base-200/50 rounded border-thick">

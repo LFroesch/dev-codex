@@ -53,17 +53,21 @@
 - `/view themes` - List available themes
 
 ### Edit Commands (Interactive Wizards + Direct Updates)
-- `/edit todo [id] [@project]` - Opens interactive wizard to edit todo (or use `--field=` and `--content=` for direct updates)
+- `/edit todo [id] [@project]` - Opens interactive wizard to edit todo (or use `--title=`, `--content=`, `--priority=`, `--status=`, `--due=` for direct updates)
 - `/edit note [id] [@project]` - Opens interactive wizard to edit note (or use `--field=` and `--content=` for direct updates)
 - `/edit devlog [id] [@project]` - Opens interactive wizard to edit dev log entry (or use `--field=` and `--content=` for direct updates)
 - `/edit doc [id] [@project]` - Opens interactive wizard to edit documentation (or use `--field=` and `--content=` for direct updates)
+- `/edit subtask [id] [@project]` - Opens interactive wizard to edit subtask (or use `--title=`, `--content=`, `--priority=`, `--status=`, `--due=` for direct updates)
 
 Examples:
 ```bash
-/edit todo 1                              # Opens wizard for interactive editing
+/edit todo 1                              # Opens wizard for interactive editing with subtask management
 /edit note 1 --field=title --content="New Title"  # Direct field update
 /edit doc 2 --field=content --content="Updated documentation"
 /edit doc 3 --field=feature --content="Authentication System"  # Update feature grouping
+/edit subtask 5                           # Opens wizard for interactive subtask editing
+/edit subtask 5 --title="Updated subtask title" --priority=high  # Direct subtask update
+/edit subtask 5 --status=in_progress      # Update subtask status
 ```
 
 ### Delete Commands (with confirmation)

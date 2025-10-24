@@ -196,6 +196,8 @@ export class CommandExecutor {
           return await this.crudHandlers.handleCompleteTodo(parsed, currentProjectId);
         case CommandType.ASSIGN_TODO:
           return await this.crudHandlers.handleAssignTodo(parsed, currentProjectId);
+        case CommandType.PUSH_TODO:
+          return await this.crudHandlers.handlePushTodo(parsed, currentProjectId);
 
         // Subtask operations
         case CommandType.ADD_SUBTASK:
@@ -212,6 +214,8 @@ export class CommandExecutor {
           return await this.crudHandlers.handleEditDevLog(parsed, currentProjectId);
         case CommandType.EDIT_COMPONENT:
           return await this.crudHandlers.handleEditComponent(parsed, currentProjectId);
+        case CommandType.EDIT_SUBTASK:
+          return await this.crudHandlers.handleEditSubtask(parsed, currentProjectId);
 
         // Delete operations
         case CommandType.DELETE_TODO:

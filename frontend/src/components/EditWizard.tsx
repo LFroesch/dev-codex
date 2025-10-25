@@ -26,6 +26,7 @@ interface EditWizardProps {
       value?: any;
       options?: string[];
       placeholder?: string;
+      allComponents?: any[];
       availableComponents?: any[];
       dependsOn?: string;
     }>;
@@ -289,11 +290,13 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
 
   /**
    * Escape special characters for command construction
-   * Handles both backslashes and quotes to work with the command parser
+   * Handles backslashes, quotes, and newlines to work with the command parser
    */
   const escapeForCommand = (value: string): string => {
     return String(value)
       .replace(/\\/g, '\\\\')  // Escape backslashes first
+      .replace(/\n/g, '\\n')    // Escape newlines
+      .replace(/\r/g, '\\r')    // Escape carriage returns
       .replace(/"/g, '\\"');    // Then escape quotes
   };
 
@@ -536,7 +539,7 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
           <button
             type="button"
             onClick={() => navigate(getNavigationPath())}
-            className="btn btn-primary w-full"
+            className="btn btn-primary w-full border-thick"
             style={{ color: getContrastTextColor('primary') }}
           >
             View {getItemTypeName()}s Page
@@ -610,7 +613,7 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
               <div className="space-y-2">
                 <div className="text-xs font-semibold text-base-content/70">Current Relationships ({(formData[step.id] || step.value || []).length})</div>
                 {(formData[step.id] || step.value || []).map((rel: any, index: number) => {
-                  const targetComp = step.availableComponents?.find((c: any) => c.id === rel.targetId);
+                  const targetComp = (step.allComponents || step.availableComponents)?.find((c: any) => c.id === rel.targetId);
                   const isEditing = editingRelIndex === index;
 
                   // Relationship type colors
@@ -635,7 +638,7 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
                               <button
                                 type="button"
                                 onClick={handleSaveRelationship}
-                                className="btn btn-ghost btn-xs text-success hover:bg-success/20"
+                                className="btn btn-ghost btn-xs border-thick text-success hover:bg-success/20"
                                 title="Save changes"
                               >
                                 ✓
@@ -643,7 +646,7 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
                               <button
                                 type="button"
                                 onClick={handleCancelEditRelationship}
-                                className="btn btn-ghost btn-xs text-error hover:bg-error/20"
+                                className="btn btn-ghost btn-xs border-thick text-error hover:bg-error/20"
                                 title="Cancel"
                               >
                                 ✕
@@ -697,7 +700,7 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
                                   console.log('📝 Edit clicked for relationship:', { index, rel });
                                   handleEditRelationship(index, rel.relationType, rel.description || '');
                                 }}
-                                className="btn btn-ghost btn-xs hover:bg-primary/20"
+                                className="btn btn-ghost btn-xs border-thick hover:bg-primary/20"
                                 title="Edit relationship"
                               >
                                 ✎
@@ -712,7 +715,7 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
                                     targetTitle: targetComp?.title || rel.targetId || 'Unknown'
                                   });
                                 }}
-                                className="btn btn-ghost btn-xs text-error hover:bg-error/20"
+                                className="btn btn-ghost btn-xs border-thick text-error hover:bg-error/20"
                                 title="Delete relationship"
                               >
                                 ✕
@@ -810,7 +813,7 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
                           delete newData[`${step.id}_temp`];
                           setFormData(newData);
                         }}
-                        className="btn btn-primary btn-sm flex-1"
+                        className="btn btn-primary btn-sm border-thick flex-1"
                         style={{ color: getContrastTextColor('primary') }}
                       >
                         Add
@@ -822,7 +825,7 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
                           delete newData[`${step.id}_temp`];
                           setFormData(newData);
                         }}
-                        className="btn btn-ghost btn-sm"
+                        className="btn btn-ghost btn-sm border-thick"
                       >
                         Cancel
                       </button>
@@ -868,7 +871,7 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
                               <button
                                 type="button"
                                 onClick={handleSaveSubtask}
-                                className="btn btn-ghost btn-xs text-success hover:bg-success/20"
+                                className="btn btn-ghost btn-xs border-thick text-success hover:bg-success/20"
                                 title="Save changes"
                               >
                                 ✓
@@ -876,7 +879,7 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
                               <button
                                 type="button"
                                 onClick={handleCancelEditSubtask}
-                                className="btn btn-ghost btn-xs text-error hover:bg-error/20"
+                                className="btn btn-ghost btn-xs border-thick text-error hover:bg-error/20"
                                 title="Cancel"
                               >
                                 ✕
@@ -956,7 +959,7 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
                                   console.log('📝 Edit clicked for subtask:', { index, subtask });
                                   handleEditSubtask(index, subtask);
                                 }}
-                                className="btn btn-ghost btn-xs hover:bg-primary/20"
+                                className="btn btn-ghost btn-xs border-thick hover:bg-primary/20"
                                 title="Edit subtask"
                               >
                                 ✎
@@ -971,7 +974,7 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
                                     subtaskTitle: subtask.title || 'Untitled'
                                   });
                                 }}
-                                className="btn btn-ghost btn-xs text-error hover:bg-error/20"
+                                className="btn btn-ghost btn-xs border-thick text-error hover:bg-error/20"
                                 title="Delete subtask"
                               >
                                 ✕
@@ -1075,7 +1078,7 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
 
                             // Add to local state
                             const updated = [...(formData[step.id] || step.value || []), {
-                              id: newSubtask.id,
+                              id: newSubtask.todo.id,
                               title: temp.title,
                               description: temp.description || '',
                               priority: temp.priority,
@@ -1090,7 +1093,7 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
                             toast.error('Failed to add subtask');
                           }
                         }}
-                        className="btn btn-primary btn-sm flex-1"
+                        className="btn btn-primary btn-sm border-thick flex-1"
                         style={{ color: getContrastTextColor('primary') }}
                       >
                         Add
@@ -1102,7 +1105,7 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
                           delete newData[`${step.id}_temp`];
                           setFormData(newData);
                         }}
-                        className="btn btn-ghost btn-sm"
+                        className="btn btn-ghost btn-sm border-thick"
                       >
                         Cancel
                       </button>
@@ -1121,7 +1124,7 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
           type="button"
           onClick={handleBack}
           disabled={currentStep === 0}
-          className="btn btn-outline"
+          className="btn btn-outline border-thick"
         >
           Back
         </button>
@@ -1130,7 +1133,7 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
             type="button"
             onClick={handleNext}
             disabled={!isStepValid()}
-            className="btn btn-primary"
+            className="btn btn-primary border-thick"
             style={{ color: getContrastTextColor('primary') }}
           >
             Next
@@ -1140,7 +1143,7 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
             type="button"
             onClick={handleSubmit}
             disabled={!isStepValid() || isSubmitting}
-            className="btn btn-primary"
+            className="btn btn-primary border-thick"
             style={{ color: getContrastTextColor('primary') }}
           >
             {isSubmitting ? (

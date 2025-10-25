@@ -146,7 +146,7 @@ const SubtaskList: React.FC<SubtaskListProps> = ({
       {isExpanded && subtasks.length > 0 && (
         <div className="space-y-2">
           {sortedSubtasks.map((subtask) => (
-            <div key={subtask.id} className="bg-base-50 rounded-md">
+            <div key={subtask.id} className="bg-base-50 rounded-lg hover:border-thick hover:border-primary hover:bg-primary/20">
               <TodoItem
                 todo={subtask}
                 projectId={projectId}

@@ -3,16 +3,13 @@ import ReactFlow, {
   Node,
   Edge,
   Controls,
-  Background,
   useNodesState,
   useEdgesState,
-  addEdge,
-  Connection,
-  ConnectionMode,
   MiniMap,
   useReactFlow,
   ReactFlowProvider,
   Panel,
+  Position,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { Doc, projectAPI } from '../api';
@@ -27,6 +24,66 @@ import { getAllCategories, getCategoryColor, getTypesForCategory } from '../conf
 const NODE_TYPES = {
   componentNode: ComponentNode,
   areaNode: AreaNode,
+};
+
+/**
+ * Calculate optimal source and target handle positions based on node positions
+ * This makes edges connect intelligently based on relative node positions
+ */
+const getEdgeHandlePositions = (
+  sourceNode: Node,
+  targetNode: Node
+): { sourceHandle: string; targetHandle: string; sourcePosition: Position; targetPosition: Position } => {
+  const sourceX = sourceNode.position.x + (sourceNode.width || 400) / 2;
+  const sourceY = sourceNode.position.y + (sourceNode.height || 200) / 2;
+  const targetX = targetNode.position.x + (targetNode.width || 400) / 2;
+  const targetY = targetNode.position.y + (targetNode.height || 200) / 2;
+
+  const dx = targetX - sourceX;
+  const dy = targetY - sourceY;
+
+  // Determine primary direction based on which delta is larger
+  const isHorizontal = Math.abs(dx) > Math.abs(dy);
+
+  if (isHorizontal) {
+    // Horizontal connection
+    if (dx > 0) {
+      // Target is to the right
+      return {
+        sourceHandle: 'right',
+        targetHandle: 'left',
+        sourcePosition: Position.Right,
+        targetPosition: Position.Left
+      };
+    } else {
+      // Target is to the left
+      return {
+        sourceHandle: 'left',
+        targetHandle: 'right',
+        sourcePosition: Position.Left,
+        targetPosition: Position.Right
+      };
+    }
+  } else {
+    // Vertical connection
+    if (dy > 0) {
+      // Target is below
+      return {
+        sourceHandle: 'bottom',
+        targetHandle: 'top',
+        sourcePosition: Position.Bottom,
+        targetPosition: Position.Top
+      };
+    } else {
+      // Target is above
+      return {
+        sourceHandle: 'top',
+        targetHandle: 'bottom',
+        sourcePosition: Position.Top,
+        targetPosition: Position.Bottom
+      };
+    }
+  }
 };
 
 interface FeaturesGraphProps {
@@ -53,6 +110,10 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
   const [viewMode, setViewMode] = useState<ViewMode>('graph');
   const [layoutMode, setLayoutMode] = useState<LayoutMode>('feature');
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
+  const [edgeType, setEdgeType] = useState<'smoothstep' | 'default'>(() => {
+    const stored = localStorage.getItem('graph-edge-type');
+    return (stored === 'smoothstep' || stored === 'default') ? stored : 'smoothstep';
+  });
   const { fitView, setCenter } = useReactFlow();
 
   // Relationship management state
@@ -92,6 +153,11 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
     const features = Array.from(new Set(docs.map(d => d.feature).filter(Boolean))) as string[];
     setSelectedFeatures(new Set(features));
   }, [docs]);
+
+  // Save edge type preference to localStorage
+  useEffect(() => {
+    localStorage.setItem('graph-edge-type', edgeType);
+  }, [edgeType]);
 
   // Auto-dismiss toast after 3 seconds
   useEffect(() => {
@@ -157,18 +223,70 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
       });
 
       const features = Object.keys(componentsByFeature);
-      const featureSpacing = 450;
-      const nodeSpacing = 150;
-      const featuresPerRow = Math.ceil(Math.sqrt(features.length));
+
+      // Calculate columns per feature based on component count
+      const getColumnsForFeature = (componentCount: number) => {
+        if (componentCount <= 2) return 1;
+        if (componentCount <= 6) return 2;
+        if (componentCount <= 12) return 3;
+        return 4;
+      };
+
+      const horizontalNodeSpacing = 650; // Space between nodes horizontally (increased)
+      const verticalNodeSpacing = 350; // Space between nodes vertically (increased)
+      const featurePadding = 600; // Padding between features (generous)
+      const rowSpacing = 400; // Extra spacing between rows of features
+
+      // Calculate width for each feature based on its column count
+      const featureWidths = features.map(feature => {
+        const componentCount = componentsByFeature[feature].length;
+        const columns = getColumnsForFeature(componentCount);
+        return columns * horizontalNodeSpacing + featurePadding;
+      });
+
+      // Calculate positions using cumulative widths (no more fixed grid)
+      let currentX = 0;
+      let currentY = 0;
+      let currentRowMaxHeight = 0;
+      let currentRowWidth = 0;
+      const maxRowWidth = 3500; // Maximum width before wrapping to next row
 
       features.forEach((feature, featureIndex) => {
         const featureComponents = componentsByFeature[feature];
-        const row = Math.floor(featureIndex / featuresPerRow);
-        const col = featureIndex % featuresPerRow;
-        const featureX = col * featureSpacing;
-        const featureY = row * featureSpacing;
+        const columnsForThisFeature = getColumnsForFeature(featureComponents.length);
+        const featureWidth = featureWidths[featureIndex];
 
-        featureComponents.forEach((component, componentIndex) => {
+        // Check if we need to wrap to next row
+        if (currentRowWidth + featureWidth > maxRowWidth && featureIndex > 0) {
+          currentX = 0;
+          currentY += currentRowMaxHeight + rowSpacing;
+          currentRowWidth = 0;
+          currentRowMaxHeight = 0;
+        }
+
+        const featureX = currentX;
+        const featureY = currentY;
+
+        // Calculate this feature's height for row tracking
+        const rows = Math.ceil(featureComponents.length / columnsForThisFeature);
+        const featureHeight = rows * verticalNodeSpacing;
+        currentRowMaxHeight = Math.max(currentRowMaxHeight, featureHeight);
+
+        // Move X position for next feature
+        currentX += featureWidth;
+        currentRowWidth += featureWidth;
+
+        // Sort components by relationship count (most connected first) for better visual organization
+        const sortedComponents = [...featureComponents].sort((a, b) => {
+          const aConnections = (a.relationships || []).length;
+          const bConnections = (b.relationships || []).length;
+          if (aConnections !== bConnections) {
+            return bConnections - aConnections; // Most connected first
+          }
+          return a.title.localeCompare(b.title); // Alphabetical tiebreaker
+        });
+
+        sortedComponents.forEach((component, componentIndex) => {
           const isRecent = new Date(component.updatedAt).getTime() > Date.now() - 24 * 60 * 60 * 1000;
           const isStale = new Date(component.updatedAt).getTime() < Date.now() - 90 * 24 * 60 * 60 * 1000;
           const isIncomplete = component.content.length < 100;
@@ -180,8 +298,8 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
           );
 
           const storedPos = storedPositions[component.id];
-          const defaultX = featureX + (componentIndex % 3) * 200;
-          const defaultY = featureY + Math.floor(componentIndex / 3) * nodeSpacing;
+          const defaultX = featureX + (componentIndex % columnsForThisFeature) * horizontalNodeSpacing;
+          const defaultY = featureY + Math.floor(componentIndex / columnsForThisFeature) * verticalNodeSpacing;
 
           // Determine node type based on component type
           const nodeType = component.type === 'area' || component.type === 'section' ? 'areaNode' : 'componentNode';
@@ -210,14 +328,48 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
       });
 
       const types = Object.keys(componentsByType) as Doc['type'][];
-      const typeSpacing = 450;
-      const nodeSpacing = 150;
+
+      // Calculate dynamic columns per type based on component count
+      const getColumnsForType = (componentCount: number) => {
+        if (componentCount <= 3) return 1;
+        if (componentCount <= 8) return 2;
+        if (componentCount <= 16) return 3;
+        return 4;
+      };
+
+      const horizontalNodeSpacing = 650; // Space between nodes in same type (increased)
+      const verticalNodeSpacing = 350; // Space between nodes vertically (increased)
+      const typePadding = 600; // Padding between type groups (generous)
+
+      // Calculate width for each type based on its column count
+      const typeWidths = types.map(type => {
+        const componentCount = componentsByType[type].length;
+        const columns = getColumnsForType(componentCount);
+        return columns * horizontalNodeSpacing + typePadding;
+      });
+
+      // Calculate positions using cumulative widths
+      let currentX = 0;
 
       types.forEach((type, typeIndex) => {
         const typeComponents = componentsByType[type];
-        const typeX = typeIndex * typeSpacing;
+        const columnsForThisType = getColumnsForType(typeComponents.length);
+        const typeX = currentX;
 
-        typeComponents.forEach((component, componentIndex) => {
+        // Move X position for next type
+        currentX += typeWidths[typeIndex];
+
+        // Sort components by relationship count (most connected first) for better visual organization
+        const sortedComponents = [...typeComponents].sort((a, b) => {
+          const aConnections = (a.relationships || []).length;
+          const bConnections = (b.relationships || []).length;
+          if (aConnections !== bConnections) {
+            return bConnections - aConnections; // Most connected first
+          }
+          return a.title.localeCompare(b.title); // Alphabetical tiebreaker
+        });
+
+        sortedComponents.forEach((component, componentIndex) => {
           const isRecent = new Date(component.updatedAt).getTime() > Date.now() - 24 * 60 * 60 * 1000;
           const isStale = new Date(component.updatedAt).getTime() < Date.now() - 90 * 24 * 60 * 60 * 1000;
           const isIncomplete = component.content.length < 100;
@@ -229,8 +381,8 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
           );
 
           const storedPos = storedPositions[component.id];
-          const defaultX = typeX;
-          const defaultY = componentIndex * nodeSpacing;
+          const defaultX = typeX + (componentIndex % columnsForThisType) * horizontalNodeSpacing;
+          const defaultY = Math.floor(componentIndex / columnsForThisType) * verticalNodeSpacing;
 
           // Determine node type based on component type
           const nodeType = component.type === 'area' || component.type === 'section' ? 'areaNode' : 'componentNode';
@@ -271,6 +423,9 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
           // Mark this relationship as processed
           processedRelationshipIds.add(rel.id);
 
+          // Calculate dynamic handle positions based on node positions
+          const handlePositions = getEdgeHandlePositions(sourceExists, targetExists);
+
           // Determine edge styling based on relationship type
           const relationshipStyles: Record<string, { stroke: string; animated: boolean; dasharray: string; strokeWidth: number }> = {
             mentions: { stroke: '#3b82f6', animated: true, dasharray: '0', strokeWidth: 2 },
@@ -289,13 +444,19 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
             id: rel.id, // Use the relationship ID directly (same for both directions)
             source: component.id,
             target: rel.targetId,
-            type: 'default', // Options: 'default', 'straight', 'step', 'smoothstep', 'bezier'
+            sourceHandle: handlePositions.sourceHandle,
+            targetHandle: handlePositions.targetHandle,
+            type: edgeType, // Use selected edge type (smoothstep or default)
             animated: style.animated,
             style: {
               stroke: style.stroke,
               strokeWidth: style.strokeWidth,
               strokeDasharray: style.dasharray,
             },
+            pathOptions: edgeType === 'smoothstep' ? {
+              offset: 20, // Offset from center for multiple edges
+              borderRadius: 15 // Smooth curves at corners
+            } : undefined,
             label: rel.relationType,
             labelStyle: { fontSize: 16, fill: '#cbd5e1', fontWeight: 600 },
             labelBgStyle: { fill: '#1e293b', fillOpacity: 0.9, rx: 4, ry: 4 },
@@ -312,7 +473,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
     setTimeout(() => {
       fitView({ padding: 0.2, duration: 500 });
     }, 100);
-  }, [docs, projectId, layoutMode, setNodes, setEdges, fitView]);
+  }, [docs, projectId, layoutMode, edgeType, setNodes, setEdges, fitView]);
 
   // Initialize graph
   useEffect(() => {
@@ -332,6 +493,38 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
 
     localStorage.setItem(storageKey, JSON.stringify(positions));
   }, [nodes, projectId, layoutMode]);
+
+  // Recalculate edge handle positions when nodes move
+  useEffect(() => {
+    if (nodes.length === 0 || edges.length === 0) return;
+
+    const updatedEdges = edges.map(edge => {
+      const sourceNode = nodes.find(n => n.id === edge.source);
+      const targetNode = nodes.find(n => n.id === edge.target);
+
+      if (sourceNode && targetNode) {
+        const handlePositions = getEdgeHandlePositions(sourceNode, targetNode);
+        return {
+          ...edge,
+          sourceHandle: handlePositions.sourceHandle,
+          targetHandle: handlePositions.targetHandle,
+        };
+      }
+
+      return edge;
+    });
+
+    // Only update if positions actually changed
+    const hasChanges = updatedEdges.some((edge, index) =>
+      edge.sourceHandle !== edges[index].sourceHandle ||
+      edge.targetHandle !== edges[index].targetHandle
+    );
+
+    if (hasChanges) {
+      setEdges(updatedEdges);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nodes]); // Recalculate when nodes change position (edges intentionally excluded to avoid loops)
 
   // Filter nodes and edges
   const filteredNodes = useMemo(() => {
@@ -362,11 +555,6 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
       visibleNodeIds.has(edge.source) && visibleNodeIds.has(edge.target)
     );
   }, [edges, filteredNodes]);
-
-  const onConnect = useCallback(
-    (params: Connection) => setEdges((eds) => addEdge(params, eds)),
-    [setEdges]
-  );
 
   const handleNodeClick = useCallback(
     (_event: React.MouseEvent, node: Node) => {
@@ -650,25 +838,50 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
 
         {/* Graph Layout Mode (only shown in graph view) */}
         {viewMode === 'graph' && (
-          <div className="bg-base-100 border-2 border-base-content/20 rounded-lg p-4">
-            <div className="text-xs font-semibold text-base-content/60 mb-2">Graph Layout</div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setLayoutMode('feature')}
-                className={`btn btn-sm flex-1 ${layoutMode === 'feature' ? 'btn-primary' : 'btn-ghost'}`}
-                style={layoutMode === 'feature' ? { color: getContrastTextColor('primary') } : {}}
-              >
-                Feature
-              </button>
-              <button
-                onClick={() => setLayoutMode('type')}
-                className={`btn btn-sm flex-1 ${layoutMode === 'type' ? 'btn-primary' : 'btn-ghost'}`}
-                style={layoutMode === 'type' ? { color: getContrastTextColor('primary') } : {}}
-              >
-                Type
-              </button>
+          <>
+            <div className="bg-base-100 border-2 border-base-content/20 rounded-lg p-4">
+              <div className="text-xs font-semibold text-base-content/60 mb-2">Graph Layout</div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setLayoutMode('feature')}
+                  className={`btn btn-sm flex-1 ${layoutMode === 'feature' ? 'btn-primary' : 'btn-ghost'}`}
+                  style={layoutMode === 'feature' ? { color: getContrastTextColor('primary') } : {}}
+                >
+                  Feature
+                </button>
+                <button
+                  onClick={() => setLayoutMode('type')}
+                  className={`btn btn-sm flex-1 ${layoutMode === 'type' ? 'btn-primary' : 'btn-ghost'}`}
+                  style={layoutMode === 'type' ? { color: getContrastTextColor('primary') } : {}}
+                >
+                  Type
+                </button>
+              </div>
             </div>
-          </div>
+
+            {/* Edge Routing Style */}
+            <div className="bg-base-100 border-2 border-base-content/20 rounded-lg p-4">
+              <div className="text-xs font-semibold text-base-content/60 mb-2">Edge Routing</div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setEdgeType('smoothstep')}
+                  className={`btn btn-sm flex-1 ${edgeType === 'smoothstep' ? 'btn-primary' : 'btn-ghost'}`}
+                  style={edgeType === 'smoothstep' ? { color: getContrastTextColor('primary') } : {}}
+                  title="Smart routing with rounded corners"
+                >
+                  Smart
+                </button>
+                <button
+                  onClick={() => setEdgeType('default')}
+                  className={`btn btn-sm flex-1 ${edgeType === 'default' ? 'btn-primary' : 'btn-ghost'}`}
+                  style={edgeType === 'default' ? { color: getContrastTextColor('primary') } : {}}
+                  title="Direct straight lines"
+                >
+                  Direct
+                </button>
+              </div>
+            </div>
+          </>
         )}
       </div>
 
@@ -682,16 +895,13 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
               edges={filteredEdges}
               onNodesChange={onNodesChange}
               onEdgesChange={onEdgesChange}
-              onConnect={onConnect}
               onNodeClick={handleNodeClick}
               nodeTypes={NODE_TYPES}
-              connectionMode={ConnectionMode.Loose}
               fitView
               fitViewOptions={{ padding: 0.2 }}
               minZoom={0.1}
               maxZoom={2}
             >
-              <Background color="#94a3b8" gap={32} />
               <Controls />
               <MiniMap
                 nodeColor={(node) => {
@@ -699,7 +909,10 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
                   return getCategoryColor(component.category);
                 }}
                 maskColor="rgba(0, 0, 0, 0.6)"
-                nodeClick={handleMinimapNodeClick}
+                onNodeClick={handleMinimapNodeClick}
+                pannable
+                zoomable
+                style={{ cursor: 'pointer' }}
               />
             </ReactFlow>
           </div>

@@ -595,24 +595,30 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
   },
   [CommandType.SUMMARY]: {
     type: CommandType.SUMMARY,
-    syntax: '/summary "[format]" @project',
+    syntax: '/summary "[format]" "[entity]" @project',
     simpleSyntax: '/summary',
-    description: 'Generate downloadable project summary in various formats (markdown/json/prompt/text)',
+    description: 'Generate downloadable project summary in various formats (markdown/json/prompt/text), optionally filtered by entity (todos/notes/devlog/components/stack/team/deployment/settings/all)',
     examples: [
-      '/summary "[format]"'
+      '/summary - Full project summary in markdown',
+      '/summary "prompt" - Full summary in AI-friendly format',
+      '/summary "json" "todos" - Export only todos in JSON',
+      '/summary "markdown" "components" - Export components as markdown',
+      '/summary "json" "team" - Export team members as JSON',
+      '/summary "prompt" "deployment" - Export deployment config for AI',
+      '/summary "markdown" "settings" - Export project settings as markdown'
     ],
     requiresProject: true,
     requiresArgs: false
   },
   [CommandType.ADD_STACK]: {
     type: CommandType.ADD_STACK,
-    syntax: '/add stack --name="name" --category="category" --version="version" --type="tech|package" @project',
+    syntax: '/add stack --name="name" --category="category" --version="version" --description="optional" @project',
     simpleSyntax: '/add stack',
     description: 'Add a technology or package to the stack (unified command)',
     examples: [
-      '/add stack --name="React" --category=framework --version=18.2.0 --type=tech @project',
-      '/add stack --name="express" --category=api --version=4.18.0 --type=package @project',
-      '/add-stack --name="PostgreSQL" --category=database --type=tech'
+      '/add stack --name="React" --category=framework --version=18.2.0 @project',
+      '/add stack --name="express" --category=api --version=4.18.0 --description="Backend framework" @project',
+      '/add-stack --name="PostgreSQL" --category=database'
     ],
     requiresProject: true,
     requiresArgs: false
@@ -658,13 +664,13 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
   },
   [CommandType.SET_DEPLOYMENT]: {
     type: CommandType.SET_DEPLOYMENT,
-    syntax: '/set deployment --url="url" --platform="platform" --status="status" @project',
+    syntax: '/set deployment --url="url" --github="repo" --platform="platform" --status="status" --branch="branch" --build="cmd" --start="cmd" --lastDeploy="date" @project',
     simpleSyntax: '/set deployment',
     description: 'Update deployment settings',
     examples: [
-      '/set deployment --url=https://myapp.com --platform=vercel',
-      '/set-deployment --status=active --branch=main',
-      '/set deployment --url=https://api.example.com @project'
+      '/set deployment --url=https://myapp.com --platform=vercel --github=user/repo',
+      '/set-deployment --status=active --branch=main --build="npm run build" --start="npm start"',
+      '/set deployment --url=https://api.example.com --lastDeploy="2025-10-25" @project'
     ],
     requiresProject: true,
     requiresArgs: false
@@ -1060,12 +1066,12 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
   // Relationship commands
   [CommandType.ADD_RELATIONSHIP]: {
     type: CommandType.ADD_RELATIONSHIP,
-    syntax: '/add relationship "[component id/title]" "[target id/title]" "[type]" @project',
+    syntax: '/add relationship --source="component" --target="target" --type=uses --description="optional" @project',
     simpleSyntax: '/add relationship',
     description: 'Add a relationship between two components',
     examples: [
-      '/add relationship "[component id/title]" "[target id/title]" "[type]"',
-      '/add relationship [#] [#] "[type]"'
+      '/add relationship --source="Login" --target="Auth Service" --type=uses',
+      '/add relationship --source="Dashboard" --target="API" --type=depends_on --description="Fetches user data"'
     ],
     requiresProject: true,
     requiresArgs: false
@@ -1084,12 +1090,12 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
   },
   [CommandType.EDIT_RELATIONSHIP]: {
     type: CommandType.EDIT_RELATIONSHIP,
-    syntax: '/edit relationship "[component id/title]" "[relationship id]" "[new type]" @project',
+    syntax: '/edit relationship "[component id/title]" "[relationship id]" "[new type]" --description="optional" @project',
     simpleSyntax: '/edit relationship',
     description: 'Edit an existing relationship',
     examples: [
-      '/edit relationship "[component id/title]" "[relationship id]" "[new type]"',
-      '/edit relationship [#] "[relationship id]" "[new type]"'
+      '/edit relationship "Login" 1 depends_on',
+      '/edit relationship "Dashboard" 2 uses --description="Fetches user data"'
     ],
     requiresProject: true,
     requiresArgs: false

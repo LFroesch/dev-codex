@@ -10,8 +10,10 @@ export interface ExportOptions {
   devLog: boolean;
   components: boolean;
   techStack: boolean;
+  team: boolean;
   deploymentData: boolean;
   publicPageData: boolean;
+  settings: boolean;
   timestamps: boolean;
 }
 
@@ -57,12 +59,25 @@ export function generateExportData(selectedProject: Project, exportOptions: Expo
     data.techStack = selectedProject.stack;
   }
 
+  if (exportOptions.team && selectedProject.team?.length) {
+    data.team = selectedProject.team;
+  }
+
   if (exportOptions.deploymentData && selectedProject.deploymentData) {
     data.deploymentData = selectedProject.deploymentData;
   }
 
   if (exportOptions.publicPageData && selectedProject.publicPageData) {
     data.publicPageData = selectedProject.publicPageData;
+  }
+
+  if (exportOptions.settings) {
+    data.settings = {
+      name: selectedProject.name,
+      category: selectedProject.category,
+      stagingEnvironment: selectedProject.stagingEnvironment,
+      tags: selectedProject.tags || []
+    };
   }
 
   if (exportOptions.timestamps) {
@@ -134,6 +149,32 @@ ${requestSection}
 
 ## ⚡ TECH STACK
 **Stack:** ${data.techStack.map((item: any) => `${item.name} (${item.category})`).join(' • ')}`;
+  }
+
+  if (data.team?.length) {
+    prompt += `
+
+## 👥 TEAM MEMBERS
+**Total Members:** ${data.team.length}
+
+`;
+    data.team.forEach((member: any) => {
+      const name = member.userId ?
+        `${member.userId.firstName || ''} ${member.userId.lastName || ''}`.trim() ||
+        member.userId.email :
+        'Unknown';
+      const role = member.role || 'member';
+      prompt += `• **${name}** - ${role}\n`;
+    });
+  }
+
+  if (data.settings) {
+    prompt += `
+
+## ⚙️ PROJECT SETTINGS
+**Category:** ${data.settings.category || 'General'}
+**Environment:** ${data.settings.stagingEnvironment || 'Development'}
+**Tags:** ${data.settings.tags?.length ? data.settings.tags.join(' • ') : 'None'}`;
   }
 
   if (data.todos?.length) {
@@ -350,6 +391,29 @@ export function generateMarkdownFormat(data: any, selectedProject: Project): str
   if (data.techStack?.length) {
     markdown += `## Tech Stack\n\n`;
     markdown += `${data.techStack.map((item: any) => `- **${item.name}** (${item.category})${item.version ? ` - v${item.version}` : ''}`).join('\n')}\n\n`;
+  }
+
+  if (data.team?.length) {
+    markdown += `## Team Members\n\n`;
+    data.team.forEach((member: any) => {
+      const name = member.userId ?
+        `${member.userId.firstName || ''} ${member.userId.lastName || ''}`.trim() ||
+        member.userId.email :
+        'Unknown';
+      const role = member.role || 'member';
+      markdown += `- **${name}** - ${role}\n`;
+    });
+    markdown += `\n`;
+  }
+
+  if (data.settings) {
+    markdown += `## Project Settings\n\n`;
+    markdown += `- **Category:** ${data.settings.category || 'General'}\n`;
+    markdown += `- **Environment:** ${data.settings.stagingEnvironment || 'Development'}\n`;
+    if (data.settings.tags?.length) {
+      markdown += `- **Tags:** ${data.settings.tags.map((tag: string) => `\`${tag}\``).join(', ')}\n`;
+    }
+    markdown += `\n`;
   }
 
   if (data.deploymentData) {

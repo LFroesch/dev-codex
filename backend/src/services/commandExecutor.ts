@@ -1,6 +1,11 @@
 import { CommandParser, CommandType, ParsedCommand } from './commandParser';
 import { logInfo, logError } from '../config/logger';
-import { CrudHandlers } from './handlers/CrudHandlers';
+import { TodoHandlers } from './handlers/crud/TodoHandlers';
+import { NoteHandlers } from './handlers/crud/NoteHandlers';
+import { DevLogHandlers } from './handlers/crud/DevLogHandlers';
+import { ComponentHandlers } from './handlers/crud/ComponentHandlers';
+import { RelationshipHandlers } from './handlers/crud/RelationshipHandlers';
+import { SearchHandlers } from './handlers/crud/SearchHandlers';
 import { StackHandlers } from './handlers/StackHandlers';
 import { TeamHandlers } from './handlers/TeamHandlers';
 import { SettingsHandlers } from './handlers/SettingsHandlers';
@@ -40,7 +45,12 @@ export interface CommandResponse {
  */
 export class CommandExecutor {
   private userId: string;
-  private crudHandlers: CrudHandlers;
+  private todoHandlers: TodoHandlers;
+  private noteHandlers: NoteHandlers;
+  private devLogHandlers: DevLogHandlers;
+  private componentHandlers: ComponentHandlers;
+  private relationshipHandlers: RelationshipHandlers;
+  private searchHandlers: SearchHandlers;
   private stackHandlers: StackHandlers;
   private teamHandlers: TeamHandlers;
   private settingsHandlers: SettingsHandlers;
@@ -48,7 +58,12 @@ export class CommandExecutor {
 
   constructor(userId: string) {
     this.userId = userId;
-    this.crudHandlers = new CrudHandlers(userId);
+    this.todoHandlers = new TodoHandlers(userId);
+    this.noteHandlers = new NoteHandlers(userId);
+    this.devLogHandlers = new DevLogHandlers(userId);
+    this.componentHandlers = new ComponentHandlers(userId);
+    this.relationshipHandlers = new RelationshipHandlers(userId);
+    this.searchHandlers = new SearchHandlers(userId);
     this.stackHandlers = new StackHandlers(userId);
     this.teamHandlers = new TeamHandlers(userId);
     this.settingsHandlers = new SettingsHandlers(userId);
@@ -84,13 +99,85 @@ export class CommandExecutor {
   }
 
   /**
+   * Split batch commands on && while respecting quoted strings
+   * @param commandStr - Raw batch command string
+   * @returns Array of individual commands
+   */
+  private splitBatchCommands(commandStr: string): string[] {
+    const commands: string[] = [];
+    let currentCommand = '';
+    let inQuotes = false;
+    let quoteChar = '';
+    let escaped = false;
+
+    for (let i = 0; i < commandStr.length; i++) {
+      const char = commandStr[i];
+      const nextChar = commandStr[i + 1];
+      const nextNextChar = commandStr[i + 2];
+
+      // Handle escape sequences
+      if (escaped) {
+        currentCommand += char;
+        escaped = false;
+        continue;
+      }
+
+      if (char === '\\') {
+        currentCommand += char;
+        escaped = true;
+        continue;
+      }
+
+      // Handle quotes
+      if ((char === '"' || char === "'") && !inQuotes) {
+        inQuotes = true;
+        quoteChar = char;
+        currentCommand += char;
+        continue;
+      }
+
+      if (char === quoteChar && inQuotes) {
+        inQuotes = false;
+        quoteChar = '';
+        currentCommand += char;
+        continue;
+      }
+
+      // Check for && separator (only when not in quotes)
+      if (!inQuotes && char === ' ' && nextChar === '&' && nextNextChar === '&') {
+        // Found &&, save current command and skip the &&
+        if (currentCommand.trim()) {
+          commands.push(currentCommand.trim());
+        }
+        currentCommand = '';
+        i += 2; // Skip the &&
+        // Also skip any trailing spaces after &&
+        while (i + 1 < commandStr.length && commandStr[i + 1] === ' ') {
+          i++;
+        }
+        continue;
+      }
+
+      // Regular character
+      currentCommand += char;
+    }
+
+    // Add the last command
+    if (currentCommand.trim()) {
+      commands.push(currentCommand.trim());
+    }
+
+    return commands;
+  }
+
+  /**
    * Execute multiple chained commands
    * @param commandStr - Command string with && separators
    * @param currentProjectId - Optional current project context
    * @returns Combined command response
    */
   private async executeBatch(commandStr: string, currentProjectId?: string): Promise<CommandResponse> {
-    const commands = commandStr.split(' && ').map(cmd => cmd.trim());
+    const commands = this.splitBatchCommands(commandStr);
 
     if (commands.length > 10) {
       return {
@@ -170,74 +257,75 @@ export class CommandExecutor {
 
     // Route to appropriate handler
     switch (parsed.type) {
-        // CRUD operations
+        // Todo operations
         case CommandType.ADD_TODO:
-          return await this.crudHandlers.handleAddTodo(parsed, currentProjectId);
-        case CommandType.ADD_NOTE:
-          return await this.crudHandlers.handleAddNote(parsed, currentProjectId);
-        case CommandType.ADD_DEVLOG:
-          return await this.crudHandlers.handleAddDevLog(parsed, currentProjectId);
-        case CommandType.ADD_COMPONENT:
-          return await this.crudHandlers.handleAddComponent(parsed, currentProjectId);
-
-        case CommandType.VIEW_NOTES:
-          return await this.crudHandlers.handleViewNotes(parsed, currentProjectId);
+          return await this.todoHandlers.handleAddTodo(parsed, currentProjectId);
         case CommandType.VIEW_TODOS:
-          return await this.crudHandlers.handleViewTodos(parsed, currentProjectId);
-        case CommandType.VIEW_DEVLOG:
-          return await this.crudHandlers.handleViewDevLog(parsed, currentProjectId);
-        case CommandType.VIEW_COMPONENTS:
-          return await this.crudHandlers.handleViewComponents(parsed, currentProjectId);
-        case CommandType.SEARCH:
-          return await this.crudHandlers.handleSearch(parsed, currentProjectId);
-
-        // Task management
+          return await this.todoHandlers.handleViewTodos(parsed, currentProjectId);
         case CommandType.COMPLETE_TODO:
-          return await this.crudHandlers.handleCompleteTodo(parsed, currentProjectId);
+          return await this.todoHandlers.handleCompleteTodo(parsed, currentProjectId);
         case CommandType.ASSIGN_TODO:
-          return await this.crudHandlers.handleAssignTodo(parsed, currentProjectId);
+          return await this.todoHandlers.handleAssignTodo(parsed, currentProjectId);
         case CommandType.PUSH_TODO:
-          return await this.crudHandlers.handlePushTodo(parsed, currentProjectId);
+          return await this.todoHandlers.handlePushTodo(parsed, currentProjectId);
+        case CommandType.EDIT_TODO:
+          return await this.todoHandlers.handleEditTodo(parsed, currentProjectId);
+        case CommandType.DELETE_TODO:
+          return await this.todoHandlers.handleDeleteTodo(parsed, currentProjectId);
 
         // Subtask operations
         case CommandType.ADD_SUBTASK:
-          return await this.crudHandlers.handleAddSubtask(parsed, currentProjectId);
+          return await this.todoHandlers.handleAddSubtask(parsed, currentProjectId);
         case CommandType.VIEW_SUBTASKS:
-          return await this.crudHandlers.handleViewSubtasks(parsed, currentProjectId);
-
-        // Edit operations
-        case CommandType.EDIT_TODO:
-          return await this.crudHandlers.handleEditTodo(parsed, currentProjectId);
-        case CommandType.EDIT_NOTE:
-          return await this.crudHandlers.handleEditNote(parsed, currentProjectId);
-        case CommandType.EDIT_DEVLOG:
-          return await this.crudHandlers.handleEditDevLog(parsed, currentProjectId);
-        case CommandType.EDIT_COMPONENT:
-          return await this.crudHandlers.handleEditComponent(parsed, currentProjectId);
+          return await this.todoHandlers.handleViewSubtasks(parsed, currentProjectId);
         case CommandType.EDIT_SUBTASK:
-          return await this.crudHandlers.handleEditSubtask(parsed, currentProjectId);
-
-        // Delete operations
-        case CommandType.DELETE_TODO:
-          return await this.crudHandlers.handleDeleteTodo(parsed, currentProjectId);
-        case CommandType.DELETE_NOTE:
-          return await this.crudHandlers.handleDeleteNote(parsed, currentProjectId);
-        case CommandType.DELETE_DEVLOG:
-          return await this.crudHandlers.handleDeleteDevLog(parsed, currentProjectId);
-        case CommandType.DELETE_COMPONENT:
-          return await this.crudHandlers.handleDeleteComponent(parsed, currentProjectId);
+          return await this.todoHandlers.handleEditSubtask(parsed, currentProjectId);
         case CommandType.DELETE_SUBTASK:
-          return await this.crudHandlers.handleDeleteSubtask(parsed, currentProjectId);
+          return await this.todoHandlers.handleDeleteSubtask(parsed, currentProjectId);
+
+        // Note operations
+        case CommandType.ADD_NOTE:
+          return await this.noteHandlers.handleAddNote(parsed, currentProjectId);
+        case CommandType.VIEW_NOTES:
+          return await this.noteHandlers.handleViewNotes(parsed, currentProjectId);
+        case CommandType.EDIT_NOTE:
+          return await this.noteHandlers.handleEditNote(parsed, currentProjectId);
+        case CommandType.DELETE_NOTE:
+          return await this.noteHandlers.handleDeleteNote(parsed, currentProjectId);
+
+        // DevLog operations
+        case CommandType.ADD_DEVLOG:
+          return await this.devLogHandlers.handleAddDevLog(parsed, currentProjectId);
+        case CommandType.VIEW_DEVLOG:
+          return await this.devLogHandlers.handleViewDevLog(parsed, currentProjectId);
+        case CommandType.EDIT_DEVLOG:
+          return await this.devLogHandlers.handleEditDevLog(parsed, currentProjectId);
+        case CommandType.DELETE_DEVLOG:
+          return await this.devLogHandlers.handleDeleteDevLog(parsed, currentProjectId);
+
+        // Component operations
+        case CommandType.ADD_COMPONENT:
+          return await this.componentHandlers.handleAddComponent(parsed, currentProjectId);
+        case CommandType.VIEW_COMPONENTS:
+          return await this.componentHandlers.handleViewComponents(parsed, currentProjectId);
+        case CommandType.EDIT_COMPONENT:
+          return await this.componentHandlers.handleEditComponent(parsed, currentProjectId);
+        case CommandType.DELETE_COMPONENT:
+          return await this.componentHandlers.handleDeleteComponent(parsed, currentProjectId);
 
         // Relationship operations
         case CommandType.ADD_RELATIONSHIP:
-          return await this.crudHandlers.handleAddRelationship(parsed, currentProjectId);
+          return await this.relationshipHandlers.handleAddRelationship(parsed, currentProjectId);
         case CommandType.VIEW_RELATIONSHIPS:
-          return await this.crudHandlers.handleViewRelationships(parsed, currentProjectId);
+          return await this.relationshipHandlers.handleViewRelationships(parsed, currentProjectId);
         case CommandType.EDIT_RELATIONSHIP:
-          return await this.crudHandlers.handleEditRelationship(parsed, currentProjectId);
+          return await this.relationshipHandlers.handleEditRelationship(parsed, currentProjectId);
         case CommandType.DELETE_RELATIONSHIP:
-          return await this.crudHandlers.handleDeleteRelationship(parsed, currentProjectId);
+          return await this.relationshipHandlers.handleDeleteRelationship(parsed, currentProjectId);
+
+        // Search operations
+        case CommandType.SEARCH:
+          return await this.searchHandlers.handleSearch(parsed, currentProjectId);
 
         // Stack operations - unified
         case CommandType.ADD_STACK:

@@ -23,7 +23,7 @@ export function isValidUrl(url: string): boolean {
 }
 
 /**
- * Sanitize text input (remove potentially harmful characters)
+ * Sanitize text input (remove potentially harmful characters and unescape special sequences)
  */
 export function sanitizeText(text: string | undefined | null): string {
   if (!text || typeof text !== 'string') {
@@ -31,6 +31,10 @@ export function sanitizeText(text: string | undefined | null): string {
   }
   return text
     .replace(/[<>]/g, '') // Remove angle brackets
+    .replace(/\\n/g, '\n') // Unescape newlines
+    .replace(/\\r/g, '\r') // Unescape carriage returns
+    .replace(/\\t/g, '\t') // Unescape tabs
+    .replace(/\\\\/g, '\\') // Unescape backslashes (must be last)
     .trim();
 }
 

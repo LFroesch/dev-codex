@@ -213,7 +213,7 @@ const SelectorWizard: React.FC<SelectorWizardProps> = ({ wizardType, step, proje
           {isDeleteSelector && (
             <button
               type="button"
-              className="btn btn-ghost btn-sm"
+              className="btn btn-ghost btn-sm border-thick"
               onClick={() => setIsFinished(true)}
             >
               I'm Finished

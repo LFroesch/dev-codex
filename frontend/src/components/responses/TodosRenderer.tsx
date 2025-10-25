@@ -115,7 +115,7 @@ export const TodosRenderer: React.FC<TodosRendererProps> = ({ todos, projectId, 
                 {todo.subtasks.map((subtask, subIndex) => (
                   <button
                     key={subIndex}
-                    onClick={() => subtask.index && onCommandClick?.(`/edit subtask ${subtask.index}`)}
+                    onClick={() => onCommandClick?.(`/edit subtask ${index + 1} ${subIndex + 1}`)}
                     className="w-full text-left flex items-start gap-2 p-2 bg-base-100 rounded-lg hover:bg-primary/10 hover:border-primary/50 transition-colors border-2 border-base-content/10 cursor-pointer"
                   >
                     <div className="flex-shrink-0 mt-0.5 text-sm">

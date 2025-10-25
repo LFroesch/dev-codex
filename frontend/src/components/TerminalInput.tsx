@@ -272,7 +272,7 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
               value: cmd.value,
               label: cmd.label,
               description: matchingAlias
-                ? `${cmd.description} (alias: /${matchingAlias})`
+                ? `${cmd.description}`
                 : cmd.description,
               category: cmd.category,
               type: 'command' as const,
@@ -333,19 +333,6 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     // Handle autocomplete navigation
     if (showAutocomplete) {
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        setSelectedIndex(prev =>
-          prev < autocompleteItems.length - 1 ? prev + 1 : prev
-        );
-        return;
-      }
-
-      if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        setSelectedIndex(prev => (prev > 0 ? prev - 1 : 0));
-        return;
-      }
 
       if (e.key === 'Tab') {
         if (autocompleteItems.length > 0) {
@@ -370,18 +357,16 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
     }
 
     // Handle command history (when autocomplete is not shown)
-    if (!showAutocomplete) {
-      if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        navigateHistory('up');
-        return;
-      }
+    if (e.key === 'ArrowUp' && e.shiftKey) {
+      e.preventDefault();
+      navigateHistory('up');
+      return;
+    }
 
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        navigateHistory('down');
-        return;
-      }
+    if (e.key === 'ArrowDown' && e.shiftKey) {
+      e.preventDefault();
+      navigateHistory('down');
+      return;
     }
 
     // Clear input with Escape
@@ -525,12 +510,12 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
       {showAutocomplete && autocompleteItems.length > 0 && (
         <div
           ref={autocompleteRef}
-          className="absolute bottom-full mb-2 w-full bg-base-100 border-2 border-base-content/20 rounded-lg shadow-xl max-h-64 overflow-y-auto z-50"
+          className="absolute bottom-full w-full bg-base-100 border-2 border-base-content/20 rounded-lg shadow-xl max-h-64 overflow-y-auto z-50"
         >
-          <div className="p-2">
-            <div className="text-xs font-semibold text-base-content/80 px-2 py-1 bg-base-200 rounded-t-lg sticky top-0">
+          <div className="p-0.5">
+            <div className="text-xs font-semibold text-base-content/80 px-2 py-1 bg-base-200 rounded-lg sticky top-0.5 border-thick">
               {autocompleteItems[0].type === 'command' ? '🔧 Commands' : '📁 Projects'}
-              <span className="ml-2 opacity-70">({autocompleteItems.length})</span>
+              <span className="ml-2 opacity-70">({autocompleteItems.length}) - Esc to Exit</span>
             </div>
             <div className="mt-1 space-y-1">
               {autocompleteItems.map((item, index) => (
@@ -586,7 +571,7 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
             onSelect={(e) => setCursorPosition(e.currentTarget.selectionStart)}
             disabled={disabled}
             placeholder="Type / for commands or @ for projects..."
-            className="textarea textarea-bordered w-full min-h-10 max-h-10 resize-none text-sm font-mono overflow-hidden placeholder:overflow-ellipsis placeholder:whitespace-nowrap bg-base-100"
+            className="textarea textarea-bordered w-full min-h-10 h-24 resize-none text-sm font-mono placeholder:overflow-ellipsis placeholder:whitespace-nowrap bg-base-100"
           />
           <button
             type="button"
@@ -613,6 +598,8 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
             </div>
             <span className="text-base-content/50 hidden sm:inline">•</span>
             <div className="flex items-center gap-1 hidden sm:flex">
+              <kbd className="kbd kbd-xs">Shift</kbd>
+              <span>+</span>
               <kbd className="kbd kbd-xs">↑</kbd>
               <kbd className="kbd kbd-xs">↓</kbd>
               <span>history</span>

@@ -3,6 +3,7 @@ import { Doc } from '../api';
 import { ComponentCategory, CreateComponentData } from '../../../shared/types/project';
 import { getContrastTextColor } from '../utils/contrastTextColor';
 import { getAllCategories, getTypesForCategory } from '../config/componentCategories';
+import ConfirmationModal from './ConfirmationModal';
 
 interface GraphControlsProps {
   docs: Doc[];
@@ -34,6 +35,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
   creating,
 }) => {
   const [showCreate, setShowCreate] = React.useState(false);
+  const [showResetConfirm, setShowResetConfirm] = React.useState(false);
   const [newComponent, setNewComponent] = React.useState({
     category: 'backend' as ComponentCategory,
     type: 'service',
@@ -200,7 +202,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
           <span className="hidden sm:inline">Reset</span>
         </button>
         <button
-          onClick={onResetLayout}
+          onClick={() => setShowResetConfirm(true)}
           className="btn btn-sm h-14 btn-ghost"
           title="Clear saved layout"
         >
@@ -210,6 +212,21 @@ const GraphControls: React.FC<GraphControlsProps> = ({
           <span className="hidden sm:inline">Clear</span>
         </button>
       </div>
+
+      {/* Reset Layout Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showResetConfirm}
+        onConfirm={() => {
+          onResetLayout();
+          setShowResetConfirm(false);
+        }}
+        onCancel={() => setShowResetConfirm(false)}
+        title="Clear Graph Layout?"
+        message="This will reset all node positions to the default auto-layout. Your manually positioned nodes will be lost. This action cannot be undone."
+        confirmText="Clear Layout"
+        cancelText="Cancel"
+        variant="warning"
+      />
 
       {/* Category Filters */}
       <div>

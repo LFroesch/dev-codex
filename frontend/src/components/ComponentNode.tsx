@@ -19,11 +19,8 @@ const ComponentNode: React.FC<NodeProps<ComponentNodeData>> = ({ data, selected 
   const category = getCategoryByValue(component.category);
   const typeInfo = category.types.find(t => t.value === component.type);
 
-  // Calculate width based on content length
-  const contentLength = component.content.length;
-  const minWidth = 200;
-  const maxWidth = 300;
-  const width = Math.min(maxWidth, minWidth + Math.floor(contentLength / 100));
+  // Fixed width for consistent layout
+  const width = 400;
 
   // Convert hex color to Tailwind-compatible format
   const hexToRgb = (hex: string) => {
@@ -37,7 +34,7 @@ const ComponentNode: React.FC<NodeProps<ComponentNodeData>> = ({ data, selected 
 
   const rgb = hexToRgb(category.color);
   const colorStyle = rgb ? {
-    backgroundColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.2)`,
+    backgroundColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.65)`,
     borderColor: category.color
   } : {};
 
@@ -62,11 +59,64 @@ const ComponentNode: React.FC<NodeProps<ComponentNodeData>> = ({ data, selected 
       className={`rounded-lg border-2 transition-all duration-200 ${healthRing} ${selectedClass}`}
       style={{ width: `${width}px`, ...colorStyle }}
     >
-      {/* Input handle (top) */}
+      {/* Handles on all 4 sides for dynamic edge routing */}
       <Handle
         type="target"
         position={Position.Top}
-        className="w-3 h-3 !bg-base-content/20 border-2 border-base-100"
+        id="top"
+        isConnectable={false}
+        style={{ opacity: 0, pointerEvents: 'none' }}
+      />
+      <Handle
+        type="target"
+        position={Position.Bottom}
+        id="bottom"
+        isConnectable={false}
+        style={{ opacity: 0, pointerEvents: 'none' }}
+      />
+      <Handle
+        type="target"
+        position={Position.Left}
+        id="left"
+        isConnectable={false}
+        style={{ opacity: 0, pointerEvents: 'none' }}
+      />
+      <Handle
+        type="target"
+        position={Position.Right}
+        id="right"
+        isConnectable={false}
+        style={{ opacity: 0, pointerEvents: 'none' }}
+      />
+
+      {/* Source handles (same positions) */}
+      <Handle
+        type="source"
+        position={Position.Top}
+        id="top"
+        isConnectable={false}
+        style={{ opacity: 0, pointerEvents: 'none' }}
+      />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        id="bottom"
+        isConnectable={false}
+        style={{ opacity: 0, pointerEvents: 'none' }}
+      />
+      <Handle
+        type="source"
+        position={Position.Left}
+        id="left"
+        isConnectable={false}
+        style={{ opacity: 0, pointerEvents: 'none' }}
+      />
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="right"
+        isConnectable={false}
+        style={{ opacity: 0, pointerEvents: 'none' }}
       />
 
       {/* Node content */}
@@ -143,18 +193,11 @@ const ComponentNode: React.FC<NodeProps<ComponentNodeData>> = ({ data, selected 
         </div>
 
         {/* Content preview */}
-        <div className="mt-2 text-xs text-base-content/50 line-clamp-2">
+        <div className="mt-2 text-sm text-base-content/70 line-clamp-4">
           {component.content}
         </div>
 
       </div>
-
-      {/* Output handle (bottom) */}
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        className="w-3 h-3 !bg-base-content/30 border-2 border-base-100"
-      />
     </div>
   );
 };

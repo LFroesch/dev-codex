@@ -6,6 +6,7 @@ import { Project } from '../../models/Project';
 import { logError } from '../../config/logger';
 import NotificationService from '../notificationService';
 import { NewsPost } from '../../models/NewsPost';
+import { calculateTextMetrics } from '../../utils/textMetrics';
 
 /**
  * Handlers for utility commands (help, themes, swap, export, news, wizards)
@@ -419,6 +420,7 @@ export class UtilityHandlers extends BaseCommandHandler {
 
     const project = resolution.project;
     const format = parsed.args[0]?.toLowerCase() || 'markdown';
+    let entity = parsed.args[1]?.toLowerCase() || 'all';
 
     // Validate format
     const validFormats = ['markdown', 'json', 'prompt', 'text'];
@@ -430,8 +432,41 @@ export class UtilityHandlers extends BaseCommandHandler {
       };
     }
 
-    // Build summary content
-    const summary = this.generateProjectSummary(project, format);
+    // Normalize entity aliases (handle plurals)
+    const entityAliases: Record<string, string> = {
+      'todo': 'todos',
+      'todos': 'todos',
+      'note': 'notes',
+      'notes': 'notes',
+      'devlog': 'devlog',
+      'devlogs': 'devlog',
+      'component': 'components',
+      'components': 'components',
+      'stack': 'stack',
+      'team': 'team',
+      'deployment': 'deployment',
+      'deploy': 'deployment',
+      'setting': 'settings',
+      'settings': 'settings',
+      'all': 'all'
+    };
+
+    if (entity && !entityAliases[entity]) {
+      return {
+        type: ResponseType.ERROR,
+        message: `Invalid entity "${entity}". Available: all, todos, notes, devlog, components, stack, team, deployment, settings`,
+        suggestions: ['/help summary']
+      };
+    }
+
+    // Normalize to canonical form
+    entity = entityAliases[entity] || 'all';
+
+    // Generate filtered summary
+    const summary = this.generateFilteredSummary(project, format, entity);
+
+    // Calculate text metrics (character count and token estimation)
+    const metrics = calculateTextMetrics(summary);
 
     // Determine file extension
     const extensions: Record<string, string> = {
@@ -442,17 +477,20 @@ export class UtilityHandlers extends BaseCommandHandler {
     };
 
     const fileExtension = extensions[format];
-    const fileName = `${project.name.replace(/\s+/g, '-')}-summary.${fileExtension}`;
+    const entitySuffix = entity === 'all' ? 'summary' : entity;
+    const fileName = `${project.name.replace(/\s+/g, '-')}-${entitySuffix}.${fileExtension}`;
 
     return {
       type: ResponseType.DATA,
-      message: `📄 Generated ${format} summary for ${project.name}`,
+      message: `📄 Generated ${format} ${entity === 'all' ? 'summary' : entity + ' export'} for ${project.name}`,
       data: {
         summary,
         format,
         fileName,
         projectName: project.name,
-        downloadable: true
+        entityType: entity,
+        downloadable: true,
+        textMetrics: metrics
       },
       metadata: {
         projectId: project._id.toString(),
@@ -460,6 +498,104 @@ export class UtilityHandlers extends BaseCommandHandler {
         action: 'summary'
       }
     };
+  }
+
+  /**
+   * Generate filtered summary based on entity type
+   */
+  private generateFilteredSummary(project: any, format: string, entity: string): string {
+    // Create a filtered project object based on entity
+    const filteredProject: any = {
+      name: project.name,
+      description: project.description,
+      category: project.category,
+      stagingEnvironment: project.stagingEnvironment,
+      color: project.color,
+      tags: project.tags,
+      createdAt: project.createdAt,
+      updatedAt: project.updatedAt,
+      _id: project._id
+    };
+
+    // Add only requested entity data
+    switch (entity) {
+      case 'todos':
+        filteredProject.todos = project.todos || [];
+        filteredProject.notes = [];
+        filteredProject.devLog = [];
+        filteredProject.components = [];
+        filteredProject.stack = [];
+        break;
+      case 'notes':
+        filteredProject.todos = [];
+        filteredProject.notes = project.notes || [];
+        filteredProject.devLog = [];
+        filteredProject.components = [];
+        filteredProject.stack = [];
+        break;
+      case 'devlog':
+        filteredProject.todos = [];
+        filteredProject.notes = [];
+        filteredProject.devLog = project.devLog || [];
+        filteredProject.components = [];
+        filteredProject.stack = [];
+        break;
+      case 'components':
+        filteredProject.todos = [];
+        filteredProject.notes = [];
+        filteredProject.devLog = [];
+        filteredProject.components = project.components || [];
+        filteredProject.stack = [];
+        break;
+      case 'stack':
+        filteredProject.todos = [];
+        filteredProject.notes = [];
+        filteredProject.devLog = [];
+        filteredProject.components = [];
+        filteredProject.stack = project.stack || [];
+        break;
+      case 'team':
+        filteredProject.todos = [];
+        filteredProject.notes = [];
+        filteredProject.devLog = [];
+        filteredProject.components = [];
+        filteredProject.stack = [];
+        filteredProject.team = project.team || [];
+        break;
+      case 'deployment':
+        filteredProject.todos = [];
+        filteredProject.notes = [];
+        filteredProject.devLog = [];
+        filteredProject.components = [];
+        filteredProject.stack = [];
+        filteredProject.deploymentData = project.deploymentData || null;
+        break;
+      case 'settings':
+        filteredProject.todos = [];
+        filteredProject.notes = [];
+        filteredProject.devLog = [];
+        filteredProject.components = [];
+        filteredProject.stack = [];
+        // Settings includes basic project metadata
+        filteredProject.tags = project.tags || [];
+        filteredProject.category = project.category;
+        filteredProject.stagingEnvironment = project.stagingEnvironment;
+        break;
+      case 'all':
+      default:
+        filteredProject.todos = project.todos || [];
+        filteredProject.notes = project.notes || [];
+        filteredProject.devLog = project.devLog || [];
+        filteredProject.components = project.components || [];
+        filteredProject.stack = project.stack || [];
+        filteredProject.team = project.team || [];
+        filteredProject.deploymentData = project.deploymentData;
+        filteredProject.publicPageData = project.publicPageData;
+        break;
+    }
+
+    // Use existing summary generator with filtered data
+    return this.generateProjectSummary(filteredProject, format);
   }
 
   /**
@@ -471,6 +607,7 @@ export class UtilityHandlers extends BaseCommandHandler {
     const devLog = project.devLog || [];
     const components = project.components || [];
     const stack = project.stack || [];
+    const team = project.team || [];
 
     // Count stats
     const completedTodos = todos.filter((t: any) => t.completed).length;
@@ -484,21 +621,8 @@ export class UtilityHandlers extends BaseCommandHandler {
             name: project.name,
             category: project.category,
             stagingEnvironment: project.stagingEnvironment,
-            color: project.color,
           },
           description: project.description,
-          tags: project.tags || [],
-          stats: {
-            todos: {
-              total: todos.length,
-              completed: completedTodos,
-              active: activeTodos.length,
-              highPriority: highPriorityTodos
-            },
-            notes: notes.length,
-            devLog: devLog.length,
-            components: components.length
-          },
           notes: notes,
           todos: todos,
           devLog: devLog,
@@ -506,6 +630,7 @@ export class UtilityHandlers extends BaseCommandHandler {
           techStack: {
             stack: stack,
           },
+          team: team,
           deploymentData: project.deploymentData || null,
           publicPageData: project.publicPageData || null,
           timestamps: {
@@ -522,10 +647,6 @@ export class UtilityHandlers extends BaseCommandHandler {
         prompt += `**Project Name:** ${project.name}\n`;
         if (project.category) prompt += `**Category:** ${project.category}\n`;
         if (project.stagingEnvironment) prompt += `**Current Environment:** ${project.stagingEnvironment}\n`;
-        if (project.color) prompt += `**Theme Color:** ${project.color}\n`;
-        if (project.tags && project.tags.length > 0) {
-          prompt += `\n**Tags/Keywords:** ${project.tags.join(' • ')}\n`;
-        }
 
         // Tech Stack
         if (stack.length > 0) {
@@ -612,13 +733,28 @@ export class UtilityHandlers extends BaseCommandHandler {
           });
         }
 
+        // Team
+        if (team.length > 0) {
+          prompt += `\n## 👥 TEAM MEMBERS\n`;
+          prompt += `**Total Members:** ${team.length}\n\n`;
+          team.forEach((member: any) => {
+            const name = member.userId ?
+              `${member.userId.firstName || ''} ${member.userId.lastName || ''}`.trim() ||
+              member.userId.email :
+              'Unknown';
+            const role = member.role || 'member';
+            prompt += `• **${name}** - ${role}\n`;
+          });
+        }
+
         // Deployment
         if (project.deploymentData) {
           prompt += `\n## 🚀 DEPLOYMENT INFO\n`;
           if (project.deploymentData.liveUrl) prompt += `**Live URL:** ${project.deploymentData.liveUrl}\n`;
           if (project.deploymentData.githubUrl) prompt += `**GitHub Repository:** ${project.deploymentData.githubUrl}\n`;
           if (project.deploymentData.deploymentPlatform) prompt += `**Hosting Platform:** ${project.deploymentData.deploymentPlatform}\n`;
-          if (project.deploymentData.environment) prompt += `**Environment:** ${project.deploymentData.environment}\n`;
+          if (project.deploymentData.deploymentStatus) prompt += `**Status:** ${project.deploymentData.deploymentStatus}\n`;
+          if (project.deploymentData.deploymentBranch) prompt += `**Branch:** ${project.deploymentData.deploymentBranch}\n`;
         }
 
         // Public Page Data
@@ -659,10 +795,6 @@ export class UtilityHandlers extends BaseCommandHandler {
           md += `## Description\n\n${project.description}\n\n`;
         }
 
-        // Tags
-        if (project.tags?.length) {
-          md += `## Tags\n\n${project.tags.map((tag: string) => `\`${tag}\``).join(', ')}\n\n`;
-        }
 
         // Notes
         if (notes.length > 0) {
@@ -714,7 +846,21 @@ export class UtilityHandlers extends BaseCommandHandler {
         // Tech Stack
         if (stack.length > 0) {
           md += `## Tech Stack\n\n`;
-          md += `### Stack\n${stack.map((t: any) => `- ${t.name}`).join('\n')}\n\n`;
+          md += `${stack.map((t: any) => `- **${t.name}** (${t.category})${t.version ? ` - v${t.version}` : ''}`).join('\n')}\n\n`;
+        }
+
+        // Team
+        if (team.length > 0) {
+          md += `## Team Members\n\n`;
+          team.forEach((member: any) => {
+            const name = member.userId ?
+              `${member.userId.firstName || ''} ${member.userId.lastName || ''}`.trim() ||
+              member.userId.email :
+              'Unknown';
+            const role = member.role || 'member';
+            md += `- **${name}** - ${role}\n`;
+          });
+          md += `\n`;
         }
 
         // Deployment
@@ -723,6 +869,7 @@ export class UtilityHandlers extends BaseCommandHandler {
           if (project.deploymentData.liveUrl) md += `- **Live URL:** ${project.deploymentData.liveUrl}\n`;
           if (project.deploymentData.githubUrl) md += `- **GitHub:** ${project.deploymentData.githubUrl}\n`;
           if (project.deploymentData.deploymentPlatform) md += `- **Platform:** ${project.deploymentData.deploymentPlatform}\n`;
+          if (project.deploymentData.deploymentStatus) md += `- **Status:** ${project.deploymentData.deploymentStatus}\n`;
           md += `\n`;
         }
 
@@ -762,22 +909,6 @@ export class UtilityHandlers extends BaseCommandHandler {
           text += `-----------\n`;
           text += `${project.description}\n\n`;
         }
-
-        // Tags
-        if (project.tags?.length) {
-          text += `TAGS\n`;
-          text += `----\n`;
-          text += `${project.tags.join(', ')}\n\n`;
-        }
-
-        // Statistics
-        text += `STATISTICS\n`;
-        text += `----------\n`;
-        text += `Todos: ${completedTodos}/${todos.length} completed\n`;
-        text += `High Priority: ${highPriorityTodos} remaining\n`;
-        text += `Notes: ${notes.length}\n`;
-        text += `Dev Log Entries: ${devLog.length}\n`;
-        text += `Components: ${components.length}\n\n`;
 
         // Notes
         if (notes.length > 0) {
@@ -823,12 +954,24 @@ export class UtilityHandlers extends BaseCommandHandler {
         if (stack.length > 0) {
           text += `TECH STACK\n`;
           text += `----------\n`;
-          if (stack.length > 0) {
-            text += `Technologies:\n`;
-            stack.forEach((t: any) => {
-              text += `- ${t.name}\n`;
-            });
-          }
+          stack.forEach((t: any) => {
+            text += `- ${t.name} (${t.category})${t.version ? ` v${t.version}` : ''}\n`;
+          });
+          text += `\n`;
+        }
+
+        // Team
+        if (team.length > 0) {
+          text += `TEAM MEMBERS\n`;
+          text += `------------\n`;
+          team.forEach((member: any) => {
+            const name = member.userId ?
+              `${member.userId.firstName || ''} ${member.userId.lastName || ''}`.trim() ||
+              member.userId.email :
+              'Unknown';
+            const role = member.role || 'member';
+            text += `- ${name} (${role})\n`;
+          });
           text += `\n`;
         }
 
@@ -839,6 +982,7 @@ export class UtilityHandlers extends BaseCommandHandler {
           if (project.deploymentData.liveUrl) text += `Live URL: ${project.deploymentData.liveUrl}\n`;
           if (project.deploymentData.githubUrl) text += `GitHub: ${project.deploymentData.githubUrl}\n`;
           if (project.deploymentData.deploymentPlatform) text += `Platform: ${project.deploymentData.deploymentPlatform}\n`;
+          if (project.deploymentData.deploymentStatus) text += `Status: ${project.deploymentData.deploymentStatus}\n`;
           text += `\n`;
         }
 
@@ -1151,209 +1295,101 @@ export class UtilityHandlers extends BaseCommandHandler {
    * Handle /llm command - Generate LLM context guide
    */
   handleLLMContext(): CommandResponse {
-    const guide = `# Project Management Terminal - LLM Guide
+    const guide = `# Terminal Command Reference for AI
 
-## Overview
-A command-line interface for managing projects, tasks, notes, and documentation. All commands start with "/" and support batch execution, flags, and project references.
+## Workflow: User → AI → Terminal → Repeat
+1. User runs \`/summary prompt [entity]\` to get project context
+2. User pastes context + this guide into AI chat
+3. AI generates commands, user pastes back into terminal
+4. Repeat as needed
 
-## Syntax Fundamentals
+## Core Syntax
+- Commands: \`/command "args" @project --flag="value"\`
+- Chain: \`cmd1 && cmd2 && cmd3\` (stops on error)
+- Quotes: Multi-word args need quotes
+- Escapes: \`\\n\` for newlines in content
+- Projects: \`@ProjectName\` at end of command
+- Item matching: UUID > Index (1-based) > Partial text match (case-insensitive)
 
-\`\`\`
-/command "arguments" @project --flag="value"
-\`\`\`
+## Commands (Syntax Only)
 
-- **Commands**: Start with / (e.g., /add todo, /view notes)
-- **Arguments**: Text following command (use quotes for multi-word text)
-- **Project References**: @projectname or @My Project Name
-- **Flags**: --key="value" or --key for boolean flags
-- **Chaining**: Use && to chain commands (e.g., /add todo fix bug && /view todos)
-- **Wizards**: Many commands support interactive wizards - omit arguments to trigger step-by-step forms
+\`/add todo --title="..." [--content="..." --priority=low|medium|high --status=not_started|in_progress|blocked|completed --due="MM-DD-YYYY HH:MM"]\`
+\`/edit todo "idx|text" [--title --content --priority --status --due]\`
+\`/delete todo "idx|text" [--confirm]\`
+\`/complete "idx|text"\`
+\`/assign "idx|text" "email"\`
+\`/push "idx|text"\` (push to devlog)
+\`/add subtask --parent="idx|text" --title="..." [same flags as todo]\`
+\`/edit subtask parent_idx subtask_idx [--flags]\`
+\`/delete subtask parent_idx subtask_idx [--confirm]\`
 
-## Command Categories (9 Groups)
+### Notes & DevLog
+\`/add note --title="..." --content="..."\`
+\`/edit note "idx|text"\`
+\`/delete note "idx|text"\`
+\`/add devlog --title="..." --content="..."\`
+\`/edit devlog "idx|text"\`
+\`/delete devlog "idx|text"\`
 
-### 1. ⚡ Getting Started
-- \`/help\` - Show all commands grouped by category
-- \`/help "command"\` - Get specific command help
+### Components & Relationships
+\`/add component --feature="..." --category=frontend|backend|database|infrastructure|security|api|documentation|asset --type="..." --title="..." --content="..."\`
+\`/edit component "idx|text"\`
+\`/delete component "idx|text"\`
+\`/add relationship --source="..." --target="..." --type=uses|implements|extends|depends_on|calls|contains|mentions|similar [--description="..."]\`
+\`/edit relationship "component" "rel_idx" "new_type" [--description]\`
+\`/delete relationship "component_idx" "rel_idx"\`
 
-### 2. 📋 Tasks & Todos
-- \`/add todo --title="text" --content="text" --priority=high|medium|low --status=not_started|in_progress|blocked --due="MM-DD-YYYY TIME"\`
-- \`/view todos\` - List all todos
-- \`/edit todo "id"\` - Edit todo (wizard with subtask management or use --title= --content= --priority= --status= --due=)
-- \`/delete todo "id/text"\` - Delete todo
-- \`/complete "id/text"\` - Mark complete
-- \`/assign "id/text" "email"\` - Assign to team member
-- \`/add subtask "parent" "text"\` - Add subtask
-- \`/view subtasks "id"\` - View subtasks
-- \`/edit subtask "parent_idx" "subtask_idx"\` - Edit subtask (per-parent indexing, wizard or use --title= --content= --priority= --status= --due=)
-- \`/delete subtask "parent_idx" "subtask_idx"\` - Delete subtask (per-parent indexing)
+**Component types by category:**
+frontend: page|component|hook|context|layout|util|custom
+backend: service|route|model|controller|middleware|util|custom
+database: schema|migration|seed|query|index|custom
+infrastructure: deployment|cicd|env|config|monitoring|docker|custom
+security: auth|authz|encryption|validation|sanitization|custom
+api: client|integration|webhook|contract|graphql|custom
+documentation: area|section|guide|architecture|api-doc|readme|changelog|custom
+asset: image|font|video|audio|document|dependency|custom
 
-### 3. 📝 Notes & Dev Log
-- \`/add note --title="text" --content="text"\` - Create note
-- \`/view notes\` - List notes
-- \`/edit note "id"\` - Edit note
-- \`/delete note "id"\` - Delete note
-- \`/add devlog --title="text" --content="text"\` - Add dev log entry
-- \`/view devlog\` - View dev log
-- \`/edit devlog "id"\` - Edit entry
-- \`/delete devlog "id"\` - Delete entry
+### Stack
+\`/add stack --name="..." --category=framework|runtime|database|styling|deployment|testing|tooling|ui|state|routing|forms|animation|api|auth|data|utility [--version="..." --description="..."]\`
+\`/remove stack --name="..."\`
 
-### 4. 🧩 Features & Components
-- \`/add component --feature="name" --category=frontend|backend|api --type="type" --title="title" --content="content"\`
-- \`/view components\` - View all components grouped by features
-- \`/edit component "id"\` - Edit component
-- \`/delete component "id"\` - Delete component
-- \`/add relationship "component" "target" "type"\` - Add relationship
-- \`/view relationships "component"\` - View relationships
+### Insights
+\`/info\` \`/today\` \`/week\` \`/standup\` \`/search "query"\`
+\`/summary [format] [entity]\` - formats: markdown|json|prompt|text; entities: all|todos|notes|devlog|components|stack|team|deployment|settings
 
-### 5. 📦 Tech Stack
-- \`/add stack --name="name" --category="category" --version="version"\` - Add technology
-- \`/view stack\` - View tech stack
-- \`/remove stack --name="name"\` - Remove technology
+### Team & Deployment
+\`/invite "email" --role=editor|viewer\`
+\`/remove member "email"\`
+\`/set deployment --url="..." --platform="..." --status=active|inactive|error [--github --build --start --branch --lastDeploy]\`
+\`/set public --enabled=true|false --slug="..."\`
 
-### 6. 📊 Project Insights
-- \`/info\` - Quick project overview with stats
-- \`/today\` - Today's tasks and activity
-- \`/week\` - Weekly summary and planning
-- \`/standup\` - Generate standup report
-- \`/summary markdown|json|prompt|text\` - Generate downloadable summary
-- \`/search "query"\` - Search across all content
+### Project
+\`/swap @project\`
+\`/export\`
+\`/set name "..."\`
+\`/set description "..."\`
+\`/add tag "..."\`
+\`/remove tag "..."\`
 
-### 7. 👥 Team & Deployment
-- \`/view team\` - View team members
-- \`/invite "email" --role=editor|viewer\` - Invite member
-- \`/remove member "email"\` - Remove member
-- \`/view deployment\` - View deployment info
-- \`/set deployment --url="url" --platform="platform"\` - Update deployment
-- \`/view public\` - View public settings
-- \`/set public --enabled=true|false --slug="slug"\` - Set public visibility
+## Critical Rules
+1. Components MUST have --feature flag
+2. Use /search before editing/deleting to verify items exist
+3. Chain commands: \`cmd1 && cmd2\` (stops on error, max 10)
+4. Dates: "MM-DD-YYYY HH:MMAM/PM" or "MM-DD HH:MM" (24hr)
+5. Markdown supported in content: \`--content="Line1\\nLine2"\`
+6. Item matching: UUID → Index → Partial text (case-insensitive)
 
-### 8. ⚙️ Project Management
-- \`/wizard new\` - Interactive project creation
-- \`/swap @project\` - Switch project
-- \`/view settings\` - View project settings
-- \`/set name "new name"\` - Update project name
-- \`/set description "text"\` - Update description
-- \`/add tag "tag"\` - Add project tag
-- \`/remove tag "tag"\` - Remove tag
-- \`/export\` - Export project data
-
-### 9. 🔔 System & Preferences
-- \`/set theme "name"\` - Change theme
-- \`/view themes\` - List available themes
-- \`/view notifications\` - View notifications
-- \`/clear notifications\` - Clear notifications
-- \`/view news\` - Latest updates
-- \`/goto "page"\` - Navigate to page
-- \`/llm\` - Show this guide
-
-## Interactive Wizards
-
-Most add/edit/delete commands support **interactive wizards** - step-by-step forms that guide you through the process:
-
-**Trigger wizards by omitting arguments:**
-- \`/wizard new\` - Interactive project creation wizard
-- \`/add todo\` - Opens wizard with form fields for title, content, priority, status, due date
-- \`/add note\` - Wizard for creating notes
-- \`/edit todo 1\` - Opens wizard to edit todo #1 with subtask management
-- \`/edit subtask 1 2\` - Wizard to edit 2nd subtask of parent #1
-- \`/delete todo 1\` - Opens confirmation wizard before deletion
-
-**Or use direct mode with flags for instant execution:**
-- \`/add todo --title="fix bug" --priority=high\` - Creates todo without wizard
-- \`/edit todo 1 --title="new title"\` - Direct edit without wizard
-
-## Key Usage Patterns
-
-**Create todo with wizard:**
-\`\`\`
-/add todo
-\`\`\`
-
-**Create todo with flags (skip wizard):**
-\`\`\`
-/add todo --title="fix login bug" --priority=high --content="Fix validation" --due="12-25-2025 8:00PM"
-\`\`\`
-
-**Batch operations:**
-\`\`\`
-/add todo --title="implement feature" && /add note --title="notes" --content="details" && /view todos
-\`\`\`
-
-**Project references:**
-\`\`\`
-/add todo --title="fix bug" @project
-/swap @My Cool Project
-\`\`\`
-
-**Edit interactively:**
-\`\`\`
-/edit todo 1              # Opens wizard with subtask management
-/edit subtask 1 2         # Opens edit wizard for 2nd subtask of parent todo #1
-\`\`\`
-
-**Edit directly:**
-\`\`\`
-/edit todo 1 --title="new title" --priority=high
-/edit subtask 1 2 --title="Updated subtask" --status=in_progress
-\`\`\`
-
-**Search and summarize:**
-\`\`\`
-/search "authentication"
-/summary prompt         # Generate AI-friendly context
-\`\`\`
-
-## Common Flags Reference
-
-- \`--title="text"\` - Set title
-- \`--content="text"\` - Set content
-- \`--priority=low|medium|high\` - Set priority
-- \`--status=not_started|in_progress|blocked\` - Set status
-- \`--due="MM-DD-YYYY TIME"\` - Set due date (flexible formats: "12-25-2025 8:00PM", "3-15 14:30")
-- \`--category="text"\` - Set category
-- \`--version="text"\` - Set version
-- \`--role=editor|viewer\` - Set user role
-- \`--enabled=true|false\` - Enable/disable feature
-- \`--url="url"\` - Set URL
-- \`--platform="text"\` - Set platform
-- \`--slug="text"\` - Set URL slug
-- \`--feature="text"\` - Set feature name
-- \`--type="text"\` - Set type
-- \`--unread\` - Filter unread items
-
-## Response Types
-
-- ✅ **success** - Operation completed
-- ❌ **error** - Operation failed
-- ℹ️ **info** - Information message
-- 📊 **data** - Data display (lists, tables)
-- ❓ **prompt** - Interactive wizard/prompt
-- ⚠️ **warning** - Warning message
-
-## Tips for LLMs
-
-1. Use /help to see all available commands organized by category
-2. Chain related commands with && for efficiency
-3. Use @project syntax for project references (works with spaces)
-4. **Most commands support BOTH wizard mode (no args) and direct mode (with flags)**
-5. Wizards are triggered by omitting arguments - great for interactive use
-6. Use flags for automation/scripting - skips wizards and executes directly
-7. Use /summary prompt to generate AI-friendly project context
-8. Use /search to find items across project before editing/deleting
-9. /info, /today, /week, /standup provide different views of project status
-10. Batch operations stop on first error
-11. Use quotes for multi-word arguments
-12. Reference items by ID or text content (system will fuzzy match)
-
-## Error Handling
-
-- Commands validate required arguments
-- Projects must exist for project-specific commands
-- Batch commands stop on first error
-- System provides suggestions for typos and similar commands
-- Use /help "command" for specific syntax help
+## Error Examples
+\`❌ --title flag is required\` → Add --title="..."
+\`❌ Component not found: "login"\` → Run /view components first
+\`❌ Invalid priority\` → Use low|medium|high
+\`❌ Target component not found\` → Both components must exist
+\`❌ --feature flag is required\` → Components need --feature="..."
 
 This terminal provides a powerful CLI for project management with support for tasks, documentation, team collaboration, and deployment tracking. All operations are command-based with support for both interactive wizards and direct flag-based execution.`;
+
+    // Calculate text metrics for the guide
+    const metrics = calculateTextMetrics(guide);
 
     return {
       type: ResponseType.DATA,
@@ -1363,7 +1399,8 @@ This terminal provides a powerful CLI for project management with support for ta
         format: 'text',
         fileName: 'llm-terminal-guide.txt',
         projectName: 'Terminal Guide',
-        downloadable: true
+        downloadable: true,
+        textMetrics: metrics
       }
     };
   }

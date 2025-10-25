@@ -190,6 +190,7 @@ export class SettingsHandlers extends BaseCommandHandler {
       {
         deployment: {
           liveUrl: dd.liveUrl || 'Not set',
+          githubRepo: dd.githubRepo || 'Not set',
           platform: dd.deploymentPlatform || 'Not set',
           status: dd.deploymentStatus || 'inactive',
           lastDeploy: dd.lastDeployDate || 'Never',
@@ -247,10 +248,39 @@ export class SettingsHandlers extends BaseCommandHandler {
       updated = true;
     }
 
+    if (parsed.flags.has('github')) {
+      deploymentData.githubRepo = parsed.flags.get('github') as string;
+      updated = true;
+    }
+
+    if (parsed.flags.has('build')) {
+      deploymentData.buildCommand = parsed.flags.get('build') as string;
+      updated = true;
+    }
+
+    if (parsed.flags.has('start')) {
+      deploymentData.startCommand = parsed.flags.get('start') as string;
+      updated = true;
+    }
+
+    if (parsed.flags.has('lastDeploy')) {
+      const dateStr = parsed.flags.get('lastDeploy') as string;
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) {
+        return {
+          type: ResponseType.ERROR,
+          message: 'Invalid date format for --lastDeploy',
+          suggestions: ['/set deployment --lastDeploy="2025-10-25"']
+        };
+      }
+      deploymentData.lastDeployDate = date;
+      updated = true;
+    }
+
     if (!updated) {
       return {
         type: ResponseType.ERROR,
-        message: 'No deployment data provided. Use flags like --url, --platform, --status, --branch',
+        message: 'No deployment data provided. Use flags like --url, --platform, --status, --branch, --github, --build, --start, --lastDeploy',
         suggestions: ['/help set deployment']
       };
     }

@@ -781,6 +781,11 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
               </button>
             )}
           </div>
+          {response.data.textMetrics && (
+            <div className="text-xs text-base-content/70 bg-base-300/50 px-3 py-2 rounded border border-base-content/10">
+              📊 <span className="font-semibold">{response.data.textMetrics.characterCount.toLocaleString()}</span> characters • ~<span className="font-semibold">{response.data.textMetrics.estimatedTokens.toLocaleString()}</span> tokens
+            </div>
+          )}
           <div className="text-xs text-base-content/60">
             💡 Use <code className="bg-base-300 px-1 rounded">/summary [format]</code> to change format (markdown, json, prompt, text)
           </div>
@@ -1054,7 +1059,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
               <button
                 type="button"
                 onClick={() => navigate(response.data.successRedirect || '/projects')}
-                className="btn btn-primary w-full"
+                className="btn btn-primary w-full border-thick"
                 style={{ color: getContrastTextColor('primary') }}
               >
                 View Project
@@ -1161,7 +1166,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                   <button
                     type="button"
                     onClick={handleAddTag}
-                    className="btn btn-primary btn-square"
+                    className="btn btn-primary btn-square border-thick"
                     style={{ color: getContrastTextColor('primary') }}
                   >
                     +
@@ -1212,7 +1217,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                               const updated = (wizardData[step.id] || step.value || []).filter((_: any, i: number) => i !== index);
                               setWizardData({ ...wizardData, [step.id]: updated });
                             }}
-                            className="btn btn-ghost btn-xs text-error"
+                            className="btn btn-ghost btn-xs border-thick text-error"
                           >
                             ✕
                           </button>
@@ -1303,7 +1308,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                               delete newData[`${step.id}_temp`];
                               setWizardData(newData);
                             }}
-                            className="btn btn-primary btn-sm flex-1"
+                            className="btn btn-primary btn-sm border-thick flex-1"
                             style={{ color: getContrastTextColor('primary') }}
                           >
                             Add
@@ -1315,7 +1320,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                               delete newData[`${step.id}_temp`];
                               setWizardData(newData);
                             }}
-                            className="btn btn-ghost btn-sm"
+                            className="btn btn-ghost btn-sm border-thick"
                           >
                             Cancel
                           </button>
@@ -1334,7 +1339,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
               type="button"
               onClick={handleBack}
               disabled={currentStep === 0}
-              className="btn btn-outline"
+              className="btn btn-outline border-thick"
             >
               Back
             </button>
@@ -1343,7 +1348,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                 type="button"
                 onClick={handleNext}
                 disabled={!isStepValid()}
-                className="btn btn-primary"
+                className="btn btn-primary border-thick"
                 style={{ color: getContrastTextColor('primary') }}
               >
                 Next
@@ -1353,7 +1358,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                 type="button"
                 onClick={handleSubmit}
                 disabled={!isStepValid() || isSubmitting}
-                className="btn btn-primary"
+                className="btn btn-primary border-thick"
                 style={{ color: getContrastTextColor('primary') }}
               >
                 {isSubmitting ? (
@@ -1401,8 +1406,10 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
 
       const escapeForCommand = (value: string): string => {
         return String(value)
-          .replace(/\\/g, '\\\\')
-          .replace(/"/g, '\\"');
+          .replace(/\\/g, '\\\\')  // Escape backslashes first
+          .replace(/\n/g, '\\n')    // Escape newlines
+          .replace(/\r/g, '\\r')    // Escape carriage returns
+          .replace(/"/g, '\\"');    // Then escape quotes
       };
 
       const handleSubmit = async () => {
@@ -1570,7 +1577,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
               <button
                 type="button"
                 onClick={() => navigate(getNavigationPath())}
-                className="btn btn-primary w-full"
+                className="btn btn-primary w-full border-thick"
                 style={{ color: getContrastTextColor('primary') }}
               >
                 {response.data.wizardType === 'edit_relationship_type' ? 'View Components' : `View ${getItemTypeName()}s Page`}
@@ -1650,7 +1657,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
               type="button"
               onClick={handleBack}
               disabled={currentStep === 0}
-              className="btn btn-outline"
+              className="btn btn-outline border-thick"
             >
               Back
             </button>
@@ -1659,7 +1666,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                 type="button"
                 onClick={handleNext}
                 disabled={!isStepValid()}
-                className="btn btn-primary"
+                className="btn btn-primary border-thick"
                 style={{ color: getContrastTextColor('primary') }}
               >
                 Next
@@ -1669,7 +1676,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                 type="button"
                 onClick={handleSubmit}
                 disabled={!isStepValid() || isSubmitting}
-                className="btn btn-primary"
+                className="btn btn-primary border-thick"
                 style={{ color: getContrastTextColor('primary') }}
               >
                 {isSubmitting ? (
@@ -2514,6 +2521,16 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
               No relationships found
             </div>
           )}
+          <button
+            onClick={() => navigate('/features')}
+            className="btn-primary-sm gap-2 border-thick"
+            style={{ color: getContrastTextColor('primary') }}
+          >
+            <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+            </svg>
+            Go to Features
+          </button>
         </div>
       );
     }
@@ -2677,6 +2694,39 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                       </svg>
                       View Features
+                    </button>
+                  ) : command.toLowerCase().includes('set deployment') ? (
+                    <button
+                      onClick={() => handleNavigateToProject('/deployment')}
+                      className="btn-primary-sm gap-2 border-thick"
+                      style={{ color: getContrastTextColor('primary') }}
+                    >
+                      <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                      </svg>
+                      View Deployment
+                    </button>
+                  ) : command.toLowerCase().includes('set name') || command.toLowerCase().includes('set description') || command.toLowerCase().includes('set tags') ? (
+                    <button
+                      onClick={() => handleNavigateToProject('/settings')}
+                      className="btn-primary-sm gap-2 border-thick"
+                      style={{ color: getContrastTextColor('primary') }}
+                    >
+                      <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                      </svg>
+                      View Settings
+                    </button>
+                  ) : command.toLowerCase().includes('set public') ? (
+                    <button
+                      onClick={() => handleNavigateToProject('/public')}
+                      className="btn-primary-sm gap-2 border-thick"
+                      style={{ color: getContrastTextColor('primary') }}
+                    >
+                      <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                      </svg>
+                      View Public
                     </button>
                   ) : command.toLowerCase().includes('add stack') || command.toLowerCase().includes('remove stack') || command.toLowerCase().includes('edit stack') ? (
                     <button

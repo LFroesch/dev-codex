@@ -25,10 +25,12 @@ const ExportSection: React.FC<ExportSectionProps> = ({ selectedProject, onProjec
     notes: false,
     todos: false,
     devLog: false,
-    docs: false,
+    components: false,
     techStack: false,
+    team: false,
     deploymentData: false,
     publicPageData: false,
+    settings: false,
     timestamps: false,
   });
 

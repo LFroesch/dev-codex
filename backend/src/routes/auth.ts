@@ -762,19 +762,26 @@ router.post('/forgot-password', passwordResetRateLimit, validatePasswordReset, a
     }
 
     const { email } = req.body;
-    
+
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      // SEC-002 FIX: Don't reveal if email exists - return same message as success case
+      console.log(`Password reset attempted for non-existent email: ${email}`);
+      return res.status(200).json({
+        message: 'If that email exists, a reset link has been sent'
+      });
     }
 
-    const resetToken = crypto.randomBytes(32).toString('hex');
-    user.resetPasswordToken = resetToken;
-    user.resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hour
+    // SEC-004 FIX: Generate token, hash it before storing, send raw token to user
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+
+    user.resetPasswordToken = hashedToken;
+    user.resetPasswordExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes (reduced from 1 hour)
     await user.save();
 
-    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5002'}/reset-password?token=${resetToken}`;
-    
+    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5002'}/reset-password?token=${rawToken}`;
+
     await transporter.sendMail({
       to: user.email,
       subject: 'Password Reset Request',
@@ -782,12 +789,12 @@ router.post('/forgot-password', passwordResetRateLimit, validatePasswordReset, a
         <h2>Password Reset Request</h2>
         <p>You requested a password reset. Click the link below to reset your password:</p>
         <a href="${resetUrl}">Reset Password</a>
-        <p>This link will expire in 1 hour.</p>
+        <p>This link will expire in 15 minutes.</p>
         <p>If you didn't request this, please ignore this email.</p>
       `
     });
 
-    res.json({ message: 'Password reset email sent' });
+    res.json({ message: 'If that email exists, a reset link has been sent' });
   } catch (error) {
     console.error('Password reset error:', error);
     res.status(500).json({ message: 'Failed to send password reset email' });
@@ -798,9 +805,12 @@ router.post('/forgot-password', passwordResetRateLimit, validatePasswordReset, a
 router.post('/reset-password', passwordResetRateLimit, validatePasswordReset, async (req, res) => {
   try {
     const { token, password } = req.body;
-    
+
+    // SEC-004 FIX: Hash the submitted token before comparing
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
     const user = await User.findOne({
-      resetPasswordToken: token,
+      resetPasswordToken: hashedToken,
       resetPasswordExpires: { $gt: Date.now() }
     });
 

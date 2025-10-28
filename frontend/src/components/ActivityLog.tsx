@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { activityLogsAPI, ActivityLogEntry, formatActivityMessage, getRelativeTime } from '../api/activityLogs';
 import { getContrastTextColor } from '../utils/contrastTextColor';
+import { csrfFetch } from '../utils/csrf';
 
 interface ActivityLogProps {
   projectId: string;
@@ -121,9 +122,8 @@ const ActivityLog: React.FC<ActivityLogProps> = ({
 
     setClearing(true);
     try {
-      const response = await fetch(`/api/activity-logs/project/${projectId}/clear`, {
+      const response = await csrfFetch(`/api/activity-logs/project/${projectId}/clear`, {
         method: 'DELETE',
-        credentials: 'include',
         headers: {
           'Content-Type': 'application/json'
         }

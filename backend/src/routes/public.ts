@@ -201,21 +201,28 @@ router.get('/projects', async (req, res) => {
       query.tags = { $in: [tag] };
     }
 
-    if (search) {
+    // SEC-006 FIX: Sanitize search input to prevent NoSQL injection
+    let sanitizedSearch = '';
+    if (search && typeof search === 'string') {
+      // Escape regex special characters
+      sanitizedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    if (sanitizedSearch) {
       // Search in project fields and also match projects by owner names
       query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
-        { publicDescription: { $regex: search, $options: 'i' } },
-        { tags: { $regex: search, $options: 'i' } }
+        { name: { $regex: sanitizedSearch, $options: 'i' } },
+        { description: { $regex: sanitizedSearch, $options: 'i' } },
+        { publicDescription: { $regex: sanitizedSearch, $options: 'i' } },
+        { tags: { $regex: sanitizedSearch, $options: 'i' } }
       ];
     }
 
     let projects, total;
-    
-    if (search) {
+
+    if (sanitizedSearch) {
       // Use aggregation for user name search
-      const searchRegex = { $regex: search, $options: 'i' };
+      const searchRegex = { $regex: sanitizedSearch, $options: 'i' };
       
       const aggregationPipeline = [
         {

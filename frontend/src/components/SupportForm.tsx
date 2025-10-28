@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { csrfFetch } from '../utils/csrf';
 
 interface SupportFormData {
   category: string;
@@ -50,12 +51,11 @@ const SupportForm: React.FC = () => {
     setError(null);
 
     try {
-      const response = await fetch('/api/tickets', {
+      const response = await csrfFetch('/api/tickets', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        credentials: 'include',
         body: JSON.stringify(formData)
       });
 

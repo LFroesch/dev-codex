@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { Outlet, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { authAPI, projectAPI } from '../api';
 import type { Project } from '../api/types';
@@ -14,8 +14,10 @@ import { useLayoutEvents } from '../hooks/useLayoutEvents';
 import { unsavedChangesManager } from '../utils/unsavedChanges';
 import { getContrastTextColor } from '../utils/contrastTextColor';
 import ToastContainer from './Toast';
-import IdeasPage from '../pages/IdeasPage';
 import { toast } from '../services/toast';
+
+// Lazy load heavy page components for better performance
+const IdeasPage = lazy(() => import('../pages/IdeasPage'));
 
 const Layout: React.FC = () => {
   const navigate = useNavigate();
@@ -30,6 +32,16 @@ const Layout: React.FC = () => {
   const [isHandlingTimeout, setIsHandlingTimeout] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [analyticsReady, setAnalyticsReady] = useState(false);
+
+  // Page-level tab states
+  const [activeStackTab, setActiveStackTab] = useState<'current' | 'add'>('current');
+  const [activeDeploymentTab, setActiveDeploymentTab] = useState<'overview' | 'deployment' | 'env' | 'notes'>('overview');
+  const [activeFeaturesTab, setActiveFeaturesTab] = useState<'graph' | 'structure' | 'all' | 'create'>('graph');
+  const [activeNewsTab, setActiveNewsTab] = useState<'all' | 'news' | 'update' | 'dev_log' | 'announcement'>('all');
+  const [activeNotesTab, setActiveNotesTab] = useState<'notes' | 'todos' | 'devlog'>('notes');
+  const [activePublicTab, setActivePublicTab] = useState<'overview' | 'url' | 'visibility'>('overview');
+  const [activeSharingTab, setActiveSharingTab] = useState<'overview' | 'team' | 'activity'>('overview');
+  const [activeSettingsTab, setActiveSettingsTab] = useState<'info' | 'export' | 'danger'>('info');
 
   // when setActiveProjectTab, clear category selections
   useEffect(() => {
@@ -609,48 +621,6 @@ const Layout: React.FC = () => {
             </div>
             )}
 
-            {/* Project Views Submenu - Mobile */}
-            {location.pathname === '/projects' && location.pathname !== '/terminal' && (
-            <div className="flex justify-center">
-              <div className="tabs-container p-1">
-                <button
-                  onClick={() => {
-                    setActiveProjectTab('active');
-                  }}
-                  className={`tab tab-sm flex-shrink-0 min-h-10 px-3 font-bold text-xs sm:text-sm whitespace-nowrap ${activeProjectTab === 'active' ? 'tab-active' : ''}`}
-                  style={activeProjectTab === 'active' ? {color: getContrastTextColor()} : {}}
-                >
-                  <span>Active <span className="text-xs opacity-60">({currentProjects.length})</span></span>
-                </button>
-                {archivedProjects.length > 0 && (
-                  <button
-                    onClick={() => setActiveProjectTab('archived')}
-                    className={`tab tab-sm flex-shrink-0 min-h-10 px-3 font-bold text-xs sm:text-sm whitespace-nowrap ${activeProjectTab === 'archived' ? 'tab-active' : ''}`}
-                    style={activeProjectTab === 'archived' ? {color: getContrastTextColor()} : {}}
-                  >
-                    <span>Archived <span className="text-xs opacity-60">({archivedProjects.length})</span></span>
-                  </button>
-                )}
-                {sharedProjects.length > 0 && (
-                  <button
-                    onClick={() => setActiveProjectTab('shared')}
-                    className={`tab tab-sm flex-shrink-0 min-h-10 px-3 font-bold text-xs sm:text-sm whitespace-nowrap ${activeProjectTab === 'shared' ? 'tab-active' : ''}`}
-                    style={activeProjectTab === 'shared' ? {color: getContrastTextColor()} : {}}
-                  >
-                    <span>Shared <span className="text-xs opacity-60">({sharedProjects.length})</span></span>
-                  </button>
-                )}
-                <button
-                  onClick={() => setActiveProjectTab('ideas')}
-                  className={`tab tab-sm flex-shrink-0 min-h-10 px-3 font-bold text-xs sm:text-sm whitespace-nowrap ${activeProjectTab === 'ideas' ? 'tab-active' : ''}`}
-                  style={activeProjectTab === 'ideas' ? {color: getContrastTextColor()} : {}}
-                >
-                  <span>Ideas</span>
-                </button>
-              </div>
-            </div>
-            )}
-
             {/* Project Details Submenu - Mobile */}
             {selectedProject && (location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/features' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && location.pathname !== '/projects' && (
             <div className="flex justify-center">
@@ -734,6 +704,351 @@ const Layout: React.FC = () => {
                 </button>
               </div>
             </div>
+            )}
+
+            {/* Page-Level Tabs - Mobile */}
+            {location.pathname !== '/terminal' && (
+              <>
+                {/* My Projects Tabs */}
+                {location.pathname === '/projects' && (
+                  <>
+                    <div className="flex justify-center">
+                      <div className="tabs-container p-1">
+                        <button
+                          onClick={() => setActiveProjectTab('active')}
+                          className={`tab-button ${activeProjectTab === 'active' ? 'tab-active' : ''}`}
+                          style={activeProjectTab === 'active' ? {color: getContrastTextColor()} : {}}
+                        >
+                          <span>Active <span className="text-xs opacity-60">({currentProjects.length})</span></span>
+                        </button>
+                        {archivedProjects.length > 0 && (
+                          <button
+                            onClick={() => setActiveProjectTab('archived')}
+                            className={`tab-button ${activeProjectTab === 'archived' ? 'tab-active' : ''}`}
+                            style={activeProjectTab === 'archived' ? {color: getContrastTextColor()} : {}}
+                          >
+                            <span>Archived <span className="text-xs opacity-60">({archivedProjects.length})</span></span>
+                          </button>
+                        )}
+                        {sharedProjects.length > 0 && (
+                          <button
+                            onClick={() => setActiveProjectTab('shared')}
+                            className={`tab-button ${activeProjectTab === 'shared' ? 'tab-active' : ''}`}
+                            style={activeProjectTab === 'shared' ? {color: getContrastTextColor()} : {}}
+                          >
+                            <span>Shared <span className="text-xs opacity-60">({sharedProjects.length})</span></span>
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setActiveProjectTab('ideas')}
+                          className={`tab-button ${activeProjectTab === 'ideas' ? 'tab-active' : ''}`}
+                          style={activeProjectTab === 'ideas' ? {color: getContrastTextColor()} : {}}
+                        >
+                          <span>Ideas</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Category Selector - Mobile */}
+                    {(activeProjectTab === 'active' || activeProjectTab === 'archived' || activeProjectTab === 'shared') && Object.keys(
+                      activeProjectTab === 'active' ? groupedCurrentProjects :
+                      activeProjectTab === 'archived' ? groupedArchivedProjects :
+                      groupedSharedProjects
+                    ).length > 0 && (
+                      <div className="flex justify-center">
+                        <div className="tabs-container p-1">
+                          <button
+                            onClick={() => setSelectedCategory(null)}
+                            className={`tab-button ${selectedCategory === null ? 'tab-active' : ''}`}
+                            style={selectedCategory === null ? {color: getContrastTextColor()} : {}}
+                          >
+                            <span>All <span className="text-xs opacity-60">({Object.values(
+                              activeProjectTab === 'active' ? groupedCurrentProjects :
+                              activeProjectTab === 'archived' ? groupedArchivedProjects :
+                              groupedSharedProjects
+                            ).flat().length})</span></span>
+                          </button>
+                          {Object.entries(
+                            activeProjectTab === 'active' ? groupedCurrentProjects :
+                            activeProjectTab === 'archived' ? groupedArchivedProjects :
+                            groupedSharedProjects
+                          ).map(([category, categoryProjects]) => (
+                            <button
+                              key={category}
+                              onClick={() => setSelectedCategory(category)}
+                              className={`tab-button ${selectedCategory === category ? 'tab-active' : ''}`}
+                              style={selectedCategory === category ? {color: getContrastTextColor()} : {}}
+                            >
+                              <span>{category} <span className="text-xs opacity-60">({categoryProjects.length})</span></span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* Stack Page Tabs */}
+                {selectedProject && location.pathname === '/stack' && (
+                  <div className="flex justify-center">
+                    <div className="tabs-container p-1">
+                      <button
+                        className={`tab-button ${activeStackTab === 'add' ? 'tab-active' : ''}`}
+                        style={activeStackTab === 'add' ? {color: getContrastTextColor()} : {}}
+                        onClick={() => setActiveStackTab('add')}
+                      >
+                        Add Technologies
+                      </button>
+                      <button
+                        className={`tab-button ${activeStackTab === 'current' ? 'tab-active' : ''}`}
+                        style={activeStackTab === 'current' ? {color: getContrastTextColor()} : {}}
+                        onClick={() => setActiveStackTab('current')}
+                      >
+                        Current Stack
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Deployment Page Tabs */}
+                {location.pathname === '/deployment' && (
+                  <div className="flex justify-center">
+                    <div className="tabs-container p-1">
+                      <button
+                        className={`tab-button ${activeDeploymentTab === 'overview' ? 'tab-active' : ''}`}
+                        style={activeDeploymentTab === 'overview' ? {color: getContrastTextColor()} : {}}
+                        onClick={() => setActiveDeploymentTab('overview')}
+                      >
+                        Overview
+                      </button>
+                      <button
+                        className={`tab-button ${activeDeploymentTab === 'deployment' ? 'tab-active' : ''}`}
+                        style={activeDeploymentTab === 'deployment' ? {color: getContrastTextColor()} : {}}
+                        onClick={() => setActiveDeploymentTab('deployment')}
+                      >
+                        Deployment
+                      </button>
+                      <button
+                        className={`tab-button ${activeDeploymentTab === 'env' ? 'tab-active' : ''}`}
+                        style={activeDeploymentTab === 'env' ? {color: getContrastTextColor()} : {}}
+                        onClick={() => setActiveDeploymentTab('env')}
+                      >
+                        Environment
+                      </button>
+                      <button
+                        className={`tab-button ${activeDeploymentTab === 'notes' ? 'tab-active' : ''}`}
+                        style={activeDeploymentTab === 'notes' ? {color: getContrastTextColor()} : {}}
+                        onClick={() => setActiveDeploymentTab('notes')}
+                      >
+                        Notes
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Features Page Tabs */}
+                {location.pathname === '/features' && (
+                  <div className="flex justify-center">
+                    <div className="tabs-container p-1">
+                      <button
+                        className={`tab-button ${activeFeaturesTab === 'graph' ? 'tab-active' : ''}`}
+                        style={activeFeaturesTab === 'graph' ? {color: getContrastTextColor()} : {}}
+                        onClick={() => setActiveFeaturesTab('graph')}
+                      >
+                        Graph
+                      </button>
+                      <button
+                        className={`tab-button ${activeFeaturesTab === 'structure' ? 'tab-active' : ''}`}
+                        style={activeFeaturesTab === 'structure' ? {color: getContrastTextColor()} : {}}
+                        onClick={() => setActiveFeaturesTab('structure')}
+                      >
+                        Structure
+                      </button>
+                      <button
+                        className={`tab-button ${activeFeaturesTab === 'all' ? 'tab-active' : ''}`}
+                        style={activeFeaturesTab === 'all' ? {color: getContrastTextColor()} : {}}
+                        onClick={() => setActiveFeaturesTab('all')}
+                      >
+                        All
+                      </button>
+                      <button
+                        className={`tab-button ${activeFeaturesTab === 'create' ? 'tab-active' : ''}`}
+                        style={activeFeaturesTab === 'create' ? {color: getContrastTextColor()} : {}}
+                        onClick={() => setActiveFeaturesTab('create')}
+                      >
+                        Create
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Notes Page Tabs */}
+                {location.pathname === '/notes' && (
+                  <div className="flex justify-center">
+                    <div className="tabs-container p-1">
+                      <button
+                        className={`tab-button ${activeNotesTab === 'notes' ? 'tab-active' : ''}`}
+                        style={activeNotesTab === 'notes' ? {color: getContrastTextColor()} : {}}
+                        onClick={() => setActiveNotesTab('notes')}
+                      >
+                        Notes
+                      </button>
+                      <button
+                        className={`tab-button ${activeNotesTab === 'todos' ? 'tab-active' : ''}`}
+                        style={activeNotesTab === 'todos' ? {color: getContrastTextColor()} : {}}
+                        onClick={() => setActiveNotesTab('todos')}
+                      >
+                        Todos
+                      </button>
+                      <button
+                        className={`tab-button ${activeNotesTab === 'devlog' ? 'tab-active' : ''}`}
+                        style={activeNotesTab === 'devlog' ? {color: getContrastTextColor()} : {}}
+                        onClick={() => setActiveNotesTab('devlog')}
+                      >
+                        Dev Log
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Public Page Tabs */}
+                {location.pathname === '/public' && (
+                  <div className="flex justify-center">
+                    <div className="tabs-container p-1">
+                      <button
+                        className={`tab-button ${activePublicTab === 'overview' ? 'tab-active' : ''}`}
+                        style={activePublicTab === 'overview' ? {color: getContrastTextColor()} : {}}
+                        onClick={() => setActivePublicTab('overview')}
+                      >
+                        Overview
+                      </button>
+                      {selectedProject.isPublic && (
+                        <>
+                          <button
+                            className={`tab-button ${activePublicTab === 'url' ? 'tab-active' : ''}`}
+                            style={activePublicTab === 'url' ? {color: getContrastTextColor()} : {}}
+                            onClick={() => setActivePublicTab('url')}
+                          >
+                            URL
+                          </button>
+                          <button
+                            className={`tab-button ${activePublicTab === 'visibility' ? 'tab-active' : ''}`}
+                            style={activePublicTab === 'visibility' ? {color: getContrastTextColor()} : {}}
+                            onClick={() => setActivePublicTab('visibility')}
+                          >
+                            Privacy
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Sharing Page Tabs */}
+                {location.pathname === '/sharing' && (
+                  <div className="flex justify-center">
+                    <div className="tabs-container p-1">
+                      <button
+                        className={`tab-button ${activeSharingTab === 'overview' ? 'tab-active' : ''}`}
+                        style={activeSharingTab === 'overview' ? {color: getContrastTextColor()} : {}}
+                        onClick={() => setActiveSharingTab('overview')}
+                      >
+                        Overview
+                      </button>
+                      {selectedProject.isShared && (
+                        <button
+                          className={`tab-button ${activeSharingTab === 'team' ? 'tab-active' : ''}`}
+                          style={activeSharingTab === 'team' ? {color: getContrastTextColor()} : {}}
+                          onClick={() => setActiveSharingTab('team')}
+                        >
+                          Team
+                        </button>
+                      )}
+                      {!selectedProject.isShared && (
+                        <button
+                          className={`tab-button ${activeSharingTab === 'activity' ? 'tab-active' : ''}`}
+                          style={activeSharingTab === 'activity' ? {color: getContrastTextColor()} : {}}
+                          onClick={() => setActiveSharingTab('activity')}
+                        >
+                          Activity
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Settings Page Tabs */}
+                {location.pathname === '/settings' && (
+                  <div className="flex justify-center">
+                    <div className="tabs-container p-1">
+                      <button
+                        className={`tab-button ${activeSettingsTab === 'info' ? 'tab-active' : ''}`}
+                        style={activeSettingsTab === 'info' ? {color: getContrastTextColor()} : {}}
+                        onClick={() => setActiveSettingsTab('info')}
+                      >
+                        Info
+                      </button>
+                      <button
+                        className={`tab-button ${activeSettingsTab === 'export' ? 'tab-active' : ''}`}
+                        style={activeSettingsTab === 'export' ? {color: getContrastTextColor()} : {}}
+                        onClick={() => setActiveSettingsTab('export')}
+                      >
+                        Export
+                      </button>
+                      <button
+                        className={`tab-button ${activeSettingsTab === 'danger' ? 'tab-active' : ''}`}
+                        style={activeSettingsTab === 'danger' ? {color: getContrastTextColor()} : {}}
+                        onClick={() => setActiveSettingsTab('danger')}
+                      >
+                        Danger
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* News Page Tabs - for /news page */}
+            {location.pathname === '/news' && (
+              <div className="flex justify-center">
+                <div className="tabs-container p-1">
+                  <button
+                    className={`tab-button ${activeNewsTab === 'all' ? 'tab-active' : ''}`}
+                    style={activeNewsTab === 'all' ? {color: getContrastTextColor()} : {}}
+                    onClick={() => setActiveNewsTab('all')}
+                  >
+                    All
+                  </button>
+                  <button
+                    className={`tab-button ${activeNewsTab === 'news' ? 'tab-active' : ''}`}
+                    style={activeNewsTab === 'news' ? {color: getContrastTextColor()} : {}}
+                    onClick={() => setActiveNewsTab('news')}
+                  >
+                    News
+                  </button>
+                  <button
+                    className={`tab-button ${activeNewsTab === 'update' ? 'tab-active' : ''}`}
+                    style={activeNewsTab === 'update' ? {color: getContrastTextColor()} : {}}
+                    onClick={() => setActiveNewsTab('update')}
+                  >
+                    Updates
+                  </button>
+                  <button
+                    className={`tab-button ${activeNewsTab === 'dev_log' ? 'tab-active' : ''}`}
+                    style={activeNewsTab === 'dev_log' ? {color: getContrastTextColor()} : {}}
+                    onClick={() => setActiveNewsTab('dev_log')}
+                  >
+                    Dev Log
+                  </button>
+                  <button
+                    className={`tab-button ${activeNewsTab === 'announcement' ? 'tab-active' : ''}`}
+                    style={activeNewsTab === 'announcement' ? {color: getContrastTextColor()} : {}}
+                    onClick={() => setActiveNewsTab('announcement')}
+                  >
+                    Announcements
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         </div>
@@ -891,54 +1206,14 @@ const Layout: React.FC = () => {
           {user && (location.pathname === '/terminal') && (
             <div className="mt-2"></div>
           )}
-          {/* Extra margin below navbars */}
-          <div className='mb-2'></div>
+          {user && (location.pathname !== '/terminal') && (
+            <div className="mt-0.5"></div>
+          )}
+
 
           {/* Second Navigation Bar - Desktop */}
           {user && location.pathname !== '/support' && (location.pathname === '/projects' || (selectedProject && (location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/features' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && location.pathname !== '/projects') || (location.pathname === '/discover' || location.pathname.startsWith('/discover/'))) && (
           <div className="py-2">
-            {/* Project Views Submenu - Desktop */}
-            {location.pathname === '/projects' && (
-            <div className="flex justify-center">
-              <div className="tabs-container p-1">
-                <button
-                  onClick={() => {
-                    setActiveProjectTab('active');
-                  }}
-                  className={`tab-button ${activeProjectTab === 'active' ? 'tab-active' : ''}`}
-                  style={activeProjectTab === 'active' ? {color: getContrastTextColor()} : {}}
-                >
-                  <span>Active <span className="text-xs opacity-60">({currentProjects.length})</span></span>
-                </button>
-                {archivedProjects.length > 0 && (
-                  <button
-                    onClick={() => setActiveProjectTab('archived')}
-                    className={`tab-button ${activeProjectTab === 'archived' ? 'tab-active' : ''}`}
-                    style={activeProjectTab === 'archived' ? {color: getContrastTextColor()} : {}}
-                  >
-                    <span>Archived <span className="text-xs opacity-60">({archivedProjects.length})</span></span>
-                  </button>
-                )}
-                {sharedProjects.length > 0 && (
-                  <button
-                    onClick={() => setActiveProjectTab('shared')}
-                    className={`tab-button ${activeProjectTab === 'shared' ? 'tab-active' : ''}`}
-                    style={activeProjectTab === 'shared' ? {color: getContrastTextColor()} : {}}
-                  >
-                    <span>Shared <span className="text-xs opacity-60">({sharedProjects.length})</span></span>
-                  </button>
-                )}
-                <button
-                  onClick={() => setActiveProjectTab('ideas')}
-                  className={`tab-button ${activeProjectTab === 'ideas' ? 'tab-active' : ''}`}
-                  style={activeProjectTab === 'ideas' ? {color: getContrastTextColor()} : {}}
-                >
-                  <span>Ideas</span>
-                </button>
-              </div>
-            </div>
-            )}
-
             {/* Project Details Submenu - Desktop */}
             {selectedProject && (location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/features' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && location.pathname !== '/projects' && (
             <div className="flex justify-center">
@@ -1023,6 +1298,355 @@ const Layout: React.FC = () => {
               </div>
             </div>
             )}
+
+            {/* Page-Level Tabs - Desktop */}
+            <>
+              {/* My Projects Tabs */}
+              {location.pathname === '/projects' && (
+                <>
+                  <div className="flex justify-center">
+                    <div className="tabs-container p-1">
+                      <button
+                        onClick={() => setActiveProjectTab('active')}
+                        className={`tab-button ${activeProjectTab === 'active' ? 'tab-active' : ''}`}
+                        style={activeProjectTab === 'active' ? {color: getContrastTextColor()} : {}}
+                      >
+                        <span>Active <span className="text-xs opacity-60">({currentProjects.length})</span></span>
+                      </button>
+                      {archivedProjects.length > 0 && (
+                        <button
+                          onClick={() => setActiveProjectTab('archived')}
+                          className={`tab-button ${activeProjectTab === 'archived' ? 'tab-active' : ''}`}
+                          style={activeProjectTab === 'archived' ? {color: getContrastTextColor()} : {}}
+                        >
+                          <span>Archived <span className="text-xs opacity-60">({archivedProjects.length})</span></span>
+                        </button>
+                      )}
+                      {sharedProjects.length > 0 && (
+                        <button
+                          onClick={() => setActiveProjectTab('shared')}
+                          className={`tab-button ${activeProjectTab === 'shared' ? 'tab-active' : ''}`}
+                          style={activeProjectTab === 'shared' ? {color: getContrastTextColor()} : {}}
+                        >
+                          <span>Shared <span className="text-xs opacity-60">({sharedProjects.length})</span></span>
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setActiveProjectTab('ideas')}
+                        className={`tab-button ${activeProjectTab === 'ideas' ? 'tab-active' : ''}`}
+                        style={activeProjectTab === 'ideas' ? {color: getContrastTextColor()} : {}}
+                      >
+                        <span>Ideas</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Category Selector - Desktop */}
+                  <div className="mt-2"></div>
+                  {(activeProjectTab === 'active' || activeProjectTab === 'archived' || activeProjectTab === 'shared') && Object.keys(
+                    activeProjectTab === 'active' ? groupedCurrentProjects :
+                    activeProjectTab === 'archived' ? groupedArchivedProjects :
+                    groupedSharedProjects
+                  ).length > 0 && (
+                    <div className="flex justify-center">
+                      <div className="tabs-container p-1">
+                        <button
+                          onClick={() => setSelectedCategory(null)}
+                          className={`tab-button ${selectedCategory === null ? 'tab-active' : ''}`}
+                          style={selectedCategory === null ? {color: getContrastTextColor()} : {}}
+                        >
+                          <span>All <span className="text-xs opacity-60">({Object.values(
+                            activeProjectTab === 'active' ? groupedCurrentProjects :
+                            activeProjectTab === 'archived' ? groupedArchivedProjects :
+                            groupedSharedProjects
+                          ).flat().length})</span></span>
+                        </button>
+                        {Object.entries(
+                          activeProjectTab === 'active' ? groupedCurrentProjects :
+                          activeProjectTab === 'archived' ? groupedArchivedProjects :
+                          groupedSharedProjects
+                        ).map(([category, categoryProjects]) => (
+                          <button
+                            key={category}
+                            onClick={() => setSelectedCategory(category)}
+                            className={`tab-button ${selectedCategory === category ? 'tab-active' : ''}`}
+                            style={selectedCategory === category ? {color: getContrastTextColor()} : {}}
+                          >
+                            <span>{category} <span className="text-xs opacity-60">({categoryProjects.length})</span></span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+              {/* Project Details Tabs */}
+              {location.pathname !== '/projects' && <div className="mt-2"></div>}
+              {selectedProject && (
+                <>
+                  {/* Stack Page Tabs */}
+                  {location.pathname === '/stack' && (
+                  <div className="flex justify-center">
+                    <div className="tabs-container p-1">
+                      <button
+                        className={`tab-button ${activeStackTab === 'add' ? 'tab-active' : ''}`}
+                        style={activeStackTab === 'add' ? {color: getContrastTextColor()} : {}}
+                        onClick={() => setActiveStackTab('add')}
+                      >
+                        Add Technologies
+                      </button>
+                      <button
+                        className={`tab-button ${activeStackTab === 'current' ? 'tab-active' : ''}`}
+                        style={activeStackTab === 'current' ? {color: getContrastTextColor()} : {}}
+                        onClick={() => setActiveStackTab('current')}
+                      >
+                        Current Stack
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Deployment Page Tabs */}
+                {location.pathname === '/deployment' && (
+                  <div className="flex justify-center">
+                    <div className="tabs-container p-1">
+                      <button
+                        className={`tab-button ${activeDeploymentTab === 'overview' ? 'tab-active' : ''}`}
+                        style={activeDeploymentTab === 'overview' ? {color: getContrastTextColor()} : {}}
+                        onClick={() => setActiveDeploymentTab('overview')}
+                      >
+                        Overview
+                      </button>
+                      <button
+                        className={`tab-button ${activeDeploymentTab === 'deployment' ? 'tab-active' : ''}`}
+                        style={activeDeploymentTab === 'deployment' ? {color: getContrastTextColor()} : {}}
+                        onClick={() => setActiveDeploymentTab('deployment')}
+                      >
+                        Deployment
+                      </button>
+                      <button
+                        className={`tab-button ${activeDeploymentTab === 'env' ? 'tab-active' : ''}`}
+                        style={activeDeploymentTab === 'env' ? {color: getContrastTextColor()} : {}}
+                        onClick={() => setActiveDeploymentTab('env')}
+                      >
+                        Environment
+                      </button>
+                      <button
+                        className={`tab-button ${activeDeploymentTab === 'notes' ? 'tab-active' : ''}`}
+                        style={activeDeploymentTab === 'notes' ? {color: getContrastTextColor()} : {}}
+                        onClick={() => setActiveDeploymentTab('notes')}
+                      >
+                        Notes
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Features Page Tabs */}
+                {location.pathname === '/features' && (
+                  <div className="flex justify-center">
+                    <div className="tabs-container p-1">
+                      <button
+                        className={`tab-button ${activeFeaturesTab === 'graph' ? 'tab-active' : ''}`}
+                        style={activeFeaturesTab === 'graph' ? {color: getContrastTextColor()} : {}}
+                        onClick={() => setActiveFeaturesTab('graph')}
+                      >
+                        Graph
+                      </button>
+                      <button
+                        className={`tab-button ${activeFeaturesTab === 'structure' ? 'tab-active' : ''}`}
+                        style={activeFeaturesTab === 'structure' ? {color: getContrastTextColor()} : {}}
+                        onClick={() => setActiveFeaturesTab('structure')}
+                      >
+                        Structure
+                      </button>
+                      <button
+                        className={`tab-button ${activeFeaturesTab === 'all' ? 'tab-active' : ''}`}
+                        style={activeFeaturesTab === 'all' ? {color: getContrastTextColor()} : {}}
+                        onClick={() => setActiveFeaturesTab('all')}
+                      >
+                        All
+                      </button>
+                      <button
+                        className={`tab-button ${activeFeaturesTab === 'create' ? 'tab-active' : ''}`}
+                        style={activeFeaturesTab === 'create' ? {color: getContrastTextColor()} : {}}
+                        onClick={() => setActiveFeaturesTab('create')}
+                      >
+                        Create
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Notes Page Tabs */}
+                {location.pathname === '/notes' && (
+                  <div className="flex justify-center">
+                    <div className="tabs-container p-1">
+                      <button
+                        className={`tab-button ${activeNotesTab === 'notes' ? 'tab-active' : ''}`}
+                        style={activeNotesTab === 'notes' ? {color: getContrastTextColor()} : {}}
+                        onClick={() => setActiveNotesTab('notes')}
+                      >
+                        Notes
+                      </button>
+                      <button
+                        className={`tab-button ${activeNotesTab === 'todos' ? 'tab-active' : ''}`}
+                        style={activeNotesTab === 'todos' ? {color: getContrastTextColor()} : {}}
+                        onClick={() => setActiveNotesTab('todos')}
+                      >
+                        Todos
+                      </button>
+                      <button
+                        className={`tab-button ${activeNotesTab === 'devlog' ? 'tab-active' : ''}`}
+                        style={activeNotesTab === 'devlog' ? {color: getContrastTextColor()} : {}}
+                        onClick={() => setActiveNotesTab('devlog')}
+                      >
+                        Dev Log
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Public Page Tabs */}
+                {location.pathname === '/public' && (
+                  <div className="flex justify-center">
+                    <div className="tabs-container p-1">
+                      <button
+                        className={`tab-button ${activePublicTab === 'overview' ? 'tab-active' : ''}`}
+                        style={activePublicTab === 'overview' ? {color: getContrastTextColor()} : {}}
+                        onClick={() => setActivePublicTab('overview')}
+                      >
+                        Overview
+                      </button>
+                      {selectedProject.isPublic && (
+                        <>
+                          <button
+                            className={`tab-button ${activePublicTab === 'url' ? 'tab-active' : ''}`}
+                            style={activePublicTab === 'url' ? {color: getContrastTextColor()} : {}}
+                            onClick={() => setActivePublicTab('url')}
+                          >
+                            URL
+                          </button>
+                          <button
+                            className={`tab-button ${activePublicTab === 'visibility' ? 'tab-active' : ''}`}
+                            style={activePublicTab === 'visibility' ? {color: getContrastTextColor()} : {}}
+                            onClick={() => setActivePublicTab('visibility')}
+                          >
+                            Privacy
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Sharing Page Tabs */}
+                {location.pathname === '/sharing' && (
+                  <div className="flex justify-center">
+                    <div className="tabs-container p-1">
+                      <button
+                        className={`tab-button ${activeSharingTab === 'overview' ? 'tab-active' : ''}`}
+                        style={activeSharingTab === 'overview' ? {color: getContrastTextColor()} : {}}
+                        onClick={() => setActiveSharingTab('overview')}
+                      >
+                        Overview
+                      </button>
+                      {selectedProject.isShared && (
+                        <button
+                          className={`tab-button ${activeSharingTab === 'team' ? 'tab-active' : ''}`}
+                          style={activeSharingTab === 'team' ? {color: getContrastTextColor()} : {}}
+                          onClick={() => setActiveSharingTab('team')}
+                        >
+                          Team
+                        </button>
+                      )}
+                      {!selectedProject.isShared && (
+                        <button
+                          className={`tab-button ${activeSharingTab === 'activity' ? 'tab-active' : ''}`}
+                          style={activeSharingTab === 'activity' ? {color: getContrastTextColor()} : {}}
+                          onClick={() => setActiveSharingTab('activity')}
+                        >
+                          Activity
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Settings Page Tabs */}
+                {location.pathname === '/settings' && (
+                  <div className="flex justify-center">
+                    <div className="tabs-container p-1">
+                      <button
+                        className={`tab-button ${activeSettingsTab === 'info' ? 'tab-active' : ''}`}
+                        style={activeSettingsTab === 'info' ? {color: getContrastTextColor()} : {}}
+                        onClick={() => setActiveSettingsTab('info')}
+                      >
+                        Project Info
+                      </button>
+                      <button
+                        className={`tab-button ${activeSettingsTab === 'export' ? 'tab-active' : ''}`}
+                        style={activeSettingsTab === 'export' ? {color: getContrastTextColor()} : {}}
+                        onClick={() => setActiveSettingsTab('export')}
+                      >
+                        Export
+                      </button>
+                      <button
+                        className={`tab-button ${activeSettingsTab === 'danger' ? 'tab-active' : ''}`}
+                        style={activeSettingsTab === 'danger' ? {color: getContrastTextColor()} : {}}
+                        onClick={() => setActiveSettingsTab('danger')}
+                      >
+                        Danger
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+            </>
+
+            {/* News Page Tabs - for /news page (Desktop) */}
+            {location.pathname === '/news' && (
+              <div className="flex justify-center">
+                <div className="tabs-container p-1">
+                  <button
+                    className={`tab-button ${activeNewsTab === 'all' ? 'tab-active' : ''}`}
+                    style={activeNewsTab === 'all' ? {color: getContrastTextColor()} : {}}
+                    onClick={() => setActiveNewsTab('all')}
+                  >
+                    All
+                  </button>
+                  <button
+                    className={`tab-button ${activeNewsTab === 'news' ? 'tab-active' : ''}`}
+                    style={activeNewsTab === 'news' ? {color: getContrastTextColor()} : {}}
+                    onClick={() => setActiveNewsTab('news')}
+                  >
+                    News
+                  </button>
+                  <button
+                    className={`tab-button ${activeNewsTab === 'update' ? 'tab-active' : ''}`}
+                    style={activeNewsTab === 'update' ? {color: getContrastTextColor()} : {}}
+                    onClick={() => setActiveNewsTab('update')}
+                  >
+                    Updates
+                  </button>
+                  <button
+                    className={`tab-button ${activeNewsTab === 'dev_log' ? 'tab-active' : ''}`}
+                    style={activeNewsTab === 'dev_log' ? {color: getContrastTextColor()} : {}}
+                    onClick={() => setActiveNewsTab('dev_log')}
+                  >
+                    Dev Log
+                  </button>
+                  <button
+                    className={`tab-button ${activeNewsTab === 'announcement' ? 'tab-active' : ''}`}
+                    style={activeNewsTab === 'announcement' ? {color: getContrastTextColor()} : {}}
+                    onClick={() => setActiveNewsTab('announcement')}
+                  >
+                    Announcements
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
           )}
         </div>
@@ -1090,41 +1714,6 @@ const Layout: React.FC = () => {
                       </div>
                     ) : (
                       <>
-                        {/* Category Selector */}
-                        <div className="flex justify-center">
-                          <div className="tabs-container p-1 opacity-90 max-w-full">
-                            <button
-                              onClick={() => setSelectedCategory(null)}
-                              className={`tab-button-xs ${
-                                selectedCategory === null ? 'tab-active' : ''
-                              }`}
-                              style={selectedCategory === null ? {color: getContrastTextColor()} : {}}
-                            >
-                              <span>All <span className="text-xs opacity-70">({Object.values(
-                                activeProjectTab === 'active' ? groupedCurrentProjects :
-                                activeProjectTab === 'archived' ? groupedArchivedProjects :
-                                groupedSharedProjects
-                              ).flat().length})</span></span>
-                            </button>
-                            {Object.entries(
-                              activeProjectTab === 'active' ? groupedCurrentProjects :
-                              activeProjectTab === 'archived' ? groupedArchivedProjects :
-                              groupedSharedProjects
-                            ).map(([category, categoryProjects]) => (
-                              <button
-                                key={category}
-                                onClick={() => setSelectedCategory(category)}
-                                className={`tab-button-xs ${
-                                  selectedCategory === category ? 'tab-active' : ''
-                                }`}
-                                style={selectedCategory === category ? {color: getContrastTextColor()} : {}}
-                              >
-                                <span>{category} <span className="text-xs opacity-70">({categoryProjects.length})</span></span>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
                         {/* Projects Grid */}
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                           {(selectedCategory 
@@ -1237,7 +1826,15 @@ const Layout: React.FC = () => {
                 {activeProjectTab === 'ideas' && (
                   <div className="space-y-4">
                     {/* Embed IdeasPage content here */}
-                    <IdeasPage onIdeasCountChange={setIdeasCount} />
+                    <Suspense fallback={
+                      <div className="p-8 animate-pulse">
+                        <div className="h-8 bg-base-300 rounded w-1/2 mb-4"></div>
+                        <div className="h-4 bg-base-300 rounded w-3/4 mb-2"></div>
+                        <div className="h-4 bg-base-300 rounded w-1/2"></div>
+                      </div>
+                    }>
+                      <IdeasPage onIdeasCountChange={setIdeasCount} />
+                    </Suspense>
                   </div>
                 )}
                 </div>
@@ -1349,7 +1946,10 @@ const Layout: React.FC = () => {
           /* Billing, Account Settings, Support, Help, and News - No sub-menu */
           <div className="flex-1 border-2 border-base-content/20 bg-gradient-to-br from-base-50 to-base-100/50 mx-4 rounded-lg shadow-2xl backdrop-blur-none">
             <div className="p-2">
-              <Outlet />
+              <Outlet context={{
+                activeNewsTab,
+                setActiveNewsTab
+              }} />
             </div>
           </div>
         ) : (
@@ -1365,7 +1965,24 @@ const Layout: React.FC = () => {
                     onProjectUpdate: handleProjectUpdate,
                     onProjectArchive: handleProjectArchive,
                     onProjectDelete: handleProjectDelete,
-                    onProjectRefresh: loadProjectsWrapper
+                    onProjectRefresh: loadProjectsWrapper,
+                    // Page-level tab states
+                    activeStackTab,
+                    setActiveStackTab,
+                    activeDeploymentTab,
+                    setActiveDeploymentTab,
+                    activeFeaturesTab,
+                    setActiveFeaturesTab,
+                    activeNewsTab,
+                    setActiveNewsTab,
+                    activeNotesTab,
+                    setActiveNotesTab,
+                    activePublicTab,
+                    setActivePublicTab,
+                    activeSharingTab,
+                    setActiveSharingTab,
+                    activeSettingsTab,
+                    setActiveSettingsTab
                   }} />
                 </div>
               ) : (

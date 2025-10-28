@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import { Project } from '../models/Project';
+import { User } from '../models/User';
 import TeamMember from '../models/TeamMember';
 import { logError } from '../config/logger';
 import { setSentryUser } from '../config/sentry';
@@ -130,4 +131,31 @@ export const requireProjectAccess = (requiredPermission: 'view' | 'edit' | 'mana
       res.status(500).json({ message: 'Server error checking project access' });
     }
   };
+};
+
+// SEC-007 FIX: Admin authentication middleware
+export const requireAdmin = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    if (!req.userId) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+
+    const user = await User.findById(req.userId);
+    if (!user) {
+      return res.status(401).json({ message: 'User not found' });
+    }
+
+    if (!user.isAdmin) {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+
+    next();
+  } catch (error) {
+    logError('Admin access check failed', error as Error, {
+      component: 'auth',
+      action: 'admin_access_check',
+      userId: req.userId
+    });
+    res.status(500).json({ message: 'Server error checking admin access' });
+  }
 };

@@ -6,6 +6,7 @@ import ConfirmationModal from './ConfirmationModal';
 import InfoModal from './InfoModal';
 import { toast } from '../services/toast';
 import { getContrastTextColor } from '../utils/contrastTextColor';
+import { csrfFetch } from '../utils/csrf';
 
 interface TeamManagementProps {
   projectId: string;
@@ -229,9 +230,8 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
 
     setClearingActivity(true);
     try {
-      const response = await fetch(`/api/activity-logs/project/${projectId}/clear`, {
+      const response = await csrfFetch(`/api/activity-logs/project/${projectId}/clear`, {
         method: 'DELETE',
-        credentials: 'include'
       });
       
       if (response.ok) {

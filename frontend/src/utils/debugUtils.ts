@@ -1,14 +1,15 @@
 // Debug utilities for development
+import { csrfFetch } from './csrf';
+
 export const debugUtils = {
-  
+
   // Clear rate limits for current user
   async clearUserRateLimits() {
     try {
-      const response = await fetch('/api/debug/rate-limits/me', {
+      const response = await csrfFetch('/api/debug/rate-limits/me', {
         method: 'DELETE',
-        credentials: 'include'
       });
-      
+
       if (response.ok) {
         const result = await response.json();
         return result;
@@ -23,9 +24,8 @@ export const debugUtils = {
   // Clear rate limits for current IP
   async clearIPRateLimits() {
     try {
-      const response = await fetch('/api/debug/rate-limits/ip', {
+      const response = await csrfFetch('/api/debug/rate-limits/ip', {
         method: 'DELETE',
-        credentials: 'include'
       });
       
       if (response.ok) {

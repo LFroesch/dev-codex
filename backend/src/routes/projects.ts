@@ -158,14 +158,27 @@ router.get('/:id', requireProjectAccess('view'), async (req: AuthRequest, res) =
 // Update project
 router.put('/:id', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
-    const updateData = { ...req.body };
-    
+    // SEC-005 FIX: Whitelist allowed fields to prevent mass assignment vulnerability
+    const allowedFields = [
+      'name', 'description', 'notes', 'todos', 'devLog', 'components',
+      'stack', 'stagingEnvironment', 'color', 'category', 'tags',
+      'deploymentData', 'isArchived', 'isShared', 'isPublic',
+      'publicSlug', 'publicDescription', 'publicVisibility'
+    ];
+
+    const updateData: any = {};
+    allowedFields.forEach(field => {
+      if (field in req.body) {
+        updateData[field] = req.body[field];
+      }
+    });
+
     logInfo('Project update request', { projectId: req.params.id, updateData });
-    
+
     if (updateData.name && !updateData.name.trim()) {
       return res.status(400).json({ message: 'Name cannot be empty' });
     }
-    
+
     if (updateData.description && !updateData.description.trim()) {
       return res.status(400).json({ message: 'Description cannot be empty' });
     }

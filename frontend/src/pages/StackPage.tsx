@@ -19,16 +19,17 @@ interface ContextType {
   selectedProject: Project | null;
   user: any;
   onProjectRefresh: () => Promise<void>;
+  activeStackTab: 'current' | 'add';
+  setActiveStackTab: (tab: 'current' | 'add') => void;
 }
 
 const StackPage: React.FC = () => {
-  const { selectedProject, user, onProjectRefresh } = useOutletContext<ContextType>();
+  const { selectedProject, user, onProjectRefresh, activeStackTab } = useOutletContext<ContextType>();
   const [selectedPlatforms, setSelectedPlatforms] = useState<Set<PlatformType>>(() => new Set(['web', 'mobile', 'desktop']));
   const [error, setError] = useState('');
   const [loadingStates, setLoadingStates] = useState<{ [key: string]: boolean }>({});
   const [stackCategories, setStackCategories] = useState<TechCategory[]>([]);
   const [dataLoaded, setDataLoaded] = useState(false);
-  const [activeSection, setActiveSection] = useState<'current' | 'add'>('current');
   const [selectedGroup, setSelectedGroup] = useState<string>('Frontend');
   const [activeCategory, setActiveCategory] = useState<string>('');
   const [editingVersion, setEditingVersion] = useState<{category: string, name: string, version: string} | null>(null);
@@ -536,34 +537,8 @@ const StackPage: React.FC = () => {
         </div>
       )}
 
-      {/* Section Navigation */}
-      <div className="flex justify-center px-2">
-        <div className="tabs-container p-1">
-          <button 
-            className={`tab-button ${activeSection === 'add' ? 'tab-active' : ''}`}
-            style={activeSection === 'add' ? {color: getContrastTextColor()} : {}}
-            onClick={() => setActiveSection('add')}
-          >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            <span>Add Technologies</span>
-          </button>
-          <button 
-            className={`tab-button ${activeSection === 'current' ? 'tab-active' : ''}`}
-            style={activeSection === 'current' ? {color: getContrastTextColor()} : {}}
-            onClick={() => setActiveSection('current')}
-          >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span>Current Stack <span className="text-xs opacity-70">({totalSelectedCount})</span></span>
-          </button>
-        </div>
-      </div>
-
       {/* Current Stack Section */}
-      {activeSection === 'current' && (
+      {activeStackTab === 'current' && (
         <div className="space-y-6">
           {totalSelectedCount === 0 ? (
             <div className="text-center py-12">
@@ -658,7 +633,7 @@ const StackPage: React.FC = () => {
       )}
 
       {/* Add Technologies Section */}
-      {activeSection === 'add' && (
+      {activeStackTab === 'add' && (
         <div className="space-y-6">
           {/* Combined Selection Panel */}
           <div className="section-container mb-4">

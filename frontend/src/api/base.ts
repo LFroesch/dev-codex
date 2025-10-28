@@ -1,8 +1,26 @@
 import axios from 'axios';
+import { getCsrfToken } from '../utils/csrf';
 
 export const apiClient = axios.create({
   baseURL: '/api',
-  withCredentials: true, 
+  withCredentials: true,
+});
+
+// CSRF Protection: Add CSRF token to all state-changing requests
+apiClient.interceptors.request.use(async (config) => {
+  const method = config.method?.toUpperCase();
+
+  // Only add CSRF token to state-changing methods
+  if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method || '')) {
+    const token = await getCsrfToken();
+    if (token) {
+      config.headers['X-CSRF-Token'] = token;
+    }
+  }
+
+  return config;
+}, (error) => {
+  return Promise.reject(error);
 });
 
 // Base class for API services providing common HTTP methods

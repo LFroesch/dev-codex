@@ -1,14 +1,39 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CommandResponse as CommandResponseType } from '../api/terminal';
 import { getContrastTextColor } from '../utils/contrastTextColor';
-import { TodosRenderer, NotesRenderer, StackRenderer, DevLogRenderer, ComponentRenderer } from './responses';
 import { authAPI, terminalAPI } from '../api';
 import { hexToOklch, oklchToCssValue, generateFocusVariant, generateContrastingTextColor } from '../utils/colorUtils';
 import { toast } from '../services/toast';
-import EditWizard from './EditWizard';
-import SelectorWizard from './SelectorWizard';
-import ConfirmationWizard from './ConfirmationWizard';
+import { generateTemplate } from '../utils/commandHelpers';
+import { csrfFetch } from '../utils/csrf';
+
+// Lazy load renderers for better performance
+const TodosRenderer = lazy(() => import('./responses').then(m => ({ default: m.TodosRenderer })));
+const NotesRenderer = lazy(() => import('./responses').then(m => ({ default: m.NotesRenderer })));
+const StackRenderer = lazy(() => import('./responses').then(m => ({ default: m.StackRenderer })));
+const DevLogRenderer = lazy(() => import('./responses').then(m => ({ default: m.DevLogRenderer })));
+const ComponentRenderer = lazy(() => import('./responses').then(m => ({ default: m.ComponentRenderer })));
+const SubtasksRenderer = lazy(() => import('./responses').then(m => ({ default: m.SubtasksRenderer })));
+const BatchCommandsRenderer = lazy(() => import('./responses').then(m => ({ default: m.BatchCommandsRenderer })));
+const NotificationsRenderer = lazy(() => import('./responses').then(m => ({ default: m.NotificationsRenderer })));
+const HelpRenderer = lazy(() => import('./responses').then(m => ({ default: m.HelpRenderer })));
+const ThemesRenderer = lazy(() => import('./responses').then(m => ({ default: m.ThemesRenderer })));
+const NewsRenderer = lazy(() => import('./responses').then(m => ({ default: m.NewsRenderer })));
+const ProjectsRenderer = lazy(() => import('./responses').then(m => ({ default: m.ProjectsRenderer })));
+
+// Lazy load wizards
+const EditWizard = lazy(() => import('./EditWizard'));
+const SelectorWizard = lazy(() => import('./SelectorWizard'));
+const ConfirmationWizard = lazy(() => import('./ConfirmationWizard'));
+
+// Loading fallback for lazy-loaded components
+const LoadingFallback: React.FC = () => (
+  <div className="mt-3 p-4 bg-base-200/50 rounded-lg border-thick animate-pulse">
+    <div className="h-4 bg-base-300 rounded w-3/4 mb-2"></div>
+    <div className="h-4 bg-base-300 rounded w-1/2"></div>
+  </div>
+);
 
 interface CommandResponseProps {
   entryId: string;
@@ -38,38 +63,6 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
   fromStorage
 }) => {
   const navigate = useNavigate();
-
-  // Generate command template from syntax (same logic as autocomplete)
-  const generateTemplate = (syntax: string): string => {
-    // Extract command base and convert flags to empty placeholders
-    // Example: "/set deployment --url=[url] --platform=[platform]" → "/set deployment --url= --platform= --status="
-
-    // Remove @project from syntax if present
-    syntax = syntax.replace(/@[\w-]+/g, '').trim();
-
-    // Remove content inside [...] brackets (placeholder text)
-    // Example: "/add subtask "[parent todo]" "[subtask text]"" → "/add subtask "" ""
-    syntax = syntax.replace(/\[([^\]]*)\]/g, '');
-
-    // Special handling for different command patterns
-    if (syntax.includes('--')) {
-      // Has flags - extract them and create template
-      const parts = syntax.split('--');
-      const baseCommand = parts[0].trim();
-
-      // Extract flag names from patterns like --url=[url] or --role=[editor/viewer]
-      const flags = parts.slice(1).map(part => {
-        const flagMatch = part.match(/^(\w+)/);
-        return flagMatch ? `--${flagMatch[1]}=` : '';
-      }).filter(Boolean);
-
-      return `${baseCommand} ${flags.join(' ')}`;
-    }
-
-    // No flags - return base command with space (or with empty quotes if present)
-    const baseMatch = syntax.match(/^(\/[^\[]+)/);
-    return baseMatch ? `${baseMatch[1].trim()} ` : `${syntax} `;
-  };
 
   // Render readonly wizard summary for entries loaded from storage
   const renderArchivedWizard = () => {
@@ -341,202 +334,80 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
 
     // Render todos list
     if (response.data.todos && Array.isArray(response.data.todos)) {
-      return <TodosRenderer todos={response.data.todos} projectId={response.metadata?.projectId} onNavigate={handleNavigateToProject} onCommandClick={onCommandClick} />;
+      return (
+        <Suspense fallback={<LoadingFallback />}>
+          <TodosRenderer todos={response.data.todos} projectId={response.metadata?.projectId} onNavigate={handleNavigateToProject} onCommandClick={onCommandClick} />
+        </Suspense>
+      );
     }
 
     // Render subtasks list
     if (response.data.subtasks && Array.isArray(response.data.subtasks)) {
-      const subtasks = response.data.subtasks;
       return (
-        <div className="mt-3 space-y-2">
-          {response.data.parentTodo && (
-            <div className="text-xs text-base-content/60 mb-2">
-              Parent: <span className="font-semibold">{response.data.parentTodo.title}</span>
-            </div>
-          )}
-          <div className="space-y-1">
-            {subtasks.map((subtask: any, index: number) => (
-              <div
-                key={index}
-                className={`p-2 rounded-lg transition-colors border-thick ${
-                  subtask.completed ? 'bg-success/10 border-success/30' : 'bg-base-200 border-base-content/20'
-                }`}
-              >
-                <div className="flex items-start gap-2">
-                  <div className="flex-shrink-0 mt-0.5">
-                    {subtask.completed ? '✓' : '○'}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className={`text-sm break-words ${
-                      subtask.completed ? 'line-through text-base-content/50' : 'text-base-content/80'
-                    }`}>
-                      {subtask.title} {}
-                    </div>
-                    <div className="flex flex-wrap items-center gap-1 mt-1">
-                      {subtask.priority && (
-                        <span className={`badge badge-xs ${
-                          subtask.priority === 'high' ? 'badge-error' :
-                          subtask.priority === 'medium' ? 'badge-warning' :
-                          'badge-info'
-                        }`}>
-                          {subtask.priority}
-                        </span>
-                      )}
-                      {subtask.status && (
-                        <span className="badge badge-xs badge-ghost">{subtask.status}</span>
-                      )}
-                      {subtask.dueDate && (
-                        <span className="text-xs text-base-content/60">
-                          📅 {new Date(subtask.dueDate).toLocaleDateString()}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <Suspense fallback={<LoadingFallback />}>
+          <SubtasksRenderer
+            subtasks={response.data.subtasks}
+            parentTodo={response.data.parentTodo}
+          />
+        </Suspense>
       );
     }
 
     // Render batch command results
     if (response.data.batch && response.data.results && Array.isArray(response.data.results)) {
-      const results = response.data.results;
       return (
-        <div className="mt-3 space-y-2">
-          <div className="text-xs text-base-content/60">
-            Executed {response.data.executed || 0} of {response.data.total || 0} commands
-          </div>
-          <div className="space-y-2">
-            {results.map((result: any, index: number) => {
-              const resultIcon =
-                result.type === 'success' ? '✅' :
-                result.type === 'error' ? '❌' :
-                result.type === 'warning' ? '⚠️' :
-                result.type === 'info' ? 'ℹ️' :
-                '•';
-
-              return (
-                <div
-                  key={index}
-                  className={`p-2 rounded-lg border-2 ${
-                    result.type === 'success' ? 'bg-success/10 border-success/30' :
-                    result.type === 'error' ? 'bg-error/10 border-error/30' :
-                    result.type === 'warning' ? 'bg-warning/10 border-warning/30' :
-                    'bg-base-200 border-base-content/20'
-                  }`}
-                >
-                  <div className="flex items-start gap-2">
-                    <span className="flex-shrink-0 text-sm">{resultIcon}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-mono text-base-content/60 mb-1 break-all">
-                        {result.command}
-                      </div>
-                      <div className="text-sm text-base-content/80 break-words">
-                        {result.message}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        <Suspense fallback={<LoadingFallback />}>
+          <BatchCommandsRenderer
+            results={response.data.results}
+            executed={response.data.executed || 0}
+            total={response.data.total || 0}
+          />
+        </Suspense>
       );
     }
 
     // Render notes list
     if (response.data.notes && Array.isArray(response.data.notes)) {
-      return <NotesRenderer notes={response.data.notes} projectId={response.metadata?.projectId} onNavigate={handleNavigateToProject} onCommandClick={onCommandClick} />;
+      return (
+        <Suspense fallback={<LoadingFallback />}>
+          <NotesRenderer notes={response.data.notes} projectId={response.metadata?.projectId} onNavigate={handleNavigateToProject} onCommandClick={onCommandClick} />
+        </Suspense>
+      );
     }
 
     // Render dev log entries
     if (response.data.entries && Array.isArray(response.data.entries)) {
-      return <DevLogRenderer entries={response.data.entries} projectId={response.metadata?.projectId} onNavigate={handleNavigateToProject} onCommandClick={onCommandClick} />;
+      return (
+        <Suspense fallback={<LoadingFallback />}>
+          <DevLogRenderer entries={response.data.entries} projectId={response.metadata?.projectId} onNavigate={handleNavigateToProject} onCommandClick={onCommandClick} />
+        </Suspense>
+      );
     }
 
     // Render components (features)
     if (response.data.structure || (response.data.components && Array.isArray(response.data.components))) {
-      return <ComponentRenderer structure={response.data.structure} components={response.data.components} projectId={response.metadata?.projectId} onNavigate={handleNavigateToProject} onCommandClick={onCommandClick} />;
+      return (
+        <Suspense fallback={<LoadingFallback />}>
+          <ComponentRenderer structure={response.data.structure} components={response.data.components} projectId={response.metadata?.projectId} onNavigate={handleNavigateToProject} onCommandClick={onCommandClick} />
+        </Suspense>
+      );
     }
 
     // Render stack data
     if (response.data.stack) {
-      return <StackRenderer stack={response.data.stack} projectId={response.metadata?.projectId} onNavigate={handleNavigateToProject} />;
+      return (
+        <Suspense fallback={<LoadingFallback />}>
+          <StackRenderer stack={response.data.stack} projectId={response.metadata?.projectId} onNavigate={handleNavigateToProject} />
+        </Suspense>
+      );
     }
 
     // Render notifications
     if (response.data.notifications && Array.isArray(response.data.notifications)) {
-      const notifications = response.data.notifications;
       return (
-        <div className="mt-3 space-y-2">
-          {notifications.length === 0 ? (
-            <div className="p-3 bg-base-200 rounded-lg border-thick text-center text-xs text-base-content/60">
-              No notifications
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {notifications.map((notif: any, index: number) => {
-                const typeIcons: Record<string, string> = {
-                  'project_invitation': '📬',
-                  'project_shared': '🤝',
-                  'team_member_added': '👥',
-                  'team_member_removed': '👋',
-                  'todo_assigned': '📝',
-                  'todo_due_soon': '⏰',
-                  'todo_overdue': '🚨',
-                  'subtask_completed': '✅'
-                };
-                const icon = typeIcons[notif.type] || '🔔';
-
-                return (
-                  <div
-                    key={index}
-                    className={`p-3 rounded-lg border-2 transition-colors ${
-                      notif.isRead
-                        ? 'bg-base-200 border-base-content/20'
-                        : 'bg-primary/10 border-primary/30'
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="text-xl flex-shrink-0">{icon}</div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2 mb-1">
-                          <div className="font-semibold text-sm text-base-content/90 break-words">
-                            {notif.title}
-                          </div>
-                          {!notif.isRead && (
-                            <span className="badge badge-xs badge-primary flex-shrink-0">New</span>
-                          )}
-                        </div>
-                        <div className="text-xs text-base-content/70 break-words mb-2">
-                          {notif.message}
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2 text-xs text-base-content/60">
-                          <span>{new Date(notif.createdAt).toLocaleString()}</span>
-                          {notif.relatedProject && (
-                            <span className="badge badge-xs badge-ghost">
-                              📁 {notif.relatedProject.name}
-                            </span>
-                          )}
-                          {notif.relatedUser && (
-                            <span className="badge badge-xs badge-ghost">
-                              👤 {notif.relatedUser.firstName} {notif.relatedUser.lastName}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-          <div className="text-xs text-base-content/60 mt-3">
-            💡 Use <code className="bg-base-200 px-1 rounded">/clear notifications</code> to clear all notifications
-          </div>
-        </div>
+        <Suspense fallback={<LoadingFallback />}>
+          <NotificationsRenderer notifications={response.data.notifications} />
+        </Suspense>
       );
     }
 
@@ -703,33 +574,9 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
     // Render news
     if (response.data.news && Array.isArray(response.data.news)) {
       return (
-        <div className="mt-3 space-y-2">
-          <div className="space-y-2">
-            {response.data.news.map((newsItem: any, index: number) => (
-              <div
-                key={index}
-                className="p-3 bg-base-200 rounded-lg hover:bg-base-300/50 transition-colors border-thick"
-              >
-                <div className="flex items-start gap-2 mb-1">
-                  <span className="text-xs px-2 py-0.5 bg-primary/30 rounded border-2 border-primary/40 capitalize flex-shrink-0">
-                    {newsItem.type || 'update'}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-sm text-base-content/80 break-words">{newsItem.title}</div>
-                  </div>
-                </div>
-                {newsItem.summary && (
-                  <div className="text-xs text-base-content/70 mt-2 break-words">
-                    {newsItem.summary}
-                  </div>
-                )}
-                <div className="text-xs text-base-content/60 mt-2">
-                  {new Date(newsItem.date).toLocaleDateString()}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <Suspense fallback={<LoadingFallback />}>
+          <NewsRenderer news={response.data.news} />
+        </Suspense>
       );
     }
 
@@ -863,77 +710,14 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
 
     // Render themes
     if (response.data.themes && Array.isArray(response.data.themes)) {
-      const customThemes = response.data.customThemes || [];
-
       return (
-        <div className="mt-3 space-y-4">
-          {/* Preset Themes */}
-          <div>
-            <div className="text-xs font-semibold text-base-content/70 mb-2">Preset Themes ({response.data.themes.length})</div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-              {response.data.themes.map((theme: any, index: number) => (
-                <div
-                  key={index}
-                  className="p-2 bg-base-200 rounded-lg hover:bg-primary/20 hover:border-primary/50 transition-all border-2 border-base-content/20 cursor-pointer flex items-center gap-2"
-                  onClick={() => onDirectThemeChange?.(theme.name)}
-                  title={`Click to apply ${theme.name} theme`}
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-xs text-base-content/80 break-words">{theme.name}</div>
-                    <div className="text-xs text-base-content/60 break-words line-clamp-1">
-                      {theme.description}
-                    </div>
-                  </div>
-                  {theme.colors && (
-                    <div className="flex gap-1 flex-shrink-0">
-                      <div className="w-3 h-3 rounded-full border-thick" style={{ backgroundColor: theme.colors.primary }} title="Primary" />
-                      <div className="w-3 h-3 rounded-full border-thick" style={{ backgroundColor: theme.colors.secondary }} title="Secondary" />
-                      <div className="w-3 h-3 rounded-full border-thick" style={{ backgroundColor: theme.colors.accent }} title="Accent" />
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Custom Themes */}
-          {customThemes.length > 0 && (
-            <div>
-              <div className="text-xs font-semibold text-base-content/70 mb-2">Custom Themes ({customThemes.length})</div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                {customThemes.map((theme: any, index: number) => (
-                  <div
-                    key={index}
-                    className="p-2 bg-base-200 rounded-lg hover:bg-secondary/20 hover:border-secondary/50 transition-all border-2 border-base-content/20 cursor-pointer flex items-center gap-2"
-                    onClick={() => onDirectThemeChange?.(theme.name)}
-                    title={`Click to apply ${theme.displayName} theme`}
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-xs text-base-content/80 flex items-center gap-1 break-words">
-                        <span className="flex-shrink-0">🎨</span>
-                        <span className="break-words">{theme.displayName}</span>
-                      </div>
-                      <div className="text-xs text-base-content/60 break-words line-clamp-1">
-                        {theme.description}
-                      </div>
-                    </div>
-                    {theme.colors && (
-                      <div className="flex gap-1 flex-shrink-0">
-                        <div className="w-3 h-3 rounded-full border-thick" style={{ backgroundColor: theme.colors.primary }} title="Primary" />
-                        <div className="w-3 h-3 rounded-full border-thick" style={{ backgroundColor: theme.colors.secondary }} title="Secondary" />
-                        <div className="w-3 h-3 rounded-full border-thick" style={{ backgroundColor: theme.colors.accent }} title="Accent" />
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="mt-3 text-xs text-base-content/60">
-            💡 Click any theme to apply it immediately
-          </div>
-        </div>
+        <Suspense fallback={<LoadingFallback />}>
+          <ThemesRenderer
+            themes={response.data.themes}
+            customThemes={response.data.customThemes || []}
+            onDirectThemeChange={onDirectThemeChange}
+          />
+        </Suspense>
       );
     }
 
@@ -970,14 +754,13 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
         setIsSubmitting(true);
         try {
           const submitData = { ...wizardData, tags };
-          await fetch(response.data.submitEndpoint, {
+          await csrfFetch(response.data.submitEndpoint, {
             method: response.data.submitMethod || 'POST',
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${localStorage.getItem('token')}`
             },
             body: JSON.stringify(submitData),
-            credentials: 'include'
           });
 
           toast.success(response.data.successMessage || 'Project created successfully!');
@@ -1703,12 +1486,14 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
       const projectId = currentProjectId || response.metadata?.projectId;
 
       return (
-        <ConfirmationWizard
-          message={response.message}
-          confirmationData={response.data.confirmationData}
-          projectId={projectId}
-          onCommandClick={onCommandClick}
-        />
+        <Suspense fallback={<LoadingFallback />}>
+          <ConfirmationWizard
+            message={response.message}
+            confirmationData={response.data.confirmationData}
+            projectId={projectId}
+            onCommandClick={onCommandClick}
+          />
+        </Suspense>
       );
     }
 
@@ -1731,12 +1516,14 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
       });
 
       return (
-        <EditWizard
-          wizardData={response.data}
-          currentProjectId={projectId}
-          entryId={entryId}
-          onWizardComplete={onWizardComplete}
-        />
+        <Suspense fallback={<LoadingFallback />}>
+          <EditWizard
+            wizardData={response.data}
+            currentProjectId={projectId}
+            entryId={entryId}
+            onWizardComplete={onWizardComplete}
+          />
+        </Suspense>
       );
     }
 
@@ -1750,189 +1537,38 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
       const step = response.data.steps[0]; // Selectors are single-step
 
       return (
-        <SelectorWizard
-          wizardType={response.data.wizardType}
-          step={step}
-          projectId={projectId}
-          entryId={entryId}
-          onSelectorTransition={onSelectorTransition}
-          onCommandClick={onCommandClick}
-        />
+        <Suspense fallback={<LoadingFallback />}>
+          <SelectorWizard
+            wizardType={response.data.wizardType}
+            step={step}
+            projectId={projectId}
+            entryId={entryId}
+            onSelectorTransition={onSelectorTransition}
+            onCommandClick={onCommandClick}
+          />
+        </Suspense>
       );
     }
 
     // Render project selection as a grid
     if (response.data.projects && Array.isArray(response.data.projects)) {
       return (
-        <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-          {response.data.projects.map((project: any, index: number) => (
-            <button
-              key={index}
-              type="button"
-              onClick={() => onProjectSelect?.(project.id)}
-              className="h-30 w-full p-3 bg-base-200 rounded-lg hover:bg-primary/20 hover:border-primary/50 border-thick transition-all text-left"
-            >
-              <div className="flex items-start gap-3">
-                {project.color && (
-                  <div
-                    className="w-3 h-3 rounded-full border-thick flex-shrink-0 mt-1"
-                    style={{ backgroundColor: project.color }}
-                  />
-                )}
-                <div className="flex-1 min-w-0 space-y-1">
-                  <div className="font-semibold text-sm text-base-content truncate">{project.name}</div>
-                  {project.category && (
-                    <div className="badge h-5 badge-xs border-thick">{project.category}</div>
-                  )}
-                  {project.description && (
-                    <p className="text-xs text-base-content/60 line-clamp-2">
-                      {project.description}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </button>
-          ))}
-        </div>
+        <Suspense fallback={<LoadingFallback />}>
+          <ProjectsRenderer projects={response.data.projects} onProjectSelect={onProjectSelect} />
+        </Suspense>
       );
     }
 
     // Render help data
     if (response.data.grouped) {
-      const [openSection, setOpenSection] = React.useState<string | null>(null);
-      const [openCommand, setOpenCommand] = React.useState<string | null>(null);
-
-      const toggleSection = (category: string) => {
-        setOpenSection(prev => prev === category ? null : category);
-        // Close any open command when switching sections
-        setOpenCommand(null);
-      };
-
-      const toggleCommand = (commandKey: string) => {
-        setOpenCommand(prev => prev === commandKey ? null : commandKey);
-      };
-
       return (
-        <div className="mt-3 space-y-2">
-          {Object.entries(response.data.grouped).map(([category, cmds]: [string, any]) => (
-            cmds.length > 0 && (
-              <div key={category} className="border-thick rounded-lg overflow-hidden">
-                <button
-                  type="button"
-                  onClick={() => toggleSection(category)}
-                  className="w-full text-left p-3 flex items-center justify-between bg-base-200 hover:bg-base-300/50 transition-colors"
-                >
-                  <div className="text-sm font-semibold text-base-content">
-                    {category} ({cmds.length})
-                  </div>
-                  <svg
-                    className={`w-4 h-4 transition-transform ${openSection === category ? 'rotate-180' : ''}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                {openSection === category && (
-                  <div className="mt-3 px-3 pb-3 bg-base-100 space-y-1">
-                    {cmds.map((cmd: any, index: number) => {
-                      const commandKey = `${category}-${index}`;
-                      const isOpen = openCommand === commandKey;
-                      const isSyntaxTip = cmd.type === 'syntax_tip';
-
-                      return (
-                        <div key={index} className="border-thick rounded-lg overflow-hidden bg-base-200/50">
-                          <button
-                            type="button"
-                            onClick={() => !isSyntaxTip && toggleCommand(commandKey)}
-                            className={`w-full text-left p-2 flex items-center justify-between ${
-                              isSyntaxTip ? 'cursor-default' : 'hover:bg-base-300/30 cursor-pointer'
-                            } transition-colors`}
-                          >
-                            <div className="flex-1 min-w-0 flex items-center gap-2">
-                              {isSyntaxTip ? (
-                                <div className="text-xs font-semibold text-base-content/70 font-mono">
-                                  {cmd.syntax} -
-                                </div>
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onCommandClick?.(generateTemplate(cmd.syntax));
-                                  }}
-                                  className="text-xs text-base-content/70 font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
-                                  title="Click to use this command"
-                                >
-                                  {cmd.simpleSyntax || cmd.syntax}
-                                </button>
-                              )}
-                              <div className="text-xs text-base-content/70 break-words line-clamp-1 flex-1">
-                                {cmd.description}
-                              </div>
-                            </div>
-                            {!isSyntaxTip && cmd.examples && cmd.examples.length > 0 && (
-                              <svg
-                                className={`w-3 h-3 flex-shrink-0 ml-2 transition-transform ${isOpen ? 'rotate-180' : ''}`}
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                              </svg>
-                            )}
-                          </button>
-                          {!isSyntaxTip && isOpen && cmd.examples && cmd.examples.length > 0 && (
-                            <div className="px-3 pb-2 bg-base-100/50 space-y-1">
-                              <div className="mt-1 text-xs font-semibold text-base-content/60 mb-1">
-                                Full syntax:
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => onCommandClick?.(generateTemplate(cmd.syntax))}
-                                className="block w-full text-left text-xs bg-base-200 px-2 py-1 rounded border-thick text-base-content/70 font-mono mb-2 hover:bg-base-300/50 cursor-pointer transition-colors"
-                                title="Click to use this command"
-                              >
-                                {cmd.syntax}
-                              </button>
-                              <div className="mt-1 text-xs font-semibold text-base-content/60 mb-1">
-                                Examples:
-                              </div>
-                              {cmd.examples.map((example: string, exIdx: number) => (
-                                <button
-                                  key={exIdx}
-                                  type="button"
-                                  onClick={() => onCommandClick?.(generateTemplate(example))}
-                                  className="block w-full text-left text-xs bg-base-200 px-2 py-1 rounded border-thick hover:bg-base-300/50 cursor-pointer transition-colors text-base-content/70"
-                                  title="Click to use this example"
-                                >
-                                  {example}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                          {isSyntaxTip && cmd.examples && cmd.examples.length > 0 && (
-                            <div className="px-3 pb-2 bg-base-100/50 space-y-1">
-                              {cmd.examples.map((example: string, exIdx: number) => (
-                                <div
-                                  key={exIdx}
-                                  className="text-xs bg-base-200 px-2 py-1 rounded border-thick text-base-content/70"
-                                >
-                                  {example}
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )
-          ))}
-        </div>
+        <Suspense fallback={<LoadingFallback />}>
+          <HelpRenderer
+            grouped={response.data.grouped}
+            onCommandClick={onCommandClick}
+            generateTemplate={generateTemplate}
+          />
+        </Suspense>
       );
     }
 

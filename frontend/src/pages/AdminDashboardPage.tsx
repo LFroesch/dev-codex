@@ -4,6 +4,7 @@ import { analyticsAPI, newsAPI } from '../api';
 import OptimizedAnalytics from '../components/OptimizedAnalytics';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { getContrastTextColor } from '../utils/contrastTextColor';
+import { csrfFetch } from '../utils/csrf';
 
 interface User {
   _id: string;
@@ -171,12 +172,11 @@ const AdminDashboardPage: React.FC = () => {
 
   const updateUserPlan = async (userId: string, newPlan: string) => {
     try {
-      const response = await fetch(`/api/admin/users/${userId}/plan`, {
+      const response = await csrfFetch(`/api/admin/users/${userId}/plan`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
         },
-        credentials: 'include',
         body: JSON.stringify({ planTier: newPlan })
       });
 
@@ -211,9 +211,8 @@ const AdminDashboardPage: React.FC = () => {
 
   const sendPasswordReset = async (userId: string) => {
     try {
-      const response = await fetch(`/api/admin/users/${userId}/password-reset`, {
+      const response = await csrfFetch(`/api/admin/users/${userId}/password-reset`, {
         method: 'POST',
-        credentials: 'include'
       });
 
       if (!response.ok) {
@@ -228,9 +227,8 @@ const AdminDashboardPage: React.FC = () => {
 
   const deleteUser = async (userId: string) => {
     try {
-      const response = await fetch(`/api/admin/users/${userId}`, {
+      const response = await csrfFetch(`/api/admin/users/${userId}`, {
         method: 'DELETE',
-        credentials: 'include'
       });
 
       if (!response.ok) {

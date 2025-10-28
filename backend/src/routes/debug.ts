@@ -1,5 +1,5 @@
 import express from 'express';
-import { requireAuth, AuthRequest } from '../middleware/auth';
+import { requireAuth, requireAdmin, AuthRequest } from '../middleware/auth';
 import RateLimit from '../models/RateLimit';
 import ReminderService from '../services/reminderService';
 import Analytics from '../models/Analytics';
@@ -96,14 +96,14 @@ if (process.env.NODE_ENV !== 'production') {
   });
 
   // Clear all rate limits (admin only)
-  router.delete('/rate-limits/all', requireAuth, async (req: AuthRequest, res) => {
+  // SEC-007 FIX: Add admin authentication
+  router.delete('/rate-limits/all', requireAuth, requireAdmin, async (req: AuthRequest, res) => {
     try {
-      // Add admin check here if you have admin users
       const deleted = await RateLimit.deleteMany({});
-      
-      res.json({ 
+
+      res.json({
         message: 'All rate limits cleared',
-        deletedCount: deleted.deletedCount 
+        deletedCount: deleted.deletedCount
       });
     } catch (error) {
       console.error('Error clearing all rate limits:', error);
@@ -112,7 +112,8 @@ if (process.env.NODE_ENV !== 'production') {
   });
 
   // Debug endpoint to see what's actually in the analytics database
-  router.get('/analytics-events', async (req, res) => {
+  // SEC-007 FIX: Add admin authentication
+  router.get('/analytics-events', requireAuth, requireAdmin, async (req: AuthRequest, res) => {
     try {
       // Get all distinct event types
       const eventTypes = await Analytics.distinct('eventType');

@@ -12,14 +12,14 @@ interface ContextType {
   user: any;
   onProjectUpdate: (projectId: string, updatedData: any) => Promise<any>;
   onProjectRefresh: () => Promise<void>;
+  activeSharingTab: 'overview' | 'team' | 'activity';
 }
 
 const SharingPage: React.FC = () => {
-  const { selectedProject, user, onProjectUpdate, onProjectRefresh } = useOutletContext<ContextType>();
-  
+  const { selectedProject, user, onProjectUpdate, onProjectRefresh, activeSharingTab } = useOutletContext<ContextType>();
+
   const [makePrivateConfirm, setMakePrivateConfirm] = useState(false);
   const [error, setError] = useState('');
-  const [activeSection, setActiveSection] = useState<'overview' | 'team' | 'activity'>('overview');
 
   const handleMakePrivate = async () => {
     if (!selectedProject) return;
@@ -60,46 +60,6 @@ const SharingPage: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      {/* Navigation Tabs */}
-      <div className="flex justify-center px-2">
-        <div className="tabs-container p-1">
-          <button 
-            className={`tab-button ${activeSection === 'overview' ? 'tab-active' : ''}`}
-            style={activeSection === 'overview' ? {color: getContrastTextColor()} : {}}
-            onClick={() => setActiveSection('overview')}
-          >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-            Overview
-          </button>
-          {selectedProject.isShared && (
-            <button 
-              className={`tab-button ${activeSection === 'team' ? 'tab-active' : ''}`}
-              style={activeSection === 'team' ? {color: getContrastTextColor()} : {}}
-              onClick={() => setActiveSection('team')}
-            >
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-              Team Management
-            </button>
-          )}
-          {!selectedProject.isShared && (
-            <button 
-              className={`tab-button ${activeSection === 'activity' ? 'tab-active' : ''}`}
-              style={activeSection === 'activity' ? {color: getContrastTextColor()} : {}}
-              onClick={() => setActiveSection('activity')}
-            >
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Activity Log
-            </button>
-          )}
-        </div>
-      </div>
-
       {/* Error Messages */}
       {error && (
         <div className="alert alert-error shadow-md mb-6">
@@ -112,7 +72,7 @@ const SharingPage: React.FC = () => {
       )}
 
       {/* Overview Section */}
-      {activeSection === 'overview' && (
+      {activeSharingTab === 'overview' && (
         <div className="section-container mb-4">
           <div className="section-header">
             <div className="flex items-center gap-3">
@@ -198,7 +158,7 @@ const SharingPage: React.FC = () => {
       )}
 
       {/* Team Management Section */}
-      {activeSection === 'team' && selectedProject.isShared && (
+      {activeSharingTab === 'team' && selectedProject.isShared && (
         <div className="section-container mb-4">
           <div className="section-header">
             <div className="flex items-center gap-3">
@@ -217,7 +177,7 @@ const SharingPage: React.FC = () => {
       )}
 
       {/* Activity Log Section */}
-      {activeSection === 'activity' && (
+      {activeSharingTab === 'activity' && (
         <div className="section-container mb-4">
           <div className="section-header">
             <div className="flex items-center gap-3">

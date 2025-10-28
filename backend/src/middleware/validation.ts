@@ -5,8 +5,8 @@ import { logError } from '../config/logger';
 // Email validation regex
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-// Strong password regex (8+ chars, uppercase, lowercase, number, special char)
-const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+// SEC-009 FIX: Stronger password policy (12+ chars, uppercase, lowercase, number, special char)
+const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$/;
 
 // MongoDB ObjectId validation
 const objectIdRegex = /^[0-9a-fA-F]{24}$/;
@@ -70,8 +70,8 @@ export const validateUserRegistration = (req: Request, res: Response, next: Next
     
     // Password strength validation
     if (!isStrongPassword(password)) {
-      return res.status(400).json({ 
-        message: 'Password must be at least 8 characters long and contain uppercase, lowercase, number, and special character' 
+      return res.status(400).json({
+        message: 'Password must be at least 12 characters long and contain uppercase, lowercase, number, and special character (@$!%*?&)'
       });
     }
     
@@ -144,10 +144,10 @@ export const validatePasswordReset = (req: Request, res: Response, next: NextFun
       }
       
       req.body.token = sanitizeString(token);
-      
+
       if (!isStrongPassword(password)) {
-        return res.status(400).json({ 
-          message: 'Password must be at least 8 characters long and contain uppercase, lowercase, number, and special character' 
+        return res.status(400).json({
+          message: 'Password must be at least 12 characters long and contain uppercase, lowercase, number, and special character (@$!%*?&)'
         });
       }
     }

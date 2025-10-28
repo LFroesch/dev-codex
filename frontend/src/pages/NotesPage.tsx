@@ -13,10 +13,11 @@ interface ContextType {
   user: any;
   onProjectUpdate: (projectId: string, updatedData: any) => Promise<any>;
   onProjectRefresh: () => Promise<void>;
+  activeNotesTab: 'notes' | 'todos' | 'devlog';
 }
 
 const NotesPage: React.FC = () => {
-  const { selectedProject, user, onProjectRefresh } = useOutletContext<ContextType>();
+  const { selectedProject, user, onProjectRefresh, activeNotesTab } = useOutletContext<ContextType>();
   const [searchParams, setSearchParams] = useSearchParams();
 
   // State for note modal
@@ -217,29 +218,10 @@ const NotesPage: React.FC = () => {
     );
   }
 
-  // Get initial section from URL or default to 'notes'
-  const getInitialSection = (): 'notes' | 'todos' | 'devlog' => {
-    const section = searchParams.get('section');
-    if (section === 'todos' || section === 'devlog' || section === 'notes') {
-      return section;
-    }
-    return 'notes';
-  };
-
-  const [activeSection, setActiveSection] = useState<'notes' | 'todos' | 'devlog'>(getInitialSection());
-
-  // Update section when URL changes
-  useEffect(() => {
-    const section = searchParams.get('section');
-    if (section === 'todos' || section === 'devlog' || section === 'notes') {
-      setActiveSection(section);
-    }
-  }, [searchParams]);
-
   // Auto-select todo from URL params (for notifications)
   useEffect(() => {
     const todoId = searchParams.get('todoId');
-    if (todoId && selectedProject?.todos && activeSection === 'todos') {
+    if (todoId && selectedProject?.todos && activeNotesTab === 'todos') {
       const todo = selectedProject.todos.find(t => t.id === todoId);
       if (todo) {
         setSelectedTodo(todo);
@@ -249,13 +231,7 @@ const NotesPage: React.FC = () => {
         setSearchParams(newParams, { replace: true });
       }
     }
-  }, [searchParams, selectedProject?.todos, activeSection]);
-
-  // Update URL when section changes (optional - for consistency)
-  const handleSectionChange = (section: 'notes' | 'todos' | 'devlog') => {
-    setActiveSection(section);
-    setSearchParams({ section });
-  };
+  }, [searchParams, selectedProject?.todos, activeNotesTab]);
 
   // Compact note form state
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -432,44 +408,8 @@ const NotesPage: React.FC = () => {
         </div>
       )}
 
-      {/* Category Navigation */}
-      <div className="flex justify-center px-2">
-        <div className="tabs-container p-1">
-          <button
-            className={`tab-button ${activeSection === 'notes' ? 'tab-active' : ''}`}
-            style={activeSection === 'notes' ? {color: getContrastTextColor()} : {}}
-            onClick={() => handleSectionChange('notes')}
-          >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <span>Notes <span className="text-xs opacity-70">({selectedProject.notes?.length || 0})</span></span>
-          </button>
-          <button
-            className={`tab-button ${activeSection === 'todos' ? 'tab-active' : ''}`}
-            style={activeSection === 'todos' ? {color: getContrastTextColor()} : {}}
-            onClick={() => handleSectionChange('todos')}
-          >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-            <span>Todos <span className="text-xs opacity-70">({selectedProject.todos?.filter(todo => !todo.parentTodoId).length || 0})</span></span>
-          </button>
-          <button
-            className={`tab-button ${activeSection === 'devlog' ? 'tab-active' : ''}`}
-            style={activeSection === 'devlog' ? {color: getContrastTextColor()} : {}}
-            onClick={() => handleSectionChange('devlog')}
-          >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-            </svg>
-            <span>Dev Log <span className="text-xs opacity-70">({selectedProject.devLog?.length || 0})</span></span>
-          </button>
-        </div>
-      </div>
-
       {/* Notes Section */}
-      {activeSection === 'notes' && (
+      {activeNotesTab === 'notes' && (
         <div className="space-y-6">
           {/* Compact Create Note Form */}
           <div className="border-2 border-base-content/20 rounded-lg mb-4">
@@ -614,7 +554,7 @@ const NotesPage: React.FC = () => {
       )}
 
       {/* Todos Section */}
-      {activeSection === 'todos' && (
+      {activeNotesTab === 'todos' && (
         <div className="space-y-4">
           {/* Create New Todo Button/Form - Always at Top */}
           <div className="border-2 border-base-content/20 rounded-lg bg-base-100">
@@ -895,7 +835,7 @@ const NotesPage: React.FC = () => {
       )}
 
       {/* Dev Log Section */}
-      {activeSection === 'devlog' && (
+      {activeNotesTab === 'devlog' && (
         <div className="space-y-6">
           {/* Compact Create Dev Log Form */}
           <div className="border-2 border-base-content/20 rounded-lg mb-4">

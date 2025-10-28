@@ -11,12 +11,13 @@ interface ContextType {
   onProjectArchive: (projectId: string, isArchived: boolean) => Promise<void>;
   onProjectDelete: (projectId: string) => Promise<void>;
   onProjectRefresh: () => Promise<void>;
+  activeSettingsTab: 'info' | 'export' | 'danger';
 }
 
 const SettingsPage: React.FC = () => {
   const navigate = useNavigate();
-  const { selectedProject, onProjectUpdate, onProjectArchive, onProjectDelete, onProjectRefresh } = useOutletContext<ContextType>();
-  
+  const { selectedProject, onProjectUpdate, onProjectArchive, onProjectDelete, onProjectRefresh, activeSettingsTab } = useOutletContext<ContextType>();
+
   // Form data and state
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -25,14 +26,13 @@ const SettingsPage: React.FC = () => {
   const [category, setCategory] = useState('general');
   const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState('');
-  
+
   // Loading states
   const [loading, setLoading] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [archiveLoading, setArchiveLoading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [error, setError] = useState('');
-  const [activeSection, setActiveSection] = useState<'info' | 'export' | 'danger'>('info');
 
   useEffect(() => {
     if (selectedProject) {
@@ -166,45 +166,6 @@ const SettingsPage: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      {/* Navigation Tabs */}
-      <div className="flex justify-center px-2">
-        <div className="tabs-container p-1">
-          <button
-            className={`tab-button ${activeSection === 'info' ? 'tab-active' : ''}`}
-            style={activeSection === 'info' ? {color: getContrastTextColor()} : {}}
-            onClick={() => setActiveSection('info')}
-          >
-            <svg className="w-4 h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span className="hidden sm:inline">Project Info</span>
-            <span className="sm:hidden">Info</span>
-          </button>
-          <button
-            className={`tab-button ${activeSection === 'export' ? 'tab-active' : ''}`}
-            style={activeSection === 'export' ? {color: getContrastTextColor()} : {}}
-            onClick={() => setActiveSection('export')}
-          >
-            <svg className="w-4 h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <span className="hidden sm:inline">Export & Import</span>
-            <span className="sm:hidden">Export</span>
-          </button>
-          <button
-            className={`tab-button ${activeSection === 'danger' ? 'tab-active' : ''}`}
-            style={activeSection === 'danger' ? {color: getContrastTextColor()} : {}}
-            onClick={() => setActiveSection('danger')}
-          >
-            <svg className="w-4 h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-            <span className="hidden sm:inline">Danger Zone</span>
-            <span className="sm:hidden">Danger</span>
-          </button>
-        </div>
-      </div>
-
       {/* Error Messages */}
       {error && (
         <div className="alert alert-error shadow-md mb-6">
@@ -218,7 +179,7 @@ const SettingsPage: React.FC = () => {
 
 
       {/* Project Info Section */}
-      {activeSection === 'info' && (
+      {activeSettingsTab === 'info' && (
         <div className="section-container mb-4">
           <div className="section-header">
             <div className="flex items-center gap-3">
@@ -434,7 +395,7 @@ const SettingsPage: React.FC = () => {
       )}
 
       {/* Export & Import Section */}
-      {activeSection === 'export' && (
+      {activeSettingsTab === 'export' && (
         <div className="section-container mb-4">
           <div className="section-header">
             <div className="flex items-center gap-3">
@@ -449,7 +410,7 @@ const SettingsPage: React.FC = () => {
       )}
 
       {/* Danger Zone Section */}
-      {activeSection === 'danger' && (
+      {activeSettingsTab === 'danger' && (
         <div className="section-container mb-4">
           <div className="section-header">
             <div className="flex items-center gap-3">

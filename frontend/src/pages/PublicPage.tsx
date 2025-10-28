@@ -12,16 +12,16 @@ interface PublicVisibilityOptions {
 }
 
 const PublicPage: React.FC = () => {
-  const { selectedProject, onProjectUpdate } = useOutletContext<any>();
+  const { selectedProject, onProjectUpdate, activePublicTab } = useOutletContext<any>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  
+
   // Form state
   const [isPublic, setIsPublic] = useState(false);
   const [publicSlug, setPublicSlug] = useState('');
   const [publicDescription, setPublicDescription] = useState('');
-  
+
   // Visibility controls
   const [visibilityOptions, setVisibilityOptions] = useState<PublicVisibilityOptions>({
     description: true,
@@ -31,10 +31,6 @@ const PublicPage: React.FC = () => {
     techStack: true,
     timestamps: true,
   });
-
-  
-  // Section navigation state
-  const [activeSection, setActiveSection] = useState<'overview' | 'url' | 'visibility'>('overview');
 
   useEffect(() => {
     if (selectedProject) {
@@ -149,50 +145,6 @@ const PublicPage: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      {/* Navigation Tabs */}
-      <div className="flex justify-center px-2">
-        <div className="tabs-container p-1">
-          <button
-            className={`tab-button ${activeSection === 'overview' ? 'tab-active' : ''}`}
-            style={activeSection === 'overview' ? {color: getContrastTextColor()} : {}}
-            onClick={() => setActiveSection('overview')}
-          >
-            <svg className="w-4 h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-            <span className="hidden sm:inline">Overview & Settings</span>
-            <span className="sm:hidden">Overview</span>
-          </button>
-          {isPublic && (
-            <>
-              <button
-                className={`tab-button ${activeSection === 'url' ? 'tab-active' : ''}`}
-                style={activeSection === 'url' ? {color: getContrastTextColor()} : {}}
-                onClick={() => setActiveSection('url')}
-              >
-                <svg className="w-4 h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                </svg>
-                <span className="hidden sm:inline">URL & Preview</span>
-                <span className="sm:hidden">URL</span>
-              </button>
-              <button
-                className={`tab-button ${activeSection === 'visibility' ? 'tab-active' : ''}`}
-                style={activeSection === 'visibility' ? {color: getContrastTextColor()} : {}}
-                onClick={() => setActiveSection('visibility')}
-              >
-                <svg className="w-4 h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-                <span className="hidden sm:inline">Visibility & Privacy</span>
-                <span className="sm:hidden">Privacy</span>
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-
       {/* Success/Error Messages */}
       {success && (
         <div className="alert alert-success shadow-md mb-6">
@@ -213,7 +165,7 @@ const PublicPage: React.FC = () => {
       )}
 
       {/* Overview & Settings Section */}
-      {activeSection === 'overview' && (
+      {activePublicTab === 'overview' && (
         <div className="space-y-4">
           {/* Overview */}
           <div className="section-container mb-4">
@@ -343,7 +295,7 @@ const PublicPage: React.FC = () => {
       )}
 
       {/* URL & Preview Section */}
-      {activeSection === 'url' && isPublic && (
+      {activePublicTab === 'url' && isPublic && (
         <div className="section-container mb-4">
           <div className="section-header">
             <div className="flex items-center gap-3">
@@ -484,7 +436,7 @@ const PublicPage: React.FC = () => {
       )}
 
       {/* Visibility & Privacy Section */}
-      {activeSection === 'visibility' && isPublic && (
+      {activePublicTab === 'visibility' && isPublic && (
         <div className="space-y-4">
           {/* Visibility Controls */}
           <div className="section-container mb-4">

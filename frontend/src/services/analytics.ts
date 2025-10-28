@@ -1,3 +1,5 @@
+import { csrfFetch } from '../utils/csrf';
+
 // Represents a user action or system event for analytics tracking
 interface AnalyticsEvent {
   eventType: 'field_edit' | 'action' | 'page_view' | 'project_open' | 'feature_usage' | 'navigation' | 'search' | 'error' | 'performance' | 'ui_interaction';
@@ -354,9 +356,8 @@ class AnalyticsService {
       await this.setCurrentProject(projectId);
 
       try {
-        const response = await fetch('/api/activity-logs/smart-join', {
+        const response = await csrfFetch('/api/activity-logs/smart-join', {
           method: 'POST',
-          credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ projectId, sessionId: this.session.sessionId })
         });
@@ -577,8 +578,7 @@ class AnalyticsService {
       'X-Session-ID': this.session?.sessionId || ''
     };
 
-    return fetch(`/api/analytics${path}`, {
-      credentials: 'include',
+    return csrfFetch(`/api/analytics${path}`, {
       headers: { ...defaultHeaders, ...options.headers },
       ...options
     });

@@ -13,7 +13,7 @@ interface ContextType {
 }
 
 const FeaturesPage: React.FC = () => {
-  const { selectedProject, onProjectRefresh } = useOutletContext<ContextType>();
+  const { selectedProject, onProjectRefresh, activeFeaturesTab } = useOutletContext<any>();
 
   const [newComponent, setNewComponent] = useState({
     category: 'backend' as ComponentCategory,
@@ -36,7 +36,6 @@ const FeaturesPage: React.FC = () => {
   const [expandedComponents, setExpandedComponents] = useState<Set<string>>(new Set());
   const [expandedFeatures, setExpandedFeatures] = useState<Set<string>>(new Set());
   const [error, setError] = useState('');
-  const [activeTab, setActiveTab] = useState<string>('graph');
   const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean; componentId: string; componentTitle: string }>({
     isOpen: false,
     componentId: '',
@@ -74,7 +73,7 @@ const FeaturesPage: React.FC = () => {
     try {
       await projectAPI.createComponent(selectedProject.id, newComponent);
       setNewComponent({ category: 'backend', type: 'service', title: '', content: '', feature: '', tags: [] });
-      setActiveTab('structure');
+      // Tab managed by Layout.tsx now
       await onProjectRefresh();
     } catch (err) {
       setError('Failed to add component');
@@ -366,58 +365,8 @@ const FeaturesPage: React.FC = () => {
         </div>
       )}
 
-      {/* Tab Navigation */}
-      <div className="flex justify-center px-2">
-        <div className="tabs-container p-1 overflow-x-auto">
-          <button
-            className={`tab-button ${activeTab === 'graph' ? 'tab-active' : ''}`}
-            style={activeTab === 'graph' ? {color: getContrastTextColor()} : {}}
-            onClick={() => setActiveTab('graph')}
-          >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
-            </svg>
-            Dashboard ({selectedProject.components?.length || 0})
-          </button>
-          {hasAnyComponents && (
-            <>
-              <button
-                className={`tab-button ${activeTab === 'structure' ? 'tab-active' : ''}`}
-                style={activeTab === 'structure' ? {color: getContrastTextColor()} : {}}
-                onClick={() => setActiveTab('structure')}
-              >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                </svg>
-                Structure ({selectedProject.components?.length || 0})
-              </button>
-              <button
-                className={`tab-button ${activeTab === 'all' ? 'tab-active' : ''}`}
-                style={activeTab === 'all' ? {color: getContrastTextColor()} : {}}
-                onClick={() => setActiveTab('all')}
-              >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                All Components ({selectedProject.components?.length || 0})
-              </button>
-            </>
-          )}
-          <button
-            className={`tab-button ${activeTab === 'create' ? 'tab-active' : ''}`}
-            style={activeTab === 'create' ? {color: getContrastTextColor()} : {}}
-            onClick={() => setActiveTab('create')}
-          >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            Create New
-          </button>
-        </div>
-      </div>
-
       {/* Tab Content */}
-      {activeTab === 'graph' ? (
+      {activeFeaturesTab === 'graph' ? (
         // Graph Dashboard Tab
         <div className="section-container mb-4">
           <div className="section-header">
@@ -431,16 +380,14 @@ const FeaturesPage: React.FC = () => {
               docs={selectedProject.components}
               projectId={selectedProject.id}
               onDocClick={(component) => {
-                // Switch to All Components tab and expand the clicked component
-                setActiveTab('all');
+                // Expand the clicked component (tab managed by Layout.tsx now)
                 if (!expandedComponents.has(component.id)) {
                   toggleComponentExpanded(component.id);
                 }
               }}
               onDocEdit={(component) => {
-                // Open edit mode for this component
+                // Open edit mode for this component (tab managed by Layout.tsx now)
                 handleEditComponent(component);
-                setActiveTab('all');
               }}
               onCreateDoc={async (componentData) => {
                 setAddingComponent(true);
@@ -460,7 +407,7 @@ const FeaturesPage: React.FC = () => {
             />
           </div>
         </div>
-      ) : activeTab === 'structure' ? (
+      ) : activeFeaturesTab === 'structure' ? (
         // Structure View Tab
         <div className="section-container mb-4">
           <div className="section-header">
@@ -477,13 +424,7 @@ const FeaturesPage: React.FC = () => {
                 </div>
                 <h3 className="text-lg font-medium mb-2 text-base-content/80">No components yet</h3>
                 <p className="text-sm text-base-content/60 mb-4">Create your first component using the "Create New" tab</p>
-                <button
-                  onClick={() => setActiveTab('create')}
-                  className="btn btn-primary btn-sm"
-                  style={{ color: getContrastTextColor('primary') }}
-                >
-                  Create Component
-                </button>
+                <p className="text-sm text-base-content/60">Use the "Create" tab above to add your first component</p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -543,7 +484,7 @@ const FeaturesPage: React.FC = () => {
             )}
           </div>
         </div>
-      ) : activeTab === 'all' ? (
+      ) : activeFeaturesTab === 'all' ? (
         // All Components Tab
         <div className="section-container mb-4">
           <div className="section-header">

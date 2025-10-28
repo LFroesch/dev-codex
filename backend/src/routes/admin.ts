@@ -1,5 +1,5 @@
 import express from 'express';
-import mongoose from 'mongoose';
+import mongoose, { isValidObjectId } from 'mongoose';
 import { User } from '../models/User';
 import { Project } from '../models/Project';
 import { Ticket } from '../models/Ticket';
@@ -130,6 +130,11 @@ router.get('/users', async (req, res) => {
 // Get user by ID
 router.get('/users/:id', async (req, res) => {
   try {
+    // SEC-008 FIX: Validate ObjectId format
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid user ID' });
+    }
+
     const user = await User.findById(req.params.id).select('-password');
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
@@ -150,12 +155,17 @@ router.get('/users/:id', async (req, res) => {
 // Update user plan
 router.put('/users/:id/plan', async (req, res) => {
   try {
+    // SEC-008 FIX: Validate ObjectId format
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid user ID' });
+    }
+
     const { planTier } = req.body;
-    
+
     if (!['free', 'pro', 'enterprise'].includes(planTier)) {
       return res.status(400).json({ error: 'Invalid plan tier' });
     }
-    
+
     const user = await User.findByIdAndUpdate(
       req.params.id,
       { 
@@ -182,6 +192,11 @@ router.put('/users/:id/plan', async (req, res) => {
 // Delete user
 router.delete('/users/:id', async (req, res) => {
   try {
+    // SEC-008 FIX: Validate ObjectId format
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid user ID' });
+    }
+
     const user = await User.findById(req.params.id);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
@@ -509,6 +524,11 @@ router.delete('/tickets/:ticketId', async (req, res) => {
 // Send password reset email for user
 router.post('/users/:id/password-reset', async (req, res) => {
   try {
+    // SEC-008 FIX: Validate ObjectId format
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid user ID' });
+    }
+
     const user = await User.findById(req.params.id);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });

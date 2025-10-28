@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import { doubleCsrf } from 'csrf-csrf';
 import passport from 'passport';
 import dotenv from 'dotenv';
 import path from 'path';
@@ -87,24 +88,67 @@ app.use('/api/billing/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
 app.use(passport.initialize());
 
+// SEC-003 FIX: Modern CSRF Protection using csrf-csrf (double-submit cookie pattern)
+const csrfProtection = doubleCsrf({
+  getSecret: () => process.env.CSRF_SECRET || 'your-csrf-secret-change-in-production',
+  cookieName: isDevelopment ? 'csrf-token' : '__Host-csrf-token',
+  cookieOptions: {
+    sameSite: 'lax',
+    path: '/',
+    secure: !isDevelopment,
+  },
+  size: 64,
+  ignoredMethods: ['GET', 'HEAD', 'OPTIONS'],
+  getSessionIdentifier: (req) => {
+    // Use session ID if available, otherwise use a default identifier
+    return (req as any).session?.id || 'anonymous';
+  },
+  getCsrfTokenFromRequest: (req) => {
+    return (req.headers['x-csrf-token'] as string) || req.body?._csrf;
+  },
+});
+
+// Conditional CSRF middleware - skip in development or for specific routes
+const conditionalCSRF = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  // Skip CSRF in development
+  if (isDevelopment) {
+    return next();
+  }
+  // Skip for webhook endpoint
+  if (req.path.includes('/webhook')) {
+    return next();
+  }
+  // Skip for auth routes (login, register - they need to get token first)
+  if (req.path.startsWith('/api/auth/') && ['POST'].includes(req.method)) {
+    return next();
+  }
+  return csrfProtection.doubleCsrfProtection(req, res, next);
+};
+
 // Request logging middleware
 app.use(requestLogger as any);
+
+// CSRF token endpoint for frontend
+app.get('/api/csrf-token', (req, res) => {
+  const token = csrfProtection.generateCsrfToken(req, res);
+  res.json({ csrfToken: token });
+});
 
 app.use('/api', healthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/public', publicRateLimit, publicRoutes);
 const rateLimitMiddleware = isDevelopment ? devRateLimit : normalRateLimit;
-app.use('/api/projects', rateLimitMiddleware, sessionMiddleware, projectRoutes);
-app.use('/api/invitations', rateLimitMiddleware, invitationRoutes);
-app.use('/api/notifications', rateLimitMiddleware, notificationRoutes);
-app.use('/api/billing', rateLimitMiddleware, billingRoutes);
-app.use('/api/admin', adminRateLimit, rateLimitMiddleware, adminRoutes);
-app.use('/api/tickets', rateLimitMiddleware, ticketRoutes);
-app.use('/api/analytics', rateLimitMiddleware, sessionMiddleware, analyticsRoutes);
-app.use('/api/activity-logs', rateLimitMiddleware, activityLogRoutes);
-app.use('/api/ideas', rateLimitMiddleware, ideasRoutes);
-app.use('/api/news', rateLimitMiddleware, newsRoutes);
-app.use('/api/terminal', rateLimitMiddleware, terminalRoutes);
+app.use('/api/projects', conditionalCSRF, rateLimitMiddleware, sessionMiddleware, projectRoutes);
+app.use('/api/invitations', conditionalCSRF, rateLimitMiddleware, invitationRoutes);
+app.use('/api/notifications', conditionalCSRF, rateLimitMiddleware, notificationRoutes);
+app.use('/api/billing', conditionalCSRF, rateLimitMiddleware, billingRoutes);
+app.use('/api/admin', conditionalCSRF, adminRateLimit, rateLimitMiddleware, adminRoutes);
+app.use('/api/tickets', conditionalCSRF, rateLimitMiddleware, ticketRoutes);
+app.use('/api/analytics', conditionalCSRF, rateLimitMiddleware, sessionMiddleware, analyticsRoutes);
+app.use('/api/activity-logs', conditionalCSRF, rateLimitMiddleware, activityLogRoutes);
+app.use('/api/ideas', conditionalCSRF, rateLimitMiddleware, ideasRoutes);
+app.use('/api/news', conditionalCSRF, rateLimitMiddleware, newsRoutes);
+app.use('/api/terminal', conditionalCSRF, rateLimitMiddleware, terminalRoutes);
 
 if (isDevelopment) {
   app.use('/api/debug', debugRoutes);

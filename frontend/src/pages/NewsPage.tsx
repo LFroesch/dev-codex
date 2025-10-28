@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { newsAPI } from '../api';
 import { getContrastTextColor } from '../utils/contrastTextColor';
 
@@ -16,12 +17,12 @@ interface NewsPost {
 }
 
 const NewsPage: React.FC = () => {
+  const { activeNewsTab } = useOutletContext<any>();
   const [posts, setPosts] = useState<NewsPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedPost, setSelectedPost] = useState<NewsPost | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState<'all' | 'news' | 'update' | 'dev_log' | 'announcement'>('all');
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -148,8 +149,8 @@ const NewsPage: React.FC = () => {
     }
   };
 
-  const filteredPosts = posts.filter(post => 
-    activeSection === 'all' || post.type === activeSection
+  const filteredPosts = posts.filter(post =>
+    activeNewsTab === 'all' || post.type === activeNewsTab
   );
 
   if (loading) {
@@ -178,34 +179,6 @@ const NewsPage: React.FC = () => {
         <div className="text-6xl mb-4">📰</div>
         <h2 className="text-2xl font-bold mb-2">What's New?</h2>
         <p className="text-base-content/60">Latest updates and announcements</p>
-      </div>
-
-      {/* Category Navigation */}
-      <div className="flex justify-center">
-        <div className="tabs-container p-1 opacity-90">
-          <button 
-            className={`tab-button ${activeSection === 'all' ? 'tab-active' : ''}`}
-            style={activeSection === 'all' ? {color: getContrastTextColor()} : {}}
-            onClick={() => setActiveSection('all')}
-          >
-            All <span className="text-xs opacity-70">({posts.length})</span>
-          </button>
-          {(['news', 'update', 'dev_log', 'announcement'] as const).map((type) => {
-            const count = posts.filter(p => p.type === type).length;
-            if (count === 0) return null;
-            
-            return (
-              <button 
-                key={type}
-                className={`tab-button ${activeSection === type ? 'tab-active' : ''}`}
-                style={activeSection === type ? {color: getContrastTextColor()} : {}}
-                onClick={() => setActiveSection(type)}
-              >
-                {getTypeIcon(type)} {getTypeLabel(type)} <span className="text-xs opacity-70">({count})</span>
-              </button>
-            );
-          })}
-        </div>
       </div>
 
       {/* Posts Grid */}

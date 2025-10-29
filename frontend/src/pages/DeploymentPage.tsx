@@ -245,7 +245,7 @@ const DeploymentPage: React.FC = () => {
                 <span>📋</span>
                 Basic Information
               </h3>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
                 <div className="form-control">
                   <label className="label">
                     <span className="label-text font-medium">Live URL</span>
@@ -308,7 +308,7 @@ const DeploymentPage: React.FC = () => {
                 <span>⚙️</span>
                 Build & Deploy Settings
               </h3>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
                 <div className="form-control">
                   <label className="label">
                     <span className="label-text font-medium">Build Command</span>

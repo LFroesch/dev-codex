@@ -856,7 +856,7 @@ const AccountSettingsPage: React.FC = () => {
                 {/* Preset Themes */}
                 {themeSubTab === 'preset' && (
                   <div className="space-y-4">
-                    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 sm:gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3">
                       {THEMES.map((theme) => (
                         <button
                           key={theme}

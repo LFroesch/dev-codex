@@ -1,5 +1,5 @@
 import { BaseCommandHandler } from './BaseCommandHandler';
-import { CommandResponse, ResponseType } from '../commandExecutor';
+import { CommandResponse, ResponseType } from '../types';
 import { ParsedCommand, CommandParser, COMMAND_METADATA, CommandType } from '../commandParser';
 import { User } from '../../models/User';
 import { Project } from '../../models/Project';
@@ -1206,7 +1206,7 @@ export class UtilityHandlers extends BaseCommandHandler {
   async handleViewNotifications(parsed: ParsedCommand): Promise<CommandResponse> {
     try {
       const notificationService = NotificationService.getInstance();
-      const unreadOnly = parsed.flags.has('unread');
+      const unreadOnly = hasFlag(parsed.flags, 'unread');
 
       const result = await notificationService.getNotifications(this.userId, {
         limit: 50,

@@ -63,7 +63,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4">
-      <div className="bg-base-100 rounded-lg shadow-xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto border-2 border-base-content/20">
+      <div className="bg-base-100 rounded-lg shadow-xl p-4 sm:p-6 w-full max-w-md max-h-[85vh] sm:max-h-[90vh] overflow-y-auto border-2 border-base-content/20">
         <div className={`flex items-center justify-center w-16 h-16 mx-auto mb-4 ${bgClass} rounded-full border-2 border-base-content/20`}>
           <svg className={`w-8 h-8 ${textClass}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             {icon}
@@ -74,7 +74,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
 
         <div className="text-center mb-6" style={{ color: getContrastTextColor('primary') }} dangerouslySetInnerHTML={{ __html: message }} />
 
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
           <button
             type="button"
             className="bg-primary btn btn-ghost flex-1 border-2 border-base-content/20"

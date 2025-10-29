@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import { Project } from '../../models/Project';
 import TeamMember from '../../models/TeamMember';
 import { logError } from '../../config/logger';
-import { ResponseType, CommandResponse } from '../commandExecutor';
+import { ResponseType, CommandResponse } from '../types';
 import { projectCache } from '../ProjectCache';
 
 /**

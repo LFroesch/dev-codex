@@ -1,6 +1,6 @@
 import { BaseCommandHandler } from './BaseCommandHandler';
-import { CommandResponse, ResponseType } from '../commandExecutor';
-import { ParsedCommand } from '../commandParser';
+import { CommandResponse, ResponseType } from '../types';
+import { ParsedCommand, getFlag, getFlagCount } from '../commandParser';
 import { User } from '../../models/User';
 import TeamMember from '../../models/TeamMember';
 import ProjectInvitation from '../../models/ProjectInvitation';
@@ -68,7 +68,7 @@ export class TeamHandlers extends BaseCommandHandler {
       };
     }
 
-    const role = (parsed.flags.get('role') as string) || 'editor';
+    const role = (getFlag(parsed.flags, 'role') as string) || 'editor';
     if (!isValidRole(role)) {
       return {
         type: ResponseType.ERROR,

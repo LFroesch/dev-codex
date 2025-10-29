@@ -1,8 +1,8 @@
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 import { BaseCommandHandler } from '../BaseCommandHandler';
-import { CommandResponse, ResponseType } from '../../commandExecutor';
-import { ParsedCommand } from '../../commandParser';
+import { CommandResponse, ResponseType } from '../../types';
+import { ParsedCommand, getFlag, getFlagCount, hasFlag } from '../../commandParser';
 import { sanitizeText } from '../../../utils/validation';
 
 /**
@@ -14,7 +14,7 @@ export class RelationshipHandlers extends BaseCommandHandler {
     if (error) return error;
 
     // Check if using old syntax (args without flags) - this is an error
-    if (parsed.args.length > 0 && parsed.flags.size === 0) {
+    if (parsed.args.length > 0 && getFlagCount(parsed.flags) === 0) {
       return {
         type: ResponseType.ERROR,
         message: '❌ Please use flag-based syntax or no arguments for wizard.',
@@ -28,13 +28,13 @@ export class RelationshipHandlers extends BaseCommandHandler {
     }
 
     // Get flags
-    const sourceIdentifier = parsed.flags.get('source') as string;
-    const targetIdentifier = parsed.flags.get('target') as string;
-    const relationshipType = (parsed.flags.get('type') as string)?.toLowerCase();
-    const description = parsed.flags.get('description') as string;
+    const sourceIdentifier = getFlag(parsed.flags, 'source') as string;
+    const targetIdentifier = getFlag(parsed.flags, 'target') as string;
+    const relationshipType = (getFlag(parsed.flags, 'type') as string)?.toLowerCase();
+    const description = getFlag(parsed.flags, 'description') as string;
 
     // No args and no flags - pull up wizard
-    if (parsed.args.length === 0 && parsed.flags.size === 0) {
+    if (parsed.args.length === 0 && getFlagCount(parsed.flags) === 0) {
       if (project.components.length < 2) {
         return {
           type: ResponseType.ERROR,
@@ -451,7 +451,7 @@ export class RelationshipHandlers extends BaseCommandHandler {
     }
 
     const newType = parsed.args[2].toLowerCase();
-    const newDescription = parsed.flags.get('description') as string;
+    const newDescription = getFlag(parsed.flags, 'description') as string;
 
     // Find component
     const component = this.findComponent(project.components, componentIdentifier);
@@ -659,7 +659,7 @@ export class RelationshipHandlers extends BaseCommandHandler {
     const targetComponent = project.components.find((c: any) => c.id === relationship.targetId);
 
     // Check for confirmation flag
-    const hasConfirmation = parsed.flags.has('confirm') || parsed.flags.has('yes') || parsed.flags.has('y');
+    const hasConfirmation = hasFlag(parsed.flags, 'confirm') || hasFlag(parsed.flags, 'yes') || hasFlag(parsed.flags, 'y');
 
     if (!hasConfirmation) {
       return {

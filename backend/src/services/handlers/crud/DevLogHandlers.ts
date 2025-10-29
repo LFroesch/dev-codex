@@ -1,8 +1,8 @@
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 import { BaseCommandHandler } from '../BaseCommandHandler';
-import { CommandResponse, ResponseType } from '../../commandExecutor';
-import { ParsedCommand } from '../../commandParser';
+import { CommandResponse, ResponseType } from '../../types';
+import { ParsedCommand, getFlag, getFlagCount, hasFlag } from '../../commandParser';
 import { sanitizeText } from '../../../utils/validation';
 
 /**
@@ -14,7 +14,7 @@ export class DevLogHandlers extends BaseCommandHandler {
     if (error) return error;
 
     // Check if using old syntax (args without flags) - this is an error
-    if (parsed.args.length > 0 && parsed.flags.size === 0) {
+    if (parsed.args.length > 0 && getFlagCount(parsed.flags) === 0) {
       return {
         type: ResponseType.ERROR,
         message: '❌ Please use flag-based syntax or no arguments for wizard.',
@@ -28,11 +28,11 @@ export class DevLogHandlers extends BaseCommandHandler {
     }
 
     // Get flags
-    const title = parsed.flags.get('title') as string;
-    const content = parsed.flags.get('content') as string;
+    const title = getFlag(parsed.flags, 'title') as string;
+    const content = getFlag(parsed.flags, 'content') as string;
 
     // No args and no flags - pull up wizard
-    if (parsed.args.length === 0 && parsed.flags.size === 0) {
+    if (parsed.args.length === 0 && getFlagCount(parsed.flags) === 0) {
       return {
         type: ResponseType.PROMPT,
         message: `✨ Add New Dev Log Entry`,
@@ -214,8 +214,8 @@ export class DevLogHandlers extends BaseCommandHandler {
     }
 
     // Check for direct flags (new syntax)
-    const title = parsed.flags.get('title') as string;
-    const content = parsed.flags.get('content') as string;
+    const title = getFlag(parsed.flags, 'title') as string;
+    const content = getFlag(parsed.flags, 'content') as string;
 
     // If any flags are provided, update those fields
     if (title || content) {
@@ -349,7 +349,7 @@ export class DevLogHandlers extends BaseCommandHandler {
       };
     }
 
-    const hasConfirmation = parsed.flags.has('confirm') || parsed.flags.has('yes') || parsed.flags.has('y');
+    const hasConfirmation = hasFlag(parsed.flags, 'confirm') || hasFlag(parsed.flags, 'yes') || hasFlag(parsed.flags, 'y');
 
     if (!hasConfirmation) {
       const entryTitle = entry.title || entry.description?.substring(0, 50) || 'Untitled entry';

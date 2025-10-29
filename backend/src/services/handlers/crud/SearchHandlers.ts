@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import { BaseCommandHandler } from '../BaseCommandHandler';
-import { CommandResponse, ResponseType } from '../../commandExecutor';
-import { ParsedCommand } from '../../commandParser';
+import { CommandResponse, ResponseType } from '../../types';
+import { ParsedCommand, getFlag, getFlagCount } from '../../commandParser';
 
 /**
  * Handlers for Search operations

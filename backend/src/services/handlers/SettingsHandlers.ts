@@ -1,6 +1,6 @@
 import { BaseCommandHandler } from './BaseCommandHandler';
-import { CommandResponse, ResponseType } from '../commandExecutor';
-import { ParsedCommand } from '../commandParser';
+import { CommandResponse, ResponseType } from '../types';
+import { ParsedCommand, getFlag, getFlagCount } from '../commandParser';
 import { sanitizeText, validateProjectName, isValidUrl, isValidDeploymentStatus } from '../../utils/validation';
 
 /**
@@ -212,8 +212,8 @@ export class SettingsHandlers extends BaseCommandHandler {
     const deploymentData = project.deploymentData || {};
     let updated = false;
 
-    if (parsed.flags.has('url')) {
-      const url = parsed.flags.get('url') as string;
+    if (hasFlag(parsed.flags, 'url')) {
+      const url = getFlag(parsed.flags, 'url') as string;
       if (url && !isValidUrl(url)) {
         return {
           type: ResponseType.ERROR,
@@ -225,13 +225,13 @@ export class SettingsHandlers extends BaseCommandHandler {
       updated = true;
     }
 
-    if (parsed.flags.has('platform')) {
-      deploymentData.deploymentPlatform = parsed.flags.get('platform') as string;
+    if (hasFlag(parsed.flags, 'platform')) {
+      deploymentData.deploymentPlatform = getFlag(parsed.flags, 'platform') as string;
       updated = true;
     }
 
-    if (parsed.flags.has('status')) {
-      const status = parsed.flags.get('status') as string;
+    if (hasFlag(parsed.flags, 'status')) {
+      const status = getFlag(parsed.flags, 'status') as string;
       if (!isValidDeploymentStatus(status)) {
         return {
           type: ResponseType.ERROR,
@@ -243,28 +243,28 @@ export class SettingsHandlers extends BaseCommandHandler {
       updated = true;
     }
 
-    if (parsed.flags.has('branch')) {
-      deploymentData.deploymentBranch = parsed.flags.get('branch') as string;
+    if (hasFlag(parsed.flags, 'branch')) {
+      deploymentData.deploymentBranch = getFlag(parsed.flags, 'branch') as string;
       updated = true;
     }
 
-    if (parsed.flags.has('github')) {
-      deploymentData.githubRepo = parsed.flags.get('github') as string;
+    if (hasFlag(parsed.flags, 'github')) {
+      deploymentData.githubRepo = getFlag(parsed.flags, 'github') as string;
       updated = true;
     }
 
-    if (parsed.flags.has('build')) {
-      deploymentData.buildCommand = parsed.flags.get('build') as string;
+    if (hasFlag(parsed.flags, 'build')) {
+      deploymentData.buildCommand = getFlag(parsed.flags, 'build') as string;
       updated = true;
     }
 
-    if (parsed.flags.has('start')) {
-      deploymentData.startCommand = parsed.flags.get('start') as string;
+    if (hasFlag(parsed.flags, 'start')) {
+      deploymentData.startCommand = getFlag(parsed.flags, 'start') as string;
       updated = true;
     }
 
-    if (parsed.flags.has('lastDeploy')) {
-      const dateStr = parsed.flags.get('lastDeploy') as string;
+    if (hasFlag(parsed.flags, 'lastDeploy')) {
+      const dateStr = getFlag(parsed.flags, 'lastDeploy') as string;
       const date = new Date(dateStr);
       if (isNaN(date.getTime())) {
         return {
@@ -340,13 +340,13 @@ export class SettingsHandlers extends BaseCommandHandler {
       updated = true;
     }
 
-    if (parsed.flags.has('enabled')) {
-      resolution.project.isPublic = parsed.flags.get('enabled') === 'true';
+    if (hasFlag(parsed.flags, 'enabled')) {
+      resolution.project.isPublic = getFlag(parsed.flags, 'enabled') === 'true';
       updated = true;
     }
 
-    if (parsed.flags.has('slug')) {
-      resolution.project.publicSlug = sanitizeText(parsed.flags.get('slug') as string);
+    if (hasFlag(parsed.flags, 'slug')) {
+      resolution.project.publicSlug = sanitizeText(getFlag(parsed.flags, 'slug') as string);
       updated = true;
     }
 

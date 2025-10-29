@@ -653,7 +653,7 @@ const StackPage: React.FC = () => {
                     <span className="text-xl">🎯</span>
                     Target Platforms
                   </h3>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                   {PLATFORMS.map(platform => (
                     <button
                       key={platform.id}
@@ -681,7 +681,7 @@ const StackPage: React.FC = () => {
                   <span className="text-xl">⚙️</span>
                   Category Groups
                 </h3>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                   {categoryGroups.map((group) => (
                     <button
                       key={group.name}

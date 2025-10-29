@@ -1,6 +1,6 @@
 import { BaseCommandHandler } from './BaseCommandHandler';
-import { CommandResponse, ResponseType } from '../commandExecutor';
-import { ParsedCommand } from '../commandParser';
+import { CommandResponse, ResponseType } from '../types';
+import { ParsedCommand, getFlag, getFlagCount } from '../commandParser';
 import { isValidStackCategory } from '../../utils/validation';
 import { lookupTech } from '../../utils/techStackLookup';
 
@@ -16,7 +16,7 @@ export class StackHandlers extends BaseCommandHandler {
     if (error) return error;
 
     // Check if using old syntax (args without flags) - this is an error
-    if (parsed.args.length > 0 && parsed.flags.size === 0) {
+    if (parsed.args.length > 0 && getFlagCount(parsed.flags) === 0) {
       return {
         type: ResponseType.ERROR,
         message: '❌ Please use flag-based syntax or no arguments for wizard.',
@@ -30,7 +30,7 @@ export class StackHandlers extends BaseCommandHandler {
     }
 
     // No args and no flags - pull up wizard
-    if (parsed.args.length === 0 && parsed.flags.size === 0) {
+    if (parsed.args.length === 0 && getFlagCount(parsed.flags) === 0) {
       return {
         type: ResponseType.PROMPT,
         message: `✨ Add New Stack Item`,
@@ -76,7 +76,7 @@ export class StackHandlers extends BaseCommandHandler {
     }
 
     // Get name from flags (new syntax)
-    const name = parsed.flags.get('name') as string;
+    const name = getFlag(parsed.flags, 'name') as string;
     if (!name) {
       return {
         type: ResponseType.ERROR,
@@ -93,9 +93,9 @@ export class StackHandlers extends BaseCommandHandler {
     const lookup = lookupTech(name);
 
     // Use user-provided values or fall back to auto-detected values
-    let category = parsed.flags.get('category') as string;
-    let version = parsed.flags.get('version') as string;
-    let description = parsed.flags.get('description') as string || '';
+    let category = getFlag(parsed.flags, 'category') as string;
+    let version = getFlag(parsed.flags, 'version') as string;
+    let description = getFlag(parsed.flags, 'description') as string || '';
     let stackName = name;
 
     if (lookup.found) {

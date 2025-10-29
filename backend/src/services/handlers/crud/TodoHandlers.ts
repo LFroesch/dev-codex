@@ -1,8 +1,8 @@
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 import { BaseCommandHandler } from '../BaseCommandHandler';
-import { CommandResponse, ResponseType } from '../../commandExecutor';
-import { ParsedCommand } from '../../commandParser';
+import { CommandResponse, ResponseType } from '../../types';
+import { ParsedCommand, getFlag, getFlagCount, hasFlag } from '../../commandParser';
 import { sanitizeText, validateTodoText, parseDueDate, formatDueDate, formatTime12Hour } from '../../../utils/validation';
 
 /**
@@ -14,7 +14,7 @@ export class TodoHandlers extends BaseCommandHandler {
     if (error) return error;
 
     // Check if using old syntax (args without flags) - this is an error
-    if (parsed.args.length > 0 && parsed.flags.size === 0) {
+    if (parsed.args.length > 0 && getFlagCount(parsed.flags) === 0) {
       return {
         type: ResponseType.ERROR,
         message: '❌ Please use flag-based syntax or no arguments for wizard.',
@@ -28,14 +28,14 @@ export class TodoHandlers extends BaseCommandHandler {
     }
 
     // Get flags
-    const title = parsed.flags.get('title') as string;
-    const content = parsed.flags.get('content') as string;
-    const priority = parsed.flags.get('priority') as string;
-    const status = parsed.flags.get('status') as string;
-    const due = parsed.flags.get('due') as string;
+    const title = getFlag(parsed.flags, 'title') as string;
+    const content = getFlag(parsed.flags, 'content') as string;
+    const priority = getFlag(parsed.flags, 'priority') as string;
+    const status = getFlag(parsed.flags, 'status') as string;
+    const due = getFlag(parsed.flags, 'due') as string;
 
     // No args and no flags - pull up wizard
-    if (parsed.args.length === 0 && parsed.flags.size === 0) {
+    if (parsed.args.length === 0 && getFlagCount(parsed.flags) === 0) {
       return {
         type: ResponseType.PROMPT,
         message: `✨ Add New Todo`,
@@ -438,7 +438,7 @@ export class TodoHandlers extends BaseCommandHandler {
     if (error) return error;
 
     // Check if using old syntax (args without flags) - this is an error
-    if (parsed.args.length > 0 && parsed.flags.size === 0) {
+    if (parsed.args.length > 0 && getFlagCount(parsed.flags) === 0) {
       return {
         type: ResponseType.ERROR,
         message: '❌ Please use flag-based syntax or no arguments for wizard.',
@@ -452,15 +452,15 @@ export class TodoHandlers extends BaseCommandHandler {
     }
 
     // Get flags
-    const parentIdentifier = parsed.flags.get('parent') as string;
-    const title = parsed.flags.get('title') as string;
-    const content = parsed.flags.get('content') as string;
-    const priority = parsed.flags.get('priority') as string;
-    const status = parsed.flags.get('status') as string;
-    const due = parsed.flags.get('due') as string;
+    const parentIdentifier = getFlag(parsed.flags, 'parent') as string;
+    const title = getFlag(parsed.flags, 'title') as string;
+    const content = getFlag(parsed.flags, 'content') as string;
+    const priority = getFlag(parsed.flags, 'priority') as string;
+    const status = getFlag(parsed.flags, 'status') as string;
+    const due = getFlag(parsed.flags, 'due') as string;
 
     // No args and no flags - pull up wizard
-    if (parsed.args.length === 0 && parsed.flags.size === 0) {
+    if (parsed.args.length === 0 && getFlagCount(parsed.flags) === 0) {
       // Get all parent todos (non-subtask todos)
       const parentTodos = project.todos.filter((t: any) => !t.parentTodoId);
 
@@ -751,11 +751,11 @@ export class TodoHandlers extends BaseCommandHandler {
     }
 
     // Check for direct flags (new syntax)
-    const title = parsed.flags.get('title') as string;
-    const content = parsed.flags.get('content') as string;
-    const priority = parsed.flags.get('priority') as string;
-    const status = parsed.flags.get('status') as string;
-    const due = parsed.flags.get('due') as string;
+    const title = getFlag(parsed.flags, 'title') as string;
+    const content = getFlag(parsed.flags, 'content') as string;
+    const priority = getFlag(parsed.flags, 'priority') as string;
+    const status = getFlag(parsed.flags, 'status') as string;
+    const due = getFlag(parsed.flags, 'due') as string;
 
     // If any flags are provided, update those fields
     if (title || content || priority || status || due) {
@@ -1082,11 +1082,11 @@ export class TodoHandlers extends BaseCommandHandler {
     const subtask = parentSubtasks[subtaskIndex - 1];
 
     // Check for direct flags (new syntax)
-    const title = parsed.flags.get('title') as string;
-    const content = parsed.flags.get('content') as string;
-    const priority = parsed.flags.get('priority') as string;
-    const status = parsed.flags.get('status') as string;
-    const due = parsed.flags.get('due') as string;
+    const title = getFlag(parsed.flags, 'title') as string;
+    const content = getFlag(parsed.flags, 'content') as string;
+    const priority = getFlag(parsed.flags, 'priority') as string;
+    const status = getFlag(parsed.flags, 'status') as string;
+    const due = getFlag(parsed.flags, 'due') as string;
 
     // If any flags are provided, update those fields
     if (title || content || priority || status || due) {
@@ -1321,7 +1321,7 @@ export class TodoHandlers extends BaseCommandHandler {
     }
 
     // Check for confirmation flag
-    const hasConfirmation = parsed.flags.has('confirm') || parsed.flags.has('yes') || parsed.flags.has('y');
+    const hasConfirmation = hasFlag(parsed.flags, 'confirm') || hasFlag(parsed.flags, 'yes') || hasFlag(parsed.flags, 'y');
 
     if (!hasConfirmation) {
       return {
@@ -1495,7 +1495,7 @@ export class TodoHandlers extends BaseCommandHandler {
 
     const subtask = parentSubtasks[subtaskIndex - 1];
 
-    const hasConfirmation = parsed.flags.has('confirm') || parsed.flags.has('yes') || parsed.flags.has('y');
+    const hasConfirmation = hasFlag(parsed.flags, 'confirm') || hasFlag(parsed.flags, 'yes') || hasFlag(parsed.flags, 'y');
 
     if (!hasConfirmation) {
       return {

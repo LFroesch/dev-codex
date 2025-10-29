@@ -314,7 +314,7 @@ const BillingPage: React.FC = () => {
 
         {/* Plans Grid */}
         <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-base-content mb-4">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-base-content mb-4">
             Choose Your Plan
           </h2>
           <p className="text-xl text-base-content/70">

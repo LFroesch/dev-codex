@@ -87,9 +87,39 @@ export interface ParsedCommand {
   subcommand?: string;
   args: string[];
   projectMention?: string;
-  flags: Map<string, string | boolean>;
+  flags: Map<string, string | boolean> | Record<string, string | boolean>;
   isValid: boolean;
   errors: string[];
+}
+
+/**
+ * Helper function to get flag value from either Map or Record
+ */
+export function getFlag(flags: Map<string, string | boolean> | Record<string, string | boolean>, key: string): string | boolean | undefined {
+  if (flags instanceof Map) {
+    return flags.get(key);
+  }
+  return flags[key];
+}
+
+/**
+ * Helper function to get flag count from either Map or Record
+ */
+export function getFlagCount(flags: Map<string, string | boolean> | Record<string, string | boolean>): number {
+  if (flags instanceof Map) {
+    return flags.size;
+  }
+  return Object.keys(flags).length;
+}
+
+/**
+ * Helper function to check if flag exists in either Map or Record
+ */
+export function hasFlag(flags: Map<string, string | boolean> | Record<string, string | boolean>, key: string): boolean {
+  if (flags instanceof Map) {
+    return flags.has(key);
+  }
+  return key in flags && flags[key] !== undefined;
 }
 
 /**

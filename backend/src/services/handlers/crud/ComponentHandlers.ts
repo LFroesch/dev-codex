@@ -1,8 +1,8 @@
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 import { BaseCommandHandler } from '../BaseCommandHandler';
-import { CommandResponse, ResponseType } from '../../commandExecutor';
-import { ParsedCommand } from '../../commandParser';
+import { CommandResponse, ResponseType } from '../../types';
+import { ParsedCommand, getFlag, getFlagCount, hasFlag } from '../../commandParser';
 import { sanitizeText } from '../../../utils/validation';
 
 /**
@@ -15,7 +15,7 @@ export class ComponentHandlers extends BaseCommandHandler {
 
     // Check if using old syntax (looking for "-" separator or args without flags) - this is an error
     const separatorIndex = parsed.args.indexOf('-');
-    if (separatorIndex !== -1 || (parsed.args.length > 0 && parsed.flags.size === 0)) {
+    if (separatorIndex !== -1 || (parsed.args.length > 0 && getFlagCount(parsed.flags) === 0)) {
       return {
         type: ResponseType.ERROR,
         message: '❌ Please use flag-based syntax or no arguments for wizard.',
@@ -29,14 +29,14 @@ export class ComponentHandlers extends BaseCommandHandler {
     }
 
     // Get flags
-    const feature = parsed.flags.get('feature') as string;
-    const category = parsed.flags.get('category') as string;
-    const type = parsed.flags.get('type') as string;
-    const title = parsed.flags.get('title') as string;
-    const content = parsed.flags.get('content') as string;
+    const feature = getFlag(parsed.flags, 'feature') as string;
+    const category = getFlag(parsed.flags, 'category') as string;
+    const type = getFlag(parsed.flags, 'type') as string;
+    const title = getFlag(parsed.flags, 'title') as string;
+    const content = getFlag(parsed.flags, 'content') as string;
 
     // No args and no flags - pull up wizard
-    if (parsed.args.length === 0 && parsed.flags.size === 0) {
+    if (parsed.args.length === 0 && getFlagCount(parsed.flags) === 0) {
       const validCategories = ['frontend', 'backend', 'database', 'infrastructure', 'security', 'api', 'documentation', 'asset'];
       const typesByCategory: Record<string, string[]> = {
         frontend: ['page', 'component', 'hook', 'context', 'layout', 'util', 'custom'],
@@ -324,16 +324,16 @@ export class ComponentHandlers extends BaseCommandHandler {
     }
 
     // Check for field flags - direct update mode
-    const field = parsed.flags.get('field') as string;
-    const content = parsed.flags.get('content') as string;
+    const field = getFlag(parsed.flags, 'field') as string;
+    const content = getFlag(parsed.flags, 'content') as string;
 
     // Check for relationship management flags
     if (field === 'relationship' || field === 'relationships') {
-      const action = parsed.flags.get('action') as string;
-      const relId = parsed.flags.get('id') as string;
-      const target = parsed.flags.get('target') as string;
-      const relType = parsed.flags.get('type') as string;
-      const description = parsed.flags.get('description') as string;
+      const action = getFlag(parsed.flags, 'action') as string;
+      const relId = getFlag(parsed.flags, 'id') as string;
+      const target = getFlag(parsed.flags, 'target') as string;
+      const relType = getFlag(parsed.flags, 'type') as string;
+      const description = getFlag(parsed.flags, 'description') as string;
 
       if (!action || !['add', 'edit', 'delete'].includes(action.toLowerCase())) {
         return {
@@ -565,11 +565,11 @@ export class ComponentHandlers extends BaseCommandHandler {
     }
 
     // Check for direct flags (new syntax) - basic field editing
-    const title = parsed.flags.get('title') as string;
-    const contentFlag = parsed.flags.get('content') as string;
-    const feature = parsed.flags.get('feature') as string;
-    const category = parsed.flags.get('category') as string;
-    const type = parsed.flags.get('type') as string;
+    const title = getFlag(parsed.flags, 'title') as string;
+    const contentFlag = getFlag(parsed.flags, 'content') as string;
+    const feature = getFlag(parsed.flags, 'feature') as string;
+    const category = getFlag(parsed.flags, 'category') as string;
+    const type = getFlag(parsed.flags, 'type') as string;
 
     // If any basic field flags are provided, update those fields
     if (title || contentFlag || feature || category || type) {
@@ -809,7 +809,7 @@ export class ComponentHandlers extends BaseCommandHandler {
       };
     }
 
-    const hasConfirmation = parsed.flags.has('confirm') || parsed.flags.has('yes') || parsed.flags.has('y');
+    const hasConfirmation = hasFlag(parsed.flags, 'confirm') || hasFlag(parsed.flags, 'yes') || hasFlag(parsed.flags, 'y');
 
     if (!hasConfirmation) {
       return {

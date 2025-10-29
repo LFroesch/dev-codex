@@ -12,9 +12,14 @@ module.exports = {
     '!src/**/*.d.ts',
     '!src/**/index.ts',
   ],
+  globalSetup: '<rootDir>/src/tests/globalSetup.ts',
+  globalTeardown: '<rootDir>/src/tests/globalTeardown.ts',
   setupFilesAfterEnv: ['<rootDir>/src/tests/setup.ts'],
   testTimeout: 10000,
+  maxWorkers: 4, // Limit parallel tests to prevent memory issues
   clearMocks: true,
   restoreMocks: true,
-  verbose: true
+  verbose: true,
+  forceExit: true, // Force exit after tests complete
+  detectOpenHandles: true // Detect processes that don't close properly
 };

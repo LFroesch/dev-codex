@@ -793,7 +793,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
   return (
     <div className="flex gap-4">
       {/* Controls Sidebar */}
-      <div className="w-64 flex-shrink-0 space-y-4">
+      <div className="w-full max-w-sm md:w-80 bg-base-100 flex-shrink-0 space-y-4">
         <GraphControls
           docs={docs}
           selectedCategories={selectedCategories}
@@ -886,7 +886,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
       </div>
 
       {/* Main Content Area - Graph or Cards */}
-      <div className="flex-1 h-[600px] relative">
+      <div className="flex-1 h-[300px] sm:h-[400px] lg:h-[600px] relative">
         {viewMode === 'graph' ? (
           /* Graph Canvas */
           <div className="absolute inset-0 bg-base-200 rounded-lg border-2 border-base-content/20 overflow-hidden">

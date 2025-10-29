@@ -1,56 +1,53 @@
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
 
 // Load test environment variables
 dotenv.config({ path: '.env.test' });
 
-let mongoServer: MongoMemoryServer;
-
-// Global test setup
+// Connect to the global MongoDB server (created in globalSetup.ts)
 beforeAll(async () => {
   try {
-    // Create in-memory MongoDB instance
-    mongoServer = await MongoMemoryServer.create();
-    const mongoUri = mongoServer.getUri();
-    
-    // Connect to in-memory database
-    await mongoose.connect(mongoUri);
-    console.log('Connected to in-memory test database');
+    const mongoUri = (global as any).__MONGO_URI__;
+
+    if (!mongoUri) {
+      throw new Error('MongoDB URI not found. Global setup may have failed.');
+    }
+
+    // Connect to the shared in-memory database
+    if (mongoose.connection.readyState === 0) {
+      await mongoose.connect(mongoUri, {
+        maxPoolSize: 10,
+        serverSelectionTimeoutMS: 5000
+      });
+    }
   } catch (error) {
-    console.error('Failed to set up test database:', error);
+    console.error('Failed to connect to test database:', error);
     throw error;
   }
-}, 30000); // 30 second timeout for MongoDB memory server setup
+}, 10000);
 
-// Cleanup after all tests
+// Cleanup after each test file
 afterAll(async () => {
   try {
-    // Close mongoose connection
-    if (mongoose.connection.readyState === 1) {
-      await mongoose.connection.close();
-    }
-    
-    // Stop the in-memory MongoDB server
-    if (mongoServer) {
-      await mongoServer.stop();
+    // Disconnect mongoose but DON'T stop the MongoDB server
+    if (mongoose.connection.readyState !== 0) {
+      await mongoose.disconnect();
     }
   } catch (error) {
     console.error('Error during test cleanup:', error);
   }
-}, 10000);
+});
 
 // Clear database before each test
 beforeEach(async () => {
   if (mongoose.connection.readyState === 1) {
     const collections = mongoose.connection.collections;
-    
+
     for (const key in collections) {
       const collection = collections[key];
-      await collection.deleteMany({});
+      await collection.deleteMany({}).catch(() => {
+        // Ignore errors during cleanup
+      });
     }
   }
 });
-
-// Increase timeout for database operations
-jest.setTimeout(30000);

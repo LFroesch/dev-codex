@@ -10,23 +10,15 @@ import { StackHandlers } from './handlers/StackHandlers';
 import { TeamHandlers } from './handlers/TeamHandlers';
 import { SettingsHandlers } from './handlers/SettingsHandlers';
 import { UtilityHandlers } from './handlers/UtilityHandlers';
+import { ResponseType, CommandResponse } from './types';
+
+// Re-export types for backward compatibility
+export { ResponseType, CommandResponse } from './types';
 
 /**
- * Response types for terminal commands
+ * Legacy interface - kept for backward compatibility
  */
-export enum ResponseType {
-  SUCCESS = 'success',
-  ERROR = 'error',
-  INFO = 'info',
-  WARNING = 'warning',
-  DATA = 'data',
-  PROMPT = 'prompt'
-}
-
-/**
- * Structured response from command execution
- */
-export interface CommandResponse {
+export interface CommandResponseLegacy {
   type: ResponseType;
   message: string;
   data?: any;

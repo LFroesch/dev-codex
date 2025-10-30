@@ -73,6 +73,16 @@ export enum CommandType {
   STANDUP = 'standup',
   INFO = 'info',
 
+  // User ideas
+  ADD_IDEA = 'add_idea',
+  VIEW_IDEAS = 'view_ideas',
+  EDIT_IDEA = 'edit_idea',
+  DELETE_IDEA = 'delete_idea',
+
+  // Project management
+  ADD_PROJECT = 'add_project',
+  VIEW_PROJECTS = 'view_projects',
+
   HELP = 'help',
   UNKNOWN = 'unknown'
 }
@@ -235,8 +245,10 @@ const COMMAND_ALIASES: Record<string, CommandType> = {
   // Wizard commands
   'wizard new': CommandType.WIZARD_NEW,
   'wizard-new': CommandType.WIZARD_NEW,
+  'wizard project': CommandType.WIZARD_NEW,
+  'wizard-project': CommandType.WIZARD_NEW,
+  'new project': CommandType.WIZARD_NEW,
   'new': CommandType.WIZARD_NEW,
-  'create': CommandType.WIZARD_NEW,
 
   // Export commands
   'export': CommandType.EXPORT,
@@ -460,6 +472,32 @@ const COMMAND_ALIASES: Record<string, CommandType> = {
   'info': CommandType.INFO,
   'overview': CommandType.INFO,
 
+  // User ideas
+  'add idea': CommandType.ADD_IDEA,
+  'add-idea': CommandType.ADD_IDEA,
+  'new idea': CommandType.ADD_IDEA,
+  'create idea': CommandType.ADD_IDEA,
+  'view ideas': CommandType.VIEW_IDEAS,
+  'view-ideas': CommandType.VIEW_IDEAS,
+  'ideas': CommandType.VIEW_IDEAS,
+  'list ideas': CommandType.VIEW_IDEAS,
+  'edit idea': CommandType.EDIT_IDEA,
+  'edit-idea': CommandType.EDIT_IDEA,
+  'update idea': CommandType.EDIT_IDEA,
+  'delete idea': CommandType.DELETE_IDEA,
+  'delete-idea': CommandType.DELETE_IDEA,
+  'remove idea': CommandType.DELETE_IDEA,
+  'rm idea': CommandType.DELETE_IDEA,
+
+  // Project management
+  'add project': CommandType.ADD_PROJECT,
+  'add-project': CommandType.ADD_PROJECT,
+  'create project': CommandType.ADD_PROJECT,
+  'view projects': CommandType.VIEW_PROJECTS,
+  'view-projects': CommandType.VIEW_PROJECTS,
+  'projects': CommandType.VIEW_PROJECTS,
+  'list projects': CommandType.VIEW_PROJECTS,
+
   // Help
   'help': CommandType.HELP,
   '?': CommandType.HELP,
@@ -604,8 +642,9 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
     description: 'Start interactive wizard to create new project',
     examples: [
       '/wizard new',
-      '/new',
-      '/create'
+      '/wizard project',
+      '/new project',
+      '/new'
     ],
     requiresProject: false,
     requiresArgs: false
@@ -1202,6 +1241,85 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
       '/info',
       '/info @project',
       '/overview'
+    ],
+    requiresProject: false,
+    requiresArgs: false
+  },
+
+  // User ideas
+  [CommandType.ADD_IDEA]: {
+    type: CommandType.ADD_IDEA,
+    syntax: '/add idea --title="title" --description="description" --content="content"',
+    simpleSyntax: '/add idea',
+    description: 'Add a new idea to your personal idea list',
+    examples: [
+      '/add idea --title="Mobile App" --content="Build a mobile app for the platform"',
+      '/add idea --title="AI Integration" --description="Add AI features" --content="Integrate GPT for smart suggestions"'
+    ],
+    requiresProject: false,
+    requiresArgs: false
+  },
+  [CommandType.VIEW_IDEAS]: {
+    type: CommandType.VIEW_IDEAS,
+    syntax: '/view ideas',
+    simpleSyntax: '/view ideas',
+    description: 'View all your personal ideas',
+    examples: [
+      '/view ideas',
+      '/ideas',
+      '/list ideas'
+    ],
+    requiresProject: false,
+    requiresArgs: false
+  },
+  [CommandType.EDIT_IDEA]: {
+    type: CommandType.EDIT_IDEA,
+    syntax: '/edit idea "[idea id]" --title="new title" --description="new description" --content="new content"',
+    simpleSyntax: '/edit idea',
+    description: 'Edit an existing idea',
+    examples: [
+      '/edit idea "[idea id]" --title="Updated Title"',
+      '/edit idea [#] --content="Updated content"'
+    ],
+    requiresProject: false,
+    requiresArgs: true
+  },
+  [CommandType.DELETE_IDEA]: {
+    type: CommandType.DELETE_IDEA,
+    syntax: '/delete idea "[idea id]"',
+    simpleSyntax: '/delete idea',
+    description: 'Delete an idea',
+    examples: [
+      '/delete idea "[idea id]"',
+      '/delete idea [#]',
+      '/rm idea [#]'
+    ],
+    requiresProject: false,
+    requiresArgs: true
+  },
+
+  // Project management
+  [CommandType.ADD_PROJECT]: {
+    type: CommandType.ADD_PROJECT,
+    syntax: '/add project --name="name" --description="description" --category="category" --color="color"',
+    simpleSyntax: '/add project',
+    description: 'Create a new project with specified properties',
+    examples: [
+      '/add project --name="My App" --description="A new web app"',
+      '/add project --name="API Service" --category=backend --color=#3B82F6'
+    ],
+    requiresProject: false,
+    requiresArgs: false
+  },
+  [CommandType.VIEW_PROJECTS]: {
+    type: CommandType.VIEW_PROJECTS,
+    syntax: '/view projects',
+    simpleSyntax: '/view projects',
+    description: 'List all your projects',
+    examples: [
+      '/view projects',
+      '/projects',
+      '/list projects'
     ],
     requiresProject: false,
     requiresArgs: false

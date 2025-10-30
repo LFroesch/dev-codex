@@ -20,7 +20,7 @@ This folder contains all project planning, architecture, and feature documentati
 ## 🎯 Quick Links
 
 ### For Development
-- **Terminal Commands** → [TERMINAL.md](./TERMINAL.md) - See all 35+ available commands
+- **Terminal Commands** → [TERMINAL.md](./TERMINAL.md) - See all 50+ available commands
 - **API Reference** → [API.md](./API.md) - Endpoint documentation
 - **Performance Tips** → [PERFORMANCE.md](./PERFORMANCE.md) - Optimization strategies
 
@@ -34,8 +34,10 @@ This folder contains all project planning, architecture, and feature documentati
 
 ## 📊 Project Status
 
-### Completed Features (90%)
+### Completed Features (95%)
 - ✅ Terminal system with 50+ commands
+- ✅ Personal idea management (add, view, edit, delete ideas)
+- ✅ Project creation via terminal (/add project, /wizard new)
 - ✅ Batch command execution (&&, newlines, max 10 per batch)
 - ✅ Full-text search with MongoDB
 - ✅ Task management (complete, assign, priority, due dates)

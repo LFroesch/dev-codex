@@ -1575,16 +1575,16 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
     // Render specific help
     if (response.data.syntax && response.data.examples) {
       return (
-        <div className="mt-3 space-y-3">
+        <div className="mt-2 sm:mt-3 space-y-2 sm:space-y-3">
           <div>
             <div className="text-xs font-semibold text-base-content/70 mb-1">Syntax:</div>
-            <code className="text-sm text-base-content/80 bg-base-200 px-2 py-1 rounded border-thick">
+            <code className="text-xs sm:text-sm text-base-content/80 bg-base-200 px-2 py-1 rounded border-thick block break-all">
               {response.data.syntax}
             </code>
           </div>
           <div>
             <div className="text-xs font-semibold text-base-content/70 mb-1">Description:</div>
-            <div className="text-sm text-base-content/80">{response.data.description}</div>
+            <div className="text-xs sm:text-sm text-base-content/80">{response.data.description}</div>
           </div>
           <div>
             <div className="text-xs font-semibold text-base-content/70 mb-1">Examples:</div>
@@ -1594,7 +1594,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                   key={index}
                   type="button"
                   onClick={() => onCommandClick?.(generateTemplate(example))}
-                  className="block w-full text-left text-xs bg-base-200 px-2 py-1 rounded border-thick text-base-content/80 hover:bg-base-300/50 cursor-pointer transition-colors"
+                  className="block w-full text-left text-xs bg-base-200 px-2 py-1 rounded border-thick text-base-content/80 hover:bg-base-300/50 cursor-pointer transition-colors break-all"
                   title="Click to use this example"
                 >
                   {example}

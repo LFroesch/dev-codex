@@ -1,6 +1,6 @@
 import { BaseCommandHandler } from './BaseCommandHandler';
 import { CommandResponse, ResponseType } from '../types';
-import { ParsedCommand, getFlag, getFlagCount } from '../commandParser';
+import { ParsedCommand, getFlag, getFlagCount, hasFlag } from '../commandParser';
 import { sanitizeText, validateProjectName, isValidUrl, isValidDeploymentStatus } from '../../utils/validation';
 
 /**

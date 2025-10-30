@@ -1,6 +1,6 @@
 import { BaseCommandHandler } from './BaseCommandHandler';
 import { CommandResponse, ResponseType } from '../types';
-import { ParsedCommand, CommandParser, COMMAND_METADATA, CommandType } from '../commandParser';
+import { ParsedCommand, CommandParser, COMMAND_METADATA, CommandType, hasFlag } from '../commandParser';
 import { User } from '../../models/User';
 import { Project } from '../../models/Project';
 import { logError } from '../../config/logger';

@@ -43,17 +43,26 @@ const validateProductionEnv = () => {
     return; // Skip validation in development
   }
 
+  const isSelfHosted = process.env.SELF_HOSTED === 'true';
+
+  // Base required variables for all deployments
   const requiredEnvVars = [
     'MONGODB_URI',
     'JWT_SECRET',
     'CSRF_SECRET',
     'CORS_ORIGINS',
     'FRONTEND_URL',
-    'SMTP_HOST',
-    'SMTP_USER',
-    'SMTP_PASS',
-    'SMTP_FROM',
   ];
+
+  // Add SMTP requirements only if not self-hosted
+  if (!isSelfHosted) {
+    requiredEnvVars.push(
+      'SMTP_HOST',
+      'SMTP_USER',
+      'SMTP_PASS',
+      'SMTP_FROM'
+    );
+  }
 
   const missingVars: string[] = [];
 
@@ -83,8 +92,8 @@ const validateProductionEnv = () => {
     process.exit(1);
   }
 
-  // Validate Stripe keys if payments are enabled
-  if (process.env.STRIPE_SECRET_KEY) {
+  // Validate Stripe keys if payments are enabled (skip for self-hosted)
+  if (!isSelfHosted && process.env.STRIPE_SECRET_KEY) {
     if (!process.env.STRIPE_SECRET_KEY.startsWith('sk_live_')) {
       logError('CRITICAL: STRIPE_SECRET_KEY must use live key (sk_live_) in production, not test key', undefined, {
         severity: 'critical',
@@ -112,6 +121,14 @@ const validateProductionEnv = () => {
       missingVars
     });
     process.exit(1);
+  }
+
+  if (isSelfHosted) {
+    logInfo('Self-hosted mode enabled - billing and rate limiting are disabled', {
+      component: 'app',
+      action: 'env_validation',
+      selfHosted: true
+    });
   }
 
   logInfo('All required environment variables validated successfully', { component: 'app', action: 'env_validation' });

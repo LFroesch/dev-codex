@@ -4,17 +4,8 @@
 **Timeline:** 5-7 hours remaining
 
 ## Last Minute Updates
-- /add idea (adds an idea), /wizard new (aliases /wizard project, /new project) commands in terminal starts a create project wizard in the terminal
-- /add project (aliases /create project) with relevant flags to add a project to your account
-- Free Plans / in general context / length limits / amounts of notes or todos etc limits
-- ensure it is easy for someone to self-host / set it to their own db / set themselves to admin for the self-hostable option / no billing in self-hosted? some sort of var or something
+- ensure it is easy for someone to self-host / set it to their own db / set themselves to admin for the self-hostable option
 - feature gates for free plans? teams? terminal? or just MUCH MUCH harsher limits
-- mobile some things are off of the screen/dont fit/arent formatted correctly on these pages:
-    - billingpage.tsx (border-thick missing around some spots)
-    - accountsettingspage.tsx (connections / analytics / public profile sections)
-    - featuresgraph
-    - publicpage (input areas for url / centering )
-- Length / context limits for notes, todos etc etc that make sense, also longer limits if not free user
 
 ---
 

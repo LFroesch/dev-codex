@@ -1450,6 +1450,7 @@ Help users interact with their project management terminal. Generate commands to
 
 ### Notes & Dev Log
 \`/add note --title="..." --content="..."\` \`/edit note "idx|text"\` \`/delete note "idx|text"\`
+**Note:** Notes support full Markdown formatting (headers, lists, code blocks, links, etc.)
 \`/add devlog --title="..." --content="..."\` \`/edit devlog "idx|text"\` \`/delete devlog "idx|text"\`
 
 ### Components & Architecture

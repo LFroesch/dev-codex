@@ -233,11 +233,13 @@ export const ticketRateLimit = createRateLimit({
 });
 
 // Terminal command execution rate limiter - prevent command spam
-export const terminalRateLimit = createRateLimit({
+// Plan-based limits: free tier gets stricter limits to control costs
+// Base: 12 → Free: ~10/min (0.8x), Pro: 60/min (5x), Enterprise: 120/min (10x)
+export const terminalRateLimit = createSmartRateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
-  maxRequests: 30, // Max 30 commands per minute
+  maxRequests: process.env.NODE_ENV === 'production' ? 12 : 30, // Production: plan-based, Dev: 30/min
   endpoint: 'terminal_execution',
-  message: 'Too many terminal commands. Please slow down.'
+  message: 'Too many terminal commands. Please slow down or upgrade your plan for higher limits.'
 });
 
 // Admin operations rate limiter - stricter protection for admin routes

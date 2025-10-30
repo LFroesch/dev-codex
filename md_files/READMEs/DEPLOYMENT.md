@@ -26,3 +26,45 @@ railway login && railway init && railway up
 - ✅ Makes SMTP optional (email features won't work without it)
 - ✅ Makes Stripe optional (no payment processing)
 - ✅ Users get unlimited projects and team members
+
+---
+
+### Setting Up Your First Admin (Self-Hosted)
+
+After deploying, create an admin account to access admin features:
+
+**1. Generate a secure secret:**
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+**2. Add these variables to your `.env` file:**
+```bash
+ADMIN_EMAIL=admin@yourdomain.com
+ADMIN_PASSWORD=YourSecurePassword123!
+ADMIN_CREATION_SECRET=<paste-generated-secret>
+EXPECTED_ADMIN_SECRET=<paste-same-secret>
+ADMIN_FIRST_NAME=Admin
+ADMIN_LAST_NAME=User
+```
+
+**3. Run the admin creation script:**
+```bash
+cd backend
+npm run create-admin
+```
+
+**4. IMPORTANT: Remove the secrets from your `.env` file after creating the admin** (for security)
+
+**Security Notes:**
+- Both `ADMIN_CREATION_SECRET` and `EXPECTED_ADMIN_SECRET` must match to prevent unauthorized admin creation
+- The script can upgrade existing users to admin status or create new admin accounts
+- Admin accounts automatically get enterprise tier (unlimited projects/members)
+- Only run this script once during initial setup or when you need to add additional admins
+
+**Admin Features:**
+- Access to admin dashboard at `/admin`
+- User management and analytics
+- Support ticket management
+- System monitoring and database cleanup
+- News post creation

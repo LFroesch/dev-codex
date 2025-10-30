@@ -4,27 +4,11 @@
 **Timeline:** 5-7 hours remaining
 
 ## Last Minute Updates
-- ensure it is easy for someone to self-host / set it to their own db / set themselves to admin for the self-hostable option
-- feature gates for free plans? teams? terminal? or just MUCH MUCH harsher limits
-
----
-
-## Security Status:
-
-**All Critical Issues Fixed (Oct 29):**
-- ✅ Helmet security headers (CSP, HSTS, X-Frame-Options)
-- ✅ CSRF_SECRET validation (required in production)
-- ✅ Environment variable validation (startup checks)
-- ✅ Stripe key validation (enforces sk_live_ in production)
-- ✅ 434+ tests passing (~35% coverage, critical paths covered)
-
-**Strong Security Posture:**
-- Auth: JWT + bcrypt + 12-char passwords + OAuth
-- Attack prevention: CSRF, XSS, NoSQL injection, mass assignment
-- Rate limiting: Database-backed, per-user + per-IP
-- Payment security: Stripe webhook verification, plan tier enforcement
-- Database: 30+ indexes, connection pooling, TTL auto-cleanup
-- Monitoring: Sentry + Winston logging
+- ✅ Admin setup documented in DEPLOYMENT.md (step-by-step with security notes)
+- ✅ Harsher free tier limits implemented:
+  - Terminal: ~10 commands/min (down from 30)
+  - Plan-based terminal rate limiting (Pro: 60/min, Enterprise: 120/min)
+  - Team members: 3/project (unchanged, already reasonable)
 
 ---
 

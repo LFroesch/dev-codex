@@ -166,6 +166,51 @@ describe('Integration: Complete Auth Flow', () => {
 
       expect(protectedResponse.status).toBe(401);
     });
+
+    it('should support full project with todos workflow', async () => {
+      // Register and login
+      await request(app).post('/api/auth/register').send(testUser);
+      const loginResponse = await request(app)
+        .post('/api/auth/login')
+        .send({ email: testUser.email, password: testUser.password });
+
+      const cookies = loginResponse.headers['set-cookie'];
+      const authCookie = Array.isArray(cookies)
+        ? cookies.find((cookie: string) => cookie.startsWith('token='))
+        : cookies;
+
+      // Create project
+      const projectResponse = await request(app)
+        .post('/api/projects')
+        .set('Cookie', authCookie!)
+        .send({ name: 'Todo Test Project', description: 'Testing todos' });
+
+      const projectId = projectResponse.body.project.id;
+
+      // Add todo to project
+      const todoResponse = await request(app)
+        .post(`/api/projects/${projectId}/todos`)
+        .set('Cookie', authCookie!)
+        .send({ title: 'Test todo', priority: 'high' });
+
+      expect(todoResponse.status).toBe(200);
+      expect(todoResponse.body.todo).toBeDefined();
+      const todoId = todoResponse.body.todo.id;
+
+      // Mark todo as complete
+      const completeResponse = await request(app)
+        .put(`/api/projects/${projectId}/todos/${todoId}`)
+        .set('Cookie', authCookie!)
+        .send({ completed: true });
+
+      expect(completeResponse.status).toBe(200);
+      expect(completeResponse.body.todo.completed).toBe(true);
+
+      // Verify in database
+      const updatedProject = await Project.findById(projectId);
+      const completedTodo = updatedProject?.todos.find(t => t.id === todoId);
+      expect(completedTodo?.completed).toBe(true);
+    });
   });
 
   describe('Authentication Security Flow', () => {

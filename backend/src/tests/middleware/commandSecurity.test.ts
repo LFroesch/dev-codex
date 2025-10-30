@@ -1,53 +1,98 @@
-import { validateCommand } from '../../middleware/commandSecurity';
+import { Request, Response, NextFunction } from 'express';
+import { sanitizeCommand, validateCommandFormat, logCommandExecution } from '../../middleware/commandSecurity';
+import { AuthRequest } from '../../middleware/auth';
 
-describe('commandSecurity', () => {
-  it('should allow safe commands', () => {
-    const result = validateCommand('/view todos');
-    expect(result.isValid).toBe(true);
+describe('commandSecurity middleware', () => {
+  let mockReq: Partial<AuthRequest>;
+  let mockRes: Partial<Response>;
+  let mockNext: NextFunction;
+
+  beforeEach(() => {
+    mockReq = {
+      userId: 'user123',
+      body: {},
+      ip: '127.0.0.1'
+    };
+    mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn()
+    };
+    mockNext = jest.fn();
   });
 
-  it('should allow commands with flags', () => {
-    const result = validateCommand('/add todo --title="Test"');
-    expect(result.isValid).toBe(true);
+  describe('validateCommandFormat', () => {
+    it('should allow valid commands starting with /', () => {
+      mockReq.body = { command: '/help' };
+
+      validateCommandFormat(mockReq as AuthRequest, mockRes as Response, mockNext);
+
+      expect(mockNext).toHaveBeenCalled();
+      expect(mockRes.status).not.toHaveBeenCalled();
+    });
+
+    it('should reject commands not starting with /', () => {
+      mockReq.body = { command: 'invalid command' };
+
+      validateCommandFormat(mockReq as AuthRequest, mockRes as Response, mockNext);
+
+      expect(mockNext).not.toHaveBeenCalled();
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+    });
+
+    it('should reject missing command', () => {
+      mockReq.body = {};
+
+      validateCommandFormat(mockReq as AuthRequest, mockRes as Response, mockNext);
+
+      expect(mockNext).not.toHaveBeenCalled();
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+    });
   });
 
-  it('should reject commands with shell injection', () => {
-    const result = validateCommand('/view todos && rm -rf /');
-    expect(result.isValid).toBe(false);
+  describe('sanitizeCommand', () => {
+    it('should allow safe commands', () => {
+      mockReq.body = { command: '/todo create New task' };
+
+      sanitizeCommand(mockReq as AuthRequest, mockRes as Response, mockNext);
+
+      expect(mockNext).toHaveBeenCalled();
+    });
+
+    it('should block commands with script tags', () => {
+      mockReq.body = { command: '/todo <script>alert("xss")</script>' };
+
+      sanitizeCommand(mockReq as AuthRequest, mockRes as Response, mockNext);
+
+      expect(mockNext).not.toHaveBeenCalled();
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+    });
+
+    it('should block commands with eval', () => {
+      mockReq.body = { command: '/todo eval(malicious)' };
+
+      sanitizeCommand(mockReq as AuthRequest, mockRes as Response, mockNext);
+
+      expect(mockNext).not.toHaveBeenCalled();
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+    });
+
+    it('should reject commands that are too long', () => {
+      mockReq.body = { command: '/todo ' + 'a'.repeat(600) };
+
+      sanitizeCommand(mockReq as AuthRequest, mockRes as Response, mockNext);
+
+      expect(mockNext).not.toHaveBeenCalled();
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+    });
   });
 
-  it('should reject commands with pipes', () => {
-    const result = validateCommand('/view todos | cat /etc/passwd');
-    expect(result.isValid).toBe(false);
-  });
+  describe('logCommandExecution', () => {
+    it('should log command and call next', () => {
+      mockReq.body = { command: '/help' };
 
-  it('should reject commands with backticks', () => {
-    const result = validateCommand('/view todos `whoami`');
-    expect(result.isValid).toBe(false);
-  });
+      logCommandExecution(mockReq as AuthRequest, mockRes as Response, mockNext);
 
-  it('should reject commands with semicolons', () => {
-    const result = validateCommand('/view todos; ls');
-    expect(result.isValid).toBe(false);
-  });
-
-  it('should allow normal text with special chars in quotes', () => {
-    const result = validateCommand('/add todo --title="Task; with semicolon"');
-    expect(result.isValid).toBe(true);
-  });
-
-  it('should reject path traversal attempts', () => {
-    const result = validateCommand('/view ../../etc/passwd');
-    expect(result.isValid).toBe(false);
-  });
-
-  it('should allow project mentions', () => {
-    const result = validateCommand('/view todos @MyProject');
-    expect(result.isValid).toBe(true);
-  });
-
-  it('should allow multi-word commands', () => {
-    const result = validateCommand('/add todo Test task');
-    expect(result.isValid).toBe(true);
+      expect(mockNext).toHaveBeenCalled();
+    });
   });
 });

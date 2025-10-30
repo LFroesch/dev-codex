@@ -3,16 +3,16 @@ import mongoose, { Document, Schema } from 'mongoose';
 // Sub-schemas for complex nested data
 const todoSchema = new Schema({
   id: { type: String, required: true },
-  title: { type: String, required: true },
-  description: { type: String, default: '' },
-  priority: { 
-    type: String, 
+  title: { type: String, required: true, maxlength: 200 },
+  description: { type: String, default: '', maxlength: 2000 },
+  priority: {
+    type: String,
     enum: ['low', 'medium', 'high'],
     default: 'medium'
   },
   completed: { type: Boolean, default: false },
-  status: { 
-    type: String, 
+  status: {
+    type: String,
     enum: ['not_started', 'in_progress', 'blocked', 'completed'],
     default: 'not_started'
   },
@@ -27,8 +27,8 @@ const todoSchema = new Schema({
 
 const devLogSchema = new Schema({
   id: { type: String, required: true },
-  title: { type: String, default: '' },
-  description: { type: String, default: '' },
+  title: { type: String, default: '', maxlength: 200 },
+  description: { type: String, default: '', maxlength: 10000 },
   date: { type: Date, default: Date.now },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
@@ -37,9 +37,9 @@ const devLogSchema = new Schema({
 // NEW: Individual note schema
 const noteSchema = new Schema({
   id: { type: String, required: true },
-  title: { type: String, required: true },
-  description: { type: String, default: '' },
-  content: { type: String, required: true },
+  title: { type: String, required: true, maxlength: 200 },
+  description: { type: String, default: '', maxlength: 1000 },
+  content: { type: String, required: true, maxlength: 50000 },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
@@ -64,12 +64,12 @@ const componentSchema = new Schema({
     enum: ['frontend', 'backend', 'database', 'infrastructure', 'security', 'api', 'documentation', 'asset'],
     required: true
   },
-  type: { type: String, required: true }, // Flexible type based on category
-  title: { type: String, required: true },
-  content: { type: String, required: true },
-  feature: { type: String, required: true }, // Feature is required - components belong to features
-  filePath: { type: String, default: '' },
-  tags: [{ type: String }],
+  type: { type: String, required: true, maxlength: 100 }, // Flexible type based on category
+  title: { type: String, required: true, maxlength: 200 },
+  content: { type: String, required: true, maxlength: 50000 },
+  feature: { type: String, required: true, maxlength: 100 }, // Feature is required - components belong to features
+  filePath: { type: String, default: '', maxlength: 500 },
+  tags: [{ type: String, maxlength: 50 }],
   relationships: [relationshipSchema],
   metadata: { type: mongoose.Schema.Types.Mixed, default: {} },
   createdAt: { type: Date, default: Date.now },

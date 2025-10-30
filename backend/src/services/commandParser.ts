@@ -666,12 +666,14 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
     type: CommandType.SUMMARY,
     syntax: '/summary "[format]" "[entity]" @project',
     simpleSyntax: '/summary',
-    description: 'Generate downloadable project summary in various formats (markdown/json/prompt/text), optionally filtered by entity (todos/notes/devlog/components/stack/team/deployment/settings/all)',
+    description: 'Generate downloadable project summary in various formats (markdown/json/prompt/text), optionally filtered by entity (todos/notes/devlog/components/stack/team/deployment/settings/projects/all)',
     examples: [
       '/summary - Full project summary in markdown',
       '/summary "prompt" - Full summary in AI-friendly format',
       '/summary "json" "todos" - Export only todos in JSON',
       '/summary "markdown" "components" - Export components as markdown',
+      '/summary "prompt" "projects" - List all projects and ideas for LLM',
+      '/summary "json" "projects" - Export all projects as JSON',
       '/summary "json" "team" - Export team members as JSON',
       '/summary "prompt" "deployment" - Export deployment config for AI',
       '/summary "markdown" "settings" - Export project settings as markdown'

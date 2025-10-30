@@ -97,6 +97,7 @@ Examples:
 - `/remove tag [name]` - Remove tag
 
 ### Project Management
+- `/add project [name] [description] [category] [color]` - Create new project
 - `/swap [project]` - Switch active project
 - `/export [@project]` - Export project data
 - `/invite [email] --role=[role]` - Invite team member
@@ -108,9 +109,10 @@ Examples:
 - `/assign [todo] [email] [@project]` - Assign todo to team member
 
 ### Export & Summary
-- `/summary [format] [@project]` - Generate downloadable project summary
+- `/summary [format] [entities] [@project]` - Generate downloadable project summary
   - Formats: `markdown` (README), `json` (structured data), `prompt` (AI template), `text` (plain)
   - Aliases: `/readme`, `/prompt`
+  - Entities: `all|todos|notes|devlog|components|stack|team|deployment|settings|projects`
 
 ### Batch Command Execution
 Execute multiple commands in sequence using `&&` or newlines (max 10 per batch):

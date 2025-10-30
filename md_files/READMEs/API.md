@@ -5,12 +5,19 @@
 
 ### Projects (`/api/projects`)
 **Base:** `POST /` `GET /` `GET /:id` `PUT /:id` `PATCH /:id/archive` `DELETE /:id`
+
 **Notes:** `POST /:id/notes` `PUT /:id/notes/:noteId` `DELETE /:id/notes/:noteId` `POST /:id/notes/:noteId/lock` `DELETE /:id/notes/:noteId/lock` `PUT /:id/notes/:noteId/lock/heartbeat` `GET /:id/notes/:noteId/lock`
+
 **Todos:** `POST /:id/todos` `PUT /:id/todos/:todoId` `DELETE /:id/todos/:todoId`
+
 **Dev Log:** `POST /:id/devlog` `PUT /:id/devlog/:entryId` `DELETE /:id/devlog/:entryId`
+
 **Stack:** `POST /:id/technologies` `PUT /:id/technologies/:category/:name` `DELETE /:id/technologies/:category/:name` `POST /:id/packages` `PUT /:id/packages/:category/:name` `DELETE /:id/packages/:category/:name`
+
 **Components:** `POST /:id/components` `PUT /:id/components/:componentId` `DELETE /:id/components/:componentId` `POST /:id/components/:componentId/relationships` `DELETE /:id/components/:componentId/relationships/:relationshipId`
+
 **Team:** `GET /:id/members` `POST /:id/invite` `DELETE /:id/members/:userId` `PATCH /:id/members/:userId`
+
 **Import/Export:** `GET /:id/export` `POST /import`
 
 ### Invitations (`/api/invitations`)
@@ -36,9 +43,13 @@
 
 ### Admin (`/api/admin`)
 **Users:** `GET /users` `GET /users/:id` `PUT /users/:id/plan` `DELETE /users/:id` `POST /users/:id/password-reset`
+
 **Projects:** `GET /projects` `GET /stats`
+
 **Tickets:** `GET /tickets` `GET /tickets/:id` `PUT /tickets/:id` `DELETE /tickets/:id`
+
 **Analytics:** `GET /analytics/combined` `GET /analytics/leaderboard` `DELETE /analytics/reset`
+
 **Cleanup:** `GET /cleanup/stats` `GET /cleanup/recommendations` `POST /cleanup/run` `POST /cleanup/optimize` `POST /cleanup/emergency`
 
 ### News (`/api/news`)

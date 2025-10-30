@@ -72,7 +72,7 @@ Invite sarah@team.com as editor
 ### Other Ways to Use the Terminal
 
 - **Interactive Wizards:** `/wizard project` → guided forms
-- **Learn the Syntax:** Autocomplete, validation, command chaining
+- **Learn the Syntax:** Autocomplete, validation, command chaining [Full Terminal Guide →](/md_files/READMEs/TERMINAL.md#available-commands-50)
 - **Skip It Entirely:** Use the traditional UI—all features available via clicks
 
 ---

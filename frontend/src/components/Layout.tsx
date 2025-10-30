@@ -48,6 +48,16 @@ const Layout: React.FC = () => {
     setSelectedCategory(null);
   }, [activeProjectTab]);
 
+  // Handle section query parameter for /notes page
+  useEffect(() => {
+    if (location.pathname === '/notes') {
+      const section = searchParams.get('section');
+      if (section === 'todos' || section === 'devlog') {
+        setActiveNotesTab(section);
+      }
+    }
+  }, [location.pathname, searchParams]);
+
   // Unsaved changes modal state
   const [showUnsavedChangesModal, setShowUnsavedChangesModal] = useState(false);
   const [unsavedChangesResolve, setUnsavedChangesResolve] = useState<((value: boolean) => void) | null>(null);

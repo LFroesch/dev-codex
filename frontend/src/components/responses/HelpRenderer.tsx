@@ -71,17 +71,25 @@ const HelpRenderer: React.FC<HelpRendererProps> = ({ grouped, onCommandClick, ge
                               {cmd.syntax} -
                             </div>
                           ) : (
-                            <button
-                              type="button"
+                            <span
                               onClick={(e) => {
                                 e.stopPropagation();
                                 onCommandClick?.(generateTemplate(cmd.syntax));
                               }}
                               className="text-xs text-base-content/70 font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
                               title="Click to use this command"
+                              role="button"
+                              tabIndex={0}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  onCommandClick?.(generateTemplate(cmd.syntax));
+                                }
+                              }}
                             >
                               {cmd.simpleSyntax || cmd.syntax}
-                            </button>
+                            </span>
                           )}
                           <div className="text-xs text-base-content/70 break-words line-clamp-1 flex-1">
                             {cmd.description}

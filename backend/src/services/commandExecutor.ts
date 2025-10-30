@@ -63,15 +63,15 @@ export class CommandExecutor {
   }
 
   /**
-   * Execute a command (supports batch chaining with &&)
+   * Execute a command (supports batch chaining with && and newlines)
    * @param commandStr - Raw command string
    * @param currentProjectId - Optional current project context
    * @returns Command response
    */
   async execute(commandStr: string, currentProjectId?: string): Promise<CommandResponse> {
     try {
-      // Check for batch command chaining (&&)
-      if (commandStr.includes(' && ')) {
+      // Check for batch command chaining (&& or newlines)
+      if (commandStr.includes(' && ') || commandStr.includes('\n')) {
         return await this.executeBatch(commandStr, currentProjectId);
       }
 
@@ -91,7 +91,7 @@ export class CommandExecutor {
   }
 
   /**
-   * Split batch commands on && while respecting quoted strings
+   * Split batch commands on && and newlines while respecting quoted strings
    * @param commandStr - Raw batch command string
    * @returns Array of individual commands
    */
@@ -143,9 +143,37 @@ export class CommandExecutor {
         }
         currentCommand = '';
         i += 2; // Skip the &&
-        // Also skip any trailing spaces after &&
+        // Skip any trailing spaces and newlines after &&
+        while (i + 1 < commandStr.length && (commandStr[i + 1] === ' ' || commandStr[i + 1] === '\n' || commandStr[i + 1] === '\r')) {
+          i++;
+        }
+        continue;
+      }
+
+      // Check for newline separator (only when not in quotes)
+      if (!inQuotes && (char === '\n' || char === '\r')) {
+        // Save current command if not empty
+        if (currentCommand.trim()) {
+          commands.push(currentCommand.trim());
+        }
+        currentCommand = '';
+
+        // Skip consecutive newlines/carriage returns
+        while (i + 1 < commandStr.length && (commandStr[i + 1] === '\n' || commandStr[i + 1] === '\r')) {
+          i++;
+        }
+
+        // Skip spaces after newline
         while (i + 1 < commandStr.length && commandStr[i + 1] === ' ') {
           i++;
+        }
+
+        // If there's a && right after, skip it (so we don't double-split)
+        if (i + 2 < commandStr.length && commandStr[i + 1] === '&' && commandStr[i + 2] === '&') {
+          i += 2;
+          while (i + 1 < commandStr.length && commandStr[i + 1] === ' ') {
+            i++;
+          }
         }
         continue;
       }

@@ -65,12 +65,12 @@ export class UtilityHandlers extends BaseCommandHandler {
       },
       {
         type: 'syntax_tip',
-        syntax: '🔗 Chained Commands',
-        description: 'Chain multiple commands with && to execute them sequentially. Execution stops on first error.',
+        syntax: '🔗 Batch Commands',
+        description: 'Chain commands with && or newlines (max 10 per batch). Execution stops on first error. Newlines are easier to read/edit.',
         examples: [
+          '/add todo task 1\n/add todo task 2\n/add note architecture',
           '/add todo implement feature && /add note architecture decisions',
-          '/add stack React && /view stack',
-          '/complete 1 && /add devlog completed user authentication'
+          '/add stack React && /view stack'
         ]
       },
       {
@@ -1305,7 +1305,7 @@ export class UtilityHandlers extends BaseCommandHandler {
 
 ## Core Syntax
 - Commands: \`/command "args" @project --flag="value"\`
-- Chain: \`cmd1 && cmd2 && cmd3\` (stops on error)
+- Batch: Chain with \`&&\` or newlines (max 10 commands per batch, stops on error)
 - Quotes: Multi-word args need quotes
 - Escapes: \`\\n\` for newlines in content
 - Projects: \`@ProjectName\` at end of command
@@ -1374,7 +1374,7 @@ asset: image|font|video|audio|document|dependency|custom
 ## Critical Rules
 1. Components MUST have --feature flag
 2. Use /search before editing/deleting to verify items exist
-3. Chain commands: \`cmd1 && cmd2\` (stops on error, max 10)
+3. Batch commands: Use \`&&\` or newlines (max 10 per batch, stops on error). Split large batches into sets of 10.
 4. Dates: "MM-DD-YYYY HH:MMAM/PM" or "MM-DD HH:MM" (24hr)
 5. Markdown supported in content: \`--content="Line1\\nLine2"\`
 6. Item matching: UUID → Index → Partial text (case-insensitive)

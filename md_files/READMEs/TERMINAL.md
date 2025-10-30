@@ -11,7 +11,7 @@
 - ✅ **NEW: Subtask system** (add, view subtasks)
 - ✅ **NEW: Edit operations with interactive wizards** (edit todos, notes, devlog, docs with wizard UI or direct field updates)
 - ✅ **NEW: Delete operations with confirmation** (delete with --confirm flag)
-- ✅ **NEW: Batch command chaining** (chain commands with &&)
+- ✅ **NEW: Batch command execution** (chain commands with && or newlines, max 10 per batch)
 - ✅ Summary/export with 4 formats (markdown, json, prompt, text)
 - ✅ News and theme management
 - ✅ Navigation buttons and query param support
@@ -106,10 +106,26 @@ Examples:
   - Formats: `markdown` (README), `json` (structured data), `prompt` (AI template), `text` (plain)
   - Aliases: `/readme`, `/prompt`
 
-### Batch Command Chaining
-Execute multiple commands in sequence using `&&`:
+### Batch Command Execution
+Execute multiple commands in sequence using `&&` or newlines (max 10 per batch):
+
+Using newlines (easier to read/edit):
 ```bash
-/add todo implement feature && /set priority high && /add subtask "implement feature" write tests
+/add todo implement feature
+/add note architecture decisions
+/add devlog completed user auth
+```
+
+Using && (backwards compatible):
+```bash
+/add todo implement feature && /add note architecture decisions && /add devlog completed user auth
+```
+
+Mixed (newlines + &&):
+```bash
+/add todo task 1 &&
+/add todo task 2 &&
+/add note documentation
 ```
 
 - Executes commands sequentially
@@ -117,6 +133,7 @@ Execute multiple commands in sequence using `&&`:
 - Returns combined results
 - Maximum 10 commands per batch
 - No AI processing - direct command execution
+- LLMs should split large command sets into batches of 10
 
 ### Workflow Commands
 - `/today [@project]` - Show today's tasks and activity

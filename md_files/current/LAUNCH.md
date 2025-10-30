@@ -3,9 +3,21 @@
 **Status:** 🟢 Production Ready - Launching Today
 **Timeline:** 5-7 hours remaining
 
+## Last Minute Updates
+- /add idea
+- /wizard new OR /create project
+- Free Plans / in general context / length limits / amounts of notes or todos etc limits
+- ensure it is easy for someone to self-host / set it to their own db / set themselves to admin for the self-hostable option / no billing in self-hosted? some sort of var or something
+- feature gates for free plans? teams? terminal? or just MUCH MUCH harsher limits
+- mobile some things are off of the screen/dont fit/arent formatted correctly on these pages:
+    - billingpage.tsx (border-thick missing around some spots)
+    - accountsettingspage.tsx (connections / analytics sections)
+    - featuresgraph
+    - publicpage (input areas for url / centering )
+
 ---
 
-## Security Status: A- (Production-Ready)
+## Security Status:
 
 **All Critical Issues Fixed (Oct 29):**
 - ✅ Helmet security headers (CSP, HSTS, X-Frame-Options)

@@ -1251,14 +1251,14 @@ export class CommandParser {
       const char = str[i];
 
       if (escaped) {
-        // Add escaped character literally
-        current += char;
+        // Add both backslash and escaped character to preserve escape sequences
+        current += '\\' + char;
         escaped = false;
         continue;
       }
 
       if (char === '\\') {
-        // Next character is escaped
+        // Next character is escaped - mark it but don't add backslash yet
         escaped = true;
         continue;
       }
@@ -1348,6 +1348,23 @@ export class CommandParser {
   }
 
   /**
+   * Process escape sequences in a string value
+   * @param value - String value that may contain escape sequences
+   * @returns Processed string with escape sequences converted
+   */
+  private static processEscapeSequences(value: string): string {
+    // Use a placeholder for escaped backslashes to prevent double-processing
+    return value
+      .replace(/\\\\/g, '\x00')  // placeholder for escaped backslash (\\)
+      .replace(/\\n/g, '\n')     // newline
+      .replace(/\\t/g, '\t')     // tab
+      .replace(/\\r/g, '\r')     // carriage return
+      .replace(/\\"/g, '"')      // escaped quote
+      .replace(/\\'/g, "'")      // escaped single quote
+      .replace(/\x00/g, '\\');   // restore escaped backslash
+  }
+
+  /**
    * Extract flags from tokens
    * @param tokens - Array of tokens
    * @returns Object with flags map and remaining tokens
@@ -1363,7 +1380,13 @@ export class CommandParser {
       const flagMatch = token.match(/^--?(\w+)(?:=(.+))?$/);
       if (flagMatch) {
         const flagName = flagMatch[1];
-        const flagValue = flagMatch[2] !== undefined ? flagMatch[2] : true;
+        let flagValue: string | boolean = flagMatch[2] !== undefined ? flagMatch[2] : true;
+
+        // Process escape sequences in string values
+        if (typeof flagValue === 'string') {
+          flagValue = this.processEscapeSequences(flagValue);
+        }
+
         flags.set(flagName, flagValue);
         continue;
       }
@@ -1457,9 +1480,9 @@ export class CommandParser {
 
     result.type = commandMatch;
 
-    // Extract remaining tokens as arguments
+    // Extract remaining tokens as arguments and process escape sequences
     const remainingTokens = tokens.slice(commandLength);
-    result.args = remainingTokens;
+    result.args = remainingTokens.map(arg => this.processEscapeSequences(arg));
 
     // Validate command based on metadata
     const metadata = COMMAND_METADATA[result.type];

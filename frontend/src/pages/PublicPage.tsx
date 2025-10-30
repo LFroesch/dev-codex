@@ -176,25 +176,26 @@ const PublicPage: React.FC = () => {
               </div>
             </div>
             <div className="section-content">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="flex-1">
-                <h3 
-                  className="text-xl font-semibold px-3 py-1 rounded-md inline-block border-thick"
-                  style={{ 
-                    backgroundColor: selectedProject.color,
-                    color: getContrastTextColor(selectedProject.color)
-                  }}
-                >
-                  {selectedProject.name}
-                </h3>
-                <span> </span>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium text-base-content border-thick relative -top-0.5 ${isPublic ? 'bg-success' : 'bg-warning'}`}
-                style={{ 
-                  color: isPublic ? getContrastTextColor('success') : getContrastTextColor('warning')
-                }}>
-                  {isPublic ? 'Public' : 'Private'}
-                </span>
-                <p className="text-base-content/70 -mb-1 mt-2">{selectedProject.description}</p>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 mb-4">
+              <div className="flex-1 w-full">
+                <div className="flex flex-wrap items-center gap-2 mb-2">
+                  <h3
+                    className="text-lg sm:text-xl font-semibold px-2 sm:px-3 py-1 rounded-md inline-block border border-thick border-base-content/20"
+                    style={{
+                      backgroundColor: selectedProject.color,
+                      color: getContrastTextColor(selectedProject.color)
+                    }}
+                  >
+                    {selectedProject.name}
+                  </h3>
+                  <span className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium text-base-content border border-thick border-base-content/20 ${isPublic ? 'bg-success' : 'bg-warning'}`}
+                  style={{
+                    color: isPublic ? getContrastTextColor('success') : getContrastTextColor('warning')
+                  }}>
+                    {isPublic ? 'Public' : 'Private'}
+                  </span>
+                </div>
+                <p className="text-sm sm:text-base text-base-content/70 -mb-1">{selectedProject.description}</p>
               </div>
             </div>
             
@@ -323,31 +324,31 @@ const PublicPage: React.FC = () => {
             <div className="space-y-4">
             {/* Custom Slug */}
             <div className="form-control">
-              <div className="label flex-col sm:flex-row justify-start items-start sm:items-center gap-2">
-                <span className="label-text font-medium">Custom URL Slug (Optional):</span>
-                <span className="label-text-alt flex flex-col sm:flex-row sm:items-center gap-1 sm:ml-2">
-                  <span className="hidden sm:inline">Your project will be accessible at:</span>
+              <div className="label flex-col sm:flex-row justify-start items-start gap-2">
+                <span className="label-text font-medium text-sm sm:text-base">Custom URL Slug:</span>
+                <span className="label-text-alt text-xs flex flex-wrap items-center gap-1">
+                  <span className="hidden sm:inline">Accessible at:</span>
                   {publicSlug ? (
                     <Link
                       to={`/project/${publicSlug}`}
-                      className="font-bold bg-primary/50 rounded-lg px-2 py-1 border-2 border-base-content/20 hover:bg-primary transition inline-flex items-center gap-1 text-xs sm:text-sm"
+                      className="font-bold bg-primary/50 rounded-lg px-2 py-0.5 text-xs border border-base-content/20 hover:bg-primary transition inline-flex items-center gap-1"
                       style={{ color: getContrastTextColor('primary') }}
                     >
-                      <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                       </svg>
-                      <span className="truncate max-w-[150px] sm:max-w-none">/project/{publicSlug}</span>
+                      <span className="truncate max-w-[120px]">/project/{publicSlug}</span>
                     </Link>
                   ) : (
                     <Link
                       to={`/project/${selectedProject.id}`}
-                      className="font-bold bg-primary rounded-lg px-2 py-1 border-2 border-base-content/20 hover:shadow-lg transition inline-flex items-center gap-1 text-xs sm:text-sm"
+                      className="font-bold bg-primary/50 rounded-lg px-2 py-0.5 text-xs border border-base-content/20 hover:bg-primary transition inline-flex items-center gap-1"
                       style={{ color: getContrastTextColor('primary') }}
                     >
-                      <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                       </svg>
-                      <span className="truncate max-w-[150px] sm:max-w-none">/project/{selectedProject.id}</span>
+                      <span className="truncate max-w-[120px]">/project/{selectedProject.id}</span>
                     </Link>
                   )}
                 </span>
@@ -355,41 +356,40 @@ const PublicPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={generateSlugFromName}
-                    className="btn btn-ghost btn-xs bg-base-200 border-2 border-base-content/20 hover:bg-base-300"
+                    className="btn btn-ghost btn-xs text-xs bg-base-200 border border-base-content/20 hover:bg-base-300"
                   >
-                    Generate from name
+                    Generate
                   </button>
                 </span>
               </div>
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-0 border-2 border-base-content/20 rounded-lg overflow-hidden">
-                <span className="bg-base-200 px-3 py-2 text-xs sm:text-sm text-base-content/70 rounded-lg sm:rounded-none flex items-center truncate">
-                  <span className="hidden sm:inline">{window.location.origin}/project/</span>
-                  <span className="sm:hidden">.../project/</span>
+              <div className="flex flex-row border-2 border-base-content/20 rounded-lg overflow-hidden">
+                <span className="bg-base-200 px-2 sm:px-3 py-2 text-xs sm:text-sm text-base-content/70 flex items-center whitespace-nowrap">
+                  <span className="hidden md:inline">{window.location.origin}/project/</span>
+                  <span className="md:hidden">...project/</span>
                 </span>
                 <input
                   type="text"
-                  className="input input-bordered flex-1 rounded-lg sm:rounded-none sm:border-none text-sm"
+                  className="input flex-1 border-none text-xs sm:text-sm w-0 min-w-0"
                   placeholder={selectedProject.id}
                   value={publicSlug}
                   onChange={(e) => setPublicSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
-                  pattern="^[a-z0-9-]+$"
                 />
               </div>
             </div>
 
             {/* Public Description */}
             <div className="form-control">
-              <label className="label justify-start">
+              <label className="label flex-col sm:flex-row justify-start items-start gap-2">
                 <span className="label-text font-medium">Public Description (Optional):</span>
-                <span className="label-text-alt ml-1">
-                  Leave empty to use your regular project description: "{selectedProject.description}"
+                <span className="label-text-alt text-xs">
+                  Leave empty to use: "{selectedProject.description.substring(0, 50)}{selectedProject.description.length > 50 ? '...' : ''}"
                 </span>
-                <span className="label-text-alt ml-auto px-2 rounded-lg py-0.5 text-xs font-semibold bg-base-200 border-2 border-base-content/20">
-                  {publicDescription.length}/300 characters
+                <span className="label-text-alt sm:ml-auto px-2 rounded-lg py-0.5 text-xs font-semibold bg-base-200 border border-thick border-base-content/20">
+                  {publicDescription.length}/300
                 </span>
               </label>
               <textarea
-                className="textarea textarea-bordered h-24 resize-none"
+                className="textarea textarea-bordered h-24 resize-none text-sm"
                 placeholder="Describe your project for public viewers (will override the regular description)"
                 value={publicDescription}
                 onChange={(e) => setPublicDescription(e.target.value.slice(0, 300))}
@@ -397,15 +397,15 @@ const PublicPage: React.FC = () => {
             </div>
 
             {/* Preview */}
-            <div className="divider">Preview</div>
-            <div className="mockup-browser border-2 border-base-content/20 bg-base-300">
+            <div className="divider text-sm sm:text-base">Preview</div>
+            <div className="mockup-browser border border-thick border-base-content/20 bg-base-300">
               <div className="mockup-browser-toolbar">
-                <div className="input">
+                <div className="input text-xs sm:text-sm truncate">
                   {window.location.origin}/project/{publicSlug || selectedProject.id}
                 </div>
               </div>
-              <div className="bg-base-100 p-4">
-                <div className="flex items-center gap-3 mb-3">
+              <div className="bg-base-100 p-3 sm:p-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 mb-3">
                   <div>
                     <h3 
                       className="text-lg font-semibold px-2 py-1 rounded-md inline-block"

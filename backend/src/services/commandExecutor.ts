@@ -414,7 +414,25 @@ export class CommandExecutor {
           return await this.utilityHandlers.handleStandup(parsed, currentProjectId);
         case CommandType.INFO:
           return await this.utilityHandlers.handleInfo(parsed, currentProjectId);
+
+        // User ideas
+        case CommandType.ADD_IDEA:
+          return await this.utilityHandlers.handleAddIdea(parsed);
+        case CommandType.VIEW_IDEAS:
+          return await this.utilityHandlers.handleViewIdeas(parsed);
+        case CommandType.EDIT_IDEA:
+          return await this.utilityHandlers.handleEditIdea(parsed);
+        case CommandType.DELETE_IDEA:
+          return await this.utilityHandlers.handleDeleteIdea(parsed);
+
+        // Project management
+        case CommandType.ADD_PROJECT:
+          return await this.utilityHandlers.handleAddProject(parsed);
+        case CommandType.VIEW_PROJECTS:
+          return await this.utilityHandlers.handleViewProjects(parsed);
         case CommandType.WIZARD_NEW:
+          return await this.utilityHandlers.handleWizardNew(parsed);
+
         default:
           return {
             type: ResponseType.ERROR,

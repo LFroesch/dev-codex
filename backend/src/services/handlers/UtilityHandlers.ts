@@ -1,6 +1,6 @@
 import { BaseCommandHandler } from './BaseCommandHandler';
 import { CommandResponse, ResponseType } from '../types';
-import { ParsedCommand, CommandParser, COMMAND_METADATA, CommandType, hasFlag } from '../commandParser';
+import { ParsedCommand, CommandParser, COMMAND_METADATA, CommandType, hasFlag, getFlag } from '../commandParser';
 import { User } from '../../models/User';
 import { Project } from '../../models/Project';
 import { logError } from '../../config/logger';
@@ -1411,7 +1411,7 @@ This terminal provides a powerful CLI for project management with support for ta
   async handleWizard(parsed: ParsedCommand): Promise<CommandResponse> {
     switch (parsed.type) {
       case CommandType.WIZARD_NEW:
-        return this.handleWizardNew();
+        return this.handleWizardNew(parsed);
       default:
         return {
           type: ResponseType.INFO,
@@ -1424,36 +1424,57 @@ This terminal provides a powerful CLI for project management with support for ta
   /**
    * Handle /wizard new command - Interactive project creation wizard
    */
-  private handleWizardNew(): CommandResponse {
-    return {
-      type: ResponseType.PROMPT,
-      message: '🧙 Project Creation Wizard',
-      data: {
-        wizardType: 'new_project',
-        steps: [
-          {
-            id: 'name',
-            type: 'text',
-            label: 'Project Name',
-            placeholder: 'Enter your project name...',
-            required: true,
-            description: 'Choose a descriptive name for your project'
-          },
-          {
-            id: 'description',
-            type: 'textarea',
-            label: 'Description',
-            placeholder: 'Describe your project...',
-            required: true,
-            description: 'Explain what your project is about'
-          },
-          {
-            id: 'category',
-            type: 'text',
-            label: 'Category',
-            placeholder: 'e.g., Web App, Mobile, API...',
-            defaultValue: 'general',
-            required: false,
+  async handleWizardNew(parsed: ParsedCommand): Promise<CommandResponse> {
+    try {
+      const user = await User.findById(this.userId);
+      if (!user) {
+        return {
+          type: ResponseType.ERROR,
+          message: 'User not found'
+        };
+      }
+
+      // Check project limit
+      if (!user.isAdmin && user.projectLimit !== -1) {
+        const currentProjectCount = await Project.countDocuments({ userId: this.userId });
+        if (currentProjectCount >= user.projectLimit) {
+          return {
+            type: ResponseType.ERROR,
+            message: `Project limit reached. Your ${user.planTier} plan allows ${user.projectLimit} projects.`,
+            suggestions: ['Upgrade your plan', '/view projects']
+          };
+        }
+      }
+
+      return {
+        type: ResponseType.PROMPT,
+        message: '🧙 Project Creation Wizard',
+        data: {
+          wizardType: 'new_project',
+          steps: [
+            {
+              id: 'name',
+              type: 'text',
+              label: 'Project Name',
+              placeholder: 'Enter your project name...',
+              required: true,
+              description: 'Choose a descriptive name for your project'
+            },
+            {
+              id: 'description',
+              type: 'textarea',
+              label: 'Description',
+              placeholder: 'Describe your project...',
+              required: true,
+              description: 'Explain what your project is about'
+            },
+            {
+              id: 'category',
+              type: 'text',
+              label: 'Category',
+              placeholder: 'e.g., Web App, Mobile, API...',
+              defaultValue: 'general',
+              required: false,
             description: 'Categorize your project type'
           },
           {
@@ -1493,6 +1514,13 @@ This terminal provides a powerful CLI for project management with support for ta
         successRedirect: '/'
       }
     };
+    } catch (error) {
+      logError('Error starting wizard', error as Error, { userId: this.userId });
+      return {
+        type: ResponseType.ERROR,
+        message: 'Failed to start project creation wizard'
+      };
+    }
   }
 
   /**
@@ -1915,4 +1943,341 @@ This terminal provides a powerful CLI for project management with support for ta
       suggestions: ['/view todos', '/view notes', '/view stack']
     };
   }
+
+  /**
+   * Handle /add idea command
+   */
+  async handleAddIdea(parsed: ParsedCommand): Promise<CommandResponse> {
+    try {
+      const user = await User.findById(this.userId);
+      if (!user) {
+        return {
+          type: ResponseType.ERROR,
+          message: 'User not found'
+        };
+      }
+
+      const title = getFlag(parsed.flags, 'title') as string;
+      const description = getFlag(parsed.flags, 'description') as string;
+      const content = getFlag(parsed.flags, 'content') as string;
+
+      if (!title || !content) {
+        return {
+          type: ResponseType.ERROR,
+          message: 'Title and content are required',
+          suggestions: ['/add idea --title="Title" --content="Content"']
+        };
+      }
+
+      const newIdea = {
+        id: Date.now().toString(),
+        title: title.substring(0, 200),
+        description: description ? description.substring(0, 500) : '',
+        content: content.substring(0, 10000),
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      user.ideas.push(newIdea);
+      await user.save();
+
+      return {
+        type: ResponseType.SUCCESS,
+        message: `💡 Idea "${title}" added successfully`,
+        data: { idea: newIdea },
+        suggestions: ['/view ideas']
+      };
+    } catch (error) {
+      logError('Error adding idea', error as Error, { userId: this.userId });
+      return {
+        type: ResponseType.ERROR,
+        message: 'Failed to add idea'
+      };
+    }
+  }
+
+  /**
+   * Handle /view ideas command
+   */
+  async handleViewIdeas(parsed: ParsedCommand): Promise<CommandResponse> {
+    try {
+      const user = await User.findById(this.userId);
+      if (!user) {
+        return {
+          type: ResponseType.ERROR,
+          message: 'User not found'
+        };
+      }
+
+      if (!user.ideas || user.ideas.length === 0) {
+        return {
+          type: ResponseType.INFO,
+          message: '💡 No ideas yet',
+          suggestions: ['/add idea --title="Title" --content="Content"']
+        };
+      }
+
+      return {
+        type: ResponseType.DATA,
+        message: `💡 Your ideas (${user.ideas.length})`,
+        data: {
+          ideas: user.ideas.map((idea, index) => ({
+            index: index + 1,
+            id: idea.id,
+            title: idea.title,
+            description: idea.description,
+            content: idea.content,
+            createdAt: idea.createdAt,
+            updatedAt: idea.updatedAt
+          }))
+        },
+        suggestions: ['/add idea', '/edit idea [#]', '/delete idea [#]']
+      };
+    } catch (error) {
+      logError('Error viewing ideas', error as Error, { userId: this.userId });
+      return {
+        type: ResponseType.ERROR,
+        message: 'Failed to fetch ideas'
+      };
+    }
+  }
+
+  /**
+   * Handle /edit idea command
+   */
+  async handleEditIdea(parsed: ParsedCommand): Promise<CommandResponse> {
+    try {
+      const user = await User.findById(this.userId);
+      if (!user) {
+        return {
+          type: ResponseType.ERROR,
+          message: 'User not found'
+        };
+      }
+
+      const ideaIdentifier = parsed.args[0];
+      if (!ideaIdentifier) {
+        return {
+          type: ResponseType.ERROR,
+          message: 'Idea identifier required',
+          suggestions: ['/edit idea [#]', '/edit idea "[idea id]"']
+        };
+      }
+
+      let ideaIndex = -1;
+      if (ideaIdentifier.match(/^\d+$/)) {
+        ideaIndex = parseInt(ideaIdentifier, 10) - 1;
+      } else {
+        ideaIndex = user.ideas.findIndex(i => i.id === ideaIdentifier);
+      }
+
+      if (ideaIndex === -1 || ideaIndex >= user.ideas.length) {
+        return {
+          type: ResponseType.ERROR,
+          message: 'Idea not found',
+          suggestions: ['/view ideas']
+        };
+      }
+
+      const idea = user.ideas[ideaIndex];
+      const title = getFlag(parsed.flags, 'title') as string;
+      const description = getFlag(parsed.flags, 'description') as string;
+      const content = getFlag(parsed.flags, 'content') as string;
+
+      if (title) idea.title = title.substring(0, 200);
+      if (description !== undefined) idea.description = description.substring(0, 500);
+      if (content) idea.content = content.substring(0, 10000);
+      idea.updatedAt = new Date();
+
+      await user.save();
+
+      return {
+        type: ResponseType.SUCCESS,
+        message: `💡 Idea "${idea.title}" updated successfully`,
+        data: { idea },
+        suggestions: ['/view ideas']
+      };
+    } catch (error) {
+      logError('Error editing idea', error as Error, { userId: this.userId });
+      return {
+        type: ResponseType.ERROR,
+        message: 'Failed to edit idea'
+      };
+    }
+  }
+
+  /**
+   * Handle /delete idea command
+   */
+  async handleDeleteIdea(parsed: ParsedCommand): Promise<CommandResponse> {
+    try {
+      const user = await User.findById(this.userId);
+      if (!user) {
+        return {
+          type: ResponseType.ERROR,
+          message: 'User not found'
+        };
+      }
+
+      const ideaIdentifier = parsed.args[0];
+      if (!ideaIdentifier) {
+        return {
+          type: ResponseType.ERROR,
+          message: 'Idea identifier required',
+          suggestions: ['/delete idea [#]', '/delete idea "[idea id]"']
+        };
+      }
+
+      let ideaIndex = -1;
+      if (ideaIdentifier.match(/^\d+$/)) {
+        ideaIndex = parseInt(ideaIdentifier, 10) - 1;
+      } else {
+        ideaIndex = user.ideas.findIndex(i => i.id === ideaIdentifier);
+      }
+
+      if (ideaIndex === -1 || ideaIndex >= user.ideas.length) {
+        return {
+          type: ResponseType.ERROR,
+          message: 'Idea not found',
+          suggestions: ['/view ideas']
+        };
+      }
+
+      const deletedIdea = user.ideas[ideaIndex];
+      user.ideas.splice(ideaIndex, 1);
+      await user.save();
+
+      return {
+        type: ResponseType.SUCCESS,
+        message: `💡 Idea "${deletedIdea.title}" deleted successfully`,
+        suggestions: ['/view ideas']
+      };
+    } catch (error) {
+      logError('Error deleting idea', error as Error, { userId: this.userId });
+      return {
+        type: ResponseType.ERROR,
+        message: 'Failed to delete idea'
+      };
+    }
+  }
+
+  /**
+   * Handle /add project command
+   */
+  async handleAddProject(parsed: ParsedCommand): Promise<CommandResponse> {
+    try {
+      const user = await User.findById(this.userId);
+      if (!user) {
+        return {
+          type: ResponseType.ERROR,
+          message: 'User not found'
+        };
+      }
+
+      // Check project limit
+      if (!user.isAdmin && user.projectLimit !== -1) {
+        const currentProjectCount = await Project.countDocuments({ userId: this.userId });
+        if (currentProjectCount >= user.projectLimit) {
+          return {
+            type: ResponseType.ERROR,
+            message: `Project limit reached. Your ${user.planTier} plan allows ${user.projectLimit} projects.`,
+            suggestions: ['/view projects', 'Upgrade your plan']
+          };
+        }
+      }
+
+      const name = getFlag(parsed.flags, 'name') as string;
+      const description = (getFlag(parsed.flags, 'description') as string) || '';
+      const category = (getFlag(parsed.flags, 'category') as string) || 'general';
+      const color = (getFlag(parsed.flags, 'color') as string) || '#3B82F6';
+
+      if (!name) {
+        return {
+          type: ResponseType.ERROR,
+          message: 'Project name is required',
+          suggestions: ['/add project --name="My Project"']
+        };
+      }
+
+      const newProject = new Project({
+        name: name.substring(0, 100),
+        description: description.substring(0, 500),
+        category,
+        color,
+        userId: this.userId,
+        ownerId: this.userId,
+        todos: [],
+        notes: [],
+        devLog: [],
+        components: [],
+        stack: []
+      });
+
+      await newProject.save();
+
+      return {
+        type: ResponseType.SUCCESS,
+        message: `✅ Project "${name}" created successfully`,
+        data: {
+          project: {
+            id: newProject._id.toString(),
+            name: newProject.name,
+            description: newProject.description,
+            category: newProject.category,
+            color: newProject.color
+          }
+        },
+        suggestions: ['/swap @' + name, '/view projects']
+      };
+    } catch (error) {
+      logError('Error adding project', error as Error, { userId: this.userId });
+      return {
+        type: ResponseType.ERROR,
+        message: 'Failed to create project'
+      };
+    }
+  }
+
+  /**
+   * Handle /view projects command
+   */
+  async handleViewProjects(parsed: ParsedCommand): Promise<CommandResponse> {
+    try {
+      const projects = await Project.find({ userId: this.userId }).select('name description category color createdAt updatedAt isArchived').sort({ createdAt: -1 });
+
+      if (!projects || projects.length === 0) {
+        return {
+          type: ResponseType.INFO,
+          message: '📁 No projects yet',
+          suggestions: ['/add project --name="My Project"', '/wizard new']
+        };
+      }
+
+      return {
+        type: ResponseType.DATA,
+        message: `📁 Your projects (${projects.length})`,
+        data: {
+          projects: projects.map((project, index) => ({
+            index: index + 1,
+            id: project._id.toString(),
+            name: project.name,
+            description: project.description,
+            category: project.category,
+            color: project.color,
+            createdAt: project.createdAt,
+            updatedAt: project.updatedAt,
+            isArchived: project.isArchived
+          }))
+        },
+        suggestions: ['/swap @[project name]', '/add project']
+      };
+    } catch (error) {
+      logError('Error viewing projects', error as Error, { userId: this.userId });
+      return {
+        type: ResponseType.ERROR,
+        message: 'Failed to fetch projects'
+      };
+    }
+  }
+
 }

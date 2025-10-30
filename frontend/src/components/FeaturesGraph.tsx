@@ -791,9 +791,9 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
   const selectedComponent = selectedNode ? (selectedNode.data as any).component as Doc : null;
 
   return (
-    <div className="flex gap-4">
+    <div className="flex flex-col lg:flex-row gap-4">
       {/* Controls Sidebar */}
-      <div className="w-full max-w-sm md:w-80 bg-base-100 flex-shrink-0 space-y-4">
+      <div className="w-full lg:max-w-sm lg:w-80 bg-base-100 flex-shrink-0 space-y-4">
         <GraphControls
           docs={docs}
           selectedCategories={selectedCategories}
@@ -810,7 +810,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
         />
 
         {/* View Mode Toggle */}
-        <div className="bg-base-100 border-2 border-base-content/20 rounded-lg p-4">
+        <div className="bg-base-100 border border-thick border-base-content/20 rounded-lg p-3 sm:p-4">
           <div className="text-xs font-semibold text-base-content/60 mb-2">View Mode</div>
           <div className="flex gap-2">
             <button
@@ -839,7 +839,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
         {/* Graph Layout Mode (only shown in graph view) */}
         {viewMode === 'graph' && (
           <>
-            <div className="bg-base-100 border-2 border-base-content/20 rounded-lg p-4">
+            <div className="bg-base-100 border border-thick border-base-content/20 rounded-lg p-3 sm:p-4">
               <div className="text-xs font-semibold text-base-content/60 mb-2">Graph Layout</div>
               <div className="flex gap-2">
                 <button
@@ -860,7 +860,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
             </div>
 
             {/* Edge Routing Style */}
-            <div className="bg-base-100 border-2 border-base-content/20 rounded-lg p-4">
+            <div className="bg-base-100 border border-thick border-base-content/20 rounded-lg p-3 sm:p-4">
               <div className="text-xs font-semibold text-base-content/60 mb-2">Edge Routing</div>
               <div className="flex gap-2">
                 <button
@@ -886,10 +886,10 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
       </div>
 
       {/* Main Content Area - Graph or Cards */}
-      <div className="flex-1 h-[300px] sm:h-[400px] lg:h-[600px] relative">
+      <div className="w-full h-[400px] sm:h-[500px] lg:h-[600px] lg:flex-1 relative">
         {viewMode === 'graph' ? (
           /* Graph Canvas */
-          <div className="absolute inset-0 bg-base-200 rounded-lg border-2 border-base-content/20 overflow-hidden">
+          <div className="w-full h-full bg-base-200 rounded-lg border border-thick border-base-content/20 overflow-hidden">
             <ReactFlow
               nodes={filteredNodes}
               edges={filteredEdges}

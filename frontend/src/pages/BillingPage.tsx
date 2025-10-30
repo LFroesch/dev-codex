@@ -164,70 +164,70 @@ const BillingPage: React.FC = () => {
 
         {/* Current Plan Status */}
         {billingInfo && (
-          <div className="card-default mb-8 border border-base-content/40">
+          <div className="card-default mb-8 border border-thick border-base-content/40">
             <div className="card-body">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex-center-gap-2">
-                  <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                    <svg className="icon-md text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+                <div className="flex items-center gap-2">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 rounded-lg flex items-center justify-center">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
                     </svg>
                   </div>
                   <div>
-                    <h2 className="text-2xl font-bold text-base-content">Current Plan</h2>
-                    <p className="text-base-content/60">Your active subscription details</p>
+                    <h2 className="text-xl sm:text-2xl font-bold text-base-content">Current Plan</h2>
+                    <p className="text-sm sm:text-base text-base-content/60">Your active subscription details</p>
                   </div>
                 </div>
-                <div className="badge badge-primary badge-lg text-lg font-semibold px-4 py-3" style={{ color: getContrastTextColor('primary') }}>
+                <div className="badge badge-primary badge-lg text-base sm:text-lg font-semibold px-3 sm:px-4 py-2 sm:py-3" style={{ color: getContrastTextColor('primary') }}>
                   {billingInfo.planTier.toUpperCase()}
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="stat bg-base-200 rounded-lg">
-                  <div className="stat-title mb-1">Project Limit</div>
-                  <div className="stat-value mb-2 text-2xl">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                <div className="stat bg-base-200 rounded-lg border border-thick border-base-content/20">
+                  <div className="stat-title mb-1 text-xs sm:text-sm">Project Limit</div>
+                  <div className="stat-value mb-2 text-xl sm:text-2xl">
                     {billingInfo.projectLimit === -1 ? '∞' : billingInfo.projectLimit}
                   </div>
-                  <div className="stat-desc">
+                  <div className="stat-desc text-xs">
                     {billingInfo.projectLimit === -1 ? 'Unlimited projects' : 'Active projects allowed'}
                   </div>
                 </div>
 
-                <div className="stat bg-base-200 rounded-lg">
-                  <div className="stat-title mb-2">Status</div>
-                  <div className="stat-value text-xl capitalize">
+                <div className="stat bg-base-200 rounded-lg border border-thick border-base-content/20">
+                  <div className="stat-title mb-2 text-xs sm:text-sm">Status</div>
+                  <div className="stat-value text-base sm:text-xl capitalize">
                     {billingInfo.subscriptionStatus === 'active' ? (
-                      <span className="text-base-content border-thick rounded-lg p-1 bg-success/70">Active</span>
+                      <span className="text-base-content border-thick rounded-lg px-2 py-1 bg-success/70 text-sm sm:text-base">Active</span>
                     ) : (
-                      <span className="text-base-content border-thick rounded-lg p-1 bg-warning/50">{billingInfo.subscriptionStatus}</span>
+                      <span className="text-base-content border-thick rounded-lg px-2 py-1 bg-warning/50 text-sm sm:text-base">{billingInfo.subscriptionStatus}</span>
                     )}
                   </div>
-                  <div className="stat-desc mt-2">Subscription status</div>
+                  <div className="stat-desc mt-2 text-xs">Subscription status</div>
                 </div>
 
                 {billingInfo.nextBillingDate && (
-                  <div className="stat bg-base-200 rounded-lg">
-                    <div className="stat-title mb-2">
+                  <div className="stat bg-base-200 rounded-lg border border-thick border-base-content/20">
+                    <div className="stat-title mb-2 text-xs sm:text-sm">
                       {billingInfo.cancelAtPeriodEnd ? 'Access Ends' : 'Renewal Date'}
                     </div>
-                    <div className="stat-value text-lg">
+                    <div className="stat-value text-base sm:text-lg">
                       {new Date(billingInfo.nextBillingDate).toLocaleDateString('en-US', {
                         month: 'short',
                         day: 'numeric',
                         year: 'numeric'
                       })}
                     </div>
-                    <div className="stat-desc mt-2">
+                    <div className="stat-desc mt-2 text-xs">
                       {billingInfo.cancelAtPeriodEnd ? 'Plan expires on this date' : 'Next renewal & charge date'}
                     </div>
                   </div>
                 )}
 
-                <div className="stat bg-base-200 rounded-lg">
-                  <div className="stat-title">Actions</div>
+                <div className="stat bg-base-200 rounded-lg border border-thick border-base-content/20">
+                  <div className="stat-title text-xs sm:text-sm">Actions</div>
                   <br />
-                  <div className="stat-value text-sm">
+                  <div className="stat-value text-xs sm:text-sm">
                     {billingInfo.hasActiveSubscription && !billingInfo.cancelAtPeriodEnd && (
                       <button 
                         onClick={() => setShowCancelConfirm(true)}

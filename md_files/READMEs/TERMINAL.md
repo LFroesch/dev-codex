@@ -37,6 +37,8 @@
 - `/add tech [name] --category=[category]` - Add technology to stack
 - `/add package [name]` - Add package to project
 - `/add tag [name]` - Add tag to project
+- `/add idea --title="title" --description="description" --content="content"` - Add a personal idea to your account
+- `/add project --name="name" --description="description" --category="category" --color="#hex"` - Create a new project with flags
 
 ### View Commands
 - `/view notes [@project]` - List notes
@@ -51,6 +53,8 @@
 - `/view settings [@project]` - View project settings
 - `/view news` - View latest news
 - `/view themes` - List available themes
+- `/view ideas` - View all your personal ideas
+- `/view projects` - List all your projects
 
 ### Edit Commands (Interactive Wizards + Direct Updates)
 - `/edit todo [id] [@project]` - Opens interactive wizard to edit todo (or use `--title=`, `--content=`, `--priority=`, `--status=`, `--due=` for direct updates)
@@ -58,6 +62,7 @@
 - `/edit devlog [id] [@project]` - Opens interactive wizard to edit dev log entry (or use `--field=` and `--content=` for direct updates)
 - `/edit doc [id] [@project]` - Opens interactive wizard to edit documentation (or use `--field=` and `--content=` for direct updates)
 - `/edit subtask [parent_idx] [subtask_idx] [@project]` - Opens interactive wizard to edit subtask (per-parent indexing, or use `--title=`, `--content=`, `--priority=`, `--status=`, `--due=` for direct updates)
+- `/edit idea [id/#] --title="title" --description="description" --content="content"` - Edit a personal idea by ID or index number
 
 Examples:
 ```bash
@@ -76,6 +81,7 @@ Examples:
 - `/delete devlog [entry id] [@project] --confirm` - Delete a dev log entry
 - `/delete doc [doc id/title] [@project] --confirm` - Delete documentation
 - `/delete subtask [parent_idx] [subtask_idx] [@project] --confirm` - Delete a subtask (per-parent indexing)
+- `/delete idea [id/#] --confirm` - Delete a personal idea by ID or index number
 
 ### Set Commands
 - `/set deployment --url=[url] --platform=[platform]` - Update deployment
@@ -142,7 +148,7 @@ Mixed (newlines + &&):
 - `/info [@project]` - Quick project overview with stats
 
 #### Interactive Features
-- `/wizard new/setup/deploy` - Interactive wizards
+- `/wizard new` - Interactive project creation wizard (aliases: `/wizard project`, `/new project`, `/new`)
 - `/suggest [request]` - AI-powered suggestions (see clippy.md)
 - `/dump [requests]` - Batch AI operations
 

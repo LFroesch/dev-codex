@@ -68,6 +68,9 @@ Invite sarah@team.com as an editor
 [paste /llm output]"
 
 LLM responds with batch commands:
+
+Batch 1 (10 commands, current max limit):
+
 /add todo --title="Setup authentication" --priority=high --status=in_progress
 /add todo --title="Create recipe database model" --priority=high
 /add todo --title="Build recipe CRUD UI" --priority=medium
@@ -78,6 +81,9 @@ LLM responds with batch commands:
 /add component --feature="Auth" --category=backend --type=service --title="Auth Service" --content="Handles user registration, login, JWT generation. Uses bcrypt for passwords, NextAuth for OAuth."
 /add component --feature="Recipes" --category=backend --type=route --title="Recipe API" --content="CRUD operations for recipes. Validates user ownership before updates/deletes."
 /add component --feature="Recipes" --category=frontend --type=page --title="Recipe List UI" --content="Displays recipes with search, filter, and pagination. Uses TanStack Query for data fetching."
+
+Batch 2 (6 remaining commands):
+
 /add relationship --source="Auth Service" --target="Recipe API" --type=depends_on --description="Recipe API requires Auth Service for user authentication"
 /add stack --name="Next.js" --category=framework --version="14.0"
 /add stack --name="PostgreSQL" --category=database --version="15"
@@ -106,6 +112,12 @@ Full autocomplete, validation, and syntax hints as you type. Chain commands:
 
 ```bash
 /add todo --title="Fix bug" --priority=high && /complete 2 && /add devlog --title="Fixed auth"
+
+OR 
+
+/add todo --title="Fix bug" --priority=high
+/complete 2
+/add devlog --title="Fixed auth"
 ```
 
 #### Option 4: Skip It Entirely
@@ -122,7 +134,7 @@ Full autocomplete, validation, and syntax hints as you type. Chain commands:
 
 ### Public Project Discovery
 
-- Custom slugs: `yoursite.com/public/project/@username/project-slug`
+- Custom slugs: `/public/project/@username/project-slug`
 - Granular visibility control (description, tech stack, components, etc.)
 - Search all public projects
 
@@ -210,7 +222,7 @@ User management, support tickets, analytics leaderboards, database cleanup, news
 
 ---
 
-## Security (Grade: A-)
+## Security
 
 | Feature | Implementation |
 |---------|---------------|
@@ -329,22 +341,12 @@ railway login && railway init && railway up
 | `npm run create-admin` | Create admin user |
 | `npm run setup-stripe` | Configure Stripe products |
 
----
-
-## Testing (35% - Production Ready)
-
-434 tests covering: Auth (70+) | Authorization (15+) | Billing/Stripe (10+) | Security (17+) | CRUD (50+) | Error handling (20+) | Terminal (10+) | Analytics (8+)
-
-Focus: Integration tests over unit tests. Test business logic, not framework code. 30-40% = production ready.
-
----
-
 ## License
 
 ISC
 
 ## Support
 
-**Issues:** <https://github.com/LFroesch/project-management/issues> | **Deployment:** `md_files/current/LAUNCH.md` | **Email:** SUPPORT_EMAIL env var
+**Issues:** <https://github.com/LFroesch/project-management/issues>
 
 **Built by a developer, for developers. Production ready.**

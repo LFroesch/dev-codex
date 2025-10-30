@@ -174,16 +174,6 @@ const ComponentNode: React.FC<NodeProps<ComponentNodeData>> = ({ data, selected 
                 🕐 Stale
               </span>
             )}
-            {isIncomplete && (
-              <span className="badge badge-xs badge-warning border-thick p-2" title="Content < 100 chars">
-                📝 Short
-              </span>
-            )}
-            {isOrphaned && (
-              <span className="badge badge-xs badge-ghost border-thick p-2" title="No feature assigned">
-                🏝️ Lone
-              </span>
-            )}
             {isRecent && !isStale && (
               <span className="badge badge-xs badge-success border-thick p-2" title="Updated in last 24h">
                 ✨ New

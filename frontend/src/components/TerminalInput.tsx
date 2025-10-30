@@ -347,6 +347,14 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
         setShowAutocomplete(false);
         return;
       }
+      if (e.key === 'ArrowDown' && e.shiftKey) {
+        e.preventDefault();
+        setSelectedIndex(prev => (prev < autocompleteItems.length - 1 ? prev + 1 : 0));
+      }
+      if (e.key === 'ArrowUp' && e.shiftKey) {
+        e.preventDefault();
+        setSelectedIndex(prev => prev > 0 ? prev - 1 : autocompleteItems.length - 1);
+      }
     }
 
     // Handle command submission
@@ -357,13 +365,13 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
     }
 
     // Handle command history (when autocomplete is not shown)
-    if (e.key === 'ArrowUp' && e.shiftKey) {
+    if (e.key === 'ArrowUp' && e.shiftKey && !showAutocomplete) {
       e.preventDefault();
       navigateHistory('up');
       return;
     }
 
-    if (e.key === 'ArrowDown' && e.shiftKey) {
+    if (e.key === 'ArrowDown' && e.shiftKey && !showAutocomplete) {
       e.preventDefault();
       navigateHistory('down');
       return;
@@ -515,7 +523,7 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
           <div className="p-0.5">
             <div className="text-xs font-semibold text-base-content/80 px-2 py-1 bg-base-200 rounded-lg sticky top-0.5 border-thick">
               {autocompleteItems[0].type === 'command' ? '🔧 Commands' : '📁 Projects'}
-              <span className="ml-2 opacity-70">({autocompleteItems.length}) - Esc to Exit</span>
+              <span className="ml-2 opacity-70">({autocompleteItems.length}) - Esc to Exit - Tab to Accept</span>
             </div>
             <div className="mt-1 space-y-1">
               {autocompleteItems.map((item, index) => (
@@ -602,7 +610,7 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
               <span>+</span>
               <kbd className="kbd kbd-xs">↑</kbd>
               <kbd className="kbd kbd-xs">↓</kbd>
-              <span>history</span>
+              <span>history/autocomplete</span>
             </div>
             <span className="text-base-content/50 hidden sm:inline">•</span>
             <div className="flex items-center gap-1 hidden md:flex">

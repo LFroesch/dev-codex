@@ -34,8 +34,9 @@ This folder contains all project planning, architecture, and feature documentati
 
 ## 📊 Project Status
 
-### Completed Features (85%)
-- ✅ Terminal system with 35+ commands
+### Completed Features (90%)
+- ✅ Terminal system with 50+ commands
+- ✅ Batch command execution (&&, newlines, max 10 per batch)
 - ✅ Full-text search with MongoDB
 - ✅ Task management (complete, assign, priority, due dates)
 - ✅ Export/summary system (markdown, JSON, prompt, text)
@@ -43,11 +44,11 @@ This folder contains all project planning, architecture, and feature documentati
 - ✅ Performance optimizations
 
 ### High Priority Next Steps
-1. Batch/chain commands in terminal
-2. Complete todo page with subtasks
-3. Better analytics and gamification
-4. Workflow commands (/today, /week, /standup)
-5. Wizard commands for interactive flows
+1. Complete todo page with subtasks
+2. Better analytics and gamification
+3. Workflow commands (/today, /week, /standup)
+4. Wizard commands for interactive flows
+5. AI integration for natural language parsing
 
 ### Future Vision
 - AI-powered assistant (Clippy/Siri experience)

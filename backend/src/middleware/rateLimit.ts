@@ -29,6 +29,11 @@ export const createRateLimit = (options: RateLimitOptions) => {
 
   return async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     try {
+      // Skip rate limiting if self-hosted mode is enabled
+      if (process.env.SELF_HOSTED === 'true') {
+        return next();
+      }
+
       // Generate identifier
       let identifier: string;
       let type: 'ip' | 'user';

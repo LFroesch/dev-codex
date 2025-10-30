@@ -37,6 +37,11 @@ const PLAN_LIMITS = {
 // Create checkout session
 router.post('/create-checkout-session', billingRateLimit, requireAuth, async (req: AuthRequest, res) => {
   try {
+    // Check if self-hosted mode is enabled
+    if (process.env.SELF_HOSTED === 'true') {
+      return res.status(501).json({ error: 'Billing is disabled in self-hosted mode' });
+    }
+
     if (!stripe) {
       return res.status(501).json({ error: 'Payment processing not configured' });
     }
@@ -133,6 +138,11 @@ router.post('/create-checkout-session', billingRateLimit, requireAuth, async (re
 
 // Handle Stripe webhooks
 router.post('/webhook', async (req, res) => {
+  // Check if self-hosted mode is enabled
+  if (process.env.SELF_HOSTED === 'true') {
+    return res.status(501).json({ error: 'Billing is disabled in self-hosted mode' });
+  }
+
   if (!stripe) {
     return res.status(501).json({ error: 'Payment processing not configured' });
   }
@@ -329,6 +339,19 @@ router.get('/info', requireAuth, async (req: AuthRequest, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
+    // If self-hosted, return basic info without billing details
+    if (process.env.SELF_HOSTED === 'true') {
+      return res.json({
+        planTier: user.planTier || 'free',
+        projectLimit: -1, // Unlimited for self-hosted
+        subscriptionStatus: 'self_hosted',
+        hasActiveSubscription: false,
+        nextBillingDate: null,
+        cancelAtPeriodEnd: false,
+        selfHosted: true
+      });
+    }
+
     logInfo('User billing details', {
       planTier: user.planTier,
       hasSubscription: !!user.subscriptionId,
@@ -412,6 +435,11 @@ router.get('/info', requireAuth, async (req: AuthRequest, res) => {
 // Cancel subscription
 router.post('/cancel-subscription', billingRateLimit, requireAuth, async (req: AuthRequest, res) => {
   try {
+    // Check if self-hosted mode is enabled
+    if (process.env.SELF_HOSTED === 'true') {
+      return res.status(501).json({ error: 'Billing is disabled in self-hosted mode' });
+    }
+
     logInfo('Cancel subscription request', { userId: req.userId });
 
     const user = await User.findById(req.userId!);
@@ -466,6 +494,11 @@ router.post('/cancel-subscription', billingRateLimit, requireAuth, async (req: A
 // Resume cancelled subscription
 router.post('/resume-subscription', billingRateLimit, requireAuth, async (req: AuthRequest, res) => {
   try {
+    // Check if self-hosted mode is enabled
+    if (process.env.SELF_HOSTED === 'true') {
+      return res.status(501).json({ error: 'Billing is disabled in self-hosted mode' });
+    }
+
     logInfo('Resume subscription request', { userId: req.userId });
 
     const user = await User.findById(req.userId!);

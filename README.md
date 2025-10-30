@@ -160,11 +160,11 @@ railway login && railway init && railway up
 **Self-Hosted:** Unlimited everything when `SELF_HOSTED=true`
 
 **Hosted Version:**
-| Plan | Projects | Team Members | Analytics Retention |
-|------|----------|--------------|---------------------|
-| **Free** | 3 | 3/project | 7 days |
-| **Pro** | 20 | 10/project | 90 days |
-| **Enterprise** | Unlimited | Unlimited | 365 days |
+| Plan | Projects | Team Members | Terminal Commands | Analytics Retention |
+|------|----------|--------------|-------------------|---------------------|
+| **Free** | 3 | 3/project | ~10/min | 7 days |
+| **Pro** | 20 | 10/project | 60/min | 90 days |
+| **Enterprise** | Unlimited | Unlimited | 120/min | 365 days |
 
 ---
 

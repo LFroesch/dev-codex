@@ -5,6 +5,7 @@ import { doubleCsrf } from 'csrf-csrf';
 import passport from 'passport';
 import dotenv from 'dotenv';
 import path from 'path';
+import helmet from 'helmet';
 import { Server } from 'socket.io';
 import { createServer } from 'http';
 import { connectDatabase } from './config/database';
@@ -35,6 +36,89 @@ dotenv.config();
 
 import { initSentry } from './config/sentry';
 initSentry();
+
+// Environment variable validation for production
+const validateProductionEnv = () => {
+  if (process.env.NODE_ENV !== 'production') {
+    return; // Skip validation in development
+  }
+
+  const requiredEnvVars = [
+    'MONGODB_URI',
+    'JWT_SECRET',
+    'CSRF_SECRET',
+    'CORS_ORIGINS',
+    'FRONTEND_URL',
+    'SMTP_HOST',
+    'SMTP_USER',
+    'SMTP_PASS',
+    'SMTP_FROM',
+  ];
+
+  const missingVars: string[] = [];
+
+  for (const varName of requiredEnvVars) {
+    if (!process.env[varName] || process.env[varName]?.trim() === '') {
+      missingVars.push(varName);
+    }
+  }
+
+  // Check CSRF_SECRET is not the default weak value
+  if (process.env.CSRF_SECRET === 'your-csrf-secret-change-in-production') {
+    logError('CRITICAL: CSRF_SECRET must be changed from default value in production', undefined, {
+      severity: 'critical',
+      component: 'app',
+      action: 'env_validation'
+    });
+    process.exit(1);
+  }
+
+  // Check JWT_SECRET is sufficiently long
+  if (process.env.JWT_SECRET && process.env.JWT_SECRET.length < 32) {
+    logError('CRITICAL: JWT_SECRET must be at least 32 characters in production', undefined, {
+      severity: 'critical',
+      component: 'app',
+      action: 'env_validation'
+    });
+    process.exit(1);
+  }
+
+  // Validate Stripe keys if payments are enabled
+  if (process.env.STRIPE_SECRET_KEY) {
+    if (!process.env.STRIPE_SECRET_KEY.startsWith('sk_live_')) {
+      logError('CRITICAL: STRIPE_SECRET_KEY must use live key (sk_live_) in production, not test key', undefined, {
+        severity: 'critical',
+        component: 'app',
+        action: 'env_validation'
+      });
+      process.exit(1);
+    }
+
+    if (!process.env.STRIPE_WEBHOOK_SECRET) {
+      logError('CRITICAL: STRIPE_WEBHOOK_SECRET is required when Stripe is enabled', undefined, {
+        severity: 'critical',
+        component: 'app',
+        action: 'env_validation'
+      });
+      process.exit(1);
+    }
+  }
+
+  if (missingVars.length > 0) {
+    logError(`CRITICAL: Missing required environment variables in production: ${missingVars.join(', ')}`, undefined, {
+      severity: 'critical',
+      component: 'app',
+      action: 'env_validation',
+      missingVars
+    });
+    process.exit(1);
+  }
+
+  logInfo('All required environment variables validated successfully', { component: 'app', action: 'env_validation' });
+};
+
+// Run validation before initializing app
+validateProductionEnv();
 
 
 const app = express();
@@ -87,6 +171,35 @@ app.use(cookieParser());
 app.use('/api/billing/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
 app.use(passport.initialize());
+
+// Security headers middleware using Helmet
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"], // Allow inline styles for compatibility
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'", "data:"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"],
+    },
+  },
+  hsts: {
+    maxAge: 31536000, // 1 year in seconds
+    includeSubDomains: true,
+    preload: true
+  },
+  referrerPolicy: {
+    policy: 'strict-origin-when-cross-origin'
+  },
+  xssFilter: true,
+  noSniff: true,
+  ieNoOpen: true,
+  hidePoweredBy: true
+}));
 
 // SEC-003 FIX: Modern CSRF Protection using csrf-csrf (double-submit cookie pattern)
 const csrfProtection = doubleCsrf({

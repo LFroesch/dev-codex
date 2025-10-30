@@ -26,6 +26,7 @@ export class ProjectCache {
   private readonly maxCacheSize: number;
   private hits: number;
   private misses: number;
+  private cleanupInterval: NodeJS.Timeout | null = null;
 
   constructor(ttlMinutes: number = 5, maxSize: number = 1000) {
     this.cache = new Map();
@@ -35,7 +36,7 @@ export class ProjectCache {
     this.misses = 0;
 
     // Clean up expired entries every minute
-    setInterval(() => this.cleanup(), 60 * 1000);
+    this.cleanupInterval = setInterval(() => this.cleanup(), 60 * 1000);
   }
 
   /**
@@ -154,6 +155,19 @@ export class ProjectCache {
       maxSize: this.maxCacheSize,
       ttlMinutes: this.defaultTTL / 60000
     };
+  }
+
+  /**
+   * Destroy the cache and clean up resources
+   * Call this when shutting down or in test teardown
+   */
+  destroy(): void {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+      this.cleanupInterval = null;
+    }
+    this.clear();
+    logInfo('Project cache destroyed and resources cleaned up');
   }
 }
 

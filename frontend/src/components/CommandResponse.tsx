@@ -361,6 +361,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
             results={response.data.results}
             executed={response.data.executed || 0}
             total={response.data.total || 0}
+            onProjectSelect={onProjectSelect}
           />
         </Suspense>
       );

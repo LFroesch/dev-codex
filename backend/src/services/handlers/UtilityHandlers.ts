@@ -413,12 +413,6 @@ export class UtilityHandlers extends BaseCommandHandler {
    * Handle /summary command - Generate downloadable project summary
    */
   async handleSummary(parsed: ParsedCommand, currentProjectId?: string): Promise<CommandResponse> {
-    const resolution = await this.resolveProject(parsed.projectMention, currentProjectId);
-    if (!resolution.project) {
-      return this.buildProjectErrorResponse(resolution);
-    }
-
-    const project = resolution.project;
     const format = parsed.args[0]?.toLowerCase() || 'markdown';
     let entity = parsed.args[1]?.toLowerCase() || 'all';
 
@@ -448,19 +442,62 @@ export class UtilityHandlers extends BaseCommandHandler {
       'deploy': 'deployment',
       'setting': 'settings',
       'settings': 'settings',
+      'project': 'projects',
+      'projects': 'projects',
       'all': 'all'
     };
 
     if (entity && !entityAliases[entity]) {
       return {
         type: ResponseType.ERROR,
-        message: `Invalid entity "${entity}". Available: all, todos, notes, devlog, components, stack, team, deployment, settings`,
+        message: `Invalid entity "${entity}". Available: all, todos, notes, devlog, components, stack, team, deployment, settings, projects`,
         suggestions: ['/help summary']
       };
     }
 
     // Normalize to canonical form
     entity = entityAliases[entity] || 'all';
+
+    // Handle special case: projects entity (show all user projects + ideas)
+    if (entity === 'projects') {
+      const summary = await this.generateProjectsAndIdeasSummary(format);
+      const metrics = calculateTextMetrics(summary);
+
+      const extensions: Record<string, string> = {
+        markdown: 'md',
+        json: 'json',
+        prompt: 'txt',
+        text: 'txt'
+      };
+
+      const fileExtension = extensions[format];
+      const fileName = `all-projects-and-ideas.${fileExtension}`;
+
+      return {
+        type: ResponseType.DATA,
+        message: `📄 Generated ${format} summary of all projects and ideas`,
+        data: {
+          summary,
+          format,
+          fileName,
+          projectName: 'All Projects',
+          entityType: 'projects',
+          downloadable: true,
+          textMetrics: metrics
+        },
+        metadata: {
+          action: 'summary'
+        }
+      };
+    }
+
+    // For other entities, resolve the project
+    const resolution = await this.resolveProject(parsed.projectMention, currentProjectId);
+    if (!resolution.project) {
+      return this.buildProjectErrorResponse(resolution);
+    }
+
+    const project = resolution.project;
 
     // Generate filtered summary
     const summary = this.generateFilteredSummary(project, format, entity);
@@ -498,6 +535,98 @@ export class UtilityHandlers extends BaseCommandHandler {
         action: 'summary'
       }
     };
+  }
+
+  /**
+   * Generate concise summary of all user projects and ideas
+   */
+  private async generateProjectsAndIdeasSummary(format: string): Promise<string> {
+    // Fetch all user projects
+    const projects = await Project.find({ userId: this.userId })
+      .select('name description category stagingEnvironment createdAt updatedAt')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Fetch user ideas
+    const user = await User.findById(this.userId).select('ideas').lean();
+    const ideas = user?.ideas || [];
+
+    switch (format) {
+      case 'json':
+        return JSON.stringify({
+          projects: projects.map(p => ({
+            name: p.name,
+            description: p.description,
+            category: p.category,
+            environment: p.stagingEnvironment
+          })),
+          ideas: ideas.map((i: any) => ({
+            title: i.title,
+            description: i.description
+          }))
+        }, null, 2);
+
+      case 'prompt':
+        let prompt = `# All Projects and Ideas\n\n`;
+        prompt += `## 📁 PROJECTS (${projects.length})\n\n`;
+        projects.forEach((project: any) => {
+          prompt += `**${project.name}**${project.category ? ` [${project.category}]` : ''}\n`;
+          if (project.description) prompt += `${project.description}\n`;
+          prompt += `\n`;
+        });
+
+        if (ideas.length > 0) {
+          prompt += `\n## 💡 IDEAS (${ideas.length})\n\n`;
+          ideas.forEach((idea: any) => {
+            prompt += `**${idea.title}**\n`;
+            if (idea.description) prompt += `${idea.description}\n`;
+            prompt += `\n`;
+          });
+        }
+
+        return prompt;
+
+      case 'markdown':
+        let md = `# All Projects and Ideas\n\n`;
+        md += `## Projects (${projects.length})\n\n`;
+        projects.forEach((project: any) => {
+          md += `### ${project.name}`;
+          if (project.category) md += ` - ${project.category}`;
+          md += `\n\n`;
+          if (project.description) md += `${project.description}\n\n`;
+        });
+
+        if (ideas.length > 0) {
+          md += `## Ideas (${ideas.length})\n\n`;
+          ideas.forEach((idea: any) => {
+            md += `### ${idea.title}\n\n`;
+            if (idea.description) md += `${idea.description}\n\n`;
+          });
+        }
+
+        return md;
+
+      case 'text':
+      default:
+        let text = `ALL PROJECTS AND IDEAS\n${'='.repeat(22)}\n\n`;
+        text += `PROJECTS (${projects.length})\n${'-'.repeat(20)}\n`;
+        projects.forEach((project: any) => {
+          text += `${project.name}${project.category ? ` [${project.category}]` : ''}\n`;
+          if (project.description) text += `  ${project.description}\n`;
+          text += `\n`;
+        });
+
+        if (ideas.length > 0) {
+          text += `\nIDEAS (${ideas.length})\n${'-'.repeat(20)}\n`;
+          ideas.forEach((idea: any) => {
+            text += `${idea.title}\n`;
+            if (idea.description) text += `  ${idea.description}\n`;
+            text += `\n`;
+          });
+        }
+
+        return text;
+    }
   }
 
   /**
@@ -1295,49 +1424,38 @@ export class UtilityHandlers extends BaseCommandHandler {
    * Handle /llm command - Generate LLM context guide
    */
   handleLLMContext(): CommandResponse {
-    const guide = `# Terminal Command Reference for AI
+    const guide = `# AI Guide: Project Management Terminal
 
-## Workflow: User → AI → Terminal → Repeat
-1. User runs \`/summary prompt [entity]\` to get project context
-2. User pastes context + this guide into AI chat
-3. AI generates commands, user pastes back into terminal
-4. Repeat as needed
+## Your Role
+Help users interact with their project management terminal. Generate commands to manage projects, tasks, notes, components, tech stack, and teams.
 
-## Core Syntax
-- Commands: \`/command "args" @project --flag="value"\`
-- Batch: Chain with \`&&\` or newlines (max 10 commands per batch, stops on error)
-- Quotes: Multi-word args need quotes
-- Escapes: \`\\n\` for newlines in content
-- Projects: \`@ProjectName\` at end of command
-- Item matching: UUID > Index (1-based) > Partial text match (case-insensitive)
+**Workflow:** User gets context (\`/summary text projects\` or \`/summary prompt\`) → pastes to you with this guide → you generate commands → user executes → repeat.
 
-## Commands (Syntax Only)
+## Syntax
+\`/command "args" @project --flag="value"\` | Batch: \`&&\` or newlines (max 10, stops on error) | Quotes: required for multi-word args | Newlines: use \`\\n\` | Item match: UUID > Index (1-based) > Partial text
 
+## Command Reference
+
+### Project Management
+\`/add project --name="..." [--description="..." --category="..." --color="#..."]\`
+\`/add idea --title="..." --content="..." [--description="..."]\`
+\`/swap @project\` - Switch to different project context
+\`/summary text projects\` - Get concise list of all projects/ideas for AI context
+
+### Tasks & Todos
 \`/add todo --title="..." [--content="..." --priority=low|medium|high --status=not_started|in_progress|blocked|completed --due="MM-DD-YYYY HH:MM"]\`
-\`/edit todo "idx|text" [--title --content --priority --status --due]\`
-\`/delete todo "idx|text" [--confirm]\`
-\`/complete "idx|text"\`
-\`/assign "idx|text" "email"\`
-\`/push "idx|text"\` (push to devlog)
-\`/add subtask --parent="idx|text" --title="..." [same flags as todo]\`
-\`/edit subtask parent_idx subtask_idx [--flags]\`
-\`/delete subtask parent_idx subtask_idx [--confirm]\`
+\`/edit todo "idx|text" [...flags]\` \`/delete todo "idx|text"\`
+\`/complete "idx|text"\` \`/assign "idx|text" "email"\` \`/push "idx|text"\` (push to devlog)
+\`/add subtask --parent="idx|text" --title="..."\` \`/edit subtask parent_idx subtask_idx\`
 
-### Notes & DevLog
-\`/add note --title="..." --content="..."\`
-\`/edit note "idx|text"\`
-\`/delete note "idx|text"\`
-\`/add devlog --title="..." --content="..."\`
-\`/edit devlog "idx|text"\`
-\`/delete devlog "idx|text"\`
+### Notes & Dev Log
+\`/add note --title="..." --content="..."\` \`/edit note "idx|text"\` \`/delete note "idx|text"\`
+\`/add devlog --title="..." --content="..."\` \`/edit devlog "idx|text"\` \`/delete devlog "idx|text"\`
 
-### Components & Relationships
-\`/add component --feature="..." --category=frontend|backend|database|infrastructure|security|api|documentation|asset --type="..." --title="..." --content="..."\`
-\`/edit component "idx|text"\`
-\`/delete component "idx|text"\`
-\`/add relationship --source="..." --target="..." --type=uses|implements|extends|depends_on|calls|contains|mentions|similar [--description="..."]\`
-\`/edit relationship "component" "rel_idx" "new_type" [--description]\`
-\`/delete relationship "component_idx" "rel_idx"\`
+### Components & Architecture
+\`/add component --feature="..." --category="..." --type="..." --title="..." --content="..."\`
+\`/edit component "idx|text"\` \`/delete component "idx|text"\`
+\`/add relationship --source="..." --target="..." --type=uses|implements|extends|depends_on|calls|contains|mentions|similar\`
 
 **Component types by category:**
 frontend: page|component|hook|context|layout|util|custom
@@ -1349,44 +1467,30 @@ api: client|integration|webhook|contract|graphql|custom
 documentation: area|section|guide|architecture|api-doc|readme|changelog|custom
 asset: image|font|video|audio|document|dependency|custom
 
-### Stack
-\`/add stack --name="..." --category=framework|runtime|database|styling|deployment|testing|tooling|ui|state|routing|forms|animation|api|auth|data|utility [--version="..." --description="..."]\`
+### Tech Stack
+\`/add stack --name="..." --category=framework|runtime|database|styling|deployment|testing|tooling|ui|state|routing [--version="..."]\`
 \`/remove stack --name="..."\`
 
-### Insights
-\`/info\` \`/today\` \`/week\` \`/standup\` \`/search "query"\`
-\`/summary [format] [entity]\` - formats: markdown|json|prompt|text; entities: all|todos|notes|devlog|components|stack|team|deployment|settings
+### Insights & Reports
+\`/info\` - Project overview with stats
+\`/today\` - Today's tasks and activity
+\`/week\` - Weekly summary and upcoming tasks
+\`/standup\` - Standup report (yesterday/today/blockers)
+\`/search "query"\` - Search across project
+\`/summary [format] [entity]\` - Export data (formats: markdown|json|prompt|text; entities: all|todos|notes|devlog|components|stack|team|deployment|settings|projects)
 
 ### Team & Deployment
-\`/invite "email" --role=editor|viewer\`
-\`/remove member "email"\`
-\`/set deployment --url="..." --platform="..." --status=active|inactive|error [--github --build --start --branch --lastDeploy]\`
+\`/invite "email" --role=editor|viewer\` \`/remove member "email"\` \`/view team\`
+\`/set deployment --url="..." --platform="..." --status=active|inactive|error\`
 \`/set public --enabled=true|false --slug="..."\`
 
-### Project
-\`/swap @project\`
-\`/export\`
-\`/set name "..."\`
-\`/set description "..."\`
-\`/add tag "..."\`
-\`/remove tag "..."\`
+### Project Settings
+\`/set name "..."\` \`/set description "..."\` \`/add tag "..."\` \`/remove tag "..."\` \`/export\`
 
-## Critical Rules
-1. Components MUST have --feature flag
-2. Use /search before editing/deleting to verify items exist
-3. Batch commands: Use \`&&\` or newlines (max 10 per batch, stops on error). Split large batches into sets of 10.
-4. Dates: "MM-DD-YYYY HH:MMAM/PM" or "MM-DD HH:MM" (24hr)
-5. Markdown supported in content: \`--content="Line1\\nLine2"\`
-6. Item matching: UUID → Index → Partial text (case-insensitive)
-
-## Error Examples
-\`❌ --title flag is required\` → Add --title="..."
-\`❌ Component not found: "login"\` → Run /view components first
-\`❌ Invalid priority\` → Use low|medium|high
-\`❌ Target component not found\` → Both components must exist
-\`❌ --feature flag is required\` → Components need --feature="..."
-
-This terminal provides a powerful CLI for project management with support for tasks, documentation, team collaboration, and deployment tracking. All operations are command-based with support for both interactive wizards and direct flag-based execution.`;
+## Key Rules
+**MUST:** Components need \`--feature\` flag | Dates: "MM-DD-YYYY HH:MM" | Priorities: low/medium/high | Max 10 batch commands
+**ALWAYS:** Search/view before edit/delete | Validate item existence | Use quotes for multi-word args | Prefer newlines over \`&&\`
+**TIPS:** Start with \`/summary text projects\` to see all projects → get details with \`/summary prompt\` → generate commands → ask clarifying questions if uncertain`;
 
     // Calculate text metrics for the guide
     const metrics = calculateTextMetrics(guide);

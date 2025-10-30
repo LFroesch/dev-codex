@@ -241,7 +241,8 @@ export class CommandExecutor {
           command: commands[i],
           type: r.type,
           message: r.message,
-          data: r.data
+          data: r.data,
+          metadata: r.metadata
         }))
       },
       metadata: {

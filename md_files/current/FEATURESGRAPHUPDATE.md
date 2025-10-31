@@ -288,6 +288,7 @@ function generateGraphWithFeatureClusters() {
 ## Implementation Plan
 
 ### Step 1: Install Dependencies
+
 ```bash
 npm install dagre @types/dagre
 ```
@@ -384,14 +385,586 @@ Add controls for:
 
 ---
 
-## Next Steps
+## Advanced Options & Tuning
 
-1. **Prototype** - Implement basic Dagre layout first (Phase 1)
-2. **Validate** - Test with your current project data
-3. **Iterate** - Add semantic weighting (Phase 2) based on results
-4. **Polish** - Add feature clustering (Phase 3) if needed
-5. **Document** - Update component documentation with layout algorithm details
+### Current Dagre Configuration (What You Have Now)
 
-**Estimated Effort:** 4-6 hours for full implementation with testing
-**Complexity:** Medium (mostly swapping layout algorithm, existing graph logic is solid)
-**Risk:** Low (can keep grid as fallback, positions still localStorage-overrideable)
+```typescript
+g.setGraph({
+  rankdir: 'TB',     // Top-to-bottom
+  nodesep: 100,      // Horizontal node spacing
+  ranksep: 150,      // Vertical rank spacing
+  marginx: 50,
+  marginy: 50,
+});
+```
+
+This is a **conservative, clean** layout. But you can tune this extensively.
+
+---
+
+### Option A: More Compact Layout
+
+**Problem:** Too much whitespace, want denser visualization
+**Solution:** Reduce spacing parameters
+
+```typescript
+g.setGraph({
+  rankdir: 'TB',
+  nodesep: 60,       // Tighter horizontal spacing
+  ranksep: 100,      // Closer ranks
+  marginx: 20,
+  marginy: 20,
+  ranker: 'tight-tree', // Alternative: 'network-simplex' (default), 'longest-path'
+});
+```
+
+**Effect:**
+- More nodes visible in viewport
+- Better for large graphs (50+ nodes)
+- Can feel cramped with big nodes
+
+---
+
+### Option B: Left-to-Right Flow (Better for Dependencies)
+
+**Problem:** Want to see dependency flow horizontally (like traditional flowcharts)
+**Solution:** Change rank direction
+
+```typescript
+g.setGraph({
+  rankdir: 'LR',     // Left-to-right (already using this for 'type' mode!)
+  nodesep: 120,
+  ranksep: 200,
+  align: 'UL',       // Align nodes: 'UL' (up-left), 'UR', 'DL', 'DR'
+});
+```
+
+**Effect:**
+- Dependencies flow left → right
+- Good for sequential processes
+- Better for wide screens
+
+---
+
+### Option C: Centered/Radial Hierarchy
+
+**Problem:** Want important nodes in center, less important radiating out
+**Solution:** Use custom ranking + positioning
+
+```typescript
+// Rank nodes by importance (connection strength)
+const centralNodes = docs
+  .sort((a, b) => calculateConnectionStrength(b) - calculateConnectionStrength(a))
+  .slice(0, 5); // Top 5 most connected
+
+// Set custom rank for central nodes
+centralNodes.forEach(node => {
+  g.setNode(node.id, {
+    width: 400,
+    height: 200,
+    rank: 0, // Force to center rank
+  });
+});
+```
+
+**Effect:**
+- Hub nodes in middle
+- Leaf nodes on edges
+- "Solar system" feel
+
+---
+
+### Option D: Strict Layering (Clean Tiers)
+
+**Problem:** Want very clear hierarchical tiers (like org chart)
+**Solution:** Adjust ranker algorithm and edge constraints
+
+```typescript
+g.setGraph({
+  rankdir: 'TB',
+  nodesep: 80,
+  ranksep: 200,      // Large vertical gaps between tiers
+  ranker: 'longest-path', // Creates deeper hierarchies
+  acyclicer: 'greedy',    // Handle circular dependencies better
+});
+
+// Enforce minimum separation for hierarchical edges
+docs.forEach(doc => {
+  doc.relationships?.forEach(rel => {
+    if (['contains', 'extends', 'depends_on'].includes(rel.relationType)) {
+      g.setEdge(doc.id, rel.targetId, {
+        weight: 10,
+        minlen: 3, // Force 3 ranks apart (was 2)
+      });
+    }
+  });
+});
+```
+
+**Effect:**
+- Very clear parent/child tiers
+- Good for hierarchical codebases
+- Can create very tall graphs
+
+---
+
+### Option E: Edge Bundling (Reduce Visual Clutter)
+
+**Problem:** Too many edges crossing, hard to follow relationships
+**Solution:** Bundle edges that go in similar directions
+
+This requires additional logic in edge creation:
+
+```typescript
+// Group edges by general direction
+const edgesByDirection: Record<string, Edge[]> = {
+  topToBottom: [],
+  leftToRight: [],
+  // ... etc
+};
+
+// Draw bundled edges with offset
+edges.forEach(edge => {
+  const direction = getEdgeDirection(edge.source, edge.target);
+  const bundleIndex = edgesByDirection[direction].length;
+
+  edge.style = {
+    ...edge.style,
+    strokeDashoffset: bundleIndex * 5, // Offset bundled edges
+  };
+});
+```
+
+**Effect:**
+- Cleaner visual when many edges
+- Easier to trace specific connections
+- Industry standard for complex graphs
+
+---
+
+### Option F: Compound Nodes (Nested Groups)
+
+**Problem:** Want visual grouping of features, not just spatial proximity
+**Solution:** Use React Flow's compound nodes (boxes around feature clusters)
+
+```typescript
+// Create parent nodes for each feature
+features.forEach(feature => {
+  newNodes.push({
+    id: `feature-${feature}`,
+    type: 'group', // Special group node type
+    position: { x: featureX, y: featureY },
+    style: {
+      width: featureWidth,
+      height: featureHeight,
+      backgroundColor: 'rgba(100, 100, 100, 0.1)',
+      border: '2px dashed #666',
+    },
+    data: { label: feature },
+  });
+});
+
+// Set parent for each component node
+componentNodes.forEach(node => {
+  node.parentNode = `feature-${node.data.component.feature}`;
+  node.extent = 'parent'; // Keep node within parent bounds
+});
+```
+
+**Effect:**
+- Clear visual boundaries around features
+- Can collapse/expand groups
+- Better spatial organization
+
+---
+
+### Option G: Force-Directed Sub-Clustering
+
+**Problem:** Dagre is too rigid, want organic clustering within features
+**Solution:** Hybrid approach - Dagre for macro layout, D3 force for micro
+
+```typescript
+// After Dagre positions features, apply force simulation within each
+features.forEach(feature => {
+  const featureComponents = componentsByFeature[feature];
+
+  // Simple force simulation (not full D3)
+  const simulation = {
+    centerForce: { x: featureCenterX, y: featureCenterY },
+    attractionStrength: 0.5,
+  };
+
+  // Move highly connected nodes toward center
+  featureComponents.forEach(comp => {
+    const strength = calculateConnectionStrength(comp);
+    const pullToCenter = strength / maxStrength;
+
+    comp.position.x += (featureCenterX - comp.position.x) * pullToCenter * 0.3;
+    comp.position.y += (featureCenterY - comp.position.y) * pullToCenter * 0.3;
+  });
+});
+```
+
+**Effect:**
+- More natural, organic feel
+- Important nodes naturally cluster in center
+- Less rigid than pure Dagre
+
+---
+
+### Option H: Customizable Ranking Function
+
+**Problem:** Want to control which nodes appear in which tier
+**Solution:** Add custom ranking based on domain logic
+
+```typescript
+// Example: Rank by architectural layer
+const getArchitecturalRank = (doc: Doc): number => {
+  // Lower rank = higher in graph (top)
+  if (doc.category === 'frontend') return 0;
+  if (doc.category === 'api') return 1;
+  if (doc.category === 'backend') return 2;
+  if (doc.category === 'database') return 3;
+  return 4; // Infrastructure, etc.
+};
+
+// Apply custom ranking
+docs.forEach(doc => {
+  g.setNode(doc.id, {
+    width: 400,
+    height: 200,
+    rank: getArchitecturalRank(doc), // Force specific rank
+  });
+});
+```
+
+**Effect:**
+- Frontend always at top, DB at bottom
+- Matches mental model of architecture layers
+- Very clear separation of concerns
+
+---
+
+### Option I: Interactive Layout Controls (UI Sliders)
+
+**Problem:** Want to experiment with spacing in real-time
+**Solution:** Add UI controls for live tuning
+
+Add to your controls sidebar:
+
+```typescript
+<div className="space-y-2">
+  <label className="text-xs">Node Spacing: {nodeSep}</label>
+  <input
+    type="range"
+    min="50"
+    max="200"
+    value={nodeSep}
+    onChange={(e) => {
+      setNodeSep(Number(e.target.value));
+      generateGraph(false); // Regenerate with new spacing
+    }}
+    className="range range-sm"
+  />
+</div>
+```
+
+**Effect:**
+- Experiment with layouts in real-time
+- Find optimal spacing for your data
+- No code changes needed
+
+---
+
+### Option J: Smart Edge Routing (Orthogonal Edges)
+
+**Problem:** Diagonal edges look messy, want clean 90° angles
+**Solution:** Use React Flow's built-in edge types or custom routing
+
+```typescript
+// Use smoothstep with better curvature
+edges.forEach(edge => {
+  edge.type = 'smoothstep';
+  edge.pathOptions = {
+    offset: 30,          // Offset from center
+    borderRadius: 20,    // Smooth corners
+    curvature: 0.5,      // How curved (0 = straight, 1 = very curved)
+  };
+});
+
+// Or use 'step' for pure orthogonal (Manhattan routing)
+edge.type = 'step';
+```
+
+**Effect:**
+- Professional flowchart look
+- Easier to follow edges
+- Less visual clutter
+
+---
+
+### Option K: Minimap Enhancement for Dagre
+
+**Problem:** Dagre creates tall/wide graphs, hard to navigate
+**Solution:** Enhanced minimap with better visualization
+
+```typescript
+<MiniMap
+  nodeColor={(node) => {
+    const strength = calculateConnectionStrength(node.data.component);
+    // More connected = brighter
+    return `hsl(210, 70%, ${30 + (strength / maxStrength) * 50}%)`;
+  }}
+  nodeStrokeWidth={3}
+  nodeBorderRadius={2}
+  maskColor="rgba(0, 0, 0, 0.7)"
+  style={{
+    height: 200,
+    width: 250,
+  }}
+/>
+```
+
+**Effect:**
+- See node importance at a glance
+- Better overview of large graphs
+- Easier navigation
+
+---
+
+### Option L: Multi-Root Layout
+
+**Problem:** Graph has multiple disconnected components
+**Solution:** Detect connected components, layout separately
+
+```typescript
+// Find connected components
+const components = findConnectedComponents(docs);
+
+let currentY = 0;
+components.forEach(componentDocs => {
+  const subgraph = generateDagreLayout(componentDocs, 'feature');
+
+  // Offset each component vertically
+  subgraph.forEach(node => {
+    node.position.y += currentY;
+  });
+
+  currentY += calculateHeight(subgraph) + 300; // Gap between components
+
+  newNodes.push(...subgraph);
+});
+```
+
+**Effect:**
+- Clean separation of isolated components
+- No wasted space from disconnected nodes
+- Clear visual distinction
+
+---
+
+## Visual Enhancement Options (Complement the Layout)
+
+### 1. Relationship Strength Visualization
+
+Make edge thickness proportional to weight:
+
+```typescript
+style: {
+  strokeWidth: 1 + (getRelationshipWeight(rel.relationType) / 10) * 4, // 1-5px
+}
+```
+
+### 2. Node Sizing by Importance
+
+Important nodes bigger:
+
+```typescript
+const size = 150 + (calculateConnectionStrength(doc) / maxStrength) * 150;
+g.setNode(doc.id, { width: size, height: size * 0.5 });
+```
+
+### 3. Animated Flow on Edges
+
+Show dependency direction:
+
+```typescript
+animated: rel.relationType === 'depends_on' || rel.relationType === 'calls',
+```
+
+### 4. Gradient Edges for Long Connections
+
+Cross-feature edges get gradient:
+
+```typescript
+style: {
+  stroke: isCrossFeature ? 'url(#gradient)' : color,
+}
+```
+
+### 5. Glow Effect on Hub Nodes
+
+Highlight highly connected:
+
+```typescript
+style: {
+  boxShadow: strength > threshold ? `0 0 20px ${color}` : 'none',
+}
+```
+
+---
+
+## Performance Optimizations for Large Graphs
+
+### Virtual Rendering
+
+Only render visible nodes:
+
+```typescript
+const visibleNodes = nodes.filter(node => {
+  return isInViewport(node.position, viewport);
+});
+```
+
+### Progressive Layout
+
+Layout in chunks to prevent freeze:
+
+```typescript
+const layoutInChunks = async (docs: Doc[], chunkSize = 20) => {
+  for (let i = 0; i < docs.length; i += chunkSize) {
+    const chunk = docs.slice(i, i + chunkSize);
+    await layoutChunk(chunk);
+    await new Promise(resolve => setTimeout(resolve, 0)); // Let UI update
+  }
+};
+```
+
+### Cached Layouts
+
+Don't recalculate if data hasn't changed:
+
+```typescript
+const layoutCacheKey = `${docs.length}-${docs.map(d => d.updatedAt).join(',')}`;
+if (layoutCache[layoutCacheKey]) {
+  return layoutCache[layoutCacheKey];
+}
+```
+
+---
+
+## Recommended Next Steps
+
+### Phase 1: Tuning (Quick Wins)
+1. **Adjust spacing** - Add sliders to find optimal nodesep/ranksep for your data
+2. **Try LR mode** - See if left-to-right feels better for your use case
+3. **Tweak relationship weights** - Adjust the weight values based on what looks good
+
+### Phase 2: Visual Enhancement (Medium Effort)
+1. **Compound nodes** - Add boxes around feature groups
+2. **Edge thickness by weight** - Visual hierarchy for relationships
+3. **Better minimap colors** - Show importance via color intensity
+
+### Phase 3: Advanced Features (Higher Effort)
+1. **Custom ranking** - Implement architectural layer ranking
+2. **Edge bundling** - Reduce visual clutter with many relationships
+3. **Hybrid force-directed** - Add organic clustering within features
+
+### Phase 4: Performance (If Needed)
+1. **Virtual rendering** - Only if you have 100+ nodes
+2. **Layout caching** - Speed up repeated layouts
+3. **Web worker** - Offload Dagre to background thread
+
+---
+
+## Comparison Matrix: Which Option Should You Choose?
+
+| Option | Complexity | Visual Impact | Best For |
+|--------|------------|---------------|----------|
+| **A: Compact Layout** | Low | Medium | Large graphs, limited space |
+| **B: LR Flow** | Low | High | Sequential dependencies, wide screens |
+| **C: Radial** | Medium | High | Hub-and-spoke architectures |
+| **D: Strict Layers** | Low | High | Clear hierarchies, org charts |
+| **E: Edge Bundling** | High | Very High | Dense graphs, many relationships |
+| **F: Compound Nodes** | Medium | Very High | Feature grouping, nested components |
+| **G: Force Sub-Clustering** | High | Medium | Organic feel, exploratory |
+| **H: Custom Ranking** | Medium | High | Domain-specific layouts |
+| **I: UI Sliders** | Low | N/A | Experimentation, finding optimal config |
+| **J: Orthogonal Edges** | Low | Medium | Clean flowchart aesthetic |
+| **K: Enhanced Minimap** | Low | Medium | Large graphs, navigation |
+| **L: Multi-Root** | Medium | Medium | Disconnected components |
+
+---
+
+## My Recommendations Based on Your Feedback
+
+Since you said "it's better but not quite there" and don't know exactly what you want, I recommend:
+
+### Immediate Quick Tests (5 min each)
+
+1. **Add UI sliders** (Option I) - Let you experiment without code changes
+2. **Try LR mode** (Option B) - See if horizontal flow feels better
+3. **Adjust current spacing** - Reduce nodesep to 80, ranksep to 120 (more compact)
+
+### Next Iteration (1-2 hours)
+
+1. **Compound nodes** (Option F) - Boxes around features make grouping clearer
+2. **Edge thickness by weight** - Visual hierarchy helps understand importance
+3. **Custom ranking** (Option H) - Force architectural layers into specific tiers
+
+### Polish (2-3 hours)
+
+1. **Edge bundling** (Option E) - Major visual cleanup for complex graphs
+2. **Enhanced minimap** (Option K) - Better navigation
+3. **Node sizing by importance** - Hub nodes bigger = clearer structure
+
+---
+
+## Questions to Help You Decide
+
+1. **Graph Density**: How many nodes typically? (< 20 = compact works, > 50 = need virtual rendering)
+2. **Relationship Density**: Average relationships per node? (< 3 = current ok, > 5 = need bundling)
+3. **Hierarchy Depth**: How many dependency levels? (2-3 = current ok, 5+ = need strict layering)
+4. **Screen Size**: Primarily desktop or mobile? (Desktop = LR works, Mobile = TB better)
+5. **Aesthetic Preference**: Clinical/professional or organic/exploratory? (Clinical = strict layers, Organic = force-directed)
+
+Answer these and I can give you a specific implementation path!
+
+---
+
+## Code Examples Repository
+
+I've implemented the core Dagre layout. To add any of the above options, the structure is:
+
+```typescript
+// All tuning happens in generateDagreLayout() function
+const generateDagreLayout = (components, mode) => {
+  const g = new dagre.graphlib.Graph();
+
+  // MODIFY THIS SECTION FOR OPTIONS A-D
+  g.setGraph({
+    rankdir: mode === 'type' ? 'LR' : 'TB',
+    nodesep: YOUR_VALUE,
+    ranksep: YOUR_VALUE,
+    ranker: 'network-simplex', // or 'tight-tree', 'longest-path'
+  });
+
+  // MODIFY NODE CREATION FOR OPTIONS C, H
+  components.forEach(doc => {
+    g.setNode(doc.id, {
+      width: YOUR_WIDTH,
+      height: YOUR_HEIGHT,
+      rank: YOUR_CUSTOM_RANK, // Optional: force specific tier
+    });
+  });
+
+  // EDGE CREATION ALREADY HAS WEIGHTING
+  // Modify minlen or weight for fine-tuning
+
+  dagre.layout(g);
+  return extractedNodes;
+};
+```
+
+The beauty is you can try options without major refactoring - just tune parameters!

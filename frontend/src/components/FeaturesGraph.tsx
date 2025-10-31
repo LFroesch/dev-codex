@@ -62,9 +62,28 @@ const getMinLength = (type: RelationshipType): number => {
  * This gives a better importance metric than just counting relationships
  */
 const calculateConnectionStrength = (doc: Doc): number => {
-  return (doc.relationships || []).reduce((sum, rel) => {
+  return (doc.relationships || []).reduce((sum: number, rel: ComponentRelationship) => {
     return sum + getRelationshipWeight(rel.relationType);
   }, 0);
+};
+
+/**
+ * Get the vertical tier/rank for a category in the architectural layout
+ * Lower numbers appear higher in the graph (closer to top)
+ * Order: documentation/assets > infrastructure > frontend > api > backend > security > database
+ */
+const getCategoryRank = (category: ComponentCategory): number => {
+  const rankMap: Record<ComponentCategory, number> = {
+    documentation: 0,
+    asset: 0,
+    infrastructure: 1,
+    frontend: 2,
+    api: 3,
+    backend: 4,
+    security: 5,
+    database: 6,
+  };
+  return rankMap[category] ?? 3; // Default to middle tier if unknown
 };
 
 /**
@@ -138,7 +157,6 @@ interface FeaturesGraphProps {
 }
 
 type ViewMode = 'graph' | 'cards';
-type LayoutMode = 'feature' | 'type';
 
 const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onDocClick, onDocEdit, onCreateDoc, creating, onRefresh }) => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
@@ -149,7 +167,6 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
   const [selectedFeatures, setSelectedFeatures] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<ViewMode>('graph');
-  const [layoutMode, setLayoutMode] = useState<LayoutMode>('feature');
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [edgeType, setEdgeType] = useState<'smoothstep' | 'default'>(() => {
     const stored = localStorage.getItem('graph-edge-type');
@@ -248,12 +265,12 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
   /**
    * Generate layout using Dagre algorithm (hierarchical, relationship-aware)
    */
-  const generateDagreLayout = useCallback((components: Doc[], mode: LayoutMode) => {
+  const generateDagreLayout = useCallback((components: Doc[]) => {
     const g = new dagre.graphlib.Graph();
 
     // Configure graph layout
     g.setGraph({
-      rankdir: mode === 'type' ? 'LR' : 'TB', // Left-to-right for type, top-to-bottom for feature
+      rankdir: 'TB', // Top-to-bottom for feature-based layout
       nodesep: 100,  // Horizontal spacing between nodes
       ranksep: 150,  // Vertical spacing between ranks
       marginx: 50,
@@ -262,18 +279,42 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
 
     g.setDefaultEdgeLabel(() => ({}));
 
-    // Add nodes to graph
+    // Find documentation/section header node for this feature
+    const headerNode = components.find(doc =>
+      doc.category === 'documentation' || doc.type === 'section' || doc.type === 'area'
+    );
+
+    // Calculate node sizes based on connection strength
+    const nodeSizes = new Map<string, { width: number; height: number }>();
     components.forEach(doc => {
+      const connectionStrength = calculateConnectionStrength(doc);
+      // Base size + scaling based on connections (with max limits)
+      const width = Math.min(600, 400 + connectionStrength * 8);
+      const height = Math.min(300, 200 + connectionStrength * 4);
+      nodeSizes.set(doc.id, { width, height });
+    });
+
+    // Add nodes to graph with calculated sizes and category-based ranks
+    components.forEach(doc => {
+      const size = nodeSizes.get(doc.id) || { width: 400, height: 200 };
+      let rank = getCategoryRank(doc.category);
+
+      // Force documentation/section header to the very top (rank -1)
+      if (headerNode && doc.id === headerNode.id) {
+        rank = -1;
+      }
+
       g.setNode(doc.id, {
-        width: 400,
-        height: 200,
+        width: size.width,
+        height: size.height,
+        rank: rank, // Force node into specific tier based on category
         label: doc.title,
       });
     });
 
     // Add edges with semantic weighting
     components.forEach(doc => {
-      (doc.relationships || []).forEach(rel => {
+      (doc.relationships || []).forEach((rel: ComponentRelationship) => {
         // Only add edge if target exists in current component set
         if (components.find(d => d.id === rel.targetId)) {
           g.setEdge(doc.id, rel.targetId, {
@@ -287,35 +328,74 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
     // Run Dagre layout algorithm
     dagre.layout(g);
 
-    // Extract positioned nodes
-    return components.map(doc => {
-      const node = g.node(doc.id);
-      const isRecent = new Date(doc.updatedAt).getTime() > Date.now() - 24 * 60 * 60 * 1000;
-      const isStale = new Date(doc.updatedAt).getTime() < Date.now() - 90 * 24 * 60 * 60 * 1000;
-      const isIncomplete = doc.content.length < 100;
-      const isOrphaned = !doc.feature;
-      const hasDuplicates = (doc.relationships || []).some(rel => rel.relationType === 'similar');
-      const nodeType = doc.type === 'area' || doc.type === 'section' ? 'areaNode' : 'componentNode';
-
-      return {
-        id: doc.id,
-        type: nodeType,
-        position: { x: node.x - node.width / 2, y: node.y - node.height / 2 }, // Dagre centers nodes, React Flow uses top-left
-        data: {
-          component: doc,
-          isRecent,
-          isStale,
-          isIncomplete,
-          isOrphaned,
-          hasDuplicates,
-        },
-      };
+    // Group components by tier
+    const tierMap: Record<number, Doc[]> = {};
+    components.forEach(doc => {
+      let tier = 0;
+      if (headerNode && doc.id === headerNode.id) {
+        tier = 0;
+      } else if (doc.category === 'documentation' || doc.category === 'asset') {
+        tier = 1;
+      } else if (doc.category === 'infrastructure') {
+        tier = 2;
+      } else if (doc.category === 'frontend') {
+        tier = 3;
+      } else if (doc.category === 'api') {
+        tier = 4;
+      } else if (doc.category === 'backend') {
+        tier = 5;
+      } else if (doc.category === 'security') {
+        tier = 6;
+      } else if (doc.category === 'database') {
+        tier = 7;
+      }
+      if (!tierMap[tier]) tierMap[tier] = [];
+      tierMap[tier].push(doc);
     });
+
+    // Position nodes in tiers with horizontal spacing
+    const layoutedNodes: any[] = [];
+    Object.keys(tierMap).forEach(tierKey => {
+      const tier = parseInt(tierKey);
+      const tierDocs = tierMap[tier];
+      const tierY = tier * 400;
+      let currentX = 0;
+
+      tierDocs.forEach(doc => {
+        const size = nodeSizes.get(doc.id) || { width: 400, height: 200 };
+        const isRecent = new Date(doc.updatedAt).getTime() > Date.now() - 24 * 60 * 60 * 1000;
+        const isStale = new Date(doc.updatedAt).getTime() < Date.now() - 90 * 24 * 60 * 60 * 1000;
+        const isIncomplete = doc.content.length < 100;
+        const isOrphaned = !doc.feature;
+        const hasDuplicates = (doc.relationships || []).some((rel: ComponentRelationship) => rel.relationType === 'similar');
+        const nodeType = doc.type === 'area' || doc.type === 'section' ? 'areaNode' : 'componentNode';
+
+        layoutedNodes.push({
+          id: doc.id,
+          type: nodeType,
+          position: { x: currentX, y: tierY },
+          width: size.width,
+          height: size.height,
+          data: {
+            component: doc,
+            isRecent,
+            isStale,
+            isIncomplete,
+            isOrphaned,
+            hasDuplicates,
+          },
+        });
+
+        currentX += size.width + 100; // Add spacing between nodes
+      });
+    });
+
+    return layoutedNodes;
   }, []);
 
   // Generate nodes and edges from components
   const generateGraph = useCallback((useStoredPositions = true) => {
-    const storageKey = `graph-layout-${projectId}-${layoutMode}`;
+    const storageKey = `graph-layout-${projectId}`;
     const storedPositions = useStoredPositions
       ? JSON.parse(localStorage.getItem(storageKey) || '{}')
       : {};
@@ -323,78 +403,58 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
     const newNodes: Node[] = [];
     const newEdges: Edge[] = [];
 
-    if (layoutMode === 'feature') {
-      // Group by feature
-      const componentsByFeature: Record<string, Doc[]> = {};
-      docs.forEach(component => {
-        const featureKey = component.feature || 'Ungrouped';
-        if (!componentsByFeature[featureKey]) componentsByFeature[featureKey] = [];
-        componentsByFeature[featureKey].push(component);
-      });
+    // Group by feature
+    const componentsByFeature: Record<string, Doc[]> = {};
+    docs.forEach(component => {
+      const featureKey = component.feature || 'Ungrouped';
+      if (!componentsByFeature[featureKey]) componentsByFeature[featureKey] = [];
+      componentsByFeature[featureKey].push(component);
+    });
 
-      const features = Object.keys(componentsByFeature);
+    const features = Object.keys(componentsByFeature);
 
-      // Use Dagre algorithm with feature clustering
-        const featureGraphs: Record<string, Node[]> = {};
-        let maxFeatureWidth = 0;
-        let currentY = 0;
+    // Use Dagre algorithm with feature clustering (horizontal multi-root layout)
+    const featureGraphs: Record<string, Node[]> = {};
+    let maxFeatureHeight = 0;
+    let currentX = 0;
 
-        // Layout each feature cluster independently
-        features.forEach(feature => {
-          const featureComponents = componentsByFeature[feature];
-          const featureNodes = generateDagreLayout(featureComponents, 'feature');
+    // Layout each feature cluster independently and place horizontally
+    features.forEach(feature => {
+      const featureComponents = componentsByFeature[feature];
+      const featureNodes = generateDagreLayout(featureComponents);
 
-          // Calculate bounding box for this feature
-          const minX = Math.min(...featureNodes.map(n => n.position.x));
-          const maxX = Math.max(...featureNodes.map(n => n.position.x + 400));
-          const minY = Math.min(...featureNodes.map(n => n.position.y));
-          const maxY = Math.max(...featureNodes.map(n => n.position.y + 200));
-          const featureWidth = maxX - minX;
-          const featureHeight = maxY - minY;
+      // Calculate bounding box for this feature
+      const minX = Math.min(...featureNodes.map(n => n.position.x));
+      const maxX = Math.max(...featureNodes.map(n => n.position.x + (n.width || 400)));
+      const minY = Math.min(...featureNodes.map(n => n.position.y));
+      const maxY = Math.max(...featureNodes.map(n => n.position.y + (n.height || 200)));
+      const featureWidth = maxX - minX;
+      const featureHeight = maxY - minY;
 
-          // Normalize positions to start at (0,0) for this feature
-          const normalizedNodes = featureNodes.map(node => ({
-            ...node,
-            position: {
-              x: node.position.x - minX,
-              y: node.position.y - minY + currentY,
-            }
-          }));
+      // Normalize positions and offset horizontally for multi-root layout
+      const normalizedNodes = featureNodes.map(node => ({
+        ...node,
+        position: {
+          x: node.position.x - minX + currentX,
+          y: node.position.y - minY,
+        }
+      }));
 
-          featureGraphs[feature] = normalizedNodes;
-          maxFeatureWidth = Math.max(maxFeatureWidth, featureWidth);
-          currentY += featureHeight + 200; // Add spacing between feature groups
-        });
+      featureGraphs[feature] = normalizedNodes;
+      maxFeatureHeight = Math.max(maxFeatureHeight, featureHeight);
+      currentX += featureWidth + 300; // Add horizontal spacing between feature groups
+    });
 
-        // Combine all feature clusters
-        Object.values(featureGraphs).forEach(featureNodes => {
-          featureNodes.forEach(node => {
-            const storedPos = storedPositions[node.id];
-            newNodes.push({
-              ...node,
-              position: storedPos || node.position,
-            });
-          });
-        });
-    } else {
-      // Group by type
-      const componentsByType: Record<Doc['type'], Doc[]> = {} as any;
-      docs.forEach(component => {
-        if (!componentsByType[component.type]) componentsByType[component.type] = [];
-        componentsByType[component.type].push(component);
-      });
-
-      // Use Dagre algorithm for all components (type grouping via left-to-right flow)
-      const allNodes = generateDagreLayout(docs, 'type');
-
-      allNodes.forEach(node => {
+    // Combine all feature clusters
+    Object.values(featureGraphs).forEach(featureNodes => {
+      featureNodes.forEach(node => {
         const storedPos = storedPositions[node.id];
         newNodes.push({
           ...node,
           position: storedPos || node.position,
         });
       });
-    }
+    });
 
     // Create edges from component relationships (deduplicate bidirectional relationships)
     const processedRelationshipIds = new Set<string>();
@@ -443,13 +503,9 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
               strokeWidth: style.strokeWidth,
               strokeDasharray: style.dasharray,
             },
-            pathOptions: edgeType === 'smoothstep' ? {
-              offset: 20, // Offset from center for multiple edges
-              borderRadius: 15 // Smooth curves at corners
-            } : undefined,
             label: rel.relationType,
             labelStyle: { fontSize: 16, fill: '#cbd5e1', fontWeight: 600 },
-            labelBgStyle: { fill: '#1e293b', fillOpacity: 0.9, rx: 4, ry: 4 },
+            labelBgStyle: { fill: '#1e293b', fillOpacity: 0.9 },
             labelBgPadding: [8, 4] as [number, number],
             data: { relationshipId: rel.id, componentId: component.id }, // Store for deletion
           });
@@ -463,7 +519,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
     setTimeout(() => {
       fitView({ padding: 0.2, duration: 500 });
     }, 100);
-  }, [docs, projectId, layoutMode, edgeType, setNodes, setEdges, fitView, generateDagreLayout]);
+  }, [docs, projectId, edgeType, setNodes, setEdges, fitView, generateDagreLayout]);
 
   // Initialize graph
   useEffect(() => {
@@ -474,7 +530,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
   useEffect(() => {
     if (nodes.length === 0) return;
 
-    const storageKey = `graph-layout-${projectId}-${layoutMode}`;
+    const storageKey = `graph-layout-${projectId}`;
     const positions: Record<string, { x: number; y: number }> = {};
 
     nodes.forEach(node => {
@@ -482,7 +538,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
     });
 
     localStorage.setItem(storageKey, JSON.stringify(positions));
-  }, [nodes, projectId, layoutMode]);
+  }, [nodes, projectId]);
 
   // Recalculate edge handle positions when nodes move
   useEffect(() => {
@@ -599,10 +655,10 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
   }, [fitView]);
 
   const handleResetLayout = useCallback(() => {
-    const storageKey = `graph-layout-${projectId}-${layoutMode}`;
+    const storageKey = `graph-layout-${projectId}`;
     localStorage.removeItem(storageKey);
     generateGraph(false);
-  }, [projectId, layoutMode, generateGraph]);
+  }, [projectId, generateGraph]);
 
   // Relationship management handlers
   const handleAddRelationship = useCallback(async (targetComponentTitle: string) => {
@@ -673,7 +729,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
 
     // For now, we need to delete and recreate the relationship since there's no update endpoint
     // Find the relationship to get the target
-    const relationship = selectedComponent.relationships?.find(r => r.id === editingRelationshipId);
+    const relationship = selectedComponent.relationships?.find((r: ComponentRelationship) => r.id === editingRelationshipId);
     if (!relationship) return;
 
     try {
@@ -826,29 +882,9 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
           </div>
         </div>
 
-        {/* Graph Layout Mode (only shown in graph view) */}
+        {/* Graph Controls (only shown in graph view) */}
         {viewMode === 'graph' && (
           <>
-            <div className="bg-base-100 border-thick rounded-lg p-3 sm:p-4">
-              <div className="text-xs font-semibold text-base-content/60 mb-2">Sort Type</div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setLayoutMode('feature')}
-                  className={`btn btn-sm flex-1 ${layoutMode === 'feature' ? 'btn-primary' : 'btn-ghost'}`}
-                  style={layoutMode === 'feature' ? { color: getContrastTextColor('primary') } : {}}
-                >
-                  Feature
-                </button>
-                <button
-                  onClick={() => setLayoutMode('type')}
-                  className={`btn btn-sm flex-1 ${layoutMode === 'type' ? 'btn-primary' : 'btn-ghost'}`}
-                  style={layoutMode === 'type' ? { color: getContrastTextColor('primary') } : {}}
-                >
-                  Type
-                </button>
-              </div>
-            </div>
-
             {/* Edge Routing Style */}
             <div className="bg-base-100 border-thick rounded-lg p-3 sm:p-4">
               <div className="text-xs font-semibold text-base-content/60 mb-2">Edge Routing</div>
@@ -981,7 +1017,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
                                       isStale: new Date(component.updatedAt).getTime() < Date.now() - 90 * 24 * 60 * 60 * 1000,
                                       isIncomplete: component.content.length < 100,
                                       isOrphaned: !component.feature,
-                                      hasDuplicates: (component.relationships || []).some((rel: ComponentRelationship) => rel.relationType === 'similar'),
+                                      hasDuplicates: false, // Not checking duplicates in cards view
                                     },
                                   });
                                 }}

@@ -12,6 +12,7 @@ import ReactFlow, {
   Position,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
+import dagre from 'dagre';
 import { Doc, projectAPI } from '../api';
 import { ComponentCategory, CreateComponentData, RelationshipType, ComponentRelationship } from '../../../shared/types/project';
 import ComponentNode from './ComponentNode';
@@ -24,6 +25,46 @@ import { getAllCategories, getCategoryColor, getTypesForCategory } from '../conf
 const NODE_TYPES = {
   componentNode: ComponentNode,
   areaNode: AreaNode,
+};
+
+// Relationship type priorities (higher = more important for layout hierarchy)
+const RELATIONSHIP_WEIGHTS: Record<RelationshipType, number> = {
+  contains: 10,     // Strong hierarchical - parent always above child
+  extends: 8,       // Clear inheritance flow
+  depends_on: 7,    // Dependency should flow downward
+  implements: 6,    // Interface above implementation
+  uses: 4,          // General usage
+  calls: 4,         // Function calls
+  mentions: 2,      // Weak reference
+  similar: 1,       // Lateral relationship, no hierarchy
+};
+
+/**
+ * Get the weight/importance of a relationship type for layout purposes
+ */
+const getRelationshipWeight = (type: RelationshipType): number => {
+  return RELATIONSHIP_WEIGHTS[type] || 1;
+};
+
+/**
+ * Get minimum rank separation for hierarchical relationships
+ * Hierarchical relationships need more vertical/horizontal separation
+ */
+const getMinLength = (type: RelationshipType): number => {
+  if (['contains', 'extends', 'depends_on'].includes(type)) {
+    return 2; // Two ranks apart minimum for clear hierarchy
+  }
+  return 1;
+};
+
+/**
+ * Calculate connection strength based on weighted relationships
+ * This gives a better importance metric than just counting relationships
+ */
+const calculateConnectionStrength = (doc: Doc): number => {
+  return (doc.relationships || []).reduce((sum, rel) => {
+    return sum + getRelationshipWeight(rel.relationType);
+  }, 0);
 };
 
 /**
@@ -203,6 +244,74 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [docs]); // Only depend on docs, not selectedNode to avoid infinite loop
 
+  /**
+   * Generate layout using Dagre algorithm (hierarchical, relationship-aware)
+   */
+  const generateDagreLayout = useCallback((components: Doc[], mode: LayoutMode) => {
+    const g = new dagre.graphlib.Graph();
+
+    // Configure graph layout
+    g.setGraph({
+      rankdir: mode === 'type' ? 'LR' : 'TB', // Left-to-right for type, top-to-bottom for feature
+      nodesep: 100,  // Horizontal spacing between nodes
+      ranksep: 150,  // Vertical spacing between ranks
+      marginx: 50,
+      marginy: 50,
+    });
+
+    g.setDefaultEdgeLabel(() => ({}));
+
+    // Add nodes to graph
+    components.forEach(doc => {
+      g.setNode(doc.id, {
+        width: 400,
+        height: 200,
+        label: doc.title,
+      });
+    });
+
+    // Add edges with semantic weighting
+    components.forEach(doc => {
+      (doc.relationships || []).forEach(rel => {
+        // Only add edge if target exists in current component set
+        if (components.find(d => d.id === rel.targetId)) {
+          g.setEdge(doc.id, rel.targetId, {
+            weight: getRelationshipWeight(rel.relationType),
+            minlen: getMinLength(rel.relationType),
+          });
+        }
+      });
+    });
+
+    // Run Dagre layout algorithm
+    dagre.layout(g);
+
+    // Extract positioned nodes
+    return components.map(doc => {
+      const node = g.node(doc.id);
+      const isRecent = new Date(doc.updatedAt).getTime() > Date.now() - 24 * 60 * 60 * 1000;
+      const isStale = new Date(doc.updatedAt).getTime() < Date.now() - 90 * 24 * 60 * 60 * 1000;
+      const isIncomplete = doc.content.length < 100;
+      const isOrphaned = !doc.feature;
+      const hasDuplicates = (doc.relationships || []).some(rel => rel.relationType === 'similar');
+      const nodeType = doc.type === 'area' || doc.type === 'section' ? 'areaNode' : 'componentNode';
+
+      return {
+        id: doc.id,
+        type: nodeType,
+        position: { x: node.x - node.width / 2, y: node.y - node.height / 2 }, // Dagre centers nodes, React Flow uses top-left
+        data: {
+          component: doc,
+          isRecent,
+          isStale,
+          isIncomplete,
+          isOrphaned,
+          hasDuplicates,
+        },
+      };
+    });
+  }, []);
+
   // Generate nodes and edges from components
   const generateGraph = useCallback((useStoredPositions = true) => {
     const storageKey = `graph-layout-${projectId}-${layoutMode}`;
@@ -224,101 +333,48 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
 
       const features = Object.keys(componentsByFeature);
 
-      // Calculate columns per feature based on component count
-      const getColumnsForFeature = (componentCount: number) => {
-        if (componentCount <= 2) return 1;
-        if (componentCount <= 6) return 2;
-        if (componentCount <= 12) return 3;
-        return 4;
-      };
+      // Use Dagre algorithm with feature clustering
+        const featureGraphs: Record<string, Node[]> = {};
+        let maxFeatureWidth = 0;
+        let currentY = 0;
 
-      const horizontalNodeSpacing = 650; // Space between nodes horizontally (increased)
-      const verticalNodeSpacing = 350; // Space between nodes vertically (increased)
-      const featurePadding = 600; // Padding between features (generous)
-      const rowSpacing = 400; // Extra spacing between rows of features
+        // Layout each feature cluster independently
+        features.forEach(feature => {
+          const featureComponents = componentsByFeature[feature];
+          const featureNodes = generateDagreLayout(featureComponents, 'feature');
 
-      // Calculate width for each feature based on its column count
-      const featureWidths = features.map(feature => {
-        const componentCount = componentsByFeature[feature].length;
-        const columns = getColumnsForFeature(componentCount);
-        return columns * horizontalNodeSpacing + featurePadding;
-      });
+          // Calculate bounding box for this feature
+          const minX = Math.min(...featureNodes.map(n => n.position.x));
+          const maxX = Math.max(...featureNodes.map(n => n.position.x + 400));
+          const minY = Math.min(...featureNodes.map(n => n.position.y));
+          const maxY = Math.max(...featureNodes.map(n => n.position.y + 200));
+          const featureWidth = maxX - minX;
+          const featureHeight = maxY - minY;
 
-      // Calculate positions using cumulative widths (no more fixed grid)
-      let currentX = 0;
-      let currentY = 0;
-      let currentRowMaxHeight = 0;
-      let currentRowWidth = 0;
-      const maxRowWidth = 3500; // Maximum width before wrapping to next row
+          // Normalize positions to start at (0,0) for this feature
+          const normalizedNodes = featureNodes.map(node => ({
+            ...node,
+            position: {
+              x: node.position.x - minX,
+              y: node.position.y - minY + currentY,
+            }
+          }));
 
-      features.forEach((feature, featureIndex) => {
-        const featureComponents = componentsByFeature[feature];
-        const columnsForThisFeature = getColumnsForFeature(featureComponents.length);
-        const featureWidth = featureWidths[featureIndex];
-
-        // Check if we need to wrap to next row
-        if (currentRowWidth + featureWidth > maxRowWidth && featureIndex > 0) {
-          currentX = 0;
-          currentY += currentRowMaxHeight + rowSpacing;
-          currentRowWidth = 0;
-          currentRowMaxHeight = 0;
-        }
-
-        const featureX = currentX;
-        const featureY = currentY;
-
-        // Calculate this feature's height for row tracking
-        const rows = Math.ceil(featureComponents.length / columnsForThisFeature);
-        const featureHeight = rows * verticalNodeSpacing;
-        currentRowMaxHeight = Math.max(currentRowMaxHeight, featureHeight);
-
-        // Move X position for next feature
-        currentX += featureWidth;
-        currentRowWidth += featureWidth;
-
-        // Sort components by relationship count (most connected first) for better visual organization
-        const sortedComponents = [...featureComponents].sort((a, b) => {
-          const aConnections = (a.relationships || []).length;
-          const bConnections = (b.relationships || []).length;
-          if (aConnections !== bConnections) {
-            return bConnections - aConnections; // Most connected first
-          }
-          return a.title.localeCompare(b.title); // Alphabetical tiebreaker
+          featureGraphs[feature] = normalizedNodes;
+          maxFeatureWidth = Math.max(maxFeatureWidth, featureWidth);
+          currentY += featureHeight + 200; // Add spacing between feature groups
         });
 
-        sortedComponents.forEach((component, componentIndex) => {
-          const isRecent = new Date(component.updatedAt).getTime() > Date.now() - 24 * 60 * 60 * 1000;
-          const isStale = new Date(component.updatedAt).getTime() < Date.now() - 90 * 24 * 60 * 60 * 1000;
-          const isIncomplete = component.content.length < 100;
-          const isOrphaned = !component.feature;
-
-          // Check for similar relationships (potential duplicates)
-          const hasDuplicates = (component.relationships || []).some(
-            rel => rel.relationType === 'similar'
-          );
-
-          const storedPos = storedPositions[component.id];
-          const defaultX = featureX + (componentIndex % columnsForThisFeature) * horizontalNodeSpacing;
-          const defaultY = featureY + Math.floor(componentIndex / columnsForThisFeature) * verticalNodeSpacing;
-
-          // Determine node type based on component type
-          const nodeType = component.type === 'area' || component.type === 'section' ? 'areaNode' : 'componentNode';
-
-          newNodes.push({
-            id: component.id,
-            type: nodeType,
-            position: storedPos || { x: defaultX, y: defaultY },
-            data: {
-              component,
-              isRecent,
-              isStale,
-              isIncomplete,
-              isOrphaned,
-              hasDuplicates,
-            },
+        // Combine all feature clusters
+        Object.values(featureGraphs).forEach(featureNodes => {
+          featureNodes.forEach(node => {
+            const storedPos = storedPositions[node.id];
+            newNodes.push({
+              ...node,
+              position: storedPos || node.position,
+            });
           });
         });
-      });
     } else {
       // Group by type
       const componentsByType: Record<Doc['type'], Doc[]> = {} as any;
@@ -327,81 +383,14 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
         componentsByType[component.type].push(component);
       });
 
-      const types = Object.keys(componentsByType) as Doc['type'][];
+      // Use Dagre algorithm for all components (type grouping via left-to-right flow)
+      const allNodes = generateDagreLayout(docs, 'type');
 
-      // Calculate dynamic columns per type based on component count
-      const getColumnsForType = (componentCount: number) => {
-        if (componentCount <= 3) return 1;
-        if (componentCount <= 8) return 2;
-        if (componentCount <= 16) return 3;
-        return 4;
-      };
-
-      const horizontalNodeSpacing = 650; // Space between nodes in same type (increased)
-      const verticalNodeSpacing = 350; // Space between nodes vertically (increased)
-      const typePadding = 600; // Padding between type groups (generous)
-
-      // Calculate width for each type based on its column count
-      const typeWidths = types.map(type => {
-        const componentCount = componentsByType[type].length;
-        const columns = getColumnsForType(componentCount);
-        return columns * horizontalNodeSpacing + typePadding;
-      });
-
-      // Calculate positions using cumulative widths
-      let currentX = 0;
-
-      types.forEach((type, typeIndex) => {
-        const typeComponents = componentsByType[type];
-        const columnsForThisType = getColumnsForType(typeComponents.length);
-        const typeX = currentX;
-
-        // Move X position for next type
-        currentX += typeWidths[typeIndex];
-
-        // Sort components by relationship count (most connected first) for better visual organization
-        const sortedComponents = [...typeComponents].sort((a, b) => {
-          const aConnections = (a.relationships || []).length;
-          const bConnections = (b.relationships || []).length;
-          if (aConnections !== bConnections) {
-            return bConnections - aConnections; // Most connected first
-          }
-          return a.title.localeCompare(b.title); // Alphabetical tiebreaker
-        });
-
-        sortedComponents.forEach((component, componentIndex) => {
-          const isRecent = new Date(component.updatedAt).getTime() > Date.now() - 24 * 60 * 60 * 1000;
-          const isStale = new Date(component.updatedAt).getTime() < Date.now() - 90 * 24 * 60 * 60 * 1000;
-          const isIncomplete = component.content.length < 100;
-          const isOrphaned = !component.feature;
-
-          // Check for similar relationships (potential duplicates)
-          const hasDuplicates = (component.relationships || []).some(
-            rel => rel.relationType === 'similar'
-          );
-
-          const storedPos = storedPositions[component.id];
-          const defaultX = typeX + (componentIndex % columnsForThisType) * horizontalNodeSpacing;
-          const defaultY = Math.floor(componentIndex / columnsForThisType) * verticalNodeSpacing;
-
-          // Determine node type based on component type
-          const nodeType = component.type === 'area' || component.type === 'section' ? 'areaNode' : 'componentNode';
-
-          newNodes.push({
-            id: component.id,
-            type: nodeType,
-            position: storedPos?.position || { x: defaultX, y: defaultY },
-            width: storedPos?.width,
-            height: storedPos?.height,
-            data: {
-              component,
-              isRecent,
-              isStale,
-              isIncomplete,
-              isOrphaned,
-              hasDuplicates,
-            },
-          });
+      allNodes.forEach(node => {
+        const storedPos = storedPositions[node.id];
+        newNodes.push({
+          ...node,
+          position: storedPos || node.position,
         });
       });
     }
@@ -473,7 +462,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
     setTimeout(() => {
       fitView({ padding: 0.2, duration: 500 });
     }, 100);
-  }, [docs, projectId, layoutMode, edgeType, setNodes, setEdges, fitView]);
+  }, [docs, projectId, layoutMode, edgeType, setNodes, setEdges, fitView, generateDagreLayout]);
 
   // Initialize graph
   useEffect(() => {

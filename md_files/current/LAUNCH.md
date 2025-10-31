@@ -1,16 +1,16 @@
 # Production Launch - Day 0
 **Date:** October 30, 2025
-**Status:** 🟢 Production Ready - Launching Today
-**Timeline:** 5-7 hours remaining
 
-## Last Minute Updates
-- ✅ Admin setup documented in DEPLOYMENT.md (step-by-step with security notes)
-- ✅ Harsher free tier limits implemented:
-  - Terminal: ~10 commands/min (down from 30)
-  - Plan-based terminal rate limiting (Pro: 60/min, Enterprise: 120/min)
-  - Team members: 3/project (unchanged, already reasonable)
-
----
+## Final Todos BLOCKING PROD:
+- Components / relationships in /summary text|markdown|prompt components needs to be better (/summary json components has all of the info, relationships need to be shown with components in text|markdown|prompt)
+- Todos/Subtasks in /summary text|markedown|prompt todos needs to be better (/view todos does it well)
+- User Sessions TTL sticking around too long?
+- [HIGH] Fix Graph Auto Sort, its just not good
+- [MEDIUM] Fix notifications/heartbeat timers - too frequent in logs
+IF THERES TIME:
+- [HIGH] Relationship/Component Types overhaul (plan this using/updating md_files/current/type-system-expansion.md )
+- [MEDIUM] Improve /llm primer with better context ('you are...')
+- [HIGH] Record Gifs for the README to demonstrate functionality
 
 ## Today's Launch Schedule (9am - 5pm)
 

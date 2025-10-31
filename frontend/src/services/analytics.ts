@@ -57,7 +57,7 @@ class AnalyticsService {
   private heartbeatTimer: number | null = null;
   private isOnline = navigator.onLine;
   private pendingEvents: AnalyticsEvent[] = [];
-  private readonly HEARTBEAT_INTERVAL = 30 * 1000;
+  private readonly HEARTBEAT_INTERVAL = 90 * 1000;
   private readonly SESSION_TIMEOUT = 15 * 60 * 1000; // 15 minutes
   private readonly MAX_PENDING_EVENTS = 100;
   private readonly RETRY_ATTEMPTS = 3;

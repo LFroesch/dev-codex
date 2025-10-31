@@ -158,7 +158,7 @@ const NotesPage: React.FC = () => {
     }
   };
 
-  // Sort todos within a group by priority then creation date
+  // Sort todos within a group by overdue, priority, due date, then creation date
   const sortTodosInGroup = (todos: Todo[]) => {
     return [...todos].sort((a, b) => {
       // Completed items go to bottom
@@ -166,13 +166,26 @@ const NotesPage: React.FC = () => {
         return a.completed ? 1 : -1;
       }
 
+      // Overdue items first
+      const aOverdue = isOverdue(a.dueDate);
+      const bOverdue = isOverdue(b.dueDate);
+      if (aOverdue !== bOverdue) {
+        return aOverdue ? -1 : 1;
+      }
+
       // Sort by priority
       const aPriority = getPriorityWeight(a.priority);
       const bPriority = getPriorityWeight(b.priority);
-
       if (aPriority !== bPriority) {
         return bPriority - aPriority;
       }
+
+      // Sort by due date (soonest first)
+      if (a.dueDate && b.dueDate) {
+        return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+      }
+      if (a.dueDate) return -1; // Items with due dates come before items without
+      if (b.dueDate) return 1;
 
       // Finally by creation date (newest first)
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();

@@ -123,11 +123,11 @@ userSessionSchema.index({ userId: 1, startTime: -1 });
 userSessionSchema.index({ userId: 1, isActive: 1 });
 userSessionSchema.index({ currentProjectId: 1, isActive: 1 }); // For finding active users on a project
 
-// TTL index to clean up inactive sessions after 24 hours
-userSessionSchema.index({ 
-  lastActivity: 1 
-}, { 
-  expireAfterSeconds: 24 * 60 * 60,
+// TTL index to clean up inactive sessions after 4 hours
+userSessionSchema.index({
+  lastActivity: 1
+}, {
+  expireAfterSeconds: 4 * 60 * 60,
   partialFilterExpression: { isActive: false }
 });
 

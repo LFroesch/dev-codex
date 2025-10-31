@@ -158,6 +158,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
   const { fitView, setCenter } = useReactFlow();
 
   // Relationship management state
+  const [showAddRelationship, setShowAddRelationship] = useState(false);
   const [relationshipSearch, setRelationshipSearch] = useState('');
   const [selectedRelationType, setSelectedRelationType] = useState<RelationshipType>('uses');
   const [relationshipDescription, setRelationshipDescription] = useState('');
@@ -1149,22 +1150,16 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
                 </div>
 
                 <div>
-                  <div className="text-xs font-semibold text-base-content/60">Content Preview</div>
-                  <div className="text-sm bg-base-200 p-2 rounded max-h-32 overflow-y-auto">
-                    {selectedComponent.content.substring(0, 200)}
-                    {selectedComponent.content.length > 200 && '...'}
+                  <div className="text-xs font-semibold text-base-content/60">Content</div>
+                  <div className="text-sm bg-base-200 p-2 rounded max-h-32 overflow-y-auto whitespace-pre-wrap">
+                    {selectedComponent.content}
                   </div>
                 </div>
               </>
             )}
 
-            <div>
-              <div className="text-xs font-semibold text-base-content/60">Stats</div>
-              <div className="text-xs space-y-1">
-                <div>Size: {selectedComponent.content.length} chars</div>
-                <div>Created: {new Date(selectedComponent.createdAt).toLocaleDateString()}</div>
-                <div>Updated: {new Date(selectedComponent.updatedAt).toLocaleDateString()}</div>
-              </div>
+            <div className="text-xs text-base-content/60">
+              Created: {new Date(selectedComponent.createdAt).toLocaleDateString()} • Updated: {new Date(selectedComponent.updatedAt).toLocaleDateString()}
             </div>
 
             {/* Relationships Management */}
@@ -1275,63 +1270,80 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
                 </div>
               )}
 
-              {/* Add relationship form */}
-              <div className="border-t border-base-content/10 pt-3 space-y-2">
-                <div className="text-xs font-semibold text-base-content/60">Add Relationship</div>
-
-                {/* Target component autocomplete */}
-                <div className="form-control">
-                  <input
-                    type="text"
-                    value={relationshipSearch}
-                    onChange={(e) => setRelationshipSearch(e.target.value)}
-                    placeholder="Search component..."
-                    className="input input-bordered input-sm w-full"
-                    list={`relationship-targets-${selectedComponent.id}`}
-                  />
-                  <datalist id={`relationship-targets-${selectedComponent.id}`}>
-                    {docs
-                      .filter(d =>
-                        d.id !== selectedComponent.id &&
-                        d.title.toLowerCase().includes(relationshipSearch.toLowerCase())
-                      )
-                      .map(d => (
-                        <option key={d.id} value={d.title} />
-                      ))}
-                  </datalist>
-                </div>
-
-                {/* Relationship type selector */}
-                <select
-                  value={selectedRelationType}
-                  onChange={(e) => setSelectedRelationType(e.target.value as RelationshipType)}
-                  className="select select-bordered select-sm w-full"
-                >
-                  <option value="uses">Uses</option>
-                  <option value="implements">Implements</option>
-                  <option value="extends">Extends</option>
-                  <option value="depends_on">Depends On</option>
-                  <option value="calls">Calls</option>
-                  <option value="contains">Contains</option>
-                </select>
-
-                {/* Optional description */}
-                <textarea
-                  value={relationshipDescription}
-                  onChange={(e) => setRelationshipDescription(e.target.value)}
-                  placeholder="Optional description..."
-                  className="textarea textarea-bordered textarea-sm w-full h-16"
-                />
-
-                {/* Add button */}
+              {/* Add relationship form - collapsible */}
+              <div className="border-t border-base-content/10 pt-3">
                 <button
-                  onClick={() => handleAddRelationship(relationshipSearch)}
-                  disabled={isAddingRelationship || !relationshipSearch.trim()}
-                  className="btn btn-sm btn-primary w-full"
-                  style={{ color: getContrastTextColor('primary') }}
+                  onClick={() => setShowAddRelationship(!showAddRelationship)}
+                  className="flex items-center justify-between w-full text-xs font-semibold text-base-content/60 hover:text-base-content transition-colors"
                 >
-                  {isAddingRelationship ? 'Adding...' : 'Add Relationship'}
+                  <span>Add Relationship</span>
+                  <svg
+                    className={`w-3 h-3 transition-transform ${showAddRelationship ? 'rotate-90' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
                 </button>
+
+                {showAddRelationship && (
+                  <div className="space-y-2 mt-2">
+                    {/* Target component autocomplete */}
+                    <div className="form-control">
+                      <input
+                        type="text"
+                        value={relationshipSearch}
+                        onChange={(e) => setRelationshipSearch(e.target.value)}
+                        placeholder="Search component..."
+                        className="input input-bordered input-sm w-full"
+                        list={`relationship-targets-${selectedComponent.id}`}
+                      />
+                      <datalist id={`relationship-targets-${selectedComponent.id}`}>
+                        {docs
+                          .filter(d =>
+                            d.id !== selectedComponent.id &&
+                            d.title.toLowerCase().includes(relationshipSearch.toLowerCase())
+                          )
+                          .map(d => (
+                            <option key={d.id} value={d.title} />
+                          ))}
+                      </datalist>
+                    </div>
+
+                    {/* Relationship type selector */}
+                    <select
+                      value={selectedRelationType}
+                      onChange={(e) => setSelectedRelationType(e.target.value as RelationshipType)}
+                      className="select select-bordered select-sm w-full"
+                    >
+                      <option value="uses">Uses</option>
+                      <option value="implements">Implements</option>
+                      <option value="extends">Extends</option>
+                      <option value="depends_on">Depends On</option>
+                      <option value="calls">Calls</option>
+                      <option value="contains">Contains</option>
+                    </select>
+
+                    {/* Optional description */}
+                    <textarea
+                      value={relationshipDescription}
+                      onChange={(e) => setRelationshipDescription(e.target.value)}
+                      placeholder="Optional description..."
+                      className="textarea textarea-bordered textarea-sm w-full h-16"
+                    />
+
+                    {/* Add button */}
+                    <button
+                      onClick={() => handleAddRelationship(relationshipSearch)}
+                      disabled={isAddingRelationship || !relationshipSearch.trim()}
+                      className="btn btn-sm btn-primary w-full"
+                      style={{ color: getContrastTextColor('primary') }}
+                    >
+                      {isAddingRelationship ? 'Adding...' : 'Add Relationship'}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>

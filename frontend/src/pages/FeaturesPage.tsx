@@ -444,7 +444,7 @@ const FeaturesPage: React.FC = () => {
                             </svg>
                           </div>
                           <h2 className="text-lg font-bold">{feature}</h2>
-                          <span className="badge badge-primary">{components.length}</span>
+                          <span className="badge badge-primary font-bold">{components.length}</span>
                         </div>
                       </button>
                       {isExpanded && (

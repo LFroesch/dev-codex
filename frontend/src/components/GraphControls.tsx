@@ -4,6 +4,7 @@ import { ComponentCategory, CreateComponentData } from '../../../shared/types/pr
 import { getContrastTextColor } from '../utils/contrastTextColor';
 import { getAllCategories, getTypesForCategory } from '../config/componentCategories';
 import ConfirmationModal from './ConfirmationModal';
+import { get } from 'node_modules/axios/index.d.cts';
 
 interface GraphControlsProps {
   docs: Doc[];
@@ -70,10 +71,10 @@ const GraphControls: React.FC<GraphControlsProps> = ({
     <div className="bg-base-100 border-2 border-base-content/20 rounded-lg p-4 space-y-4">
       {/* Create New Component */}
       {onCreateDoc && (
-        <div className="border-b border-base-content/10 pb-4">
+        <div className="border-thick rounded-lg p-3">
           <button
             onClick={() => setShowCreate(!showCreate)}
-            className="flex items-center justify-between w-full text-xs font-semibold text-base-content/60 mb-2 hover:text-base-content transition-colors"
+            className="flex items-center justify-between w-full text-sm font-semibold text-base-content/60 hover:text-base-content transition-colors"
           >
             <span>✨ Create New Component</span>
             <svg
@@ -230,7 +231,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
 
       {/* Category Filters */}
       <div>
-        <div className="text-xs font-semibold text-base-content/60 mb-2 flex items-center justify-between">
+        <div className="text-sm font-semibold text-base-content/60 mb-2 flex items-center justify-between">
           <span>Categories</span>
           <button
             onClick={() => {
@@ -244,7 +245,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
                 });
               }
             }}
-            className="text-primary border-thick rounded-lg p-1 hover:underline"
+            className="text-base-content/80 border-thick rounded-lg p-1 hover:bg-primary"
           >
             {selectedCategories.size === categories.length ? 'None' : 'All'}
           </button>
@@ -256,10 +257,10 @@ const GraphControls: React.FC<GraphControlsProps> = ({
               <button
                 key={cat.value}
                 onClick={() => onCategoryToggle(cat.value)}
-                className={`badge badge-sm border-thick p-2 cursor-pointer transition-all`}
+                className={`border-thick badge badge-sm p-2 h-6 text-xs font-semibold cursor-pointer transition-all`}
                 style={isSelected ? {
                   backgroundColor: cat.color,
-                  color: 'white',
+                  color: getContrastTextColor("primary"),
                   borderColor: cat.color
                 } : {
                   opacity: 0.4
@@ -276,7 +277,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
       {/* Feature Filters */}
       {features.length > 0 && (
         <div>
-          <div className="text-xs font-semibold text-base-content/60 mb-2 flex items-center justify-between">
+          <div className="text-sm font-semibold text-base-content/60 mb-2 flex items-center justify-between">
             <span>Features</span>
             <button
               onClick={() => {
@@ -290,7 +291,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
                   });
                 }
               }}
-              className="text-primary border-thick rounded-lg p-1 hover:underline"
+              className="text-base-content/80 border-thick rounded-lg p-1 hover:bg-primary "
             >
               {selectedFeatures.size === features.length ? 'None' : 'All'}
             </button>
@@ -302,7 +303,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
                 <button
                   key={feature}
                   onClick={() => onFeatureToggle(feature)}
-                  className={`badge badge-sm cursor-pointer transition-all ${
+                  className={`badge badge-sm text-sm font-semibold cursor-pointer transition-all p-2 h-6 ${
                     isSelected
                       ? 'badge-primary'
                       : 'badge-ghost opacity-40 hover:opacity-70'

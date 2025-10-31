@@ -2,15 +2,13 @@
 **Date:** October 30, 2025
 
 ## Final Todos BLOCKING PROD:
-- Components / relationships in /summary text|markdown|prompt components needs to be better (/summary json components has all of the info, relationships need to be shown with components in text|markdown|prompt)
-- Todos/Subtasks in /summary text|markedown|prompt todos needs to be better (/view todos does it well)
-- User Sessions TTL sticking around too long?
-- [HIGH] Fix Graph Auto Sort, its just not good
-- [MEDIUM] Fix notifications/heartbeat timers - too frequent in logs
-IF THERES TIME:
-- [HIGH] Relationship/Component Types overhaul (plan this using/updating md_files/current/type-system-expansion.md )
-- [MEDIUM] Improve /llm primer with better context ('you are...')
+- [HIGH] Tune FeaturesGraph.tsx autosort etc
 - [HIGH] Record Gifs for the README to demonstrate functionality
+IF THERES TIME:
+- [MEDIUM] Improve /llm primer with better context ('you are...')
+    - /llm [format] components [@project]
+    - /llm [format] todos
+    - ... etc
 
 ## Today's Launch Schedule (9am - 5pm)
 

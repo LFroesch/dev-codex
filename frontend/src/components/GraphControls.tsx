@@ -4,7 +4,6 @@ import { ComponentCategory, CreateComponentData } from '../../../shared/types/pr
 import { getContrastTextColor } from '../utils/contrastTextColor';
 import { getAllCategories, getTypesForCategory } from '../config/componentCategories';
 import ConfirmationModal from './ConfirmationModal';
-import { get } from 'node_modules/axios/index.d.cts';
 
 interface GraphControlsProps {
   docs: Doc[];

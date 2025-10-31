@@ -179,37 +179,27 @@ const GraphControls: React.FC<GraphControlsProps> = ({
       </div>
 
       {/* Action Buttons */}
-      <div className="grid grid-cols-3 gap-2">
-        <button
-          onClick={onAutoLayout}
-          className="btn btn-sm h-14 btn-primary border-thick"
-          style={{ color: getContrastTextColor('primary') }}
-          title="Auto-arrange nodes"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-          </svg>
-          <span className="hidden sm:inline">Auto</span>
-        </button>
+      <div className="grid grid-cols-2 gap-2">
         <button
           onClick={onResetView}
-          className="btn btn-sm h-14 btn-ghost"
+          className="btn btn-sm h-14 btn-primary bg-primary/20 border-thick border-primary"
           title="Reset zoom and position"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m0 0v6m0-6h6m-6 0H4" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
           </svg>
-          <span className="hidden sm:inline">Reset</span>
+          <span className="hidden sm:inline">Reset Zoom</span>
         </button>
         <button
           onClick={() => setShowResetConfirm(true)}
-          className="btn btn-sm h-14 btn-ghost"
+          className="btn btn-sm h-14 btn-error bg-error/20 border-thick border-error"
           title="Clear saved layout"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
           </svg>
-          <span className="hidden sm:inline">Clear</span>
+          <span className="hidden sm:inline" style={{color:getContrastTextColor("error")}}>Auto Layout</span>
         </button>
       </div>
 
@@ -221,9 +211,9 @@ const GraphControls: React.FC<GraphControlsProps> = ({
           setShowResetConfirm(false);
         }}
         onCancel={() => setShowResetConfirm(false)}
-        title="Clear Graph Layout?"
+        title="Auto Layout Graph?"
         message="This will reset all node positions to the default auto-layout. Your manually positioned nodes will be lost. This action cannot be undone."
-        confirmText="Clear Layout"
+        confirmText="Auto Layout"
         cancelText="Cancel"
         variant="warning"
       />
@@ -244,7 +234,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
                 });
               }
             }}
-            className="text-base-content/80 border-thick rounded-lg p-1 hover:bg-primary"
+            className="btn btn-sm btn-primary bg-primary/20 border-thick border-primary p-1"
           >
             {selectedCategories.size === categories.length ? 'None' : 'All'}
           </button>
@@ -256,7 +246,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
               <button
                 key={cat.value}
                 onClick={() => onCategoryToggle(cat.value)}
-                className={`border-thick badge badge-sm p-2 h-6 text-xs font-semibold cursor-pointer transition-all`}
+                className={`border-thick badge badge-sm p-2 h-6 text-sm font-semibold cursor-pointer transition-all`}
                 style={isSelected ? {
                   backgroundColor: cat.color,
                   color: getContrastTextColor("primary"),
@@ -290,7 +280,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
                   });
                 }
               }}
-              className="text-base-content/80 border-thick rounded-lg p-1 hover:bg-primary "
+              className="btn btn-sm btn-primary bg-primary/20 border-thick border-primary p-1"
             >
               {selectedFeatures.size === features.length ? 'None' : 'All'}
             </button>
@@ -302,7 +292,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
                 <button
                   key={feature}
                   onClick={() => onFeatureToggle(feature)}
-                  className={`badge badge-sm text-sm font-semibold cursor-pointer transition-all p-2 h-6 ${
+                  className={`border-thick badge badge-sm p-2 h-6 text-sm font-semibold cursor-pointer transition-all ${
                     isSelected
                       ? 'badge-primary'
                       : 'badge-ghost opacity-40 hover:opacity-70'

@@ -7,7 +7,8 @@
 ## Requested Features to Add
 - I want to have these features, but I don't want random ai slop "CROSS OUR FINGERS" code, either libraries, tried and true verified methods
 - or tell me that you DO NOT KNOW HOW TO DO IT. do NOT hallucinate code and waste tokens
-**Example:** Each Feature is horizontally laid out, 
+**Example:** Each Feature is horizontally laid out, it should automatically make a documentation(section header) as the top node if one doesnt already exist for a feature, and then proceed to generate downward with customizable ranking function below, and edge bundling / detection, node sizing if it has more connections.
+KEEP IT SIMPLE PLEASE SIMPLE & WORKING > COMPLEX AND BROKEN AND WASTED TOKENS
 
 ### 🎯 Node Sizing (Priority: HIGH - Quick Win)
 **What:** Make nodes a little bigger the more connections they have

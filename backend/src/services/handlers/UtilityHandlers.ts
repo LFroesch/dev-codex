@@ -737,10 +737,10 @@ export class UtilityHandlers extends BaseCommandHandler {
     const components = project.components || [];
     const stack = project.stack || [];
     const team = project.team || [];
+    const relationships = project.relationships || [];
 
     // Count stats
     const completedTodos = todos.filter((t: any) => t.completed).length;
-    const highPriorityTodos = todos.filter((t: any) => t.priority === 'high' && !t.completed).length;
     const activeTodos = todos.filter((t: any) => !t.completed);
 
     switch (format) {
@@ -783,28 +783,53 @@ export class UtilityHandlers extends BaseCommandHandler {
           prompt += `**Stack:** ${stack.map((t: any) => t.name).join(' • ')}\n`;
         }
 
-        // Tasks
+        // Tasks (Hierarchical with subtasks)
         if (todos.length > 0) {
+          const parentTodos = todos.filter((t: any) => !t.parentTodoId);
+          const activeParents = parentTodos.filter((t: any) => !t.completed);
+          const completedParents = parentTodos.filter((t: any) => t.completed);
+
           prompt += `\n## ✅ CURRENT TASKS (${completedTodos} completed, ${activeTodos.length} pending)\n\n`;
-          if (activeTodos.length > 0) {
+
+          if (activeParents.length > 0) {
             prompt += `**🚧 Pending Tasks:**\n`;
-            activeTodos.forEach((todo: any) => {
+            activeParents.forEach((todo: any) => {
               if (todo?.title) {
                 prompt += `• ${todo.title}`;
                 if (todo.content) prompt += ` - ${todo.content}`;
                 if (todo.priority) prompt += ` [${todo.priority.toUpperCase()} PRIORITY]`;
                 if (todo.dueDate) prompt += ` (Due: ${new Date(todo.dueDate).toLocaleDateString()})`;
                 prompt += `\n`;
+
+                // Show subtasks indented
+                const subtasks = todos.filter((t: any) => t.parentTodoId === todo.id);
+                if (subtasks.length > 0) {
+                  subtasks.forEach((sub: any) => {
+                    prompt += `  - ${sub.completed ? '✓' : '○'} ${sub.title}`;
+                    if (sub.priority) prompt += ` [${sub.priority.toUpperCase()}]`;
+                    if (sub.dueDate) prompt += ` (Due: ${new Date(sub.dueDate).toLocaleDateString()})`;
+                    prompt += `\n`;
+                  });
+                }
               }
             });
           }
-          if (completedTodos > 0) {
+
+          if (completedParents.length > 0) {
             prompt += `\n**✅ Completed Tasks:**\n`;
-            todos.filter((t: any) => t.completed).forEach((todo: any) => {
+            completedParents.forEach((todo: any) => {
               if (todo?.title) {
                 prompt += `• ${todo.title}`;
                 if (todo.content) prompt += ` - ${todo.content}`;
                 prompt += `\n`;
+
+                // Show completed subtasks indented
+                const subtasks = todos.filter((t: any) => t.parentTodoId === todo.id && t.completed);
+                if (subtasks.length > 0) {
+                  subtasks.forEach((sub: any) => {
+                    prompt += `  - ✓ ${sub.title}\n`;
+                  });
+                }
               }
             });
           }
@@ -859,6 +884,18 @@ export class UtilityHandlers extends BaseCommandHandler {
                 component.content || '';
               prompt += `• [${component.type}] **${component.title || 'Untitled'}:** ${componentContent}\n`;
             });
+          });
+        }
+
+        // Relationships between components
+        if (relationships.length > 0) {
+          prompt += `\n## 🔗 COMPONENT RELATIONSHIPS\n`;
+          relationships.forEach((rel: any) => {
+            const sourceComp = components.find((c: any) => c.id === rel.sourceId);
+            const targetComp = components.find((c: any) => c.id === rel.targetId);
+            if (sourceComp && targetComp) {
+              prompt += `• **${sourceComp.title}** → ${rel.type} → **${targetComp.title}**\n`;
+            }
           });
         }
 
@@ -936,16 +973,31 @@ export class UtilityHandlers extends BaseCommandHandler {
           });
         }
 
-        // Todo Items
+        // Todo Items (Hierarchical with subtasks)
         if (todos.length > 0) {
+          const parentTodos = todos.filter((t: any) => !t.parentTodoId);
           md += `## Todo Items\n\n`;
-          todos.forEach((todo: any) => {
+
+          parentTodos.forEach((todo: any) => {
             const todoDesc = todo.content?.length > 200 ?
               todo.content.substring(0, 200) + '...' :
               todo.content;
             md += `- [${todo.completed ? 'x' : ' '}] **${todo.title || 'Untitled Task'}**${todoDesc ? `: ${todoDesc}` : ''}`;
             if (todo.priority) md += ` [${todo.priority.toUpperCase()}]`;
             md += `\n`;
+
+            // Show subtasks indented
+            const subtasks = todos.filter((t: any) => t.parentTodoId === todo.id);
+            if (subtasks.length > 0) {
+              subtasks.forEach((sub: any) => {
+                const subDesc = sub.content?.length > 100 ?
+                  sub.content.substring(0, 100) + '...' :
+                  sub.content;
+                md += `  - [${sub.completed ? 'x' : ' '}] ${sub.title}${subDesc ? `: ${subDesc}` : ''}`;
+                if (sub.priority) md += ` [${sub.priority.toUpperCase()}]`;
+                md += `\n`;
+              });
+            }
           });
           md += `\n`;
         }
@@ -970,6 +1022,19 @@ export class UtilityHandlers extends BaseCommandHandler {
               component.content || '';
             md += `### ${component.title || 'Untitled'} (${component.type}) - Feature: ${component.feature}\n${componentContent}\n\n`;
           });
+        }
+
+        // Relationships between components
+        if (relationships.length > 0) {
+          md += `## Component Relationships\n\n`;
+          relationships.forEach((rel: any) => {
+            const sourceComp = components.find((c: any) => c.id === rel.sourceId);
+            const targetComp = components.find((c: any) => c.id === rel.targetId);
+            if (sourceComp && targetComp) {
+              md += `- **${sourceComp.title}** → ${rel.type} → **${targetComp.title}**\n`;
+            }
+          });
+          md += `\n`;
         }
 
         // Tech Stack
@@ -1049,12 +1114,22 @@ export class UtilityHandlers extends BaseCommandHandler {
           text += `\n`;
         }
 
-        // Todos
+        // Todos (Hierarchical with subtasks)
         if (todos.length > 0) {
+          const parentTodos = todos.filter((t: any) => !t.parentTodoId);
           text += `TODO ITEMS\n`;
           text += `----------\n`;
-          todos.forEach((todo: any) => {
+
+          parentTodos.forEach((todo: any) => {
             text += `[${todo.completed ? 'X' : ' '}] [${todo.priority?.toUpperCase() || 'MED'}] ${todo.title}\n`;
+
+            // Show subtasks indented
+            const subtasks = todos.filter((t: any) => t.parentTodoId === todo.id);
+            if (subtasks.length > 0) {
+              subtasks.forEach((sub: any) => {
+                text += `  [${sub.completed ? 'X' : ' '}] [${sub.priority?.toUpperCase() || 'MED'}] ${sub.title}\n`;
+              });
+            }
           });
           text += `\n`;
         }
@@ -1075,6 +1150,20 @@ export class UtilityHandlers extends BaseCommandHandler {
           text += `----------\n`;
           components.forEach((component: any) => {
             text += `${component.title || 'Untitled'} (${component.type}) [${component.feature}]: ${component.content?.substring(0, 150) || ''}${component.content?.length > 150 ? '...' : ''}\n`;
+          });
+          text += `\n`;
+        }
+
+        // Relationships between components
+        if (relationships.length > 0) {
+          text += `COMPONENT RELATIONSHIPS\n`;
+          text += `-----------------------\n`;
+          relationships.forEach((rel: any) => {
+            const sourceComp = components.find((c: any) => c.id === rel.sourceId);
+            const targetComp = components.find((c: any) => c.id === rel.targetId);
+            if (sourceComp && targetComp) {
+              text += `${sourceComp.title} -> ${rel.type} -> ${targetComp.title}\n`;
+            }
           });
           text += `\n`;
         }

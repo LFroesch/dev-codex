@@ -27,7 +27,7 @@ const SubtaskList: React.FC<SubtaskListProps> = ({
   const completedSubtasks = subtasks.filter(subtask => subtask.completed).length;
   const progressPercentage = subtasks.length > 0 ? (completedSubtasks / subtasks.length) * 100 : 0;
 
-  // Auto-sort subtasks: overdue first, then by priority (high->low), then by creation date
+  // Auto-sort subtasks: overdue first, then priority, then due date, then creation date
   const sortSubtasks = (subtasks: Todo[]) => {
     return [...subtasks].sort((a, b) => {
       // Helper function to check if overdue
@@ -51,21 +51,26 @@ const SubtaskList: React.FC<SubtaskListProps> = ({
         return a.completed ? 1 : -1;
       }
 
-      // For non-completed items, prioritize by overdue status first
+      // Overdue items first
       const aOverdue = isOverdue(a.dueDate);
       const bOverdue = isOverdue(b.dueDate);
-      
       if (aOverdue !== bOverdue) {
-        return aOverdue ? -1 : 1; // overdue items first
+        return aOverdue ? -1 : 1;
       }
 
       // Then sort by priority (high to low)
       const aPriority = getPriorityWeight(a.priority);
       const bPriority = getPriorityWeight(b.priority);
-      
       if (aPriority !== bPriority) {
-        return bPriority - aPriority; // higher priority first
+        return bPriority - aPriority;
       }
+
+      // Sort by due date (soonest first)
+      if (a.dueDate && b.dueDate) {
+        return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+      }
+      if (a.dueDate) return -1; // Items with due dates come before items without
+      if (b.dueDate) return 1;
 
       // Finally sort by creation date (newer first)
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();

@@ -1,4 +1,4 @@
-# FeaturesGraph Enhancement Plan - Options C, E, G, H, I, L
+# FeaturesGraph Enhancement Plan
 
 ## Current Setup (FeaturesGraph.tsx)
 ✅ **Already Implemented:**
@@ -32,7 +32,7 @@ components.forEach(doc => {
 
 ---
 
-### 🅲 Centered/Radial Hierarchy (Option C)
+### 🅲 Centered/Radial Hierarchy
 **What:** Hub nodes positioned in center, less connected nodes radiate outward
 **Why:** Natural "solar system" layout for hub-and-spoke architectures
 
@@ -64,7 +64,7 @@ applyRadialHierarchy(components, g);
 
 ---
 
-### 🅴 Edge Bundling (Option E)
+### 🅴 Edge Bundling
 **What:** Group edges going in similar directions to reduce visual clutter
 **Why:** Makes dense graphs with many relationships easier to read
 
@@ -104,7 +104,7 @@ edgesByDirection.forEach(bundleEdges => {
 
 ---
 
-### 🅶 Force-Directed Sub-Clustering (Option G)
+### 🅶 Force-Directed Sub-Clustering
 **What:** Hybrid approach - Dagre for macro layout, force simulation for micro-clustering within features
 **Why:** More organic feel while keeping overall structure
 
@@ -150,7 +150,7 @@ features.forEach(feature => {
 
 ---
 
-### 🅷 Customizable Ranking Function (Option H)
+### 🅷 Customizable Ranking Function
 **What:** Force nodes into specific tiers based on category (frontend → api → backend → database)
 **Why:** Clear architectural layer visualization
 
@@ -186,7 +186,7 @@ components.forEach(doc => {
 
 ---
 
-### 🅸 Interactive Layout Controls (Option I)
+### 🅸 Interactive Layout Controls
 **What:** UI sliders for real-time spacing adjustment
 **Why:** Experiment with layouts without code changes
 
@@ -247,7 +247,7 @@ g.setGraph({
 
 ---
 
-### 🅻 Multi-Root Layout (Option L)
+### 🅻 Multi-Root Layout
 **What:** Detect disconnected graph components and lay them out separately
 **Why:** Clean separation of unrelated component clusters
 

@@ -799,7 +799,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
         />
 
         {/* View Mode Toggle */}
-        <div className="bg-base-100 border border-thick border-base-content/20 rounded-lg p-3 sm:p-4">
+        <div className="bg-base-100 border-thick rounded-lg p-3 sm:p-4">
           <div className="text-xs font-semibold text-base-content/60 mb-2">View Mode</div>
           <div className="flex gap-2">
             <button
@@ -828,8 +828,8 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
         {/* Graph Layout Mode (only shown in graph view) */}
         {viewMode === 'graph' && (
           <>
-            <div className="bg-base-100 border border-thick border-base-content/20 rounded-lg p-3 sm:p-4">
-              <div className="text-xs font-semibold text-base-content/60 mb-2">Graph Layout</div>
+            <div className="bg-base-100 border-thick rounded-lg p-3 sm:p-4">
+              <div className="text-xs font-semibold text-base-content/60 mb-2">Sort Type</div>
               <div className="flex gap-2">
                 <button
                   onClick={() => setLayoutMode('feature')}
@@ -849,7 +849,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
             </div>
 
             {/* Edge Routing Style */}
-            <div className="bg-base-100 border border-thick border-base-content/20 rounded-lg p-3 sm:p-4">
+            <div className="bg-base-100 border-thick rounded-lg p-3 sm:p-4">
               <div className="text-xs font-semibold text-base-content/60 mb-2">Edge Routing</div>
               <div className="flex gap-2">
                 <button
@@ -858,7 +858,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
                   style={edgeType === 'smoothstep' ? { color: getContrastTextColor('primary') } : {}}
                   title="Smart routing with rounded corners"
                 >
-                  Smart
+                  Grid
                 </button>
                 <button
                   onClick={() => setEdgeType('default')}
@@ -866,7 +866,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
                   style={edgeType === 'default' ? { color: getContrastTextColor('primary') } : {}}
                   title="Direct straight lines"
                 >
-                  Direct
+                  Smooth
                 </button>
               </div>
             </div>
@@ -998,16 +998,15 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
                                   {/* Category badge */}
                                   <div className="flex items-center justify-between">
                                     <span
-                                      className="badge badge-sm"
+                                      className="badge badge-sm h-6 p-2 border-thick font-semibold text-sm"
                                       style={{
                                         backgroundColor: categoryInfo?.color,
                                         color: 'white',
                                         borderColor: categoryInfo?.color
                                       }}
                                     >
-                                      {categoryInfo?.emoji} {component.category}
+                                      {categoryInfo?.emoji} {component.category} - {component.type}
                                     </span>
-                                    <span className="text-xs text-base-content/60">{component.type}</span>
                                   </div>
 
                                   {/* Title */}

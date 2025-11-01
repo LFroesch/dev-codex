@@ -623,7 +623,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
               strokeWidth: style.strokeWidth,
               strokeDasharray: style.dasharray,
             },
-            label: rel.relationType,
+            label: rel.relationType.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),
             labelStyle: { fontSize: 16, fill: '#cbd5e1', fontWeight: 600 },
             labelBgStyle: { fill: '#1e293b', fillOpacity: 0.9 },
             labelBgPadding: [8, 4] as [number, number],
@@ -1025,7 +1025,26 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
                 <h3 className="font-bold text-lg">{selectedComponent.title}</h3>
               )}
               {selectedComponent.feature && !componentEditing.isEditingComponent && (
-                <span className="badge badge-sm badge-primary mt-1">{selectedComponent.feature}</span>
+                <span className="badge badge-sm text-xs font-semibold badge-primary mt-1">{selectedComponent.feature}</span>
+              )}
+              {selectedComponent.category && !componentEditing.isEditingComponent && (
+                <div className="flex gap-1 mt-1">
+                  <span
+                    className="badge badge-sm text-xs font-semibold border-thick"
+                    style={{
+                      backgroundColor: getCategoryColor(selectedComponent.category as ComponentCategory),
+                      color: getContrastTextColor("primary"),
+                      borderColor: getCategoryColor(selectedComponent.category as ComponentCategory)
+                    }}
+                  >
+                    {getAllCategories().find(c => c.value === selectedComponent.category)?.emoji} {getAllCategories().find(c => c.value === selectedComponent.category)?.label}
+                  </span>
+                  {selectedComponent.type && (
+                    <span className="badge badge-sm text-xs font-semibold bg-secondary">
+                      {selectedComponent.type.charAt(0).toUpperCase() + selectedComponent.type.slice(1)}
+                    </span>
+                  )}
+                </div>
               )}
               {componentEditing.isEditingComponent && componentEditing.editComponentData && (
                 <input
@@ -1102,14 +1121,10 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
             ) : (
               <>
                 <div>
-                  <div className="text-xs font-semibold text-base-content/60">Category & Type</div>
-                  <div className="text-sm">
-                    {getAllCategories().find(c => c.value === selectedComponent.category)?.emoji} {selectedComponent.category} • {selectedComponent.type}
-                  </div>
                 </div>
 
                 <div>
-                  <div className="text-xs font-semibold text-base-content/60">Content</div>
+                  <div className="text-sm font-semibold text-base-content/60 mb-2">Content</div>
                   <div className="text-sm bg-base-200 p-2 rounded max-h-32 overflow-y-auto whitespace-pre-wrap">
                     {selectedComponent.content}
                   </div>
@@ -1123,7 +1138,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
 
             {/* Relationships Management */}
             <div>
-              <div className="text-xs font-semibold text-base-content/60 mb-2">Relationships</div>
+              <div className="text-sm font-semibold text-base-content/60 mb-2">Relationships</div>
 
               {/* Current relationships list */}
               {(!selectedComponent.relationships || selectedComponent.relationships.length === 0) ? (
@@ -1183,10 +1198,10 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
                             <div className="flex items-center justify-between gap-2">
                               <div className="flex items-center gap-2 min-w-0 flex-1">
                                 <span
-                                  className="badge badge-xs"
-                                  style={{ backgroundColor: RELATIONSHIP_COLORS[rel.relationType], color: 'white', borderColor: RELATIONSHIP_COLORS[rel.relationType] }}
+                                  className="h-6 badge badge-xs border-thick font-semibold text-xs"
+                                  style={{ backgroundColor: RELATIONSHIP_COLORS[rel.relationType], color: getContrastTextColor(RELATIONSHIP_COLORS[rel.relationType]), borderColor: RELATIONSHIP_COLORS[rel.relationType] }}
                                 >
-                                  {rel.relationType}
+                                  {rel.relationType.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
                                 </span>
                                 <span className="text-xs font-medium truncate">{targetComponent.title}</span>
                               </div>
@@ -1219,10 +1234,10 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
               )}
 
               {/* Add relationship form - collapsible */}
-              <div className="border-t border-base-content/10 pt-3">
+              <div className="border-t border-base-content/20 pt-3">
                 <button
                   onClick={() => relationshipManagement.setShowAddRelationship(!relationshipManagement.showAddRelationship)}
-                  className="flex items-center justify-between w-full text-xs font-semibold text-base-content/60 hover:text-base-content transition-colors"
+                  className="flex items-center justify-between w-full text-sm font-semibold text-base-content/60 hover:text-base-content transition-colors"
                 >
                   <span>Add Relationship</span>
                   <svg
@@ -1297,7 +1312,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
           </div>
 
           {!componentEditing.isEditingComponent ? (
-            <div className="flex gap-2 pt-2 border-t border-base-content/10">
+            <div className="flex gap-2 pt-2 border-t border-base-content/20">
               <button
                 onClick={componentEditing.handleEditComponent}
                 className="btn btn-sm btn-primary flex-1"

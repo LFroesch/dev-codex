@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { ideasAPI, type Idea } from '../api/ideas';
 import { getContrastTextColor } from '../utils/contrastTextColor';
+import { useItemModal } from '../hooks/useItemModal';
 
 interface IdeasPageProps {
   onIdeasCountChange?: (count: number) => void;
@@ -11,9 +12,17 @@ const IdeasPage: React.FC<IdeasPageProps> = ({ onIdeasCountChange }) => {
   const [ideas, setIdeas] = useState<Idea[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [selectedIdea, setSelectedIdea] = useState<Idea | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState<'view' | 'edit'>('view');
+
+  // Modal state using custom hook
+  const ideaModal = useItemModal<Idea>({
+    initialMode: 'view',
+    onItemSync: (currentItem, isOpen) => {
+      if (currentItem && ideas.length > 0 && isOpen) {
+        return ideas.find(idea => idea.id === currentItem.id);
+      }
+      return undefined;
+    }
+  });
 
   const loadIdeas = async () => {
     try {
@@ -31,16 +40,6 @@ const IdeasPage: React.FC<IdeasPageProps> = ({ onIdeasCountChange }) => {
   useEffect(() => {
     loadIdeas();
   }, []);
-
-  // Effect to update selectedIdea when ideas data changes
-  useEffect(() => {
-    if (selectedIdea && ideas.length > 0 && isModalOpen) {
-      const updatedIdea = ideas.find(idea => idea.id === selectedIdea.id);
-      if (updatedIdea) {
-        setSelectedIdea(updatedIdea);
-      }
-    }
-  }, [ideas, selectedIdea?.id, isModalOpen]);
 
   const handleCreateIdea = async (title: string, description: string, content: string) => {
     try {
@@ -76,14 +75,7 @@ const IdeasPage: React.FC<IdeasPageProps> = ({ onIdeasCountChange }) => {
   };
 
   const handleIdeaClick = (idea: Idea) => {
-    setSelectedIdea(idea);
-    setModalMode('view');
-    setIsModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setSelectedIdea(null);
+    ideaModal.open(idea, 'view');
   };
 
   if (loading) {
@@ -159,15 +151,15 @@ const IdeasPage: React.FC<IdeasPageProps> = ({ onIdeasCountChange }) => {
       )}
 
       {/* Idea Modal */}
-      {selectedIdea && (
+      {ideaModal.item && (
         <IdeaModal
-          idea={selectedIdea}
-          isOpen={isModalOpen}
-          onClose={handleCloseModal}
+          idea={ideaModal.item}
+          isOpen={ideaModal.isOpen}
+          onClose={ideaModal.close}
           onUpdate={handleUpdateIdea}
           onDelete={handleDeleteIdea}
-          mode={modalMode}
-          onModeChange={setModalMode}
+          mode={ideaModal.mode}
+          onModeChange={ideaModal.setMode}
         />
       )}
     </div>

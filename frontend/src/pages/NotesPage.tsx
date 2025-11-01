@@ -7,6 +7,9 @@ import DatePicker from '../components/DatePicker';
 import TeamMemberSelect from '../components/TeamMemberSelect';
 import activityTracker from '../services/activityTracker';
 import { getContrastTextColor } from '../utils/contrastTextColor';
+import { isOverdue, isToday, isTomorrow, isSoon, isFuture } from '../utils/dateHelpers';
+import { getPriorityWeight } from '../utils/priorityHelpers';
+import { useItemModal } from '../hooks/useItemModal';
 
 interface ContextType {
   selectedProject: Project | null;
@@ -20,16 +23,27 @@ const NotesPage: React.FC = () => {
   const { selectedProject, user, onProjectRefresh, activeNotesTab } = useOutletContext<ContextType>();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // State for note modal
-  const [selectedNote, setSelectedNote] = useState<any>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState<'view' | 'edit'>('view');
-  
-  // State for dev log editing
-  const [selectedDevLog, setSelectedDevLog] = useState<any>(null);
-  const [isDevLogModalOpen, setIsDevLogModalOpen] = useState(false);
-  const [devLogModalMode, setDevLogModalMode] = useState<'view' | 'edit'>('view');
-  
+  // Modal state using custom hook
+  const noteModal = useItemModal<any>({
+    initialMode: 'view',
+    onItemSync: (currentItem, isOpen) => {
+      if (currentItem && selectedProject && isOpen) {
+        return selectedProject.notes?.find(note => note.id === currentItem.id);
+      }
+      return undefined;
+    }
+  });
+
+  const devLogModal = useItemModal<any>({
+    initialMode: 'view',
+    onItemSync: (currentItem, isOpen) => {
+      if (currentItem && selectedProject && isOpen) {
+        return selectedProject.devLog?.find(entry => entry.id === currentItem.id);
+      }
+      return undefined;
+    }
+  });
+
   const [error, setError] = useState('');
 
   // Set activity tracker context when project changes
@@ -40,56 +54,20 @@ const NotesPage: React.FC = () => {
   }, [selectedProject, user]);
 
   const handleNoteClick = (note: any) => {
-    setSelectedNote(note);
-    setModalMode('view');
-    setIsModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setSelectedNote(null);
+    noteModal.open(note, 'view');
   };
 
   const handleDevLogClick = (entry: any) => {
-    setSelectedDevLog(entry);
-    setDevLogModalMode('view');
-    setIsDevLogModalOpen(true);
-  };
-
-  const handleCloseDevLogModal = () => {
-    setIsDevLogModalOpen(false);
-    setSelectedDevLog(null);
+    devLogModal.open(entry, 'view');
   };
 
   const handleNoteUpdate = async () => {
-    // Refresh the project data first
     await onProjectRefresh();
   };
 
   const handleDevLogUpdate = async () => {
-    // Refresh the project data first
     await onProjectRefresh();
   };
-
-  // Effect to update selectedNote when project data changes
-  useEffect(() => {
-    if (selectedNote && selectedProject && isModalOpen) {
-      const updatedNote = selectedProject.notes?.find(note => note.id === selectedNote.id);
-      if (updatedNote) {
-        setSelectedNote(updatedNote);
-      }
-    }
-  }, [selectedProject?.notes, selectedNote?.id, isModalOpen]);
-
-  // Effect to update selectedDevLog when project data changes
-  useEffect(() => {
-    if (selectedDevLog && selectedProject && isDevLogModalOpen) {
-      const updatedDevLog = selectedProject.devLog?.find(entry => entry.id === selectedDevLog.id);
-      if (updatedDevLog) {
-        setSelectedDevLog(updatedDevLog);
-      }
-    }
-  }, [selectedProject?.devLog, selectedDevLog?.id, isDevLogModalOpen]);
 
   const handleArchiveTodoToDevLog = async (todo: Todo) => {
     if (!selectedProject) return;
@@ -111,52 +89,6 @@ const NotesPage: React.FC = () => {
     }
   };
 
-  // Helper functions for date comparisons
-  const isOverdue = (dueDate?: string) => {
-    if (!dueDate) return false;
-    return new Date(dueDate).getTime() < new Date().setHours(0, 0, 0, 0);
-  };
-
-  const isToday = (dueDate?: string) => {
-    if (!dueDate) return false;
-    const today = new Date().setHours(0, 0, 0, 0);
-    const due = new Date(dueDate).setHours(0, 0, 0, 0);
-    return due === today;
-  };
-
-  const isTomorrow = (dueDate?: string) => {
-    if (!dueDate) return false;
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(0, 0, 0, 0);
-    const due = new Date(dueDate).setHours(0, 0, 0, 0);
-    return due === tomorrow.valueOf();
-  };
-
-  const isSoon = (dueDate?: string) => {
-    if (!dueDate) return false;
-    const now = new Date().setHours(0, 0, 0, 0);
-    const due = new Date(dueDate).setHours(0, 0, 0, 0);
-    const diffDays = Math.ceil((due - now) / (1000 * 60 * 60 * 24));
-    return diffDays >= 2 && diffDays <= 7;
-  };
-
-  const isFuture = (dueDate?: string) => {
-    if (!dueDate) return true; // Undated todos go to future
-    const now = new Date().setHours(0, 0, 0, 0);
-    const due = new Date(dueDate).setHours(0, 0, 0, 0);
-    const diffDays = Math.ceil((due - now) / (1000 * 60 * 60 * 24));
-    return diffDays > 7;
-  };
-
-  const getPriorityWeight = (priority?: string) => {
-    switch (priority) {
-      case 'high': return 3;
-      case 'medium': return 2;
-      case 'low': return 1;
-      default: return 2;
-    }
-  };
 
   // Sort todos within a group by overdue, priority, due date, then creation date
   const sortTodosInGroup = (todos: Todo[]) => {
@@ -983,32 +915,32 @@ const NotesPage: React.FC = () => {
 
       {/* Note Modal */}
       <NoteModal
-        note={selectedNote}
+        note={noteModal.item}
         projectId={selectedProject.id}
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
+        isOpen={noteModal.isOpen}
+        onClose={noteModal.close}
         onUpdate={handleNoteUpdate}
-        mode={modalMode}
-        onModeChange={setModalMode}
+        mode={noteModal.mode}
+        onModeChange={noteModal.setMode}
         project={selectedProject}
       />
 
       {/* Dev Log Modal - reusing NoteModal for consistency */}
-      {selectedDevLog && (
+      {devLogModal.item && (
         <NoteModal
           note={{
-            id: selectedDevLog.id,
-            title: selectedDevLog.title,
-            content: selectedDevLog.description || '',
-            createdAt: selectedDevLog.date,
-            updatedAt: selectedDevLog.date
+            id: devLogModal.item.id,
+            title: devLogModal.item.title,
+            content: devLogModal.item.description || '',
+            createdAt: devLogModal.item.date,
+            updatedAt: devLogModal.item.date
           }}
           projectId={selectedProject.id}
-          isOpen={isDevLogModalOpen}
-          onClose={handleCloseDevLogModal}
+          isOpen={devLogModal.isOpen}
+          onClose={devLogModal.close}
           onUpdate={handleDevLogUpdate}
-          mode={devLogModalMode}
-          onModeChange={setDevLogModalMode}
+          mode={devLogModal.mode}
+          onModeChange={devLogModal.setMode}
           project={selectedProject}
           type="devlog"
         />

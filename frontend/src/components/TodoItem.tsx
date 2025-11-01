@@ -5,6 +5,8 @@ import TeamMemberSelect from './TeamMemberSelect';
 import SubtaskList from './SubtaskList';
 import ConfirmationModal from './ConfirmationModal';
 import { getContrastTextColor } from '../utils/contrastTextColor';
+import { isOverdue } from '../utils/dateHelpers';
+import { getPriorityColor } from '../utils/priorityHelpers';
 
 interface TodoItemProps {
   todo: Todo;
@@ -91,14 +93,6 @@ const TodoItem: React.FC<TodoItemProps> = ({
     await onUpdate();
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high': return 'text-error';
-      case 'medium': return 'text-warning';
-      case 'low': return 'text-success';
-      default: return 'text-base-content/60';
-    }
-  };
 
   const getPriorityIcon = (priority: string) => {
     switch (priority) {
@@ -124,12 +118,6 @@ const TodoItem: React.FC<TodoItemProps> = ({
     return diffHours > 0 && diffHours <= 24;
   };
 
-  const isOverdue = (dueDate?: string) => {
-    if (!dueDate) return false;
-    const due = new Date(dueDate);
-    const now = new Date();
-    return due.getTime() < now.getTime();
-  };
 
   const subtasks = allTodos.filter(t => t.parentTodoId === todo.id);
   const hasSubtasks = subtasks.length > 0;

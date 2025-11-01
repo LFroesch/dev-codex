@@ -555,4 +555,189 @@ export const validateEmail = (email: string) => {
 
 ---
 
+## 🆕 ADDITIONAL AI SLOP PATTERNS FOUND (Latest Audit)
+
+### Pattern 6: Complex Conditional Chains
+**Found**: 10+ instances of deeply nested && conditions
+
+**Examples**:
+- `Layout.tsx:654` - Pathname check with 7 conditions chained with &&
+- `Layout.tsx:1310` - Navigation visibility with 10+ conditions
+- `NotesPage.tsx:217` - Date filtering with 5 chained negations
+
+```tsx
+// BAD - Unreadable chain from Layout.tsx
+{selectedProject && (location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/features' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && location.pathname !== '/projects' && (
+```
+
+**FIX**: Extract to helper functions
+
+```tsx
+// GOOD
+const isProjectRoute = () => PROJECT_ROUTES.includes(location.pathname);
+const shouldShowProjectNav = selectedProject && isProjectRoute() && !isProjectsPage();
+```
+
+**Impact**:
+- Lines saved: ~30 lines
+- Readability: Massive improvement
+
+---
+
+### Pattern 7: Timer/Interval Bloat
+**Found**: 29 files using setTimeout/setInterval
+- Most in polling patterns that could use WebSocket or better state management
+- Layout.tsx, FeaturesGraph.tsx have multiple timers
+
+**Files with most timers**:
+- Layout.tsx (sidebar animations, project sync)
+- FeaturesGraph.tsx (layout animations)
+- CommandResponse.tsx (update polling)
+- AccountSettingsPage.tsx (debouncing)
+
+**FIX**:
+- Replace polling with WebSocket subscriptions
+- Use debounce/throttle utilities
+- Proper cleanup in useEffect
+
+---
+
+### Pattern 8: Switch Statement Sprawl
+**Found**: 40 switch statements across 23 files
+- AdminDashboardPage.tsx: 7 switches
+- NewsPage.tsx: 2 switches
+- CommandResponse.tsx: 3 switches
+
+Many could be replaced with object lookups:
+
+```tsx
+// BAD
+switch (type) {
+  case 'success': return 'green';
+  case 'error': return 'red';
+  case 'warning': return 'yellow';
+  default: return 'gray';
+}
+
+// GOOD
+const COLORS = { success: 'green', error: 'red', warning: 'yellow' };
+return COLORS[type] || 'gray';
+```
+
+---
+
+### Pattern 9: Inline onClick Handlers
+**Found**: 98 inline onClick handlers with arrow functions
+
+**Problem**: Creates new function on every render
+
+```tsx
+// BAD - New function every render
+<button onClick={() => handleClick(item.id)}>Click</button>
+
+// GOOD - Memoized or use data attributes
+<button onClick={handleClick} data-id={item.id}>Click</button>
+```
+
+**Files with most inline handlers**:
+- CommandResponse.tsx
+- Layout.tsx
+- AdminDashboardPage.tsx
+
+---
+
+### Pattern 10: Else-If Ladders
+**Found**: 65 else-if chains
+- Many could be switch statements or object lookups
+- AdminDashboardPage.tsx and CommandResponse.tsx are worst offenders
+
+---
+
+## 📈 UPDATED CODEBASE METRICS
+
+### Component Size Distribution
+- **Average component**: 335 lines
+- **Target average**: 200 lines
+- **Components over 400 lines**: 15 files
+- **Components over 1000 lines**: 8 files
+- **Largest component**: CommandResponse.tsx (2,438 lines)
+
+### Code Quality Metrics
+- **Total useState calls**: ~223 (should consolidate)
+- **Inline onClick handlers**: 98 (should extract)
+- **Switch statements**: 40 (many redundant)
+- **setTimeout/setInterval**: 29 files (consolidate)
+- **Complex && chains**: 10+ critical cases
+- **else-if ladders**: 65 instances
+
+### High-Value Targets (UPDATED)
+
+| File | Current | Issues | Priority |
+|------|---------|--------|----------|
+| CommandResponse.tsx | 2,438 | 3 switches, inline renders, timers | P0 |
+| Layout.tsx | 2,125 | 7-cond chains, timers, massive sidebar | P0 |
+| AccountSettingsPage.tsx | 1,987 | 24 useState, 1 switch, timers | P0 |
+| AdminDashboardPage.tsx | 1,550 | 7 switches, massive complexity | P1 |
+| FeaturesGraph.tsx | 1,408 | Timers, complex calculations | P1 |
+| EditWizard.tsx | 1,156 | 2 switches, repetitive steps | P1 |
+| NoteItem.tsx | 1,131 | Modal state explosion | P1 |
+| NotesPage.tsx | 1,019 | 18 useState, complex filtering | P2 |
+
+---
+
+## 🎯 COMPREHENSIVE CLEANUP ROADMAP
+
+### Quick Wins (1-2 hours each)
+
+1. **Extract date/priority utils** - Remove 190 duplicate lines
+2. **Create useItemModal hook** - Save 200+ lines
+3. **Simplify conditional chains** - Extract to helper functions
+4. **Replace inline handlers** - Use proper event delegation
+
+### Medium Effort (3-5 hours each)
+
+1. **Refactor AccountSettingsPage** - Split into 4 sub-components
+2. **Clean up Layout.tsx** - Extract ProjectSidebar, NavigationBar
+3. **Componentize NoteItem** - Extract NoteEditor, metadata panels
+4. **Simplify NotesPage** - Extract filters, toolbar, create form
+
+### Major Refactors (5-10 hours each)
+
+1. **CommandResponse.tsx** - Extract all renderers to separate files
+2. **AdminDashboardPage.tsx** - Convert switches to routed sub-pages
+3. **FeaturesGraph.tsx** - Optimize layout calculations, extract controls
+
+### Code Quality Pass (2-3 hours)
+
+1. Replace all switch statements with object lookups where appropriate
+2. Convert manual loading states to useLoadingState hook
+3. Consolidate timer usage (debounce utility, WebSocket patterns)
+4. Add proper TypeScript types (remove all `any` usage)
+
+---
+
+## 📊 ESTIMATED IMPACT
+
+### Line Count Reduction
+- **Component extraction**: -7,700 lines (60% of top 8 files)
+- **DRY violations fixed**: -605 lines
+- **Simplified conditionals**: -150 lines
+- **Removed inline handlers**: -200 lines
+- **Total reduction**: **~8,655 lines** (~35% of frontend code)
+
+### Maintainability Gains
+- Average component size: 335 → 180 lines (46% reduction)
+- Components over 1000 lines: 8 → 0
+- Reusable utilities: +6 new utility modules
+- Reusable hooks: +2 new custom hooks
+- Type safety: Remove all `any` types
+
+### Performance Improvements
+- Reduced re-renders (extracted components)
+- Memoized event handlers
+- Optimized conditional logic
+- Better code splitting opportunities
+
+---
+
 Ready to tackle these? Pick a file and I'll help you surgically extract components and clean up AI bloat.

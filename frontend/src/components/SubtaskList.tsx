@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Todo } from '../api';
 import { TodoItem, NewTodoForm } from './TodoItem';
+import { isOverdue } from '../utils/dateHelpers';
+import { getPriorityWeight } from '../utils/priorityHelpers';
 
 interface SubtaskListProps {
   parentTodo: Todo;
@@ -30,22 +32,6 @@ const SubtaskList: React.FC<SubtaskListProps> = ({
   // Auto-sort subtasks: overdue first, then priority, then due date, then creation date
   const sortSubtasks = (subtasks: Todo[]) => {
     return [...subtasks].sort((a, b) => {
-      // Helper function to check if overdue
-      const isOverdue = (dueDate?: string) => {
-        if (!dueDate) return false;
-        return new Date(dueDate).getTime() < new Date().getTime();
-      };
-
-      // Helper function to get priority weight
-      const getPriorityWeight = (priority?: string) => {
-        switch (priority) {
-          case 'high': return 3;
-          case 'medium': return 2;
-          case 'low': return 1;
-          default: return 2; // default to medium
-        }
-      };
-
       // Completed items go to bottom
       if (a.completed !== b.completed) {
         return a.completed ? 1 : -1;

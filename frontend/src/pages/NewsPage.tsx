@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { newsAPI } from '../api';
 import { getContrastTextColor } from '../utils/contrastTextColor';
+import { useItemModal } from '../hooks/useItemModal';
 
 interface NewsPost {
   _id: string;
@@ -21,8 +22,9 @@ const NewsPage: React.FC = () => {
   const [posts, setPosts] = useState<NewsPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedPost, setSelectedPost] = useState<NewsPost | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Modal state using custom hook
+  const postModal = useItemModal<NewsPost>({ initialMode: 'view' });
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -40,13 +42,7 @@ const NewsPage: React.FC = () => {
   }, []);
 
   const handlePostClick = (post: NewsPost) => {
-    setSelectedPost(post);
-    setIsModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setSelectedPost(null);
+    postModal.open(post, 'view');
   };
 
   // Enhanced markdown to HTML converter (same as EnhancedTextEditor)
@@ -247,26 +243,26 @@ const NewsPage: React.FC = () => {
       )}
 
       {/* Post Modal - using same pattern as NoteModal */}
-      {selectedPost && (
-        <div className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 transition-opacity duration-300 ${isModalOpen ? 'opacity-100' : 'opacity-0'}`}>
-          <div className={`bg-base-100 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col transition-transform duration-300 ${isModalOpen ? 'scale-100' : 'scale-95'}`}>
+      {postModal.item && (
+        <div className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 transition-opacity duration-300 ${postModal.isOpen ? 'opacity-100' : 'opacity-0'}`}>
+          <div className={`bg-base-100 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col transition-transform duration-300 ${postModal.isOpen ? 'scale-100' : 'scale-95'}`}>
             <div className="flex justify-between items-center p-6 border-b border-base-300">
               <div className="flex items-center gap-3">
                 <div className="text-lg">
-                  {React.cloneElement(getTypeIcon(selectedPost.type) as React.ReactElement, { 
-                    className: "w-5 h-5 inline" 
+                  {React.cloneElement(getTypeIcon(postModal.item.type) as React.ReactElement, {
+                    className: "w-5 h-5 inline"
                   })}
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold">{selectedPost.title}</h2>
+                  <h2 className="text-xl font-bold">{postModal.item.title}</h2>
                   <p className="text-sm text-base-content/60">
-                    {getTypeLabel(selectedPost.type)} • {new Date(selectedPost.publishedAt!).toLocaleDateString()}
+                    {getTypeLabel(postModal.item.type)} • {new Date(postModal.item.publishedAt!).toLocaleDateString()}
                   </p>
                 </div>
               </div>
-              <button 
+              <button
                 className="btn btn-ghost btn-circle"
-                onClick={handleCloseModal}
+                onClick={postModal.close}
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -275,14 +271,14 @@ const NewsPage: React.FC = () => {
             </div>
 
             <div className="flex-1 overflow-y-auto p-6">
-              {selectedPost.summary && (
+              {postModal.item.summary && (
                 <p className="text-base-content/80 mb-4 italic bg-base-200 p-3 rounded-lg">
-                  {selectedPost.summary}
+                  {postModal.item.summary}
                 </p>
               )}
-              <div 
+              <div
                 className="text-base-content/70 leading-relaxed prose prose-sm max-w-none"
-                dangerouslySetInnerHTML={{ __html: renderMarkdown(selectedPost.content) }}
+                dangerouslySetInnerHTML={{ __html: renderMarkdown(postModal.item.content) }}
               />
             </div>
           </div>

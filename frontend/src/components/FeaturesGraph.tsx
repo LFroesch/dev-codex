@@ -93,20 +93,20 @@ const getComponentSortPriority = (doc: BaseComponent): number => {
 /**
  * Get the vertical tier/rank for a category in the architectural layout
  * Lower numbers appear higher in the graph (closer to top)
- * Order: documentation/assets > infrastructure > frontend > api > backend > security > database
+ * Order: documentation/assets/infrastructure > frontend > api > backend > security > database
  */
 const getCategoryRank = (category: ComponentCategory): number => {
   const rankMap: Record<ComponentCategory, number> = {
     documentation: 0,
     asset: 0,
-    infrastructure: 1,
-    frontend: 2,
-    api: 3,
-    backend: 4,
-    security: 5,
-    database: 6,
+    infrastructure: 0,
+    frontend: 1,
+    api: 2,
+    backend: 3,
+    security: 4,
+    database: 5,
   };
-  return rankMap[category] ?? 3; // Default to middle tier if unknown
+  return rankMap[category] ?? 2; // Default to middle tier if unknown
 };
 
 /**

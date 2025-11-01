@@ -63,7 +63,7 @@ interface NewsPost {
   title: string;
   content: string;
   summary?: string;
-  type: 'news' | 'update' | 'dev_log' | 'announcement';
+  type: 'news' | 'update' | 'dev_log' | 'announcement' | 'important';
   isPublished: boolean;
   publishedAt?: string;
   authorId: string;
@@ -99,7 +99,7 @@ const AdminDashboardPage: React.FC = () => {
     title: '',
     content: '',
     summary: '',
-    type: 'news' as 'news' | 'update' | 'dev_log' | 'announcement',
+    type: 'news' as 'news' | 'update' | 'dev_log' | 'announcement' | 'important',
     isPublished: false
   });
   const [postToDelete, setPostToDelete] = useState<NewsPost | null>(null);
@@ -1249,6 +1249,7 @@ const AdminDashboardPage: React.FC = () => {
                       <option value="update">🔄 Update</option>
                       <option value="dev_log">👩‍💻 Dev Log</option>
                       <option value="announcement">📢 Announcement</option>
+                      <option value="important">⚠️ Important</option>
                     </select>
                   </div>
                   
@@ -1328,7 +1329,7 @@ const AdminDashboardPage: React.FC = () => {
                       <div className="flex items-start justify-between mb-3">
                         <h3 className="border-2 border-base-content/20 font-semibold truncate px-2 py-1 rounded-md group-hover:opacity-90 transition-opacity bg-primary"
                            style={{ color: getContrastTextColor() }}>
-                          {post.type === 'news' ? '📰' : post.type === 'update' ? '🔄' : post.type === 'dev_log' ? '👩‍💻' : '📢'} {post.title}
+                          {post.type === 'news' ? '📰' : post.type === 'update' ? '🔄' : post.type === 'dev_log' ? '👩‍💻' : post.type === 'important' ? '⚠️' : '📢'} {post.title}
                         </h3>
                         <span className={`badge badge-xs ${post.isPublished ? 'badge-success' : 'badge-ghost'}`}>
                           {post.isPublished ? '✓' : '○'}

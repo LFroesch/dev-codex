@@ -2,13 +2,7 @@
 **Date:** October 30, 2025
 
 ## Final Todos BLOCKING PROD:
-- [HIGH] Tune FeaturesGraph.tsx autosort etc
 - [HIGH] Record Gifs for the README to demonstrate functionality
-IF THERES TIME:
-- [MEDIUM] Improve /llm primer with better context ('you are...')
-    - /llm [format] components [@project]
-    - /llm [format] todos
-    - ... etc
 
 ## Today's Launch Schedule (9am - 5pm)
 

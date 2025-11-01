@@ -404,7 +404,7 @@ export class CommandExecutor {
         case CommandType.CLEAR_NOTIFICATIONS:
           return await this.utilityHandlers.handleClearNotifications();
         case CommandType.LLM_CONTEXT:
-          return this.utilityHandlers.handleLLMContext();
+          return await this.utilityHandlers.handleLLMContext(parsed, currentProjectId);
         case CommandType.GOTO:
           return await this.utilityHandlers.handleGoto(parsed, currentProjectId);
         case CommandType.TODAY:

@@ -5,7 +5,7 @@ export interface NewsPost {
   title: string;
   content: string;
   summary?: string;
-  type: 'news' | 'update' | 'dev_log' | 'announcement';
+  type: 'news' | 'update' | 'dev_log' | 'announcement' | 'important';
   isPublished: boolean;
   publishedAt?: string;
   authorId: string;
@@ -17,7 +17,7 @@ export interface CreateNewsPostRequest {
   title: string;
   content: string;
   summary?: string;
-  type?: 'news' | 'update' | 'dev_log' | 'announcement';
+  type?: 'news' | 'update' | 'dev_log' | 'announcement' | 'important';
   isPublished?: boolean;
 }
 
@@ -25,7 +25,7 @@ export interface UpdateNewsPostRequest {
   title?: string;
   content?: string;
   summary?: string;
-  type?: 'news' | 'update' | 'dev_log' | 'announcement';
+  type?: 'news' | 'update' | 'dev_log' | 'announcement' | 'important';
   isPublished?: boolean;
 }
 
@@ -33,6 +33,12 @@ export const newsAPI = {
   // Get all published news posts (public)
   getPublished: async (): Promise<{ posts: NewsPost[] }> => {
     const response = await apiClient.get('/news');
+    return response.data;
+  },
+
+  // Get important announcements (public)
+  getImportant: async (): Promise<{ posts: NewsPost[] }> => {
+    const response = await apiClient.get('/news/important');
     return response.data;
   },
 

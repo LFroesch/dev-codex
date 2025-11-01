@@ -21,13 +21,28 @@ const adminMiddleware = async (req: AuthRequest, res: any, next: any) => {
 // Get all published news posts (public endpoint)
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const posts = await NewsPost.find({ 
-      isPublished: true 
+    const posts = await NewsPost.find({
+      isPublished: true
     }).sort({ publishedAt: -1 });
-    
+
     res.json({ posts });
   } catch (error) {
     console.error('Error fetching news posts:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get important announcements (public endpoint)
+router.get('/important', async (req: Request, res: Response) => {
+  try {
+    const posts = await NewsPost.find({
+      isPublished: true,
+      type: 'important'
+    }).sort({ publishedAt: -1 });
+
+    res.json({ posts });
+  } catch (error) {
+    console.error('Error fetching important announcements:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

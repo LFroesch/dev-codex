@@ -1,6 +1,6 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { Outlet, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import { authAPI, projectAPI } from '../api';
+import { authAPI, projectAPI, newsAPI } from '../api';
 import type { Project } from '../api/types';
 import SessionTracker from './SessionTracker';
 import NotificationBell from './NotificationBell';
@@ -32,12 +32,14 @@ const Layout: React.FC = () => {
   const [isHandlingTimeout, setIsHandlingTimeout] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [analyticsReady, setAnalyticsReady] = useState(false);
+  const [importantAnnouncements, setImportantAnnouncements] = useState<any[]>([]);
+  const [showImportantPopup, setShowImportantPopup] = useState(false);
 
   // Page-level tab states
   const [activeStackTab, setActiveStackTab] = useState<'current' | 'add'>('current');
   const [activeDeploymentTab, setActiveDeploymentTab] = useState<'overview' | 'deployment' | 'env' | 'notes'>('overview');
   const [activeFeaturesTab, setActiveFeaturesTab] = useState<'graph' | 'structure' | 'all' | 'create'>('graph');
-  const [activeNewsTab, setActiveNewsTab] = useState<'all' | 'news' | 'update' | 'dev_log' | 'announcement'>('all');
+  const [activeNewsTab, setActiveNewsTab] = useState<'all' | 'news' | 'update' | 'dev_log' | 'announcement' | 'important'>('all');
   const [activeNotesTab, setActiveNotesTab] = useState<'notes' | 'todos' | 'devlog'>('notes');
   const [activePublicTab, setActivePublicTab] = useState<'overview' | 'url' | 'visibility'>('overview');
   const [activeSharingTab, setActiveSharingTab] = useState<'overview' | 'team' | 'activity'>('overview');
@@ -57,6 +59,23 @@ const Layout: React.FC = () => {
       }
     }
   }, [location.pathname, searchParams]);
+
+  // Fetch important announcements
+  useEffect(() => {
+    const fetchImportantAnnouncements = async () => {
+      try {
+        const response = await newsAPI.getImportant();
+        setImportantAnnouncements(response.posts);
+      } catch (err) {
+        console.error('Error fetching important announcements:', err);
+      }
+    };
+
+    fetchImportantAnnouncements();
+    // Refresh every 5 minutes
+    const interval = setInterval(fetchImportantAnnouncements, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Unsaved changes modal state
   const [showUnsavedChangesModal, setShowUnsavedChangesModal] = useState(false);
@@ -1199,6 +1218,72 @@ const Layout: React.FC = () => {
                 <span className="text-sm font-medium text-base-content/80 ml-2">Hi, {user?.firstName}!</span>
 
                 <NotificationBell />
+
+                {/* Important Announcements Notification */}
+                {importantAnnouncements.length > 0 && (
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowImportantPopup(!showImportantPopup)}
+                      className="btn btn-ghost btn-circle btn-sm relative hover:bg-warning/20"
+                      title="Important Announcement"
+                    >
+                      <svg className="w-5 h-5 text-warning" fill="currentColor" viewBox="0 0 24 24">
+                        <path fillRule="evenodd" d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+
+                    {/* Popup */}
+                    {showImportantPopup && (
+                      <>
+                        {/* Backdrop to close popup when clicking outside */}
+                        <div
+                          className="fixed inset-0 z-40"
+                          onClick={() => setShowImportantPopup(false)}
+                        />
+                        <div className="absolute right-0 top-12 w-80 bg-base-100 border-2 border-warning shadow-xl rounded-lg z-50 overflow-hidden">
+                          <div className="bg-warning/20 p-3 border-b-2 border-warning flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <svg className="w-5 h-5 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                              </svg>
+                              <span className="font-semibold text-sm">Important Announcement</span>
+                            </div>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setShowImportantPopup(false);
+                              }}
+                              className="btn btn-ghost btn-xs btn-circle"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
+                          <div className="p-4 space-y-3">
+                            <div>
+                              <div className="font-medium text-sm mb-1">{importantAnnouncements[0].title}</div>
+                              {importantAnnouncements[0].summary && (
+                                <div className="text-xs text-base-content/70">{importantAnnouncements[0].summary}</div>
+                              )}
+                            </div>
+                            <button
+                              onClick={() => {
+                                navigate('/news');
+                                setActiveNewsTab('important');
+                                setShowImportantPopup(false);
+                              }}
+                              className="btn btn-warning btn-sm w-full"
+                            >
+                              View Full Announcement
+                            </button>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+
                 <UserMenu user={user} onLogout={handleLogout} />
               </div>
             ) : (
@@ -1222,7 +1307,7 @@ const Layout: React.FC = () => {
 
 
           {/* Second Navigation Bar - Desktop */}
-          {user && location.pathname !== '/support' && (location.pathname === '/projects' || (selectedProject && (location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/features' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && location.pathname !== '/projects') || (location.pathname === '/discover' || location.pathname.startsWith('/discover/'))) && (
+          {user && location.pathname !== '/support' && (location.pathname === '/projects' || (selectedProject && (location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/features' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && location.pathname !== '/projects') || (location.pathname === '/discover' || location.pathname.startsWith('/discover/')) || location.pathname === '/news') && (
           <div className="py-2">
             {/* Project Details Submenu - Desktop */}
             {selectedProject && (location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/features' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && location.pathname !== '/projects' && (

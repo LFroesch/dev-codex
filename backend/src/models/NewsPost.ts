@@ -4,7 +4,7 @@ export interface INewsPost extends Document {
   title: string;
   content: string;
   summary?: string;
-  type: 'news' | 'update' | 'dev_log' | 'announcement';
+  type: 'news' | 'update' | 'dev_log' | 'announcement' | 'important';
   isPublished: boolean;
   publishedAt?: Date;
   authorId: string;
@@ -32,7 +32,7 @@ const newsPostSchema = new Schema<INewsPost>({
   },
   type: {
     type: String,
-    enum: ['news', 'update', 'dev_log', 'announcement'],
+    enum: ['news', 'update', 'dev_log', 'announcement', 'important'],
     default: 'news'
   },
   isPublished: {

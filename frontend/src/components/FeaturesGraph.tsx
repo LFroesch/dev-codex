@@ -12,7 +12,7 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import dagre from 'dagre';
-import { Doc, projectAPI } from '../api';
+import { BaseComponent } from '../../../shared/types/project';
 import { ComponentCategory, CreateComponentData, RelationshipType, ComponentRelationship } from '../../../shared/types/project';
 import ComponentNode from './ComponentNode';
 import AreaNode from './AreaNode';
@@ -36,14 +36,10 @@ const RELATIONSHIP_WEIGHTS: Record<RelationshipType, number> = {
   implements: 6,    // Interface above implementation
   uses: 4,          // General usage
   calls: 4,         // Function calls
-  mentions: 2,      // Weak reference
-  similar: 1,       // Lateral relationship, no hierarchy
 };
 
 // Relationship type colors for edges and UI
 const RELATIONSHIP_COLORS: Record<RelationshipType, string> = {
-  mentions: '#3b82f6',
-  similar: '#eab308',
   uses: '#3b82f6',
   implements: '#10b981',
   extends: '#8b5cf6',
@@ -74,7 +70,7 @@ const getMinLength = (type: RelationshipType): number => {
  * Calculate connection strength based on weighted relationships
  * This gives a better importance metric than just counting relationships
  */
-const calculateConnectionStrength = (doc: Doc): number => {
+const calculateConnectionStrength = (doc: BaseComponent): number => {
   return (doc.relationships || []).reduce((sum: number, rel: ComponentRelationship) => {
     return sum + getRelationshipWeight(rel.relationType);
   }, 0);
@@ -85,7 +81,7 @@ const calculateConnectionStrength = (doc: Doc): number => {
  * Lower numbers appear first (higher priority)
  * Section headers ALWAYS at top, then other documentation, then everything else
  */
-const getComponentSortPriority = (doc: Doc): number => {
+const getComponentSortPriority = (doc: BaseComponent): number => {
   // Section headers at the very top (priority 0)
   if (doc.type === 'section' || doc.type === 'area') return 0;
   // Other documentation items (priority 1)
@@ -174,10 +170,8 @@ const getEdgeHandlePositions = (
 };
 
 interface FeaturesGraphProps {
-  docs: Doc[];
+  docs: BaseComponent[];
   projectId: string;
-  onDocClick?: (component: Doc) => void;
-  onDocEdit?: (component: Doc) => void;
   onCreateDoc?: (component: CreateComponentData) => Promise<void>;
   creating?: boolean;
   onRefresh?: () => Promise<void>;
@@ -189,11 +183,11 @@ type ViewMode = 'graph' | 'cards';
  * Filter components based on category, feature, and search query
  */
 const filterComponents = (
-  components: Doc[],
+  components: BaseComponent[],
   selectedCategories: Set<ComponentCategory>,
   selectedFeatures: Set<string>,
   searchQuery: string
-): Doc[] => {
+): BaseComponent[] => {
   return components.filter(component => {
     if (!selectedCategories.has(component.category)) return false;
 
@@ -216,8 +210,8 @@ const filterComponents = (
 /**
  * Group components by their feature
  */
-const groupComponentsByFeature = (components: Doc[]): Record<string, Doc[]> => {
-  const grouped: Record<string, Doc[]> = {};
+const groupComponentsByFeature = (components: BaseComponent[]): Record<string, BaseComponent[]> => {
+  const grouped: Record<string, BaseComponent[]> = {};
   components.forEach(component => {
     const featureKey = component.feature || 'Ungrouped';
     if (!grouped[featureKey]) grouped[featureKey] = [];
@@ -226,7 +220,7 @@ const groupComponentsByFeature = (components: Doc[]): Record<string, Doc[]> => {
   return grouped;
 };
 
-const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onDocClick, onDocEdit, onCreateDoc, creating, onRefresh }) => {
+const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onCreateDoc, creating, onRefresh }) => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [selectedCategories, setSelectedCategories] = useState<Set<ComponentCategory>>(
@@ -246,7 +240,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
   // Get selected component from node
-  const selectedComponent = selectedNode ? (selectedNode.data as any).component as Doc : null;
+  const selectedComponent = selectedNode ? (selectedNode.data as { component: BaseComponent }).component : null;
 
   // Custom hooks for relationship and component management
   const relationshipManagement = useRelationshipManagement({
@@ -310,7 +304,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
         };
 
         // Only update if the component data actually changed
-        const currentComponent = (selectedNode.data as any).component as Doc;
+        const currentComponent = (selectedNode.data as { component: BaseComponent }).component;
         if (JSON.stringify(currentComponent.relationships) !== JSON.stringify(updatedComponent.relationships) ||
             currentComponent.updatedAt !== updatedComponent.updatedAt) {
           setSelectedNode(newNode);
@@ -323,7 +317,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
   /**
    * Generate layout using Dagre algorithm (hierarchical, relationship-aware)
    */
-  const generateDagreLayout = useCallback((components: Doc[]) => {
+  const generateDagreLayout = useCallback((components: BaseComponent[]) => {
     const g = new dagre.graphlib.Graph();
 
     // Configure graph layout
@@ -393,7 +387,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
     dagre.layout(g);
 
     // Group components by tier using getCategoryRank
-    const tierMap: Record<number, Doc[]> = {};
+    const tierMap: Record<number, BaseComponent[]> = {};
     components.forEach(doc => {
       // Header node at tier 0, otherwise use category rank + 1 to offset from header
       const tier = (headerNode && doc.id === headerNode.id) ? 0 : getCategoryRank(doc.category) + 1;
@@ -402,7 +396,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
     });
 
     // Position nodes in tiers with horizontal spacing
-    const layoutedNodes: any[] = [];
+    const layoutedNodes: Node[] = [];
     Object.keys(tierMap).forEach(tierKey => {
       const tier = parseInt(tierKey);
       let tierDocs = tierMap[tier];
@@ -412,7 +406,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
       // Smart horizontal ordering: sort by relationship connectivity
       // Components with relationships to each other should be adjacent
       if (tierDocs.length > 1) {
-        const sortedDocs: Doc[] = [];
+        const sortedDocs: BaseComponent[] = [];
         const remaining = new Set(tierDocs.map(d => d.id));
 
         // Start with the most connected component in this tier
@@ -431,7 +425,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
 
         // Iteratively add the component most connected to already-sorted components
         while (remaining.size > 0) {
-          let bestNext: Doc | null = null;
+          let bestNext: BaseComponent | null = null;
           let bestScore = -1;
 
           for (const docId of remaining) {
@@ -470,7 +464,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
         const isStale = new Date(doc.updatedAt).getTime() < Date.now() - 90 * 24 * 60 * 60 * 1000;
         const isIncomplete = doc.content.length < 100;
         const isOrphaned = !doc.feature;
-        const hasDuplicates = (doc.relationships || []).some((rel: ComponentRelationship) => rel.relationType === 'similar');
+        const hasDuplicates = false; // Removed similar relationship type check
         const nodeType = doc.type === 'area' || doc.type === 'section' ? 'areaNode' : 'componentNode';
 
         layoutedNodes.push({
@@ -701,7 +695,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
   // Filter nodes and edges
   const filteredNodes = useMemo(() => {
     // Extract components from nodes and filter
-    const nodeComponents = nodes.map(node => (node.data as any).component as Doc);
+    const nodeComponents = nodes.map(node => (node.data as { component: BaseComponent }).component);
     const filtered = filterComponents(nodeComponents, selectedCategories, selectedFeatures, searchQuery);
     const filteredIds = new Set(filtered.map(c => c.id));
 
@@ -788,9 +782,9 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
   }
 
   return (
-    <div className="flex flex-col lg:flex-row gap-4">
+    <div className="flex flex-col lg:flex-row gap-2">
       {/* Controls Sidebar */}
-      <div className="w-full lg:max-w-sm lg:w-80 bg-base-100 flex-shrink-0 space-y-4">
+      <div className="w-full lg:max-w-sm lg:w-80 bg-base-100 flex-shrink-0 space-y-2">
         <GraphControls
           docs={docs}
           selectedCategories={selectedCategories}
@@ -807,8 +801,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
         />
 
         {/* View Mode Toggle */}
-        <div className="bg-base-100 border-thick rounded-lg p-3 sm:p-4">
-          <div className="text-xs font-semibold text-base-content/60 mb-2">View Mode</div>
+        <div className="bg-base-100 border-thick rounded-lg p-2 sm:p-4">
           <div className="flex gap-2">
             <button
               onClick={() => setViewMode('graph')}
@@ -831,15 +824,11 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
               Cards
             </button>
           </div>
-        </div>
-
-        {/* Graph Controls (only shown in graph view) */}
+        {/* Edge Routing Style */}
         {viewMode === 'graph' && (
           <>
-            {/* Edge Routing Style */}
-            <div className="bg-base-100 border-thick rounded-lg p-3 sm:p-4">
-              <div className="text-xs font-semibold text-base-content/60 mb-2">Edge Routing</div>
-              <div className="flex gap-2">
+            <div className="bg-base-100 rounded-lg">
+              <div className="flex">
                 <button
                   onClick={() => setEdgeType('smoothstep')}
                   className={`btn btn-sm flex-1 ${edgeType === 'smoothstep' ? 'btn-primary' : 'btn-ghost'}`}
@@ -861,6 +850,8 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
           </>
         )}
       </div>
+        </div>
+
 
       {/* Main Content Area - Graph or Cards */}
       <div className="w-full h-[400px] sm:h-[500px] lg:h-[600px] lg:flex-1 relative">
@@ -882,7 +873,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
               <Controls />
               <MiniMap
                 nodeColor={(node) => {
-                  const component = (node.data as any).component as Doc;
+                  const component = (node.data as { component: BaseComponent }).component;
                   return getCategoryColor(component.category);
                 }}
                 maskColor="rgba(0, 0, 0, 0.6)"
@@ -966,12 +957,13 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
                                   {/* Category badge */}
                                   <div className="flex items-center justify-between">
                                     <span
-                                      className="badge badge-sm h-6 p-2 border-thick font-semibold text-sm"
+                                      className="badge badge-sm p-2 border-thick font-semibold text-xs truncate max-w-full"
                                       style={{
                                         backgroundColor: categoryInfo?.color,
                                         color: 'white',
                                         borderColor: categoryInfo?.color
                                       }}
+                                      title={`${component.category} - ${component.type}`}
                                     >
                                       {categoryInfo?.emoji} {component.category} - {component.type}
                                     </span>

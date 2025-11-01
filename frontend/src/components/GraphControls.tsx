@@ -67,7 +67,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
   };
 
   return (
-    <div className="bg-base-100 border-2 border-base-content/20 rounded-lg p-4 space-y-4">
+    <div className="bg-base-100 border-2 border-base-content/20 rounded-lg p-4 space-y-2">
       {/* Create New Component */}
       {onCreateDoc && (
         <div className="border-thick rounded-lg p-3">
@@ -182,7 +182,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
       <div className="grid grid-cols-2 gap-2">
         <button
           onClick={onResetView}
-          className="btn btn-sm h-14 btn-primary bg-primary/20 border-thick border-primary"
+          className="btn btn-sm h-6 btn-primary bg-primary/20 border-thick border-primary"
           title="Reset zoom and position"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -193,7 +193,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
         </button>
         <button
           onClick={() => setShowResetConfirm(true)}
-          className="btn btn-sm h-14 btn-error bg-error/20 border-thick border-error"
+          className="btn btn-sm h-6 btn-error bg-error/20 border-thick border-error"
           title="Clear saved layout"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

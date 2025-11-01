@@ -102,7 +102,6 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
   };
 
   const handleEditRelationship = useCallback((index: number, relationType: RelationshipType, description: string) => {
-    console.log('📝 EDIT RELATIONSHIP CLICKED', { index, relationType, description });
     setEditingRelIndex(index);
     setEditRelData({ relationType, description: description || '' });
   }, []);
@@ -116,7 +115,6 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
     const currentRelationships = formData[step.id] || step.value || [];
     const relationship = currentRelationships[editingRelIndex];
     if (!relationship) {
-      console.error('Relationship not found at index:', editingRelIndex);
       toast.error('Relationship not found');
       return;
     }
@@ -168,7 +166,6 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
   }, []);
 
   const handleEditSubtask = useCallback((index: number, subtask: any) => {
-    console.log('📝 EDIT SUBTASK CLICKED', { index, subtask });
     setEditingSubtaskIndex(index);
     setEditSubtaskData({
       title: subtask.title || '',
@@ -187,7 +184,6 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
     const currentSubtasks = formData[step.id] || step.value || [];
     const subtask = currentSubtasks[editingSubtaskIndex];
     if (!subtask) {
-      console.error('Subtask not found at index:', editingSubtaskIndex);
       toast.error('Subtask not found');
       return;
     }
@@ -315,13 +311,6 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
       const { wizardType, todoId, noteId, entryId, componentId } = wizardData;
       const itemId = todoId || noteId || entryId || componentId;
 
-      console.log('🔧 EditWizard submitting:', {
-        wizardType,
-        itemId,
-        currentProjectId,
-        hasFormData: Object.keys(formData).length > 0
-      });
-
       const commandMap: Record<string, string> = {
         'edit_todo': 'todo',
         'edit_note': 'note',
@@ -350,12 +339,10 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
       if (flags.length > 0) {
         try {
           const editCommand = `/edit ${itemType} ${itemId} ${flags.join(' ')}`;
-          console.log('Executing edit command:', editCommand);
 
           const response = await terminalAPI.executeCommand(editCommand, currentProjectId);
 
           if (response.type === 'error') {
-            console.error('Command failed:', response.message);
             errorCount++;
             toast.error(`Failed to update: ${response.message}`);
           } else {
@@ -375,13 +362,6 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
       if (wizardType === 'edit_component' && formData.relationships) {
         const newRels = formData.relationships || [];
 
-        console.log('📊 Processing relationships:', {
-          totalRelationships: newRels.length,
-          tempRelationships: newRels.filter((r: any) => r.id?.startsWith('temp-')).length,
-          componentId: itemId,
-          currentProjectId
-        });
-
         // Find new relationships (temp IDs only - everything else already saved)
         for (const newRel of newRels) {
           if (newRel.id?.startsWith('temp-')) {
@@ -391,17 +371,9 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
                 : '';
               const addCmd = `/edit component ${itemId} --field=relationship --action=add --target=${newRel.targetId} --type=${newRel.relationType}${desc}`;
 
-              console.log('📤 Executing relationship command:', {
-                command: addCmd,
-                projectId: currentProjectId,
-                sourceId: itemId,
-                targetId: newRel.targetId
-              });
-
               const response = await terminalAPI.executeCommand(addCmd, currentProjectId);
 
               if (response.type === 'error') {
-                console.error('Relationship command failed:', response.message);
                 errorCount++;
                 toast.error(`Failed to add relationship: ${response.message}`);
               } else {
@@ -697,7 +669,6 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
                               <button
                                 type="button"
                                 onClick={() => {
-                                  console.log('📝 Edit clicked for relationship:', { index, rel });
                                   handleEditRelationship(index, rel.relationType, rel.description || '');
                                 }}
                                 className="btn btn-ghost btn-xs border-thick hover:bg-primary/20"
@@ -708,7 +679,6 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
                               <button
                                 type="button"
                                 onClick={() => {
-                                  console.log('🗑️ Delete clicked for relationship:', { index, rel });
                                   setDeleteConfirmation({
                                     isOpen: true,
                                     relationshipId: rel.id,
@@ -956,7 +926,6 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
                               <button
                                 type="button"
                                 onClick={() => {
-                                  console.log('📝 Edit clicked for subtask:', { index, subtask });
                                   handleEditSubtask(index, subtask);
                                 }}
                                 className="btn btn-ghost btn-xs border-thick hover:bg-primary/20"
@@ -967,7 +936,6 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
                               <button
                                 type="button"
                                 onClick={() => {
-                                  console.log('🗑️ Delete clicked for subtask:', { index, subtask });
                                   setDeleteSubtaskConfirmation({
                                     isOpen: true,
                                     subtaskId: subtask.id,

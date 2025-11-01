@@ -226,13 +226,11 @@ export class NoteHandlers extends BaseCommandHandler {
 
       if (title) {
         const sanitizedTitle = sanitizeText(title);
-        console.log(`[EDIT NOTE] Updating title from "${note.title}" to "${sanitizedTitle}"`);
         note.title = sanitizedTitle;
         updated = true;
       }
 
       if (content) {
-        console.log(`[EDIT NOTE] Updating content for note "${note.title}"`);
         note.content = sanitizeText(content);
         updated = true;
       }
@@ -241,9 +239,7 @@ export class NoteHandlers extends BaseCommandHandler {
         note.updatedAt = new Date();
 
         try {
-          console.log(`[EDIT NOTE] Saving project "${project.name}" (ID: ${project._id})`);
           await project.save();
-          console.log(`[EDIT NOTE] Save successful for note "${note.title}"`);
         } catch (saveError) {
           console.error('[EDIT NOTE] Save failed:', saveError);
           return {

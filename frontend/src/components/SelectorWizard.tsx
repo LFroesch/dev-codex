@@ -125,8 +125,6 @@ const SelectorWizard: React.FC<SelectorWizardProps> = ({ wizardType, step, proje
 
     setIsSubmitting(true);
     try {
-      console.log('🗑️ Executing delete command:', { command, projectId });
-
       const result = await terminalAPI.executeCommand(command, projectId);
 
       if (result.type === 'error') {

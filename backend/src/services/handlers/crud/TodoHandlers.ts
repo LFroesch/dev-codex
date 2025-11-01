@@ -770,13 +770,11 @@ export class TodoHandlers extends BaseCommandHandler {
             suggestions: ['/help edit todo']
           };
         }
-        console.log(`[EDIT TODO] Updating title from "${todo.title}" to "${validation.sanitized}"`);
         todo.title = validation.sanitized!;
         updated = true;
       }
 
       if (content) {
-        console.log(`[EDIT TODO] Updating description for todo "${todo.title}"`);
         todo.description = sanitizeText(content);
         updated = true;
       }
@@ -789,7 +787,6 @@ export class TodoHandlers extends BaseCommandHandler {
             suggestions: ['/help edit todo']
           };
         }
-        console.log(`[EDIT TODO] Updating priority for todo "${todo.title}" to ${priority.toLowerCase()}`);
         todo.priority = priority.toLowerCase() as 'low' | 'medium' | 'high';
         updated = true;
       }
@@ -803,7 +800,6 @@ export class TodoHandlers extends BaseCommandHandler {
             suggestions: ['/help edit todo']
           };
         }
-        console.log(`[EDIT TODO] Updating status for todo "${todo.title}" to ${status.toLowerCase()}`);
         todo.status = status.toLowerCase() as any;
         updated = true;
       }
@@ -822,16 +818,13 @@ export class TodoHandlers extends BaseCommandHandler {
             ]
           };
         }
-        console.log(`[EDIT TODO] Updating due date for todo "${todo.title}" to ${formatDueDate(dueDateParse.date!)}`);
         todo.dueDate = dueDateParse.date;
         updated = true;
       }
 
       if (updated) {
         try {
-          console.log(`[EDIT TODO] Saving project "${project.name}" (ID: ${project._id})`);
           await project.save();
-          console.log(`[EDIT TODO] Save successful for todo "${todo.title}"`);
         } catch (saveError) {
           console.error('[EDIT TODO] Save failed:', saveError);
           return {
@@ -1101,13 +1094,11 @@ export class TodoHandlers extends BaseCommandHandler {
             suggestions: ['/help edit subtask']
           };
         }
-        console.log(`[EDIT SUBTASK] Updating title from "${subtask.title}" to "${validation.sanitized}"`);
         subtask.title = validation.sanitized!;
         updated = true;
       }
 
       if (content) {
-        console.log(`[EDIT SUBTASK] Updating description for subtask "${subtask.title}"`);
         subtask.description = sanitizeText(content);
         updated = true;
       }
@@ -1120,7 +1111,6 @@ export class TodoHandlers extends BaseCommandHandler {
             suggestions: ['/help edit subtask']
           };
         }
-        console.log(`[EDIT SUBTASK] Updating priority for subtask "${subtask.title}" to ${priority.toLowerCase()}`);
         subtask.priority = priority.toLowerCase() as 'low' | 'medium' | 'high';
         updated = true;
       }
@@ -1134,7 +1124,6 @@ export class TodoHandlers extends BaseCommandHandler {
             suggestions: ['/help edit subtask']
           };
         }
-        console.log(`[EDIT SUBTASK] Updating status for subtask "${subtask.title}" to ${status.toLowerCase()}`);
         subtask.status = status.toLowerCase() as any;
         updated = true;
       }
@@ -1153,16 +1142,13 @@ export class TodoHandlers extends BaseCommandHandler {
             ]
           };
         }
-        console.log(`[EDIT SUBTASK] Updating due date for subtask "${subtask.title}" to ${formatDueDate(dueDateParse.date!)}`);
         subtask.dueDate = dueDateParse.date;
         updated = true;
       }
 
       if (updated) {
         try {
-          console.log(`[EDIT SUBTASK] Saving project "${project.name}" (ID: ${project._id})`);
           await project.save();
-          console.log(`[EDIT SUBTASK] Save successful for subtask "${subtask.title}"`);
         } catch (saveError) {
           console.error('[EDIT SUBTASK] Save failed:', saveError);
           return {
@@ -1542,14 +1528,12 @@ export class TodoHandlers extends BaseCommandHandler {
     // Try to find by UUID (exact match) - PRIORITY 1
     const byUuid = notes.find((note: any) => note.id === identifier);
     if (byUuid) {
-      console.log(`[FIND NOTE] Found by UUID: ${identifier}`);
       return byUuid;
     }
 
     // Try to find by index (1-based) - PRIORITY 2
     const index = parseInt(identifier);
     if (!isNaN(index) && index > 0 && index <= notes.length) {
-      console.log(`[FIND NOTE] Found by index: ${index}`);
       return notes[index - 1];
     }
 
@@ -1559,9 +1543,7 @@ export class TodoHandlers extends BaseCommandHandler {
       note.title.toLowerCase().includes(identifierLower)
     );
     if (byTitle) {
-      console.log(`[FIND NOTE] Found by title match: ${identifier}`);
     } else {
-      console.log(`[FIND NOTE] Not found: ${identifier}`);
     }
     return byTitle || null;
   }
@@ -1573,14 +1555,12 @@ export class TodoHandlers extends BaseCommandHandler {
     // Try to find by UUID (exact match) - PRIORITY 1
     const byUuid = devLog.find((entry: any) => entry.id === identifier);
     if (byUuid) {
-      console.log(`[FIND DEVLOG] Found by UUID: ${identifier}`);
       return byUuid;
     }
 
     // Try to find by index (1-based) - PRIORITY 2
     const index = parseInt(identifier);
     if (!isNaN(index) && index > 0 && index <= devLog.length) {
-      console.log(`[FIND DEVLOG] Found by index: ${index}`);
       return devLog[index - 1];
     }
 
@@ -1590,9 +1570,7 @@ export class TodoHandlers extends BaseCommandHandler {
       entry.description && entry.description.toLowerCase().includes(identifierLower)
     );
     if (byDescription) {
-      console.log(`[FIND DEVLOG] Found by description match: ${identifier}`);
     } else {
-      console.log(`[FIND DEVLOG] Not found: ${identifier}`);
     }
     return byDescription || null;
   }
@@ -1625,14 +1603,12 @@ export class TodoHandlers extends BaseCommandHandler {
     // Try to find by UUID (exact match) - PRIORITY 1
     const byUuid = todos.find((todo: any) => todo.id === identifier);
     if (byUuid) {
-      console.log(`[FIND TODO] Found by UUID: ${identifier}`);
       return byUuid;
     }
 
     // Try to find by index (1-based) - PRIORITY 2
     const index = parseInt(identifier);
     if (!isNaN(index) && index > 0 && index <= todos.length) {
-      console.log(`[FIND TODO] Found by index: ${index}`);
       return todos[index - 1];
     }
 
@@ -1642,9 +1618,7 @@ export class TodoHandlers extends BaseCommandHandler {
       todo.title.toLowerCase().includes(identifierLower)
     );
     if (byTitle) {
-      console.log(`[FIND TODO] Found by title match: ${identifier}`);
     } else {
-      console.log(`[FIND TODO] Not found: ${identifier}`);
     }
     return byTitle || null;
   }

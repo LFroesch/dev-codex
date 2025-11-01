@@ -1244,8 +1244,6 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
             command = `/${baseCommand} ${flags}`;
           }
 
-          console.log('🚀 Executing command:', { command, projectId, wizardData });
-
           // Execute the command
           const result = await terminalAPI.executeCommand(command, projectId);
 
@@ -1506,15 +1504,6 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
       }
       // Use projectId from response metadata as fallback if currentProjectId is not set
       const projectId = currentProjectId || response.metadata?.projectId;
-
-      console.log('🔍 CommandResponse rendering EditWizard:', {
-        hasCurrentProjectId: !!currentProjectId,
-        currentProjectId,
-        hasResponseMetadata: !!response.metadata,
-        metadataProjectId: response.metadata?.projectId,
-        finalProjectId: projectId,
-        wizardType: response.data.wizardType
-      });
 
       return (
         <Suspense fallback={<LoadingFallback />}>

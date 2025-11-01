@@ -223,13 +223,11 @@ export class DevLogHandlers extends BaseCommandHandler {
 
       if (title) {
         const sanitizedTitle = sanitizeText(title);
-        console.log(`[EDIT DEVLOG] Updating title to "${sanitizedTitle}"`);
         entry.title = sanitizedTitle;
         updated = true;
       }
 
       if (content) {
-        console.log(`[EDIT DEVLOG] Updating description`);
         entry.description = sanitizeText(content);
         updated = true;
       }
@@ -238,9 +236,7 @@ export class DevLogHandlers extends BaseCommandHandler {
         entry.date = new Date();
 
         try {
-          console.log(`[EDIT DEVLOG] Saving project "${project.name}" (ID: ${project._id})`);
           await project.save();
-          console.log(`[EDIT DEVLOG] Save successful`);
         } catch (saveError) {
           console.error('[EDIT DEVLOG] Save failed:', saveError);
           return {

@@ -13,9 +13,9 @@ const AreaNode: React.FC<NodeProps<AreaNodeData>> = ({ data, selected }) => {
 
   return (
     <div
-      className={`rounded-xl border-6 border-solid border-base-content/40 bg-base-300/65 backdrop-blur-sm transition-all duration-200 shadow-lg ${selectedClass}`}
+      className={`rounded-xl border-thick border-base-content/60 bg-base-300/65 backdrop-blur-sm transition-all duration-200 shadow-lg ${selectedClass}`}
       style={{
-        width: '700px',
+        width: '600px',
         height: '300px',
       }}
     >
@@ -82,18 +82,18 @@ const AreaNode: React.FC<NodeProps<AreaNodeData>> = ({ data, selected }) => {
       {/* Node content */}
       <div className="p-4 h-full flex flex-col items-center justify-center">
         <div className="text-center">
-          <div className="text-4xl mb-2">📍</div>
-          <h3 className="font-bold text-2xl text-base-content/80 mb-1">
+          <div className="text-6xl mb-2">📍</div>
+          <h3 className="font-bold text-6xl text-base-content/80 mb-1">
             {component.title}
           </h3>
           {component.content && (
-            <p className="text-sm text-base-content/60 line-clamp-2">
+            <p className="text-3xl text-base-content/60 line-clamp-2">
               {component.content}
             </p>
           )}
           {component.feature && (
             <div className="mt-2">
-              <span className="badge badge-lg badge-ghost border-2 border-dashed">
+              <span className="border-thick border-base-content/60 text-3xl rounded-lg p-4 badge h-12 font-semibold">
                 {component.feature}
               </span>
             </div>

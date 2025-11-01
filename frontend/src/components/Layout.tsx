@@ -344,7 +344,7 @@ const Layout: React.FC = () => {
   const groupedSharedProjects = groupProjectsByCategory(sharedProjects);
 
   return (
-    <div className={`bg-base-100 flex flex-col ${location.pathname === '/terminal' ? 'h-screen overflow-hidden' : ''}`}>
+    <div className={`bg-base-100 flex flex-col ${location.pathname === '/terminal' || location.pathname === '/features' ? 'h-screen overflow-hidden' : ''}`}>
       {/* Header */}
       <header className="bg-base-100 border-b-2 border-base-content/20 shadow-sm sticky top-0 z-40 w-full">
 
@@ -1966,7 +1966,7 @@ const Layout: React.FC = () => {
           /* Project Details Tab - Show project content with tabs */
           <>
             {/* Page Content */}
-            <div className={`flex-1 overflow-auto border-2 border-base-content/20 bg-gradient-to-br from-base-50 to-base-100/50 rounded-lg shadow-2xl backdrop-blur-none container-height-fix ${location.pathname === '/support' ? 'mt-4' : ''}`}>
+            <div className={`flex-1 ${location.pathname === '/features' ? 'overflow-auto lg:overflow-hidden' : 'overflow-auto'} border-2 border-base-content/20 bg-gradient-to-br from-base-50 to-base-100/50 rounded-lg shadow-2xl backdrop-blur-none container-height-fix ${location.pathname === '/support' ? 'mt-4' : ''}`}>
               {selectedProject ? (
                 <div className="p-2">
                   <Outlet context={{

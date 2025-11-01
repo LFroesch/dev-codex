@@ -801,7 +801,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
         />
 
         {/* View Mode Toggle */}
-        <div className="bg-base-100 border-thick rounded-lg p-2 sm:p-4">
+        <div className="bg-base-100 border-thick rounded-lg p-2">
           <div className="flex gap-2">
             <button
               onClick={() => setViewMode('graph')}
@@ -826,28 +826,28 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
           </div>
         {/* Edge Routing Style */}
         {viewMode === 'graph' && (
-          <>
-            <div className="bg-base-100 rounded-lg">
-              <div className="flex">
-                <button
-                  onClick={() => setEdgeType('smoothstep')}
-                  className={`btn btn-sm flex-1 ${edgeType === 'smoothstep' ? 'btn-primary' : 'btn-ghost'}`}
-                  style={edgeType === 'smoothstep' ? { color: getContrastTextColor('primary') } : {}}
-                  title="Smart routing with rounded corners"
-                >
-                  Grid
-                </button>
-                <button
-                  onClick={() => setEdgeType('default')}
-                  className={`btn btn-sm flex-1 ${edgeType === 'default' ? 'btn-primary' : 'btn-ghost'}`}
-                  style={edgeType === 'default' ? { color: getContrastTextColor('primary') } : {}}
-                  title="Direct straight lines"
-                >
-                  Smooth
-                </button>
-              </div>
+          
+          <div className="bg-base-100 rounded-lg">
+            <div className="divider m-0"></div>
+            <div className="flex">
+              <button
+                onClick={() => setEdgeType('smoothstep')}
+                className={`btn btn-sm flex-1 ${edgeType === 'smoothstep' ? 'btn-primary' : 'btn-ghost'}`}
+                style={edgeType === 'smoothstep' ? { color: getContrastTextColor('primary') } : {}}
+                title="Smart routing with rounded corners"
+              >
+                Grid
+              </button>
+              <button
+                onClick={() => setEdgeType('default')}
+                className={`btn btn-sm flex-1 ${edgeType === 'default' ? 'btn-primary' : 'btn-ghost'}`}
+                style={edgeType === 'default' ? { color: getContrastTextColor('primary') } : {}}
+                title="Direct straight lines"
+              >
+                Smooth
+              </button>
             </div>
-          </>
+          </div>
         )}
       </div>
         </div>
@@ -1010,7 +1010,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
 
       {/* Selected Component Sidebar */}
       {selectedComponent && (
-        <div className="w-80 bg-base-100 border-2 border-base-content/20 rounded-lg p-4 space-y-3 max-h-[600px] overflow-y-auto">
+        <div className="w-full lg:w-80 bg-base-100 border-2 border-base-content/20 rounded-lg p-4 space-y-3 max-h-[80vh] lg:max-h-[600px] overflow-y-auto">
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
               <div className="text-sm font-semibold text-base-content/60 mb-1">Selected Component</div>

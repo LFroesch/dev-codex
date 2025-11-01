@@ -68,6 +68,20 @@ const calculateConnectionStrength = (doc: Doc): number => {
 };
 
 /**
+ * Get sort priority for components within a feature
+ * Lower numbers appear first (higher priority)
+ * Section headers ALWAYS at top, then other documentation, then everything else
+ */
+const getComponentSortPriority = (doc: Doc): number => {
+  // Section headers at the very top (priority 0)
+  if (doc.type === 'section' || doc.type === 'area') return 0;
+  // Other documentation items (priority 1)
+  if (doc.category === 'documentation') return 1;
+  // Everything else (priority 2)
+  return 2;
+};
+
+/**
  * Get the vertical tier/rank for a category in the architectural layout
  * Lower numbers appear higher in the graph (closer to top)
  * Order: documentation/assets > infrastructure > frontend > api > backend > security > database
@@ -288,9 +302,15 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
     const nodeSizes = new Map<string, { width: number; height: number }>();
     components.forEach(doc => {
       const connectionStrength = calculateConnectionStrength(doc);
+
+      // Area/section nodes are wider than regular component nodes
+      const isAreaNode = doc.type === 'area' || doc.type === 'section';
+      const baseWidth = isAreaNode ? 600 : 400;
+      const baseHeight = isAreaNode ? 250 : 200;
+
       // Base size + scaling based on connections (with max limits)
-      const width = Math.min(600, 400 + connectionStrength * 8);
-      const height = Math.min(300, 200 + connectionStrength * 4);
+      const width = Math.min(800, baseWidth + connectionStrength * 8);
+      const height = Math.min(350, baseHeight + connectionStrength * 4);
       nodeSizes.set(doc.id, { width, height });
     });
 
@@ -357,9 +377,64 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
     const layoutedNodes: any[] = [];
     Object.keys(tierMap).forEach(tierKey => {
       const tier = parseInt(tierKey);
-      const tierDocs = tierMap[tier];
+      let tierDocs = tierMap[tier];
       const tierY = tier * 400;
       let currentX = 0;
+
+      // Smart horizontal ordering: sort by relationship connectivity
+      // Components with relationships to each other should be adjacent
+      if (tierDocs.length > 1) {
+        const sortedDocs: Doc[] = [];
+        const remaining = new Set(tierDocs.map(d => d.id));
+
+        // Start with the most connected component in this tier
+        const firstDoc = tierDocs.reduce((best, doc) => {
+          const connections = (doc.relationships || []).filter((rel: ComponentRelationship) =>
+            tierDocs.some(td => td.id === rel.targetId)
+          ).length;
+          const bestConnections = (best.relationships || []).filter((rel: ComponentRelationship) =>
+            tierDocs.some(td => td.id === rel.targetId)
+          ).length;
+          return connections > bestConnections ? doc : best;
+        });
+
+        sortedDocs.push(firstDoc);
+        remaining.delete(firstDoc.id);
+
+        // Iteratively add the component most connected to already-sorted components
+        while (remaining.size > 0) {
+          let bestNext: Doc | null = null;
+          let bestScore = -1;
+
+          for (const docId of remaining) {
+            const doc = tierDocs.find(d => d.id === docId)!;
+            // Count connections to already-sorted components (in any tier)
+            const score = (doc.relationships || []).filter((rel: ComponentRelationship) =>
+              sortedDocs.some(sd => sd.id === rel.targetId) ||
+              components.some(c => c.id === rel.targetId && sortedDocs.some(sd =>
+                (sd.relationships || []).some((r: ComponentRelationship) => r.targetId === doc.id)
+              ))
+            ).reduce((sum: number, rel: ComponentRelationship) => sum + getRelationshipWeight(rel.relationType), 0);
+
+            if (score > bestScore || bestNext === null) {
+              bestScore = score;
+              bestNext = doc;
+            }
+          }
+
+          if (bestNext) {
+            sortedDocs.push(bestNext);
+            remaining.delete(bestNext.id);
+          } else {
+            // No connections found, just add the first remaining
+            const nextDoc = tierDocs.find(d => remaining.has(d.id))!;
+            sortedDocs.push(nextDoc);
+            remaining.delete(nextDoc.id);
+          }
+        }
+
+        tierDocs = sortedDocs;
+      }
 
       tierDocs.forEach(doc => {
         const size = nodeSizes.get(doc.id) || { width: 400, height: 200 };
@@ -420,25 +495,54 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
 
     // Layout each feature cluster independently and place horizontally
     features.forEach(feature => {
-      const featureComponents = componentsByFeature[feature];
+      // Sort: section headers first, then other documentation, then everything else
+      const featureComponents = componentsByFeature[feature].sort((a, b) => {
+        return getComponentSortPriority(a) - getComponentSortPriority(b);
+      });
       const featureNodes = generateDagreLayout(featureComponents);
 
       // Calculate bounding box for this feature
       const minX = Math.min(...featureNodes.map(n => n.position.x));
       const maxX = Math.max(...featureNodes.map(n => n.position.x + (n.width || 400)));
-      const minY = Math.min(...featureNodes.map(n => n.position.y));
       const maxY = Math.max(...featureNodes.map(n => n.position.y + (n.height || 200)));
       const featureWidth = maxX - minX;
-      const featureHeight = maxY - minY;
+      const featureHeight = maxY; // Keep absolute height to preserve tier spacing
 
-      // Normalize positions and offset horizontally for multi-root layout
+      // Normalize X positions only, preserve Y tier positions
       const normalizedNodes = featureNodes.map(node => ({
         ...node,
         position: {
-          x: node.position.x - minX + currentX,
-          y: node.position.y - minY,
+          x: node.position.x - minX,
+          y: node.position.y, // Keep original Y to preserve tier gaps
         }
       }));
+
+      // Group nodes by tier for centering
+      const nodesByTier: Record<number, typeof normalizedNodes> = {};
+      normalizedNodes.forEach(node => {
+        if (!nodesByTier[node.position.y]) nodesByTier[node.position.y] = [];
+        nodesByTier[node.position.y].push(node);
+      });
+
+      // Find widest tier
+      let maxTierWidth = 0;
+      Object.values(nodesByTier).forEach(tierNodes => {
+        const tierMinX = Math.min(...tierNodes.map(n => n.position.x));
+        const tierMaxX = Math.max(...tierNodes.map(n => n.position.x + (n.width || 400)));
+        maxTierWidth = Math.max(maxTierWidth, tierMaxX - tierMinX);
+      });
+
+      // Center each tier
+      Object.values(nodesByTier).forEach(tierNodes => {
+        const tierMinX = Math.min(...tierNodes.map(n => n.position.x));
+        const tierMaxX = Math.max(...tierNodes.map(n => n.position.x + (n.width || 400)));
+        const tierWidth = tierMaxX - tierMinX;
+        const offset = (maxTierWidth - tierWidth) / 2;
+
+        tierNodes.forEach(node => {
+          node.position.x += offset + currentX;
+        });
+      });
 
       featureGraphs[feature] = normalizedNodes;
       maxFeatureHeight = Math.max(maxFeatureHeight, featureHeight);
@@ -998,7 +1102,9 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onD
                       </div>
                       <div className="collapse-content">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pt-2">
-                          {componentsByFeature[feature].map(component => {
+                          {componentsByFeature[feature]
+                            .sort((a, b) => getComponentSortPriority(a) - getComponentSortPriority(b))
+                            .map(component => {
                             const categoryInfo = getAllCategories().find(c => c.value === component.category);
                             const relationshipCount = component.relationships?.length || 0;
 

@@ -972,13 +972,20 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
   },
   [CommandType.LLM_CONTEXT]: {
     type: CommandType.LLM_CONTEXT,
-    syntax: '/llm',
+    syntax: '/llm "[entity]" @project',
     simpleSyntax: '/llm',
-    description: 'Generate comprehensive terminal interaction guide for local LLMs',
+    description: 'Generate LLM interaction guide - general or entity-specific with project data',
     examples: [
-      '/llm',
-      '/ai',
-      '/llm context'
+      '/llm - General terminal guide',
+      '/llm todos - Todos guide with current project data',
+      '/llm components - Components guide with architecture',
+      '/llm notes @myproject - Notes guide for specific project',
+      '/llm stack - Tech stack guide',
+      '/ai devlog - Dev log guide (alias)',
+      '/llm team - Team management guide',
+      '/llm deployment - Deployment guide',
+      '/llm settings - Settings guide',
+      '/llm projects - Projects overview'
     ],
     requiresProject: false,
     requiresArgs: false

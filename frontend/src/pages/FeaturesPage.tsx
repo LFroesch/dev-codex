@@ -368,14 +368,14 @@ const FeaturesPage: React.FC = () => {
       {/* Tab Content */}
       {activeFeaturesTab === 'graph' ? (
         // Graph Dashboard Tab
-        <div className="section-container mb-4">
+        <div className="section-container">
           <div className="section-header">
             <div className="flex items-center gap-3">
               <div className="section-icon">🕸️</div>
               <span>Features Dashboard</span>
             </div>
           </div>
-          <div className="section-content">
+          <div className="section-content p-2">
             <FeaturesGraph
               docs={selectedProject.components}
               projectId={selectedProject.id}

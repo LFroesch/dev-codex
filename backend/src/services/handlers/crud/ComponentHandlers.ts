@@ -578,14 +578,12 @@ export class ComponentHandlers extends BaseCommandHandler {
 
       if (title) {
         const sanitizedTitle = sanitizeText(title);
-        console.log(`[EDIT COMPONENT] Updating title from "${component.title}" to "${sanitizedTitle}"`);
         component.title = sanitizedTitle;
         updated = true;
         updatedFields.push('title');
       }
 
       if (contentFlag) {
-        console.log(`[EDIT COMPONENT] Updating content for component "${component.title}"`);
         component.content = sanitizeText(contentFlag);
         updated = true;
         updatedFields.push('content');
@@ -593,7 +591,6 @@ export class ComponentHandlers extends BaseCommandHandler {
 
       if (feature) {
         const sanitizedFeature = sanitizeText(feature);
-        console.log(`[EDIT COMPONENT] Updating feature for component "${component.title}" to "${sanitizedFeature}"`);
         component.feature = sanitizedFeature;
         updated = true;
         updatedFields.push('feature');
@@ -608,7 +605,6 @@ export class ComponentHandlers extends BaseCommandHandler {
             suggestions: ['/help edit component']
           };
         }
-        console.log(`[EDIT COMPONENT] Updating category for component "${component.title}" to "${category.toLowerCase()}"`);
         component.category = category.toLowerCase() as any;
         updated = true;
         updatedFields.push('category');
@@ -616,7 +612,6 @@ export class ComponentHandlers extends BaseCommandHandler {
 
       if (type) {
         const sanitizedType = sanitizeText(type);
-        console.log(`[EDIT COMPONENT] Updating type for component "${component.title}" to "${sanitizedType}"`);
         component.type = sanitizedType;
         updated = true;
         updatedFields.push('type');
@@ -626,9 +621,7 @@ export class ComponentHandlers extends BaseCommandHandler {
         component.updatedAt = new Date();
 
         try {
-          console.log(`[EDIT COMPONENT] Saving project "${project.name}" (ID: ${project._id})`);
           await project.save();
-          console.log(`[EDIT COMPONENT] Save successful for component "${component.title}"`);
         } catch (saveError) {
           console.error('[EDIT COMPONENT] Save failed:', saveError);
           return {

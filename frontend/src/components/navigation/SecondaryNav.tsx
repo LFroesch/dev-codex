@@ -7,13 +7,15 @@ interface SecondaryNavProps {
   selectedProject: any;
   onNavigate: (path: string) => void;
   getContrastColor: () => string;
+  variant?: 'desktop' | 'mobile';
 }
 
 const SecondaryNav: React.FC<SecondaryNavProps> = ({
   currentPath,
   selectedProject,
   onNavigate,
-  getContrastColor
+  getContrastColor,
+  variant = 'desktop'
 }) => {
   const projectDetailsPaths = ['/notes', '/stack', '/features', '/deployment', '/public', '/sharing', '/settings'];
   const showProjectDetails = selectedProject && projectDetailsPaths.includes(currentPath);
@@ -32,6 +34,7 @@ const SecondaryNav: React.FC<SecondaryNavProps> = ({
           currentPath={currentPath}
           onNavigate={onNavigate}
           getContrastColor={getContrastColor}
+          variant={variant}
         />
         </div>
       )}
@@ -42,6 +45,7 @@ const SecondaryNav: React.FC<SecondaryNavProps> = ({
           currentPath={currentPath}
           onNavigate={onNavigate}
           getContrastColor={getContrastColor}
+          variant={variant}
         />
         </div>
       )}

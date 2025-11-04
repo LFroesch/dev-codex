@@ -15,7 +15,7 @@ const MainNav: React.FC<MainNavProps> = ({ currentPath, onNavigate, getContrastC
   const buttonClass = isMobile ? 'tab tab-sm flex-shrink-0 min-h-10' : 'tab-button';
   const iconClass = isMobile ? 'w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0' : 'icon-sm';
   const gapClass = isMobile ? 'gap-1 sm:gap-2 font-bold whitespace-nowrap px-2 sm:px-4' : 'gap-2';
-  const wrapperClass = isMobile ? '' : 'absolute left-1/2 transform -translate-x-1/2';
+  const wrapperClass = isMobile ? 'flex justify-center' : 'absolute left-1/2 transform -translate-x-1/2';
 
   return (
     <div className={wrapperClass}>

@@ -12,6 +12,7 @@ export interface MainNavProps {
   currentPath: string;
   onNavigate: (path: string) => void;
   getContrastColor: () => string;
+  variant?: 'desktop' | 'mobile';
 }
 
 export interface SecondaryNavProps {
@@ -19,4 +20,5 @@ export interface SecondaryNavProps {
   selectedProject: any;
   onNavigate: (path: string) => void;
   getContrastColor: () => string;
+  variant?: 'desktop' | 'mobile';
 }

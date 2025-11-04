@@ -29,7 +29,7 @@ const SecondaryNav: React.FC<SecondaryNavProps> = ({
   return (
     <>
       {showProjectDetails && (
-        <div className='mt-0.5'>
+        <div className='lg:mt-0.5'>
         <ProjectDetailsNav
           currentPath={currentPath}
           onNavigate={onNavigate}
@@ -40,7 +40,7 @@ const SecondaryNav: React.FC<SecondaryNavProps> = ({
       )}
 
       {showDiscover && (
-        <div className='mt-0.5'>
+        <div className='lg:mt-0.5'>
         <DiscoverNav
           currentPath={currentPath}
           onNavigate={onNavigate}

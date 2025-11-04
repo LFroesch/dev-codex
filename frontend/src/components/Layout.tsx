@@ -17,6 +17,8 @@ import ToastContainer from './Toast';
 import { toast } from '../services/toast';
 import MainNav from './navigation/MainNav';
 import SecondaryNav from './navigation/SecondaryNav';
+import ProjectsTabs from './tabs/ProjectsTabs';
+import CategorySelector from './tabs/CategorySelector';
 
 // Lazy load heavy page components for better performance
 const IdeasPage = lazy(() => import('../pages/IdeasPage'));
@@ -590,14 +592,12 @@ const Layout: React.FC = () => {
 
             {/* Navigation buttons */}
             {location.pathname !== '/support' && location.pathname !== '/terminal' && (
-            <div className="flex justify-center">
               <MainNav
                 currentPath={location.pathname}
                 onNavigate={handleNavigateWithCheck}
                 getContrastColor={getContrastTextColor}
                 variant="mobile"
               />
-            </div>
             )}
 
             <SecondaryNav
@@ -614,78 +614,29 @@ const Layout: React.FC = () => {
                 {/* My Projects Tabs */}
                 {location.pathname === '/projects' && (
                   <>
-                    <div className="flex justify-center">
-                      <div className="tabs-container p-1">
-                        <button
-                          onClick={() => setActiveProjectTab('active')}
-                          className={`tab-button ${activeProjectTab === 'active' ? 'tab-active' : ''}`}
-                          style={activeProjectTab === 'active' ? {color: getContrastTextColor()} : {}}
-                        >
-                          <span>Active <span className="text-xs opacity-60">({currentProjects.length})</span></span>
-                        </button>
-                        {archivedProjects.length > 0 && (
-                          <button
-                            onClick={() => setActiveProjectTab('archived')}
-                            className={`tab-button ${activeProjectTab === 'archived' ? 'tab-active' : ''}`}
-                            style={activeProjectTab === 'archived' ? {color: getContrastTextColor()} : {}}
-                          >
-                            <span>Archived <span className="text-xs opacity-60">({archivedProjects.length})</span></span>
-                          </button>
-                        )}
-                        {sharedProjects.length > 0 && (
-                          <button
-                            onClick={() => setActiveProjectTab('shared')}
-                            className={`tab-button ${activeProjectTab === 'shared' ? 'tab-active' : ''}`}
-                            style={activeProjectTab === 'shared' ? {color: getContrastTextColor()} : {}}
-                          >
-                            <span>Shared <span className="text-xs opacity-60">({sharedProjects.length})</span></span>
-                          </button>
-                        )}
-                        <button
-                          onClick={() => setActiveProjectTab('ideas')}
-                          className={`tab-button ${activeProjectTab === 'ideas' ? 'tab-active' : ''}`}
-                          style={activeProjectTab === 'ideas' ? {color: getContrastTextColor()} : {}}
-                        >
-                          <span>Ideas</span>
-                        </button>
-                      </div>
-                    </div>
+                    <ProjectsTabs
+                      activeTab={activeProjectTab}
+                      onTabChange={setActiveProjectTab}
+                      getContrastColor={getContrastTextColor}
+                      counts={{
+                        active: currentProjects.length,
+                        archived: archivedProjects.length,
+                        shared: sharedProjects.length
+                      }}
+                    />
 
                     {/* Category Selector - Mobile */}
-                    {(activeProjectTab === 'active' || activeProjectTab === 'archived' || activeProjectTab === 'shared') && Object.keys(
-                      activeProjectTab === 'active' ? groupedCurrentProjects :
-                      activeProjectTab === 'archived' ? groupedArchivedProjects :
-                      groupedSharedProjects
-                    ).length > 0 && (
-                      <div className="flex justify-center">
-                        <div className="tabs-container p-1">
-                          <button
-                            onClick={() => setSelectedCategory(null)}
-                            className={`tab-button ${selectedCategory === null ? 'tab-active' : ''}`}
-                            style={selectedCategory === null ? {color: getContrastTextColor()} : {}}
-                          >
-                            <span>All <span className="text-xs opacity-60">({Object.values(
-                              activeProjectTab === 'active' ? groupedCurrentProjects :
-                              activeProjectTab === 'archived' ? groupedArchivedProjects :
-                              groupedSharedProjects
-                            ).flat().length})</span></span>
-                          </button>
-                          {Object.entries(
-                            activeProjectTab === 'active' ? groupedCurrentProjects :
-                            activeProjectTab === 'archived' ? groupedArchivedProjects :
-                            groupedSharedProjects
-                          ).map(([category, categoryProjects]) => (
-                            <button
-                              key={category}
-                              onClick={() => setSelectedCategory(category)}
-                              className={`tab-button ${selectedCategory === category ? 'tab-active' : ''}`}
-                              style={selectedCategory === category ? {color: getContrastTextColor()} : {}}
-                            >
-                              <span>{category} <span className="text-xs opacity-60">({categoryProjects.length})</span></span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
+                    {(activeProjectTab === 'active' || activeProjectTab === 'archived' || activeProjectTab === 'shared') && (
+                      <CategorySelector
+                        selectedCategory={selectedCategory}
+                        onCategoryChange={setSelectedCategory}
+                        categories={
+                          activeProjectTab === 'active' ? groupedCurrentProjects :
+                          activeProjectTab === 'archived' ? groupedArchivedProjects :
+                          groupedSharedProjects
+                        }
+                        getContrastColor={getContrastTextColor}
+                      />
                     )}
                   </>
                 )}
@@ -1145,78 +1096,29 @@ const Layout: React.FC = () => {
               {/* My Projects Tabs */}
               {location.pathname === '/projects' && (
                 <>
-                  <div className="flex justify-center mt-0.5">
-                    <div className="tabs-container p-1">
-                      <button
-                        onClick={() => setActiveProjectTab('active')}
-                        className={`tab-button ${activeProjectTab === 'active' ? 'tab-active' : ''}`}
-                        style={activeProjectTab === 'active' ? {color: getContrastTextColor()} : {}}
-                      >
-                        <span>Active <span className="text-xs opacity-60">({currentProjects.length})</span></span>
-                      </button>
-                      {archivedProjects.length > 0 && (
-                        <button
-                          onClick={() => setActiveProjectTab('archived')}
-                          className={`tab-button ${activeProjectTab === 'archived' ? 'tab-active' : ''}`}
-                          style={activeProjectTab === 'archived' ? {color: getContrastTextColor()} : {}}
-                        >
-                          <span>Archived <span className="text-xs opacity-60">({archivedProjects.length})</span></span>
-                        </button>
-                      )}
-                      {sharedProjects.length > 0 && (
-                        <button
-                          onClick={() => setActiveProjectTab('shared')}
-                          className={`tab-button ${activeProjectTab === 'shared' ? 'tab-active' : ''}`}
-                          style={activeProjectTab === 'shared' ? {color: getContrastTextColor()} : {}}
-                        >
-                          <span>Shared <span className="text-xs opacity-60">({sharedProjects.length})</span></span>
-                        </button>
-                      )}
-                      <button
-                        onClick={() => setActiveProjectTab('ideas')}
-                        className={`tab-button ${activeProjectTab === 'ideas' ? 'tab-active' : ''}`}
-                        style={activeProjectTab === 'ideas' ? {color: getContrastTextColor()} : {}}
-                      >
-                        <span>Ideas</span>
-                      </button>
-                    </div>
-                  </div>
+                  <ProjectsTabs
+                    activeTab={activeProjectTab}
+                    onTabChange={setActiveProjectTab}
+                    getContrastColor={getContrastTextColor}
+                    counts={{
+                      active: currentProjects.length,
+                      archived: archivedProjects.length,
+                      shared: sharedProjects.length
+                    }}
+                  />
 
                   {/* Category Selector - Desktop */}
-                  {(activeProjectTab === 'active' || activeProjectTab === 'archived' || activeProjectTab === 'shared') && Object.keys(
-                    activeProjectTab === 'active' ? groupedCurrentProjects :
-                    activeProjectTab === 'archived' ? groupedArchivedProjects :
-                    groupedSharedProjects
-                  ).length > 0 && (
-                    <div className="flex justify-center">
-                      <div className="tabs-container p-1">
-                        <button
-                          onClick={() => setSelectedCategory(null)}
-                          className={`tab-button ${selectedCategory === null ? 'tab-active' : ''}`}
-                          style={selectedCategory === null ? {color: getContrastTextColor()} : {}}
-                        >
-                          <span>All <span className="text-xs opacity-60">({Object.values(
-                            activeProjectTab === 'active' ? groupedCurrentProjects :
-                            activeProjectTab === 'archived' ? groupedArchivedProjects :
-                            groupedSharedProjects
-                          ).flat().length})</span></span>
-                        </button>
-                        {Object.entries(
-                          activeProjectTab === 'active' ? groupedCurrentProjects :
-                          activeProjectTab === 'archived' ? groupedArchivedProjects :
-                          groupedSharedProjects
-                        ).map(([category, categoryProjects]) => (
-                          <button
-                            key={category}
-                            onClick={() => setSelectedCategory(category)}
-                            className={`tab-button ${selectedCategory === category ? 'tab-active' : ''}`}
-                            style={selectedCategory === category ? {color: getContrastTextColor()} : {}}
-                          >
-                            <span>{category} <span className="text-xs opacity-60">({categoryProjects.length})</span></span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
+                  {(activeProjectTab === 'active' || activeProjectTab === 'archived' || activeProjectTab === 'shared') && (
+                    <CategorySelector
+                      selectedCategory={selectedCategory}
+                      onCategoryChange={setSelectedCategory}
+                      categories={
+                        activeProjectTab === 'active' ? groupedCurrentProjects :
+                        activeProjectTab === 'archived' ? groupedArchivedProjects :
+                        groupedSharedProjects
+                      }
+                      getContrastColor={getContrastTextColor}
+                    />
                   )}
                 </>
               )}

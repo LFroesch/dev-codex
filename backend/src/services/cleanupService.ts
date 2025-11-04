@@ -7,6 +7,7 @@ import RateLimit from '../models/RateLimit';
 import { Project } from '../models/Project';
 import { User } from '../models/User';
 import NoteLock from '../models/NoteLock';
+import TeamMember from '../models/TeamMember';
 import mongoose from 'mongoose';
 
 export class CleanupService {
@@ -97,68 +98,142 @@ export class CleanupService {
   }
 
   /**
-   * Clean up expired invitations
+   * Clean up expired invitations with plan-aware retention
+   * Also sets deletionExpiresAt for expired/cancelled invitations based on plan tier
    */
   static async cleanupExpiredInvitations() {
     const now = new Date();
-    
-    // Mark expired invitations
-    const expiredResult = await ProjectInvitation.updateMany(
-      { 
-        expiresAt: { $lt: now },
-        status: 'pending'
-      },
-      { status: 'expired' }
-    );
 
-    // Delete old expired/cancelled invitations (older than 30 days)
-    const oldDate = new Date();
-    oldDate.setDate(oldDate.getDate() - 30);
-    
-    const deleteResult = await ProjectInvitation.deleteMany({
-      $or: [
-        { status: 'expired', updatedAt: { $lt: oldDate } },
-        { status: 'cancelled', updatedAt: { $lt: oldDate } }
-      ]
+    // Mark pending invitations as expired if expiresAt has passed
+    const expiredInvitations = await ProjectInvitation.find({
+      expiresAt: { $lt: now },
+      status: 'pending'
     });
 
+    let markedExpired = 0;
+    for (const invitation of expiredInvitations) {
+      // Import here to avoid circular dependency
+      const { calculateInvitationExpiration } = await import('../utils/retentionUtils');
+      const deletionExpiresAt = calculateInvitationExpiration(
+        invitation.planTier,
+        'expired',
+        now
+      );
+
+      await ProjectInvitation.updateOne(
+        { _id: invitation._id },
+        {
+          status: 'expired',
+          deletionExpiresAt,
+        }
+      );
+      markedExpired++;
+    }
+
+    // MongoDB TTL index will automatically delete documents when deletionExpiresAt is reached
+    // No manual deletion needed for expired/cancelled invitations
+
     return {
-      markedExpired: expiredResult.modifiedCount,
-      deleted: deleteResult.deletedCount
+      markedExpired,
+      message: 'Expired invitations marked. MongoDB TTL will handle automatic deletion.'
     };
   }
 
   /**
-   * Clean up old notifications
+   * NOTE: Notifications and Activity Logs are now handled by MongoDB TTL indexes
+   * with plan-aware expiresAt fields. No manual cleanup needed.
+   * These methods are kept for backward compatibility and emergency cleanup.
+   */
+
+  /**
+   * Clean up old notifications (DEPRECATED - TTL indexes handle this automatically)
+   * Only use for emergency cleanup of documents without expiresAt
    */
   static async cleanupOldNotifications(daysOld = 90) {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysOld);
-    
+
+    // Only delete notifications that don't have expiresAt set (legacy data)
     const result = await Notification.deleteMany({
-      createdAt: { $lt: cutoffDate }
+      createdAt: { $lt: cutoffDate },
+      expiresAt: { $exists: false }
     });
-    
+
     return {
       deleted: result.deletedCount,
-      cutoffDate: cutoffDate.toISOString()
+      cutoffDate: cutoffDate.toISOString(),
+      message: 'Cleaned up legacy notifications without TTL. New notifications use automatic TTL.'
     };
   }
 
   /**
-   * Clean up old activity logs (beyond TTL)
+   * Clean up old activity logs (DEPRECATED - TTL indexes handle this automatically)
+   * Only use for emergency cleanup of documents without expiresAt
    */
   static async cleanupOldActivityLogs(daysOld = 90) {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysOld);
-    
+
+    // Only delete activity logs that don't have expiresAt set (legacy data)
     const result = await ActivityLog.deleteMany({
-      timestamp: { $lt: cutoffDate }
+      timestamp: { $lt: cutoffDate },
+      expiresAt: { $exists: false }
     });
-    
+
     return {
       deleted: result.deletedCount,
-      cutoffDate: cutoffDate.toISOString()
+      cutoffDate: cutoffDate.toISOString(),
+      message: 'Cleaned up legacy activity logs without TTL. New logs use automatic TTL.'
+    };
+  }
+
+  /**
+   * Get retention policy stats by plan tier
+   */
+  static async getRetentionStats() {
+    const activityLogStats = await ActivityLog.aggregate([
+      {
+        $group: {
+          _id: '$planTier',
+          count: { $sum: 1 },
+          withExpiration: {
+            $sum: { $cond: [{ $ne: ['$expiresAt', null] }, 1, 0] }
+          }
+        }
+      }
+    ]);
+
+    const notificationStats = await Notification.aggregate([
+      {
+        $group: {
+          _id: {
+            planTier: '$planTier',
+            importance: '$importance'
+          },
+          count: { $sum: 1 },
+          withExpiration: {
+            $sum: { $cond: [{ $ne: ['$expiresAt', null] }, 1, 0] }
+          }
+        }
+      }
+    ]);
+
+    const teamMemberStats = await TeamMember.aggregate([
+      {
+        $group: {
+          _id: '$isActive',
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    return {
+      activityLogs: activityLogStats,
+      notifications: notificationStats,
+      teamMembers: teamMemberStats,
+      summary: {
+        message: 'All data is using plan-aware TTL indexes for automatic cleanup'
+      }
     };
   }
 

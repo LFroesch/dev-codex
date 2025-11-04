@@ -8,6 +8,11 @@ export interface ITeamMember extends Document {
   joinedAt: Date;
   createdAt: Date;
   updatedAt: Date;
+  // Soft deletion fields
+  isActive: boolean;
+  removedAt?: Date;
+  removalReason?: 'left' | 'removed_by_owner' | 'project_deleted';
+  expiresAt?: Date;
 }
 
 const TeamMemberSchema = new Schema<ITeamMember>(
@@ -37,6 +42,23 @@ const TeamMemberSchema = new Schema<ITeamMember>(
       type: Date,
       default: Date.now,
     },
+    // Soft deletion fields
+    isActive: {
+      type: Boolean,
+      default: true,
+      index: true,
+    },
+    removedAt: {
+      type: Date,
+    },
+    removalReason: {
+      type: String,
+      enum: ['left', 'removed_by_owner', 'project_deleted'],
+    },
+    expiresAt: {
+      type: Date,
+      index: true,
+    },
   },
   {
     timestamps: true,
@@ -49,5 +71,9 @@ TeamMemberSchema.index({ projectId: 1, userId: 1 }, { unique: true });
 // Index for efficient queries
 TeamMemberSchema.index({ userId: 1 });
 TeamMemberSchema.index({ projectId: 1 });
+TeamMemberSchema.index({ isActive: 1, removedAt: 1 });
+
+// TTL index for soft-deleted members
+TeamMemberSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 export default mongoose.model<ITeamMember>('TeamMember', TeamMemberSchema);

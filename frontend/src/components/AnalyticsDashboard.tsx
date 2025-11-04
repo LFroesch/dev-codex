@@ -94,7 +94,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="loading loading-spinner loading-lg"></div>
+        <div className="loading loading-spinner loading-md sm:loading-lg"></div>
       </div>
     );
   }
@@ -115,9 +115,9 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
   if (!analyticsData) {
     return (
-      <div className="text-center p-8">
-        <div className="text-6xl mb-4">📊</div>
-        <h3 className="text-xl font-semibold mb-2">No Data Yet</h3>
+      <div className="text-center p-4 sm:p-8">
+        <div className="text-4xl sm:text-6xl mb-4">📊</div>
+        <h3 className="text-lg sm:text-xl font-semibold mb-2">No Data Yet</h3>
         <p className="text-base-content/60">Start using the app to see your analytics!</p>
       </div>
     );
@@ -129,64 +129,66 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex justify-between items-center gap-4">
-        <div className="flex items-center gap-4">
-          <h2 className="text-2xl font-bold">📊 Usage Analytics</h2>
-        </div>
-          <p className="translate-y-[3px] text-base-content/60">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+        <div className="flex flex-col gap-1">
+          <h2 className="text-xl sm:text-2xl font-bold">📊 Usage Analytics</h2>
+          <p className="text-xs sm:text-sm text-base-content/60">
             Track your productivity and app usage patterns. All data is private and only visible to you.
           </p>
-              <button 
-                className="btn btn-xs btn-outline border-2"
-                onClick={() => {
-                  const dataStr = JSON.stringify(analyticsData, null, 2);
-                  const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-                  const exportFileDefaultName = `analytics-${selectedPeriod}days-${new Date().toISOString().split('T')[0]}.json`;
-                  const linkElement = document.createElement('a');
-                  linkElement.setAttribute('href', dataUri);
-                  linkElement.setAttribute('download', exportFileDefaultName);
-                  linkElement.click();
-                }}
-              >
-                Export
-              </button>
-        <select
-          className="select select-bordered select-sm"
-          value={selectedPeriod}
-          onChange={(e) => setSelectedPeriod(Number(e.target.value))}
-        >
-          <option value={7}>Last 7 days</option>
-          <option value={30}>Last 30 days</option>
-          <option value={90}>Last 90 days</option>
-        </select>
+        </div>
+        <div className="flex gap-2 items-center">
+          <button
+            className="btn btn-xs sm:btn-sm btn-outline border-2"
+            onClick={() => {
+              const dataStr = JSON.stringify(analyticsData, null, 2);
+              const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+              const exportFileDefaultName = `analytics-${selectedPeriod}days-${new Date().toISOString().split('T')[0]}.json`;
+              const linkElement = document.createElement('a');
+              linkElement.setAttribute('href', dataUri);
+              linkElement.setAttribute('download', exportFileDefaultName);
+              linkElement.click();
+            }}
+          >
+            Export
+          </button>
+          <select
+            className="select select-bordered select-sm w-full sm:w-auto text-xs sm:text-sm"
+            value={selectedPeriod}
+            onChange={(e) => setSelectedPeriod(Number(e.target.value))}
+          >
+            <option value={7}>Last 7 days</option>
+            <option value={30}>Last 30 days</option>
+            <option value={90}>Last 90 days</option>
+          </select>
+        </div>
       </div>
 
       {/* Compact Metrics */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="stat bg-primary/5 rounded-lg border-2 border-primary/70 p-3">
+        <div className="stat bg-primary/5 rounded-lg border sm:border-2 border-primary/70 p-2 sm:p-3">
           <div className="stat-title text-xs text-primary">Total Time</div>
-          <div className="stat-value text-primary text-lg">
+          <div className="stat-value text-primary text-base sm:text-lg">
             {formatDuration(metrics.totalTime)}
           </div>
         </div>
 
-        <div className="stat bg-accent/5 rounded-lg border-2 border-accent/70 p-3">
+        <div className="stat bg-accent/5 rounded-lg border sm:border-2 border-accent/70 p-2 sm:p-3">
           <div className="stat-title text-xs text-accent">Unique Projects</div>
-          <div className="stat-value text-accent text-lg">
+          <div className="stat-value text-accent text-base sm:text-lg">
             {metrics.uniqueProjects}
           </div>
         </div>
 
-        <div className="stat bg-info/5 rounded-lg border-2 border-info/70 p-3">
+        <div className="stat bg-info/5 rounded-lg border sm:border-2 border-info/70 p-2 sm:p-3">
           <div className="stat-title text-xs text-info">Sessions</div>
-          <div className="stat-value text-info text-lg">
+          <div className="stat-value text-info text-base sm:text-lg">
             {metrics.sessions}
           </div>
         </div>
 
-        <div className="stat bg-secondary/5 rounded-lg border-2 border-secondary/70 p-3">
+        <div className="stat bg-secondary/5 rounded-lg border sm:border-2 border-secondary/70 p-2 sm:p-3">
           <div className="stat-title text-xs text-secondary">Avg Session</div>
-          <div className="stat-value text-secondary text-lg">
+          <div className="stat-value text-secondary text-base sm:text-lg">
             {formatDuration(analyticsData.sessionStats?.avgDuration || 0)}
           </div>
         </div>
@@ -196,23 +198,23 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       {!compact && analyticsData.projectBreakdown && analyticsData.projectBreakdown.length > 0 && (
         <div className="border-2 rounded-lg border-base-content/20">
           <div className="card-body p-4">
-            <h3 className="font-semibold mb-3">⏱️ Project Time</h3>
-            
+            <h3 className="text-sm sm:text-base font-semibold mb-3">⏱️ Project Time</h3>
+
             <div className="space-y-2">
               {analyticsData.projectBreakdown
                 .sort((a, b) => b.totalTime - a.totalTime)
                 .map((project) => (
-                <div key={project.projectId} className="flex justify-between items-center p-2 bg-base-200 rounded border-2 border-base-content/20">
+                <div key={project.projectId} className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0 p-2 bg-base-200 rounded border-2 border-base-content/20">
                   <div>
-                    <div className="font-medium text-sm">
+                    <div className="font-medium text-xs sm:text-sm">
                       {project.projectName}
                     </div>
                     <div className="text-xs text-base-content/60">
                       {project.sessions} sessions
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="font-mono font-semibold">
+                  <div className="text-left sm:text-right">
+                    <div className="font-mono font-semibold text-sm sm:text-base">
                       {formatDuration(project.totalTime)}
                     </div>
                   </div>

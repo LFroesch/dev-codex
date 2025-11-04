@@ -3,6 +3,9 @@
 
 ## Final Todos BLOCKING PROD:
 - [HIGH] Record Gifs for the README to demonstrate functionality
+- Some of these final changes e.g. the activity log / db retention / ttl improvements could also have the rest of the 
+system be better integrated, the activity log is not very descriptive/helpful, better redirect buttons on the activity logs, etc
+- Stats/Analytics not tracked or shown well
 
 ## Today's Launch Schedule (9am - 5pm)
 

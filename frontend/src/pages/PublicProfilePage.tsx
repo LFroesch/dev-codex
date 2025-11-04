@@ -132,6 +132,7 @@ const PublicProfilePage: React.FC = () => {
               <div className="flex gap-2 flex-shrink-0">
                 {currentUser && currentUser.id === user.id && (
                   <button
+                  // todo - make this also go to the URL section in account-settings
                     onClick={() => navigate('/account-settings')}
                     className="btn btn-sm btn-secondary gap-1 sm:gap-2 border-thick"
                     style={{ color: getContrastTextColor('secondary') }}

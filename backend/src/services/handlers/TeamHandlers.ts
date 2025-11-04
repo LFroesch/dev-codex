@@ -9,6 +9,11 @@ import { sendProjectInvitationEmail } from '../emailService';
 import { isValidEmail, isValidRole, parseEmailOrUsername } from '../../utils/validation';
 import { logError } from '../../config/logger';
 import NotificationService from '../notificationService';
+import {
+  getProjectOwnerPlanTier,
+  calculateTeamMemberExpiration,
+  calculateInvitationExpiration,
+} from '../../utils/retentionUtils';
 
 /**
  * Handlers for team management and collaboration commands
@@ -23,7 +28,10 @@ export class TeamHandlers extends BaseCommandHandler {
       return this.buildProjectErrorResponse(resolution);
     }
 
-    const members = await TeamMember.find({ projectId: resolution.project._id })
+    const members = await TeamMember.find({
+      projectId: resolution.project._id,
+      isActive: true  // Only show active team members
+    })
       .populate('userId', 'firstName lastName email')
       .lean();
 
@@ -93,11 +101,12 @@ export class TeamHandlers extends BaseCommandHandler {
       };
     }
 
-    // Check if already a member
+    // Check if already a member (only check active members)
     if (existingUser) {
       const existingMember = await TeamMember.findOne({
         projectId: resolution.project._id,
-        userId: existingUser._id
+        userId: existingUser._id,
+        isActive: true
       });
 
       if (existingMember) {
@@ -143,14 +152,19 @@ export class TeamHandlers extends BaseCommandHandler {
       };
     }
 
-    // Create invitation
+    // Get plan tier for retention policy
+    const planTier = await getProjectOwnerPlanTier(resolution.project._id);
+
+    // Create invitation with plan-aware retention
     const invitation = new ProjectInvitation({
       projectId: resolution.project._id,
       inviterUserId: this.userId,
       inviteeEmail: inviteeEmail,
       inviteeUserId: existingUser?._id,
       role,
-      token: require('crypto').randomBytes(32).toString('hex')
+      token: require('crypto').randomBytes(32).toString('hex'),
+      planTier,
+      // Don't set deletionExpiresAt yet - will be set when status changes
     });
 
     await invitation.save();
@@ -240,10 +254,11 @@ export class TeamHandlers extends BaseCommandHandler {
       };
     }
 
-    // Find and remove team member
+    // Find and remove team member (only active members)
     const teamMember = await TeamMember.findOne({
       projectId: resolution.project._id,
-      userId: userToRemove._id
+      userId: userToRemove._id,
+      isActive: true
     });
 
     if (!teamMember) {
@@ -254,7 +269,17 @@ export class TeamHandlers extends BaseCommandHandler {
       };
     }
 
-    await TeamMember.findByIdAndDelete(teamMember._id);
+    // Soft delete the team member with plan-aware retention
+    const planTier = await getProjectOwnerPlanTier(resolution.project._id);
+    const removedAt = new Date();
+    const expiresAt = calculateTeamMemberExpiration(planTier, removedAt);
+
+    await TeamMember.findByIdAndUpdate(teamMember._id, {
+      isActive: false,
+      removedAt,
+      removalReason: 'removed_by_owner',
+      expiresAt,
+    });
 
     // Create notification
     const notificationService = NotificationService.getInstance();
@@ -266,9 +291,10 @@ export class TeamHandlers extends BaseCommandHandler {
       relatedProjectId: resolution.project._id
     });
 
-    // Check remaining members
+    // Check remaining active members
     const remainingMembers = await TeamMember.countDocuments({
-      projectId: resolution.project._id
+      projectId: resolution.project._id,
+      isActive: true
     });
 
     if (remainingMembers === 0) {

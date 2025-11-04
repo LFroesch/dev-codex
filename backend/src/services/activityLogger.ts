@@ -1,5 +1,6 @@
 import ActivityLog, { IActivityLog } from '../models/ActivityLog';
 import mongoose from 'mongoose';
+import { getUserPlanTier, calculateActivityLogExpiration } from '../utils/retentionUtils';
 
 export interface ActivityLogData {
   projectId: string;
@@ -23,6 +24,11 @@ export interface ActivityLogData {
 class ActivityLogger {
   async log(data: ActivityLogData): Promise<IActivityLog> {
     try {
+      // Get user's plan tier to set appropriate retention policy
+      const planTier = await getUserPlanTier(data.userId);
+      const timestamp = new Date();
+      const expiresAt = calculateActivityLogExpiration(planTier, timestamp);
+
       const activityLog = new ActivityLog({
         projectId: new mongoose.Types.ObjectId(data.projectId),
         userId: new mongoose.Types.ObjectId(data.userId),
@@ -31,9 +37,13 @@ class ActivityLogger {
         resourceType: data.resourceType,
         resourceId: data.resourceId,
         details: data.details || {},
-        timestamp: new Date(),
+        timestamp,
         userAgent: data.userAgent,
-        ipAddress: data.ipAddress
+        ipAddress: data.ipAddress,
+        // Tiered retention fields
+        planTier,
+        expiresAt,
+        isCompacted: false
       });
 
       return await activityLog.save();

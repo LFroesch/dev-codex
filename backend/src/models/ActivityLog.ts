@@ -18,6 +18,10 @@ export interface IActivityLog extends Document {
   timestamp: Date;
   userAgent?: string;
   ipAddress?: string;
+  // Tiered retention fields
+  planTier: 'free' | 'pro' | 'enterprise';
+  expiresAt?: Date;
+  isCompacted?: boolean; // Flag for summary documents
 }
 
 const activityLogSchema: Schema = new Schema({
@@ -52,8 +56,7 @@ const activityLogSchema: Schema = new Schema({
       // Session actions
       'joined_project', 'left_project',
       // Management actions
-      'cleared_activity_log',
-      'terminal_command' // For logging terminal commands executed
+      'cleared_activity_log'
     ]
   },
   resourceType: {
@@ -79,7 +82,23 @@ const activityLogSchema: Schema = new Schema({
     index: true
   },
   userAgent: String,
-  ipAddress: String
+  ipAddress: String,
+  // Tiered retention fields
+  planTier: {
+    type: String,
+    required: true,
+    enum: ['free', 'pro', 'enterprise'],
+    default: 'free',
+    index: true
+  },
+  expiresAt: {
+    type: Date,
+    index: true
+  },
+  isCompacted: {
+    type: Boolean,
+    default: false
+  }
 }, {
   timestamps: true
 });
@@ -89,9 +108,10 @@ activityLogSchema.index({ projectId: 1, timestamp: -1 });
 activityLogSchema.index({ userId: 1, timestamp: -1 });
 activityLogSchema.index({ projectId: 1, userId: 1, timestamp: -1 });
 
-// TTL index to automatically clean up old logs after 90 days
-activityLogSchema.index({ timestamp: 1 }, { 
-  expireAfterSeconds: 90 * 24 * 60 * 60 
+// Dynamic TTL index based on expiresAt field (plan-aware retention)
+// expireAfterSeconds: 0 means MongoDB uses the expiresAt field directly
+activityLogSchema.index({ expiresAt: 1 }, {
+  expireAfterSeconds: 0
 });
 
 export default mongoose.model<IActivityLog>('ActivityLog', activityLogSchema);

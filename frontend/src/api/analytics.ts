@@ -1,4 +1,4 @@
-import { BaseApiService } from './base';
+import { BaseApiService, apiClient } from './base';
 
 // API client for analytics-related server communication
 class AnalyticsService extends BaseApiService {
@@ -23,12 +23,16 @@ class AnalyticsService extends BaseApiService {
 
   // Resets all analytics data (admin only)
   async resetAllAnalytics() {
-    return this.delete('/admin/analytics/reset');
+    // Use apiClient directly to avoid /analytics prefix duplication
+    const response = await apiClient.delete('/admin/analytics/reset');
+    return response.data;
   }
 
   // Resets project time tracking data (admin only)
   async resetProjectTimeData() {
-    return this.delete('/admin/analytics/project-time/reset');
+    // Use apiClient directly to avoid /analytics prefix duplication
+    const response = await apiClient.delete('/admin/analytics/project-time/reset');
+    return response.data;
   }
 
 

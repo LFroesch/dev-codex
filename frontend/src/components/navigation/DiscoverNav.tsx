@@ -4,9 +4,10 @@ interface DiscoverNavProps {
   currentPath: string;
   onNavigate: (path: string) => void;
   getContrastColor: () => string;
+  variant?: 'desktop' | 'mobile';
 }
 
-const DiscoverNav: React.FC<DiscoverNavProps> = ({ currentPath, onNavigate, getContrastColor }) => {
+const DiscoverNav: React.FC<DiscoverNavProps> = ({ currentPath, onNavigate, getContrastColor, variant = 'desktop' }) => {
   const isDetailsPage = currentPath.startsWith('/discover/project/') || currentPath.startsWith('/discover/user/');
 
   return (

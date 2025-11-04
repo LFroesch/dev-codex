@@ -337,18 +337,6 @@ const Layout: React.FC = () => {
     );
   }
 
-  const tabs = [
-    { id: 'notes', label: 'Notes/To Dos', path: '/notes' },
-    { id: 'stack', label: 'Stack', path: '/stack' },
-    { id: 'features', label: 'Features', path: '/features' },
-    { id: 'deployment', label: 'Deployment', path: '/deployment' },
-    { id: 'public', label: 'Public', path: '/public' },
-    { id: 'sharing', label: 'Sharing', path: '/sharing' },
-    { id: 'settings', label: 'Settings', path: '/settings' }
-  ];
-
-  const currentTab = location.pathname.slice(1) || 'notes';
-
   // Filter projects and group by category
   const filteredProjects = projects.filter(p => 
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -440,8 +428,8 @@ const Layout: React.FC = () => {
               {location.pathname === '/terminal' && (
                 <div className="tabs-container p-1">
                   <button
-                    className={`tab tab-sm flex-shrink-0 min-h-10 ${location.pathname === '/projects' ? 'tab-active' : ''} gap-1 sm:gap-2 font-bold whitespace-nowrap px-2 sm:px-4`}
-                    style={location.pathname === '/projects' ? {color: getContrastTextColor()} : {}}
+                    className={`tab tab-sm flex-shrink-0 min-h-10 gap-1 sm:gap-2 font-bold whitespace-nowrap px-2 sm:px-4`}
+                    style={{color: getContrastTextColor()}}
                     onClick={() => handleNavigateWithCheck('/projects')}
                     title='Projects'
                   >
@@ -603,139 +591,22 @@ const Layout: React.FC = () => {
             {/* Navigation buttons */}
             {location.pathname !== '/support' && location.pathname !== '/terminal' && (
             <div className="flex justify-center">
-              <div className="tabs-container p-1">
-                <button
-                  className={`tab tab-sm flex-shrink-0 min-h-10 ${location.pathname === '/projects' ? 'tab-active' : ''} gap-1 sm:gap-2 font-bold whitespace-nowrap px-2 sm:px-4`}
-                  style={location.pathname === '/projects' ? {color: getContrastTextColor()} : {}}
-                  onClick={() => handleNavigateWithCheck('/projects')}
-                >
-                  <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                  </svg>
-                  <span className="text-sm sm:text-base">Projects</span>
-                </button>
-                <button
-                  className={`tab tab-sm flex-shrink-0 min-h-10 ${(location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/features' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && location.pathname !== '/projects' ? 'tab-active' : ''} gap-1 sm:gap-2 font-bold whitespace-nowrap px-2 sm:px-4`}
-                  style={(location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/features' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && location.pathname !== '/projects' ? {color: getContrastTextColor()} : {}}
-                  onClick={() => handleNavigateWithCheck('/notes')}
-                >
-                  <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  <span className="text-sm sm:text-base">Details</span>
-                </button>
-                <button
-                  className={`tab tab-sm flex-shrink-0 min-h-10 ${location.pathname === '/discover' || location.pathname.startsWith('/discover/') ? 'tab-active' : ''} gap-1 sm:gap-2 font-bold whitespace-nowrap px-2 sm:px-4`}
-                  style={location.pathname === '/discover' || location.pathname.startsWith('/discover/') ? {color: getContrastTextColor()} : {}}
-                  onClick={() => {
-                    handleNavigateWithCheck('/discover');
-                  }}
-                >
-                  <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                  <span className="text-sm sm:text-base">Discover</span>
-                </button>
-                <button
-                  className={`tab tab-sm flex-shrink-0 min-h-10 ${location.pathname === '/terminal' ? 'tab-active' : ''} gap-1 sm:gap-2 font-bold whitespace-nowrap px-2 sm:px-4`}
-                  style={location.pathname === '/terminal' ? {color: getContrastTextColor()} : {}}
-                  onClick={() => {
-                    handleNavigateWithCheck('/terminal');
-                  }}
-                >
-                  <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  <span className="text-sm sm:text-base">Terminal</span>
-                </button>
-              </div>
+              <MainNav
+                currentPath={location.pathname}
+                onNavigate={handleNavigateWithCheck}
+                getContrastColor={getContrastTextColor}
+                variant="mobile"
+              />
             </div>
             )}
 
-            {/* Project Details Submenu - Mobile */}
-            {selectedProject && (location.pathname === '/notes' || location.pathname === '/stack' || location.pathname === '/features' || location.pathname === '/deployment' || location.pathname === '/public' || location.pathname === '/sharing' || location.pathname === '/settings') && location.pathname !== '/projects' && (
-            <div className="flex justify-center">
-              <div className="tabs-container p-1">
-                {tabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => handleNavigateWithCheck(tab.path)}
-                    className={`tab-button whitespace-nowrap ${currentTab === tab.id ? 'tab-active' : ''} gap-1 sm:gap-2`}
-                    style={currentTab === tab.id ? {color: getContrastTextColor()} : {}}
-                  >
-                    {tab.id === 'notes' && (
-                      <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                      </svg>
-                    )}
-                    {tab.id === 'stack' && (
-                      <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
-                      </svg>
-                    )}
-                    {tab.id === 'features' && (
-                      <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                    )}
-                    {tab.id === 'deployment' && (
-                      <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                      </svg>
-                    )}
-                    {tab.id === 'public' && (
-                      <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    )}
-                    {tab.id === 'sharing' && (
-                      <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                      </svg>
-                    )}
-                    {tab.id === 'settings' && (
-                      <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                    )}
-                    <span>
-                      {tab.id === 'notes' ? 'Notes' :
-                       tab.id === 'stack' ? 'Stack' :
-                       tab.id === 'features' ? 'Features' :
-                       tab.id === 'deployment' ? 'Deploy' :
-                       tab.id === 'public' ? 'Public' :
-                       tab.id === 'sharing' ? 'Sharing' :
-                       tab.id === 'settings' ? 'Settings' : tab.label}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-            )}
-
-            {/* Discover Submenu - Mobile */}
-            {(location.pathname === '/discover' || location.pathname.startsWith('/discover/')) && location.pathname !== '/terminal' && (
-            <div className="flex justify-center">
-              <div className="tabs-container p-1">
-                <button
-                  onClick={() => handleNavigateWithCheck('/discover')}
-                  className={`tab-button ${location.pathname === '/discover' ? 'tab-active' : ''}`}
-                  style={location.pathname === '/discover' ? {color: getContrastTextColor()} : {}}
-                >
-                  Discover
-                </button>
-                <button
-                  onClick={() => handleNavigateWithCheck('/discover')}
-                  className={`tab-button ${(location.pathname.startsWith('/discover/project/') || location.pathname.startsWith('/discover/user/')) ? 'tab-active' : ''}`}
-                  style={(location.pathname.startsWith('/discover/project/') || location.pathname.startsWith('/discover/user/')) ? {color: getContrastTextColor()} : {}}
-                  disabled={!(location.pathname.startsWith('/discover/project/') || location.pathname.startsWith('/discover/user/'))}
-                >
-                  Details
-                </button>
-              </div>
-            </div>
-            )}
+            <SecondaryNav
+              currentPath={location.pathname}
+              selectedProject={selectedProject}
+              onNavigate={handleNavigateWithCheck}
+              getContrastColor={getContrastTextColor}
+              variant="mobile"
+            />
 
             {/* Page-Level Tabs - Mobile */}
             {location.pathname !== '/terminal' && (

@@ -292,9 +292,17 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
 
   if (subscription.status === 'canceled' || subscription.status === 'incomplete_expired') {
     // Subscription was cancelled or expired
+    const oldPlanTier = user.planTier;
     user.planTier = 'free';
     user.projectLimit = PLAN_LIMITS.free;
     logInfo('Downgraded user to free plan', { userId: user._id, reason: subscription.status });
+
+    // Update retention for existing data when downgrading
+    if (oldPlanTier !== 'free') {
+      const { updateExpirationOnPlanChange } = await import('../utils/retentionUtils');
+      await updateExpirationOnPlanChange(user._id.toString(), oldPlanTier, 'free');
+      logInfo('Updated data retention after downgrade', { userId: user._id, from: oldPlanTier, to: 'free' });
+    }
   } else if (subscription.status === 'active') {
     // Determine plan tier from price ID
     const priceId = subscription.items.data[0]?.price.id;
@@ -309,9 +317,17 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
     }
 
     if (newPlanTier) {
+      const oldPlanTier = user.planTier;
       user.planTier = newPlanTier;
       user.projectLimit = PLAN_LIMITS[newPlanTier];
       logInfo('Updated user plan via subscription change', { userId: user._id, planTier: newPlanTier });
+
+      // Update retention for existing data when plan changes
+      if (oldPlanTier !== newPlanTier) {
+        const { updateExpirationOnPlanChange } = await import('../utils/retentionUtils');
+        await updateExpirationOnPlanChange(user._id.toString(), oldPlanTier, newPlanTier);
+        logInfo('Updated data retention after plan change', { userId: user._id, from: oldPlanTier, to: newPlanTier });
+      }
     } else {
       logError('Could not determine plan tier for price ID', new Error(`Price ID: ${priceId}`));
     }

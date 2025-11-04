@@ -1,16 +1,26 @@
 import express from 'express';
 import mongoose, { isValidObjectId } from 'mongoose';
+import Stripe from 'stripe';
 import { User } from '../models/User';
 import { Project } from '../models/Project';
 import { Ticket } from '../models/Ticket';
 import Analytics from '../models/Analytics';
 import UserSession from '../models/UserSession';
+import ActivityLog from '../models/ActivityLog';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { PLAN_LIMITS } from '../config/planLimits';
 import { CleanupService } from '../services/cleanupService';
 import nodemailer from 'nodemailer';
 
 const router = express.Router();
+
+// Initialize Stripe only if API key is provided
+let stripe: Stripe | null = null;
+if (process.env.STRIPE_SECRET_KEY) {
+  stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+    apiVersion: '2025-07-30.basil',
+  });
+}
 
 // Email configuration
 const createTransporter = () => {
@@ -189,6 +199,74 @@ router.put('/users/:id/plan', async (req, res) => {
 // Admin promotion is only available through secure server-side scripts
 // This endpoint is disabled for security reasons
 
+// Ban user
+router.post('/users/:id/ban', async (req: AuthRequest, res) => {
+  try {
+    // SEC-008 FIX: Validate ObjectId format
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid user ID' });
+    }
+
+    const { reason } = req.body;
+
+    if (!reason || reason.trim().length === 0) {
+      return res.status(400).json({ error: 'Ban reason is required' });
+    }
+
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Don't allow banning admins
+    if (user.isAdmin) {
+      return res.status(400).json({ error: 'Cannot ban admin users' });
+    }
+
+    // Don't allow banning yourself
+    if (req.params.id === req.userId) {
+      return res.status(400).json({ error: 'Cannot ban yourself' });
+    }
+
+    user.isBanned = true;
+    user.bannedAt = new Date();
+    user.banReason = reason.trim();
+    user.bannedBy = req.userId;
+    await user.save();
+
+    res.json({ message: 'User banned successfully', user });
+  } catch (error) {
+    console.error('Error banning user:', error);
+    res.status(500).json({ error: 'Failed to ban user' });
+  }
+});
+
+// Unban user
+router.post('/users/:id/unban', async (req: AuthRequest, res) => {
+  try {
+    // SEC-008 FIX: Validate ObjectId format
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid user ID' });
+    }
+
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    user.isBanned = false;
+    user.bannedAt = undefined;
+    user.banReason = undefined;
+    user.bannedBy = undefined;
+    await user.save();
+
+    res.json({ message: 'User unbanned successfully', user });
+  } catch (error) {
+    console.error('Error unbanning user:', error);
+    res.status(500).json({ error: 'Failed to unban user' });
+  }
+});
+
 // Delete user
 router.delete('/users/:id', async (req, res) => {
   try {
@@ -212,7 +290,7 @@ router.delete('/users/:id', async (req, res) => {
 
     // Delete user's projects
     await Project.deleteMany({ userId: req.params.id });
-    
+
     // Delete user
     await User.findByIdAndDelete(req.params.id);
 
@@ -584,19 +662,96 @@ router.post('/users/:id/password-reset', async (req, res) => {
   }
 });
 
+// Refund user subscription
+router.post('/users/:id/refund', async (req: AuthRequest, res) => {
+  try {
+    // SEC-008 FIX: Validate ObjectId format
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid user ID' });
+    }
+
+    if (!stripe) {
+      return res.status(501).json({ error: 'Payment processing not configured' });
+    }
+
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (!user.stripeCustomerId) {
+      return res.status(400).json({ error: 'User has no Stripe customer ID' });
+    }
+
+    // Get the user's recent charges (last 6 months)
+    const sixMonthsAgo = Math.floor(Date.now() / 1000) - (6 * 30 * 24 * 60 * 60);
+    const charges = await stripe.charges.list({
+      customer: user.stripeCustomerId,
+      limit: 10,
+      created: { gte: sixMonthsAgo }
+    });
+
+    if (charges.data.length === 0) {
+      return res.status(404).json({ error: 'No recent charges found for this user' });
+    }
+
+    // Get the most recent successful charge
+    const latestCharge = charges.data.find(charge => charge.status === 'succeeded' && !charge.refunded);
+
+    if (!latestCharge) {
+      return res.status(404).json({ error: 'No refundable charges found' });
+    }
+
+    // Create refund
+    const refund = await stripe.refunds.create({
+      charge: latestCharge.id,
+      reason: 'requested_by_customer',
+      metadata: {
+        refunded_by: req.userId || 'admin',
+        reason: req.body.reason || 'Admin-initiated refund'
+      }
+    });
+
+    res.json({
+      message: 'Refund processed successfully',
+      refund: {
+        id: refund.id,
+        amount: refund.amount / 100,
+        currency: refund.currency,
+        status: refund.status
+      },
+      charge: {
+        id: latestCharge.id,
+        amount: latestCharge.amount / 100,
+        currency: latestCharge.currency
+      }
+    });
+  } catch (error: any) {
+    console.error('Error processing refund:', error);
+    res.status(500).json({
+      error: 'Failed to process refund',
+      details: error.message
+    });
+  }
+});
+
 // Reset all analytics data
 router.delete('/analytics/reset', async (_req, res) => {
   try {
     // Clear all analytics events
     const analyticsResult = await Analytics.deleteMany({});
-    
+
     // Clear all user sessions (this also clears project time data)
     const sessionsResult = await UserSession.deleteMany({});
-    
-    res.json({ 
+
+    // Clear all activity logs
+    const activityLogsResult = await ActivityLog.deleteMany({});
+
+    res.json({
       message: 'Analytics data reset successfully',
       deletedAnalytics: analyticsResult.deletedCount,
       deletedSessions: sessionsResult.deletedCount,
+      deletedActivityLogs: activityLogsResult.deletedCount,
       projectTimeDataCleared: true
     });
   } catch (error) {

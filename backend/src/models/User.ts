@@ -45,6 +45,10 @@ export interface IUser extends Document {
   subscriptionStatus?: 'active' | 'inactive' | 'canceled' | 'past_due' | 'incomplete_expired';
   lastBillingUpdate?: Date;
   isAdmin: boolean;
+  isBanned: boolean;
+  bannedAt?: Date;
+  banReason?: string;
+  bannedBy?: string;
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
   googleId?: string;
@@ -144,6 +148,23 @@ const userSchema = new Schema<IUser>({
   isAdmin: {
     type: Boolean,
     default: false
+  },
+  isBanned: {
+    type: Boolean,
+    default: false
+  },
+  bannedAt: {
+    type: Date,
+    required: false
+  },
+  banReason: {
+    type: String,
+    required: false,
+    maxlength: 500
+  },
+  bannedBy: {
+    type: String,
+    required: false
   },
   resetPasswordToken: {
     type: String,
@@ -256,6 +277,7 @@ userSchema.index({ 'customThemes.id': 1 });
 userSchema.index({ planTier: 1, subscriptionStatus: 1 });
 userSchema.index({ isPublic: 1, publicSlug: 1 });
 userSchema.index({ subscriptionStatus: 1, lastBillingUpdate: 1 });
+userSchema.index({ isBanned: 1 });
 
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();

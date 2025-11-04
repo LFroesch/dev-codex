@@ -1298,7 +1298,7 @@ const Layout: React.FC = () => {
             )}
           </div>
           {/* /terminal only gap */}
-          {user && (location.pathname === '/terminal') && (
+          {user && (location.pathname === '/terminal' || location.pathname === '/billing' || location.pathname === '/account-settings' || location.pathname === '/support' || location.pathname === '/help' || location.pathname === '/news' || location.pathname === '/admin') && (
             <div className="mt-2"></div>
           )}
           {user && (location.pathname !== '/terminal') && (
@@ -1368,6 +1368,11 @@ const Layout: React.FC = () => {
                   </button>
                 ))}
               </div>
+            </div>
+            )}
+
+            {(!selectedProject && (location.pathname === '/projects' || location.pathname === '/notes')) && (
+            <div className="mt-2">
             </div>
             )}
 

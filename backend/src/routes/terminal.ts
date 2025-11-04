@@ -40,30 +40,6 @@ router.post('/execute', terminalRateLimit, async (req: AuthRequest, res) => {
     const executor = new CommandExecutor(userId);
     const response = await executor.execute(command, currentProjectId);
 
-    // Log command execution for audit trail (only if project-related)
-    if (response.metadata?.projectId) {
-      try {
-        await activityLogger.log({
-          projectId: response.metadata.projectId,
-          userId,
-          sessionId: 'terminal', // Terminal commands don't have a session
-          action: 'terminal_command',
-          resourceType: 'project',
-          resourceId: response.metadata.projectId,
-          details: {
-            metadata: {
-              command: command.slice(0, 100),
-              commandType: response.metadata.action,
-              success: response.type === 'success'
-            }
-          }
-        });
-      } catch (error) {
-        // Don't fail command execution if logging fails
-        logError('Activity logging failed', error as Error, { userId });
-      }
-    }
-
     res.json(response);
   } catch (error) {
     logError('Terminal execute error', error as Error, {

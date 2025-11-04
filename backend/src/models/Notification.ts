@@ -14,6 +14,10 @@ export interface INotification extends Document {
   metadata?: Record<string, any>;
   createdAt: Date;
   updatedAt: Date;
+  // Tiered retention fields
+  planTier: 'free' | 'pro' | 'enterprise';
+  importance: 'critical' | 'standard' | 'transient';
+  expiresAt?: Date;
 }
 
 const NotificationSchema = new Schema<INotification>(
@@ -65,6 +69,25 @@ const NotificationSchema = new Schema<INotification>(
       type: Schema.Types.Mixed,
       default: {},
     },
+    // Tiered retention fields
+    planTier: {
+      type: String,
+      required: true,
+      enum: ['free', 'pro', 'enterprise'],
+      default: 'free',
+      index: true,
+    },
+    importance: {
+      type: String,
+      required: true,
+      enum: ['critical', 'standard', 'transient'],
+      default: 'standard',
+      index: true,
+    },
+    expiresAt: {
+      type: Date,
+      index: true,
+    },
   },
   {
     timestamps: true,
@@ -76,8 +99,8 @@ NotificationSchema.index({ userId: 1, createdAt: -1 });
 NotificationSchema.index({ userId: 1, isRead: 1 });
 NotificationSchema.index({ relatedInvitationId: 1 });
 
-// TTL index to automatically clean up old notifications after 90 days
-NotificationSchema.index({ createdAt: 1 }, { expireAfterSeconds: 90 * 24 * 60 * 60 });
-
+// Dynamic TTL index based on expiresAt field (plan and importance-aware retention)
+// expireAfterSeconds: 0 means MongoDB uses the expiresAt field directly
+NotificationSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 export default mongoose.model<INotification>('Notification', NotificationSchema);

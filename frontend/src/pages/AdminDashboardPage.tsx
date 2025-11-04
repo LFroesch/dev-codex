@@ -14,6 +14,10 @@ interface User {
   planTier: 'free' | 'pro' | 'enterprise';
   subscriptionStatus?: string;
   isAdmin: boolean;
+  isBanned?: boolean;
+  bannedAt?: string;
+  banReason?: string;
+  bannedBy?: string;
   createdAt: string;
   projectCount?: number;
 }
@@ -103,7 +107,19 @@ const AdminDashboardPage: React.FC = () => {
     isPublished: false
   });
   const [postToDelete, setPostToDelete] = useState<NewsPost | null>(null);
-  
+
+  // Ban/Unban state
+  const [showBanConfirm, setShowBanConfirm] = useState(false);
+  const [userToBan, setUserToBan] = useState<User | null>(null);
+  const [banReason, setBanReason] = useState('');
+  const [banLoading, setBanLoading] = useState(false);
+
+  // Refund state
+  const [showRefundConfirm, setShowRefundConfirm] = useState(false);
+  const [userToRefund, setUserToRefund] = useState<User | null>(null);
+  const [refundReason, setRefundReason] = useState('');
+  const [refundLoading, setRefundLoading] = useState(false);
+
   const fetchUsers = async (pageNum: number = 1) => {
     try {
       const response = await fetch(`/api/admin/users?page=${pageNum}&limit=10`, {
@@ -287,6 +303,86 @@ const AdminDashboardPage: React.FC = () => {
       alert('Failed to reset analytics: ' + (err.response?.data?.error || err.message));
     } finally {
       setResettingAnalytics(false);
+    }
+  };
+
+  const banUser = async (userId: string, reason: string) => {
+    try {
+      setBanLoading(true);
+      const response = await csrfFetch(`/api/admin/users/${userId}/ban`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ reason })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to ban user');
+      }
+
+      await fetchUsers(page);
+      await fetchStats();
+      setShowBanConfirm(false);
+      setUserToBan(null);
+      setBanReason('');
+      setSelectedUser(null);
+      alert('User banned successfully!');
+    } catch (err: any) {
+      alert('Failed to ban user: ' + err.message);
+    } finally {
+      setBanLoading(false);
+    }
+  };
+
+  const unbanUser = async (userId: string) => {
+    try {
+      const response = await csrfFetch(`/api/admin/users/${userId}/unban`, {
+        method: 'POST'
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to unban user');
+      }
+
+      await fetchUsers(page);
+      await fetchStats();
+      setSelectedUser(null);
+      alert('User unbanned successfully!');
+    } catch (err: any) {
+      alert('Failed to unban user: ' + err.message);
+    }
+  };
+
+  const processRefund = async (userId: string, reason?: string) => {
+    try {
+      setRefundLoading(true);
+      const response = await csrfFetch(`/api/admin/users/${userId}/refund`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ reason })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to process refund');
+      }
+
+      await fetchUsers(page);
+      await fetchStats();
+      setShowRefundConfirm(false);
+      setUserToRefund(null);
+      setRefundReason('');
+      setSelectedUser(null);
+      alert('Refund processed successfully!');
+    } catch (err: any) {
+      alert('Failed to process refund: ' + err.message);
+    } finally {
+      setRefundLoading(false);
     }
   };
 
@@ -646,7 +742,10 @@ const AdminDashboardPage: React.FC = () => {
                       </td>
                       <td>{formatDate(user.createdAt)}</td>
                       <td>
-                        {user.isAdmin && <div className="badge badge-warning">Admin</div>}
+                        <div className="flex flex-col gap-1">
+                          {user.isAdmin && <div className="badge badge-warning">Admin</div>}
+                          {user.isBanned && <div className="badge badge-error">Banned</div>}
+                        </div>
                       </td>
                       <td>
                         <div className="dropdown dropdown-end">
@@ -675,9 +774,53 @@ const AdminDashboardPage: React.FC = () => {
                                 Send Password Reset
                               </a>
                             </li>
-                            <div className="divider my-1"></div>
                             <li>
-                              <a 
+                              <a
+                                className="text-info"
+                                onClick={() => {
+                                  setUserToRefund(user);
+                                  setRefundReason('');
+                                  setShowRefundConfirm(true);
+                                }}
+                              >
+                                <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                Process Refund
+                              </a>
+                            </li>
+                            <div className="divider my-1"></div>
+                            {!user.isBanned ? (
+                              <li>
+                                <a
+                                  className="text-error"
+                                  onClick={() => {
+                                    setUserToBan(user);
+                                    setBanReason('');
+                                    setShowBanConfirm(true);
+                                  }}
+                                >
+                                  <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                                  </svg>
+                                  Ban User
+                                </a>
+                              </li>
+                            ) : (
+                              <li>
+                                <a
+                                  className="text-success"
+                                  onClick={() => unbanUser(user._id)}
+                                >
+                                  <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                  Unban User
+                                </a>
+                              </li>
+                            )}
+                            <li>
+                              <a
                                 className="text-error"
                                 onClick={() => {
                                   setUserToDelete(user);
@@ -1442,7 +1585,7 @@ const AdminDashboardPage: React.FC = () => {
                       {selectedUser.isAdmin ? 'Admin' : 'Regular User'}
                     </div>
                   </div>
-                  
+
                   <div>
                     <label className="font-semibold text-base-content/70">User ID</label>
                     <p className="text-sm font-mono bg-base-200 p-2 rounded">{selectedUser._id}</p>
@@ -1450,7 +1593,29 @@ const AdminDashboardPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mt-6 sm:mt-8">
+              {/* Ban Status Section */}
+              {selectedUser.isBanned && (
+                <div className="mt-4 p-3 sm:p-4 bg-error/10 border-2 border-error/20 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <svg className="icon-sm text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                    </svg>
+                    <span className="font-semibold text-error">User is Banned</span>
+                  </div>
+                  {selectedUser.banReason && (
+                    <p className="text-sm text-base-content/70 mb-2">
+                      <strong>Reason:</strong> {selectedUser.banReason}
+                    </p>
+                  )}
+                  {selectedUser.bannedAt && (
+                    <p className="text-xs text-base-content/60">
+                      Banned on {formatDate(selectedUser.bannedAt)}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mt-6 sm:mt-8 flex-wrap">
                 <button
                   className="btn btn-warning btn-sm sm:btn-md"
                   onClick={() => {
@@ -1464,6 +1629,51 @@ const AdminDashboardPage: React.FC = () => {
                   <span className="hidden sm:inline">Send Password Reset</span>
                   <span className="sm:hidden">Password Reset</span>
                 </button>
+                <button
+                  className="btn btn-info btn-sm sm:btn-md"
+                  onClick={() => {
+                    setUserToRefund(selectedUser);
+                    setRefundReason('');
+                    setShowRefundConfirm(true);
+                    setSelectedUser(null);
+                  }}
+                >
+                  <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="hidden sm:inline">Process Refund</span>
+                  <span className="sm:hidden">Refund</span>
+                </button>
+                {!selectedUser.isBanned ? (
+                  <button
+                    className="btn btn-error btn-outline btn-sm sm:btn-md"
+                    onClick={() => {
+                      setUserToBan(selectedUser);
+                      setBanReason('');
+                      setShowBanConfirm(true);
+                      setSelectedUser(null);
+                    }}
+                  >
+                    <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                    </svg>
+                    <span className="hidden sm:inline">Ban User</span>
+                    <span className="sm:hidden">Ban</span>
+                  </button>
+                ) : (
+                  <button
+                    className="btn btn-success btn-sm sm:btn-md"
+                    onClick={() => {
+                      unbanUser(selectedUser._id);
+                    }}
+                  >
+                    <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className="hidden sm:inline">Unban User</span>
+                    <span className="sm:hidden">Unban</span>
+                  </button>
+                )}
                 <button
                   className="btn btn-error btn-sm sm:btn-md"
                   onClick={() => {
@@ -1543,6 +1753,149 @@ const AdminDashboardPage: React.FC = () => {
           confirmText="Delete Post"
           variant="error"
         />
+
+        {/* Ban User Modal */}
+        {showBanConfirm && userToBan && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-base-100 rounded-lg shadow-xl p-4 sm:p-6 w-full max-w-md">
+              <h2 className="text-xl sm:text-2xl font-bold mb-4">Ban User</h2>
+
+              <div className="mb-4">
+                <p className="text-base-content/80 mb-2">
+                  You are about to ban <strong>{userToBan.firstName} {userToBan.lastName}</strong>
+                </p>
+                <div className="bg-error/10 border-2 border-error/20 p-3 rounded-lg">
+                  <p className="text-error font-semibold mb-1">Warning</p>
+                  <ul className="text-sm text-base-content/70 list-disc list-inside">
+                    <li>User will be immediately logged out</li>
+                    <li>User will not be able to access their account</li>
+                    <li>User can be unbanned by admins</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="form-control mb-4">
+                <label className="label">
+                  <span className="label-text font-semibold">Ban Reason (Required)</span>
+                </label>
+                <textarea
+                  value={banReason}
+                  onChange={(e) => setBanReason(e.target.value)}
+                  placeholder="Enter reason for banning this user..."
+                  className="textarea textarea-bordered w-full"
+                  rows={3}
+                  required
+                />
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                <button
+                  className="btn btn-error btn-sm sm:btn-md flex-1"
+                  onClick={() => banUser(userToBan._id, banReason)}
+                  disabled={!banReason.trim() || banLoading}
+                >
+                  {banLoading ? (
+                    <>
+                      <span className="loading loading-spinner loading-xs"></span>
+                      Banning...
+                    </>
+                  ) : (
+                    'Ban User'
+                  )}
+                </button>
+                <button
+                  className="btn btn-ghost btn-sm sm:btn-md flex-1"
+                  onClick={() => {
+                    setShowBanConfirm(false);
+                    setUserToBan(null);
+                    setBanReason('');
+                  }}
+                  disabled={banLoading}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Refund Modal */}
+        {showRefundConfirm && userToRefund && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-base-100 rounded-lg shadow-xl p-4 sm:p-6 w-full max-w-md">
+              <h2 className="text-xl sm:text-2xl font-bold mb-4">Process Refund</h2>
+
+              <div className="mb-4">
+                <p className="text-base-content/80 mb-3">
+                  You are about to process a refund for <strong>{userToRefund.firstName} {userToRefund.lastName}</strong>
+                </p>
+
+                <div className="bg-base-200 p-3 rounded-lg mb-3">
+                  <p className="text-sm font-semibold mb-1">User Information</p>
+                  <p className="text-sm text-base-content/70">
+                    <strong>Plan:</strong> <span className={`badge ${getPlanBadgeColor(userToRefund.planTier)} badge-sm`}>
+                      {userToRefund.planTier}
+                    </span>
+                  </p>
+                  <p className="text-sm text-base-content/70">
+                    <strong>Email:</strong> {userToRefund.email}
+                  </p>
+                </div>
+
+                <div className="bg-warning/10 border-2 border-warning/20 p-3 rounded-lg">
+                  <p className="text-warning font-semibold mb-1">Important</p>
+                  <ul className="text-sm text-base-content/70 list-disc list-inside">
+                    <li>This will process a refund through Stripe</li>
+                    <li>User's subscription will be cancelled</li>
+                    <li>User will be downgraded to Free plan</li>
+                    <li>This action cannot be undone</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="form-control mb-4">
+                <label className="label">
+                  <span className="label-text font-semibold">Refund Reason (Optional)</span>
+                </label>
+                <textarea
+                  value={refundReason}
+                  onChange={(e) => setRefundReason(e.target.value)}
+                  placeholder="Enter reason for refund (optional)..."
+                  className="textarea textarea-bordered w-full"
+                  rows={3}
+                />
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                <button
+                  className="btn btn-info btn-sm sm:btn-md flex-1"
+                  onClick={() => processRefund(userToRefund._id, refundReason)}
+                  disabled={refundLoading}
+                >
+                  {refundLoading ? (
+                    <>
+                      <span className="loading loading-spinner loading-xs"></span>
+                      Processing...
+                    </>
+                  ) : (
+                    'Process Refund'
+                  )}
+                </button>
+                <button
+                  className="btn btn-ghost btn-sm sm:btn-md flex-1"
+                  onClick={() => {
+                    setShowRefundConfirm(false);
+                    setUserToRefund(null);
+                    setRefundReason('');
+                  }}
+                  disabled={refundLoading}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
     </div>
   );
 };

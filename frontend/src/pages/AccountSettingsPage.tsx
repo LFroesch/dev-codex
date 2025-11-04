@@ -89,7 +89,7 @@ const DEFAULT_CUSTOM_COLORS = {
 const AccountSettingsPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState<'theme' | 'connections' | 'profile' | 'analytics'>('theme');
+  const [activeTab, setActiveTab] = useState<'theme' | 'connections' | 'profile' | 'analytics' | 'billing'>('theme');
   const [profileSubTab, setProfileSubTab] = useState<'personal' | 'public' | 'privacy'>('personal');
   const [themeSubTab, setThemeSubTab] = useState<'preset' | 'custom'>('preset');
   const [currentTheme, setCurrentTheme] = useState('retro');
@@ -779,6 +779,13 @@ const AccountSettingsPage: React.FC = () => {
             onClick={() => setActiveTab('analytics')}
           >
             Analytics
+          </button>
+          <button
+            className={`tab-button ${activeTab === 'billing' ? 'tab-active' : ''}`}
+            style={activeTab === 'billing' ? {color: getContrastTextColor()} : {}}
+            onClick={() => setActiveTab('billing')}
+          >
+            Billing
           </button>
         </div>
       </div>
@@ -1973,10 +1980,126 @@ const AccountSettingsPage: React.FC = () => {
 
             {activeTab === 'analytics' && (
               <div className="space-y-6">
-                
-                
+
+
                 {/* Enhanced Analytics Dashboard */}
                 <AnalyticsDashboard />
+              </div>
+            )}
+
+            {activeTab === 'billing' && (
+              <div className="space-y-6">
+                <div className='text-center space-y-2'>
+                  <h2 className="text-2xl font-bold mb-2">Billing & Subscription</h2>
+                  <p className="text-base-content/60">
+                    Manage your subscription plan, view billing history, and update payment methods.
+                  </p>
+                </div>
+
+                {/* Quick Plan Summary */}
+                <div className="card bg-base-200 border-2 border-base-content/20">
+                  <div className="card-body p-4 sm:p-6">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                      <div className="text-center sm:text-left">
+                        <h3 className="text-lg font-semibold text-base-content">Current Plan</h3>
+                        <p className="text-sm text-base-content/60">View and manage your subscription</p>
+                      </div>
+                      <button
+                        onClick={() => navigate('/billing')}
+                        className="btn btn-primary gap-2"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                        </svg>
+                        Go to Billing Page
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Features */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="card bg-base-200 border border-base-content/20">
+                    <div className="card-body p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-base-content mb-1">View Plans</h4>
+                          <p className="text-sm text-base-content/70">Compare Free, Pro, and Enterprise plans to find the right fit for your projects.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="card bg-base-200 border border-base-content/20">
+                    <div className="card-body p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 bg-success/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <svg className="w-5 h-5 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                          </svg>
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-base-content mb-1">Upgrade Anytime</h4>
+                          <p className="text-sm text-base-content/70">Instantly unlock more projects and features by upgrading your subscription.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="card bg-base-200 border border-base-content/20">
+                    <div className="card-body p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 bg-info/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <svg className="w-5 h-5 text-info" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-base-content mb-1">Flexible Billing</h4>
+                          <p className="text-sm text-base-content/70">Cancel anytime and keep access until the end of your billing period.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="card bg-base-200 border border-base-content/20">
+                    <div className="card-body p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 bg-warning/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <svg className="w-5 h-5 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-base-content mb-1">Billing History</h4>
+                          <p className="text-sm text-base-content/70">Access your invoices and payment history on the billing page.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Call to Action */}
+                <div className="text-center p-6 bg-primary/5 border-2 border-primary/20 rounded-lg">
+                  <h3 className="text-xl font-bold text-base-content mb-2">Ready to upgrade?</h3>
+                  <p className="text-base-content/70 mb-4">
+                    Get more projects, advanced features, and priority support.
+                  </p>
+                  <button
+                    onClick={() => navigate('/billing')}
+                    className="btn btn-primary btn-lg gap-2"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                    </svg>
+                    View Plans & Pricing
+                  </button>
+                </div>
               </div>
             )}
         </div>

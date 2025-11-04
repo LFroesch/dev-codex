@@ -272,7 +272,8 @@ app.use('/api/projects', conditionalCSRF, rateLimitMiddleware, sessionMiddleware
 app.use('/api/invitations', conditionalCSRF, rateLimitMiddleware, invitationRoutes);
 app.use('/api/notifications', conditionalCSRF, rateLimitMiddleware, notificationRoutes);
 app.use('/api/billing', conditionalCSRF, rateLimitMiddleware, billingRoutes);
-app.use('/api/admin', conditionalCSRF, adminRateLimit, rateLimitMiddleware, adminRoutes);
+// Admin routes - no rate limiting (admins should have unrestricted access)
+app.use('/api/admin', conditionalCSRF, adminRoutes);
 app.use('/api/tickets', conditionalCSRF, rateLimitMiddleware, ticketRoutes);
 app.use('/api/analytics', conditionalCSRF, rateLimitMiddleware, sessionMiddleware, analyticsRoutes);
 app.use('/api/activity-logs', conditionalCSRF, rateLimitMiddleware, activityLogRoutes);

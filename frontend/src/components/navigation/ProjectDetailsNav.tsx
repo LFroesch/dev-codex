@@ -63,7 +63,7 @@ const getIcon = (tabId: string, isMobile: boolean) => {
 const ProjectDetailsNav: React.FC<ProjectDetailsNavProps> = ({ currentPath, onNavigate, getContrastColor, variant = 'desktop' }) => {
   const currentTab = currentPath.slice(1);
   const isMobile = variant === 'mobile';
-  const buttonClass = isMobile ? 'tab-button whitespace-nowrap' : 'tab-button whitespace-nowrap';
+  const buttonClass = isMobile ? 'tab-button whitespace-nowrap flex-shrink-0 min-h-10' : 'tab-button whitespace-nowrap';
   const gapClass = isMobile ? 'gap-1 sm:gap-2' : 'gap-2';
 
   return (

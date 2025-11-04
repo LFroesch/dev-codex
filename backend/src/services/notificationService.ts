@@ -1,5 +1,10 @@
 import Notification, { INotification } from '../models/Notification';
 import mongoose from 'mongoose';
+import {
+  getUserPlanTier,
+  calculateNotificationExpiration,
+  getNotificationImportance,
+} from '../utils/retentionUtils';
 
 interface CreateNotificationData {
   userId: mongoose.Types.ObjectId | string;
@@ -62,8 +67,18 @@ class NotificationService {
         this.emitNotificationEvent('notification-deleted', data.userId.toString(), existingNotification._id.toString());
       }
 
-      // Create the new notification
-      const notification = await Notification.create(data);
+      // Get user's plan tier and calculate retention
+      const planTier = await getUserPlanTier(data.userId);
+      const importance = getNotificationImportance(data.type);
+      const expiresAt = calculateNotificationExpiration(planTier, data.type);
+
+      // Create the new notification with retention fields
+      const notification = await Notification.create({
+        ...data,
+        planTier,
+        importance,
+        expiresAt,
+      });
 
       // Populate related fields for the socket event
       const populatedNotification = await Notification.findById(notification._id)

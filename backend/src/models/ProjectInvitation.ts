@@ -13,6 +13,9 @@ export interface IProjectInvitation extends Document {
   acceptedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
+  // Tiered retention field
+  planTier: 'free' | 'pro' | 'enterprise';
+  deletionExpiresAt?: Date; // For plan-aware deletion after status changes
 }
 
 const ProjectInvitationSchema = new Schema<IProjectInvitation>(
@@ -61,6 +64,18 @@ const ProjectInvitationSchema = new Schema<IProjectInvitation>(
     acceptedAt: {
       type: Date,
     },
+    // Tiered retention field
+    planTier: {
+      type: String,
+      required: true,
+      enum: ['free', 'pro', 'enterprise'],
+      default: 'free',
+      index: true,
+    },
+    deletionExpiresAt: {
+      type: Date,
+      index: true,
+    },
   },
   {
     timestamps: true,
@@ -91,14 +106,12 @@ ProjectInvitationSchema.index(
   }
 );
 
-// TTL index to automatically clean up expired invitations after 30 days
+// Dynamic TTL index based on deletionExpiresAt field (plan-aware retention)
+// This handles deletion of expired, cancelled, and accepted invitations
 ProjectInvitationSchema.index(
-  { expiresAt: 1 }, 
-  { 
-    expireAfterSeconds: 30 * 24 * 60 * 60,
-    partialFilterExpression: { 
-      status: { $in: ['expired', 'cancelled'] }
-    }
+  { deletionExpiresAt: 1 },
+  {
+    expireAfterSeconds: 0
   }
 );
 

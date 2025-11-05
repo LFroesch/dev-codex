@@ -26,9 +26,13 @@ export const useProjectManagement = () => {
       grouped[normalizedCategory].push(project);
     });
 
-    // Sort projects within each category alphabetically
+    // Sort projects within each category by recently updated
     Object.keys(grouped).forEach(category => {
-      grouped[category].sort((a, b) => a.name.localeCompare(b.name));
+      grouped[category].sort((a, b) => {
+        const dateA = new Date(a.updatedAt).getTime();
+        const dateB = new Date(b.updatedAt).getTime();
+        return dateB - dateA; // Most recent first
+      });
     });
 
     return grouped;

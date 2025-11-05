@@ -361,7 +361,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                   </p>
                 )}
                 <div className="text-xs text-base-content/60">
-                  💡 You can still view project data, but editing is disabled until you upgrade your plan.
+                  You can still view and download project data, but editing is disabled until you upgrade your plan.
                 </div>
               </div>
             </div>

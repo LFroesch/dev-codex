@@ -3,6 +3,7 @@ import { useNavigate, useOutletContext } from 'react-router-dom';
 import { analyticsAPI, newsAPI } from '../api';
 import OptimizedAnalytics from '../components/OptimizedAnalytics';
 import ConfirmationModal from '../components/ConfirmationModal';
+import TicketKanban from '../components/TicketKanban';
 import { getContrastTextColor } from '../utils/contrastTextColor';
 import { csrfFetch } from '../utils/csrf';
 import { toast } from '../services/toast';
@@ -164,27 +165,25 @@ const AdminDashboardPage: React.FC = () => {
     }
   };
 
-  const fetchTickets = async (pageNum: number = 1) => {
+  const fetchTickets = async () => {
     try {
+      // Fetch all tickets for Kanban board (no pagination or status filter)
       const params = new URLSearchParams({
-        page: pageNum.toString(),
-        limit: '10',
-        status: ticketStatusTab
+        page: '1',
+        limit: '1000' // Get all tickets for the Kanban board
       });
 
       const response = await fetch(`/api/admin/tickets?${params}`, {
         credentials: 'include'
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to fetch tickets');
       }
-      
+
       const data = await response.json();
       setTickets(data.tickets);
       setTicketStats(data.stats);
-      setTotalPages(data.pagination.totalPages);
-      setPage(pageNum);
     } catch (err: any) {
       setError(err.message);
     }
@@ -340,12 +339,34 @@ const AdminDashboardPage: React.FC = () => {
       }
 
       // Refresh tickets list
-      await fetchTickets(page);
+      await fetchTickets();
       setSelectedTicket(null);
       setAdminResponse('');
       setRespondingToTicket(null);
+
+      if (adminResponse) {
+        toast.success('Response sent successfully!');
+      } else if (status) {
+        toast.success('Ticket status updated!');
+      }
     } catch (err: any) {
-      alert('Failed to update ticket: ' + err.message);
+      toast.error('Failed to update ticket: ' + err.message);
+    }
+  };
+
+  const handleQuickReply = async (ticketId: string, response: string) => {
+    try {
+      await updateTicket(ticketId, undefined, response);
+    } catch (err: any) {
+      toast.error('Failed to send reply: ' + err.message);
+    }
+  };
+
+  const handleStatusChange = async (ticketId: string, newStatus: 'open' | 'in_progress' | 'resolved' | 'closed') => {
+    try {
+      await updateTicket(ticketId, newStatus);
+    } catch (err: any) {
+      toast.error('Failed to update status: ' + err.message);
     }
   };
 
@@ -958,289 +979,129 @@ const AdminDashboardPage: React.FC = () => {
         </div>
         )}
 
-        {/* Tickets Table */}
+        {/* Tickets Kanban Board */}
         {activeTab === 'tickets' && (
-          <div className="shadow-md p-2 rounded-lg border-2 border-base-content/20 transition-all duration-200" style={{ overflow: 'visible' }}>
-            <div className="card-body p-2" style={{ overflow: 'visible' }}>
+          <div className="p-4">
+            {/* Kanban Board */}
+            <TicketKanban
+              tickets={tickets}
+              ticketStats={ticketStats}
+              onStatusChange={handleStatusChange}
+              onQuickReply={handleQuickReply}
+              onViewFull={setSelectedTicket}
+            />
 
-              {/* Ticket Status Tabs */}
-              <div className="flex justify-center mb-2">
-                <div className="tabs-container p-1 tabs-sm bg-base-200 flex max-w-4xl">
-                <button 
-                  className={`tab-button-admin  ${ticketStatusTab === 'open' ? 'tab-active' : ''}`}
-                  style={ticketStatusTab === 'open' ? {color: getContrastTextColor()} : {}}
-                  onClick={() => {
-                    setTicketStatusTab('open');
-                    setPage(1);
-                  }}
-                >
-                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                  </svg>
-                  <span className="hidden sm:inline">Open ({ticketStats?.open || 0})</span>
-                  <span className="sm:hidden">Open</span>
-                </button>
-                <button 
-                  className={`tab-button-admin ${ticketStatusTab === 'in_progress' ? 'tab-active' : ''}`}
-                  style={ticketStatusTab === 'in_progress' ? {color: getContrastTextColor()} : {}}
-                  onClick={() => {
-                    setTicketStatusTab('in_progress');
-                    setPage(1);
-                  }}
-                >
-                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span className="hidden sm:inline">In Progress ({ticketStats?.inProgress || 0})</span>
-                  <span className="sm:hidden">Progress</span>
-                </button>
-                <button 
-                  className={`tab-button-admin ${ticketStatusTab === 'resolved' ? 'tab-active' : ''}`}
-                  style={ticketStatusTab === 'resolved' ? {color: getContrastTextColor()} : {}}
-                  onClick={() => {
-                    setTicketStatusTab('resolved');
-                    setPage(1);
-                  }}
-                >
-                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span className="hidden sm:inline">Resolved ({ticketStats?.resolved || 0})</span>
-                  <span className="sm:hidden">Resolved</span>
-                </button>
-                <button 
-                  className={`tab-button-admin ${ticketStatusTab === 'closed' ? 'tab-active' : ''}`}
-                  style={ticketStatusTab === 'closed' ? {color: getContrastTextColor()} : {}}
-                  onClick={() => {
-                    setTicketStatusTab('closed');
-                    setPage(1);
-                  }}
-                >
-                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span className="hidden sm:inline">Closed ({ticketStats?.closed || 0})</span>
-                  <span className="sm:hidden">Closed</span>
-                </button>
-                </div>
-              </div>
-
-              <div style={{ overflowX: 'auto', overflowY: 'visible', paddingBottom: '200px' }}>
-                <table className="table table-zebra w-full">
-                  <thead>
-                    <tr>
-                      <th>Ticket ID</th>
-                      <th>User</th>
-                      <th>Subject</th>
-                      <th>Category</th>
-                      <th>Priority</th>
-                      <th>Status</th>
-                      <th>Created</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {tickets.map((ticket) => (
-                      <tr key={ticket._id} className={selectedTicket?._id === ticket._id ? 'bg-primary/10' : ''}>
-                        <td>
-                          <code className="text-xs">{ticket.ticketId}</code>
-                        </td>
-                        <td>
-                          <div>
-                            <div className="font-semibold">
-                              {ticket.userId.firstName} {ticket.userId.lastName}
-                            </div>
-                            <div className="text-sm text-base-content/60">{ticket.userId.email}</div>
-                            <div className={`badge badge-xs ${getPlanBadgeColor(ticket.userId.planTier)}`}>
-                              {ticket.userId.planTier}
-                            </div>
-                          </div>
-                        </td>
-                        <td>
-                          <div className="max-w-xs">
-                            <div className="font-medium truncate" title={ticket.subject}>
-                              {ticket.subject}
-                            </div>
-                            <div className="text-xs text-base-content/60 truncate" title={ticket.message}>
-                              {ticket.message}
-                            </div>
-                          </div>
-                        </td>
-                        <td>
-                          <div className="badge badge-outline whitespace-nowrap">
-                            {ticket.category.replace('_', ' ')}
-                          </div>
-                        </td>
-                        <td>
-                          <div className={`badge ${getPriorityBadgeColor(ticket.priority)} whitespace-nowrap`}>
-                            {ticket.priority}
-                          </div>
-                        </td>
-                        <td>
-                          <div className={`badge ${getStatusBadgeColor(ticket.status)} whitespace-nowrap`}>
-                            {getStatusDisplayText(ticket.status)}
-                          </div>
-                        </td>
-                        <td>{formatDate(ticket.createdAt)}</td>
-                        <td>
-                          <div className="dropdown dropdown-end">
-                            <div 
-                              tabIndex={0}
-                              role="button" 
-                              className="btn-ghost-xs"
-                            >
-                              <svg className="icon-sm ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                              </svg>
-                            </div>
-                            <ul tabIndex={0} className="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-48 z-50">
-                              <li>
-                                <a 
-                                  onClick={() => setSelectedTicket(selectedTicket?._id === ticket._id ? null : ticket)}
-                                >
-                                  <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                  </svg>
-                                  {selectedTicket?._id === ticket._id ? 'Hide Details' : 'View Details'}
-                                </a>
-                              </li>
-                              <li>
-                                <a 
-                                  className="text-primary"
-                                  onClick={() => {
-                                    setRespondingToTicket(ticket.ticketId);
-                                    setAdminResponse('');
-                                  }}
-                                >
-                                  <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                  </svg>
-                                  Send Response
-                                </a>
-                              </li>
-                              <div className="divider my-1"></div>
-                                
-                                {/* Status-specific actions */}
-                                {ticket.status === 'open' && (
-                                  <li>
-                                    <a 
-                                      className="text-warning"
-                                      onClick={() => updateTicket(ticket.ticketId, 'in_progress')}
-                                    >
-                                      <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                      </svg>
-                                      Start Working
-                                    </a>
-                                  </li>
-                                )}
-                                
-                                {ticket.status === 'in_progress' && (
-                                  <li>
-                                    <a 
-                                      className="text-success"
-                                      onClick={() => updateTicket(ticket.ticketId, 'resolved')}
-                                    >
-                                      <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                      </svg>
-                                      Mark Resolved
-                                    </a>
-                                  </li>
-                                )}
-                                
-                                {ticket.status === 'resolved' && (
-                                  <>
-                                    <li>
-                                      <a 
-                                        className="text-neutral"
-                                        onClick={() => updateTicket(ticket.ticketId, 'closed')}
-                                      >
-                                        <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                        Close Ticket
-                                      </a>
-                                    </li>
-                                    <li>
-                                      <a 
-                                        className="text-warning"
-                                        onClick={() => updateTicket(ticket.ticketId, 'in_progress')}
-                                      >
-                                        <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.001 8.001 0 01-15.357-2m15.357 2H15" />
-                                        </svg>
-                                        Reopen
-                                      </a>
-                                    </li>
-                                  </>
-                                )}
-                                
-                                {ticket.status === 'closed' && (
-                                  <li>
-                                    <a 
-                                      className="text-warning"
-                                      onClick={() => updateTicket(ticket.ticketId, 'in_progress')}
-                                    >
-                                      <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.001 8.001 0 01-15.357-2m15.357 2H15" />
-                                      </svg>
-                                      Reopen Ticket
-                                    </a>
-                                  </li>
-                                )}
-                                
-                                <div className="divider my-1"></div>
-                                <li>
-                                  <a className="text-error">
-                                    <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                    </svg>
-                                    Delete Ticket
-                                  </a>
-                                </li>
-                              </ul>
-                            </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Ticket Details */}
+              {/* Ticket Details Modal */}
               {selectedTicket && (
-                <div className="mt-6 p-3 sm:p-4 bg-base-200 shadow-md border-2 border-base-content/20 rounded-lg">
-                  <h3 className="font-bold text-base sm:text-lg mb-2">Ticket Details</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4">
-                    <div className="text-sm sm:text-base">
-                      <strong>Subject:</strong> {selectedTicket.subject}
-                    </div>
-                    <div className="text-sm sm:text-base">
-                      <strong>Category:</strong> {selectedTicket.category.replace('_', ' ')}
-                    </div>
-                    <div className="text-sm sm:text-base">
-                      <strong>Priority:</strong> {selectedTicket.priority}
-                    </div>
-                    <div className="text-sm sm:text-base">
-                      <strong>Status:</strong> {getStatusDisplayText(selectedTicket.status)}
+                <div className="mt-6 p-4 bg-primary/5 shadow-xl border-2 border-primary rounded-lg">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-bold text-lg flex items-center gap-2">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                      Ticket Details
+                    </h3>
+                    <button
+                      onClick={() => setSelectedTicket(null)}
+                      className="btn btn-sm btn-circle btn-ghost"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  <div className="bg-base-100 rounded-lg p-4 mb-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <span className="text-xs text-base-content/60 uppercase tracking-wider">Ticket ID</span>
+                        <div className="font-mono font-semibold">{selectedTicket.ticketId}</div>
+                      </div>
+                      <div>
+                        <span className="text-xs text-base-content/60 uppercase tracking-wider">User</span>
+                        <div className="font-semibold">
+                          {selectedTicket.userId.firstName} {selectedTicket.userId.lastName}
+                        </div>
+                        <div className="text-sm text-base-content/60">{selectedTicket.userId.email}</div>
+                      </div>
+                      <div>
+                        <span className="text-xs text-base-content/60 uppercase tracking-wider">Category</span>
+                        <div className="badge badge-outline mt-1">{selectedTicket.category.replace('_', ' ')}</div>
+                      </div>
+                      <div>
+                        <span className="text-xs text-base-content/60 uppercase tracking-wider">Priority</span>
+                        <div className={`badge mt-1 ${getPriorityBadgeColor(selectedTicket.priority)}`}>
+                          {selectedTicket.priority}
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-xs text-base-content/60 uppercase tracking-wider">Status</span>
+                        <div className={`badge mt-1 ${getStatusBadgeColor(selectedTicket.status)}`}>
+                          {getStatusDisplayText(selectedTicket.status)}
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-xs text-base-content/60 uppercase tracking-wider">Created</span>
+                        <div className="text-sm">{formatDate(selectedTicket.createdAt)}</div>
+                      </div>
                     </div>
                   </div>
-                  <div className="mb-4 text-sm sm:text-base">
-                    <strong>Message:</strong>
-                    <div className="bg-base-100 p-3 rounded mt-2 whitespace-pre-wrap text-sm">
+
+                  <div className="mb-4">
+                    <span className="text-xs text-base-content/60 uppercase tracking-wider">Message</span>
+                    <div className="bg-base-100 p-4 rounded-lg mt-2 whitespace-pre-wrap border-l-4 border-primary">
                       {selectedTicket.message}
                     </div>
                   </div>
+
                   {selectedTicket.adminResponse && (
-                    <div className="text-sm sm:text-base">
-                      <strong>Admin Response:</strong>
-                      <div className="bg-success/10 p-3 rounded mt-2 whitespace-pre-wrap text-sm">
+                    <div className="mb-4">
+                      <span className="text-xs text-base-content/60 uppercase tracking-wider">Admin Response</span>
+                      <div className="bg-success/10 p-4 rounded-lg mt-2 whitespace-pre-wrap border-l-4 border-success">
                         {selectedTicket.adminResponse}
                       </div>
                     </div>
                   )}
+
+                  <div className="flex gap-2 flex-wrap">
+                    <button
+                      className="btn btn-primary btn-sm"
+                      onClick={() => {
+                        setRespondingToTicket(selectedTicket.ticketId);
+                        setAdminResponse('');
+                      }}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                      Send Response
+                    </button>
+                    {selectedTicket.status === 'open' && (
+                      <button
+                        className="btn btn-warning btn-sm"
+                        onClick={() => updateTicket(selectedTicket.ticketId, 'in_progress')}
+                      >
+                        Start Working
+                      </button>
+                    )}
+                    {selectedTicket.status === 'in_progress' && (
+                      <button
+                        className="btn btn-success btn-sm"
+                        onClick={() => updateTicket(selectedTicket.ticketId, 'resolved')}
+                      >
+                        Mark Resolved
+                      </button>
+                    )}
+                    {selectedTicket.status === 'resolved' && (
+                      <button
+                        className="btn btn-neutral btn-sm"
+                        onClick={() => updateTicket(selectedTicket.ticketId, 'closed')}
+                      >
+                        Close Ticket
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -1311,69 +1172,6 @@ const AdminDashboardPage: React.FC = () => {
                 </div>
               )}
 
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex justify-center mt-6">
-                  <div className="join">
-                    <button 
-                      className="join-item btn"
-                      disabled={page <= 1}
-                      onClick={() => {
-                        const currentTab = activeTab as 'users' | 'tickets' | 'analytics';
-                        switch (currentTab) {
-                          case 'users':
-                            fetchUsers(page - 1);
-                            break;
-                          case 'tickets':
-                            fetchTickets(page - 1);
-                            break;
-                        }
-                      }}
-                    >
-                      «
-                    </button>
-                    
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
-                      <button
-                        key={pageNum}
-                        className={`join-item btn ${pageNum === page ? 'btn-active' : ''}`}
-                        onClick={() => {
-                          const currentTab = activeTab as 'users' | 'tickets' | 'analytics';
-                          switch (currentTab) {
-                            case 'users':
-                              fetchUsers(pageNum);
-                              break;
-                            case 'tickets':
-                              fetchTickets(pageNum);
-                              break;
-                          }
-                        }}
-                      >
-                        {pageNum}
-                      </button>
-                    ))}
-                    
-                    <button 
-                      className="join-item btn"
-                      disabled={page >= totalPages}
-                      onClick={() => {
-                        const currentTab = activeTab as 'users' | 'tickets' | 'analytics';
-                        switch (currentTab) {
-                          case 'users':
-                            fetchUsers(page + 1);
-                            break;
-                          case 'tickets':
-                            fetchTickets(page + 1);
-                            break;
-                        }
-                      }}
-                    >
-                      »
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
           </div>
         )}
 

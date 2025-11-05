@@ -2,7 +2,9 @@
 
 ## Executive Summary
 
-Complete redesign of analytics infrastructure and admin dashboard UX. Hybrid approach: Keep ActivityLog for project collaboration, massively expand Analytics for business intelligence. Add conversion tracking, feature usage analytics, error monitoring, and data compounding (7-day detail retention). Redesign admin dashboard for modern, responsive UX with cached on-demand updates.
+Simplified analytics infrastructure and admin dashboard UX improvements. Hybrid approach: Keep ActivityLog for project collaboration, expand Analytics for basic business intelligence. Add simple conversion tracking, feature usage analytics, basic error monitoring, and data compounding (7-day detail retention for scale). Redesign admin dashboard for modern, responsive UX.
+
+**Key Philosophy:** Start simple, track what matters, scale with compounding infrastructure.
 
 ---
 
@@ -15,39 +17,26 @@ Complete redesign of analytics infrastructure and admin dashboard UX. Hybrid app
 **New Event Types:**
 ```typescript
 // User Lifecycle
-'user_signup'         // { source, referrer, planSelected }
-'user_activated'      // { daysToActivation, projectsCreated }
-'user_upgraded'       // { fromPlan, toPlan, trigger }
-'user_downgraded'     // { fromPlan, toPlan, reason }
-'user_churned'        // { daysSinceSignup, lastActivity, reason }
+'user_signup'         // { source, referrer }
+'user_upgraded'       // { fromPlan, toPlan }
+'user_downgraded'     // { fromPlan, toPlan }
 
-// Feature Engagement
-'feature_used'        // { feature, context, duration }
-'command_executed'    // { command, success, duration }
-'export_generated'    // { format, itemCount }
-'import_completed'    // { format, itemCount, success }
+// Feature Engagement (Simple)
+'feature_used'        // { feature }
 
 // Project Engagement (expand existing)
-'project_created'     // { source, initialSize }
-'project_shared'      // { recipientCount, method }
-'project_archived'    // { age, size, reason }
-'project_deleted'     // { age, size, itemCount }
+'project_created'     // { }
+'project_deleted'     // { }
 
 // Collaboration
-'team_invite_sent'    // { projectId, role }
-'team_invite_accepted'// { projectId, role, daysToAccept }
-'comment_added'       // { resourceType, projectId }
+'team_invite_sent'    // { projectId }
+'team_invite_accepted'// { projectId }
 
-// Monetization Funnel
-'pricing_viewed'      // { source, planFocus }
-'checkout_started'    // { plan, method }
-'checkout_completed'  // { plan, amount, method }
-'checkout_abandoned'  // { plan, step }
+// Monetization (Simple)
+'checkout_completed'  // { plan, amount }
 
-// Performance & Errors
-'error_occurred'      // { type, code, context, userImpact }
-'slow_operation'      // { operation, duration, threshold }
-'api_error'          // { endpoint, status, message }
+// Errors (Basic)
+'error_occurred'      // { type, message, page }
 ```
 
 **Enhanced Schema Fields:**
@@ -65,22 +54,11 @@ interface AnalyticsEvent {
   ipAddress?: string
 
   // NEW fields
-  category: 'engagement' | 'business' | 'technical' | 'error'
-  properties: Record<string, any>  // Replaces/supplements eventData
-  context: {
-    page?: string
-    previousPage?: string
-    viewport?: { width: number, height: number }
-    referrer?: string
-  }
+  category: 'engagement' | 'business' | 'error'
 
   // Business intelligence
   isConversion: boolean
   conversionValue?: number  // Dollar value for revenue tracking
-
-  // Privacy
-  isPII: boolean
-  anonymized: boolean
 }
 ```
 
@@ -98,16 +76,14 @@ const EVENT_RETENTION = {
   // Business-critical - never expire
   conversions: Infinity,
   payments: Infinity,
-  subscriptions: Infinity,
 
   // Engagement - plan-based (existing)
   feature_usage: planTTL,  // 30d free, 180d pro, unlimited premium
   sessions: planTTL,
   project_activity: planTTL,
 
-  // Technical - shorter retention for all
+  // Errors - shorter retention for all
   errors: 90,           // 90 days all plans
-  performance: 30,      // 30 days all plans
   heartbeats: 7,        // 7 days all plans (existing)
 }
 ```
@@ -125,7 +101,7 @@ interface CompactedAnalytics {
   userId: ObjectId
   projectId?: ObjectId
   eventType: string
-  category: 'engagement' | 'business' | 'technical' | 'error'
+  category: 'engagement' | 'business' | 'error'
 
   // Aggregated metrics
   count: number           // Total events
@@ -352,18 +328,14 @@ class AnalyticsService {
     })
   }
 
-  // NEW: Track feature usage
+  // NEW: Track feature usage (simple)
   async trackFeatureUsage(
     userId: string,
     sessionId: string,
-    feature: string,
-    context: any,
-    duration?: number
+    feature: string
   ) {
     return this.trackEvent(userId, sessionId, 'feature_used', {
       feature,
-      context,
-      duration,
       category: 'engagement'
     })
   }
@@ -373,189 +345,85 @@ class AnalyticsService {
     userId: string,
     sessionId: string,
     error: Error,
-    context: any
+    page: string
   ) {
     return this.trackEvent(userId, sessionId, 'error_occurred', {
       type: error.name,
       message: error.message,
-      stack: error.stack?.split('\n').slice(0, 3).join('\n'),  // Truncate
-      context,
+      page,
       category: 'error'
     })
-  }
-
-  // NEW: Track slow operations
-  async trackSlowOperation(
-    userId: string,
-    sessionId: string,
-    operation: string,
-    duration: number,
-    threshold: number
-  ) {
-    if (duration < threshold) return
-
-    return this.trackEvent(userId, sessionId, 'slow_operation', {
-      operation,
-      duration,
-      threshold,
-      category: 'technical'
-    })
-  }
-
-  // NEW: Event batching
-  private eventBuffer: any[] = []
-  private batchSize = 50
-  private flushInterval = 5000  // 5 seconds
-
-  async trackEventBatched(event: any) {
-    this.eventBuffer.push(event)
-
-    if (this.eventBuffer.length >= this.batchSize) {
-      await this.flushEvents()
-    }
-  }
-
-  async flushEvents() {
-    if (this.eventBuffer.length === 0) return
-
-    const batch = [...this.eventBuffer]
-    this.eventBuffer = []
-
-    await Analytics.insertMany(batch)
-  }
-
-  // NEW: PII scrubbing
-  sanitizeEvent(event: any): any {
-    const sanitized = { ...event }
-
-    // Remove emails, keep domain
-    if (sanitized.properties?.email) {
-      sanitized.properties.emailDomain = sanitized.properties.email.split('@')[1]
-      delete sanitized.properties.email
-      sanitized.isPII = true
-      sanitized.anonymized = true
-    }
-
-    // Hash IPs
-    if (sanitized.ipAddress) {
-      sanitized.ipHash = this.hashIP(sanitized.ipAddress)
-      delete sanitized.ipAddress
-    }
-
-    return sanitized
   }
 }
 ```
 
 ---
 
-## Phase 2: Conversion Funnel Tracking
+## Phase 2: Simple Conversion Tracking
 
-### 2.1 User Funnel Stages
+### 2.1 Basic Conversion Metrics
 
-**Track user journey:**
+**Track simple conversion flow:**
 1. **Signup** → `user_signup`
-2. **Activated** (created first project) → `user_activated`
-3. **Engaged** (added content to project) → `feature_used` with context
-4. **Team Invite** → `team_invite_sent`
-5. **Upgraded** → `user_upgraded`
+2. **Created Project** → `project_created`
+3. **Upgraded** → `user_upgraded`
 
-**Add to User Model:**
-```typescript
-interface User {
-  // Existing fields...
-
-  // NEW: Funnel tracking
-  funnelStage: 'signup' | 'activated' | 'engaged' | 'team' | 'upgraded'
-  funnelTimestamps: {
-    signup: Date
-    activated?: Date
-    engaged?: Date
-    teamInvite?: Date
-    upgraded?: Date
-  }
-  daysToActivation?: number
-  daysToUpgrade?: number
-}
-```
-
-### 2.2 Funnel Tracking Endpoints
-
-**New routes:**
-- `GET /analytics/funnels/conversion` - Overall funnel with drop-off percentages
-- `GET /analytics/funnels/user/:userId` - Individual user journey
-- `GET /analytics/funnels/cohort` - Cohort analysis (signup week → conversion rate)
+**Simple Conversion Endpoint:**
+- `GET /admin/analytics/conversion-rate` - Basic conversion percentage
 
 **Implementation in `/backend/src/routes/analytics.ts`:**
 ```typescript
-router.get('/funnels/conversion', async (req, res) => {
-  const stages = await User.aggregate([
-    {
-      $group: {
-        _id: '$funnelStage',
-        count: { $sum: 1 },
-        avgDaysToStage: { $avg: '$daysToActivation' }
-      }
-    }
-  ])
+router.get('/conversion-rate', async (req, res) => {
+  const totalUsers = await User.countDocuments()
+  const usersWithProjects = await User.countDocuments({ 'projects.0': { $exists: true } })
+  const paidUsers = await User.countDocuments({ planTier: { $in: ['pro', 'premium'] } })
 
-  // Calculate drop-off percentages
-  const funnel = {
-    signup: stages.find(s => s._id === 'signup')?.count || 0,
-    activated: stages.find(s => s._id === 'activated')?.count || 0,
-    engaged: stages.find(s => s._id === 'engaged')?.count || 0,
-    teamInvite: stages.find(s => s._id === 'team')?.count || 0,
-    upgraded: stages.find(s => s._id === 'upgraded')?.count || 0
-  }
+  const conversionRate = totalUsers > 0 ? (paidUsers / totalUsers * 100).toFixed(2) : 0
+  const projectCreationRate = totalUsers > 0 ? (usersWithProjects / totalUsers * 100).toFixed(2) : 0
 
-  const dropoffs = {
-    signupToActivated: ((funnel.signup - funnel.activated) / funnel.signup * 100).toFixed(1),
-    activatedToEngaged: ((funnel.activated - funnel.engaged) / funnel.activated * 100).toFixed(1),
-    engagedToTeam: ((funnel.engaged - funnel.teamInvite) / funnel.engaged * 100).toFixed(1),
-    teamToUpgraded: ((funnel.teamInvite - funnel.upgraded) / funnel.teamInvite * 100).toFixed(1)
-  }
-
-  res.json({ funnel, dropoffs, conversionRate: (funnel.upgraded / funnel.signup * 100).toFixed(2) })
+  res.json({
+    totalUsers,
+    usersWithProjects,
+    paidUsers,
+    conversionRate,
+    projectCreationRate
+  })
 })
 ```
 
 ---
 
-## Phase 3: Feature Usage Analytics
+## Phase 3: Simple Feature Usage Analytics
 
-### 3.1 Feature Instrumentation
+### 3.1 Feature Tracking
 
-**Track these features:**
-- Project type selection (on create)
-- Export formats (markdown, JSON, PDF, etc.)
-- Team collaboration (invites, comments)
-- Command palette usage (which commands)
-- File uploads/imports
-- Search usage
-- Settings changes
+**Track these features (simple):**
+- Export (any format)
+- Team invites
+- Search
+- Project creation
 
-**Frontend tracking:**
+**Frontend tracking (simple):**
 ```typescript
 // In relevant components
 import { analyticsService } from '@/services/analytics'
 
-// Example: Export feature
+// Example: Track when export is used
 const handleExport = async (format: string) => {
-  const startTime = Date.now()
-
   try {
     await exportProject(format)
-
-    analyticsService.trackFeatureUsage('export', {
-      format,
-      projectId: currentProject.id,
-      itemCount: project.todos.length + project.notes.length,
-      duration: Date.now() - startTime,
-      success: true
-    })
+    analyticsService.trackFeatureUsage('export')
   } catch (error) {
-    analyticsService.trackError(error, { feature: 'export', format })
+    analyticsService.trackError(error, window.location.pathname)
   }
+}
+
+// Example: Track when search is used
+const handleSearch = (query: string) => {
+  if (query.length > 0) {
+    analyticsService.trackFeatureUsage('search')
+  }
+  // ... rest of search logic
 }
 ```
 
@@ -584,7 +452,7 @@ const handleExport = async (format: string) => {
 
 ---
 
-## Phase 4: Error & Performance Monitoring
+## Phase 4: Basic Error Tracking
 
 ### 4.1 Frontend Error Tracking
 
@@ -593,10 +461,7 @@ const handleExport = async (format: string) => {
 // /frontend/src/components/ErrorBoundary.tsx
 class ErrorBoundary extends React.Component {
   componentDidCatch(error: Error, errorInfo: any) {
-    analyticsService.trackError(error, {
-      componentStack: errorInfo.componentStack,
-      page: window.location.pathname
-    })
+    analyticsService.trackError(error, window.location.pathname)
   }
 }
 ```
@@ -607,59 +472,18 @@ class ErrorBoundary extends React.Component {
 axios.interceptors.response.use(
   response => response,
   error => {
-    analyticsService.trackError(error, {
-      endpoint: error.config?.url,
-      method: error.config?.method,
-      status: error.response?.status
-    })
+    if (error.response?.status >= 400) {
+      analyticsService.trackError(error, error.config?.url || 'unknown')
+    }
     return Promise.reject(error)
   }
 )
 ```
 
-### 4.2 Backend Performance Monitoring
+### 4.2 Error Dashboard Endpoint
 
-**Middleware:** `/backend/src/middleware/performanceMonitor.ts`
-```typescript
-export const performanceMonitor = (req: Request, res: Response, next: NextFunction) => {
-  const startTime = Date.now()
-
-  res.on('finish', () => {
-    const duration = Date.now() - startTime
-
-    // Track slow requests (>2s)
-    if (duration > 2000) {
-      analyticsService.trackSlowOperation(
-        req.user?.id,
-        req.headers['x-session-id'],
-        `${req.method} ${req.path}`,
-        duration,
-        2000
-      )
-    }
-
-    // Track errors
-    if (res.statusCode >= 400) {
-      analyticsService.trackEvent(req.user?.id, null, 'api_error', {
-        endpoint: req.path,
-        method: req.method,
-        status: res.statusCode,
-        duration,
-        category: 'error'
-      })
-    }
-  })
-
-  next()
-}
-```
-
-### 4.3 Error Dashboard Endpoints
-
-**Routes:**
-- `GET /admin/analytics/errors/summary` - Error counts by type, top errors
-- `GET /admin/analytics/errors/details/:errorId` - Error stack trace and affected users
-- `GET /admin/analytics/performance/slow-operations` - Slowest endpoints
+**Route:**
+- `GET /admin/analytics/errors/summary` - Error counts by type
 
 ---
 
@@ -851,17 +675,11 @@ class ActivityLogger {
 │ └──────────┴──────────┴──────────┴──────────┘              │
 │                                                              │
 │ ┌────────────────────────────────────────────────────────┐  │
-│ │ 🎯 Conversion Funnel (Last 30 Days)                   │  │
+│ │ 🎯 Simple Conversion Metrics (Last 30 Days)           │  │
 │ │                                                        │  │
-│ │ Signed Up      1,234 ━━━━━━━━━━━━━━━━━━━━ 100%      │  │
-│ │     ↓ 20% drop                                        │  │
-│ │ Created Proj     987 ━━━━━━━━━━━━━━━━━   80%        │  │
-│ │     ↓ 25% drop                                        │  │
-│ │ Added Content    743 ━━━━━━━━━━━━━       60%        │  │
-│ │     ↓ 68% drop                                        │  │
-│ │ Invited Team     234 ━━━━━               19%        │  │
-│ │     ↓ 33% drop                                        │  │
-│ │ Upgraded         156 ━━━                 13%        │  │
+│ │ Total Users:       1,234                               │  │
+│ │ Created Projects:    987 (80%)                         │  │
+│ │ Upgraded to Paid:    156 (13%)                         │  │
 │ │                                                        │  │
 │ │ Overall conversion rate: 12.6%                        │  │
 │ └────────────────────────────────────────────────────────┘  │
@@ -877,19 +695,11 @@ class ActivityLogger {
 │ ┌────────────────────────────────────────────────────────┐  │
 │ │ ⚠️ Top Errors (Last 24h)                              │  │
 │ │                                                        │  │
-│ │ 1. Payment timeout            45 errors  [Details →] │  │
-│ │ 2. Session expired            23 errors  [Details →] │  │
-│ │ 3. Project not found          12 errors  [Details →] │  │
+│ │ 1. Payment timeout            45 errors               │  │
+│ │ 2. Session expired            23 errors               │  │
+│ │ 3. Project not found          12 errors               │  │
 │ │                                                        │  │
 │ │ [View All Errors →]                                   │  │
-│ └────────────────────────────────────────────────────────┘  │
-│                                                              │
-│ ┌────────────────────────────────────────────────────────┐  │
-│ │ 🐢 Slow Operations (Last 24h)                         │  │
-│ │                                                        │  │
-│ │ GET /projects/:id/data        4.2s avg  [Optimize →] │  │
-│ │ POST /export/pdf              3.8s avg  [Optimize →] │  │
-│ │ GET /analytics/combined       2.9s avg  [Optimize →] │  │
 │ └────────────────────────────────────────────────────────┘  │
 │                                                              │
 │ [Export to CSV]                                             │
@@ -902,35 +712,26 @@ class ActivityLogger {
 - **Active Projects:** Count + % change
 - **Error Rate:** Percentage + % change (red if increasing)
 
-### Conversion Funnel Visualization
-- Horizontal bar chart showing drop-off at each stage
-- Percentage labels on each bar
-- Drop-off percentages between stages
-- Overall conversion rate at bottom
-- Click any stage to drill down into specific users
+### Simple Conversion Metrics
+- Total users count
+- Number who created projects (with percentage)
+- Number who upgraded (with percentage)
+- Overall conversion rate
 
 ### Feature Adoption Chart
 - Horizontal bar chart by feature
-- Segmented by plan tier (different colors)
-- Shows adoption percentage per plan
-- Sortable by total usage or plan-specific
+- Shows adoption percentage across all users
+- Simple count of how many users used each feature
 
 ### Top Errors Table
 - Shows most frequent errors in last 24h
-- Error type, count, affected users
-- Click to see error details (stack trace, user list)
-- Auto-highlights critical errors (>50 occurrences)
-
-### Slow Operations Table
-- Operations exceeding 2s threshold
-- Average duration, P95, count
-- Link to optimization suggestions
-- Auto-highlights worsening trends
+- Error type and count
+- Simple list for monitoring
 
 ### Export Functionality
 - Export to CSV button
 - Generates report with selected date range
-- Includes all metrics, funnel data, errors
+- Includes all metrics and error data
 
 ---
 
@@ -1117,50 +918,23 @@ Use `gap-2` (8px) as default for most layouts.
 ### New Admin Endpoints
 
 **Analytics:**
-- `GET /admin/analytics/overview` - Key metrics with 30s cache
-- `GET /admin/analytics/conversion-funnel` - Funnel data
-- `GET /admin/analytics/features/adoption` - Feature usage by plan
-- `GET /admin/analytics/errors/summary` - Error aggregation
-- `GET /admin/analytics/errors/details/:errorId` - Error details
-- `GET /admin/analytics/performance/slow-ops` - Slow operations
-- `GET /admin/analytics/users/growth` - User growth trends
-- `GET /admin/analytics/revenue` - MRR, churn, LTV
+- `GET /admin/analytics/overview` - Key metrics (users, MRR, projects, errors)
+- `GET /admin/analytics/conversion-rate` - Simple conversion percentage
+- `GET /admin/analytics/features/adoption` - Feature usage counts
+- `GET /admin/analytics/errors/summary` - Top errors
+- `GET /admin/analytics/users/growth` - User growth over time
 
 **Activity:**
 - `GET /admin/activity/feed` - Combined analytics + activity logs
-- `GET /admin/activity/feed/filters` - Available filter options
 
-### Caching Strategy
+### Caching Strategy (Optional for Later)
 
-**Redis Cache:**
+**Note:** Start without caching, add later if performance becomes an issue.
+
+When ready to add caching:
 - Cache key format: `admin:analytics:{endpoint}:{hash(params)}`
-- TTL: 30 seconds (on-demand refresh)
-- Manual invalidation on refresh button click
-
-**Implementation:**
-```typescript
-// In admin routes
-const getCachedAnalytics = async (key: string, queryFn: Function, ttl = 30) => {
-  const cached = await redis.get(key)
-  if (cached) return JSON.parse(cached)
-
-  const data = await queryFn()
-  await redis.setex(key, ttl, JSON.stringify(data))
-  return data
-}
-
-router.get('/analytics/overview', async (req, res) => {
-  const { days = 30 } = req.query
-  const cacheKey = `admin:analytics:overview:${days}`
-
-  const data = await getCachedAnalytics(cacheKey, async () => {
-    // Expensive aggregation queries...
-    return { users, mrr, projects, errors }
-  })
-
-  res.json(data)
-})
-```
+- TTL: 30 seconds
+- Manual invalidation on refresh button
 
 ---
 
@@ -1237,7 +1011,7 @@ activityLogSchema.index({ resourceType: 1, action: 1, timestamp: -1 })
 **Days 1-2:**
 - Expand Analytics model (add new fields)
 - Create CompactedAnalytics model
-- Enhanced AnalyticsService methods
+- Enhanced AnalyticsService methods (simple tracking)
 
 **Days 3-4:**
 - Analytics compounding service
@@ -1245,53 +1019,35 @@ activityLogSchema.index({ resourceType: 1, action: 1, timestamp: -1 })
 - New admin analytics endpoints
 
 **Days 5-7:**
-- Conversion funnel tracking
-- Feature usage instrumentation
-- Error tracking middleware
+- Simple conversion tracking
+- Feature usage instrumentation (simple)
+- Basic error tracking
 
-### Week 2: Business Intelligence & Activity Logs
+### Week 2: Frontend & Activity Logs
 **Days 1-3:**
-- Feature adoption analytics
-- Performance monitoring
+- Design system setup (shared components)
+- Analytics tab redesign (metrics cards, simple conversion)
 - Frontend error tracking (Error Boundary)
 
 **Days 4-5:**
-- Activity Log enhancements (descriptions)
-- Activity Feed API endpoint
-- Combined activity query logic
-
-**Days 6-7:**
-- Redis caching layer
-- Query optimizations
-- Index creation
-
-### Week 3: Admin Dashboard Frontend
-**Days 1-2:**
-- Design system setup (shared components)
-- Analytics tab redesign (metrics cards, funnel)
-
-**Days 3-4:**
 - Users tab improvements (search, filters, avatars, cards)
 - Mobile responsive layouts
 
-**Days 5-7:**
+**Days 6-7:**
 - Activity Feed tab (NEW)
-- Tickets tab polish
-- News tab enhancements
+- Activity Log enhancements (descriptions)
+- Index creation
 
-### Week 4: Data Compounding & Polish
+### Week 3: Data Compounding & Testing
 **Days 1-2:**
 - Compaction cron job implementation
 - Testing compaction with sample data
-- Monitoring & alerting
 
 **Days 3-4:**
 - Query abstraction layer testing
-- Performance testing with large datasets
-- Cache optimization
+- End-to-end testing
 
 **Days 5-7:**
-- End-to-end testing
 - Bug fixes
 - Documentation
 - Deployment
@@ -1308,24 +1064,22 @@ activityLogSchema.index({ resourceType: 1, action: 1, timestamp: -1 })
 - [ ] Can find any user/ticket in < 3 seconds
 
 ### Analytics System
-- [ ] Can answer "Why did user X churn?" in < 30 seconds
-- [ ] Error detection within 5 minutes of occurrence
-- [ ] Clear visibility into conversion funnel drop-offs
-- [ ] Feature adoption rates visible per plan tier
+- [ ] Track basic user conversion rate
+- [ ] See top errors in dashboard
+- [ ] Feature adoption visible
+- [ ] Simple, clear metrics
 
 ### Performance
-- [ ] Analytics writes < 50ms P95
-- [ ] Dashboard queries < 500ms P95 (cached)
-- [ ] Storage growth < 10MB per 1000 DAU per month
+- [ ] Dashboard loads in < 3 seconds
+- [ ] Storage growth manageable with compaction
 - [ ] Zero data loss during compaction
 - [ ] Compaction job completes in < 5 minutes
 
 ### Business Intelligence
-- [ ] Track conversion rate at each funnel stage
-- [ ] Identify top 5 most/least used features per plan
-- [ ] Detect error rate spikes (>5% in 1 hour)
-- [ ] Calculate accurate MRR and churn rate
-- [ ] Predict at-risk users (churn probability)
+- [ ] Track overall conversion rate
+- [ ] Identify most/least used features
+- [ ] See error counts
+- [ ] Calculate MRR
 
 ---
 
@@ -1360,23 +1114,15 @@ activityLogSchema.index({ resourceType: 1, action: 1, timestamp: -1 })
 ## Monitoring & Alerting
 
 ### Critical Alerts (Immediate Action)
-- Error rate > 5% in 1 hour
-- API P95 response time > 5s
+- Error rate suddenly spikes
 - Compaction job failure (2 days in a row)
-- Storage growth > 100MB in 24h
-- Cache hit rate < 50%
+- Storage growth unusually high
 
-### Warning Alerts (Daily Review)
-- Error rate > 2% in 24h
-- Slow operations count > 50 in 24h
-- User churn rate increase > 30% week-over-week
-- Conversion funnel drop-off > 80% at any stage
-
-### Info Alerts (Weekly Review)
-- New user cohort analysis
-- Feature adoption trends
-- MRR and revenue trends
-- Storage usage summary
+### Weekly Review
+- Check error trends
+- Review feature adoption
+- Check MRR and revenue
+- Monitor storage usage
 
 ---
 
@@ -1385,19 +1131,12 @@ activityLogSchema.index({ resourceType: 1, action: 1, timestamp: -1 })
 ### If Issues Occur:
 
 **Analytics System Issues:**
-1. Disable event batching (revert to immediate writes)
-2. Pause compaction job (keep raw events longer)
-3. Fallback to existing Analytics model (disable new fields)
+1. Pause compaction job (keep raw events longer)
+2. Fallback to existing Analytics model (disable new fields)
 
 **Admin Dashboard Issues:**
 1. Revert to previous AdminDashboardPage component
-2. Disable Redis cache (direct DB queries)
-3. Hide new Activity Feed tab
-
-**Performance Issues:**
-1. Increase cache TTL to 5 minutes
-2. Reduce analytics query date ranges
-3. Disable real-time features
+2. Hide new Activity Feed tab
 
 ### Rollback Commands:
 ```bash
@@ -1409,9 +1148,6 @@ git revert <commit-hash-frontend>
 
 # Disable compaction job
 # Comment out cron schedule in server.ts
-
-# Clear Redis cache
-redis-cli FLUSHDB
 ```
 
 ---
@@ -1419,32 +1155,30 @@ redis-cli FLUSHDB
 ## Post-Launch Tasks
 
 ### Week 1 After Launch
-- Monitor error rates and performance metrics
+- Monitor error rates
 - Gather admin feedback on dashboard UX
 - Verify compaction job success
 - Check storage reduction metrics
 
 ### Week 2-4 After Launch
-- Analyze conversion funnel data
-- Identify feature adoption opportunities
-- Review slow operations and optimize
+- Review conversion data
+- Identify feature adoption patterns
 - Implement additional visualizations based on feedback
 
-### Long-term Enhancements
-- Machine learning for churn prediction
-- Automated recommendations for dev priorities
-- Real-time WebSocket updates for activity feed
-- Export analytics to external BI tools
-- Custom dashboard builder for admins
+### Long-term Enhancements (Maybe)
+- Real-time updates for activity feed
+- Export analytics to CSV/external tools
+- More detailed filtering options
 
 ---
 
 ## Notes
 
+- Keep it simple - don't over-engineer
 - Prioritize backend stability over frontend polish
 - Test compaction job thoroughly with production-like data
-- Cache aggressively but invalidate correctly
 - Mobile-first design for all new components
 - Keep existing functionality working during rollout
+- Start without caching, add if needed later
 - Document all new endpoints in API docs
 - Add TypeScript types for all new models

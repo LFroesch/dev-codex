@@ -11,6 +11,7 @@ import { TeamHandlers } from './handlers/TeamHandlers';
 import { SettingsHandlers } from './handlers/SettingsHandlers';
 import { UtilityHandlers } from './handlers/UtilityHandlers';
 import { ResponseType, CommandResponse } from './types';
+import { Project } from '../models/Project';
 
 // Re-export types for backward compatibility
 export { ResponseType, CommandResponse } from './types';
@@ -275,6 +276,43 @@ export class CommandExecutor {
       type: parsed.type,
       command: parsed.command
     });
+
+    // Check if project is locked before executing write commands
+    const writeCommands = [
+      CommandType.ADD_TODO, CommandType.COMPLETE_TODO, CommandType.ASSIGN_TODO,
+      CommandType.PUSH_TODO, CommandType.EDIT_TODO, CommandType.DELETE_TODO,
+      CommandType.ADD_SUBTASK, CommandType.EDIT_SUBTASK, CommandType.DELETE_SUBTASK,
+      CommandType.ADD_NOTE, CommandType.EDIT_NOTE, CommandType.DELETE_NOTE,
+      CommandType.ADD_DEVLOG, CommandType.EDIT_DEVLOG, CommandType.DELETE_DEVLOG,
+      CommandType.ADD_COMPONENT, CommandType.EDIT_COMPONENT, CommandType.DELETE_COMPONENT,
+      CommandType.ADD_RELATIONSHIP, CommandType.EDIT_RELATIONSHIP, CommandType.DELETE_RELATIONSHIP,
+      CommandType.ADD_STACK, CommandType.REMOVE_STACK,
+      CommandType.INVITE_MEMBER, CommandType.REMOVE_MEMBER,
+      CommandType.SET_NAME, CommandType.SET_DESCRIPTION, CommandType.ADD_TAG,
+      CommandType.REMOVE_TAG, CommandType.SET_DEPLOYMENT, CommandType.SET_PUBLIC
+    ];
+
+    if (writeCommands.includes(parsed.type) && currentProjectId) {
+      try {
+        const project = await Project.findById(currentProjectId);
+
+        if (project && project.isLocked) {
+          return {
+            type: ResponseType.ERROR,
+            message: project.lockedReason || 'This project is locked and cannot be modified. Please upgrade your plan to unlock it.',
+            data: {
+              isLocked: true,
+              message: project.lockedReason
+            }
+          };
+        }
+      } catch (error) {
+        logError('Project lock check error', error as Error, {
+          userId: this.userId,
+          projectId: currentProjectId
+        });
+      }
+    }
 
     // Route to appropriate handler
     switch (parsed.type) {

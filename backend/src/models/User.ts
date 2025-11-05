@@ -58,6 +58,13 @@ export interface IUser extends Document {
   publicDescription?: string;
   ideas: IIdea[];
   customThemes: ICustomTheme[];
+  tutorialCompleted: boolean;
+  tutorialProgress: {
+    currentStep: number;
+    completedSteps: number[];
+    skipped: boolean;
+    lastActiveDate: Date;
+  };
   createdAt: Date;
   updatedAt: Date;
   comparePassword(password: string): Promise<boolean>;
@@ -260,7 +267,29 @@ const userSchema = new Schema<IUser>({
       type: Date,
       default: Date.now
     }
-  }]
+  }],
+  tutorialCompleted: {
+    type: Boolean,
+    default: false
+  },
+  tutorialProgress: {
+    currentStep: {
+      type: Number,
+      default: 0
+    },
+    completedSteps: {
+      type: [Number],
+      default: []
+    },
+    skipped: {
+      type: Boolean,
+      default: false
+    },
+    lastActiveDate: {
+      type: Date,
+      default: Date.now
+    }
+  }
 }, {
   timestamps: true
 });
@@ -278,6 +307,7 @@ userSchema.index({ planTier: 1, subscriptionStatus: 1 });
 userSchema.index({ isPublic: 1, publicSlug: 1 });
 userSchema.index({ subscriptionStatus: 1, lastBillingUpdate: 1 });
 userSchema.index({ isBanned: 1 });
+userSchema.index({ tutorialCompleted: 1 });
 
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();

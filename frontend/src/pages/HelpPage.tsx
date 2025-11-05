@@ -1,10 +1,28 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getContrastTextColor } from '../utils/contrastTextColor';
+import { useTutorialContext } from '../contexts/TutorialContext';
+import { tutorialAPI } from '../api/tutorial';
 
 const HelpPage: React.FC = () => {
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState<string>('getting-started');
+  const { startTutorial } = useTutorialContext();
+
+  const handleRestartTutorial = async () => {
+    try {
+      // Reset tutorial on backend
+      await tutorialAPI.resetTutorial();
+
+      // Clear session storage
+      sessionStorage.removeItem('tutorialWelcomeShown');
+
+      // Reload the page to get fresh user data, then start tutorial
+      window.location.href = '/projects?startTutorial=true';
+    } catch (error) {
+      console.error('Failed to reset tutorial:', error);
+    }
+  };
 
   const sections = [
     { id: 'getting-started', title: 'Getting Started', icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253' },
@@ -21,6 +39,29 @@ const HelpPage: React.FC = () => {
         return (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold">Quick Start</h2>
+
+            {/* Tutorial Section */}
+            <div className="alert shadow-lg border-2 border-primary">
+              <div className="flex-1">
+                <svg className="w-6 h-6 text-primary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                </svg>
+                <div className="flex-1">
+                  <h3 className="font-bold">Interactive Tutorial</h3>
+                  <div className="text-xs">Take a guided tour through all 12 features of the app</div>
+                </div>
+              </div>
+              <div className="flex-none">
+                <button
+                  onClick={handleRestartTutorial}
+                  className="btn btn-sm btn-primary"
+                  style={{ color: getContrastTextColor('primary') }}
+                >
+                  Start Tutorial
+                </button>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="shadow-md p-4 rounded-lg border-2 border-base-content/20 hover:border-base-300/50 transition-all duration-200 cursor-pointer group"
                    onClick={() => navigate('/create-project')}>

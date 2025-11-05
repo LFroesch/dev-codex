@@ -43,6 +43,27 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
 
+  // Relationship editing state (for inline edit)
+  const [editingRelIndex, setEditingRelIndex] = useState<number | null>(null);
+  const [editRelData, setEditRelData] = useState<{ relationType: RelationshipType; description: string }>({
+    relationType: 'uses',
+    description: ''
+  });
+
+  // Subtask editing state (for inline edit)
+  const [editingSubtaskIndex, setEditingSubtaskIndex] = useState<number | null>(null);
+  const [editSubtaskData, setEditSubtaskData] = useState<{
+    title: string;
+    description: string;
+    priority: 'low' | 'medium' | 'high';
+    status: 'not_started' | 'in_progress' | 'completed' | 'blocked';
+  }>({
+    title: '',
+    description: '',
+    priority: 'medium',
+    status: 'not_started'
+  });
+
   // Handle Escape key to go back
   React.useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -74,13 +95,6 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
     targetTitle: ''
   });
 
-  // Relationship editing state (for inline edit)
-  const [editingRelIndex, setEditingRelIndex] = useState<number | null>(null);
-  const [editRelData, setEditRelData] = useState<{ relationType: RelationshipType; description: string }>({
-    relationType: 'uses',
-    description: ''
-  });
-
   // Confirmation modal state for delete subtask
   const [deleteSubtaskConfirmation, setDeleteSubtaskConfirmation] = useState<{
     isOpen: boolean;
@@ -90,20 +104,6 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
     isOpen: false,
     subtaskId: null,
     subtaskTitle: ''
-  });
-
-  // Subtask editing state (for inline edit)
-  const [editingSubtaskIndex, setEditingSubtaskIndex] = useState<number | null>(null);
-  const [editSubtaskData, setEditSubtaskData] = useState<{
-    title: string;
-    description: string;
-    priority: 'low' | 'medium' | 'high';
-    status: 'not_started' | 'in_progress' | 'completed' | 'blocked';
-  }>({
-    title: '',
-    description: '',
-    priority: 'medium',
-    status: 'not_started'
   });
 
   const steps = wizardData.steps;

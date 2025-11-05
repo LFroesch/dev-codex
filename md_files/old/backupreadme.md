@@ -41,7 +41,7 @@ npm run dev
 
 #### 2. Use the Hosted Version
 - I'm hosting a production instance at [TBA]
-- Optional paid plans (Pro/Enterprise) for convenience
+- Optional paid plans (Pro/Premium) for convenience
 - Same features, but I handle deployment, monitoring, and maintenance and rate limits
 - Free tier available (3 projects, perfect for trying it out)
 
@@ -274,7 +274,7 @@ User management, support tickets, analytics leaderboards, database cleanup, news
 |------|----------|--------------|---------------------|
 | **Free** | 3 | 3/project | 7 days |
 | **Pro** | 20 | 10/project | 90 days |
-| **Enterprise** | Unlimited | Unlimited | 365 days |
+| **Premium** | Unlimited | Unlimited | 365 days |
 
 Limits enforced on project creation and team invitations. Analytics auto-deleted after retention period (TTL indexes).
 

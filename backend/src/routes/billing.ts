@@ -18,20 +18,18 @@ const billingRateLimit = createRateLimit({
 // Initialize Stripe only if API key is provided
 let stripe: Stripe | null = null;
 if (process.env.STRIPE_SECRET_KEY) {
-  stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-    apiVersion: '2025-07-30.basil',
-  });
+  stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 }
 
 const PLAN_PRICES = {
   pro: process.env.STRIPE_PRO_PRICE_ID || '',
-  enterprise: process.env.STRIPE_ENTERPRISE_PRICE_ID || ''
+  premium: process.env.STRIPE_PREMIUM_PRICE_ID || ''
 };
 
 const PLAN_LIMITS = {
   free: 3,
   pro: 20,
-  enterprise: -1 // unlimited
+  premium: 50
 };
 
 // Create checkout session
@@ -51,7 +49,7 @@ router.post('/create-checkout-session', billingRateLimit, requireAuth, async (re
 
     logInfo('Creating checkout session', { userId, planTier });
 
-    if (!['pro', 'enterprise'].includes(planTier)) {
+    if (!['pro', 'premium'].includes(planTier)) {
       return res.status(400).json({ error: 'Invalid plan tier' });
     }
 
@@ -203,7 +201,7 @@ async function handleSuccessfulPayment(session: Stripe.Checkout.Session) {
   logInfo('Processing successful payment', { sessionId: session.id, metadata: session.metadata, subscription: session.subscription });
 
   const userId = session.metadata?.userId;
-  let planTier = session.metadata?.planTier as 'pro' | 'enterprise';
+  let planTier = session.metadata?.planTier as 'pro' | 'premium';
 
   if (!userId) {
     logError('Missing userId in session metadata');
@@ -220,8 +218,8 @@ async function handleSuccessfulPayment(session: Stripe.Checkout.Session) {
       // Determine plan tier from price ID
       if (priceId === PLAN_PRICES.pro) {
         planTier = 'pro';
-      } else if (priceId === PLAN_PRICES.enterprise) {
-        planTier = 'enterprise';
+      } else if (priceId === PLAN_PRICES.premium) {
+        planTier = 'premium';
       }
       logInfo('Determined plan tier from price ID', { planTier });
     } catch (error) {
@@ -297,6 +295,9 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
     user.projectLimit = PLAN_LIMITS.free;
     logInfo('Downgraded user to free plan', { userId: user._id, reason: subscription.status });
 
+    // Handle excess projects by locking them
+    await handleDowngradeExcess(user._id.toString(), 'free');
+
     // Update retention for existing data when downgrading
     if (oldPlanTier !== 'free') {
       const { updateExpirationOnPlanChange } = await import('../utils/retentionUtils');
@@ -306,14 +307,14 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
   } else if (subscription.status === 'active') {
     // Determine plan tier from price ID
     const priceId = subscription.items.data[0]?.price.id;
-    let newPlanTier: 'pro' | 'enterprise' | null = null;
+    let newPlanTier: 'pro' | 'premium' | null = null;
 
     logInfo('Active subscription price details', { priceId, availablePrices: PLAN_PRICES });
 
     if (priceId === PLAN_PRICES.pro) {
       newPlanTier = 'pro';
-    } else if (priceId === PLAN_PRICES.enterprise) {
-      newPlanTier = 'enterprise';
+    } else if (priceId === PLAN_PRICES.premium) {
+      newPlanTier = 'premium';
     }
 
     if (newPlanTier) {
@@ -374,9 +375,17 @@ router.get('/info', requireAuth, async (req: AuthRequest, res) => {
       subscriptionStatus: user.subscriptionStatus
     });
 
+    // Get user's current project count
+    const { Project } = await import('../models/Project');
+    const projectCount = await Project.countDocuments({
+      $or: [{ userId: user._id }, { ownerId: user._id }],
+      isArchived: false
+    });
+
     let billingInfo: any = {
       planTier: user.planTier,
       projectLimit: user.projectLimit,
+      projectCount: projectCount,
       subscriptionStatus: user.subscriptionStatus,
       hasActiveSubscription: user.subscriptionStatus === 'active',
       nextBillingDate: null,
@@ -447,6 +456,41 @@ router.get('/info', requireAuth, async (req: AuthRequest, res) => {
     res.status(500).json({ error: 'Failed to fetch billing info' });
   }
 });
+
+// Handle excess projects when downgrading
+async function handleDowngradeExcess(userId: string, targetPlan: 'free' | 'pro' | 'premium') {
+  const { Project } = await import('../models/Project');
+
+  const targetLimit = PLAN_LIMITS[targetPlan];
+
+  // If unlimited projects, no need to lock anything
+  if (targetLimit === -1) {
+    return;
+  }
+
+  // Find all active projects
+  const projects = await Project.find({
+    $or: [{ userId: userId }, { ownerId: userId }],
+    isArchived: false
+  }).sort({ updatedAt: -1 }); // Most recently updated first
+
+  // If user has more projects than allowed, lock the excess oldest ones
+  if (projects.length > targetLimit) {
+    const projectsToLock = projects.slice(targetLimit);
+
+    for (const project of projectsToLock) {
+      project.isLocked = true;
+      project.lockedReason = `Project locked due to plan downgrade. Upgrade to ${targetPlan === 'free' ? 'Pro' : 'Premium'} to unlock.`;
+      await project.save();
+    }
+
+    logInfo('Locked excess projects on downgrade', {
+      userId,
+      targetPlan,
+      lockedCount: projectsToLock.length
+    });
+  }
+}
 
 // Cancel subscription
 router.post('/cancel-subscription', billingRateLimit, requireAuth, async (req: AuthRequest, res) => {

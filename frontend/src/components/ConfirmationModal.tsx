@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { getContrastTextColor } from '../utils/contrastTextColor';
 
 interface ConfirmationModalProps {
@@ -22,6 +22,20 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   cancelText = 'Cancel',
   variant = 'warning'
 }) => {
+  // Handle Escape key to cancel
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onCancel();
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [isOpen, onCancel]);
+
   if (!isOpen) return null;
 
   const getIconAndColor = () => {

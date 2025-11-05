@@ -431,13 +431,13 @@ router.get('/project/:projectId/team-time', requireAuth, async (req: AuthRequest
 router.post('/plan/update', requireAuth, async (req: AuthRequest, res) => {
   try {
     const { planTier, subscriptionStatus } = req.body;
-    
-    if (!['free', 'pro', 'enterprise'].includes(planTier)) {
+
+    if (!['free', 'pro', 'premium'].includes(planTier)) {
       return res.status(400).json({ error: 'Invalid plan tier' });
     }
-    
+
     await AnalyticsService.updateUserAnalyticsRetention(req.userId!, planTier, subscriptionStatus);
-    
+
     res.json({ 
       success: true, 
       message: `Analytics retention updated for ${planTier} plan` 

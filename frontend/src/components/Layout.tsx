@@ -1473,32 +1473,56 @@ const Layout: React.FC = () => {
                                 navigate('/notes');
                               }}
                               disabled={!analyticsReady}
-                              className={`shadow-lg hover:shadow-xl p-4 rounded-lg border-2 transition-all duration-200 text-left group h-[225px] flex flex-col ${
-                                !analyticsReady 
-                                  ? 'border-base-300/30 bg-base-100/50 opacity-60 cursor-not-allowed' 
-                                  : selectedProject?.id === project.id 
-                                    ? 'border-base-300 bg-base-200/50 hover:border-secondary/50' 
-                                    : 'border-base-content/20 hover:border-secondary/50'
+                              className={`shadow-lg hover:shadow-xl p-4 rounded-lg border-2 transition-all duration-200 text-left group h-[225px] flex flex-col relative ${
+                                project.isLocked
+                                  ? 'border-warning/50 bg-base-100/30 opacity-60'
+                                  : !analyticsReady
+                                    ? 'border-base-300/30 bg-base-100/50 opacity-60 cursor-not-allowed'
+                                    : selectedProject?.id === project.id
+                                      ? 'border-base-300 bg-base-200/50 hover:border-secondary/50'
+                                      : 'border-base-content/20 hover:border-secondary/50'
                               }`}
+                              title={project.isLocked ? (project.lockedReason || 'This project is locked and cannot be edited') : ''}
                             >
+                              {/* Lock Icon Overlay */}
+                              {project.isLocked && (
+                                <div className="absolute top-2 right-2 z-10">
+                                  <svg
+                                    className="w-6 h-6 text-warning"
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                  >
+                                    <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                                  </svg>
+                                </div>
+                              )}
+
                               {/* Header with project name */}
                               <div className="flex items-center gap-3 mb-3">
-                                <h3 
-                                  className="border-2 border-base-content/20 font-bold truncate px-2 py-1 rounded-md group-hover:opacity-90 transition-opacity bg-primary text-md"
-                                  style={{ 
+                                <h3
+                                  className={`border-2 border-base-content/20 font-bold truncate px-2 py-1 rounded-md group-hover:opacity-90 transition-opacity bg-primary text-md ${
+                                    project.isLocked ? 'opacity-50' : ''
+                                  }`}
+                                  style={{
                                     color: getContrastTextColor()
                                   }}
                                 >
                                   {project.name}
                                   <span> </span>
                                   {project.color && (
-                                    <span 
+                                    <span
                                       className="inline-block w-3 h-3 rounded-full"
                                       style={{ backgroundColor: project.color }}
                                     ></span>
                                   )}
                                 </h3>
-                                {selectedProject?.id === project.id && (
+                                {project.isLocked && (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-warning/80 text-base-content/80 border-2 border-base-content/20"
+                                  style={{ color: getContrastTextColor("warning") }}>
+                                    Locked
+                                  </span>
+                                )}
+                                {selectedProject?.id === project.id && !project.isLocked && (
                                   <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-success/80 text-base-content/80 border-2 border-base-content/20"
                                   style={{ color: getContrastTextColor("success") }}>
                                     Current Project

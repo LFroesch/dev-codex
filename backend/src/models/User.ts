@@ -38,7 +38,7 @@ export interface IUser extends Document {
   username: string;
   displayPreference: 'name' | 'username';
   theme: UserTheme;
-  planTier: 'free' | 'pro' | 'enterprise';
+  planTier: 'free' | 'pro' | 'premium';
   projectLimit: number;
   stripeCustomerId?: string;
   subscriptionId?: string;
@@ -121,7 +121,7 @@ const userSchema = new Schema<IUser>({
   },
   planTier: {
     type: String,
-    enum: ['free', 'pro', 'enterprise'],
+    enum: ['free', 'pro', 'premium'],
     default: 'free'
   },
   projectLimit: {

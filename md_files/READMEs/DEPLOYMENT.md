@@ -59,7 +59,7 @@ npm run create-admin
 **Security Notes:**
 - Both `ADMIN_CREATION_SECRET` and `EXPECTED_ADMIN_SECRET` must match to prevent unauthorized admin creation
 - The script can upgrade existing users to admin status or create new admin accounts
-- Admin accounts automatically get enterprise tier (unlimited projects/members)
+- Admin accounts automatically get premium tier (unlimited projects/members)
 - Only run this script once during initial setup or when you need to add additional admins
 
 **Admin Features:**

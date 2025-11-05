@@ -18,7 +18,7 @@ export const checkProjectLimit = async (req: AuthRequest, res: Response, next: N
       return next();
     }
 
-    // Unlimited projects for enterprise users
+    // Unlimited projects for premium users
     if (user.projectLimit === -1) {
       return next();
     }
@@ -46,7 +46,7 @@ export const checkProjectLimit = async (req: AuthRequest, res: Response, next: N
 const TEAM_MEMBER_LIMITS = {
   free: 3,
   pro: 10,
-  enterprise: -1 // unlimited
+  premium: -1 // unlimited
 };
 
 export const checkTeamMemberLimit = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -77,7 +77,7 @@ export const checkTeamMemberLimit = async (req: AuthRequest, res: Response, next
     const planTier = owner.planTier || 'free';
     const memberLimit = TEAM_MEMBER_LIMITS[planTier as keyof typeof TEAM_MEMBER_LIMITS];
 
-    // Unlimited members for enterprise
+    // Unlimited members for premium
     if (memberLimit === -1) {
       return next();
     }

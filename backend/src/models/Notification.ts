@@ -15,7 +15,7 @@ export interface INotification extends Document {
   createdAt: Date;
   updatedAt: Date;
   // Tiered retention fields
-  planTier: 'free' | 'pro' | 'enterprise';
+  planTier: 'free' | 'pro' | 'premium';
   importance: 'critical' | 'standard' | 'transient';
   expiresAt?: Date;
 }
@@ -73,7 +73,7 @@ const NotificationSchema = new Schema<INotification>(
     planTier: {
       type: String,
       required: true,
-      enum: ['free', 'pro', 'enterprise'],
+      enum: ['free', 'pro', 'premium'],
       default: 'free',
       index: true,
     },

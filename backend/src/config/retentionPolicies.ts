@@ -5,7 +5,7 @@
  * This configuration drives TTL (Time To Live) settings across all models.
  */
 
-export type PlanTier = 'free' | 'pro' | 'enterprise';
+export type PlanTier = 'free' | 'pro' | 'premium';
 
 export interface RetentionPolicy {
   detailedDays: number; // Days to keep detailed records (-1 = forever)
@@ -41,7 +41,7 @@ export const RETENTION_POLICIES = {
       detailedDays: 180,  // 6 months
       summaryYears: 3,
     },
-    enterprise: {
+    premium: {
       detailedDays: 365,  // 1 year
       summaryYears: -1,   // Forever
     },
@@ -58,7 +58,7 @@ export const RETENTION_POLICIES = {
       standard: 90,   // 3 months
       transient: 30,
     },
-    enterprise: {
+    premium: {
       critical: 365,  // 1 year
       standard: 365,
       transient: 90,  // 3 months
@@ -76,7 +76,7 @@ export const RETENTION_POLICIES = {
       expired: 30,
       accepted: 180,  // 6 months
     },
-    enterprise: {
+    premium: {
       pending: 30,
       expired: 90,
       accepted: -1,   // Forever
@@ -90,7 +90,7 @@ export const RETENTION_POLICIES = {
     pro: {
       removedDays: 180,  // 6 months
     },
-    enterprise: {
+    premium: {
       removedDays: 1095, // 3 years
     },
   } as Record<PlanTier, TeamMemberRetentionPolicy>,

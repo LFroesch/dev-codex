@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { terminalAPI } from '../api';
 import { getContrastTextColor } from '../utils/contrastTextColor';
 import { toast } from '../services/toast';
@@ -25,6 +25,20 @@ const ConfirmationWizard: React.FC<ConfirmationWizardProps> = ({
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+
+  // Handle Escape key to cancel
+  useEffect(() => {
+    if (isCompleted) return;
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isSubmitting) {
+        handleCancel();
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [isCompleted, isSubmitting]);
 
   const handleConfirm = async () => {
     setIsSubmitting(true);

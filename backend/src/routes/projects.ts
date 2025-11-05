@@ -22,12 +22,21 @@ import {
   validateExportRequest,
   securityHeaders
 } from '../middleware/importExportSecurity';
+import { checkProjectLock } from '../middleware/projectLock';
 
 const router = express.Router();
 
 // All routes require authentication
 router.use(requireAuth);
 router.use(trackProjectAccess); // Track project access
+
+// Check for locked projects on all modification routes (PUT, POST, DELETE with :id)
+router.use('/:id', (req, res, next) => {
+  if (req.method === 'GET') {
+    return next(); // Allow GET requests
+  }
+  return checkProjectLock(req as AuthRequest, res, next);
+});
 
 // Create project
 router.post('/', checkProjectLimit, async (req: AuthRequest, res) => {
@@ -156,7 +165,7 @@ router.get('/:id', requireProjectAccess('view'), async (req: AuthRequest, res) =
 });
 
 // Update project
-router.put('/:id', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
+router.put('/:id', requireProjectAccess('edit'), checkProjectLock, async (req: AuthRequest, res) => {
   try {
     // SEC-005 FIX: Whitelist allowed fields to prevent mass assignment vulnerability
     const allowedFields = [
@@ -1475,6 +1484,8 @@ function formatProjectResponse(project: any) {
     category: project.category,
     tags: project.tags,
     isArchived: project.isArchived,
+    isLocked: project.isLocked || false,
+    lockedReason: project.lockedReason,
     isShared: project.isShared,
     isPublic: project.isPublic,
     publicSlug: project.publicSlug,
@@ -2103,3 +2114,27 @@ router.post('/import',
 });
 
 export default router;
+// TEST ONLY: Manually lock/unlock a project for testing
+router.post('/:id/test-lock', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
+  try {
+    const { lock } = req.body;
+    const project = await Project.findById(req.params.id);
+    
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    project.isLocked = lock === true;
+    project.lockedReason = lock ? 'Test lock - simulate plan downgrade' : undefined;
+    await project.save();
+
+    res.json({ 
+      success: true, 
+      isLocked: project.isLocked,
+      message: lock ? 'Project locked for testing' : 'Project unlocked'
+    });
+  } catch (error) {
+    console.error('Error toggling project lock:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});

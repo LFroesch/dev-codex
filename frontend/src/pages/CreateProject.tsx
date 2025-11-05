@@ -39,7 +39,11 @@ const CreateProject: React.FC = () => {
         stagingEnvironment: formData.stagingEnvironment,
       });
       toast.success(`Project "${formData.name}" created successfully!`);
-      navigate('/');
+
+      // Trigger project list refresh
+      window.dispatchEvent(new CustomEvent('refreshProject'));
+
+      navigate('/projects');
     } catch (err: any) {
       let errorMessage = 'An unexpected error occurred';
       if (err?.response?.data?.message) {
@@ -98,11 +102,10 @@ const CreateProject: React.FC = () => {
         <div className="card bg-base-100 shadow-xl">
           <div className="card-body">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="card-title text-xl">Project Details</h2>
               <button
                 onClick={() => navigate('/')}
-                className="btn btn-primary gap-2"
-                style={{ color: getContrastTextColor('primary') }}
+                className="btn btn-error border-thick gap-2"
+                style={{ color: getContrastTextColor('error') }}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -122,8 +125,8 @@ const CreateProject: React.FC = () => {
 
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Basic Information */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Basic Information</h3>
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold">Project Details</h3>
                 
                 <div className="form-control">
                   <label className="label">
@@ -157,7 +160,7 @@ const CreateProject: React.FC = () => {
               </div>
 
               {/* Optional Metadata */}
-              <div className="space-y-4">
+              <div className="space-y-2">
                 <h3 className="text-lg font-semibold text-base-content/80">Optional Settings</h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -239,7 +242,7 @@ const CreateProject: React.FC = () => {
                       <button
                         type="button"
                         onClick={handleAddTag}
-                        className="btn btn-primary btn-square"
+                        className="btn btn-primary btn-square border-thick"
                         style={{ color: getContrastTextColor('primary') }}
                       >
                         +
@@ -280,7 +283,7 @@ const CreateProject: React.FC = () => {
                 <button
                   type="submit"
                   disabled={loading || !formData.name.trim() || !formData.description.trim()}
-                  className="btn btn-primary gap-2"
+                  className="btn btn-primary gap-2 border-thick"
                   style={{ color: getContrastTextColor('primary') }}
                 >
                   {loading ? (

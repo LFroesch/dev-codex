@@ -1,10 +1,13 @@
 # Standalone TUI Application
 
 ## Overview
-Create a standalone TUI (Text User Interface) application that allows users to interact with the project manager from their native terminal (Ubuntu/bash, PowerShell, etc.) instead of through the web interface.
+Create a standalone TUI / Terminal (Text User Interface) application that allows users to interact with the project manager from their native terminal (Ubuntu/bash, PowerShell, etc.) instead of through the web interface.
 
 ## Concept
 Users can install and run a CLI tool (e.g., `pm` or `project-manager`) directly in their terminal that provides the same functionality as the web-based terminal, but as a native terminal application.
+
+examples: running pm to enter into a tui
+OR pm export @dev-codex or something does it right in your terminal rather than the TUI or both? idk
 
 ## Benefits
 - **No browser needed**: Quick access without opening a web browser

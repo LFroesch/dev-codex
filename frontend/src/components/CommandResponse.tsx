@@ -311,6 +311,11 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
   };
 
   const getIcon = () => {
+    // Special icon for lock errors
+    if (response.type === 'error' && response.data?.isLocked) {
+      return '🔒';
+    }
+
     switch (response.type) {
       case 'success':
         return '✅';
@@ -331,6 +336,48 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
 
   const renderData = () => {
     if (!response.data) return null;
+
+    // Special handling for lock errors
+    if (response.type === 'error' && response.data.isLocked) {
+      return (
+        <div className="mt-3 space-y-3">
+          <div className="p-4 bg-warning/10 border-2 border-warning/50 rounded-lg">
+            <div className="flex items-start gap-3">
+              <svg
+                className="w-6 h-6 text-warning flex-shrink-0 mt-0.5"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+              </svg>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-sm font-semibold text-warning mb-1">Project Locked - Read Only Mode</h4>
+                <p className="text-sm text-base-content/80 mb-2">
+                  {response.message || 'This project is locked and cannot be modified.'}
+                </p>
+                {response.data.message && response.data.message !== response.message && (
+                  <p className="text-xs text-base-content/70 mb-2">
+                    {response.data.message}
+                  </p>
+                )}
+                <div className="text-xs text-base-content/60">
+                  💡 You can still view project data, but editing is disabled until you upgrade your plan.
+                </div>
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={() => navigate('/billing')}
+            className="btn btn-warning btn-sm gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            Upgrade Plan to Unlock
+          </button>
+        </div>
+      );
+    }
 
     // Render todos list
     if (response.data.todos && Array.isArray(response.data.todos)) {

@@ -5,6 +5,7 @@ import OptimizedAnalytics from '../components/OptimizedAnalytics';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { getContrastTextColor } from '../utils/contrastTextColor';
 import { csrfFetch } from '../utils/csrf';
+import { toast } from '../services/toast';
 
 interface User {
   _id: string;
@@ -259,17 +260,26 @@ const AdminDashboardPage: React.FC = () => {
         throw new Error('Failed to update project lock');
       }
 
-      // Refresh the projects list
+      // Update the project in the local state immediately
+      setUserProjects(prevProjects =>
+        prevProjects.map(project =>
+          project._id === projectId
+            ? { ...project, isLocked: lock, lockedReason: reason }
+            : project
+        )
+      );
+
+      toast.success(`Project ${lock ? 'locked' : 'unlocked'} successfully!`);
+
+      // Also refresh from server to ensure sync
       if (showProjectsModal && selectedUserForProjects) {
         const userId = userProjects[0]?.userId || userProjects[0]?.ownerId;
         if (userId) {
           await fetchUserProjects(userId, selectedUserForProjects);
         }
       }
-
-      alert(`Project ${lock ? 'locked' : 'unlocked'} successfully!`);
     } catch (err: any) {
-      alert('Failed to update project lock: ' + err.message);
+      toast.error('Failed to update project lock: ' + err.message);
     }
   };
 
@@ -566,9 +576,23 @@ const AdminDashboardPage: React.FC = () => {
     if (!processedText.includes('<p') && !processedText.includes('<h') && !processedText.includes('<pre')) {
       processedText = `<p class="mb-2">${processedText}</p>`;
     }
-    
+
     return processedText;
   };
+
+  // Handle escape key for projects modal
+  useEffect(() => {
+    if (!showProjectsModal) return;
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowProjectsModal(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [showProjectsModal]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -669,7 +693,7 @@ const AdminDashboardPage: React.FC = () => {
   };
 
   return (
-    <div className="p-2">
+    <div className="p-1">
 
         {/* Stats Cards */}
         {activeTab === 'users' && stats && (
@@ -732,7 +756,7 @@ const AdminDashboardPage: React.FC = () => {
 
         {/* Users Table */}
         {activeTab === 'users' && (
-          <div className="shadow-md p-4 rounded-lg border-2 border-base-content/20 transition-all duration-200" style={{ overflow: 'visible' }}>
+          <div className="shadow-md p-1 rounded-lg border-2 border-base-content/20 transition-all duration-200" style={{ overflow: 'visible' }}>
             <div className="card-body" style={{ overflow: 'visible' }}>
             <div className="flex-between-center mb-4">
               <h2 className="card-title">Users</h2>
@@ -1955,7 +1979,15 @@ const AdminDashboardPage: React.FC = () => {
 
       {/* User Projects Modal */}
       {showProjectsModal && (
-        <div className="modal modal-open">
+        <div
+          className="modal modal-open"
+          onClick={(e) => {
+            // Close modal when clicking backdrop
+            if (e.target === e.currentTarget) {
+              setShowProjectsModal(false);
+            }
+          }}
+        >
           <div className="modal-box max-w-4xl">
             <h3 className="font-bold text-lg mb-4">
               {selectedUserForProjects}'s Projects

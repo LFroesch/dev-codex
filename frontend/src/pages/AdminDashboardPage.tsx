@@ -11,7 +11,7 @@ interface User {
   email: string;
   firstName: string;
   lastName: string;
-  planTier: 'free' | 'pro' | 'enterprise';
+  planTier: 'free' | 'pro' | 'premium';
   subscriptionStatus?: string;
   isAdmin: boolean;
   isBanned?: boolean;
@@ -30,7 +30,7 @@ interface AdminStats {
   planDistribution: {
     free: number;
     pro: number;
-    enterprise: number;
+    premium: number;
   };
 }
 
@@ -98,6 +98,9 @@ const AdminDashboardPage: React.FC = () => {
   const [resettingAnalytics, setResettingAnalytics] = useState(false);
   const [newsPosts, setNewsPosts] = useState<NewsPost[]>([]);
   const [showNewsForm, setShowNewsForm] = useState(false);
+  const [userProjects, setUserProjects] = useState<any[]>([]);
+  const [selectedUserForProjects, setSelectedUserForProjects] = useState<string>('');
+  const [showProjectsModal, setShowProjectsModal] = useState(false);
   const [editingPost, setEditingPost] = useState<NewsPost | null>(null);
   const [newsForm, setNewsForm] = useState({
     title: '',
@@ -222,6 +225,51 @@ const AdminDashboardPage: React.FC = () => {
       setSelectedUser(userData);
     } catch (err: any) {
       alert('Failed to fetch user details: ' + err.message);
+    }
+  };
+
+  const fetchUserProjects = async (userId: string, userName: string) => {
+    try {
+      const response = await fetch(`/api/admin/users/${userId}/projects`, {
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch user projects');
+      }
+
+      const data = await response.json();
+      setUserProjects(data.projects);
+      setSelectedUserForProjects(userName);
+      setShowProjectsModal(true);
+    } catch (err: any) {
+      alert('Failed to fetch user projects: ' + err.message);
+    }
+  };
+
+  const toggleProjectLock = async (projectId: string, lock: boolean, reason?: string) => {
+    try {
+      const response = await csrfFetch(`/api/admin/projects/${projectId}/lock`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lock, reason })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update project lock');
+      }
+
+      // Refresh the projects list
+      if (showProjectsModal && selectedUserForProjects) {
+        const userId = userProjects[0]?.userId || userProjects[0]?.ownerId;
+        if (userId) {
+          await fetchUserProjects(userId, selectedUserForProjects);
+        }
+      }
+
+      alert(`Project ${lock ? 'locked' : 'unlocked'} successfully!`);
+    } catch (err: any) {
+      alert('Failed to update project lock: ' + err.message);
     }
   };
 
@@ -585,7 +633,7 @@ const AdminDashboardPage: React.FC = () => {
     switch (plan) {
       case 'free': return 'badge-ghost';
       case 'pro': return 'badge-primary';
-      case 'enterprise': return 'badge-secondary';
+      case 'premium': return 'badge-secondary';
       default: return 'badge-neutral';
     }
   };
@@ -647,7 +695,7 @@ const AdminDashboardPage: React.FC = () => {
               <div className="stat-value text-xs sm:text-sm">
                 <div>Free: {stats.planDistribution.free}</div>
                 <div>Pro: {stats.planDistribution.pro}</div>
-                <div>Enterprise: {stats.planDistribution.enterprise}</div>
+                <div>Premium: {stats.planDistribution.premium}</div>
               </div>
             </div>
           </div>
@@ -726,7 +774,7 @@ const AdminDashboardPage: React.FC = () => {
                           <ul tabIndex={0} className="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-32" style={{ zIndex: 9999 }}>
                             <li><a onClick={() => updateUserPlan(user._id, 'free')}>Free</a></li>
                             <li><a onClick={() => updateUserPlan(user._id, 'pro')}>Pro</a></li>
-                            <li><a onClick={() => updateUserPlan(user._id, 'enterprise')}>Enterprise</a></li>
+                            <li><a onClick={() => updateUserPlan(user._id, 'premium')}>Premium</a></li>
                           </ul>
                         </div>
                       </td>
@@ -764,6 +812,14 @@ const AdminDashboardPage: React.FC = () => {
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                 </svg>
                                 View Details
+                              </a>
+                            </li>
+                            <li>
+                              <a onClick={() => fetchUserProjects(user._id, user.firstName + ' ' + user.lastName)}>
+                                <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                                </svg>
+                                Manage Projects
                               </a>
                             </li>
                             <li>
@@ -1896,6 +1952,91 @@ const AdminDashboardPage: React.FC = () => {
             </div>
           </div>
         )}
+
+      {/* User Projects Modal */}
+      {showProjectsModal && (
+        <div className="modal modal-open">
+          <div className="modal-box max-w-4xl">
+            <h3 className="font-bold text-lg mb-4">
+              {selectedUserForProjects}'s Projects
+            </h3>
+
+            {userProjects.length === 0 ? (
+              <p className="text-base-content/70">No projects found.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="table table-zebra w-full">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Status</th>
+                      <th>Updated</th>
+                      <th>Lock</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {userProjects.map((project) => (
+                      <tr key={project._id}>
+                        <td>
+                          <div className="font-semibold">{project.name}</div>
+                          {project.description && (
+                            <div className="text-sm text-base-content/70 truncate max-w-xs">
+                              {project.description}
+                            </div>
+                          )}
+                        </td>
+                        <td>
+                          {project.isArchived ? (
+                            <span className="badge badge-ghost">Archived</span>
+                          ) : project.isLocked ? (
+                            <span className="badge badge-warning">Locked</span>
+                          ) : (
+                            <span className="badge badge-success">Active</span>
+                          )}
+                        </td>
+                        <td>{new Date(project.updatedAt).toLocaleDateString()}</td>
+                        <td>
+                          {project.isLocked ? (
+                            <div>
+                              <button
+                                className="btn btn-sm btn-success"
+                                onClick={() => toggleProjectLock(project._id, false)}
+                              >
+                                Unlock
+                              </button>
+                              {project.lockedReason && (
+                                <div className="text-xs text-base-content/70 mt-1">
+                                  {project.lockedReason}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <button
+                              className="btn btn-sm btn-warning"
+                              onClick={() => {
+                                const reason = prompt('Enter lock reason (optional):');
+                                toggleProjectLock(project._id, true, reason || undefined);
+                              }}
+                            >
+                              Lock
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <div className="modal-action">
+              <button className="btn" onClick={() => setShowProjectsModal(false)}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -2029,7 +2029,7 @@ const AccountSettingsPage: React.FC = () => {
                         </div>
                         <div>
                           <h4 className="font-semibold text-base-content mb-1">View Plans</h4>
-                          <p className="text-sm text-base-content/70">Compare Free, Pro, and Enterprise plans to find the right fit for your projects.</p>
+                          <p className="text-sm text-base-content/70">Compare Free, Pro, and Premium plans to find the right fit for your projects.</p>
                         </div>
                       </div>
                     </div>

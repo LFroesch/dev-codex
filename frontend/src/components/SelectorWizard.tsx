@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { terminalAPI } from '../api';
 import { getContrastTextColor } from '../utils/contrastTextColor';
 import { toast } from '../services/toast';
@@ -26,6 +26,22 @@ const SelectorWizard: React.FC<SelectorWizardProps> = ({ wizardType, step, proje
   const isEditSelector = wizardType?.includes('edit_');
   const isDeleteSelector = wizardType?.includes('delete_');
   const isViewSelector = wizardType?.includes('view_');
+
+  // Handle Escape key - for delete selectors, mark as finished; otherwise close/do nothing
+  useEffect(() => {
+    if (isFinished) return;
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isSubmitting) {
+        if (isDeleteSelector) {
+          setIsFinished(true);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [isFinished, isSubmitting, isDeleteSelector]);
 
   // Filter out deleted items from options (only for delete selectors)
   const availableOptions = isDeleteSelector

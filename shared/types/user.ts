@@ -6,7 +6,7 @@ export interface BaseUser {
   username: string;
   displayPreference: 'name' | 'username';
   theme: string;
-  planTier: 'free' | 'pro' | 'enterprise';
+  planTier: 'free' | 'pro' | 'premium';
   projectLimit: number;
   isAdmin: boolean;
   bio?: string;

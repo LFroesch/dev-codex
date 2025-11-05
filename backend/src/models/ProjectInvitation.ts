@@ -14,7 +14,7 @@ export interface IProjectInvitation extends Document {
   createdAt: Date;
   updatedAt: Date;
   // Tiered retention field
-  planTier: 'free' | 'pro' | 'enterprise';
+  planTier: 'free' | 'pro' | 'premium';
   deletionExpiresAt?: Date; // For plan-aware deletion after status changes
 }
 
@@ -68,7 +68,7 @@ const ProjectInvitationSchema = new Schema<IProjectInvitation>(
     planTier: {
       type: String,
       required: true,
-      enum: ['free', 'pro', 'enterprise'],
+      enum: ['free', 'pro', 'premium'],
       default: 'free',
       index: true,
     },

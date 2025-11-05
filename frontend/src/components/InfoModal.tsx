@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 
 interface InfoModalProps {
   isOpen: boolean;
@@ -15,6 +15,20 @@ const InfoModal: React.FC<InfoModalProps> = ({
   message,
   variant = 'info'
 }) => {
+  // Handle Escape key to close
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const getIconAndColor = () => {

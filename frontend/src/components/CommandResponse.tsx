@@ -751,6 +751,18 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
         }
       };
 
+      // Handle Escape key to go back
+      React.useEffect(() => {
+        const handleEscape = (e: KeyboardEvent) => {
+          if (e.key === 'Escape' && !isCompleted && !isSubmitting && currentStep > 0) {
+            handleBack();
+          }
+        };
+
+        window.addEventListener('keydown', handleEscape);
+        return () => window.removeEventListener('keydown', handleEscape);
+      }, [currentStep, isCompleted, isSubmitting]);
+
       const handleSubmit = async () => {
         setIsSubmitting(true);
         try {
@@ -1187,6 +1199,18 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
           setCurrentStep(currentStep - 1);
         }
       };
+
+      // Handle Escape key to go back
+      React.useEffect(() => {
+        const handleEscape = (e: KeyboardEvent) => {
+          if (e.key === 'Escape' && !isCompleted && !isSubmitting && currentStep > 0) {
+            handleBack();
+          }
+        };
+
+        window.addEventListener('keydown', handleEscape);
+        return () => window.removeEventListener('keydown', handleEscape);
+      }, [currentStep, isCompleted, isSubmitting]);
 
       const escapeForCommand = (value: string): string => {
         return String(value)

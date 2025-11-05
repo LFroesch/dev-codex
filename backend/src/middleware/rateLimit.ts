@@ -187,14 +187,11 @@ export const createSmartRateLimit = (baseOptions: RateLimitOptions & { maxReques
         const planTier = req.user.planTier || 'free';
 
         switch (planTier) {
-          case 'premium':
-            maxRequests = Math.floor(maxRequests * 3); // 3x limit for premium
-            break;
           case 'pro':
             maxRequests = Math.floor(maxRequests * 5); // 5x limit for pro
             break;
-          case 'enterprise':
-            maxRequests = Math.floor(maxRequests * 10); // 10x limit for enterprise
+          case 'premium':
+            maxRequests = Math.floor(maxRequests * 10); // 10x limit for premium
             break;
           default: // 'free'
             maxRequests = Math.floor(maxRequests * 0.8); // 20% reduction for free users
@@ -234,7 +231,7 @@ export const ticketRateLimit = createRateLimit({
 
 // Terminal command execution rate limiter - prevent command spam
 // Plan-based limits: free tier gets stricter limits to control costs
-// Base: 12 → Free: ~10/min (0.8x), Pro: 60/min (5x), Enterprise: 120/min (10x)
+// Base: 12 → Free: ~10/min (0.8x), Pro: 60/min (5x), Premium: 120/min (10x)
 export const terminalRateLimit = createSmartRateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
   maxRequests: process.env.NODE_ENV === 'production' ? 12 : 30, // Production: plan-based, Dev: 30/min

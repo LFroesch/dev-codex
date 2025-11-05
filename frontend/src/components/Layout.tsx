@@ -23,6 +23,44 @@ import CategorySelector from './tabs/CategorySelector';
 // Lazy load heavy page components for better performance
 const IdeasPage = lazy(() => import('../pages/IdeasPage'));
 
+// Helper function to calculate todo stats for project cards
+const calculateTodoStats = (project: Project) => {
+  const now = new Date();
+  const oneWeekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+  const open = project.todos.filter(todo => !todo.completed).length;
+  const overdue = project.todos.filter(todo => {
+    if (todo.completed || !todo.dueDate) return false;
+    return new Date(todo.dueDate) < now;
+  }).length;
+  const upcoming = project.todos.filter(todo => {
+    if (todo.completed || !todo.dueDate) return false;
+    const dueDate = new Date(todo.dueDate);
+    return dueDate >= now && dueDate <= oneWeekFromNow;
+  }).length;
+
+  return { open, overdue, upcoming };
+};
+
+// Helper function to format relative time
+const getRelativeTime = (dateString: string): string => {
+  const now = new Date();
+  const date = new Date(dateString);
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffMins < 1) return 'just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays === 1) return 'yesterday';
+  if (diffDays < 7) return `${diffDays}d ago`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
+  if (diffDays < 365) return `${Math.floor(diffDays / 30)}mo ago`;
+  return `${Math.floor(diffDays / 365)}y ago`;
+};
+
 const Layout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -1484,7 +1522,7 @@ const Layout: React.FC = () => {
                       <>
                         {/* Projects Grid */}
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                          {(selectedCategory 
+                          {(selectedCategory
                             ? (activeProjectTab === 'active' ? groupedCurrentProjects :
                                activeProjectTab === 'archived' ? groupedArchivedProjects :
                                groupedSharedProjects)[selectedCategory] || []
@@ -1493,7 +1531,12 @@ const Layout: React.FC = () => {
                                 activeProjectTab === 'archived' ? groupedArchivedProjects :
                                 groupedSharedProjects
                               ).flat()
-                          ).map((project) => (
+                          ).sort((a, b) => {
+                            // Sort by recently updated globally
+                            const dateA = new Date(a.updatedAt).getTime();
+                            const dateB = new Date(b.updatedAt).getTime();
+                            return dateB - dateA; // Most recent first
+                          }).map((project) => (
                             <button
                               key={project.id}
                               onClick={() => {
@@ -1507,7 +1550,7 @@ const Layout: React.FC = () => {
                                   : !analyticsReady
                                     ? 'border-base-300/30 bg-base-100/50 opacity-60 cursor-not-allowed'
                                     : selectedProject?.id === project.id
-                                      ? 'border-base-300 bg-base-200/50 hover:border-secondary/50'
+                                      ? 'border-secondary/60 bg-secondary/20 hover:border-accent/50'
                                       : 'border-base-content/20 hover:border-secondary/50'
                               }`}
                               title={project.isLocked ? (project.lockedReason || 'This project is locked and cannot be edited') : ''}
@@ -1525,8 +1568,8 @@ const Layout: React.FC = () => {
                                 </div>
                               )}
 
-                              {/* Header with project name */}
-                              <div className="flex items-center gap-3 mb-3">
+                              {/* Header with project name and category */}
+                              <div className="flex items-center gap-2 mb-2 flex-wrap">
                                 <h3
                                   className={`border-2 border-base-content/20 font-bold truncate px-2 py-1 rounded-md group-hover:opacity-90 transition-opacity bg-primary text-md ${
                                     project.isLocked ? 'opacity-50' : ''
@@ -1535,7 +1578,7 @@ const Layout: React.FC = () => {
                                     color: getContrastTextColor()
                                   }}
                                 >
-                                  {project.name}
+                                  {String(project.name).split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
                                   <span> </span>
                                   {project.color && (
                                     <span
@@ -1544,68 +1587,77 @@ const Layout: React.FC = () => {
                                     ></span>
                                   )}
                                 </h3>
+                                {project.category && (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-base-200 text-base-content/80 border-2 border-accent">
+                                    {String(project.category).split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+                                  </span>
+                                )}
                                 {project.isLocked && (
                                   <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-warning/80 text-base-content/80 border-2 border-base-content/20"
                                   style={{ color: getContrastTextColor("warning") }}>
                                     Locked
                                   </span>
                                 )}
-                                {selectedProject?.id === project.id && !project.isLocked && (
-                                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-success/80 text-base-content/80 border-2 border-base-content/20"
-                                  style={{ color: getContrastTextColor("success") }}>
-                                    Current Project
-                                  </span>
-                                )}
                               </div>
-                              
-                              {/* Description - Fixed height */}
-                              <div className="mb-3 h-[3.5rem] flex-shrink-0">
-                                {project.description && (
-                                  <div className={`inline-flex items-start px-2 py-0.5 rounded-md text-xs font-medium text-base-content/80 border-2 border-base-content/20 h-full w-full ${
-                                    selectedProject?.id === project.id ? 'bg-base-100' : 'bg-base-200'
-                                  }`}>
-                                    <p className="text-sm text-base-content/70 line-clamp-2 leading-relaxed">
-                                      {project.description}
-                                    </p>
-                                  </div>
-                                )}
-                              </div>
-                              
-                              {/* Tags - Fixed height */}
-                              <div className="mb-3 h-[1.5rem] flex-shrink-0">
-                                {project.tags && project.tags.length > 0 && (
-                                  <div className="flex flex-wrap gap-1">
-                                    {project.tags.slice(0, 3).map((tag, tagIndex) => (
-                                      <span
-                                        key={tagIndex}
-                                        className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-mono font-semibold bg-primary/70  border-2 border-base-content/20"
-                                        style={{ color: getContrastTextColor() }}
-                                      >
-                                        {tag}
-                                      </span>
-                                    ))}
-                                    {project.tags.length > 3 && (
-                                      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-mono font-semibold bg-primary/70  border-2 border-base-content/20"
-                                      style={{ color: getContrastTextColor() }}>
-                                        +{project.tags.length - 3}
-                                      </span>
+
+                              {/* Description */}
+                              {project.description && (
+                                <div className="mb-3">
+                                  <p className="text-sm text-base-content/70 line-clamp-2 leading-relaxed">
+                                    {project.description}
+                                  </p>
+                                </div>
+                              )}
+
+                              {/* Todo Stats - compact row */}
+                              {(() => {
+                                const stats = calculateTodoStats(project);
+                                return (
+                                  <div className="mb-3 flex gap-2 flex-wrap items-center">
+                                    {stats.overdue > 0 && (
+                                      <div className="inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold bg-error/20 text-error border-2 border-error/40 gap-1">
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        {stats.overdue} overdue
+                                      </div>
+                                    )}
+                                    {stats.upcoming > 0 && (
+                                      <div className="inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold bg-warning/20 text-warning border-2 border-warning/40 gap-1">
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                        {stats.upcoming} upcoming
+                                      </div>
                                     )}
                                   </div>
-                                )}
-                              </div>
-                              
-                              {/* Footer - Always at bottom */}
-                              <div className="flex items-center justify-between text-xs pt-3 border-t-2 border-base-content/20 mt-auto">
-                                <div className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold font-mono bg-success/80 text-base-content/80 border-2 border-base-content/20 gap-1"
-                                style={{ color: getContrastTextColor("success") }}>
-                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                  </svg>
-                                  <span>{formatProjectTime(project.id)}</span>
+                                );
+                              })()}
+
+                              {/* Footer - Time worked, updated, and created all on one line */}
+                              <div className="pt-3 border-t-2 border-base-content/20 mt-auto">
+                                <div className="flex items-center justify-between text-xs gap-2 flex-wrap">
+                                  <div className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold font-mono bg-success/80 text-base-content/80 border-2 border-base-content/20 gap-1"
+                                  style={{ color: getContrastTextColor("success") }}>
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span>{formatProjectTime(project.id)}</span>
+                                  </div>
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-base-200 text-base-content/80 border-2 border-base-content/20 font-mono gap-1">
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                    {getRelativeTime(project.updatedAt)}
+                                  </span>
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-base-300/50 text-base-content/70 border-2 border-base-content/20 font-mono gap-1">
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
+                                    {new Date(project.createdAt).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' })}
+                                  </span>
                                 </div>
-                                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-base-200 text-base-content/80 border-2 border-base-content/20 font-mono">
-                                  {new Date(project.updatedAt).toLocaleDateString()}
-                                </span>
                               </div>
                             </button>
                           ))}

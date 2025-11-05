@@ -172,13 +172,13 @@ router.put('/users/:id/plan', async (req, res) => {
 
     const { planTier } = req.body;
 
-    if (!['free', 'pro', 'enterprise'].includes(planTier)) {
+    if (!['free', 'pro', 'premium'].includes(planTier)) {
       return res.status(400).json({ error: 'Invalid plan tier' });
     }
 
     const user = await User.findByIdAndUpdate(
       req.params.id,
-      { 
+      {
         planTier,
         projectLimit: PLAN_LIMITS[planTier as keyof typeof PLAN_LIMITS]
       },
@@ -309,7 +309,7 @@ router.get('/stats', async (req, res) => {
     const activeSubscriptions = await User.countDocuments({ subscriptionStatus: 'active' });
     const freeUsers = await User.countDocuments({ planTier: 'free' });
     const proUsers = await User.countDocuments({ planTier: 'pro' });
-    const enterpriseUsers = await User.countDocuments({ planTier: 'enterprise' });
+    const premiumUsers = await User.countDocuments({ planTier: 'premium' });
 
     // Recent signups (last 30 days)
     const thirtyDaysAgo = new Date();
@@ -319,11 +319,11 @@ router.get('/stats', async (req, res) => {
     // Active sessions and analytics
     const activeSessions = await UserSession.countDocuments({ isActive: true });
     const activeVisibleSessions = await UserSession.countDocuments({ isActive: true, isVisible: true });
-    
+
     // Recent activity (last 24 hours)
     const twentyFourHoursAgo = new Date();
     twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
-    const recentActivity = await UserSession.countDocuments({ 
+    const recentActivity = await UserSession.countDocuments({
       lastActivity: { $gte: twentyFourHoursAgo }
     });
 
@@ -335,7 +335,7 @@ router.get('/stats', async (req, res) => {
       planDistribution: {
         free: freeUsers,
         pro: proUsers,
-        enterprise: enterpriseUsers
+        premium: premiumUsers
       },
       analytics: {
         activeSessions,
@@ -1413,3 +1413,55 @@ router.get('/performance/recommendations', async (req, res) => {
 
 
 export default router;
+// Lock/Unlock project (Admin only)
+router.post('/projects/:id/lock', requireAuth, adminMiddleware, async (req: AuthRequest, res) => {
+  try {
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid project ID' });
+    }
+
+    const { lock, reason } = req.body;
+    const project = await Project.findById(req.params.id);
+
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+
+    project.isLocked = lock === true;
+    project.lockedReason = lock ? (reason || 'Locked by admin') : undefined;
+    await project.save();
+
+    res.json({
+      success: true,
+      project: {
+        _id: project._id,
+        name: project.name,
+        isLocked: project.isLocked,
+        lockedReason: project.lockedReason
+      }
+    });
+  } catch (error) {
+    console.error('Error locking/unlocking project:', error);
+    res.status(500).json({ error: 'Failed to update project lock status' });
+  }
+});
+
+// Get user's projects (Admin only)
+router.get('/users/:id/projects', requireAuth, adminMiddleware, async (req: AuthRequest, res) => {
+  try {
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid user ID' });
+    }
+
+    const projects = await Project.find({
+      $or: [{ userId: req.params.id }, { ownerId: req.params.id }]
+    })
+    .select('_id name description isLocked lockedReason isArchived createdAt updatedAt')
+    .sort({ updatedAt: -1 });
+
+    res.json({ projects });
+  } catch (error) {
+    console.error('Error fetching user projects:', error);
+    res.status(500).json({ error: 'Failed to fetch projects' });
+  }
+});

@@ -19,7 +19,7 @@ export interface IActivityLog extends Document {
   userAgent?: string;
   ipAddress?: string;
   // Tiered retention fields
-  planTier: 'free' | 'pro' | 'enterprise';
+  planTier: 'free' | 'pro' | 'premium';
   expiresAt?: Date;
   isCompacted?: boolean; // Flag for summary documents
 }
@@ -87,7 +87,7 @@ const activityLogSchema: Schema = new Schema({
   planTier: {
     type: String,
     required: true,
-    enum: ['free', 'pro', 'enterprise'],
+    enum: ['free', 'pro', 'premium'],
     default: 'free',
     index: true
   },

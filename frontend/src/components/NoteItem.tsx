@@ -339,7 +339,12 @@ const NoteModal: React.FC<NoteModalProps> = ({
         setLockedBy(error.response.data.lockedBy);
         toast.warning(`Note is currently being edited by ${error.response.data.lockedBy?.name || 'another user'}`, 4000);
       } else if (error.response?.status === 403) {
-        toast.error('You do not have permission to edit this note', 5000);
+        const errorData = error.response?.data;
+        if (errorData?.isLocked) {
+          toast.error(errorData.message || 'This project is locked and cannot be edited', 5000);
+        } else {
+          toast.error('You do not have permission to edit this note', 5000);
+        }
       } else if (error.response?.status === 401) {
         toast.error('You need to be logged in to edit notes', 5000);
       } else {
@@ -426,7 +431,9 @@ const NoteModal: React.FC<NoteModalProps> = ({
   const handleEnterEditMode = async () => {
     // Check permissions first
     if (project && project.canEdit === false) {
-      if (project.userRole === 'viewer') {
+      if (project.isLocked) {
+        toast.error(project.lockedReason || 'This project is locked and cannot be edited', 5000);
+      } else if (project.userRole === 'viewer') {
         toast.error(`You need editor access to edit ${type}s in this project`, 5000);
       } else {
         toast.error(`You do not have permission to edit this ${type}`, 5000);
@@ -450,7 +457,9 @@ const NoteModal: React.FC<NoteModalProps> = ({
 
     // Check permissions before saving
     if (project && project.canEdit === false) {
-      if (project.userRole === 'viewer') {
+      if (project.isLocked) {
+        toast.error(project.lockedReason || 'This project is locked and cannot be edited', 5000);
+      } else if (project.userRole === 'viewer') {
         toast.error(`You need editor access to save changes to ${type}s`, 5000);
       } else {
         toast.error(`You do not have permission to save changes to this ${type}`, 5000);
@@ -521,7 +530,12 @@ const NoteModal: React.FC<NoteModalProps> = ({
       if (error.response?.status === 423) {
         setLockError(`${type === 'devlog' ? 'Dev log entry' : 'Note'} is being edited by ${error.response.data.lockedBy?.name || 'another user'}`);
       } else if (error.response?.status === 403) {
-        toast.error(`You do not have permission to edit this ${type}`, 5000);
+        const errorData = error.response?.data;
+        if (errorData?.isLocked) {
+          toast.error(errorData.message || 'This project is locked and cannot be edited', 5000);
+        } else {
+          toast.error(`You do not have permission to edit this ${type}`, 5000);
+        }
       } else if (error.response?.status === 401) {
         toast.error(`You need to be logged in to edit ${type}s`, 5000);
       } else {

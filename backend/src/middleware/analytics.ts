@@ -76,7 +76,7 @@ export function calculateActiveTime(startTime: Date, endTime: Date, heartbeatTim
 export class AnalyticsService {
   // Get user's current plan tier and subscription status
   private static async getUserPlanInfo(userId: string): Promise<{
-    planTier: 'free' | 'pro' | 'enterprise';
+    planTier: 'free' | 'pro' | 'premium';
     subscriptionStatus?: string;
   }> {
     try {
@@ -92,7 +92,7 @@ export class AnalyticsService {
   }
 
   // Check daily event limits based on plan
-  private static async checkDailyLimit(userId: string, planTier: 'free' | 'pro' | 'enterprise'): Promise<boolean> {
+  private static async checkDailyLimit(userId: string, planTier: 'free' | 'pro' | 'premium'): Promise<boolean> {
     const today = new Date().toDateString();
     const cacheKey = `${userId}-${today}`;
     
@@ -243,7 +243,7 @@ export class AnalyticsService {
   // Update analytics retention when user's plan changes
   static async updateUserAnalyticsRetention(
     userId: string, 
-    newPlanTier: 'free' | 'pro' | 'enterprise',
+    newPlanTier: 'free' | 'pro' | 'premium',
     subscriptionStatus?: string
   ): Promise<void> {
     try {

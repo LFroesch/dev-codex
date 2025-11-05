@@ -13,7 +13,7 @@ export interface IAnalytics extends Document {
   timestamp: Date;
   userAgent?: string;
   ipAddress?: string;
-  planTier: 'free' | 'pro' | 'enterprise'; // Plan tier at time of event
+  planTier: 'free' | 'pro' | 'premium'; // Plan tier at time of event
   createdAt: Date;
   expiresAt?: Date; // Plan-specific expiration date
 }
@@ -50,7 +50,7 @@ const analyticsSchema: Schema = new Schema({
   planTier: {
     type: String,
     required: true,
-    enum: ['free', 'pro', 'enterprise'],
+    enum: ['free', 'pro', 'premium'],
     default: 'free',
     index: true
   },
@@ -71,7 +71,7 @@ analyticsSchema.index({ planTier: 1, timestamp: -1 });
 
 // Plan-based TTL index for automatic cleanup
 // Free tier: expires based on expiresAt field
-// Pro/Enterprise: no expiration (expiresAt is null) unless subscription cancelled
+// Pro/Premium: no expiration (expiresAt is null) unless subscription cancelled
 analyticsSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 export default mongoose.model<IAnalytics>('Analytics', analyticsSchema);

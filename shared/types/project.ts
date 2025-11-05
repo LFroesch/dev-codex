@@ -87,6 +87,8 @@ export interface BaseProject {
   category: string;
   tags: string[];
   isArchived: boolean;
+  isLocked: boolean;
+  lockedReason?: string;
   isShared: boolean;
   isPublic: boolean;
   publicSlug?: string;

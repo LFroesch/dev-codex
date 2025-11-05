@@ -277,7 +277,7 @@ const OptimizedAnalytics: React.FC<OptimizedAnalyticsProps> = ({ onResetAnalytic
                           <td className="hidden sm:table-cell">
                             <span className={`badge badge-xs ${
                               user.planTier === 'pro' ? 'badge-primary' :
-                              user.planTier === 'enterprise' ? 'badge-secondary' : 'badge-ghost'
+                              user.planTier === 'premium' ? 'badge-secondary' : 'badge-ghost'
                             }`}>
                               {user.planTier}
                             </span>

@@ -7,8 +7,8 @@ import { AnalyticsService } from '../middleware/analytics';
 
 export interface SubscriptionChangeEvent {
   userId: string;
-  oldPlanTier: 'free' | 'pro' | 'enterprise';
-  newPlanTier: 'free' | 'pro' | 'enterprise';
+  oldPlanTier: 'free' | 'pro' | 'premium';
+  newPlanTier: 'free' | 'pro' | 'premium';
   subscriptionStatus: 'active' | 'inactive' | 'canceled' | 'past_due' | 'incomplete_expired';
   eventType: 'upgrade' | 'downgrade' | 'cancel' | 'reactivate';
 }
@@ -47,7 +47,7 @@ export class SubscriptionAnalyticsHandler {
   }
 
   /**
-   * Handle plan upgrades (free → pro/enterprise, pro → enterprise)
+   * Handle plan upgrades (free → pro/premium, pro → premium)
    */
   private static async handlePlanUpgrade(event: SubscriptionChangeEvent): Promise<void> {
     
@@ -70,7 +70,7 @@ export class SubscriptionAnalyticsHandler {
   }
 
   /**
-   * Handle plan downgrades (enterprise → pro/free, pro → free)
+   * Handle plan downgrades (premium → pro/free, pro → free)
    */
   private static async handlePlanDowngrade(event: SubscriptionChangeEvent): Promise<void> {
     

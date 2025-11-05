@@ -128,6 +128,8 @@ export interface IProject extends Document {
   userId: mongoose.Types.ObjectId; // Legacy field, now acts as ownerId
   ownerId: mongoose.Types.ObjectId; // New owner field for clarity
   isArchived: boolean;
+  isLocked: boolean;
+  lockedReason?: string;
   isShared: boolean;
   isPublic: boolean;
   publicSlug?: string;
@@ -284,6 +286,14 @@ const projectSchema = new Schema<IProject>({
   isArchived: {
     type: Boolean,
     default: false
+  },
+  isLocked: {
+    type: Boolean,
+    default: false
+  },
+  lockedReason: {
+    type: String,
+    required: false
   },
   isShared: {
     type: Boolean,

@@ -43,6 +43,26 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
 
+  // Handle Escape key to go back
+  React.useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isCompleted && !isSubmitting) {
+        // If we're editing a relationship or subtask, cancel that first
+        if (editingRelIndex !== null) {
+          handleCancelEditRelationship();
+        } else if (editingSubtaskIndex !== null) {
+          handleCancelEditSubtask();
+        } else if (currentStep > 0) {
+          // Otherwise, go back a step
+          handleBack();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [currentStep, isCompleted, isSubmitting, editingRelIndex, editingSubtaskIndex]);
+
   // Confirmation modal state for delete relationship
   const [deleteConfirmation, setDeleteConfirmation] = useState<{
     isOpen: boolean;

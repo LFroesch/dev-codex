@@ -4,7 +4,7 @@
  */
 
 export interface AnalyticsPlanConfig {
-  planTier: 'free' | 'pro' | 'enterprise';
+  planTier: 'free' | 'pro' | 'premium';
   retentionPeriod: number; // seconds, 0 = forever
   maxEventsPerDay: number;
   throttlingMultiplier: number; // 1.0 = standard, 0.5 = faster, 2.0 = slower
@@ -30,10 +30,10 @@ export const ANALYTICS_PLAN_CONFIG: Record<string, AnalyticsPlanConfig> = {
     advancedAnalytics: true,
     dataExport: true
   },
-  enterprise: {
-    planTier: 'enterprise',
+  premium: {
+    planTier: 'premium',
     retentionPeriod: 0, // Forever (until unsubscribe)
-    maxEventsPerDay: 100000, // Very high limit for enterprise
+    maxEventsPerDay: 100000, // Very high limit for premium
     throttlingMultiplier: 0.5, // 50% faster event processing
     advancedAnalytics: true,
     dataExport: true
@@ -68,7 +68,7 @@ export const ANALYTICS_FEATURES = {
     apiAccess: true,
     retentionDays: -1 // Forever
   },
-  enterprise: {
+  premium: {
     realTimeAnalytics: true,
     customDashboards: true,
     advancedFiltering: true,
@@ -81,14 +81,14 @@ export const ANALYTICS_FEATURES = {
 /**
  * Get analytics configuration for a specific plan tier
  */
-export function getAnalyticsConfig(planTier: 'free' | 'pro' | 'enterprise'): AnalyticsPlanConfig {
+export function getAnalyticsConfig(planTier: 'free' | 'pro' | 'premium'): AnalyticsPlanConfig {
   return ANALYTICS_PLAN_CONFIG[planTier];
 }
 
 /**
  * Calculate throttle duration based on plan tier
  */
-export function getThrottleDuration(eventType: string, planTier: 'free' | 'pro' | 'enterprise'): number {
+export function getThrottleDuration(eventType: string, planTier: 'free' | 'pro' | 'premium'): number {
   const baseThrottle = BASE_THROTTLE_DURATIONS[eventType] || 10000;
   const config = getAnalyticsConfig(planTier);
   
@@ -99,7 +99,7 @@ export function getThrottleDuration(eventType: string, planTier: 'free' | 'pro' 
 /**
  * Check if user can track this many events per day
  */
-export function canTrackEvent(currentDailyCount: number, planTier: 'free' | 'pro' | 'enterprise'): boolean {
+export function canTrackEvent(currentDailyCount: number, planTier: 'free' | 'pro' | 'premium'): boolean {
   const config = getAnalyticsConfig(planTier);
   return currentDailyCount < config.maxEventsPerDay;
 }
@@ -108,16 +108,16 @@ export function canTrackEvent(currentDailyCount: number, planTier: 'free' | 'pro
  * Get TTL for analytics data based on plan and subscription status
  */
 export function getAnalyticsTTL(
-  planTier: 'free' | 'pro' | 'enterprise', 
+  planTier: 'free' | 'pro' | 'premium', 
   subscriptionStatus?: string
 ): number {
   const config = getAnalyticsConfig(planTier);
   
   // If subscription is canceled/inactive, revert to free tier TTL
-  if ((planTier === 'pro' || planTier === 'enterprise') && 
+  if ((planTier === 'pro' || planTier === 'premium') && 
       ['canceled', 'inactive', 'incomplete_expired'].includes(subscriptionStatus || '')) {
     return ANALYTICS_PLAN_CONFIG.free.retentionPeriod;
   }
   
-  return config.retentionPeriod; // 0 = forever for active pro/enterprise
+  return config.retentionPeriod; // 0 = forever for active pro/premium
 }

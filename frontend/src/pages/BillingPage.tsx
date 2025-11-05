@@ -7,7 +7,7 @@ import { toast } from '../services/toast';
 import { getContrastTextColor } from '../utils/contrastTextColor';
 
 interface BillingInfo {
-  planTier: 'free' | 'pro' | 'enterprise';
+  planTier: 'free' | 'pro' | 'premium';
   projectLimit: number;
   subscriptionStatus: string;
   hasActiveSubscription: boolean;
@@ -15,6 +15,7 @@ interface BillingInfo {
   cancelAtPeriodEnd?: boolean;
   subscriptionEndsAt?: string | null;
   subscriptionId?: string | null;
+  projectCount?: number;
 }
 
 const BillingPage: React.FC = () => {
@@ -50,7 +51,7 @@ const BillingPage: React.FC = () => {
     {
       name: 'Pro',
       id: 'pro' as const,
-      price: 5,
+      price: 10,
       projects: 20,
       features: [
         '20 Projects',
@@ -63,24 +64,24 @@ const BillingPage: React.FC = () => {
       popular: true
     },
     {
-      name: 'Enterprise',
-      id: 'enterprise' as const,
+      name: 'Premium',
+      id: 'premium' as const,
       price: 20,
-      projects: -1,
+      projects: 50,
       features: [
-        'Unlimited Projects',
+        '50 Projects',
         'Advanced Analytics',
         'Team Collaboration',
         'Admin Dashboard',
         'Custom Integrations',
         '24/7 Support'
       ],
-      current: billingInfo?.planTier === 'enterprise',
+      current: billingInfo?.planTier === 'premium',
       popular: false
     }
   ];
 
-  const handleUpgrade = async (planTier: 'pro' | 'enterprise') => {
+  const handleUpgrade = async (planTier: 'pro' | 'premium') => {
     setLoading(true);
     
     try {
@@ -161,78 +162,118 @@ const BillingPage: React.FC = () => {
           <div className="hidden sm:block w-32"></div> {/* Spacer for centering */}
         </div>
 
+        {/* Excess Projects Warning Banner */}
+        {billingInfo && billingInfo.cancelAtPeriodEnd && billingInfo.projectCount && billingInfo.projectCount > 3 && (
+          <div className="alert alert-warning mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <div>
+              <h3 className="font-bold">Project Limit Warning</h3>
+              <div className="text-sm">
+                You have <strong>{billingInfo.projectCount} projects</strong> but the free plan allows only <strong>3</strong>.
+                When your subscription ends on <strong>{billingInfo.subscriptionEndsAt ? new Date(billingInfo.subscriptionEndsAt).toLocaleDateString() : billingInfo.nextBillingDate ? new Date(billingInfo.nextBillingDate).toLocaleDateString() : 'the end date'}</strong>,
+                your <strong>{billingInfo.projectCount - 3} oldest projects will be locked</strong> (read-only).
+                You can unlock them by upgrading again.
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Current Plan Status */}
         {billingInfo && (
-          <div className="card-default mb-8 border border-thick border-base-content/40">
+          <div className={`card-default mb-8 border-2 ${
+            billingInfo.planTier === 'free'
+              ? 'border-thick border-base-content/40'
+              : 'border-primary shadow-lg'
+          }`}>
             <div className="card-body">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-                <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {/* Header Section */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-base-content/10">
+                <div className="flex items-center gap-3">
+                  <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center ${
+                    billingInfo.planTier === 'free'
+                      ? 'bg-base-300'
+                      : 'bg-primary/20'
+                  }`}>
+                    <svg className="w-6 h-6 sm:w-7 sm:h-7 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
                     </svg>
                   </div>
                   <div>
                     <h2 className="text-xl sm:text-2xl font-bold text-base-content">Current Plan</h2>
-                    <p className="text-sm sm:text-base text-base-content/60">Your active subscription details</p>
+                    <p className="text-sm text-base-content/60">Your subscription overview</p>
                   </div>
                 </div>
-                <div className="badge badge-primary badge-lg text-base sm:text-lg font-semibold px-3 sm:px-4 py-2 sm:py-3" style={{ color: getContrastTextColor('primary') }}>
+                <div className="badge badge-primary badge-lg text-base sm:text-lg font-semibold px-4 py-3" style={{ color: getContrastTextColor('primary') }}>
                   {billingInfo.planTier.toUpperCase()}
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-                <div className="stat bg-base-200 rounded-lg border border-thick border-base-content/20">
-                  <div className="stat-title mb-1 text-xs sm:text-sm">Project Limit</div>
-                  <div className="stat-value mb-2 text-xl sm:text-2xl">
+              {/* Stats Grid */}
+              <div className={`grid gap-4 sm:gap-6 mt-6 ${
+                billingInfo.hasActiveSubscription && billingInfo.nextBillingDate
+                  ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
+                  : 'grid-cols-1 sm:grid-cols-2'
+              }`}>
+                {/* Project Limit */}
+                <div className="stat bg-base-200 rounded-lg border border-thick border-base-content/20 p-4">
+                  <div className="stat-title text-xs sm:text-sm text-base-content/60 mb-2">Project Limit</div>
+                  <div className="stat-value text-2xl sm:text-3xl text-primary font-bold mb-1">
                     {billingInfo.projectLimit === -1 ? '∞' : billingInfo.projectLimit}
                   </div>
-                  <div className="stat-desc text-xs">
+                  <div className="stat-desc text-xs text-base-content/70">
                     {billingInfo.projectLimit === -1 ? 'Unlimited projects' : 'Active projects allowed'}
                   </div>
                 </div>
 
-                <div className="stat bg-base-200 rounded-lg border border-thick border-base-content/20">
-                  <div className="stat-title mb-2 text-xs sm:text-sm">Status</div>
-                  <div className="stat-value text-base sm:text-xl capitalize">
+                {/* Status */}
+                <div className="stat bg-base-200 rounded-lg border border-thick border-base-content/20 p-4">
+                  <div className="stat-title text-xs sm:text-sm text-base-content/60 mb-2">Status</div>
+                  <div className="stat-value text-base sm:text-lg mb-1">
                     {billingInfo.subscriptionStatus === 'active' ? (
-                      <span className="text-base-content border-thick rounded-lg px-2 py-1 bg-success/70 text-sm sm:text-base">Active</span>
+                      <span className="badge badge-success badge-lg gap-2">
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        Active
+                      </span>
                     ) : (
-                      <span className="text-base-content border-thick rounded-lg px-2 py-1 bg-warning/50 text-sm sm:text-base">{billingInfo.subscriptionStatus}</span>
+                      <span className="badge badge-warning badge-lg capitalize">{billingInfo.subscriptionStatus}</span>
                     )}
                   </div>
-                  <div className="stat-desc mt-2 text-xs">Subscription status</div>
+                  <div className="stat-desc text-xs text-base-content/70">Subscription status</div>
                 </div>
 
+                {/* Billing Date */}
                 {billingInfo.nextBillingDate && (
-                  <div className="stat bg-base-200 rounded-lg border border-thick border-base-content/20">
-                    <div className="stat-title mb-2 text-xs sm:text-sm">
-                      {billingInfo.cancelAtPeriodEnd ? 'Access Ends' : 'Renewal Date'}
+                  <div className="stat bg-base-200 rounded-lg border border-thick border-base-content/20 p-4">
+                    <div className="stat-title text-xs sm:text-sm text-base-content/60 mb-2">
+                      {billingInfo.cancelAtPeriodEnd ? 'Access Ends' : 'Next Renewal'}
                     </div>
-                    <div className="stat-value text-base sm:text-lg">
+                    <div className="stat-value text-base sm:text-lg text-base-content font-semibold mb-1">
                       {new Date(billingInfo.nextBillingDate).toLocaleDateString('en-US', {
                         month: 'short',
                         day: 'numeric',
                         year: 'numeric'
                       })}
                     </div>
-                    <div className="stat-desc mt-2 text-xs">
-                      {billingInfo.cancelAtPeriodEnd ? 'Plan expires on this date' : 'Next renewal & charge date'}
+                    <div className="stat-desc text-xs text-base-content/70">
+                      {billingInfo.cancelAtPeriodEnd ? 'Plan expires on this date' : 'Automatic renewal date'}
                     </div>
                   </div>
                 )}
+              </div>
 
-                <div className="stat bg-base-200 rounded-lg border border-thick border-base-content/20">
-                  <div className="stat-title text-xs sm:text-sm">Actions</div>
-                  <br />
-                  <div className="stat-value text-xs sm:text-sm">
-                    {billingInfo.hasActiveSubscription && !billingInfo.cancelAtPeriodEnd && (
-                      <button 
+              {/* Action Buttons - Only show if there are active subscription actions */}
+              {billingInfo.hasActiveSubscription && (
+                <div className="mt-6 pt-6 border-t border-base-content/10">
+                  <div className="flex flex-wrap gap-3">
+                    {!billingInfo.cancelAtPeriodEnd ? (
+                      <button
                         onClick={() => setShowCancelConfirm(true)}
                         disabled={cancelLoading}
-                        className="-mt-2 btn btn-outline btn-error btn-sm"
+                        className="btn btn-outline btn-error btn-sm"
                       >
                         {cancelLoading ? (
                           <>
@@ -240,12 +281,16 @@ const BillingPage: React.FC = () => {
                             Canceling...
                           </>
                         ) : (
-                          'Cancel Plan'
+                          <>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                            Cancel Subscription
+                          </>
                         )}
                       </button>
-                    )}
-                    {billingInfo.cancelAtPeriodEnd && (
-                      <button 
+                    ) : (
+                      <button
                         onClick={handleResumeSubscription}
                         disabled={resumeLoading}
                         className="btn btn-success btn-sm"
@@ -256,24 +301,30 @@ const BillingPage: React.FC = () => {
                             Resuming...
                           </>
                         ) : (
-                          'Resume Plan'
+                          <>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                            Resume Subscription
+                          </>
                         )}
                       </button>
                     )}
                   </div>
                 </div>
-              </div>
+              )}
 
+              {/* Warning/Info Alerts */}
               {billingInfo.cancelAtPeriodEnd && billingInfo.nextBillingDate && (
-                <div className="mt-6 p-4 bg-warning/10 border border-warning/20 rounded-lg">
+                <div className="mt-6 p-4 bg-warning/10 border-2 border-warning/30 rounded-lg">
                   <div className="flex items-start gap-3">
-                    <svg className="icon-md text-warning mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-5 h-5 text-warning mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                     </svg>
                     <div>
-                      <h4 className="font-semibold text-warning mb-1">Subscription Cancelled</h4>
+                      <h4 className="font-semibold text-warning mb-1">Subscription Ending</h4>
                       <p className="text-sm text-base-content/80">
-                        You'll continue to have access to your {billingInfo.planTier} plan until{' '}
+                        You'll have access to your <strong className="capitalize">{billingInfo.planTier}</strong> plan until{' '}
                         <strong>
                           {new Date(billingInfo.nextBillingDate).toLocaleDateString('en-US', {
                             year: 'numeric',
@@ -281,7 +332,7 @@ const BillingPage: React.FC = () => {
                             day: 'numeric'
                           })}
                         </strong>
-                        . After that, your account will be downgraded to the free plan. You can resume your subscription anytime before this date.
+                        . After that, your account will revert to the Free plan.
                       </p>
                     </div>
                   </div>
@@ -289,12 +340,15 @@ const BillingPage: React.FC = () => {
               )}
 
               {!billingInfo.cancelAtPeriodEnd && billingInfo.hasActiveSubscription && billingInfo.nextBillingDate && (
-                <div className="mt-6 p-4 bg-base-200 border border-base-content/20 rounded-lg">
+                <div className="mt-6 p-4 bg-success/10 border-2 border-success/30 rounded-lg">
                   <div className="flex items-start gap-3">
+                    <svg className="w-5 h-5 text-success mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
                     <div>
-                      <h4 className="text-lg font-bold text-base-content mb-2 bg-success/70 border-thick rounded-lg inline-block p-1">Active Subscription</h4>
+                      <h4 className="font-semibold text-success mb-1">Active Subscription</h4>
                       <p className="text-sm text-base-content/80">
-                        Your {billingInfo.planTier} plan will automatically renew on{' '}
+                        Your <strong className="capitalize">{billingInfo.planTier}</strong> plan renews on{' '}
                         <strong>
                           {new Date(billingInfo.nextBillingDate).toLocaleDateString('en-US', {
                             year: 'numeric',
@@ -302,7 +356,7 @@ const BillingPage: React.FC = () => {
                             day: 'numeric'
                           })}
                         </strong>
-                        . You can cancel anytime and still enjoy your plan benefits until the end of the billing period.
+                        . Cancel anytime to retain access until the billing period ends.
                       </p>
                     </div>
                   </div>
@@ -324,10 +378,10 @@ const BillingPage: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
           {plans.map((plan) => (
-            <div 
-              key={plan.id} 
+            <div
+              key={plan.id}
               className={`card-default border-2 transition-all duration-200 hover:shadow-2xl ${
-                plan.current ? 'border-primary ring-2 ring-primary/20' : 'border-base-300 hover:border-primary/50'
+                plan.current ? 'border-primary ring-2 ring-primary/20' : 'border-thick border-base-content/40 hover:border-primary/50'
               } ${plan.popular ? 'transform lg:scale-105' : ''}`}
             >
               {plan.popular && (
@@ -492,7 +546,11 @@ const BillingPage: React.FC = () => {
         onConfirm={handleCancelSubscription}
         onCancel={() => setShowCancelConfirm(false)}
         title="Cancel Subscription"
-        message="Are you sure you want to cancel your subscription? You'll retain access until the end of your billing period, but you won't be charged again."
+        message={
+          billingInfo && billingInfo.projectCount && billingInfo.projectCount > 3
+            ? `Are you sure you want to cancel your subscription? You have ${billingInfo.projectCount} projects, but the free plan allows only 3. Your ${billingInfo.projectCount - 3} oldest projects will be locked (read-only) when your subscription ends. You'll retain access until the end of your billing period.`
+            : "Are you sure you want to cancel your subscription? You'll retain access until the end of your billing period, but you won't be charged again."
+        }
         confirmText={cancelLoading ? "Canceling..." : "Cancel Subscription"}
         cancelText="Keep Subscription"
         variant="warning"

@@ -1,6 +1,10 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { unsavedChangesManager } from '../../utils/unsavedChanges';
 
 interface RelatedProject {
+  id?: string;
+  _id?: string;
   name: string;
 }
 
@@ -10,13 +14,17 @@ interface RelatedUser {
 }
 
 interface Notification {
+  id?: string;
+  _id?: string;
   type: string;
   title: string;
   message: string;
   isRead: boolean;
   createdAt: string;
   relatedProject?: RelatedProject;
+  relatedProjectId?: RelatedProject | string;
   relatedUser?: RelatedUser;
+  relatedTodoId?: string;
 }
 
 interface NotificationsRendererProps {
@@ -24,6 +32,8 @@ interface NotificationsRendererProps {
 }
 
 const NotificationsRenderer: React.FC<NotificationsRendererProps> = ({ notifications }) => {
+  const navigate = useNavigate();
+
   const typeIcons: Record<string, string> = {
     'project_invitation': '📬',
     'project_shared': '🤝',
@@ -33,6 +43,42 @@ const NotificationsRenderer: React.FC<NotificationsRendererProps> = ({ notificat
     'todo_due_soon': '⏰',
     'todo_overdue': '🚨',
     'subtask_completed': '✅'
+  };
+
+  const handleNotificationClick = async (notification: Notification) => {
+    // Extract project ID from either relatedProjectId or relatedProject
+    // Handle both id and _id fields for compatibility
+    const projectId = notification.relatedProjectId
+      ? (typeof notification.relatedProjectId === 'string'
+          ? notification.relatedProjectId
+          : (notification.relatedProjectId.id || notification.relatedProjectId._id))
+      : (notification.relatedProject?.id || notification.relatedProject?._id);
+
+    if (!projectId) {
+      console.warn('No projectId found in notification');
+      return;
+    }
+
+    // Check for unsaved changes before navigation
+    const canNavigate = await unsavedChangesManager.checkNavigationAllowed();
+    if (!canNavigate) return;
+
+    // Dispatch event to switch project
+    window.dispatchEvent(new CustomEvent('selectProject', { detail: { projectId } }));
+
+    // Navigate based on notification type
+    if (notification.type === 'team_member_added' || notification.type === 'team_member_removed') {
+      navigate('/sharing');
+    } else if (['todo_assigned', 'todo_due_soon', 'todo_overdue', 'subtask_completed'].includes(notification.type)) {
+      const todoId = notification.relatedTodoId;
+      if (todoId) {
+        navigate(`/notes?section=todos&todoId=${todoId}`);
+      } else {
+        navigate('/notes?section=todos');
+      }
+    } else {
+      navigate('/notes');
+    }
   };
 
   return (
@@ -49,11 +95,12 @@ const NotificationsRenderer: React.FC<NotificationsRendererProps> = ({ notificat
             return (
               <div
                 key={index}
-                className={`p-3 rounded-lg border-2 transition-colors ${
+                className={`p-3 rounded-lg border-2 transition-colors cursor-pointer hover:bg-base-300 ${
                   notif.isRead
                     ? 'bg-base-200 border-base-content/20'
                     : 'bg-primary/10 border-primary/30'
                 }`}
+                onClick={() => handleNotificationClick(notif)}
               >
                 <div className="flex items-start gap-3">
                   <div className="text-xl flex-shrink-0">{icon}</div>

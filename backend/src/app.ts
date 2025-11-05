@@ -26,6 +26,7 @@ import ideasRoutes from './routes/ideas';
 import newsRoutes from './routes/news';
 import healthRoutes from './routes/health';
 import terminalRoutes from './routes/terminal';
+import tutorialRoutes from './routes/tutorial';
 import { normalRateLimit, authRateLimit, devRateLimit, publicRateLimit, adminRateLimit } from './middleware/rateLimit';
 import { terminalExecuteSecurity, terminalSuggestionsSecurity } from './middleware/commandSecurity';
 import { sessionMiddleware, AnalyticsService } from './middleware/analytics';
@@ -280,6 +281,7 @@ app.use('/api/activity-logs', conditionalCSRF, rateLimitMiddleware, activityLogR
 app.use('/api/ideas', conditionalCSRF, rateLimitMiddleware, ideasRoutes);
 app.use('/api/news', conditionalCSRF, rateLimitMiddleware, newsRoutes);
 app.use('/api/terminal', conditionalCSRF, rateLimitMiddleware, terminalRoutes);
+app.use('/api/tutorial', conditionalCSRF, rateLimitMiddleware, tutorialRoutes);
 
 if (isDevelopment) {
   app.use('/api/debug', debugRoutes);

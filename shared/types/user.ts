@@ -13,6 +13,13 @@ export interface BaseUser {
   isPublic: boolean;
   publicSlug?: string;
   publicDescription?: string;
+  tutorialCompleted?: boolean;
+  tutorialProgress?: {
+    currentStep: number;
+    completedSteps: number[];
+    skipped: boolean;
+    lastActiveDate: string;
+  };
   createdAt: string;
   updatedAt?: string;
 }

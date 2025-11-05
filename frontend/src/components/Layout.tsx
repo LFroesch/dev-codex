@@ -19,9 +19,62 @@ import MainNav from './navigation/MainNav';
 import SecondaryNav from './navigation/SecondaryNav';
 import ProjectsTabs from './tabs/ProjectsTabs';
 import CategorySelector from './tabs/CategorySelector';
+import { TutorialProvider, useTutorialContext } from '../contexts/TutorialContext';
+import { TutorialOverlay } from './tutorial/TutorialOverlay';
+import { WelcomeModal } from './tutorial/WelcomeModal';
 
 // Lazy load heavy page components for better performance
 const IdeasPage = lazy(() => import('../pages/IdeasPage'));
+
+// Auto-start tutorial handler
+const TutorialAutoStarter: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { startTutorial } = useTutorialContext();
+
+  useEffect(() => {
+    if (searchParams.get('startTutorial') === 'true') {
+      // Remove the query param
+      searchParams.delete('startTutorial');
+      setSearchParams(searchParams);
+
+      // Start tutorial after a brief delay
+      setTimeout(() => {
+        startTutorial();
+      }, 500);
+    }
+  }, [searchParams, setSearchParams, startTutorial]);
+
+  return null;
+};
+
+// Floating button to resume tutorial
+const ResumeTutorialButton: React.FC = () => {
+  const { isActive, currentStep, totalSteps, goToStep } = useTutorialContext();
+
+  // Don't show if tutorial overlay is already visible
+  if (isActive) {
+    return null;
+  }
+
+  // Don't show if no tutorial in progress
+  if (!currentStep || currentStep === 0) {
+    return null;
+  }
+
+  return (
+    <div className="fixed bottom-4 right-20 z-50">
+      <button
+        onClick={() => goToStep(currentStep)}
+        className="btn btn-warning btn-md shadow-2xl hover:shadow-xl transition-all gap-2 border-thick border-warning"
+      >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+        </svg>
+        Resume Tutorial ({currentStep}/{totalSteps})
+      </button>
+    </div>
+  );
+};
 
 // Helper function to calculate todo stats for project cards
 const calculateTodoStats = (project: Project) => {
@@ -78,7 +131,7 @@ const Layout: React.FC = () => {
   const [showImportantPopup, setShowImportantPopup] = useState(false);
 
   // Page-level tab states
-  const [activeStackTab, setActiveStackTab] = useState<'current' | 'add'>('current');
+  const [activeStackTab, setActiveStackTab] = useState<'current' | 'add'>('add');
   const [activeDeploymentTab, setActiveDeploymentTab] = useState<'overview' | 'deployment' | 'env' | 'notes'>('overview');
   const [activeFeaturesTab, setActiveFeaturesTab] = useState<'graph' | 'structure' | 'all' | 'create'>('graph');
   const [activeNewsTab, setActiveNewsTab] = useState<'all' | 'news' | 'update' | 'dev_log' | 'announcement' | 'important'>('all');
@@ -393,7 +446,8 @@ const Layout: React.FC = () => {
   const groupedSharedProjects = groupProjectsByCategory(sharedProjects);
 
   return (
-    <div className={`bg-base-100 flex flex-col ${location.pathname === '/terminal' || location.pathname === '/features' ? 'h-screen overflow-hidden' : ''}`}>
+    <TutorialProvider>
+      <div className={`bg-base-100 flex flex-col ${location.pathname === '/terminal' || location.pathname === '/features' ? 'h-screen overflow-hidden' : ''}`}>
       {/* Header */}
       <header className="bg-base-100 border-b-2 border-base-content/20 shadow-sm sticky top-0 z-40 w-full">
 
@@ -1868,7 +1922,15 @@ const Layout: React.FC = () => {
         cancelText="Stay Here"
         variant="warning"
       />
+
+      <TutorialOverlay />
+      <WelcomeModal user={user} />
+      <TutorialAutoStarter />
+
+      {/* Floating Tutorial Resume Button - shows when tutorial is in progress but not active */}
+      <ResumeTutorialButton />
     </div>
+    </TutorialProvider>
   );
 };
 

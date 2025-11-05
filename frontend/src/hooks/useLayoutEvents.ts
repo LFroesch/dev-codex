@@ -29,12 +29,33 @@ export const useLayoutEvents = ({
 
   // Listen for custom project selection events from notifications
   useEffect(() => {
-    const handleSelectProject = (event: CustomEvent) => {
+    const handleSelectProject = async (event: CustomEvent) => {
       const { projectId } = event.detail;
       if (projects.length > 0) {
         const project = projects.find(p => p.id === projectId);
         if (project) {
           setSelectedProject(project);
+
+          // Save selected project to localStorage for refresh persistence
+          localStorage.setItem('selectedProjectId', project.id);
+
+          // Update analytics service current project (this handles backend time recording)
+          try {
+            await analytics.setCurrentProject(project.id);
+          } catch (error) {
+            // Fallback to direct API call if analytics service fails
+            const sessionInfo = analytics.getSessionInfo();
+            if (sessionInfo?.sessionId) {
+              // Import analyticsAPI if needed
+              const { analyticsAPI } = await import('../api/analytics');
+              analyticsAPI.switchProject(sessionInfo.sessionId, project.id).catch(() => {});
+            }
+          }
+
+          // Update project time data immediately after switching
+          setTimeout(() => {
+            loadProjectTimeData();
+          }, 1000);
         }
       }
     };

@@ -423,6 +423,8 @@ router.get('/me', async (req, res) => {
         isPublic: user.isPublic || false,
         publicSlug: user.publicSlug,
         publicDescription: user.publicDescription,
+        tutorialCompleted: user.tutorialCompleted,
+        tutorialProgress: user.tutorialProgress,
         createdAt: user.createdAt
       }
     });

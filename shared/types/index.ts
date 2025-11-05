@@ -3,6 +3,7 @@ export * from './user';
 export * from './project';
 export * from './team';
 export * from './analytics';
+export * from './tutorial';
 
 // Import types for use in interfaces
 import type { BaseUser } from './user';

@@ -220,7 +220,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
                 todo.completed ? 'line-through text-base-content/60' : ''
               }`}
               style={{
-                color: getContrastTextColor()
+                color: getContrastTextColor("primary")
               }}
             >
               {todo.title}
@@ -231,19 +231,19 @@ const TodoItem: React.FC<TodoItemProps> = ({
             </span>
             
             {hasSubtasks && (
-              <span className="text-sm font-semibold bg-info/20 text-info px-2 py-0.5 rounded-full border-thick">
+              <span className="text-sm font-semibold bg-info/20 px-2 py-0.5 rounded-full border-thick border-info" style={{color:getContrastTextColor("info/20")}}>
                 {completedSubtasks}/{subtasks.length}
               </span>
             )}
-            
+
             {isOverdue(todo.dueDate) && !todo.completed && (
-              <span className="text-sm font-semibold bg-error/20 text-error px-2 py-0.5 rounded-full border-thick">
+              <span className="text-sm font-semibold bg-error/20 px-2 py-0.5 rounded-full border-thick border-error" style={{color:getContrastTextColor("error/20")}}>
                 Overdue
               </span>
             )}
-            
+
             {!isOverdue(todo.dueDate) && isDueSoon(todo.dueDate) && (
-              <span className="text-sm font-semibold bg-warning/20 text-warning px-2 py-0.5 rounded-full border-thick">
+              <span className="text-sm font-semibold bg-warning/20 px-2 py-0.5 rounded-full border-thick border-warning" style={{color:getContrastTextColor("warning/20")}}>
                 Due soon
               </span>
             )}

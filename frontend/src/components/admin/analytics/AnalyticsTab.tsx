@@ -11,10 +11,10 @@ const AnalyticsTab: React.FC = () => {
   return (
     <div className="p-4 space-y-4 max-w-7xl mx-auto">
       {/* Clean Header Bar */}
-      <div className="flex items-center justify-between bg-base-200 p-3 rounded-lg">
+      <div className="flex items-center justify-between bg-base-200 p-3 rounded-lg border-thick">
         <div>
           <h1 className="text-2xl font-bold">Platform Analytics</h1>
-          <p className="text-sm text-base-content/60">Last {timeRange} days</p>
+          <p className="text-sm text-base-content/60">{timeRange == 9999 ? "All Time Stats" : `Last ${timeRange} days`}</p>
         </div>
         <div className="flex gap-2">
           <select
@@ -26,6 +26,8 @@ const AnalyticsTab: React.FC = () => {
             <option value={7}>7 Days</option>
             <option value={30}>30 Days</option>
             <option value={90}>90 Days</option>
+            <option value={365}>365 Days</option>
+            <option value={9999}>All Time</option>
           </select>
           <button
             className="btn btn-sm btn-ghost"

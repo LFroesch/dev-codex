@@ -232,7 +232,7 @@ const NotificationBell: React.FC = () => {
           <h3 className="font-semibold">Notifications</h3>
           {notifications.length > 0 && (
             <button 
-              className="btn btn-xs btn-ghost"
+              className="btn btn-xs btn-ghost text-sm"
               onClick={() => {
                 setShowClearAllModal(true);
                 setIsOpen(false);

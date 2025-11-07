@@ -1743,7 +1743,9 @@ router.get('/analytics/errors/summary', async (req: AuthRequest, res) => {
           count: { $sum: 1 },
           affectedUsers: { $addToSet: '$userId' },
           firstOccurrence: { $min: '$timestamp' },
-          lastOccurrence: { $max: '$timestamp' }
+          lastOccurrence: { $max: '$timestamp' },
+          pages: { $addToSet: '$eventData.page' },
+          sampleStack: { $first: '$eventData.stack' }
         }
       },
       {
@@ -1754,6 +1756,8 @@ router.get('/analytics/errors/summary', async (req: AuthRequest, res) => {
           affectedUsers: { $size: '$affectedUsers' },
           firstOccurrence: 1,
           lastOccurrence: 1,
+          pages: 1,
+          stack: '$sampleStack',
           _id: 0
         }
       },

@@ -610,14 +610,8 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
 
                   // Relationship type colors
                   const relationshipColors: Record<string, string> = {
-                    mentions: '#3b82f6',
-                    similar: '#eab308',
                     uses: '#3b82f6',
-                    implements: '#10b981',
-                    extends: '#8b5cf6',
                     depends_on: '#f97316',
-                    calls: '#06b6d4',
-                    contains: '#6b7280',
                   };
 
                   return (

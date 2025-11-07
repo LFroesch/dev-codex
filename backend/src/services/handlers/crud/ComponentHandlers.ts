@@ -384,7 +384,7 @@ export class ComponentHandlers extends BaseCommandHandler {
           };
         }
 
-        const validTypes = ['uses', 'implements', 'extends', 'depends_on', 'calls', 'contains', 'mentions', 'similar'];
+        const validTypes = ['uses', 'depends_on'];
         if (!validTypes.includes(relType.toLowerCase())) {
           return {
             type: ResponseType.ERROR,
@@ -481,7 +481,7 @@ export class ComponentHandlers extends BaseCommandHandler {
         }
 
         if (relType) {
-          const validTypes = ['uses', 'implements', 'extends', 'depends_on', 'calls', 'contains', 'mentions', 'similar'];
+          const validTypes = ['uses', 'depends_on'];
           if (!validTypes.includes(relType.toLowerCase())) {
             return {
               type: ResponseType.ERROR,

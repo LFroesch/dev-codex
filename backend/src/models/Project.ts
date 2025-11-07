@@ -51,7 +51,7 @@ const relationshipSchema = new Schema({
   targetId: { type: String, required: true },
   relationType: {
     type: String,
-    enum: ['uses', 'implements', 'extends', 'depends_on', 'calls', 'contains', 'mentions', 'similar'],
+    enum: ['uses', 'depends_on'],
     required: true
   },
   description: { type: String, default: '' }
@@ -188,7 +188,7 @@ export interface IProject extends Document {
     relationships?: Array<{
       id: string;
       targetId: string;
-      relationType: 'uses' | 'implements' | 'extends' | 'depends_on' | 'calls' | 'contains' | 'mentions' | 'similar';
+      relationType: 'uses' | 'depends_on';
       description?: string;
     }>;
     metadata?: Record<string, any>;

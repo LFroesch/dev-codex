@@ -114,11 +114,11 @@ const PublicProfilePage: React.FC = () => {
                     @{user.publicSlug}
                   </span>
                 )}
-                <div className="flex items-center bg-accent gap-1.5 border-2 border-base-content/20 px-2 py-1 rounded-md">
-                  <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke={getContrastTextColor()} viewBox="0 0 24 24">
+                <div className="flex items-center bg-accent gap-1.5 border-2 border-base-content/20 px-2 py-1 rounded-md" style={{ color: getContrastTextColor("accent") }}>
+                  <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <span className="text-xs font-semibold whitespace-nowrap" style={{ color: getContrastTextColor() }}>
+                  <span className="text-xs font-semibold whitespace-nowrap">
                     <span className="hidden sm:inline">Member </span>
                     {new Date(user.createdAt).toLocaleDateString('en-US', {
                       year: 'numeric',

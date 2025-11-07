@@ -1182,12 +1182,12 @@ const AdminDashboardPage: React.FC = () => {
 
         {/* News Tab */}
         {activeTab === 'news' && (
-          <div className="space-y-6">
+          <div className="space-y-6 p-4">
             {/* Header with Create Button */}
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-bold">News & Updates Management</h2>
               <button
-                className="btn btn-primary"
+                className="btn btn-primary border-thick"
                 onClick={() => {
                   setEditingPost(null);
                   setNewsForm({
@@ -1199,6 +1199,7 @@ const AdminDashboardPage: React.FC = () => {
                   });
                   setShowNewsForm(true);
                 }}
+                style={{color:getContrastTextColor("primary")}}
               >
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -1296,6 +1297,7 @@ const AdminDashboardPage: React.FC = () => {
                         className="checkbox checkbox-primary checkbox-sm"
                         checked={newsForm.isPublished}
                         onChange={(e) => setNewsForm(prev => ({ ...prev, isPublished: e.target.checked }))}
+                        style={{color:getContrastTextColor("primary")}}
                       />
                       <span className="label-text text-sm">Publish immediately</span>
                     </label>
@@ -1305,6 +1307,7 @@ const AdminDashboardPage: React.FC = () => {
                     <button
                       type="submit"
                       className="btn btn-primary btn-sm"
+                      style={{color:getContrastTextColor("primary")}}
                     >
                       {editingPost ? 'Update' : 'Create Post'}
                     </button>

@@ -8,6 +8,8 @@ interface ErrorData {
   affectedUsers: number;
   firstOccurrence: string;
   lastOccurrence: string;
+  pages?: string[];
+  stack?: string;
 }
 
 interface ErrorsSummaryProps {
@@ -22,6 +24,7 @@ const ErrorsSummary: React.FC<ErrorsSummaryProps> = ({ hours = 24 }) => {
   const [errors, setErrors] = useState<ErrorData[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [expandedRow, setExpandedRow] = useState<number | null>(null);
 
   useEffect(() => {
     fetchErrors();
@@ -72,32 +75,72 @@ const ErrorsSummary: React.FC<ErrorsSummaryProps> = ({ hours = 24 }) => {
             <table className="table table-zebra">
               <thead>
                 <tr>
+                  <th className="w-8"></th>
                   <th>Error Type</th>
                   <th>Message</th>
+                  <th>Pages</th>
                   <th>Count</th>
-                  <th>Users Affected</th>
+                  <th>Users</th>
                   <th>Last Seen</th>
                 </tr>
               </thead>
               <tbody>
                 {errors.map((error, index) => (
-                  <tr key={index} className="hover">
-                    <td>
-                      <code className="text-xs bg-base-200 px-2 py-1 rounded">
-                        {error.type}
-                      </code>
-                    </td>
-                    <td className="max-w-xs truncate" title={error.message}>
-                      {error.message}
-                    </td>
-                    <td>
-                      <span className="badge badge-error">{error.count}</span>
-                    </td>
-                    <td>{error.affectedUsers}</td>
-                    <td className="text-xs text-base-content/60">
-                      {new Date(error.lastOccurrence).toLocaleString()}
-                    </td>
-                  </tr>
+                  <React.Fragment key={index}>
+                    <tr
+                      className="hover cursor-pointer"
+                      onClick={() => setExpandedRow(expandedRow === index ? null : index)}
+                    >
+                      <td>
+                        <button className="btn btn-ghost btn-xs">
+                          {expandedRow === index ? '▼' : '▶'}
+                        </button>
+                      </td>
+                      <td>
+                        <code className="text-xs bg-base-200 px-2 py-1 rounded">
+                          {error.type || 'Error'}
+                        </code>
+                      </td>
+                      <td className="max-w-xs truncate" title={error.message}>
+                        {error.message}
+                      </td>
+                      <td className="text-xs">
+                        {error.pages && error.pages.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {error.pages.slice(0, 2).map((page, i) => (
+                              <span key={i} className="badge badge-sm badge-outline">
+                                {page || 'unknown'}
+                              </span>
+                            ))}
+                            {error.pages.length > 2 && (
+                              <span className="badge badge-sm badge-ghost">+{error.pages.length - 2}</span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-base-content/40">-</span>
+                        )}
+                      </td>
+                      <td>
+                        <span className="badge badge-error">{error.count}</span>
+                      </td>
+                      <td>{error.affectedUsers}</td>
+                      <td className="text-xs text-base-content/60">
+                        {new Date(error.lastOccurrence).toLocaleString()}
+                      </td>
+                    </tr>
+                    {expandedRow === index && error.stack && (
+                      <tr>
+                        <td colSpan={7} className="bg-base-200">
+                          <div className="p-3">
+                            <h4 className="text-sm font-semibold mb-2">Stack Trace:</h4>
+                            <pre className="text-xs bg-base-300 p-2 rounded overflow-x-auto max-h-48 overflow-y-auto">
+                              {error.stack}
+                            </pre>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 ))}
               </tbody>
             </table>

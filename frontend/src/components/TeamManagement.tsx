@@ -427,6 +427,7 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
               }}
               disabled={refreshingActivity}
               className="btn btn-xs h-7 border-thick bg-warning/50"
+              style={{color:getContrastTextColor('warning/50')}}
             >
               {refreshingActivity ? (
                 <div className="loading loading-spinner loading-xs"></div>
@@ -440,6 +441,7 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
               onClick={handleClearActivity}
               disabled={clearingActivity || !canManageTeam}
               className={`btn btn-xs bg-error/60 border-thick h-7 ${showClearConfirm ? 'btn-error' : 'btn-ghost'}`}
+              style={{color:getContrastTextColor('error/60')}}
             >
               {clearingActivity ? (
                 <div className="loading loading-spinner loading-xs"></div>

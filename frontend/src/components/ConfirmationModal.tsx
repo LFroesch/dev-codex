@@ -92,12 +92,12 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
           <button
             type="button"
             className="bg-primary btn btn-ghost flex-1 border-2 border-base-content/20"
+            style={{color:getContrastTextColor("primary")}}
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
               onCancel();
             }}
-            style={{ color: getContrastTextColor('primary') }}
           >
             {cancelText}
           </button>

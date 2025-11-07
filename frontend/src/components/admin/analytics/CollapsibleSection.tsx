@@ -18,7 +18,7 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
-    <div className="collapse collapse-arrow bg-base-200 border-2 border-base-content/20">
+    <div className="collapse collapse-arrow bg-base-200 border-2 border-base-content/20 rounded-lg">
       <input
         type="checkbox"
         checked={isOpen}

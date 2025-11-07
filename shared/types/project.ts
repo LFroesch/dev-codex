@@ -37,7 +37,7 @@ export interface BaseDevLogEntry {
 
 export type ComponentCategory = 'frontend' | 'backend' | 'database' | 'infrastructure' | 'security' | 'api' | 'documentation' | 'asset';
 
-export type RelationshipType = 'uses' | 'implements' | 'extends' | 'depends_on' | 'calls' | 'contains';
+export type RelationshipType = 'uses' | 'depends_on';
 
 export interface ComponentRelationship {
   id: string;

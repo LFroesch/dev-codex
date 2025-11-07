@@ -57,8 +57,61 @@ router.get('/users', async (req, res) => {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
     const skip = (page - 1) * limit;
+    const plan = req.query.plan as string;
+    const status = req.query.status as string;
+    const search = req.query.search as string;
 
-    const users = await User.find()
+    // Build filter object
+    const filter: any = {};
+    const andConditions: any[] = [];
+
+    // Filter by plan
+    if (plan && plan !== 'all') {
+      filter.planTier = plan;
+    }
+
+    // Filter by status
+    if (status && status !== 'all') {
+      if (status === 'active') {
+        // Active = logged in within last 30 days and not banned
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        filter.isBanned = false;
+        filter.lastLogin = { $gte: thirtyDaysAgo };
+      } else if (status === 'inactive') {
+        // Inactive = not logged in for 30+ days or never logged in, and not banned
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        filter.isBanned = false;
+        andConditions.push({
+          $or: [
+            { lastLogin: { $lt: thirtyDaysAgo } },
+            { lastLogin: { $exists: false } },
+            { lastLogin: null }
+          ]
+        });
+      } else if (status === 'banned') {
+        filter.isBanned = true;
+      }
+    }
+
+    // Search by name or email
+    if (search && search.trim()) {
+      andConditions.push({
+        $or: [
+          { firstName: { $regex: search, $options: 'i' } },
+          { lastName: { $regex: search, $options: 'i' } },
+          { email: { $regex: search, $options: 'i' } }
+        ]
+      });
+    }
+
+    // Combine $and conditions if any exist
+    if (andConditions.length > 0) {
+      filter.$and = andConditions;
+    }
+
+    const users = await User.find(filter)
       .select('-password')
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -117,7 +170,7 @@ router.get('/users', async (req, res) => {
       };
     });
 
-    const total = await User.countDocuments();
+    const total = await User.countDocuments(filter);
     const totalPages = Math.ceil(total / limit);
 
     res.json({
@@ -1411,8 +1464,6 @@ router.get('/performance/recommendations', async (req, res) => {
   }
 });
 
-
-export default router;
 // Lock/Unlock project (Admin only)
 router.post('/projects/:id/lock', requireAuth, adminMiddleware, async (req: AuthRequest, res) => {
   try {
@@ -1465,3 +1516,429 @@ router.get('/users/:id/projects', requireAuth, adminMiddleware, async (req: Auth
     res.status(500).json({ error: 'Failed to fetch projects' });
   }
 });
+
+// =====================
+// Admin Analytics Endpoints
+// =====================
+
+// Get analytics overview - key metrics for dashboard
+router.get('/analytics/overview', async (req: AuthRequest, res) => {
+  try {
+    const { days = '30' } = req.query;
+    const daysInt = parseInt(days as string);
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - daysInt);
+
+    // Calculate previous period for comparison
+    const previousStartDate = new Date(startDate);
+    previousStartDate.setDate(previousStartDate.getDate() - daysInt);
+
+    // Get total users
+    const totalUsers = await User.countDocuments();
+    const previousUsers = await User.countDocuments({
+      createdAt: { $lt: startDate }
+    });
+    const newUsers = totalUsers - previousUsers;
+    const userGrowth = previousUsers > 0 ? ((newUsers / previousUsers) * 100).toFixed(2) : 0;
+
+    // Get MRR (Monthly Recurring Revenue)
+    const paidUsers = await User.find({
+      planTier: { $in: ['pro', 'premium'] },
+      subscriptionStatus: 'active'
+    }).select('planTier');
+
+    const mrr = paidUsers.reduce((sum, user) => {
+      if (user.planTier === 'pro') return sum + 10; // $10/month
+      if (user.planTier === 'premium') return sum + 25; // $25/month
+      return sum;
+    }, 0);
+
+    // Get active projects
+    const activeProjects = await Project.countDocuments({ isArchived: false });
+    const previousProjects = await Project.countDocuments({
+      isArchived: false,
+      createdAt: { $lt: startDate }
+    });
+    const newProjects = activeProjects - previousProjects;
+    const projectGrowth = previousProjects > 0 ? ((newProjects / previousProjects) * 100).toFixed(2) : 0;
+
+    // Get error rate
+    const totalEvents = await Analytics.countDocuments({
+      timestamp: { $gte: startDate }
+    });
+    const errorEvents = await Analytics.countDocuments({
+      timestamp: { $gte: startDate },
+      eventType: 'error_occurred'
+    });
+    const errorRate = totalEvents > 0 ? ((errorEvents / totalEvents) * 100).toFixed(2) : '0';
+
+    res.json({
+      users: {
+        total: totalUsers,
+        new: newUsers,
+        growth: parseFloat(userGrowth as string)
+      },
+      mrr: {
+        current: mrr,
+        growth: 0
+      },
+      projects: {
+        total: activeProjects,
+        new: newProjects,
+        growth: parseFloat(projectGrowth as string)
+      },
+      errorRate: {
+        percentage: parseFloat(errorRate),
+        total: errorEvents
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching analytics overview:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get conversion rate metrics
+router.get('/analytics/conversion-rate', async (_req: AuthRequest, res) => {
+  try {
+    const totalUsers = await User.countDocuments();
+    const usersWithProjects = await Project.distinct('userId');
+    const paidUsers = await User.countDocuments({
+      planTier: { $in: ['pro', 'premium'] }
+    });
+
+    const conversionRate = totalUsers > 0 ? ((paidUsers / totalUsers) * 100).toFixed(2) : '0';
+    const projectCreationRate = totalUsers > 0 ? ((usersWithProjects.length / totalUsers) * 100).toFixed(2) : '0';
+
+    res.json({
+      totalUsers,
+      usersWithProjects: usersWithProjects.length,
+      paidUsers,
+      conversionRate: parseFloat(conversionRate),
+      projectCreationRate: parseFloat(projectCreationRate)
+    });
+  } catch (error) {
+    console.error('Error fetching conversion rate:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get feature adoption metrics
+router.get('/analytics/features/adoption', async (req: AuthRequest, res) => {
+  try {
+    const { days = '30' } = req.query;
+    const daysInt = parseInt(days as string);
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - daysInt);
+
+    // Get feature usage events
+    const featureUsage = await Analytics.aggregate([
+      {
+        $match: {
+          eventType: 'feature_used',
+          timestamp: { $gte: startDate }
+        }
+      },
+      {
+        $group: {
+          _id: '$eventData.feature',
+          totalUsers: { $addToSet: '$userId' },
+          totalUsage: { $sum: 1 }
+        }
+      },
+      {
+        $project: {
+          feature: '$_id',
+          totalUsers: { $size: '$totalUsers' },
+          totalUsage: 1,
+          _id: 0
+        }
+      },
+      {
+        $sort: { totalUsers: -1 }
+      }
+    ]);
+
+    // Get plan-based breakdown for each feature
+    const totalUsersByPlan = {
+      free: await User.countDocuments({ planTier: 'free' }),
+      pro: await User.countDocuments({ planTier: 'pro' }),
+      premium: await User.countDocuments({ planTier: 'premium' })
+    };
+
+    const features = await Promise.all(
+      featureUsage.map(async (feature) => {
+        const byPlan = await Analytics.aggregate([
+          {
+            $match: {
+              eventType: 'feature_used',
+              'eventData.feature': feature.feature,
+              timestamp: { $gte: startDate }
+            }
+          },
+          {
+            $group: {
+              _id: '$planTier',
+              users: { $addToSet: '$userId' }
+            }
+          },
+          {
+            $project: {
+              planTier: '$_id',
+              users: { $size: '$users' },
+              _id: 0
+            }
+          }
+        ]);
+
+        const planBreakdown: any = {};
+        byPlan.forEach((plan: any) => {
+          const totalPlanUsers = totalUsersByPlan[plan.planTier as 'free' | 'pro' | 'premium'] || 1;
+          planBreakdown[plan.planTier] = {
+            users: plan.users,
+            percentage: ((plan.users / totalPlanUsers) * 100).toFixed(1)
+          };
+        });
+
+        const totalUsers = await User.countDocuments();
+        return {
+          name: feature.feature,
+          totalUsers: feature.totalUsers,
+          totalUsage: feature.totalUsage,
+          avgUsagePerUser: (feature.totalUsage / feature.totalUsers).toFixed(1),
+          adoptionRate: ((feature.totalUsers / totalUsers) * 100).toFixed(1),
+          byPlan: planBreakdown
+        };
+      })
+    );
+
+    res.json({ features });
+  } catch (error) {
+    console.error('Error fetching feature adoption:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get error summary
+router.get('/analytics/errors/summary', async (req: AuthRequest, res) => {
+  try {
+    const { hours = '24' } = req.query;
+    const hoursInt = parseInt(hours as string);
+    const startDate = new Date();
+    startDate.setHours(startDate.getHours() - hoursInt);
+
+    const errors = await Analytics.aggregate([
+      {
+        $match: {
+          eventType: 'error_occurred',
+          timestamp: { $gte: startDate }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            type: '$eventData.type',
+            message: '$eventData.message'
+          },
+          count: { $sum: 1 },
+          affectedUsers: { $addToSet: '$userId' },
+          firstOccurrence: { $min: '$timestamp' },
+          lastOccurrence: { $max: '$timestamp' }
+        }
+      },
+      {
+        $project: {
+          type: '$_id.type',
+          message: '$_id.message',
+          count: 1,
+          affectedUsers: { $size: '$affectedUsers' },
+          firstOccurrence: 1,
+          lastOccurrence: 1,
+          _id: 0
+        }
+      },
+      {
+        $sort: { count: -1 }
+      },
+      {
+        $limit: 20
+      }
+    ]);
+
+    const totalErrors = await Analytics.countDocuments({
+      eventType: 'error_occurred',
+      timestamp: { $gte: startDate }
+    });
+
+    res.json({
+      total: totalErrors,
+      period: `Last ${hours} hours`,
+      errors
+    });
+  } catch (error) {
+    console.error('Error fetching error summary:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get user growth data (for charts)
+router.get('/analytics/users/growth', async (req: AuthRequest, res) => {
+  try {
+    const { days = '30' } = req.query;
+    const daysInt = parseInt(days as string);
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - daysInt);
+
+    const userGrowth = await User.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: startDate }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: {
+              format: '%Y-%m-%d',
+              date: '$createdAt'
+            }
+          },
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { _id: 1 }
+      }
+    ]);
+
+    res.json({ growth: userGrowth });
+  } catch (error) {
+    console.error('Error fetching user growth:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get combined activity feed (analytics + activity logs)
+router.get('/activity/feed', async (req: AuthRequest, res) => {
+  try {
+    const { limit = '50', hours = '24' } = req.query;
+    const limitInt = parseInt(limit as string);
+    const hoursInt = parseInt(hours as string);
+    const startDate = new Date();
+    startDate.setHours(startDate.getHours() - hoursInt);
+
+    // Get recent analytics events
+    const analyticsEvents = await Analytics.find({
+      timestamp: { $gte: startDate },
+      eventType: { $in: ['user_signup', 'user_upgraded', 'user_downgraded', 'project_created', 'error_occurred'] }
+    })
+      .populate('userId', 'firstName lastName email')
+      .sort({ timestamp: -1 })
+      .limit(limitInt / 2)
+      .lean();
+
+    // Get recent activity logs
+    const activityLogs = await ActivityLog.find({
+      timestamp: { $gte: startDate }
+    })
+      .populate('userId', 'firstName lastName email')
+      .populate('projectId', 'name')
+      .sort({ timestamp: -1 })
+      .limit(limitInt / 2)
+      .lean();
+
+    // Combine and sort
+    const combined = [
+      ...analyticsEvents.map((e: any) => ({
+        type: 'analytics',
+        eventType: e.eventType,
+        timestamp: e.timestamp,
+        user: e.userId,
+        data: e.eventData,
+        category: e.category
+      })),
+      ...activityLogs.map((l: any) => ({
+        type: 'activity',
+        action: l.action,
+        resourceType: l.resourceType,
+        timestamp: l.timestamp,
+        user: l.userId,
+        project: l.projectId,
+        details: l.details
+      }))
+    ]
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+      .slice(0, limitInt);
+
+    res.json({ feed: combined, period: `Last ${hours} hours` });
+  } catch (error) {
+    console.error('Error fetching activity feed:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+
+// Export analytics data as CSV
+router.get('/analytics/export', async (req: AuthRequest, res) => {
+  try {
+    const { days = '30' } = req.query;
+    const daysInt = parseInt(days as string);
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - daysInt);
+
+    // Fetch overview data
+    const totalUsers = await User.countDocuments();
+    const newUsers = await User.countDocuments({
+      createdAt: { $gte: startDate }
+    });
+
+    const totalProjects = await Project.countDocuments();
+    const newProjects = await Project.countDocuments({
+      createdAt: { $gte: startDate }
+    });
+
+    const paidUsers = await User.countDocuments({
+      planTier: { $in: ['pro', 'premium'] }
+    });
+
+    const usersWithProjects = await User.countDocuments({
+      'projects.0': { $exists: true }
+    });
+
+    const conversionRate = totalUsers > 0 ? ((paidUsers / totalUsers) * 100).toFixed(2) : '0';
+    const projectCreationRate = totalUsers > 0 ? ((usersWithProjects / totalUsers) * 100).toFixed(2) : '0';
+
+    // Create CSV content
+    const csvLines = [
+      'Analytics Export',
+      `Generated: ${new Date().toISOString()}`,
+      `Period: Last ${days} days`,
+      '',
+      'Key Metrics',
+      'Metric,Value',
+      `Total Users,${totalUsers}`,
+      `New Users (Period),${newUsers}`,
+      `Total Projects,${totalProjects}`,
+      `New Projects (Period),${newProjects}`,
+      `Paid Users,${paidUsers}`,
+      `Users With Projects,${usersWithProjects}`,
+      '',
+      'Conversion Metrics',
+      'Metric,Value',
+      `Conversion Rate,${conversionRate}%`,
+      `Project Creation Rate,${projectCreationRate}%`,
+    ];
+
+    const csv = csvLines.join('\n');
+
+    // Set headers for CSV download
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="analytics-export-${new Date().toISOString().split('T')[0]}.csv"`);
+    res.send(csv);
+  } catch (error) {
+    console.error('Error exporting analytics:', error);
+    res.status(500).json({ error: 'Failed to export analytics data' });
+  }
+});
+
+export default router;

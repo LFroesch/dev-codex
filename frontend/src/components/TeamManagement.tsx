@@ -7,6 +7,7 @@ import InfoModal from './InfoModal';
 import { toast } from '../services/toast';
 import { getContrastTextColor } from '../utils/contrastTextColor';
 import { csrfFetch } from '../utils/csrf';
+import { analyticsService } from '../services/analytics';
 
 interface TeamManagementProps {
   projectId: string;
@@ -166,6 +167,15 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
     setInviting(true);
     try {
       await teamAPI.inviteUser(projectId, { email: inviteEmail, role: inviteRole });
+
+      // Track team invite feature usage
+      analyticsService.trackFeatureUsage('team_invite', {
+        projectId,
+        role: inviteRole,
+        inviteEmail,
+        hasMultipleMembers: members.length > 0
+      });
+
       toast.success(`Invitation sent successfully to ${inviteEmail}!`);
       setInviteEmail('');
     } catch (error: any) {

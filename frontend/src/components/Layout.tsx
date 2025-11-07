@@ -155,6 +155,19 @@ const Layout: React.FC = () => {
     }
   }, [location.pathname, searchParams]);
 
+  // Handle tab query parameter for /admin page
+  useEffect(() => {
+    if (location.pathname === '/admin') {
+      const tab = searchParams.get('tab');
+      if (tab) {
+        const validTabs = ['users', 'tickets', 'analytics', 'news'];
+        if (validTabs.includes(tab)) {
+          setActiveAdminTab(tab as 'users' | 'tickets' | 'analytics' | 'news');
+        }
+      }
+    }
+  }, [location.pathname, searchParams]);
+
   // Fetch important announcements
   useEffect(() => {
     const fetchImportantAnnouncements = async () => {
@@ -1623,34 +1636,39 @@ const Layout: React.FC = () => {
                               )}
 
                               {/* Header with project name and category */}
-                              <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                <h3
-                                  className={`border-2 border-base-content/20 font-bold truncate px-2 py-1 rounded-md group-hover:opacity-90 transition-opacity bg-primary text-md ${
+                              <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <h3
+                                    className={`border-2 border-base-content/20 font-bold truncate px-2 py-1 rounded-md group-hover:opacity-90 transition-opacity bg-primary text-md ${
+                                      project.isLocked ? 'opacity-50' : ''
+                                    }`}
+                                    style={{
+                                      color: getContrastTextColor()
+                                    }}
+                                  >
+                                    {project.color && (
+                                      <span
+                                        className="inline-block w-3 h-3 rounded-full"
+                                        style={{ backgroundColor: project.color }}
+                                      ></span>
+                                    )}
+                                    <span className='mr-0.5'> </span>
+                                    {String(project.name).split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+                                  </h3>
+                                  {project.isLocked && (
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-warning/80 text-base-content/80 border-2 border-base-content/20"
+                                    style={{ color: getContrastTextColor("warning") }}>
+                                      Locked
+                                    </span>
+                                  )}
+                                </div>
+                                {project.category && (
+                                  <h3 className={`border-2 border-base-content/20 font-semibold bg-info/40 truncate px-2 py-1 rounded-md group-hover:opacity-90 transition-opacity text-sm ${
                                     project.isLocked ? 'opacity-50' : ''
                                   }`}
-                                  style={{
-                                    color: getContrastTextColor()
-                                  }}
-                                >
-                                  {String(project.name).split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
-                                  <span> </span>
-                                  {project.color && (
-                                    <span
-                                      className="inline-block w-3 h-3 rounded-full"
-                                      style={{ backgroundColor: project.color }}
-                                    ></span>
-                                  )}
-                                </h3>
-                                {project.category && (
-                                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-base-200 text-base-content/80 border-2 border-accent">
+                                  style={{ color: getContrastTextColor("info") }}>
                                     {String(project.category).split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
-                                  </span>
-                                )}
-                                {project.isLocked && (
-                                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-warning/80 text-base-content/80 border-2 border-base-content/20"
-                                  style={{ color: getContrastTextColor("warning") }}>
-                                    Locked
-                                  </span>
+                                  </h3>
                                 )}
                               </div>
 
@@ -1669,7 +1687,8 @@ const Layout: React.FC = () => {
                                 return (
                                   <div className="mb-3 flex gap-2 flex-wrap items-center">
                                     {stats.overdue > 0 && (
-                                      <div className="inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold bg-error/20 text-error border-2 border-error/40 gap-1">
+                                      <div className="inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold bg-error/20 border-2 border-error/40 gap-1"
+                                      style={{ color: getContrastTextColor("error") }}>
                                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                         </svg>
@@ -1677,7 +1696,8 @@ const Layout: React.FC = () => {
                                       </div>
                                     )}
                                     {stats.upcoming > 0 && (
-                                      <div className="inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold bg-warning/20 text-warning border-2 border-warning/40 gap-1">
+                                      <div className="inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold bg-warning/20 border-2 border-warning/40 gap-1"
+                                      style={{ color: getContrastTextColor("warning") }}>
                                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                         </svg>
@@ -1691,20 +1711,22 @@ const Layout: React.FC = () => {
                               {/* Footer - Time worked, updated, and created all on one line */}
                               <div className="pt-3 border-t-2 border-base-content/20 mt-auto">
                                 <div className="flex items-center justify-between text-xs gap-2 flex-wrap">
-                                  <div className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold font-mono bg-success/80 text-base-content/80 border-2 border-base-content/20 gap-1"
+                                  <div className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold font-mono bg-success/40 text-base-content/80 border-2 border-base-content/20 gap-1"
                                   style={{ color: getContrastTextColor("success") }}>
                                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
                                     <span>{formatProjectTime(project.id)}</span>
                                   </div>
-                                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-base-200 text-base-content/80 border-2 border-base-content/20 font-mono gap-1">
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-accent/20 border-2 border-accent/40 font-mono gap-1"
+                                  style={{ color: getContrastTextColor("accent") }}>
                                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                     </svg>
                                     {getRelativeTime(project.updatedAt)}
                                   </span>
-                                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-base-300/50 text-base-content/70 border-2 border-base-content/20 font-mono gap-1">
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-info/20 border-thick border-info/40 font-mono gap-1"
+                                  style={{ color: getContrastTextColor("info") }}>
                                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />

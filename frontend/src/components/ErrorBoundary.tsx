@@ -24,13 +24,13 @@ class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Error Boundary caught an error:', error, errorInfo);
-    
+
     // Call custom error handler if provided
     if (this.props.onError) {
       this.props.onError(error, errorInfo);
     }
 
-    // Log to analytics service if available
+    // Track error to analytics
     try {
       if (analyticsService && typeof analyticsService.trackError === 'function') {
         analyticsService.trackError({
@@ -38,11 +38,16 @@ class ErrorBoundary extends Component<Props, State> {
           message: error.message,
           stack: error.stack || undefined,
           componentStack: errorInfo.componentStack || undefined,
-          errorBoundary: true
+          errorBoundary: true,
+          severity: 'high',
+          context: {
+            url: window.location.href,
+            userAgent: navigator.userAgent
+          }
         });
       }
     } catch (e) {
-      // Fail silently if analytics service is not available
+      console.error('Failed to track error to analytics:', e);
     }
   }
 

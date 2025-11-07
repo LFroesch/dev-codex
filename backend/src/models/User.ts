@@ -65,6 +65,7 @@ export interface IUser extends Document {
     skipped: boolean;
     lastActiveDate: Date;
   };
+  lastLogin?: Date;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(password: string): Promise<boolean>;
@@ -289,6 +290,10 @@ const userSchema = new Schema<IUser>({
       type: Date,
       default: Date.now
     }
+  },
+  lastLogin: {
+    type: Date,
+    required: false
   }
 }, {
   timestamps: true

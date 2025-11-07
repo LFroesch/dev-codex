@@ -57,7 +57,9 @@ router.post('/track', requireAuth, async (req: AuthRequest, res) => {
     }
 
     const allowedEventTypes = [
-      'project_open'
+      'project_open',
+      'feature_used',
+      'error_occurred'
     ];
     if (!allowedEventTypes.includes(eventType)) {
       return res.status(400).json({ error: 'Invalid event type' });
@@ -148,6 +150,76 @@ router.post('/heartbeat', requireAuth, async (req: AuthRequest, res) => {
     res.json({ success: true });
   } catch (error) {
     console.error('Error processing heartbeat:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Feature usage tracking endpoint
+router.post('/feature', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const sessionId = req.headers['x-session-id'] as string;
+    const { feature, metadata, timestamp, page } = req.body;
+
+    if (!sessionId) {
+      return res.status(400).json({ error: 'sessionId is required in X-Session-ID header' });
+    }
+
+    if (!feature) {
+      return res.status(400).json({ error: 'feature is required' });
+    }
+
+    // Track feature usage event
+    await AnalyticsService.trackEvent(
+      req.userId!,
+      'feature_used',
+      {
+        feature,
+        page,
+        metadata: metadata || {},
+        sessionId
+      },
+      req
+    );
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error tracking feature usage:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Error tracking endpoint
+router.post('/error', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const sessionId = req.headers['x-session-id'] as string;
+    const { name, message, stack, page, metadata, timestamp } = req.body;
+
+    if (!sessionId) {
+      return res.status(400).json({ error: 'sessionId is required in X-Session-ID header' });
+    }
+
+    if (!message) {
+      return res.status(400).json({ error: 'error message is required' });
+    }
+
+    // Track error event
+    await AnalyticsService.trackEvent(
+      req.userId!,
+      'error_occurred',
+      {
+        type: name || 'Error',
+        message,
+        stack,
+        page,
+        metadata: metadata || {},
+        sessionId
+      },
+      req
+    );
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error tracking error event:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

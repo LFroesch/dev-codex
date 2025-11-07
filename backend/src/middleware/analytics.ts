@@ -118,7 +118,7 @@ export class AnalyticsService {
 
   static async trackEvent(
     userId: string,
-    eventType: 'project_open' | 'session_start' | 'session_end',
+    eventType: 'project_open' | 'session_start' | 'session_end' | 'user_signup' | 'user_upgraded' | 'user_downgraded' | 'feature_used' | 'project_created' | 'project_deleted' | 'team_invite_sent' | 'team_invite_accepted' | 'checkout_completed' | 'error_occurred',
     eventData: any,
     req?: Request
   ) {
@@ -167,7 +167,11 @@ export class AnalyticsService {
         userAgent: req?.headers['user-agent'],
         ipAddress: this.getClientIP(req),
         planTier, // Store plan tier at time of event
-        expiresAt // Plan-based expiration (undefined = never expires)
+        expiresAt, // Plan-based expiration (undefined = never expires)
+        // NEW fields for enhanced analytics
+        category: eventData.category || this.determineCategory(eventType),
+        isConversion: eventData.isConversion || false,
+        conversionValue: eventData.conversionValue || 0
       });
 
       await analyticsData.save();
@@ -218,7 +222,7 @@ export class AnalyticsService {
   // Get client IP address with fallbacks
   private static getClientIP(req?: Request): string {
     if (!req) return 'unknown';
-    
+
     return (
       req.headers['x-forwarded-for'] as string ||
       req.headers['x-real-ip'] as string ||
@@ -226,6 +230,24 @@ export class AnalyticsService {
       req.socket?.remoteAddress ||
       'unknown'
     );
+  }
+
+  // Determine event category based on event type
+  private static determineCategory(eventType: string): 'engagement' | 'business' | 'error' {
+    const businessEvents = [
+      'user_signup',
+      'user_upgraded',
+      'user_downgraded',
+      'checkout_completed'
+    ];
+    const errorEvents = ['error_occurred'];
+
+    if (businessEvents.includes(eventType)) {
+      return 'business';
+    } else if (errorEvents.includes(eventType)) {
+      return 'error';
+    }
+    return 'engagement';
   }
 
   // Clean up old throttle cache entries
@@ -946,6 +968,70 @@ export class AnalyticsService {
       console.error('Error getting user analytics:', error);
       return null;
     }
+  }
+
+  // NEW: Track conversions (business events with revenue value)
+  static async trackConversion(
+    userId: string,
+    eventType: 'user_upgraded' | 'user_downgraded' | 'checkout_completed',
+    value: number,
+    metadata: Record<string, any>,
+    req?: Request
+  ) {
+    return this.trackEvent(
+      userId,
+      eventType,
+      {
+        ...metadata,
+        category: 'business',
+        isConversion: true,
+        conversionValue: value
+      },
+      req
+    );
+  }
+
+  // NEW: Track feature usage (engagement events)
+  static async trackFeatureUsage(
+    userId: string,
+    sessionId: string,
+    feature: string,
+    metadata?: Record<string, any>,
+    req?: Request
+  ) {
+    return this.trackEvent(
+      userId,
+      'feature_used',
+      {
+        feature,
+        category: 'engagement',
+        metadata
+      },
+      req
+    );
+  }
+
+  // NEW: Track errors
+  static async trackError(
+    userId: string,
+    sessionId: string,
+    error: Error,
+    page: string,
+    metadata?: Record<string, any>,
+    req?: Request
+  ) {
+    return this.trackEvent(
+      userId,
+      'error_occurred',
+      {
+        type: error.name,
+        message: error.message,
+        page,
+        category: 'error',
+        metadata
+      },
+      req
+    );
   }
 
 }

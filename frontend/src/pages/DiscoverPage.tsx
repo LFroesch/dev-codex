@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { publicAPI } from '../api';
 import { getContrastTextColor } from '../utils/contrastTextColor';
+import { analyticsService } from '../services/analytics';
 
 const DiscoverPage: React.FC = () => {
   const navigate = useNavigate();
@@ -77,6 +78,17 @@ const DiscoverPage: React.FC = () => {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Track search usage
+    if (searchTerm) {
+      analyticsService.trackFeatureUsage('search', {
+        searchTerm,
+        category: selectedCategory !== 'all' ? selectedCategory : undefined,
+        tag: selectedTag || undefined,
+        source: 'discover_page'
+      });
+    }
+
     setCurrentPage(1);
     loadProjects();
   };

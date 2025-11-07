@@ -5,6 +5,7 @@ import CommandResponse from '../components/CommandResponse';
 import { terminalAPI, CommandResponse as CommandResponseType } from '../api/terminal';
 import { authAPI } from '../api';
 import { hexToOklch, oklchToCssValue, generateFocusVariant, generateContrastingTextColor } from '../utils/colorUtils';
+import { analyticsService } from '../services/analytics';
 
 interface ContextType {
   user: { id: string; email: string; firstName: string; lastName: string } | null;

@@ -6,6 +6,7 @@ import { STACK_CATEGORIES } from '@shared/data/techStackData';
 import { handleAPIError } from '../services/errorService';
 import activityTracker from '../services/activityTracker';
 import { getContrastTextColor } from '../utils/contrastTextColor';
+import { analyticsService } from '../services/analytics';
 
 type PlatformType = 'web' | 'mobile' | 'desktop';
 
@@ -128,6 +129,13 @@ const StackPage: React.FC = () => {
         { category: techCategory }
       );
 
+      analyticsService.trackFeatureUsage('stack_technology_add', {
+        projectId: selectedProject.id,
+        projectName: selectedProject.name,
+        technology: tech.name,
+        category: techCategory
+      });
+
       await onProjectRefresh();
     } catch (err: any) {
       // Rollback optimistic update on error
@@ -198,6 +206,14 @@ const StackPage: React.FC = () => {
         // OPTIMISTIC UPDATE - Remove from local state immediately
         setLocalStack(prev => prev.filter(item => item.name !== name));
         await projectAPI.removeTechnology(selectedProject.id, stackItem.category, name);
+
+        analyticsService.trackFeatureUsage('stack_technology_remove', {
+          projectId: selectedProject.id,
+          projectName: selectedProject.name,
+          technology: name,
+          category: stackItem.category
+        });
+
         await onProjectRefresh();
       } else {
         // Item not found - shouldn't happen but handle it

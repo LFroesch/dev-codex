@@ -10,6 +10,7 @@ import { getContrastTextColor } from '../utils/contrastTextColor';
 import { isOverdue, isToday, isTomorrow, isSoon, isFuture } from '../utils/dateHelpers';
 import { getPriorityWeight } from '../utils/priorityHelpers';
 import { useItemModal } from '../hooks/useItemModal';
+import { analyticsService } from '../services/analytics';
 
 interface ContextType {
   selectedProject: Project | null;
@@ -247,7 +248,7 @@ const NotesPage: React.FC = () => {
         title: newNoteTitle.trim(),
         content: newNoteContent.trim()
       });
-      
+
       await activityTracker.trackCreate(
         'note',
         'new-note',
@@ -255,7 +256,13 @@ const NotesPage: React.FC = () => {
         undefined,
         { contentLength: newNoteContent.trim().length }
       );
-      
+
+      analyticsService.trackFeatureUsage('note_create', {
+        projectId: selectedProject.id,
+        projectName: selectedProject.name,
+        hasContent: !!newNoteContent.trim()
+      });
+
       setNewNoteTitle('');
       setNewNoteContent('');
       setShowCreateForm(false);
@@ -297,6 +304,13 @@ const NotesPage: React.FC = () => {
         }
       );
 
+      analyticsService.trackFeatureUsage('todo_create', {
+        projectId: selectedProject.id,
+        hasDueDate: !!newTodoDueDate,
+        hasAssignee: !!newTodoAssignedTo,
+        priority: newTodoPriority
+      });
+
       setNewTodoText('');
       setNewTodoDescription('');
       setNewTodoPriority('medium');
@@ -330,7 +344,12 @@ const NotesPage: React.FC = () => {
         undefined,
         { hasDescription: !!newDevLogDescription.trim() }
       );
-      
+
+      analyticsService.trackFeatureUsage('devlog_create', {
+        projectId: selectedProject.id,
+        hasDescription: !!newDevLogDescription.trim()
+      });
+
       setNewDevLogTitle('');
       setNewDevLogDescription('');
       setShowCreateDevLogForm(false);
@@ -718,6 +737,10 @@ const NotesPage: React.FC = () => {
                                   onChange={async (e) => {
                                     e.stopPropagation();
                                     await projectAPI.updateTodo(selectedProject.id, todo.id, { completed: !todo.completed });
+                                    analyticsService.trackFeatureUsage('todo_complete', {
+                                      projectId: selectedProject.id,
+                                      completed: !todo.completed
+                                    });
                                     await onProjectRefresh();
                                   }}
                                   className="checkbox checkbox-sm checkbox-primary mt-0.5 flex-shrink-0"

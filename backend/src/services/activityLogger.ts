@@ -1,6 +1,7 @@
 import ActivityLog, { IActivityLog } from '../models/ActivityLog';
 import mongoose from 'mongoose';
 import { getUserPlanTier, calculateActivityLogExpiration } from '../utils/retentionUtils';
+import { User } from '../models/User';
 
 export interface ActivityLogData {
   projectId: string;
@@ -22,12 +23,98 @@ export interface ActivityLogData {
 }
 
 class ActivityLogger {
+  /**
+   * Generate human-readable description for activity log
+   */
+  private generateDescription(data: ActivityLogData, userName: string): string {
+    const resourceName = data.details?.resourceName || data.resourceId || 'item';
+    const resourceType = data.resourceType;
+
+    switch (data.action) {
+      case 'created':
+        return `${userName} created ${resourceType} "${resourceName}"`;
+
+      case 'updated':
+        if (data.details?.field === 'status') {
+          return `${userName} changed ${resourceType} "${resourceName}" status to ${data.details.newValue}`;
+        }
+        if (data.details?.field === 'completed') {
+          return `${userName} marked ${resourceType} "${resourceName}" as ${data.details.newValue ? 'complete' : 'incomplete'}`;
+        }
+        if (data.details?.field) {
+          return `${userName} updated ${data.details.field} in ${resourceType} "${resourceName}"`;
+        }
+        return `${userName} updated ${resourceType} "${resourceName}"`;
+
+      case 'deleted':
+        return `${userName} deleted ${resourceType} "${resourceName}"`;
+
+      case 'viewed':
+        return `${userName} viewed ${resourceType} "${resourceName}"`;
+
+      case 'invited_member':
+        const inviteeEmail = data.details?.metadata?.inviteeEmail || 'a user';
+        return `${userName} invited ${inviteeEmail} to the project`;
+
+      case 'removed_member':
+        const removedEmail = data.details?.metadata?.removedEmail || 'a user';
+        return `${userName} removed ${removedEmail} from the project`;
+
+      case 'updated_role':
+        const newRole = data.details?.newValue || 'member';
+        return `${userName} changed user role to ${newRole}`;
+
+      case 'added_tech':
+        return `${userName} added technology "${resourceName}"`;
+
+      case 'removed_tech':
+        return `${userName} removed technology "${resourceName}"`;
+
+      case 'added_package':
+        return `${userName} added package "${resourceName}"`;
+
+      case 'removed_package':
+        return `${userName} removed package "${resourceName}"`;
+
+      case 'exported_data':
+        const format = data.details?.metadata?.format || 'unknown format';
+        return `${userName} exported project data to ${format}`;
+
+      case 'imported_data':
+        return `${userName} imported data into the project`;
+
+      case 'archived_project':
+        return `${userName} archived the project`;
+
+      case 'unarchived_project':
+        return `${userName} unarchived the project`;
+
+      case 'joined_project':
+        return `${userName} joined the project`;
+
+      case 'left_project':
+        return `${userName} left the project`;
+
+      default:
+        return `${userName} performed ${data.action} on ${resourceType}`;
+    }
+  }
+
   async log(data: ActivityLogData): Promise<IActivityLog> {
     try {
       // Get user's plan tier to set appropriate retention policy
       const planTier = await getUserPlanTier(data.userId);
       const timestamp = new Date();
       const expiresAt = calculateActivityLogExpiration(planTier, timestamp);
+
+      // Get user info for human-readable description
+      const user = await User.findById(data.userId).select('firstName lastName email').lean();
+      const userName = user
+        ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email
+        : 'Unknown User';
+
+      // Generate human-readable description
+      const changeDescription = this.generateDescription(data, userName);
 
       const activityLog = new ActivityLog({
         projectId: new mongoose.Types.ObjectId(data.projectId),
@@ -43,7 +130,10 @@ class ActivityLogger {
         // Tiered retention fields
         planTier,
         expiresAt,
-        isCompacted: false
+        isCompacted: false,
+        // NEW: Human-readable fields
+        userName,
+        changeDescription
       });
 
       return await activityLog.save();

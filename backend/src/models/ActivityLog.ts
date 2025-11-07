@@ -22,6 +22,10 @@ export interface IActivityLog extends Document {
   planTier: 'free' | 'pro' | 'premium';
   expiresAt?: Date;
   isCompacted?: boolean; // Flag for summary documents
+
+  // NEW: Human-readable fields for activity feed
+  userName?: string; // "John Doe" or "john@example.com"
+  changeDescription?: string; // "John Doe marked todo 'Fix auth bug' as complete"
 }
 
 const activityLogSchema: Schema = new Schema({
@@ -98,6 +102,14 @@ const activityLogSchema: Schema = new Schema({
   isCompacted: {
     type: Boolean,
     default: false
+  },
+  // NEW: Human-readable fields for activity feed
+  userName: {
+    type: String,
+    index: true
+  },
+  changeDescription: {
+    type: String
   }
 }, {
   timestamps: true
@@ -107,6 +119,10 @@ const activityLogSchema: Schema = new Schema({
 activityLogSchema.index({ projectId: 1, timestamp: -1 });
 activityLogSchema.index({ userId: 1, timestamp: -1 });
 activityLogSchema.index({ projectId: 1, userId: 1, timestamp: -1 });
+
+// NEW indexes for enhanced analytics
+activityLogSchema.index({ action: 1, timestamp: -1 });
+activityLogSchema.index({ resourceType: 1, action: 1, timestamp: -1 });
 
 // Dynamic TTL index based on expiresAt field (plan-aware retention)
 // expireAfterSeconds: 0 means MongoDB uses the expiresAt field directly

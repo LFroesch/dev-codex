@@ -4,6 +4,7 @@ import { BaseCommandHandler } from '../BaseCommandHandler';
 import { CommandResponse, ResponseType } from '../../types';
 import { ParsedCommand, getFlag, getFlagCount, hasFlag } from '../../commandParser';
 import { sanitizeText, validateTodoText, parseDueDate, formatDueDate, formatTime12Hour } from '../../../utils/validation';
+import { AnalyticsService } from '../../../middleware/analytics';
 
 /**
  * Handlers for Todo and Subtask CRUD operations
@@ -165,6 +166,30 @@ export class TodoHandlers extends BaseCommandHandler {
     project.todos.push(newTodo);
     await project.save();
 
+    // Track analytics
+    try {
+      console.log('[TODO ANALYTICS] Tracking todo create:', {
+        userId: this.userId,
+        projectId: project._id.toString(),
+        priority: newTodo.priority
+      });
+
+      const result = await AnalyticsService.trackEvent(this.userId, 'feature_used', {
+        feature: 'todo_create_terminal',
+        category: 'engagement',
+        projectId: project._id.toString(),
+        projectName: project.name,
+        metadata: {
+          priority: newTodo.priority,
+          hasDueDate: !!dueDate
+        }
+      });
+
+      console.log('[TODO ANALYTICS] Track result:', result ? 'SUCCESS' : 'NULL (throttled or limit reached)');
+    } catch (error) {
+      console.error('[TODO ANALYTICS] Failed to track terminal todo create:', error);
+    }
+
     const dueDateMsg = dueDate ? ` (due: ${formatDueDate(dueDate)})` : '';
     return this.buildSuccessResponse(
       `✅ Added todo: "${validation.sanitized}"${dueDateMsg} to ${project.name}`,
@@ -267,6 +292,21 @@ export class TodoHandlers extends BaseCommandHandler {
     todo.completed = true;
     todo.status = 'completed';
     await project.save();
+
+    // Track analytics
+    try {
+      await AnalyticsService.trackEvent(this.userId, 'feature_used', {
+        feature: 'todo_complete_terminal',
+        category: 'engagement',
+        projectId: project._id.toString(),
+        projectName: project.name,
+        metadata: {
+          completed: true
+        }
+      });
+    } catch (error) {
+      console.error('Failed to track terminal todo complete:', error);
+    }
 
     return this.buildSuccessResponse(
       `✅ Marked todo as completed: "${todo.title}"`,
@@ -1342,6 +1382,18 @@ export class TodoHandlers extends BaseCommandHandler {
       t.id !== todo.id && t.parentTodoId !== todo.id
     );
     await project.save();
+
+    // Track analytics
+    try {
+      await AnalyticsService.trackEvent(this.userId, 'feature_used', {
+        feature: 'todo_delete_terminal',
+        category: 'engagement',
+        projectId: project._id.toString(),
+        projectName: project.name
+      });
+    } catch (error) {
+      console.error('Failed to track terminal todo delete:', error);
+    }
 
     return this.buildSuccessResponse(
       `🗑️  Deleted todo: "${todoTitle}"`,

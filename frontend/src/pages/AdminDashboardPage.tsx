@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { analyticsAPI, newsAPI } from '../api';
-import OptimizedAnalytics from '../components/OptimizedAnalytics';
 import ConfirmationModal from '../components/ConfirmationModal';
+import { AnalyticsTab, UsersTab } from '../components/admin';
 import TicketKanban from '../components/TicketKanban';
 import { getContrastTextColor } from '../utils/contrastTextColor';
 import { csrfFetch } from '../utils/csrf';
@@ -1177,9 +1177,7 @@ const AdminDashboardPage: React.FC = () => {
 
         {/* Analytics Tab */}
         {activeTab === 'analytics' && (
-          <OptimizedAnalytics 
-            onResetAnalytics={() => setShowAnalyticsResetConfirm(true)}
-          />
+          <AnalyticsTab />
         )}
 
         {/* News Tab */}

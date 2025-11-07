@@ -29,7 +29,7 @@ export class CleanupService {
 
     // Get detailed collection stats
     const dbStats = await mongoose.connection.db.stats();
-    
+
     // Calculate approximate collection sizes
     const collectionSizes = await Promise.all([
       this.getCollectionSize('analytics'),
@@ -40,7 +40,16 @@ export class CleanupService {
       this.getCollectionSize('usersessions'),
     ]);
 
+    // Get system stats
+    const uptime = process.uptime();
+    const hours = Math.floor(uptime / 3600);
+    const minutes = Math.floor((uptime % 3600) / 60);
+
     return {
+      database: 'Connected',
+      cache: 'OK',
+      uptime: `${hours}h ${minutes}m`,
+      memory: `${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}MB`,
       collections: stats,
       totalDocuments: Object.values(stats).reduce((sum, count) => sum + count, 0),
       dbSizeGB: (dbStats.dataSize / (1024 * 1024 * 1024)).toFixed(2),

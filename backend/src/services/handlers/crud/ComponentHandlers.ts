@@ -4,6 +4,7 @@ import { BaseCommandHandler } from '../BaseCommandHandler';
 import { CommandResponse, ResponseType } from '../../types';
 import { ParsedCommand, getFlag, getFlagCount, hasFlag } from '../../commandParser';
 import { sanitizeText } from '../../../utils/validation';
+import { AnalyticsService } from '../../../middleware/analytics';
 
 /**
  * Handlers for Component CRUD operations
@@ -203,6 +204,22 @@ export class ComponentHandlers extends BaseCommandHandler {
 
     project.components.push(newComponent);
     await project.save();
+
+    // Track analytics
+    try {
+      await AnalyticsService.trackEvent(this.userId, 'feature_used', {
+        feature: 'component_create_terminal',
+        category: 'engagement',
+        projectId: project._id.toString(),
+        projectName: project.name,
+        metadata: {
+          componentCategory: category,
+          componentType: type
+        }
+      });
+    } catch (error) {
+      console.error('Failed to track terminal component create:', error);
+    }
 
     return this.buildSuccessResponse(
       `🧩 Added ${category.toLowerCase()} component "${sanitizedTitle}" to feature "${sanitizedFeature}" in ${project.name}`,
@@ -852,6 +869,18 @@ export class ComponentHandlers extends BaseCommandHandler {
     });
 
     await project.save();
+
+    // Track analytics
+    try {
+      await AnalyticsService.trackEvent(this.userId, 'feature_used', {
+        feature: 'component_delete_terminal',
+        category: 'engagement',
+        projectId: project._id.toString(),
+        projectName: project.name
+      });
+    } catch (error) {
+      console.error('Failed to track terminal component delete:', error);
+    }
 
     const message = orphanedRelationshipsCount > 0
       ? `🗑️  Deleted component: "${componentTitle}" and removed ${orphanedRelationshipsCount} orphaned relationship${orphanedRelationshipsCount > 1 ? 's' : ''}`

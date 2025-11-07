@@ -7,6 +7,7 @@ import { Project } from '../models/Project';
 import TeamMember from '../models/TeamMember';
 import { logInfo, logError } from '../config/logger';
 import activityLogger from '../services/activityLogger';
+import { AnalyticsService } from '../middleware/analytics';
 
 const router = express.Router();
 
@@ -39,6 +40,32 @@ router.post('/execute', terminalRateLimit, async (req: AuthRequest, res) => {
     // Execute command
     const executor = new CommandExecutor(userId);
     const response = await executor.execute(command, currentProjectId);
+
+    // Track terminal usage analytics
+    try {
+      const commandType = command.split(' ')[0].replace('/', '');
+      console.log('[TERMINAL ANALYTICS] Tracking terminal command:', {
+        userId,
+        commandType,
+        responseType: response.type
+      });
+
+      const result = await AnalyticsService.trackEvent(userId, 'feature_used', {
+        feature: 'terminal_command',
+        category: 'engagement',
+        projectId: currentProjectId,
+        metadata: {
+          commandType,
+          hasProjectContext: !!currentProjectId,
+          responseType: response.type
+        }
+      });
+
+      console.log('[TERMINAL ANALYTICS] Track result:', result ? 'SUCCESS' : 'NULL (throttled or limit reached)');
+    } catch (error) {
+      // Don't fail the request if analytics fails
+      console.error('[TERMINAL ANALYTICS] Failed to track terminal command:', error);
+    }
 
     res.json(response);
   } catch (error) {

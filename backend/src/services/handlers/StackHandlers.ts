@@ -3,6 +3,7 @@ import { CommandResponse, ResponseType } from '../types';
 import { ParsedCommand, getFlag, getFlagCount } from '../commandParser';
 import { isValidStackCategory } from '../../utils/validation';
 import { lookupTech } from '../../utils/techStackLookup';
+import { AnalyticsService } from '../../middleware/analytics';
 
 /**
  * Handlers for unified tech stack management commands
@@ -145,6 +146,22 @@ export class StackHandlers extends BaseCommandHandler {
     project.stack.push({ category, name: stackName, version, description });
     await project.save();
 
+    // Track analytics
+    try {
+      await AnalyticsService.trackEvent(this.userId, 'feature_used', {
+        feature: 'stack_technology_add_terminal',
+        category: 'engagement',
+        projectId: project._id.toString(),
+        projectName: project.name,
+        metadata: {
+          technology: stackName,
+          techCategory: category
+        }
+      });
+    } catch (error) {
+      console.error('Failed to track terminal stack add:', error);
+    }
+
     return this.buildSuccessResponse(
       `⚡ Added ${stackName}${version ? ` v${version}` : ''} to stack${lookup.found ? ' (auto-detected)' : ''}`,
       project,
@@ -277,6 +294,22 @@ export class StackHandlers extends BaseCommandHandler {
     stack.splice(index, 1);
     project.stack = stack;
     await project.save();
+
+    // Track analytics
+    try {
+      await AnalyticsService.trackEvent(this.userId, 'feature_used', {
+        feature: 'stack_technology_remove_terminal',
+        category: 'engagement',
+        projectId: project._id.toString(),
+        projectName: project.name,
+        metadata: {
+          technology: removedItem.name,
+          techCategory: removedItem.category
+        }
+      });
+    } catch (error) {
+      console.error('Failed to track terminal stack remove:', error);
+    }
 
     return this.buildSuccessResponse(
       `🗑️  Removed ${removedItem.name} from stack`,

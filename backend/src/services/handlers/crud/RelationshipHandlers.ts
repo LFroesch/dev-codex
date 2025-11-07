@@ -4,6 +4,7 @@ import { BaseCommandHandler } from '../BaseCommandHandler';
 import { CommandResponse, ResponseType } from '../../types';
 import { ParsedCommand, getFlag, getFlagCount, hasFlag } from '../../commandParser';
 import { sanitizeText } from '../../../utils/validation';
+import { AnalyticsService } from '../../../middleware/analytics';
 
 /**
  * Handlers for Relationship CRUD operations
@@ -174,6 +175,21 @@ export class RelationshipHandlers extends BaseCommandHandler {
     sourceComponent.updatedAt = new Date();
     targetComponent.updatedAt = new Date();
     await project.save();
+
+    // Track analytics
+    try {
+      await AnalyticsService.trackEvent(this.userId, 'feature_used', {
+        feature: 'relationship_create_terminal',
+        category: 'engagement',
+        projectId: project._id.toString(),
+        projectName: project.name,
+        metadata: {
+          relationType: relationshipType
+        }
+      });
+    } catch (error) {
+      console.error('Failed to track terminal relationship create:', error);
+    }
 
     return this.buildSuccessResponse(
       `✅ Added ${relationshipType} relationship: "${sourceComponent.title}" ⇄ "${targetComponent.title}"`,
@@ -703,6 +719,18 @@ export class RelationshipHandlers extends BaseCommandHandler {
     }
 
     await project.save();
+
+    // Track analytics
+    try {
+      await AnalyticsService.trackEvent(this.userId, 'feature_used', {
+        feature: 'relationship_delete_terminal',
+        category: 'engagement',
+        projectId: project._id.toString(),
+        projectName: project.name
+      });
+    } catch (error) {
+      console.error('Failed to track terminal relationship delete:', error);
+    }
 
     return this.buildSuccessResponse(
       `🗑️  Deleted ${relationship.relationType} relationship: "${component.title}" ⇄ "${targetComponent?.title || 'unknown'}"`,

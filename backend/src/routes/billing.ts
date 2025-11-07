@@ -238,6 +238,8 @@ async function handleSuccessfulPayment(session: Stripe.Checkout.Session) {
     return;
   }
 
+  const previousPlan = user.planTier;
+
   logInfo('Updating user plan', { userId, planTier });
   user.planTier = planTier;
   user.projectLimit = PLAN_LIMITS[planTier];
@@ -253,6 +255,46 @@ async function handleSuccessfulPayment(session: Stripe.Checkout.Session) {
     projectLimit: user.projectLimit,
     subscriptionStatus: user.subscriptionStatus
   });
+
+  // Track conversion/upgrade event
+  try {
+    const { AnalyticsService } = await import('../middleware/analytics');
+
+    // Calculate conversion value (price in dollars)
+    const conversionValue = planTier === 'pro' ? 10 : 25;
+
+    // Track checkout completion
+    await AnalyticsService.trackEvent(
+      userId,
+      'checkout_completed',
+      {
+        plan: planTier,
+        amount: conversionValue,
+        stripeSessionId: session.id,
+        previousPlan: previousPlan,
+        category: 'business',
+        isConversion: true,
+        conversionValue: conversionValue
+      }
+    );
+
+    // Track user upgrade event
+    await AnalyticsService.trackEvent(
+      userId,
+      'user_upgraded',
+      {
+        fromPlan: previousPlan,
+        toPlan: planTier,
+        category: 'business',
+        isConversion: true,
+        conversionValue: conversionValue
+      }
+    );
+
+    logInfo('Tracked conversion analytics', { userId, fromPlan: previousPlan, toPlan: planTier });
+  } catch (error) {
+    logError('Failed to track conversion analytics', error as Error);
+  }
 }
 
 async function handleSuccessfulSubscriptionPayment(invoice: Stripe.Invoice) {

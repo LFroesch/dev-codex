@@ -6,6 +6,7 @@ import ConfirmationModal from '../components/ConfirmationModal';
 import { getContrastTextColor } from '../utils/contrastTextColor';
 import FeaturesGraph from '../components/FeaturesGraph';
 import { getAllCategories, getTypesForCategory } from '../config/componentCategories';
+import { analyticsService } from '../services/analytics';
 
 interface ContextType {
   selectedProject: Project | null;
@@ -72,6 +73,15 @@ const FeaturesPage: React.FC = () => {
 
     try {
       await projectAPI.createComponent(selectedProject.id, newComponent);
+
+      analyticsService.trackFeatureUsage('component_create', {
+        projectId: selectedProject.id,
+        projectName: selectedProject.name,
+        category: newComponent.category,
+        type: newComponent.type,
+        feature: newComponent.feature
+      });
+
       setNewComponent({ category: 'backend', type: 'service', title: '', content: '', feature: '', tags: [] });
       // Tab managed by Layout.tsx now
       await onProjectRefresh();
@@ -102,6 +112,14 @@ const FeaturesPage: React.FC = () => {
 
     try {
       await projectAPI.updateComponent(selectedProject.id, editingComponent, editData);
+
+      analyticsService.trackFeatureUsage('component_update', {
+        projectId: selectedProject.id,
+        projectName: selectedProject.name,
+        category: editData.category,
+        type: editData.type
+      });
+
       setEditingComponent(null);
       await onProjectRefresh();
     } catch (err) {
@@ -114,6 +132,12 @@ const FeaturesPage: React.FC = () => {
 
     try {
       await projectAPI.deleteComponent(selectedProject.id, componentId);
+
+      analyticsService.trackFeatureUsage('component_delete', {
+        projectId: selectedProject.id,
+        projectName: selectedProject.name
+      });
+
       await onProjectRefresh();
       setDeleteConfirmation({ isOpen: false, componentId: '', componentTitle: '' });
     } catch (err) {
@@ -395,6 +419,16 @@ const FeaturesPage: React.FC = () => {
 
                 try {
                   await projectAPI.createComponent(selectedProject.id, componentData);
+
+                  analyticsService.trackFeatureUsage('component_create', {
+                    projectId: selectedProject.id,
+                    projectName: selectedProject.name,
+                    category: componentData.category,
+                    type: componentData.type,
+                    feature: componentData.feature,
+                    createdFrom: 'graph'
+                  });
+
                   await onProjectRefresh();
                 } catch (err) {
                   setError('Failed to add component');

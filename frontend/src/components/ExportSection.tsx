@@ -3,12 +3,13 @@ import type { Project } from '../api/types';
 import BackupImportExport from './export/BackupImportExport';
 import ExportOptionsSelector from './export/ExportOptionsSelector';
 import ExportResult from './export/ExportResult';
-import { 
-  generateExportData, 
-  formatExportData, 
-  type ExportOptions, 
-  type ExportFormat 
+import {
+  generateExportData,
+  formatExportData,
+  type ExportOptions,
+  type ExportFormat
 } from '../utils/exportGenerators';
+import { analyticsService } from '../services/analytics';
 
 interface ExportSectionProps {
   selectedProject: Project;
@@ -59,6 +60,14 @@ const ExportSection: React.FC<ExportSectionProps> = ({ selectedProject, onProjec
 
   const generateExport = () => {
     try {
+      // Track feature usage
+      analyticsService.trackFeatureUsage(`export_${exportFormat}`, {
+        format: exportFormat,
+        selectedOptionsCount: selectedCount,
+        projectId: selectedProject._id,
+        projectName: selectedProject.name
+      });
+
       const data = generateExportData(selectedProject, exportOptions);
       const output = formatExportData(data, exportFormat, selectedProject, customAiRequest);
       setExportedData(output);

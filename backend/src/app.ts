@@ -32,6 +32,8 @@ import { terminalExecuteSecurity, terminalSuggestionsSecurity } from './middlewa
 import { sessionMiddleware, AnalyticsService } from './middleware/analytics';
 import ReminderService from './services/reminderService';
 import UserSession from './models/UserSession';
+import cron from 'node-cron';
+import analyticsCompoundingService from './services/analyticsCompounding';
 
 dotenv.config();
 
@@ -337,10 +339,25 @@ process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 const startServer = async () => {
   try {
     await connectDatabase();
-    
+
     const reminderService = ReminderService.getInstance();
     reminderService.initialize();
-    
+
+    // Initialize analytics compounding cron job (runs daily at 3am UTC)
+    cron.schedule('0 3 * * *', async () => {
+      logInfo('Starting analytics compounding job');
+      try {
+        const result = await analyticsCompoundingService.compactOldEvents();
+        logInfo('Analytics compounding completed', result);
+      } catch (error) {
+        logError('Analytics compounding failed', error as Error, {
+          component: 'analytics-compounding',
+          action: 'cron-job'
+        });
+      }
+    });
+    logInfo('Analytics compounding cron job scheduled (daily at 3am UTC)');
+
     const server = createServer(app);
     
     const io = new Server(server, {

@@ -30,22 +30,14 @@ const NODE_TYPES = {
 
 // Relationship type priorities (higher = more important for layout hierarchy)
 const RELATIONSHIP_WEIGHTS: Record<RelationshipType, number> = {
-  contains: 10,     // Strong hierarchical - parent always above child
-  extends: 8,       // Clear inheritance flow
   depends_on: 7,    // Dependency should flow downward
-  implements: 6,    // Interface above implementation
   uses: 4,          // General usage
-  calls: 4,         // Function calls
 };
 
 // Relationship type colors for edges and UI
 const RELATIONSHIP_COLORS: Record<RelationshipType, string> = {
   uses: '#3b82f6',
-  implements: '#10b981',
-  extends: '#8b5cf6',
   depends_on: '#f97316',
-  calls: '#06b6d4',
-  contains: '#6b7280',
 };
 
 /**
@@ -60,7 +52,7 @@ const getRelationshipWeight = (type: RelationshipType): number => {
  * Hierarchical relationships need more vertical/horizontal separation
  */
 const getMinLength = (type: RelationshipType): number => {
-  if (['contains', 'extends', 'depends_on'].includes(type)) {
+  if (type === 'depends_on') {
     return 2; // Two ranks apart minimum for clear hierarchy
   }
   return 1;
@@ -598,14 +590,8 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
 
           // Determine edge styling based on relationship type
           const relationshipStyles: Record<string, { stroke: string; animated: boolean; dasharray: string; strokeWidth: number }> = {
-            mentions: { stroke: RELATIONSHIP_COLORS.mentions, animated: true, dasharray: '0', strokeWidth: 2 },
-            similar: { stroke: RELATIONSHIP_COLORS.similar, animated: false, dasharray: '5,5', strokeWidth: 3 },
             uses: { stroke: RELATIONSHIP_COLORS.uses, animated: false, dasharray: '0', strokeWidth: 2 },
-            implements: { stroke: RELATIONSHIP_COLORS.implements, animated: false, dasharray: '5,5', strokeWidth: 2 },
-            extends: { stroke: RELATIONSHIP_COLORS.extends, animated: false, dasharray: '0', strokeWidth: 3 },
             depends_on: { stroke: RELATIONSHIP_COLORS.depends_on, animated: false, dasharray: '3,3', strokeWidth: 2 },
-            calls: { stroke: RELATIONSHIP_COLORS.calls, animated: false, dasharray: '0', strokeWidth: 2 },
-            contains: { stroke: RELATIONSHIP_COLORS.contains, animated: false, dasharray: '0', strokeWidth: 4 },
           };
 
           const style = relationshipStyles[rel.relationType] || relationshipStyles.uses;
@@ -1025,7 +1011,8 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
                 <h3 className="font-bold text-lg">{selectedComponent.title}</h3>
               )}
               {selectedComponent.feature && !componentEditing.isEditingComponent && (
-                <span className="badge badge-sm text-xs font-semibold badge-primary mt-1">{selectedComponent.feature}</span>
+                <span className="badge badge-sm text-xs font-semibold badge-primary mt-1"
+                style={{color:getContrastTextColor("primary")}}>{selectedComponent.feature}</span>
               )}
               {selectedComponent.category && !componentEditing.isEditingComponent && (
                 <div className="flex gap-1 mt-1">
@@ -1040,7 +1027,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
                     {getAllCategories().find(c => c.value === selectedComponent.category)?.emoji} {getAllCategories().find(c => c.value === selectedComponent.category)?.label}
                   </span>
                   {selectedComponent.type && (
-                    <span className="badge badge-sm text-xs font-semibold bg-secondary">
+                    <span className="badge badge-sm text-xs font-semibold badge-primary" style={{color:getContrastTextColor("primary")}}>
                       {selectedComponent.type.charAt(0).toUpperCase() + selectedComponent.type.slice(1)}
                     </span>
                   )}
@@ -1198,8 +1185,8 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
                             <div className="flex items-center justify-between gap-2">
                               <div className="flex items-center gap-2 min-w-0 flex-1">
                                 <span
-                                  className="h-6 badge badge-xs border-thick font-semibold text-xs"
-                                  style={{ backgroundColor: RELATIONSHIP_COLORS[rel.relationType], color: getContrastTextColor(RELATIONSHIP_COLORS[rel.relationType]), borderColor: RELATIONSHIP_COLORS[rel.relationType] }}
+                                  className="h-6 badge badge-xs border-thick font-semibold text-xs bg-primary"
+                                  style={{color: getContrastTextColor("primary")}}
                                 >
                                   {rel.relationType.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
                                 </span>

@@ -1628,7 +1628,7 @@ Help users interact with their project management terminal. Generate commands to
 ### Components & Architecture
 \`/add component --feature="..." --category="..." --type="..." --title="..." --content="..."\`
 \`/edit component "idx|text"\` \`/delete component "idx|text"\`
-\`/add relationship --source="..." --target="..." --type=uses|implements|extends|depends_on|calls|contains|mentions|similar\`
+\`/add relationship --source="..." --target="..." --type=uses|depends_on\`
 
 **Component types by category:**
 frontend: page|component|hook|context|layout|util|custom
@@ -2716,7 +2716,7 @@ ${devlogs.length > 0 ? `\nAll Dev Log Entries:\n${devlogs.map((d: any, i: number
 \`/add component --feature="..." --category="..." --type="..." --title="..." --content="..."\`
 \`/edit component "idx|text" --title="..." --content="..."\`
 \`/delete component "idx|text"\`
-\`/add relationship --source="comp_idx" --target="comp_idx" --type=uses|implements|extends|depends_on|calls|contains|mentions|similar\`
+\`/add relationship --source="comp_idx" --target="comp_idx" --type=uses|depends_on\`
 \`/edit relationship "rel_id" --type="..." --description="..."\`
 \`/delete relationship "rel_id"\`
 

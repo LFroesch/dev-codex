@@ -124,7 +124,7 @@ export class RelationshipHandlers extends BaseCommandHandler {
     }
 
     // Validate relationship type
-    const validTypes = ['uses', 'implements', 'extends', 'depends_on', 'calls', 'contains', 'mentions', 'similar'];
+    const validTypes = ['uses', 'depends_on'];
     if (!validTypes.includes(relationshipType)) {
       return {
         type: ResponseType.ERROR,
@@ -515,7 +515,7 @@ export class RelationshipHandlers extends BaseCommandHandler {
     }
 
     // Validate new type
-    const validTypes = ['uses', 'implements', 'extends', 'depends_on', 'calls', 'contains', 'mentions', 'similar'];
+    const validTypes = ['uses', 'depends_on'];
     if (!validTypes.includes(newType)) {
       return {
         type: ResponseType.ERROR,

@@ -1,21 +1,24 @@
 /**
  * Determines if text should be white or black based on background color
  * for optimal contrast and readability
+ *
+ * Supports opacity modifiers (e.g., "primary/20", "info/40")
+ * Low opacity backgrounds always return black text for better readability
  */
 export const getContrastTextColor = (colorValue?: string): string => {
-  
+
   const hslToRgb = (h: number, s: number, l: number): [number, number, number] => {
     // Convert HSL to RGB
     h = h / 360;
     s = s / 100;
     l = l / 100;
-    
+
     const c = (1 - Math.abs(2 * l - 1)) * s;
     const x = c * (1 - Math.abs((h * 6) % 2 - 1));
     const m = l - c / 2;
-    
+
     let r = 0, g = 0, b = 0;
-    
+
     if (0 <= h && h < 1/6) {
       r = c; g = x; b = 0;
     } else if (1/6 <= h && h < 2/6) {
@@ -29,7 +32,7 @@ export const getContrastTextColor = (colorValue?: string): string => {
     } else if (5/6 <= h && h < 1) {
       r = c; g = 0; b = x;
     }
-    
+
     return [
       Math.round((r + m) * 255),
       Math.round((g + m) * 255),
@@ -51,6 +54,20 @@ export const getContrastTextColor = (colorValue?: string): string => {
     colorValue = 'primary';
   }
 
+  // Handle opacity modifiers (e.g., "primary/20", "info/40")
+  let opacity = 1;
+  if (colorValue.includes('/')) {
+    const [color, opacityStr] = colorValue.split('/');
+    opacity = parseInt(opacityStr) / 100;
+    colorValue = color;
+
+    // For low opacity backgrounds (< 50%), always use black text
+    // The background is very light due to transparency
+    if (opacity < 0.4) {
+      return '#000000';
+    }
+  }
+
   // Handle DaisyUI color names by getting their actual computed values
   if (colorValue && typeof colorValue === 'string' && !colorValue.startsWith('#')) {
     const colorMap: { [key: string]: string } = {
@@ -62,8 +79,8 @@ export const getContrastTextColor = (colorValue?: string): string => {
       'success': '--su',
       'warning': '--wa',
       'error': '--er',
-      'base': '--bc',
-      
+      'base': '--b',
+
     };
 
     if (colorMap[colorValue] && typeof window !== 'undefined') {

@@ -183,6 +183,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
         <button
           onClick={onResetView}
           className="btn btn-sm h-6 btn-primary bg-primary/20 border-thick border-primary"
+          style={{color:getContrastTextColor("primary/20")}}
           title="Reset zoom and position"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -194,12 +195,13 @@ const GraphControls: React.FC<GraphControlsProps> = ({
         <button
           onClick={() => setShowResetConfirm(true)}
           className="btn btn-sm h-6 btn-error bg-error/20 border-thick border-error"
+          style={{color:getContrastTextColor("error/20")}}
           title="Clear saved layout"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
           </svg>
-          <span className="hidden sm:inline" style={{color:getContrastTextColor("error")}}>Auto Layout</span>
+          <span className="hidden sm:inline">Auto Layout</span>
         </button>
       </div>
 
@@ -235,6 +237,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
               }
             }}
             className="btn btn-sm btn-primary bg-primary/20 border-thick border-primary p-1"
+            style={{color:getContrastTextColor("primary/20")}}
           >
             {selectedCategories.size === categories.length ? 'None' : 'All'}
           </button>
@@ -281,7 +284,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
                 }
               }}
               className="btn btn-sm btn-primary bg-primary/20 border-thick border-primary p-1"
-              style={{color:getContrastTextColor("primary")}}
+              style={{color:getContrastTextColor("primary/20")}}
             >
               {selectedFeatures.size === features.length ? 'None' : 'All'}
             </button>
@@ -294,10 +297,11 @@ const GraphControls: React.FC<GraphControlsProps> = ({
                   key={feature}
                   onClick={() => onFeatureToggle(feature)}
                   className={`border-thick badge badge-sm p-2 h-6 text-sm font-semibold cursor-pointer transition-all ${
-                    isSelected
-                      ? 'badge-primary'
-                      : 'badge-ghost opacity-40 hover:opacity-70'
+                  isSelected
+                    ? 'badge-primary'
+                    : 'badge-ghost opacity-40 hover:opacity-70'
                   }`}
+                  style={isSelected ? { color: getContrastTextColor("primary")} : undefined}
                 >
                   {feature}
                 </button>

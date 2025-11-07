@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { projectAPI } from '../api';
 import { toast } from '../services/toast';
 import { getContrastTextColor } from '../utils/contrastTextColor';
+import { analyticsService } from '../services/analytics';
 
 const CreateProject: React.FC = () => {
   const navigate = useNavigate();
@@ -38,6 +39,16 @@ const CreateProject: React.FC = () => {
         tags: formData.tags,
         stagingEnvironment: formData.stagingEnvironment,
       });
+
+      // Track project creation
+      analyticsService.trackFeatureUsage('project_create', {
+        projectName: formData.name,
+        category: formData.category,
+        hasDescription: !!formData.description,
+        hasTags: formData.tags.length > 0,
+        stagingEnvironment: formData.stagingEnvironment
+      });
+
       toast.success(`Project "${formData.name}" created successfully!`);
 
       // Trigger project list refresh

@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { Doc, projectAPI } from '../api';
 import { RelationshipType, ComponentRelationship } from '../../../shared/types/project';
+import { analyticsService } from '../services/analytics';
 
 interface UseRelationshipManagementOptions {
   projectId: string;
@@ -45,6 +46,12 @@ export const useRelationshipManagement = ({
         description: relationshipDescription || undefined,
       });
 
+      analyticsService.trackFeatureUsage('relationship_create', {
+        projectId,
+        relationType: selectedRelationType,
+        hasDescription: !!relationshipDescription
+      });
+
       // Reset form
       setRelationshipSearch('');
       setRelationshipDescription('');
@@ -69,6 +76,10 @@ export const useRelationshipManagement = ({
 
     try {
       await projectAPI.deleteRelationship(projectId, selectedComponent.id, relationshipId);
+
+      analyticsService.trackFeatureUsage('relationship_delete', {
+        projectId
+      });
 
       setToast({ message: 'Relationship deleted', type: 'success' });
 
@@ -104,6 +115,11 @@ export const useRelationshipManagement = ({
         targetId: relationship.targetId,
         relationType: editRelationshipData.relationType,
         description: editRelationshipData.description || undefined,
+      });
+
+      analyticsService.trackFeatureUsage('relationship_update', {
+        projectId,
+        relationType: editRelationshipData.relationType
       });
 
       setToast({ message: 'Relationship updated', type: 'success' });

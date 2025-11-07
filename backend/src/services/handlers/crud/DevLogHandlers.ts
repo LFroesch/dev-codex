@@ -4,6 +4,7 @@ import { BaseCommandHandler } from '../BaseCommandHandler';
 import { CommandResponse, ResponseType } from '../../types';
 import { ParsedCommand, getFlag, getFlagCount, hasFlag } from '../../commandParser';
 import { sanitizeText } from '../../../utils/validation';
+import { AnalyticsService } from '../../../middleware/analytics';
 
 /**
  * Handlers for DevLog CRUD operations
@@ -108,6 +109,21 @@ export class DevLogHandlers extends BaseCommandHandler {
 
     project.devLog.push(newEntry);
     await project.save();
+
+    // Track analytics
+    try {
+      await AnalyticsService.trackEvent(this.userId, 'feature_used', {
+        feature: 'devlog_create_terminal',
+        category: 'engagement',
+        projectId: project._id.toString(),
+        projectName: project.name,
+        metadata: {
+          hasDescription: !!sanitizedContent
+        }
+      });
+    } catch (error) {
+      console.error('Failed to track terminal devlog create:', error);
+    }
 
     return this.buildSuccessResponse(
       `📋 Added dev log entry "${sanitizedTitle}" to ${project.name}`,
@@ -377,6 +393,18 @@ export class DevLogHandlers extends BaseCommandHandler {
 
     project.devLog = project.devLog.filter((e: any) => e.id !== entry.id);
     await project.save();
+
+    // Track analytics
+    try {
+      await AnalyticsService.trackEvent(this.userId, 'feature_used', {
+        feature: 'devlog_delete_terminal',
+        category: 'engagement',
+        projectId: project._id.toString(),
+        projectName: project.name
+      });
+    } catch (error) {
+      console.error('Failed to track terminal devlog delete:', error);
+    }
 
     return this.buildSuccessResponse(
       `🗑️  Deleted dev log entry`,

@@ -56,11 +56,11 @@ const App: React.FC = () => {
         import('./services/notificationService').then(({ notificationService }) => {
           notificationService.cleanup();
         });
-        
+
         import('./services/lockSignaling').then(({ lockSignaling }) => {
           lockSignaling.cleanup();
         });
-        
+
         if (analyticsService && typeof analyticsService.endSession === 'function') {
           analyticsService.endSession();
         }

@@ -281,6 +281,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
                 }
               }}
               className="btn btn-sm btn-primary bg-primary/20 border-thick border-primary p-1"
+              style={{color:getContrastTextColor("primary")}}
             >
               {selectedFeatures.size === features.length ? 'None' : 'All'}
             </button>

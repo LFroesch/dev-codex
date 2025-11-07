@@ -267,12 +267,29 @@ router.post('/register', authRateLimit, validateUserRegistration, async (req, re
 
     await user.save();
 
+    // Track user signup
+    try {
+      const { AnalyticsService } = await import('../middleware/analytics');
+      await AnalyticsService.trackEvent(
+        user._id.toString(),
+        'user_signup',
+        {
+          source: req.headers.referer || 'direct',
+          referrer: req.headers.referer,
+          theme: theme || 'retro',
+          category: 'engagement'
+        }
+      );
+    } catch (error) {
+      console.error('Failed to track signup analytics:', error);
+    }
+
     // Create JWT token
     if (!process.env.JWT_SECRET) {
       console.error('CRITICAL: JWT_SECRET environment variable is not set');
       return res.status(500).json({ message: 'Server configuration error' });
     }
-    
+
     const token = jwt.sign(
       { userId: user._id, email: user.email },
       process.env.JWT_SECRET,
@@ -321,6 +338,10 @@ router.post('/login', authRateLimit, validateUserLogin, async (req, res) => {
     if (!isMatch) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
+
+    // Update last login timestamp
+    user.lastLogin = new Date();
+    await user.save();
 
     // Create JWT token
     if (!process.env.JWT_SECRET) {
@@ -688,23 +709,26 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
     }
   });
 
-  router.get('/google/callback', 
+  router.get('/google/callback',
     passport.authenticate('google', { session: false }),
     async (req: any, res) => {
       try {
         const user = req.user;
         const isLinking = !!(user as any).isLinking;
-        
+
         if (isLinking) {
           // Account linking flow - redirect to account settings with success
           res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5002'}/account-settings?google_linked=success`);
         } else {
           // Regular OAuth login flow
+          // Update last login timestamp
+          await User.findByIdAndUpdate(user._id, { lastLogin: new Date() });
+
           if (!process.env.JWT_SECRET) {
             console.error('CRITICAL: JWT_SECRET environment variable is not set');
             return res.status(500).json({ message: 'Server configuration error' });
           }
-          
+
           const token = jwt.sign(
             { userId: user._id, email: user.email },
             process.env.JWT_SECRET,

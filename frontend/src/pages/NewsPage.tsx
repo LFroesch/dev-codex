@@ -22,9 +22,17 @@ const NewsPage: React.FC = () => {
   const [posts, setPosts] = useState<NewsPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest'>('newest');
 
   // Modal state using custom hook
   const postModal = useItemModal<NewsPost>({ initialMode: 'view' });
+
+  const isRecent = (date: string) => {
+    const postDate = new Date(date);
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    return postDate >= sevenDaysAgo;
+  };
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -150,9 +158,13 @@ const NewsPage: React.FC = () => {
     }
   };
 
-  const filteredPosts = posts.filter(post =>
-    activeNewsTab === 'all' || post.type === activeNewsTab
-  );
+  const filteredPosts = posts
+    .filter(post => activeNewsTab === 'all' || post.type === activeNewsTab)
+    .sort((a, b) => {
+      const dateA = new Date(a.publishedAt || a.createdAt).getTime();
+      const dateB = new Date(b.publishedAt || b.createdAt).getTime();
+      return sortBy === 'newest' ? dateB - dateA : dateA - dateB;
+    });
 
   if (loading) {
     return (
@@ -175,11 +187,32 @@ const NewsPage: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      {/* Header */}
+      {/* Header with Sort Controls */}
       <div className="text-center">
         <div className="text-6xl mb-4">📰</div>
         <h2 className="text-2xl font-bold mb-2">What's New?</h2>
-        <p className="text-base-content/60">Latest updates and announcements</p>
+        <p className="text-base-content/60 mb-4">Latest updates and announcements</p>
+
+        {/* Sort Controls */}
+        {posts.length > 0 && (
+          <div className="flex justify-center items-center gap-2">
+            <span className="text-sm text-base-content/60">Sort by:</span>
+            <div className="join">
+              <button
+                className={`btn btn-xs join-item ${sortBy === 'newest' ? 'btn-active' : 'btn-ghost'}`}
+                onClick={() => setSortBy('newest')}
+              >
+                Newest First
+              </button>
+              <button
+                className={`btn btn-xs join-item ${sortBy === 'oldest' ? 'btn-active' : 'btn-ghost'}`}
+                onClick={() => setSortBy('oldest')}
+              >
+                Oldest First
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Posts Grid */}
@@ -203,11 +236,18 @@ const NewsPage: React.FC = () => {
             >
               <div className="flex flex-col flex-1">
                 <div className="flex items-start justify-between mb-3">
-                  <h3 className="border-2 border-base-content/20 font-semibold truncate px-2 py-1 rounded-md group-hover:opacity-90 transition-opacity bg-primary"
-                     style={{ color: getContrastTextColor() }}>
-                    {getTypeIcon(post.type)} {post.title}
-                  </h3>
-                  <div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex-1">
+                    <h3 className="border-2 border-base-content/20 font-semibold truncate px-2 py-1 rounded-md group-hover:opacity-90 transition-opacity bg-primary inline-block"
+                       style={{ color: getContrastTextColor() }}>
+                      {getTypeIcon(post.type)} {post.title}
+                    </h3>
+                    {isRecent(post.publishedAt || post.createdAt) && (
+                      <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-error text-error-content animate-pulse">
+                        NEW
+                      </span>
+                    )}
+                  </div>
+                  <div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
                     <svg className="w-4 h-4 text-base-content/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>

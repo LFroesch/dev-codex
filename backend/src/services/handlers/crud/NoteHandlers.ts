@@ -4,6 +4,7 @@ import { BaseCommandHandler } from '../BaseCommandHandler';
 import { CommandResponse, ResponseType } from '../../types';
 import { ParsedCommand, getFlag, getFlagCount, hasFlag } from '../../commandParser';
 import { sanitizeText } from '../../../utils/validation';
+import { AnalyticsService } from '../../../middleware/analytics';
 
 /**
  * Handlers for Note CRUD operations
@@ -110,6 +111,21 @@ export class NoteHandlers extends BaseCommandHandler {
 
     project.notes.push(newNote);
     await project.save();
+
+    // Track analytics
+    try {
+      await AnalyticsService.trackEvent(this.userId, 'feature_used', {
+        feature: 'note_create_terminal',
+        category: 'engagement',
+        projectId: project._id.toString(),
+        projectName: project.name,
+        metadata: {
+          hasContent: !!sanitizedContent
+        }
+      });
+    } catch (error) {
+      console.error('Failed to track terminal note create:', error);
+    }
 
     return this.buildSuccessResponse(
       `📝 Added note "${sanitizedTitle}" to ${project.name}`,
@@ -380,6 +396,18 @@ export class NoteHandlers extends BaseCommandHandler {
     const noteTitle = note.title;
     project.notes = project.notes.filter((n: any) => n.id !== note.id);
     await project.save();
+
+    // Track analytics
+    try {
+      await AnalyticsService.trackEvent(this.userId, 'feature_used', {
+        feature: 'note_delete_terminal',
+        category: 'engagement',
+        projectId: project._id.toString(),
+        projectName: project.name
+      });
+    } catch (error) {
+      console.error('Failed to track terminal note delete:', error);
+    }
 
     return this.buildSuccessResponse(
       `🗑️  Deleted note: "${noteTitle}"`,

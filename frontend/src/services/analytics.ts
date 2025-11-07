@@ -792,6 +792,7 @@ class AnalyticsService {
     }
 
     try {
+      // Track error event locally
       const event = {
         eventType: 'error' as const,
         timestamp: Date.now(),
@@ -810,8 +811,58 @@ class AnalyticsService {
       };
 
       await this.sendEventWithRetry(event);
+
+      // Also send to backend analytics for admin error tracking
+      // This hits the enhanced analytics endpoint that stores in the Analytics collection
+      if (this.session?.sessionId) {
+        try {
+          await this.makeAnalyticsRequest('/track', {
+            method: 'POST',
+            body: JSON.stringify({
+              eventType: 'error_occurred',
+              eventData: {
+                type: errorData.name,
+                message: errorData.message,
+                page: window.location.pathname,
+                category: 'error',
+                severity: errorData.severity || 'medium',
+                stack: errorData.stack,
+                componentStack: errorData.componentStack,
+                fromErrorBoundary: errorData.errorBoundary || false,
+                metadata: errorData.context
+              }
+            })
+          });
+        } catch (backendError) {
+          // Silently fail if backend tracking fails
+          console.error('Failed to send error to backend analytics:', backendError);
+        }
+      }
     } catch (error) {
       console.error('Failed to track error:', error);
+    }
+  }
+
+  // Helper method to track feature usage
+  async trackFeatureUsage(feature: string, metadata?: Record<string, any>): Promise<void> {
+    if (!this.session?.sessionId || !this.isAuthenticated || !this.isOnline) {
+      return;
+    }
+
+    try {
+      await this.makeAnalyticsRequest('/track', {
+        method: 'POST',
+        body: JSON.stringify({
+          eventType: 'feature_used',
+          eventData: {
+            feature,
+            category: 'engagement',
+            metadata
+          }
+        })
+      });
+    } catch (error) {
+      console.error('Failed to track feature usage:', error);
     }
   }
 }

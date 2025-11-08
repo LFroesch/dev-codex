@@ -357,39 +357,78 @@ router.delete('/users/:id', async (req, res) => {
 // Get dashboard stats
 router.get('/stats', async (req, res) => {
   try {
-    const totalUsers = await User.countDocuments();
-    const totalProjects = await Project.countDocuments();
-    const activeSubscriptions = await User.countDocuments({ subscriptionStatus: 'active' });
-    const freeUsers = await User.countDocuments({ planTier: 'free' });
-    const proUsers = await User.countDocuments({ planTier: 'pro' });
-    const premiumUsers = await User.countDocuments({ planTier: 'premium' });
-
-    // Recent signups (last 30 days)
+    // OPTIMIZED: Calculate date filters once
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const recentSignups = await User.countDocuments({ createdAt: { $gte: thirtyDaysAgo } });
-
-    // Active sessions and analytics
-    const activeSessions = await UserSession.countDocuments({ isActive: true });
-    const activeVisibleSessions = await UserSession.countDocuments({ isActive: true, isVisible: true });
-
-    // Recent activity (last 24 hours)
     const twentyFourHoursAgo = new Date();
     twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
-    const recentActivity = await UserSession.countDocuments({
-      lastActivity: { $gte: twentyFourHoursAgo }
+
+    // OPTIMIZED: Run all queries in parallel (10 queries → 5 queries)
+    const [userStats, totalProjects, recentSignups, sessionStats, recentActivity] = await Promise.all([
+      // Single aggregate for all user counts (replaces 5 queries with 1)
+      User.aggregate([
+        {
+          $facet: {
+            total: [{ $count: 'count' }],
+            activeSubscriptions: [
+              { $match: { subscriptionStatus: 'active' } },
+              { $count: 'count' }
+            ],
+            planDistribution: [
+              {
+                $group: {
+                  _id: '$planTier',
+                  count: { $sum: 1 }
+                }
+              }
+            ]
+          }
+        }
+      ]),
+
+      Project.countDocuments(),
+
+      User.countDocuments({ createdAt: { $gte: thirtyDaysAgo } }),
+
+      // Single aggregate for session counts (replaces 2 queries with 1)
+      UserSession.aggregate([
+        {
+          $facet: {
+            active: [
+              { $match: { isActive: true } },
+              { $count: 'count' }
+            ],
+            activeVisible: [
+              { $match: { isActive: true, isVisible: true } },
+              { $count: 'count' }
+            ]
+          }
+        }
+      ]),
+
+      UserSession.countDocuments({ lastActivity: { $gte: twentyFourHoursAgo } })
+    ]);
+
+    // Extract user stats from aggregate result
+    const totalUsers = userStats[0]?.total[0]?.count || 0;
+    const activeSubscriptions = userStats[0]?.activeSubscriptions[0]?.count || 0;
+    const planDistribution = { free: 0, pro: 0, premium: 0 };
+    userStats[0]?.planDistribution.forEach((plan: any) => {
+      if (plan._id && planDistribution.hasOwnProperty(plan._id)) {
+        planDistribution[plan._id as 'free' | 'pro' | 'premium'] = plan.count;
+      }
     });
+
+    // Extract session stats from aggregate result
+    const activeSessions = sessionStats[0]?.active[0]?.count || 0;
+    const activeVisibleSessions = sessionStats[0]?.activeVisible[0]?.count || 0;
 
     res.json({
       totalUsers,
       totalProjects,
       activeSubscriptions,
       recentSignups,
-      planDistribution: {
-        free: freeUsers,
-        pro: proUsers,
-        premium: premiumUsers
-      },
+      planDistribution,
       analytics: {
         activeSessions,
         activeVisibleSessions,
@@ -452,23 +491,43 @@ router.get('/tickets', async (req, res) => {
       filter.priority = priority;
     }
 
-    const tickets = await Ticket.find(filter)
-      .populate('userId', 'firstName lastName email planTier')
-      .populate('adminUserId', 'firstName lastName email')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
+    // OPTIMIZED: Run all queries in parallel
+    const [tickets, total, statusCounts] = await Promise.all([
+      Ticket.find(filter)
+        .populate('userId', 'firstName lastName email planTier')
+        .populate('adminUserId', 'firstName lastName email')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
 
-    const total = await Ticket.countDocuments(filter);
+      Ticket.countDocuments(filter),
+
+      // FIXED: Single aggregate query instead of 4 separate countDocuments
+      Ticket.aggregate([
+        {
+          $group: {
+            _id: '$status',
+            count: { $sum: 1 }
+          }
+        }
+      ])
+    ]);
+
     const totalPages = Math.ceil(total / limit);
 
-    // Get ticket stats
+    // Convert aggregate results to stats object
     const stats = {
-      open: await Ticket.countDocuments({ status: 'open' }),
-      inProgress: await Ticket.countDocuments({ status: 'in_progress' }),
-      resolved: await Ticket.countDocuments({ status: 'resolved' }),
-      closed: await Ticket.countDocuments({ status: 'closed' })
+      open: 0,
+      inProgress: 0,
+      resolved: 0,
+      closed: 0
     };
+    statusCounts.forEach((item: any) => {
+      if (item._id === 'open') stats.open = item.count;
+      else if (item._id === 'in_progress') stats.inProgress = item.count;
+      else if (item._id === 'resolved') stats.resolved = item.count;
+      else if (item._id === 'closed') stats.closed = item.count;
+    });
 
     res.json({
       tickets,
@@ -1660,11 +1719,24 @@ router.get('/analytics/features/adoption', async (req: AuthRequest, res) => {
     ]);
 
     // Get plan-based breakdown for each feature
-    const totalUsersByPlan = {
-      free: await User.countDocuments({ planTier: 'free' }),
-      pro: await User.countDocuments({ planTier: 'pro' }),
-      premium: await User.countDocuments({ planTier: 'premium' })
-    };
+    // OPTIMIZED: Calculate all user counts ONCE before the loop (prevents N+1 queries)
+    const [totalUsersByPlan, totalUsers] = await Promise.all([
+      User.aggregate([
+        {
+          $group: {
+            _id: '$planTier',
+            count: { $sum: 1 }
+          }
+        }
+      ]).then(results => {
+        const counts: any = { free: 0, pro: 0, premium: 0 };
+        results.forEach((r: any) => {
+          if (r._id) counts[r._id] = r.count;
+        });
+        return counts;
+      }),
+      User.countDocuments()
+    ]);
 
     const features = await Promise.all(
       featureUsage.map(async (feature) => {
@@ -1700,7 +1772,7 @@ router.get('/analytics/features/adoption', async (req: AuthRequest, res) => {
           };
         });
 
-        const totalUsers = await User.countDocuments();
+        // FIXED: totalUsers now calculated ONCE outside the loop
         return {
           name: feature.feature,
           totalUsers: feature.totalUsers,
@@ -1719,71 +1791,6 @@ router.get('/analytics/features/adoption', async (req: AuthRequest, res) => {
   }
 });
 
-// Get error summary
-router.get('/analytics/errors/summary', async (req: AuthRequest, res) => {
-  try {
-    const { hours = '24' } = req.query;
-    const hoursInt = parseInt(hours as string);
-    const startDate = new Date();
-    startDate.setHours(startDate.getHours() - hoursInt);
-
-    const errors = await Analytics.aggregate([
-      {
-        $match: {
-          eventType: 'error_occurred',
-          timestamp: { $gte: startDate }
-        }
-      },
-      {
-        $group: {
-          _id: {
-            type: '$eventData.type',
-            message: '$eventData.message'
-          },
-          count: { $sum: 1 },
-          affectedUsers: { $addToSet: '$userId' },
-          firstOccurrence: { $min: '$timestamp' },
-          lastOccurrence: { $max: '$timestamp' },
-          pages: { $addToSet: '$eventData.page' },
-          sampleStack: { $first: '$eventData.stack' }
-        }
-      },
-      {
-        $project: {
-          type: '$_id.type',
-          message: '$_id.message',
-          count: 1,
-          affectedUsers: { $size: '$affectedUsers' },
-          firstOccurrence: 1,
-          lastOccurrence: 1,
-          pages: 1,
-          stack: '$sampleStack',
-          _id: 0
-        }
-      },
-      {
-        $sort: { count: -1 }
-      },
-      {
-        $limit: 20
-      }
-    ]);
-
-    const totalErrors = await Analytics.countDocuments({
-      eventType: 'error_occurred',
-      timestamp: { $gte: startDate }
-    });
-
-    res.json({
-      total: totalErrors,
-      period: `Last ${hours} hours`,
-      errors
-    });
-  } catch (error) {
-    console.error('Error fetching error summary:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
 
 // Get user growth data (for charts)
 router.get('/analytics/users/growth', async (req: AuthRequest, res) => {

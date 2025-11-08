@@ -843,7 +843,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
       <div className="w-full h-[400px] sm:h-[500px] lg:h-[600px] lg:flex-1 relative">
         {viewMode === 'graph' ? (
           /* Graph Canvas */
-          <div className="w-full h-full bg-base-200 rounded-lg border border-thick border-base-content/20 overflow-hidden">
+          <div className="w-full h-full bg-base-200/40 rounded-lg border border-thick border-base-content/20 overflow-hidden">
             <ReactFlow
               nodes={filteredNodes}
               edges={filteredEdges}

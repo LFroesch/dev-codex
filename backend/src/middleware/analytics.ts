@@ -1011,29 +1011,6 @@ export class AnalyticsService {
     );
   }
 
-  // NEW: Track errors
-  static async trackError(
-    userId: string,
-    sessionId: string,
-    error: Error,
-    page: string,
-    metadata?: Record<string, any>,
-    req?: Request
-  ) {
-    return this.trackEvent(
-      userId,
-      'error_occurred',
-      {
-        type: error.name,
-        message: error.message,
-        page,
-        category: 'error',
-        metadata
-      },
-      req
-    );
-  }
-
 }
 
 

@@ -1,5 +1,5 @@
 import { Component, ReactNode, ErrorInfo } from 'react';
-import analyticsService from '../services/analytics';
+import * as Sentry from '@sentry/react';
 
 interface Props {
   children: ReactNode;
@@ -30,25 +30,15 @@ class ErrorBoundary extends Component<Props, State> {
       this.props.onError(error, errorInfo);
     }
 
-    // Track error to analytics
-    try {
-      if (analyticsService && typeof analyticsService.trackError === 'function') {
-        analyticsService.trackError({
-          name: error.name,
-          message: error.message,
-          stack: error.stack || undefined,
-          componentStack: errorInfo.componentStack || undefined,
-          errorBoundary: true,
-          severity: 'high',
-          context: {
-            url: window.location.href,
-            userAgent: navigator.userAgent
-          }
-        });
-      }
-    } catch (e) {
-      console.error('Failed to track error to analytics:', e);
-    }
+    // Send error to Sentry with component stack context
+    Sentry.withScope((scope) => {
+      scope.setLevel('error');
+      scope.setTag('errorBoundary', 'true');
+      scope.setContext('errorInfo', {
+        componentStack: errorInfo.componentStack
+      });
+      Sentry.captureException(error);
+    });
   }
 
   render() {

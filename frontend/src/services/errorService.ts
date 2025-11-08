@@ -1,4 +1,3 @@
-import analyticsService from './analytics';
 import { toast } from './toast';
 import * as Sentry from '@sentry/react';
 
@@ -22,7 +21,6 @@ interface ErrorReport {
 
 class ErrorService {
   private static instance: ErrorService;
-  private errors: ErrorReport[] = [];
 
   private constructor() {}
 
@@ -52,9 +50,6 @@ class ErrorService {
       severity
     };
 
-    // Store error (in production, you'd send this to a logging service)
-    this.errors.push(errorReport);
-    
     // Log to console in development
     if (process.env.NODE_ENV === 'development') {
       console.group(`🚨 Error [${severity.toUpperCase()}]: ${errorReport.name}`);
@@ -72,33 +67,18 @@ class ErrorService {
           message: errorReport.message,
           context: errorReport.context
         });
-        
+
         if (context.userId) scope.setUser({ id: context.userId });
         if (context.component) scope.setTag('component', context.component);
         if (context.action) scope.setTag('action', context.action);
         if (context.projectId) scope.setTag('projectId', context.projectId);
-        
+
         if (typeof error === 'string') {
           Sentry.captureMessage(error);
         } else {
           Sentry.captureException(error);
         }
       });
-    } catch (e) {
-      // Fail silently
-    }
-
-    // Send to analytics service if available
-    try {
-      if (analyticsService && typeof analyticsService.trackError === 'function') {
-        analyticsService.trackError({
-          name: errorReport.name,
-          message: errorReport.message,
-          stack: errorReport.stack,
-          context: errorReport.context,
-          severity: errorReport.severity
-        });
-      }
     } catch (e) {
       // Fail silently
     }
@@ -168,16 +148,6 @@ class ErrorService {
     }, 'medium');
 
     toast.error(fallbackMessage);
-  }
-
-  // Get error history (for debugging)
-  public getErrorHistory(): ErrorReport[] {
-    return [...this.errors];
-  }
-
-  // Clear error history
-  public clearErrorHistory(): void {
-    this.errors = [];
   }
 }
 

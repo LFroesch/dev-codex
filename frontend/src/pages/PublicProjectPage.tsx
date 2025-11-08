@@ -64,7 +64,7 @@ const PublicProjectPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-base-100 to-base-200 flex items-center justify-center">
+      <div className="min-h-screen bg-base-100 flex items-center justify-center">
         <div className="text-center">
           <div className="loading loading-spinner loading-lg text-primary mb-4"></div>
           <p className="text-base-content/60">Loading project...</p>
@@ -75,7 +75,7 @@ const PublicProjectPage: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-base-100 to-base-200 flex items-center justify-center">
+      <div className="min-h-screen bg-base-100 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto px-4">
           <div className="w-24 h-24 bg-error/20 rounded-full flex items-center justify-center mx-auto mb-6">
             <svg className="w-12 h-12 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">

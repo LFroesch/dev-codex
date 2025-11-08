@@ -1,9 +1,18 @@
+// CRITICAL: dotenv MUST be first to load environment variables
+import dotenv from 'dotenv';
+dotenv.config();
+
+// CRITICAL: Sentry MUST be initialized before importing express or any other modules
+import { initSentry } from './config/sentry';
+import * as Sentry from '@sentry/node';
+initSentry();
+
+// Now import everything else
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { doubleCsrf } from 'csrf-csrf';
 import passport from 'passport';
-import dotenv from 'dotenv';
 import path from 'path';
 import helmet from 'helmet';
 import { Server } from 'socket.io';
@@ -34,11 +43,6 @@ import ReminderService from './services/reminderService';
 import UserSession from './models/UserSession';
 import cron from 'node-cron';
 import analyticsCompoundingService from './services/analyticsCompounding';
-
-dotenv.config();
-
-import { initSentry } from './config/sentry';
-initSentry();
 
 // Environment variable validation for production
 const validateProductionEnv = () => {
@@ -145,6 +149,10 @@ const app = express();
 const PORT = process.env.PORT || 5003;
 
 const isDevelopment = process.env.NODE_ENV !== 'production';
+
+// Sentry request handler - MUST be first middleware
+// In Sentry v8+, this is handled automatically by init()
+// No manual requestHandler needed
 
 // Determines allowed CORS origins based on environment
 const getAllowedOrigins = () => {
@@ -292,7 +300,7 @@ if (isDevelopment) {
 if (!isDevelopment) {
   const frontendDistPath = path.join(__dirname, '../../frontend/dist');
   app.use(express.static(frontendDistPath));
-  
+
   app.get('*', (req, res) => {
     if (!req.path.startsWith('/api/')) {
       res.sendFile(path.join(frontendDistPath, 'index.html'));
@@ -306,6 +314,8 @@ app.get('/health', (_, res) => {
   res.json({ status: 'OK' });
 });
 
+// Sentry error handler - MUST be after routes but BEFORE other error handlers
+Sentry.setupExpressErrorHandler(app);
 
 // Handles graceful server shutdown and cleanup
 const gracefulShutdown = async (_signal: string) => {

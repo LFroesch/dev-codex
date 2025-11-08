@@ -1,151 +1,61 @@
-import React, { useEffect, useState } from 'react';
-import { StatusBadge, LoadingSkeleton } from '../shared';
-
-interface ErrorData {
-  type: string;
-  message: string;
-  count: number;
-  affectedUsers: number;
-  firstOccurrence: string;
-  lastOccurrence: string;
-  pages?: string[];
-  stack?: string;
-}
+import React from 'react';
 
 interface ErrorsSummaryProps {
   hours?: number;
 }
 
 /**
- * ErrorsSummary component showing recent errors
- * Helps identify and triage issues quickly
+ * ErrorsSummary component - redirects to Sentry for error tracking
+ * Error tracking is now handled entirely by Sentry for better insights and analysis
  */
 const ErrorsSummary: React.FC<ErrorsSummaryProps> = ({ hours = 24 }) => {
-  const [errors, setErrors] = useState<ErrorData[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [expandedRow, setExpandedRow] = useState<number | null>(null);
-
-  useEffect(() => {
-    fetchErrors();
-  }, [hours]);
-
-  const fetchErrors = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(`/api/admin/analytics/errors/summary?hours=${hours}`, {
-        credentials: 'include'
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch errors');
-      }
-
-      const result = await response.json();
-      setErrors(result.errors || []);
-      setTotal(result.total || 0);
-    } catch (err) {
-      console.error('Error fetching errors summary:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
-    return <LoadingSkeleton type="card" />;
-  }
+  const sentryUrl = import.meta.env.VITE_SENTRY_DSN
+    ? `https://sentry.io/organizations/${import.meta.env.VITE_SENTRY_ORG || 'your-org'}/issues/`
+    : 'https://sentry.io';
 
   return (
     <div className="card bg-base-100 shadow-lg border-2 border-base-content/20">
       <div className="card-body">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="card-title">Recent Errors</h3>
-          <StatusBadge status={total > 0 ? 'error' : 'success'} label={`${total} total`} />
+        <h3 className="card-title">Error Tracking</h3>
+
+        <div className="alert alert-info">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <div>
+            <h4 className="font-bold">Error tracking powered by Sentry</h4>
+            <p className="text-sm">
+              All application errors are now tracked with Sentry for advanced error monitoring,
+              release tracking, user impact analysis, and performance correlation.
+            </p>
+          </div>
         </div>
 
-        {errors.length === 0 ? (
-          <div className="alert alert-success">
-            <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <div className="mt-4">
+          <a
+            href={sentryUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn-primary"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
             </svg>
-            <span>No errors in the last {hours} hours!</span>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="table table-zebra">
-              <thead>
-                <tr>
-                  <th className="w-8"></th>
-                  <th>Error Type</th>
-                  <th>Message</th>
-                  <th>Pages</th>
-                  <th>Count</th>
-                  <th>Users</th>
-                  <th>Last Seen</th>
-                </tr>
-              </thead>
-              <tbody>
-                {errors.map((error, index) => (
-                  <React.Fragment key={index}>
-                    <tr
-                      className="hover cursor-pointer"
-                      onClick={() => setExpandedRow(expandedRow === index ? null : index)}
-                    >
-                      <td>
-                        <button className="btn btn-ghost btn-xs">
-                          {expandedRow === index ? '▼' : '▶'}
-                        </button>
-                      </td>
-                      <td>
-                        <code className="text-xs bg-base-200 px-2 py-1 rounded">
-                          {error.type || 'Error'}
-                        </code>
-                      </td>
-                      <td className="max-w-xs truncate" title={error.message}>
-                        {error.message}
-                      </td>
-                      <td className="text-xs">
-                        {error.pages && error.pages.length > 0 ? (
-                          <div className="flex flex-wrap gap-1">
-                            {error.pages.slice(0, 2).map((page, i) => (
-                              <span key={i} className="badge badge-sm badge-outline">
-                                {page || 'unknown'}
-                              </span>
-                            ))}
-                            {error.pages.length > 2 && (
-                              <span className="badge badge-sm badge-ghost">+{error.pages.length - 2}</span>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-base-content/40">-</span>
-                        )}
-                      </td>
-                      <td>
-                        <span className="badge badge-error">{error.count}</span>
-                      </td>
-                      <td>{error.affectedUsers}</td>
-                      <td className="text-xs text-base-content/60">
-                        {new Date(error.lastOccurrence).toLocaleString()}
-                      </td>
-                    </tr>
-                    {expandedRow === index && error.stack && (
-                      <tr>
-                        <td colSpan={7} className="bg-base-200">
-                          <div className="p-3">
-                            <h4 className="text-sm font-semibold mb-2">Stack Trace:</h4>
-                            <pre className="text-xs bg-base-300 p-2 rounded overflow-x-auto max-h-48 overflow-y-auto">
-                              {error.stack}
-                            </pre>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </React.Fragment>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+            View Errors in Sentry
+          </a>
+        </div>
+
+        <div className="mt-4 text-sm opacity-70">
+          <p className="font-semibold mb-2">Sentry provides:</p>
+          <ul className="list-disc list-inside space-y-1">
+            <li>Smart error grouping and deduplication</li>
+            <li>Stack traces with source maps</li>
+            <li>User impact and breadcrumb tracking</li>
+            <li>Release and environment filtering</li>
+            <li>Performance monitoring integration</li>
+            <li>Automated alerting and notifications</li>
+          </ul>
+        </div>
       </div>
     </div>
   );

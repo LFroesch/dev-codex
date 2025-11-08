@@ -606,7 +606,7 @@ const StackPage: React.FC = () => {
                                 name={tech.name}
                                 version={tech.version}
                               />
-                              <div className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-base-200/50 border-2 border-base-content/10">
+                              <div className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-base-200/50 border-thick">
                                 <p className="text-xs text-base-content/70">{category.shortName}</p>
                               </div>
                             </div>

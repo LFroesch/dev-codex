@@ -58,8 +58,7 @@ router.post('/track', requireAuth, async (req: AuthRequest, res) => {
 
     const allowedEventTypes = [
       'project_open',
-      'feature_used',
-      'error_occurred'
+      'feature_used'
     ];
     if (!allowedEventTypes.includes(eventType)) {
       return res.status(400).json({ error: 'Invalid event type' });
@@ -188,41 +187,6 @@ router.post('/feature', requireAuth, async (req: AuthRequest, res) => {
   }
 });
 
-// Error tracking endpoint
-router.post('/error', requireAuth, async (req: AuthRequest, res) => {
-  try {
-    const sessionId = req.headers['x-session-id'] as string;
-    const { name, message, stack, page, metadata, timestamp } = req.body;
-
-    if (!sessionId) {
-      return res.status(400).json({ error: 'sessionId is required in X-Session-ID header' });
-    }
-
-    if (!message) {
-      return res.status(400).json({ error: 'error message is required' });
-    }
-
-    // Track error event
-    await AnalyticsService.trackEvent(
-      req.userId!,
-      'error_occurred',
-      {
-        type: name || 'Error',
-        message,
-        stack,
-        page,
-        metadata: metadata || {},
-        sessionId
-      },
-      req
-    );
-
-    res.json({ success: true });
-  } catch (error) {
-    console.error('Error tracking error event:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
 
 // Project Time Tracking Routes
 

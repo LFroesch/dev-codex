@@ -401,7 +401,7 @@ const Layout: React.FC = () => {
     };
 
     loadData();
-  }, [navigate, location.pathname]);
+  }, [navigate]);
 
   // Layout event listeners (project selection, sync, timeouts, etc.)
   useLayoutEvents({
@@ -480,7 +480,7 @@ const Layout: React.FC = () => {
                 </svg>
                 </div>
                 {location.pathname !== '/terminal' && (
-                  <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text whitespace-nowrap">Dev Codex</h1>
+                  <h1 className="text-xl font-bold bg-primary bg-clip-text whitespace-nowrap">Dev Codex</h1>
                 )}
 
                 {/* Search bar on tablet - hidden on mobile and terminal */}
@@ -1041,7 +1041,7 @@ const Layout: React.FC = () => {
                   <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
                 </svg>
               </div>
-              <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text">Dev Codex</h1>
+              <h1 className="text-xl font-bold bg-primary bg-clip-text">Dev Codex</h1>
               
               {/* Search bar */}
               <div className="relative ml-4 flex-center-gap-2">
@@ -1532,7 +1532,7 @@ const Layout: React.FC = () => {
           <>
 
             {/* Tab Content */}
-            <div className="flex-1 overflow-auto border-2 border-base-content/20 bg-gradient-to-br from-base-50 to-base-100/50 rounded-lg shadow-2xl backdrop-blur-none container-height-fix">
+            <div className="flex-1 overflow-auto border-2 border-base-content/20 bg-base-100 rounded-lg shadow-2xl backdrop-blur-none container-height-fix">
               <div className="p-2">
                 <div className="space-y-4">
                 {(activeProjectTab === 'active' || activeProjectTab === 'archived' || activeProjectTab === 'shared') && (
@@ -1657,16 +1657,16 @@ const Layout: React.FC = () => {
                                   </h3>
                                   {project.isLocked && (
                                     <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-warning/80 text-base-content/80 border-2 border-base-content/20"
-                                    style={{ color: getContrastTextColor("warning") }}>
+                                    style={{ color: getContrastTextColor("warning/80") }}>
                                       Locked
                                     </span>
                                   )}
                                 </div>
                                 {project.category && (
-                                  <h3 className={`border-2 border-base-content/20 font-semibold bg-info/40 truncate px-2 py-1 rounded-md group-hover:opacity-90 transition-opacity text-sm ${
+                                  <h3 className={`border-2 border-base-content/20 font-semibold bg-info/20 truncate px-2 py-1 rounded-md group-hover:opacity-90 transition-opacity text-sm ${
                                     project.isLocked ? 'opacity-50' : ''
                                   }`}
-                                  style={{ color: getContrastTextColor("info") }}>
+                                  style={{ color: getContrastTextColor("info/20") }}>
                                     {String(project.category).split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
                                   </h3>
                                 )}
@@ -1688,7 +1688,7 @@ const Layout: React.FC = () => {
                                   <div className="mb-3 flex gap-2 flex-wrap items-center">
                                     {stats.overdue > 0 && (
                                       <div className="inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold bg-error/20 border-2 border-error/40 gap-1"
-                                      style={{ color: getContrastTextColor("error") }}>
+                                      style={{ color: getContrastTextColor("error/20") }}>
                                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                         </svg>
@@ -1697,7 +1697,7 @@ const Layout: React.FC = () => {
                                     )}
                                     {stats.upcoming > 0 && (
                                       <div className="inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold bg-warning/20 border-2 border-warning/40 gap-1"
-                                      style={{ color: getContrastTextColor("warning") }}>
+                                      style={{ color: getContrastTextColor("warning/20") }}>
                                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                         </svg>
@@ -1712,21 +1712,21 @@ const Layout: React.FC = () => {
                               <div className="pt-3 border-t-2 border-base-content/20 mt-auto">
                                 <div className="flex items-center justify-between text-xs gap-2 flex-wrap">
                                   <div className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold font-mono bg-success/40 text-base-content/80 border-2 border-base-content/20 gap-1"
-                                  style={{ color: getContrastTextColor("success") }}>
+                                  style={{ color: getContrastTextColor("success/40") }}>
                                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
                                     <span>{formatProjectTime(project.id)}</span>
                                   </div>
                                   <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-accent/20 border-2 border-accent/40 font-mono gap-1"
-                                  style={{ color: getContrastTextColor("accent") }}>
+                                  style={{ color: getContrastTextColor("accent/20") }}>
                                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                     </svg>
                                     {getRelativeTime(project.updatedAt)}
                                   </span>
                                   <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-info/20 border-thick border-info/40 font-mono gap-1"
-                                  style={{ color: getContrastTextColor("info") }}>
+                                  style={{ color: getContrastTextColor("info/20") }}>
                                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -1765,7 +1765,7 @@ const Layout: React.FC = () => {
           /* Discover Tab - With sub-tabs */
           <>
             
-            <div className="flex-1 overflow-auto border-2 border-base-content/20 bg-gradient-to-br from-base-50 to-base-100/50 rounded-lg shadow-2xl backdrop-blur-none container-height-fix">
+            <div className="flex-1 overflow-auto border-2 border-base-content/20 bg-base-100 rounded-lg shadow-2xl backdrop-blur-none container-height-fix">
               <div className="p-2">
                 <Outlet />
               </div>
@@ -1773,7 +1773,7 @@ const Layout: React.FC = () => {
           </>
         ) : location.pathname.startsWith('/project/') || location.pathname.startsWith('/user/') ? (
           /* Public Pages - Same styling as discover */
-          <div className="flex-1 overflow-auto border-2 border-base-content/20 bg-gradient-to-br from-base-50 to-base-100/50 mx-4 rounded-lg shadow-2xl backdrop-blur-none container-height-fix">
+          <div className="flex-1 overflow-auto border-2 border-base-content/20 bg-base-100 mx-4 rounded-lg shadow-2xl backdrop-blur-none container-height-fix">
             <div className="p-2">
               <Outlet />
             </div>
@@ -1831,7 +1831,7 @@ const Layout: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex-1 overflow-auto border-2 border-base-content/20 bg-gradient-to-br from-base-50 to-base-100/50 rounded-lg shadow-2xl backdrop-blur-none container-height-fix">
+            <div className="flex-1 overflow-auto border-2 border-base-content/20 bg-base-100 rounded-lg shadow-2xl backdrop-blur-none container-height-fix">
               <div className="p-1">
                 <Outlet context={{
                   selectedProject,
@@ -1847,7 +1847,7 @@ const Layout: React.FC = () => {
           </>
         ) : location.pathname === '/terminal' ? (
           /* Terminal - Command Interface */
-          <div className="flex-1 min-h-0 overflow-hidden border-2 border-base-content/20 bg-gradient-to-br from-base-50 to-base-100/50 rounded-lg shadow-2xl backdrop-blur-none">
+          <div className="flex-1 min-h-0 overflow-hidden border-2 border-base-content/20 bg-base-100 rounded-lg shadow-2xl backdrop-blur-none">
             <div className="h-full">
               <Outlet context={{
                 user,
@@ -1864,7 +1864,7 @@ const Layout: React.FC = () => {
           </div>
         ) : location.pathname === '/billing' || location.pathname === '/account-settings' || location.pathname === '/support' || location.pathname === '/help' || location.pathname === '/news' ? (
           /* Billing, Account Settings, Support, Help, and News - No sub-menu */
-          <div className="flex-1 border-2 border-base-content/20 bg-gradient-to-br from-base-50 to-base-100/50 mx-4 rounded-lg shadow-2xl backdrop-blur-none">
+          <div className="flex-1 border-2 border-base-content/20 bg-base-100 mx-4 rounded-lg shadow-2xl backdrop-blur-none">
             <div className="p-2">
               <Outlet context={{
                 activeNewsTab,
@@ -1876,7 +1876,7 @@ const Layout: React.FC = () => {
           /* Project Details Tab - Show project content with tabs */
           <>
             {/* Page Content */}
-            <div className={`flex-1 ${location.pathname === '/features' ? 'overflow-auto lg:overflow-hidden' : 'overflow-auto'} border-2 border-base-content/20 bg-gradient-to-br from-base-50 to-base-100/50 rounded-lg shadow-2xl backdrop-blur-none container-height-fix ${location.pathname === '/support' ? 'mt-4' : ''}`}>
+            <div className={`flex-1 ${location.pathname === '/features' ? 'overflow-auto lg:overflow-hidden' : 'overflow-auto'} border-2 border-base-content/20 bg-base-100 rounded-lg shadow-2xl backdrop-blur-none container-height-fix ${location.pathname === '/support' ? 'mt-4' : ''}`}>
               {selectedProject ? (
                 <div className="p-2">
                   <Outlet context={{
@@ -1913,7 +1913,7 @@ const Layout: React.FC = () => {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                       </svg>
                     </div>
-                    <h2 className="text-2xl font-semibold mb-4 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">Select a project to get started</h2>
+                    <h2 className="text-2xl font-semibold mb-4">Select a project to get started</h2>
                     <p className="text-base-content/60 mb-6">Go to My Projects to choose a project</p>
                     <button
                       onClick={() => navigate('/projects')}

@@ -76,7 +76,7 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({ colors }) => {
                   <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
                 </svg>
               </div>
-              <span className="font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-sm">Dev Codex</span>
+              <span className="font-bold bg-primary bg-clip-text text-sm">Dev Codex</span>
             </div>
             <div className="flex gap-1">
               <button className="btn btn-primary btn-xs">Menu</button>
@@ -109,7 +109,7 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({ colors }) => {
             <p className="text-xs text-base-content/60 mb-2">Web App project preview</p>
             <button className="btn btn-primary btn-xs">View</button>
           </div>
-          <div className="bg-gradient-to-br from-base-50 to-base-100/50 rounded-xl p-3 border-subtle shadow-lg">
+          <div className="bg-base-100 rounded-xl p-3 border-subtle shadow-lg">
             <div className="flex items-center gap-2 mb-1">
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: colors.secondary }}></div>
               <h4 className="text-xs font-bold">Another Project</h4>

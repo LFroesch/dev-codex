@@ -60,12 +60,6 @@ export const getContrastTextColor = (colorValue?: string): string => {
     const [color, opacityStr] = colorValue.split('/');
     opacity = parseInt(opacityStr) / 100;
     colorValue = color;
-
-    // For low opacity backgrounds (< 50%), always use black text
-    // The background is very light due to transparency
-    if (opacity < 0.4) {
-      return '#000000';
-    }
   }
 
   // Handle DaisyUI color names by getting their actual computed values
@@ -99,10 +93,34 @@ export const getContrastTextColor = (colorValue?: string): string => {
           
           // Convert saturation from decimal to percentage
           if (s <= 1) s *= 100;
-          
-          const [r, g, b] = hslToRgb(h, s, l);
+
+          let [r, g, b] = hslToRgb(h, s, l);
+
+          // Blend with base background if opacity < 1
+          if (opacity < 1) {
+            const baseHslString = styles.getPropertyValue('--b1').trim() || styles.getPropertyValue('--b').trim();
+
+            if (baseHslString) {
+              const baseMatches = baseHslString.match(/[\d.]+/g);
+              if (baseMatches && baseMatches.length >= 3) {
+                const baseL = parseFloat(baseMatches[0]);
+                let baseS = parseFloat(baseMatches[1]);
+                const baseH = parseFloat(baseMatches[2]);
+
+                if (baseS <= 1) baseS *= 100;
+
+                const [baseR, baseG, baseB] = hslToRgb(baseH, baseS, baseL);
+
+                // Blend foreground with base background
+                r = Math.round(r * opacity + baseR * (1 - opacity));
+                g = Math.round(g * opacity + baseG * (1 - opacity));
+                b = Math.round(b * opacity + baseB * (1 - opacity));
+              }
+            }
+          }
+
           const luminance = calculateLuminance(r, g, b);
-          
+
           return luminance > 0.35 ? '#000000' : '#ffffff';
         }
       }

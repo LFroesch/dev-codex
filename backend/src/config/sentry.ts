@@ -34,7 +34,9 @@ export const initSentry = () => {
       // Profiling (performance insights)
       profilesSampleRate: environment === 'production' ? 0.1 : 1.0,
       integrations: [
+        // Add profiling integration to default integrations
         nodeProfilingIntegration(),
+        // Default integrations are automatically included (Http, OnUncaughtException, etc.)
       ],
       
       // Release tracking

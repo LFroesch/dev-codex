@@ -100,12 +100,13 @@ export const logError = (message: string, error?: Error, context?: Record<string
   });
   
   logger.error(message, logContext);
-  
-  // Send critical errors to Sentry
-  if (error && (context?.severity === 'critical' || context?.severity === 'high')) {
+
+  // Send ALL errors to Sentry
+  if (error) {
     try {
       captureErrorWithContext(error, {
         message,
+        severity: context?.severity || 'medium',
         ...context
       });
     } catch (sentryError) {

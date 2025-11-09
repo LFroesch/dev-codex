@@ -31,16 +31,16 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({
   };
 
   const sizeClasses = {
-    sm: 'badge-sm',
-    md: 'badge-md',
-    lg: 'badge-lg'
+    sm: 'h-5 px-2 py-0.5 text-xs',
+    md: 'h-6 px-3 py-1 text-sm',
+    lg: 'h-7 px-4 py-1 text-base'
   };
 
   const config = statusConfig[status];
   const displayLabel = label || config.defaultLabel;
 
   return (
-    <span className={`badge ${config.color} ${sizeClasses[size]} ${className}`}>
+    <span className={`badge ${config.color} ${sizeClasses[size]} font-bold ${className}`}>
       {displayLabel}
     </span>
   );

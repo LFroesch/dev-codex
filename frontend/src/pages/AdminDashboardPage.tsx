@@ -84,9 +84,11 @@ const AdminDashboardPage: React.FC = () => {
   const [ticketStatusTab, setTicketStatusTab] = useState<'open' | 'in_progress' | 'resolved' | 'closed'>('open');
   const [users, setUsers] = useState<User[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [closedTickets, setClosedTickets] = useState<Ticket[]>([]);
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [ticketStats, setTicketStats] = useState<TicketStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingClosedTickets, setLoadingClosedTickets] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -167,10 +169,11 @@ const AdminDashboardPage: React.FC = () => {
 
   const fetchTickets = async () => {
     try {
-      // Fetch all tickets for Kanban board (no pagination or status filter)
+      // Fetch tickets excluding closed ones (they're loaded on demand)
       const params = new URLSearchParams({
         page: '1',
-        limit: '1000' // Get all tickets for the Kanban board
+        limit: '1000',
+        excludeStatus: 'closed'
       });
 
       const response = await fetch(`/api/admin/tickets?${params}`, {
@@ -186,6 +189,32 @@ const AdminDashboardPage: React.FC = () => {
       setTicketStats(data.stats);
     } catch (err: any) {
       setError(err.message);
+    }
+  };
+
+  const fetchClosedTickets = async () => {
+    try {
+      setLoadingClosedTickets(true);
+      const params = new URLSearchParams({
+        page: '1',
+        limit: '1000',
+        status: 'closed'
+      });
+
+      const response = await fetch(`/api/admin/tickets?${params}`, {
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch closed tickets');
+      }
+
+      const data = await response.json();
+      setClosedTickets(data.tickets);
+    } catch (err: any) {
+      toast.error('Failed to load closed tickets: ' + err.message);
+    } finally {
+      setLoadingClosedTickets(false);
     }
   };
 
@@ -365,6 +394,21 @@ const AdminDashboardPage: React.FC = () => {
   const handleStatusChange = async (ticketId: string, newStatus: 'open' | 'in_progress' | 'resolved' | 'closed') => {
     try {
       await updateTicket(ticketId, newStatus);
+
+      // If moving a ticket to closed status, remove it from main list and add to closed
+      if (newStatus === 'closed') {
+        const closedTicket = tickets.find(t => t.ticketId === ticketId);
+        if (closedTicket && closedTickets.length > 0) {
+          // If closed tickets are loaded, add this ticket to the list
+          setClosedTickets([closedTicket, ...closedTickets]);
+        }
+      }
+      // If moving a ticket from closed to another status, refresh the main list
+      else if (closedTickets.find(t => t.ticketId === ticketId)) {
+        await fetchTickets();
+        // Remove from closed list if it was there
+        setClosedTickets(closedTickets.filter(t => t.ticketId !== ticketId));
+      }
     } catch (err: any) {
       toast.error('Failed to update status: ' + err.message);
     }
@@ -781,7 +825,7 @@ const AdminDashboardPage: React.FC = () => {
             <div className="card-body" style={{ overflow: 'visible' }}>
             <div className="flex-between-center mb-4">
               <h2 className="card-title">Users</h2>
-              <div className="badge badge-neutral">{users.length} of {stats?.totalUsers} total</div>
+              <div className="badge badge-neutral h-6 px-3 py-1 font-bold text-sm">{users.length} of {stats?.totalUsers} total</div>
             </div>
 
             <div className="overflow-x-auto" style={{ paddingBottom: '200px' }}>
@@ -809,10 +853,10 @@ const AdminDashboardPage: React.FC = () => {
                       <td>{user.email}</td>
                       <td>
                         <div className="dropdown dropdown-end">
-                          <div 
+                          <div
                             tabIndex={0}
-                            role="button" 
-                            className={`badge ${getPlanBadgeColor(user.planTier)} cursor-pointer`}
+                            role="button"
+                            className={`badge ${getPlanBadgeColor(user.planTier)} h-6 px-3 py-1 font-bold text-sm cursor-pointer`}
                           >
                             {user.planTier}
                           </div>
@@ -829,15 +873,15 @@ const AdminDashboardPage: React.FC = () => {
                         </div>
                       </td>
                       <td>
-                        <div className={`badge ${user.subscriptionStatus === 'active' ? 'badge-success' : 'badge-ghost'}`}>
+                        <div className={`badge ${user.subscriptionStatus === 'active' ? 'badge-success' : 'badge-ghost'} h-6 px-3 py-1 font-bold text-sm`}>
                           {user.subscriptionStatus || 'inactive'}
                         </div>
                       </td>
                       <td>{formatDate(user.createdAt)}</td>
                       <td>
                         <div className="flex flex-col gap-1">
-                          {user.isAdmin && <div className="badge badge-warning">Admin</div>}
-                          {user.isBanned && <div className="badge badge-error">Banned</div>}
+                          {user.isAdmin && <div className="badge badge-warning h-6 px-3 py-1 font-bold text-sm">Admin</div>}
+                          {user.isBanned && <div className="badge badge-error h-6 px-3 py-1 font-bold text-sm">Banned</div>}
                         </div>
                       </td>
                       <td>
@@ -989,6 +1033,9 @@ const AdminDashboardPage: React.FC = () => {
               onStatusChange={handleStatusChange}
               onQuickReply={handleQuickReply}
               onViewFull={setSelectedTicket}
+              onLoadClosedTickets={fetchClosedTickets}
+              closedTickets={closedTickets}
+              loadingClosedTickets={loadingClosedTickets}
             />
 
               {/* Ticket Details Modal */}
@@ -1026,18 +1073,18 @@ const AdminDashboardPage: React.FC = () => {
                         <div className="text-sm text-base-content/60">{selectedTicket.userId.email}</div>
                       </div>
                       <div>
-                        <span className="text-xs text-base-content/60 uppercase tracking-wider">Category</span>
-                        <div className="badge badge-outline mt-1">{selectedTicket.category.replace('_', ' ')}</div>
+                        <span className="text-xs text-base-content/60 uppercase tracking-wider block mb-1">Category</span>
+                        <div className="badge badge-outline h-6 px-3 py-1 font-bold text-sm">{selectedTicket.category.replace('_', ' ')}</div>
                       </div>
                       <div>
-                        <span className="text-xs text-base-content/60 uppercase tracking-wider">Priority</span>
-                        <div className={`badge mt-1 ${getPriorityBadgeColor(selectedTicket.priority)}`}>
+                        <span className="text-xs text-base-content/60 uppercase tracking-wider block mb-1">Priority</span>
+                        <div className={`badge ${getPriorityBadgeColor(selectedTicket.priority)} h-6 px-3 py-1 font-bold text-sm`}>
                           {selectedTicket.priority}
                         </div>
                       </div>
                       <div>
-                        <span className="text-xs text-base-content/60 uppercase tracking-wider">Status</span>
-                        <div className={`badge mt-1 ${getStatusBadgeColor(selectedTicket.status)}`}>
+                        <span className="text-xs text-base-content/60 uppercase tracking-wider block mb-1">Status</span>
+                        <div className={`badge ${getStatusBadgeColor(selectedTicket.status)} h-6 px-3 py-1 font-bold text-sm`}>
                           {getStatusDisplayText(selectedTicket.status)}
                         </div>
                       </div>
@@ -1358,7 +1405,7 @@ const AdminDashboardPage: React.FC = () => {
                            style={{ color: getContrastTextColor() }}>
                           {post.type === 'news' ? '📰' : post.type === 'update' ? '🔄' : post.type === 'dev_log' ? '👩‍💻' : post.type === 'important' ? '⚠️' : '📢'} {post.title}
                         </h3>
-                        <span className={`badge badge-xs ${post.isPublished ? 'badge-success' : 'badge-ghost'}`}>
+                        <span className={`badge ${post.isPublished ? 'badge-success' : 'badge-ghost'} h-5 px-2 py-0.5 font-bold text-xs`}>
                           {post.isPublished ? '✓' : '○'}
                         </span>
                       </div>
@@ -1438,15 +1485,15 @@ const AdminDashboardPage: React.FC = () => {
                   </div>
                   
                   <div>
-                    <label className="font-semibold text-base-content/70">Plan </label>
-                    <div className={`badge ${getPlanBadgeColor(selectedUser.planTier)} badge-lg`}>
+                    <label className="font-semibold text-base-content/70 mr-2">Plan</label>
+                    <div className={`badge ${getPlanBadgeColor(selectedUser.planTier)} h-7 px-4 py-1 font-bold text-base`}>
                       {selectedUser.planTier}
                     </div>
                   </div>
-                  
+
                   <div>
-                    <label className="font-semibold text-base-content/70">Status </label>
-                    <div className={`badge ${selectedUser.subscriptionStatus === 'active' ? 'badge-success' : 'badge-ghost'} badge-lg`}>
+                    <label className="font-semibold text-base-content/70 mr-2">Status</label>
+                    <div className={`badge ${selectedUser.subscriptionStatus === 'active' ? 'badge-success' : 'badge-ghost'} h-7 px-4 py-1 font-bold text-base`}>
                       {selectedUser.subscriptionStatus || 'inactive'}
                     </div>
                   </div>
@@ -1464,8 +1511,8 @@ const AdminDashboardPage: React.FC = () => {
                   </div>
                   
                   <div>
-                    <label className="font-semibold text-base-content/70">Admin Status </label>
-                    <div className={`badge ${selectedUser.isAdmin ? 'badge-warning' : 'badge-neutral'} badge-lg`}>
+                    <label className="font-semibold text-base-content/70 mr-2">Admin Status</label>
+                    <div className={`badge ${selectedUser.isAdmin ? 'badge-warning' : 'badge-neutral'} h-7 px-4 py-1 font-bold text-base`}>
                       {selectedUser.isAdmin ? 'Admin' : 'Regular User'}
                     </div>
                   </div>
@@ -1717,7 +1764,8 @@ const AdminDashboardPage: React.FC = () => {
                 <div className="bg-base-200 p-3 rounded-lg mb-3">
                   <p className="text-sm font-semibold mb-1">User Information</p>
                   <p className="text-sm text-base-content/70">
-                    <strong>Plan:</strong> <span className={`badge ${getPlanBadgeColor(userToRefund.planTier)} badge-sm`}>
+                    <strong className="mr-2">Plan:</strong>
+                    <span className={`badge ${getPlanBadgeColor(userToRefund.planTier)} h-5 px-2 py-0.5 font-bold text-xs`}>
                       {userToRefund.planTier}
                     </span>
                   </p>
@@ -1823,11 +1871,11 @@ const AdminDashboardPage: React.FC = () => {
                         </td>
                         <td>
                           {project.isArchived ? (
-                            <span className="badge badge-ghost">Archived</span>
+                            <span className="badge badge-ghost h-6 px-3 py-1 font-bold text-sm">Archived</span>
                           ) : project.isLocked ? (
-                            <span className="badge badge-warning">Locked</span>
+                            <span className="badge badge-warning h-6 px-3 py-1 font-bold text-sm">Locked</span>
                           ) : (
-                            <span className="badge badge-success">Active</span>
+                            <span className="badge badge-success h-6 px-3 py-1 font-bold text-sm">Active</span>
                           )}
                         </td>
                         <td>{new Date(project.updatedAt).toLocaleDateString()}</td>

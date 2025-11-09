@@ -239,7 +239,7 @@ const AdminActivityFeed: React.FC = () => {
         <div className="flex items-center gap-4">
           <h2 className="text-xl font-bold">Activity Feed</h2>
           {period && (
-            <span className="badge badge-neutral">{period}</span>
+            <span className="badge badge-neutral h-6 px-3 py-1 font-bold text-sm">{period}</span>
           )}
           <span className="text-sm text-base-content/60">{feed.length} events</span>
         </div>
@@ -260,6 +260,11 @@ const AdminActivityFeed: React.FC = () => {
               <option value={24}>Last 24 hours</option>
               <option value={48}>Last 2 days</option>
               <option value={168}>Last 7 days</option>
+              <option value={720}>Last 30 days</option>
+              <option value={2160}>Last 90 days</option>
+              <option value={4380}>Last 6 months</option>
+              <option value={8760}>Last 1 year</option>
+              <option value={99999}>All Time</option>
             </select>
           </div>
 
@@ -348,7 +353,7 @@ const AdminActivityFeed: React.FC = () => {
 
                   {/* Type badge and time */}
                   <div className="flex items-center gap-2">
-                    <span className={`badge badge-sm ${getItemBadgeColor(item)}`}>
+                    <span className={`badge ${getItemBadgeColor(item)} h-5 px-2 py-0.5 font-bold text-xs`}>
                       {item.type === 'analytics' ? item.eventType : item.action}
                     </span>
                     <span

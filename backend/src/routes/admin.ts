@@ -482,10 +482,14 @@ router.get('/tickets', async (req, res) => {
     const skip = (page - 1) * limit;
     const status = req.query.status as string;
     const priority = req.query.priority as string;
+    const excludeStatus = req.query.excludeStatus as string;
 
     let filter: any = {};
     if (status && status !== 'all') {
       filter.status = status;
+    }
+    if (excludeStatus) {
+      filter.status = { $ne: excludeStatus };
     }
     if (priority && priority !== 'all') {
       filter.priority = priority;

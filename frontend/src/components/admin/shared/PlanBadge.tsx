@@ -38,15 +38,15 @@ const PlanBadge: React.FC<PlanBadgeProps> = ({
   };
 
   const sizeClasses = {
-    sm: 'badge-sm',
-    md: 'badge-md',
-    lg: 'badge-lg'
+    sm: 'h-5 px-2 py-0.5 text-xs',
+    md: 'h-6 px-3 py-1 text-sm',
+    lg: 'h-7 px-4 py-1 text-base'
   };
 
   const config = planConfig[plan];
 
   return (
-    <span className={`badge ${config.color} ${sizeClasses[size]} gap-1 ${className}`}>
+    <span className={`badge ${config.color} ${sizeClasses[size]} font-bold gap-1 ${className}`}>
       {showIcon && <span>{config.icon}</span>}
       <span>{config.label}</span>
     </span>

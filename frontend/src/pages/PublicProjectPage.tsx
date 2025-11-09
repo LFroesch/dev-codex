@@ -108,14 +108,14 @@ const PublicProjectPage: React.FC = () => {
 
   if (!project) return null;
 
-  // Group docs by type for better organization
-  const docsByType = project.docs?.reduce((acc: any, doc: any) => {
-    if (!acc[doc.type]) acc[doc.type] = [];
-    acc[doc.type].push(doc);
+  // Group components by type for better organization
+  const componentsByType = project.components?.reduce((acc: any, component: any) => {
+    if (!acc[component.type]) acc[component.type] = [];
+    acc[component.type].push(component);
     return acc;
   }, {}) || {};
 
-  const docTypes = [
+  const componentTypes = [
     { value: 'Model', label: 'Models', emoji: '🗃️', description: 'Database schemas' },
     { value: 'Route', label: 'Routes', emoji: '🛣️', description: 'API endpoints' },
     { value: 'API', label: 'APIs', emoji: '🔌', description: 'API documentation' },
@@ -130,15 +130,15 @@ const PublicProjectPage: React.FC = () => {
   const visibility = project.publicVisibility || {
     description: true,
     tags: true,
-    docs: true,
+    components: true,
     techStack: true,
     timestamps: true,
   };
 
-  const hasAnyDocs = project.docs && project.docs.length > 0 && visibility.docs;
+  const hasAnyComponents = project.components && project.components.length > 0 && visibility.components;
   const hasTechStack = project.technologies && project.technologies.length > 0 && visibility.techStack;
   const hasDeploymentLinks = project.deploymentData && (project.deploymentData.liveUrl || project.deploymentData.githubRepo);
-  const hasContent = hasAnyDocs || hasTechStack || hasDeploymentLinks;
+  const hasContent = hasAnyComponents || hasTechStack || hasDeploymentLinks;
 
   return (
     <div className="flex-1 w-full max-w-7xl mx-auto p-2 sm:p-4 bg-base-100 flex flex-col mb-4 min-h-0">
@@ -379,7 +379,7 @@ const PublicProjectPage: React.FC = () => {
         )}
 
         {/* Documentation */}
-        {hasAnyDocs && (
+        {hasAnyComponents && (
           <div className="section-container">
             <div className="section-content">
               <div className="flex items-center gap-3 mb-6">
@@ -389,30 +389,30 @@ const PublicProjectPage: React.FC = () => {
                 <h2 className="font-semibold text-lg px-2 py-1 rounded-md bg-base-300 inline-block w-fit">Documentation</h2>
               </div>
               <div className="space-y-8">
-              {docTypes.map((docType) => {
-                const docs = docsByType[docType.value];
-                if (!docs || docs.length === 0) return null;
+              {componentTypes.map((componentType) => {
+                const components = componentsByType[componentType.value];
+                if (!components || components.length === 0) return null;
 
                 return (
-                  <div key={docType.value}>
+                  <div key={componentType.value}>
                     <div className="flex items-center gap-4 mb-6">
                       <div className="section-icon">
-                        <span className="text-2xl">{docType.emoji}</span>
+                        <span className="text-2xl">{componentType.emoji}</span>
                       </div>
                       <div className="flex-1">
-                        <h3 className="text-2xl font-bold text-base-content">{docType.label}</h3>
-                        <p className="text-base-content/60">{docType.description}</p>
+                        <h3 className="text-2xl font-bold text-base-content">{componentType.label}</h3>
+                        <p className="text-base-content/60">{componentType.description}</p>
                       </div>
-                      <div className="badge badge-primary badge-lg">{docs.length}</div>
+                      <div className="badge badge-primary badge-lg">{components.length}</div>
                     </div>
-                    
+
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      {docs.map((doc: any) => (
-                        <div key={doc.id} className="section-container">
+                      {components.map((component: any) => (
+                        <div key={component.id} className="section-container">
                           <div className="section-content">
-                            <h4 className="font-semibold text-base mb-3 px-2 py-1 rounded-md bg-base-300 inline-block w-fit">{doc.title}</h4>
+                            <h4 className="font-semibold text-base mb-3 px-2 py-1 rounded-md bg-base-300 inline-block w-fit">{component.title}</h4>
                             <div className="mockup-code bg-base-200 text-xs">
-                              <pre><code>{doc.content}</code></pre>
+                              <pre><code>{component.content}</code></pre>
                             </div>
                           </div>
                         </div>

@@ -34,16 +34,16 @@ export interface TeamMemberRetentionPolicy {
 export const RETENTION_POLICIES = {
   activityLog: {
     free: {
-      detailedDays: 30,
-      summaryYears: 0,  // No summaries for free tier
+      detailedDays: 180,  // 6 months (sufficient audit trail)
+      summaryYears: 0,    // No summaries - critical events preserved separately
     },
     pro: {
-      detailedDays: 180,  // 6 months
-      summaryYears: 3,
+      detailedDays: 180,  // 6 months (sufficient audit trail)
+      summaryYears: 0,    // No summaries - critical events preserved separately
     },
     premium: {
-      detailedDays: 365,  // 1 year
-      summaryYears: -1,   // Forever
+      detailedDays: 180,  // 6 months (sufficient audit trail)
+      summaryYears: 0,    // No summaries - critical events preserved separately
     },
   } as Record<PlanTier, RetentionPolicy>,
 
@@ -109,6 +109,7 @@ export const NOTIFICATION_IMPORTANCE: Record<string, 'critical' | 'standard' | '
   // Standard - medium retention
   project_shared: 'standard',
   todo_assigned: 'standard',
+  stale_items_summary: 'standard',
 
   // Transient - short retention
   todo_due_soon: 'transient',

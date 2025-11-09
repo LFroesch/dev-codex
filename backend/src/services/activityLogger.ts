@@ -8,7 +8,7 @@ export interface ActivityLogData {
   userId: string;
   sessionId: string;
   action: string;
-  resourceType: 'project' | 'note' | 'todo' | 'doc' | 'devlog' | 'link' | 'tech' | 'package' | 'team' | 'settings';
+  resourceType: 'project' | 'note' | 'todo' | 'component' | 'devlog' | 'link' | 'tech' | 'team' | 'settings';
   resourceId?: string;
   details?: {
     field?: string;
@@ -70,12 +70,6 @@ class ActivityLogger {
       case 'removed_tech':
         return `${userName} removed technology "${resourceName}"`;
 
-      case 'added_package':
-        return `${userName} added package "${resourceName}"`;
-
-      case 'removed_package':
-        return `${userName} removed package "${resourceName}"`;
-
       case 'exported_data':
         const format = data.details?.metadata?.format || 'unknown format';
         return `${userName} exported project data to ${format}`;
@@ -100,12 +94,26 @@ class ActivityLogger {
     }
   }
 
+  // Critical actions that should never expire (audit trail)
+  private readonly CRITICAL_ACTIONS = [
+    'invited_member',
+    'removed_member',
+    'updated_role',
+    'shared_project',
+    'unshared_project',
+    'archived_project',
+    'unarchived_project'
+  ];
+
   async log(data: ActivityLogData): Promise<IActivityLog> {
     try {
       // Get user's plan tier to set appropriate retention policy
       const planTier = await getUserPlanTier(data.userId);
       const timestamp = new Date();
-      const expiresAt = calculateActivityLogExpiration(planTier, timestamp);
+
+      // Critical audit events never expire, others expire based on plan tier
+      const isCritical = this.CRITICAL_ACTIONS.includes(data.action);
+      const expiresAt = isCritical ? undefined : calculateActivityLogExpiration(planTier, timestamp);
 
       // Get user info for human-readable description
       const user = await User.findById(data.userId).select('firstName lastName email').lean();

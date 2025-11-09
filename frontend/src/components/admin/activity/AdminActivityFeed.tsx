@@ -27,14 +27,29 @@ interface ActivityFeedItem {
 const AdminActivityFeed: React.FC = () => {
   const [feed, setFeed] = useState<ActivityFeedItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hours, setHours] = useState(24);
   const [limit, setLimit] = useState(50);
   const [period, setPeriod] = useState('');
 
+  // Filter states
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterType, setFilterType] = useState<'all' | 'analytics' | 'activity'>('all');
+  const [filterEventType, setFilterEventType] = useState<string>('all');
+  const [filterAction, setFilterAction] = useState<string>('all');
+  const [filterResourceType, setFilterResourceType] = useState<string>('all');
+  const [filterUserEmail, setFilterUserEmail] = useState<string>('');
+  const [debouncedUserEmail, setDebouncedUserEmail] = useState<string>('');
+
   const fetchActivityFeed = async () => {
     try {
-      setLoading(true);
+      // Only show full loading on initial mount
+      if (feed.length === 0) {
+        setLoading(true);
+      } else {
+        setRefreshing(true);
+      }
       setError(null);
 
       const response = await fetch(`/api/admin/activity/feed?hours=${hours}&limit=${limit}`, {
@@ -46,19 +61,72 @@ const AdminActivityFeed: React.FC = () => {
       }
 
       const data = await response.json();
-      setFeed(data.feed || []);
+
+      // Apply client-side filters
+      let filteredFeed = data.feed || [];
+
+      // Filter by type (analytics vs activity)
+      if (filterType !== 'all') {
+        filteredFeed = filteredFeed.filter((item: ActivityFeedItem) => item.type === filterType);
+      }
+
+      // Filter by event type (for analytics)
+      if (filterEventType !== 'all') {
+        filteredFeed = filteredFeed.filter((item: ActivityFeedItem) =>
+          item.type === 'analytics' && item.eventType === filterEventType
+        );
+      }
+
+      // Filter by action (for activity logs)
+      if (filterAction !== 'all') {
+        filteredFeed = filteredFeed.filter((item: ActivityFeedItem) =>
+          item.type === 'activity' && item.action === filterAction
+        );
+      }
+
+      // Filter by resource type (for activity logs)
+      if (filterResourceType !== 'all') {
+        filteredFeed = filteredFeed.filter((item: ActivityFeedItem) =>
+          item.type === 'activity' && item.resourceType === filterResourceType
+        );
+      }
+
+      // Filter by user email (using debounced value)
+      if (debouncedUserEmail.trim()) {
+        const searchTerm = debouncedUserEmail.toLowerCase();
+        filteredFeed = filteredFeed.filter((item: ActivityFeedItem) => {
+          if (!item.user) return false;
+          return (
+            (item.user.email?.toLowerCase().includes(searchTerm)) ||
+            (item.user.firstName?.toLowerCase().includes(searchTerm)) ||
+            (item.user.lastName?.toLowerCase().includes(searchTerm))
+          );
+        });
+      }
+
+      setFeed(filteredFeed);
       setPeriod(data.period || '');
     } catch (err: any) {
       setError(err.message);
       console.error('Error fetching activity feed:', err);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
+  // Debounce user email search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedUserEmail(filterUserEmail);
+    }, 500); // Wait 500ms after user stops typing
+
+    return () => clearTimeout(timer);
+  }, [filterUserEmail]);
+
   useEffect(() => {
     fetchActivityFeed();
-  }, [hours, limit]);
+  }, [hours, limit, filterType, filterEventType, filterAction, filterResourceType, debouncedUserEmail]);
 
   const getActivityIcon = (item: ActivityFeedItem) => {
     if (item.type === 'analytics') {
@@ -242,6 +310,12 @@ const AdminActivityFeed: React.FC = () => {
             <span className="badge badge-neutral h-6 px-3 py-1 font-bold text-sm">{period}</span>
           )}
           <span className="text-sm text-base-content/60">{feed.length} events</span>
+          {refreshing && (
+            <div className="flex items-center gap-1">
+              <div className="loading loading-spinner loading-xs"></div>
+              <span className="text-xs text-base-content/50">Updating...</span>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-3">
@@ -285,6 +359,17 @@ const AdminActivityFeed: React.FC = () => {
           </div>
 
           <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`btn btn-sm mt-6 ${showFilters ? 'btn-primary' : 'btn-ghost'}`}
+            style={showFilters ? { color: getContrastTextColor('primary') } : {}}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            </svg>
+            Filters
+          </button>
+
+          <button
             onClick={fetchActivityFeed}
             className="btn btn-sm btn-primary mt-6"
             style={{ color: getContrastTextColor('primary') }}
@@ -296,6 +381,134 @@ const AdminActivityFeed: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Filter Panel */}
+      {showFilters && (
+        <div className="bg-base-100 p-4 rounded-lg border-2 border-base-content/20 space-y-4">
+          <h3 className="font-semibold text-lg">Filters</h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Type Filter */}
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text font-semibold">Type</span>
+              </label>
+              <select
+                className="select select-bordered select-sm"
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value as 'all' | 'analytics' | 'activity')}
+              >
+                <option value="all">All Types</option>
+                <option value="analytics">Analytics Events</option>
+                <option value="activity">Activity Logs</option>
+              </select>
+            </div>
+
+            {/* User Email Search */}
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text font-semibold">User Search</span>
+              </label>
+              <input
+                type="text"
+                placeholder="Search by name or email..."
+                className="input input-bordered input-sm"
+                value={filterUserEmail}
+                onChange={(e) => setFilterUserEmail(e.target.value)}
+              />
+            </div>
+
+            {/* Event Type Filter (for analytics) */}
+            {(filterType === 'all' || filterType === 'analytics') && (
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-semibold">Event Type</span>
+                </label>
+                <select
+                  className="select select-bordered select-sm"
+                  value={filterEventType}
+                  onChange={(e) => setFilterEventType(e.target.value)}
+                >
+                  <option value="all">All Events</option>
+                  <option value="user_signup">User Signup</option>
+                  <option value="user_upgraded">User Upgraded</option>
+                  <option value="user_downgraded">User Downgraded</option>
+                  <option value="project_created">Project Created</option>
+                  <option value="error_occurred">Error Occurred</option>
+                </select>
+              </div>
+            )}
+
+            {/* Action Filter (for activity logs) */}
+            {(filterType === 'all' || filterType === 'activity') && (
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-semibold">Action</span>
+                </label>
+                <select
+                  className="select select-bordered select-sm"
+                  value={filterAction}
+                  onChange={(e) => setFilterAction(e.target.value)}
+                >
+                  <option value="all">All Actions</option>
+                  <option value="created">Created</option>
+                  <option value="updated">Updated</option>
+                  <option value="deleted">Deleted</option>
+                  <option value="viewed">Viewed</option>
+                  <option value="joined_project">Joined Project</option>
+                  <option value="left_project">Left Project</option>
+                  <option value="invited_member">Invited Member</option>
+                  <option value="removed_member">Removed Member</option>
+                  <option value="updated_role">Updated Role</option>
+                  <option value="added_tech">Added Tech</option>
+                  <option value="removed_tech">Removed Tech</option>
+                </select>
+              </div>
+            )}
+
+            {/* Resource Type Filter (for activity logs) */}
+            {(filterType === 'all' || filterType === 'activity') && (
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-semibold">Resource Type</span>
+                </label>
+                <select
+                  className="select select-bordered select-sm"
+                  value={filterResourceType}
+                  onChange={(e) => setFilterResourceType(e.target.value)}
+                >
+                  <option value="all">All Resources</option>
+                  <option value="project">Project</option>
+                  <option value="note">Note</option>
+                  <option value="todo">Todo</option>
+                  <option value="component">Component</option>
+                  <option value="devlog">DevLog</option>
+                  <option value="link">Link</option>
+                  <option value="tech">Tech</option>
+                  <option value="team">Team</option>
+                  <option value="settings">Settings</option>
+                </select>
+              </div>
+            )}
+          </div>
+
+          {/* Clear Filters Button */}
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={() => {
+                setFilterType('all');
+                setFilterEventType('all');
+                setFilterAction('all');
+                setFilterResourceType('all');
+                setFilterUserEmail('');
+              }}
+              className="btn btn-ghost btn-sm"
+            >
+              Clear All Filters
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Feed */}
       {feed.length === 0 ? (

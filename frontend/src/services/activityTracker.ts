@@ -19,7 +19,7 @@ class ActivityTracker {
 
   // Track when user creates something
   async trackCreate(
-    resourceType: 'note' | 'todo' | 'doc' | 'devlog' | 'link' | 'tech' | 'package',
+    resourceType: 'note' | 'todo' | 'component' | 'devlog' | 'link' | 'tech',
     resourceId: string,
     resourceName?: string,
     fileName?: string,
@@ -47,7 +47,7 @@ class ActivityTracker {
 
   // Track when user updates something
   async trackUpdate(
-    resourceType: 'note' | 'todo' | 'doc' | 'devlog' | 'link' | 'tech' | 'package' | 'project',
+    resourceType: 'note' | 'todo' | 'component' | 'devlog' | 'link' | 'tech' | 'project',
     resourceId: string,
     field: string,
     oldValue: any,
@@ -79,7 +79,7 @@ class ActivityTracker {
 
   // Track when user deletes something
   async trackDelete(
-    resourceType: 'note' | 'todo' | 'doc' | 'devlog' | 'link' | 'tech' | 'package',
+    resourceType: 'note' | 'todo' | 'component' | 'devlog' | 'link' | 'tech',
     resourceId: string,
     resourceName?: string,
     fileName?: string,
@@ -107,7 +107,7 @@ class ActivityTracker {
 
   // Track when user views something
   async trackView(
-    resourceType: 'project' | 'note' | 'doc',
+    resourceType: 'project' | 'note' | 'component',
     resourceId: string
   ) {
     if (!this.currentProjectId) return;

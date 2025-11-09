@@ -11,7 +11,7 @@ export interface ActivityLogEntry {
   };
   sessionId: string;
   action: string;
-  resourceType: 'project' | 'note' | 'todo' | 'doc' | 'devlog' | 'link' | 'tech' | 'package' | 'team' | 'settings';
+  resourceType: 'project' | 'note' | 'todo' | 'component' | 'devlog' | 'link' | 'tech' | 'team' | 'settings';
   resourceId?: string;
   details: {
     field?: string;
@@ -164,12 +164,12 @@ export const formatActivityMessage = (activity: ActivityLogEntry): string => {
   switch (activity.action) {
     case 'created':
       if (resourceName || fileName) {
-        if (resourceType === 'tech' || resourceType === 'package') {
+        if (resourceType === 'tech') {
           return `${userName} added ${getResourceDisplay()} to stack`;
         } else if (resourceType === 'todo') {
           return `${userName} added todo ${getResourceDisplay()}`;
-        } else if (resourceType === 'doc') {
-          return `${userName} added documentation ${getResourceDisplay()}`;
+        } else if (resourceType === 'component') {
+          return `${userName} added component ${getResourceDisplay()}`;
         } else if (resourceType === 'note') {
           return `${userName} added note ${getResourceDisplay()}`;
         } else if (resourceType === 'devlog') {
@@ -178,12 +178,12 @@ export const formatActivityMessage = (activity: ActivityLogEntry): string => {
         return `${userName} created ${getResourceDisplay()}`;
       }
       // Fallback for when no name is available
-      if (resourceType === 'tech' || resourceType === 'package') {
+      if (resourceType === 'tech') {
         return `${userName} added item to stack`;
       } else if (resourceType === 'todo') {
         return `${userName} added a todo`;
-      } else if (resourceType === 'doc') {
-        return `${userName} added documentation`;
+      } else if (resourceType === 'component') {
+        return `${userName} added a component`;
       } else if (resourceType === 'note') {
         return `${userName} added a note`;
       } else if (resourceType === 'devlog') {
@@ -203,12 +203,12 @@ export const formatActivityMessage = (activity: ActivityLogEntry): string => {
       
     case 'deleted':
       if (resourceName || fileName) {
-        if (resourceType === 'tech' || resourceType === 'package') {
+        if (resourceType === 'tech') {
           return `${userName} removed ${getResourceDisplay()} from stack`;
         } else if (resourceType === 'todo') {
           return `${userName} removed todo ${getResourceDisplay()}`;
-        } else if (resourceType === 'doc') {
-          return `${userName} removed documentation ${getResourceDisplay()}`;
+        } else if (resourceType === 'component') {
+          return `${userName} removed component ${getResourceDisplay()}`;
         } else if (resourceType === 'note') {
           return `${userName} removed note ${getResourceDisplay()}`;
         } else if (resourceType === 'devlog') {
@@ -217,12 +217,12 @@ export const formatActivityMessage = (activity: ActivityLogEntry): string => {
         return `${userName} deleted ${getResourceDisplay()}`;
       }
       // Fallback for when no name is available
-      if (resourceType === 'tech' || resourceType === 'package') {
+      if (resourceType === 'tech') {
         return `${userName} removed item from stack`;
       } else if (resourceType === 'todo') {
         return `${userName} removed a todo`;
-      } else if (resourceType === 'doc') {
-        return `${userName} removed documentation`;
+      } else if (resourceType === 'component') {
+        return `${userName} removed a component`;
       } else if (resourceType === 'note') {
         return `${userName} removed a note`;
       } else if (resourceType === 'devlog') {
@@ -273,21 +273,7 @@ export const formatActivityMessage = (activity: ActivityLogEntry): string => {
         return `${userName} removed "${removedTech}" technology`;
       }
       return `${userName} removed a technology`;
-      
-    case 'added_package':
-      const packageName = activity.details?.metadata?.packageName || activity.details?.newValue;
-      if (packageName) {
-        return `${userName} added package "${packageName}"`;
-      }
-      return `${userName} added a package`;
-      
-    case 'removed_package':
-      const removedPackage = activity.details?.metadata?.packageName || activity.details?.oldValue;
-      if (removedPackage) {
-        return `${userName} removed package "${removedPackage}"`;
-      }
-      return `${userName} removed a package`;
-      
+
     case 'shared_project':
       return `${userName} made the project public`;
     case 'unshared_project':

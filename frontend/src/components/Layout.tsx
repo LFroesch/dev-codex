@@ -123,7 +123,7 @@ const Layout: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeProjectTab, setActiveProjectTab] = useState('active');
-  const [activeAdminTab, setActiveAdminTab] = useState<'users' | 'tickets' | 'analytics' | 'news'>('users');
+  const [activeAdminTab, setActiveAdminTab] = useState<'users' | 'tickets' | 'analytics' | 'news' | 'activity'>('users');
   const [isHandlingTimeout, setIsHandlingTimeout] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [analyticsReady, setAnalyticsReady] = useState(false);
@@ -1817,7 +1817,7 @@ const Layout: React.FC = () => {
                   <span className="hidden sm:inline">Platform Analytics</span>
                   <span className="sm:hidden">Analytics</span>
                 </button>
-                <button 
+                <button
                   className={`tab tab-sm font-bold text-xs sm:text-base px-3 sm:px-4 whitespace-nowrap ${activeAdminTab === 'news' ? 'tab-active' : ''}`}
                   style={activeAdminTab === 'news' ? {color: getContrastTextColor()} : {}}
                   onClick={() => setActiveAdminTab('news')}
@@ -1827,6 +1827,17 @@ const Layout: React.FC = () => {
                   </svg>
                   <span className="hidden sm:inline">News & Updates</span>
                   <span className="sm:hidden">News</span>
+                </button>
+                <button
+                  className={`tab tab-sm font-bold text-xs sm:text-base px-3 sm:px-4 whitespace-nowrap ${activeAdminTab === 'activity' ? 'tab-active' : ''}`}
+                  style={activeAdminTab === 'activity' ? {color: getContrastTextColor()} : {}}
+                  onClick={() => setActiveAdminTab('activity')}
+                >
+                  <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="hidden sm:inline">Activity Log</span>
+                  <span className="sm:hidden">Activity</span>
                 </button>
               </div>
             </div>

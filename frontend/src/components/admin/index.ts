@@ -2,3 +2,4 @@
 export * from './shared';
 export * from './analytics';
 export * from './users';
+export * from './activity';

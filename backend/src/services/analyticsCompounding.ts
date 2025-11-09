@@ -20,23 +20,15 @@ export class AnalyticsCompoundingService {
 
   /**
    * Calculate TTL for compacted analytics based on plan tier
+   *
+   * UPDATED: Compacted data never expires for better UX!
+   * Rationale: Compacted data is already heavily compressed (1000s of events → 1 daily record)
+   * Storage cost is minimal, but UX value is high (users expect historical stats to persist)
    */
   calculateTTL(planTier: string): Date | undefined {
-    const now = new Date();
-    switch (planTier) {
-      case 'free':
-        // 90 days retention
-        return new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
-      case 'pro':
-        // 365 days retention
-        return new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000);
-      case 'premium':
-        // Unlimited retention
-        return undefined;
-      default:
-        // Default to 30 days
-        return new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-    }
+    // Compacted analytics NEVER expire - they're already compressed and tiny
+    // This provides better UX: users won't lose their "all time" stats
+    return undefined;
   }
 
   /**

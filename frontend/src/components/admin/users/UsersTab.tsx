@@ -412,7 +412,7 @@ const UsersTab: React.FC = () => {
 
               {/* Results count */}
               {!loading && (
-                <div className="badge badge-neutral badge-lg">
+                <div className="badge badge-neutral h-7 px-4 py-1 font-bold text-base">
                   {totalUsers > 0 ? `${users.length} of ${totalUsers} users` : `${users.length} users`}
                 </div>
               )}

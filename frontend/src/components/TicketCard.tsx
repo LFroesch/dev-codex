@@ -113,7 +113,7 @@ const TicketCard: React.FC<TicketCardProps> = ({
               </h3>
             </div>
           </div>
-          <code className="text-xs badge badge-ghost whitespace-nowrap flex-shrink-0">
+          <code className="badge badge-ghost h-5 px-2 py-0.5 font-bold text-xs whitespace-nowrap flex-shrink-0">
             {ticket.ticketId.split('-').slice(-1)[0]}
           </code>
         </div>
@@ -134,7 +134,7 @@ const TicketCard: React.FC<TicketCardProps> = ({
             </div>
             <div className="text-xs truncate">{ticket.userId.email}</div>
           </div>
-          <div className="badge badge-xs badge-primary flex-shrink-0">{ticket.userId.planTier}</div>
+          <div className="badge badge-primary h-5 px-2 py-0.5 font-bold text-xs flex-shrink-0">{ticket.userId.planTier}</div>
         </div>
 
         {/* Message Preview - Not draggable */}
@@ -142,7 +142,7 @@ const TicketCard: React.FC<TicketCardProps> = ({
 
         {/* Category and Time - Not draggable */}
         <div className="flex items-center justify-between gap-2 text-xs mb-3 flex-wrap">
-          <div className="badge badge-outline badge-sm flex-shrink-0">
+          <div className="badge badge-outline h-5 px-2 py-0.5 font-bold text-xs flex-shrink-0">
             {ticket.category.replace('_', ' ')}
           </div>
           <div className="text-base-content/60 flex-shrink-0">{getTimeSince(ticket.createdAt)}</div>

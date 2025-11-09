@@ -1873,8 +1873,8 @@ const Layout: React.FC = () => {
               }} />
             </div>
           </div>
-        ) : location.pathname === '/billing' || location.pathname === '/account-settings' || location.pathname === '/support' || location.pathname === '/help' || location.pathname === '/news' ? (
-          /* Billing, Account Settings, Support, Help, and News - No sub-menu */
+        ) : location.pathname === '/billing' || location.pathname === '/account-settings' || location.pathname === '/support' || location.pathname === '/help' || location.pathname === '/news' || location.pathname === '/notifications' ? (
+          /* Billing, Account Settings, Support, Help, News, and Notifications - No sub-menu */
           <div className="flex-1 border-2 border-base-content/20 bg-base-100 mx-4 rounded-lg shadow-2xl backdrop-blur-none">
             <div className="p-2">
               <Outlet context={{

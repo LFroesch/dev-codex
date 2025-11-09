@@ -8,7 +8,7 @@ import {
 
 interface CreateNotificationData {
   userId: mongoose.Types.ObjectId | string;
-  type: 'project_invitation' | 'project_shared' | 'team_member_added' | 'team_member_removed' | 'todo_assigned' | 'todo_due_soon' | 'todo_overdue' | 'subtask_completed';
+  type: 'project_invitation' | 'project_shared' | 'team_member_added' | 'team_member_removed' | 'todo_assigned' | 'todo_due_soon' | 'todo_overdue' | 'subtask_completed' | 'stale_items_summary';
   title: string;
   message: string;
   actionUrl?: string;

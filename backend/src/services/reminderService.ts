@@ -3,6 +3,7 @@ import { Project } from '../models/Project';
 import Notification from '../models/Notification';
 import { User } from '../models/User';
 import NotificationService from './notificationService';
+import staleItemService from './staleItemService';
 
 class ReminderService {
   private static instance: ReminderService;
@@ -31,6 +32,11 @@ class ReminderService {
     // Daily summary at 8 AM
     cron.schedule('0 8 * * *', () => {
       this.sendDailySummary();
+    });
+
+    // Weekly stale items check on Mondays at 9 AM
+    cron.schedule('0 9 * * 1', () => {
+      this.checkStaleItems();
     });
 
     this.isInitialized = true;
@@ -238,10 +244,24 @@ class ReminderService {
   }
 
 
+  private async checkStaleItems(): Promise<void> {
+    try {
+      console.log('[ReminderService] Starting weekly stale items check');
+      await staleItemService.checkAllUsers();
+      console.log('[ReminderService] Completed weekly stale items check');
+    } catch (error) {
+      console.error('[ReminderService] Error in weekly stale items check:', error);
+    }
+  }
+
   // Public method to manually trigger checks (for testing)
   public async triggerChecks(): Promise<void> {
     await this.checkDueTodos();
     await this.checkReminderNotifications();
+  }
+
+  public async triggerStaleItemsCheck(): Promise<void> {
+    await this.checkStaleItems();
   }
 
   public stop(): void {

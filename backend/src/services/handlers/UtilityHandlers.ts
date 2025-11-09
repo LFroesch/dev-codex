@@ -7,6 +7,7 @@ import { logError } from '../../config/logger';
 import NotificationService from '../notificationService';
 import { NewsPost } from '../../models/NewsPost';
 import { calculateTextMetrics } from '../../utils/textMetrics';
+import staleItemService from '../staleItemService';
 
 /**
  * Handlers for utility commands (help, themes, swap, export, news, wizards)
@@ -1505,6 +1506,127 @@ export class UtilityHandlers extends BaseCommandHandler {
       return {
         type: ResponseType.ERROR,
         message: 'Unable to clear notifications at this time'
+      };
+    }
+  }
+
+  /**
+   * Handle /stale command - View stale items (notes/todos without activity)
+   */
+  async handleStaleItems(parsed: ParsedCommand, currentProjectId?: string): Promise<CommandResponse> {
+    try {
+      const summary = await staleItemService.findStaleItems(this.userId.toString());
+
+      // Determine which project to filter by (from @project mention or current project)
+      let targetProjectId: string | undefined;
+      let projectName: string | undefined;
+
+      if (parsed.projectMention) {
+        // Look up project by name from the mention
+        const project = await Project.findOne({
+          $or: [
+            { ownerId: this.userId },
+            { 'teamMembers.userId': this.userId }
+          ],
+          name: { $regex: new RegExp(`^${parsed.projectMention}$`, 'i') }
+        }).lean();
+
+        if (project) {
+          targetProjectId = project._id.toString();
+          projectName = project.name;
+        } else {
+          return {
+            type: ResponseType.ERROR,
+            message: `Project "${parsed.projectMention}" not found`
+          };
+        }
+      } else if (currentProjectId) {
+        targetProjectId = currentProjectId;
+      }
+
+      // Filter by project if specified
+      let filteredNotes = summary.staleNotes;
+      let filteredTodos = summary.staleTodos;
+
+      if (targetProjectId) {
+        filteredNotes = summary.staleNotes.filter(n => n.projectId === targetProjectId);
+        filteredTodos = summary.staleTodos.filter(t => t.projectId === targetProjectId);
+
+        // Get project name from the filtered items if not already set
+        if (!projectName) {
+          projectName = filteredNotes[0]?.projectName || filteredTodos[0]?.projectName;
+        }
+      }
+
+      const totalCount = filteredNotes.length + filteredTodos.length;
+
+      if (totalCount === 0) {
+        const msg = targetProjectId
+          ? `✨ No stale items found in ${projectName || 'this project'}! All notes and todos are up to date.`
+          : '✨ No stale items found! All your notes and todos are up to date.';
+
+        return {
+          type: ResponseType.INFO,
+          message: msg,
+          data: {
+            staleNotes: [],
+            staleTodos: [],
+            totalCount: 0
+          },
+          suggestions: ['/view notes', '/view todos']
+        };
+      }
+
+      // Group by project for better organization
+      const notesByProject: Record<string, typeof summary.staleNotes> = {};
+      const todosByProject: Record<string, typeof summary.staleTodos> = {};
+
+      filteredNotes.forEach(note => {
+        if (!notesByProject[note.projectId]) {
+          notesByProject[note.projectId] = [];
+        }
+        notesByProject[note.projectId].push(note);
+      });
+
+      filteredTodos.forEach(todo => {
+        if (!todosByProject[todo.projectId]) {
+          todosByProject[todo.projectId] = [];
+        }
+        todosByProject[todo.projectId].push(todo);
+      });
+
+      const noteText = filteredNotes.length === 1 ? 'note' : 'notes';
+      const todoText = filteredTodos.length === 1 ? 'todo' : 'todos';
+
+      let message = targetProjectId
+        ? `⏰ Stale Items in ${projectName}\n\n`
+        : '⏰ Stale Items Found\n\n';
+
+      if (filteredNotes.length > 0 && filteredTodos.length > 0) {
+        message += `${filteredNotes.length} ${noteText} (14+ days) and ${filteredTodos.length} ${todoText} (7+ days) need attention`;
+      } else if (filteredNotes.length > 0) {
+        message += `${filteredNotes.length} ${noteText} haven't been updated in 14+ days`;
+      } else {
+        message += `${filteredTodos.length} ${todoText} haven't been updated in 7+ days`;
+      }
+
+      return {
+        type: ResponseType.DATA,
+        message,
+        data: {
+          staleNotes: filteredNotes,
+          staleTodos: filteredTodos,
+          notesByProject,
+          todosByProject,
+          totalCount
+        },
+        suggestions: ['/view notes', '/view todos']
+      };
+    } catch (error) {
+      logError('Error fetching stale items', error as Error);
+      return {
+        type: ResponseType.ERROR,
+        message: 'Unable to fetch stale items at this time'
       };
     }
   }

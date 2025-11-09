@@ -10,3 +10,4 @@ export { default as HelpRenderer } from './HelpRenderer';
 export { default as ThemesRenderer } from './ThemesRenderer';
 export { default as NewsRenderer } from './NewsRenderer';
 export { default as ProjectsRenderer } from './ProjectsRenderer';
+export { default as StaleItemsRenderer } from './StaleItemsRenderer';

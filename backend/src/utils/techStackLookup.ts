@@ -40,7 +40,7 @@ export function lookupTech(name: string): TechLookupResult {
 
     if (match) {
       // Map frontend category to backend category
-      const backendCategory = mapToBackendCategory(category.id, 'tech');
+      const backendCategory = mapToBackendCategory(category.id);
 
       return {
         found: true,
@@ -77,40 +77,39 @@ function removeTechSuffix(name: string): string {
 }
 
 /**
- * Map frontend category IDs to backend category strings
+ * Map frontend category IDs to backend tech category strings
  */
-function mapToBackendCategory(frontendCategory: string, type: 'tech' | 'package'): string {
-  const categoryMap: { [key: string]: { tech: string, package: string } } = {
-    'frontend-framework': { tech: 'framework', package: 'ui' },
-    'meta-framework': { tech: 'framework', package: 'ui' },
-    'ui-library': { tech: 'framework', package: 'ui' },
-    'styling': { tech: 'styling', package: 'ui' },
-    'backend-language': { tech: 'runtime', package: 'api' },
-    'backend-framework': { tech: 'framework', package: 'api' },
-    'database': { tech: 'database', package: 'data' },
-    'database-orm': { tech: 'database', package: 'data' },
-    'mobile-framework': { tech: 'framework', package: 'ui' },
-    'desktop-framework': { tech: 'framework', package: 'ui' },
-    'hosting-deployment': { tech: 'deployment', package: 'utility' },
-    'development-tools': { tech: 'tooling', package: 'utility' },
-    'testing': { tech: 'testing', package: 'utility' },
-    'authentication': { tech: 'tooling', package: 'auth' },
-    'payments': { tech: 'tooling', package: 'utility' },
-    'email': { tech: 'tooling', package: 'api' },
-    'file-storage': { tech: 'tooling', package: 'data' },
-    'analytics': { tech: 'tooling', package: 'data' },
-    'monitoring': { tech: 'tooling', package: 'utility' },
-    'cms': { tech: 'tooling', package: 'data' },
-    'state-management': { tech: 'tooling', package: 'state' },
-    'data-fetching': { tech: 'tooling', package: 'api' },
-    'forms': { tech: 'tooling', package: 'forms' },
-    'routing': { tech: 'tooling', package: 'routing' },
-    'animation': { tech: 'tooling', package: 'animation' },
-    'utilities': { tech: 'tooling', package: 'utility' }
+function mapToBackendCategory(frontendCategory: string): string {
+  const categoryMap: { [key: string]: string } = {
+    'frontend-framework': 'framework',
+    'meta-framework': 'framework',
+    'ui-library': 'framework',
+    'styling': 'styling',
+    'backend-language': 'runtime',
+    'backend-framework': 'framework',
+    'database': 'database',
+    'database-orm': 'database',
+    'mobile-framework': 'framework',
+    'desktop-framework': 'framework',
+    'hosting-deployment': 'deployment',
+    'development-tools': 'tooling',
+    'testing': 'testing',
+    'authentication': 'tooling',
+    'payments': 'tooling',
+    'email': 'tooling',
+    'file-storage': 'tooling',
+    'analytics': 'tooling',
+    'monitoring': 'tooling',
+    'cms': 'tooling',
+    'state-management': 'tooling',
+    'data-fetching': 'tooling',
+    'forms': 'tooling',
+    'routing': 'tooling',
+    'animation': 'tooling',
+    'utilities': 'tooling'
   };
 
-  const mapping = categoryMap[frontendCategory] || { tech: 'tooling', package: 'utility' };
-  return type === 'tech' ? mapping.tech : mapping.package;
+  return categoryMap[frontendCategory] || 'tooling';
 }
 
 /**
@@ -118,11 +117,4 @@ function mapToBackendCategory(frontendCategory: string, type: 'tech' | 'package'
  */
 export function getValidTechCategories(): string[] {
   return ['styling', 'database', 'framework', 'runtime', 'deployment', 'testing', 'tooling'];
-}
-
-/**
- * Get list of all valid backend package categories
- */
-export function getValidPackageCategories(): string[] {
-  return ['ui', 'state', 'routing', 'forms', 'animation', 'utility', 'api', 'auth', 'data'];
 }

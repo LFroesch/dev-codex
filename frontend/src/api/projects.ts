@@ -6,7 +6,6 @@ import type {
   CreateTodoData, UpdateTodoData, BaseTodo,
   CreateDevLogData, UpdateDevLogData, BaseDevLogEntry,
   CreateTechnologyData, BaseSelectedTechnology,
-  CreatePackageData, BaseSelectedPackage,
   CreateRelationshipData, ComponentRelationship
 } from './types';
 
@@ -131,19 +130,6 @@ class ProjectService extends BaseApiService {
 
   async updateTechnology(projectId: string, category: string, name: string, data: { version: string }): Promise<{ message: string; technology: BaseSelectedTechnology }> {
     return this.put(`/${projectId}/technologies/${category}/${encodeURIComponent(name)}`, data);
-  }
-
-  // Packages management
-  async addPackage(projectId: string, data: CreatePackageData): Promise<{ message: string; package: BaseSelectedPackage }> {
-    return this.post(`/${projectId}/packages`, data);
-  }
-
-  async removePackage(projectId: string, category: string, name: string): Promise<{ message: string }> {
-    return this.delete(`/${projectId}/packages/${category}/${encodeURIComponent(name)}`);
-  }
-
-  async updatePackage(projectId: string, category: string, name: string, data: { version: string }): Promise<{ message: string; package: BaseSelectedPackage }> {
-    return this.put(`/${projectId}/packages/${category}/${encodeURIComponent(name)}`, data);
   }
 
   // Import/Export functionality

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { analyticsAPI, newsAPI } from '../api';
 import ConfirmationModal from '../components/ConfirmationModal';
-import { AnalyticsTab, UsersTab } from '../components/admin';
+import { AnalyticsTab, UsersTab, AdminActivityFeed } from '../components/admin';
 import TicketKanban from '../components/TicketKanban';
 import { getContrastTextColor } from '../utils/contrastTextColor';
 import { csrfFetch } from '../utils/csrf';
@@ -79,7 +79,7 @@ interface NewsPost {
 
 const AdminDashboardPage: React.FC = () => {
   const navigate = useNavigate();
-  const context = useOutletContext<{ activeAdminTab?: 'users' | 'tickets' | 'analytics' | 'news' }>();
+  const context = useOutletContext<{ activeAdminTab?: 'users' | 'tickets' | 'analytics' | 'news' | 'activity' }>();
   const activeTab = context?.activeAdminTab || 'users';
   const [ticketStatusTab, setTicketStatusTab] = useState<'open' | 'in_progress' | 'resolved' | 'closed'>('open');
   const [users, setUsers] = useState<User[]>([]);
@@ -1178,6 +1178,11 @@ const AdminDashboardPage: React.FC = () => {
         {/* Analytics Tab */}
         {activeTab === 'analytics' && (
           <AnalyticsTab />
+        )}
+
+        {/* Activity Log Tab */}
+        {activeTab === 'activity' && (
+          <AdminActivityFeed />
         )}
 
         {/* News Tab */}

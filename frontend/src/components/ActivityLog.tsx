@@ -173,8 +173,6 @@ const ActivityLog: React.FC<ActivityLogProps> = ({
         return <span className="text-primary">👥</span>;
       case 'added_tech':
       case 'removed_tech':
-      case 'added_package':
-      case 'removed_package':
         return <span className="text-secondary">⚡</span>;
       case 'shared_project':
       case 'unshared_project':
@@ -199,7 +197,7 @@ const ActivityLog: React.FC<ActivityLogProps> = ({
         return '📝';
       case 'todo':
         return '✓';
-      case 'doc':
+      case 'component':
         return '📚';
       case 'devlog':
         return '🐛';
@@ -207,8 +205,6 @@ const ActivityLog: React.FC<ActivityLogProps> = ({
         return '🔗';
       case 'tech':
         return '⚡';
-      case 'package':
-        return '📦';
       case 'team':
         return '👥';
       case 'settings':

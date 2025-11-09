@@ -713,6 +713,7 @@ router.post('/:id/todos', requireProjectAccess('edit'), async (req: AuthRequest,
       assignedTo: assignedTo ? new mongoose.Types.ObjectId(assignedTo) : undefined,
       parentTodoId: parentTodoId || undefined,
       createdAt: new Date(),
+      updatedAt: new Date(),
       createdBy: req.userId ? new mongoose.Types.ObjectId(req.userId) : undefined
     };
 
@@ -847,6 +848,7 @@ router.put('/:id/todos/:todoId', requireProjectAccess('edit'), async (req: AuthR
     if (assignedTo !== undefined) todo.assignedTo = assignedTo ? new mongoose.Types.ObjectId(assignedTo) : undefined;
     if (parentTodoId !== undefined) todo.parentTodoId = parentTodoId;
     todo.updatedBy = req.userId ? new mongoose.Types.ObjectId(req.userId) : undefined;
+    (todo as any).updatedAt = new Date();
 
     await project.save();
 

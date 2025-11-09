@@ -40,6 +40,7 @@ export enum CommandType {
   SUMMARY = 'summary',
   VIEW_NOTIFICATIONS = 'view_notifications',
   CLEAR_NOTIFICATIONS = 'clear_notifications',
+  STALE_ITEMS = 'stale_items',
   LLM_CONTEXT = 'llm_context',
 
   // Subtask commands
@@ -345,6 +346,14 @@ const COMMAND_ALIASES: Record<string, CommandType> = {
   'clear notifications': CommandType.CLEAR_NOTIFICATIONS,
   'clear-notifications': CommandType.CLEAR_NOTIFICATIONS,
   'clear notifs': CommandType.CLEAR_NOTIFICATIONS,
+
+  // Stale items
+  'stale': CommandType.STALE_ITEMS,
+  'stale items': CommandType.STALE_ITEMS,
+  'stale-items': CommandType.STALE_ITEMS,
+  'inactive': CommandType.STALE_ITEMS,
+  'inactive items': CommandType.STALE_ITEMS,
+  'view stale': CommandType.STALE_ITEMS,
 
   // LLM Context
   'llm': CommandType.LLM_CONTEXT,
@@ -966,6 +975,19 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
       '/clear notifications',
       '/clear notifs',
       '/clear-notifications'
+    ],
+    requiresProject: false,
+    requiresArgs: false
+  },
+  [CommandType.STALE_ITEMS]: {
+    type: CommandType.STALE_ITEMS,
+    syntax: '/stale @project',
+    simpleSyntax: '/stale',
+    description: 'View notes (14+ days) and todos (7+ days) that haven\'t been updated recently (excludes items with due dates/reminders)',
+    examples: [
+      '/stale',
+      '/stale @project',
+      '/inactive'
     ],
     requiresProject: false,
     requiresArgs: false

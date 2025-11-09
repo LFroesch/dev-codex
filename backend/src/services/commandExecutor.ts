@@ -441,6 +441,8 @@ export class CommandExecutor {
           return await this.utilityHandlers.handleViewNotifications(parsed);
         case CommandType.CLEAR_NOTIFICATIONS:
           return await this.utilityHandlers.handleClearNotifications();
+        case CommandType.STALE_ITEMS:
+          return await this.utilityHandlers.handleStaleItems(parsed, currentProjectId);
         case CommandType.LLM_CONTEXT:
           return await this.utilityHandlers.handleLLMContext(parsed, currentProjectId);
         case CommandType.GOTO:

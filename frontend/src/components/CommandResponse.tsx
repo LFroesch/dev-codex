@@ -17,6 +17,7 @@ const ComponentRenderer = lazy(() => import('./responses').then(m => ({ default:
 const SubtasksRenderer = lazy(() => import('./responses').then(m => ({ default: m.SubtasksRenderer })));
 const BatchCommandsRenderer = lazy(() => import('./responses').then(m => ({ default: m.BatchCommandsRenderer })));
 const NotificationsRenderer = lazy(() => import('./responses').then(m => ({ default: m.NotificationsRenderer })));
+const StaleItemsRenderer = lazy(() => import('./responses').then(m => ({ default: m.StaleItemsRenderer })));
 const HelpRenderer = lazy(() => import('./responses').then(m => ({ default: m.HelpRenderer })));
 const ThemesRenderer = lazy(() => import('./responses').then(m => ({ default: m.ThemesRenderer })));
 const NewsRenderer = lazy(() => import('./responses').then(m => ({ default: m.NewsRenderer })));
@@ -455,6 +456,21 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
       return (
         <Suspense fallback={<LoadingFallback />}>
           <NotificationsRenderer notifications={response.data.notifications} />
+        </Suspense>
+      );
+    }
+
+    // Render stale items
+    if (response.data.staleNotes || response.data.staleTodos) {
+      return (
+        <Suspense fallback={<LoadingFallback />}>
+          <StaleItemsRenderer
+            staleNotes={response.data.staleNotes || []}
+            staleTodos={response.data.staleTodos || []}
+            notesByProject={response.data.notesByProject}
+            todosByProject={response.data.todosByProject}
+            totalCount={response.data.totalCount || 0}
+          />
         </Suspense>
       );
     }

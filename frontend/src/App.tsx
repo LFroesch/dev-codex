@@ -30,6 +30,7 @@ const NewsPage = lazy(() => import('./pages/NewsPage'));
 const PublicProjectPage = lazy(() => import('./pages/PublicProjectPage'));
 const PublicProfilePage = lazy(() => import('./pages/PublicProfilePage'));
 const TerminalPage = lazy(() => import('./pages/TerminalPage'));
+const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
 
 // Load debug utilities only in development mode
 if (import.meta.env.DEV) {
@@ -103,6 +104,7 @@ const App: React.FC = () => {
               <Route path="support" element={<SupportPage />} />
               <Route path="help" element={<HelpPage />} />
               <Route path="news" element={<NewsPage />} />
+              <Route path="notifications" element={<NotificationsPage />} />
             </Route>
             <Route path="*" element={<Navigate to="/login" />} />
             </Routes>

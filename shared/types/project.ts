@@ -22,6 +22,7 @@ export interface BaseTodo {
   parentTodoId?: string; // for subtasks
   tags?: string[];
   createdAt: string;
+  updatedAt?: string;
   createdBy?: string;
   updatedBy?: string;
 }

@@ -136,6 +136,12 @@ const NotificationBell: React.FC = () => {
           navigate('/notes?section=todos');
         }
       }
+    } else if (notification.type === 'stale_items_summary') {
+      // Stale items summary goes to notifications page
+      const canNavigate = await unsavedChangesManager.checkNavigationAllowed();
+      if (canNavigate) {
+        navigate('/notifications');
+      }
     } else if (notification.relatedProjectId) {
       // For other notification types, redirect to the notes section
       const canNavigate = await unsavedChangesManager.checkNavigationAllowed();
@@ -247,8 +253,8 @@ const NotificationBell: React.FC = () => {
             <p className="text-center p-4 text-base-content/60">No notifications</p>
           ) : (
             notifications.map((notification) => (
-              <div 
-                key={notification._id} 
+              <div
+                key={notification._id}
                 className={`p-2 rounded cursor-pointer hover:bg-base-200 ${!notification.isRead ? 'bg-primary/10' : ''}`}
                 onClick={() => handleNotificationClick(notification)}
               >
@@ -258,6 +264,22 @@ const NotificationBell: React.FC = () => {
             ))
           )}
         </div>
+        {notifications.length > 0 && (
+          <div className="border-t border-base-content/10 pt-2 mt-2">
+            <button
+              className="btn btn-sm btn-block btn-ghost"
+              onClick={async () => {
+                const canNavigate = await unsavedChangesManager.checkNavigationAllowed();
+                if (canNavigate) {
+                  setIsOpen(false);
+                  navigate('/notifications');
+                }
+              }}
+            >
+              View All Notifications
+            </button>
+          </div>
+        )}
         </div>
       )}
 

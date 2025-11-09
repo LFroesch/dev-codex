@@ -33,28 +33,49 @@ const ActivityLog: React.FC<ActivityLogProps> = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
 
+  // Filter states
+  const [selectedAction, setSelectedAction] = useState<string>('all');
+  const [selectedResourceType, setSelectedResourceType] = useState<string>(resourceType || 'all');
+  const [showFilters, setShowFilters] = useState(false);
+
   const loadActivities = async (page: number = 1, append: boolean = false) => {
     try {
       setError(null);
       if (append) {
         setLoadingMore(true);
       }
-      
+
       const offset = (page - 1) * limit;
-      const response = await activityLogsAPI.getProjectActivities(projectId, {
+
+      // Build filter options
+      const filterOptions: any = {
         limit,
         offset,
-        userId,
-        resourceType
-      });
-      
+        userId
+      };
+
+      // Apply resource type filter
+      if (selectedResourceType !== 'all') {
+        filterOptions.resourceType = selectedResourceType;
+      } else if (resourceType && resourceType !== 'all') {
+        filterOptions.resourceType = resourceType;
+      }
+
+      const response = await activityLogsAPI.getProjectActivities(projectId, filterOptions);
+
+      // Apply client-side action filter
+      let filteredActivities = response.activities;
+      if (selectedAction !== 'all') {
+        filteredActivities = response.activities.filter(activity => activity.action === selectedAction);
+      }
+
       if (append) {
-        setActivities(prev => [...prev, ...response.activities]);
+        setActivities(prev => [...prev, ...filteredActivities]);
       } else {
-        setActivities(response.activities);
+        setActivities(filteredActivities);
         setCurrentPage(page);
       }
-      setTotal(response.total);
+      setTotal(selectedAction !== 'all' ? filteredActivities.length : response.total);
     } catch (err) {
       console.error('Failed to load activities:', err);
       setError('Failed to load activity logs');
@@ -148,7 +169,7 @@ const ActivityLog: React.FC<ActivityLogProps> = ({
   useEffect(() => {
     setCurrentPage(1);
     loadActivities(1, false);
-  }, [projectId, userId, resourceType, limit]);
+  }, [projectId, userId, resourceType, limit, selectedAction, selectedResourceType]);
 
   useEffect(() => {
     if (autoRefresh && !loading) {
@@ -250,26 +271,37 @@ const ActivityLog: React.FC<ActivityLogProps> = ({
   return (
     <div className="space-y-3">
       {showTitle && (
-        <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-xl p-2">Recent Activity</h3>
-          <div className="flex items-center gap-2 border-thick rounded-lg p-2">
-            <span className="text-xs bg-success border-thick h-7 rounded-lg p-1" style={{ color: getContrastTextColor('success') }}>{total} Total</span>
-            {autoRefresh && (
-              <div className="flex items-center gap-1">
-                <div className="w-2 h-2 bg-success rounded-full animate-pulse"></div>
-                <span className="text-xs text-base-content/60">Live</span>
-              </div>
-            )}
-            <button
-              onClick={() => loadActivities(1, false)}
-              className="btn btn-xs h-7 border-thick bg-warning"
-              style={{color:getContrastTextColor('warning')}}
-              disabled={loading}
-            >
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-            </button>
+        <>
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-xl p-2">Recent Activity</h3>
+            <div className="flex items-center gap-2 border-thick rounded-lg p-2">
+              <span className="text-xs bg-success border-thick h-7 rounded-lg p-1" style={{ color: getContrastTextColor('success') }}>{total} Total</span>
+              {autoRefresh && (
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 bg-success rounded-full animate-pulse"></div>
+                  <span className="text-xs text-base-content/60">Live</span>
+                </div>
+              )}
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className={`btn btn-xs h-7 border-thick ${showFilters ? 'bg-primary' : 'bg-base-content/20'}`}
+                style={showFilters ? {color:getContrastTextColor('primary')} : {}}
+                title="Toggle filters"
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                </svg>
+              </button>
+              <button
+                onClick={() => loadActivities(1, false)}
+                className="btn btn-xs h-7 border-thick bg-warning"
+                style={{color:getContrastTextColor('warning')}}
+                disabled={loading}
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </button>
             {showClearButton && activities.length > 0 && (
               <>
                 <button
@@ -302,8 +334,81 @@ const ActivityLog: React.FC<ActivityLogProps> = ({
                 )}
               </>
             )}
+            </div>
           </div>
-        </div>
+
+          {/* Filter Panel */}
+          {showFilters && (
+            <div className="bg-base-200/50 p-4 rounded-lg border-thick space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {/* Action Filter */}
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-semibold">Action</span>
+                  </label>
+                  <select
+                    className="select select-bordered select-sm"
+                    value={selectedAction}
+                    onChange={(e) => setSelectedAction(e.target.value)}
+                  >
+                    <option value="all">All Actions</option>
+                    <option value="created">Created</option>
+                    <option value="updated">Updated</option>
+                    <option value="deleted">Deleted</option>
+                    <option value="viewed">Viewed</option>
+                    <option value="joined_project">Joined Project</option>
+                    <option value="left_project">Left Project</option>
+                    <option value="invited_member">Invited Member</option>
+                    <option value="removed_member">Removed Member</option>
+                    <option value="updated_role">Updated Role</option>
+                    <option value="added_tech">Added Tech</option>
+                    <option value="removed_tech">Removed Tech</option>
+                    <option value="shared_project">Shared Project</option>
+                    <option value="unshared_project">Unshared Project</option>
+                    <option value="archived_project">Archived Project</option>
+                    <option value="unarchived_project">Unarchived Project</option>
+                  </select>
+                </div>
+
+                {/* Resource Type Filter */}
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-semibold">Resource Type</span>
+                  </label>
+                  <select
+                    className="select select-bordered select-sm"
+                    value={selectedResourceType}
+                    onChange={(e) => setSelectedResourceType(e.target.value)}
+                  >
+                    <option value="all">All Types</option>
+                    <option value="project">Project</option>
+                    <option value="note">Note</option>
+                    <option value="todo">Todo</option>
+                    <option value="component">Component</option>
+                    <option value="devlog">DevLog</option>
+                    <option value="link">Link</option>
+                    <option value="tech">Tech</option>
+                    <option value="team">Team</option>
+                    <option value="settings">Settings</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Clear Filters Button */}
+              <div className="flex justify-end">
+                <button
+                  onClick={() => {
+                    setSelectedAction('all');
+                    setSelectedResourceType(resourceType || 'all');
+                  }}
+                  className="btn btn-ghost btn-xs"
+                >
+                  Clear Filters
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       <div className="space-y-1">

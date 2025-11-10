@@ -4,9 +4,12 @@ import ConversionFunnel from './ConversionFunnel';
 import FeatureAdoption from './FeatureAdoption';
 import ErrorsSummary from './ErrorsSummary';
 import CollapsibleSection from './CollapsibleSection';
+import { analyticsAPI } from '../../../api/analytics';
 
 const AnalyticsTab: React.FC = () => {
   const [timeRange, setTimeRange] = useState<number>(30);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
 
   return (
     <div className="p-4 space-y-4 max-w-7xl mx-auto">
@@ -65,6 +68,15 @@ const AnalyticsTab: React.FC = () => {
             </svg>
             Export
           </button>
+          <button
+            className="btn btn-sm btn-error"
+            onClick={() => setShowResetModal(true)}
+          >
+            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            Reset
+          </button>
         </div>
       </div>
 
@@ -87,6 +99,47 @@ const AnalyticsTab: React.FC = () => {
       <CollapsibleSection title="Recent Errors" defaultOpen={false}>
         <ErrorsSummary hours={24} />
       </CollapsibleSection>
+
+      {/* Reset Confirmation Modal */}
+      {showResetModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-base-100 p-6 rounded-lg max-w-md border-thick">
+            <h3 className="text-xl font-bold mb-4 text-error">Reset All Analytics?</h3>
+            <p className="mb-6 text-base-content/80">
+              This will permanently delete all analytics data, user sessions, and activity logs.
+              This action cannot be undone.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                className="btn btn-ghost"
+                onClick={() => setShowResetModal(false)}
+                disabled={isResetting}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn-error"
+                onClick={async () => {
+                  setIsResetting(true);
+                  try {
+                    const result = await analyticsAPI.resetAllAnalytics();
+                    alert(`Reset Complete!\n\nDeleted:\n- ${result.deletedAnalytics} analytics records\n- ${result.deletedSessions} user sessions\n- ${result.deletedActivityLogs} activity logs`);
+                    setShowResetModal(false);
+                    window.location.reload(); // Refresh to show empty state
+                  } catch (error) {
+                    alert('Failed to reset analytics. Please try again.');
+                  } finally {
+                    setIsResetting(false);
+                  }
+                }}
+                disabled={isResetting}
+              >
+                {isResetting ? 'Resetting...' : 'Yes, Reset All'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

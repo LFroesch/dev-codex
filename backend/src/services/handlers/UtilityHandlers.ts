@@ -3,6 +3,7 @@ import { CommandResponse, ResponseType } from '../types';
 import { ParsedCommand, CommandParser, COMMAND_METADATA, CommandType, hasFlag, getFlag } from '../commandParser';
 import { User } from '../../models/User';
 import { Project } from '../../models/Project';
+import ActivityLog from '../../models/ActivityLog';
 import { logError } from '../../config/logger';
 import NotificationService from '../notificationService';
 import { NewsPost } from '../../models/NewsPost';
@@ -1627,6 +1628,136 @@ export class UtilityHandlers extends BaseCommandHandler {
       return {
         type: ResponseType.ERROR,
         message: 'Unable to fetch stale items at this time'
+      };
+    }
+  }
+
+  /**
+   * Handle /activitylog command - View recent activity logs
+   */
+  async handleActivityLog(parsed: ParsedCommand, currentProjectId?: string): Promise<CommandResponse> {
+    try {
+      // Determine which project to filter by (from @project mention or current project)
+      let targetProjectId: string | undefined;
+      let projectName: string | undefined;
+
+      if (parsed.projectMention) {
+        // Look up project by name from the mention
+        const project = await Project.findOne({
+          $or: [
+            { ownerId: this.userId },
+            { 'teamMembers.userId': this.userId }
+          ],
+          name: { $regex: new RegExp(`^${parsed.projectMention}$`, 'i') }
+        }).lean();
+
+        if (project) {
+          targetProjectId = project._id.toString();
+          projectName = project.name;
+        } else {
+          return {
+            type: ResponseType.ERROR,
+            message: `Project "${parsed.projectMention}" not found`
+          };
+        }
+      } else if (currentProjectId) {
+        targetProjectId = currentProjectId;
+      }
+
+      // Build query
+      const query: any = {};
+
+      if (targetProjectId) {
+        // Filter by specific project
+        query.projectId = targetProjectId;
+      } else {
+        // Show user's recent activity across all their projects
+        const userProjects = await Project.find({
+          $or: [
+            { ownerId: this.userId },
+            { 'teamMembers.userId': this.userId }
+          ]
+        }).select('_id name').lean();
+
+        const projectIds = userProjects.map(p => p._id.toString());
+        query.projectId = { $in: projectIds };
+      }
+
+      // Fetch recent activity logs (limit to 50 for performance)
+      const logs = await ActivityLog.find(query)
+        .sort({ timestamp: -1 })
+        .limit(50)
+        .lean();
+
+      if (logs.length === 0) {
+        const msg = targetProjectId
+          ? `📊 No activity found for project "${projectName}"`
+          : '📊 No recent activity found';
+
+        return {
+          type: ResponseType.INFO,
+          message: msg
+        };
+      }
+
+      // Get project names for all logs
+      const projectIds = [...new Set(logs.map(log => log.projectId))];
+      const projects = await Project.find({
+        _id: { $in: projectIds }
+      }).select('_id name').lean();
+
+      const projectMap: Record<string, string> = {};
+      projects.forEach(p => {
+        projectMap[p._id.toString()] = p.name;
+      });
+
+      // Get user names for all logs
+      const userIds = [...new Set(logs.map(log => log.userId))];
+      const users = await User.find({
+        _id: { $in: userIds }
+      }).select('_id firstName lastName').lean();
+
+      const userMap: Record<string, string> = {};
+      users.forEach(u => {
+        userMap[u._id.toString()] = `${u.firstName} ${u.lastName}`;
+      });
+
+      // Format the activity log as structured data for clean rendering
+      const header = targetProjectId
+        ? `📊 Activity Log for "${projectName}" (${logs.length} entries)`
+        : `📊 Recent Activity (${logs.length} entries)`;
+
+      const activityEntries = logs.slice(0, 20).map((log, idx) => {
+        const timestamp = new Date(log.timestamp).toLocaleString();
+        const userName = userMap[log.userId.toString()] || 'Unknown User';
+        const projName = projectMap[log.projectId.toString()] || 'Unknown Project';
+        const resourceName = log.details?.resourceName || 'unnamed';
+        const projectInfo = !targetProjectId ? ` (@${projName})` : '';
+
+        return {
+          timestamp,
+          user: userName,
+          action: log.action,
+          resourceType: log.resourceType,
+          resourceName,
+          project: !targetProjectId ? projName : undefined
+        };
+      });
+
+      return {
+        type: ResponseType.DATA,
+        message: header,
+        data: {
+          activityEntries,
+          hasMore: logs.length > 20,
+          remainingCount: logs.length > 20 ? logs.length - 20 : 0
+        }
+      };
+    } catch (error) {
+      logError('Error fetching activity log', error as Error);
+      return {
+        type: ResponseType.ERROR,
+        message: 'Unable to fetch activity log at this time'
       };
     }
   }

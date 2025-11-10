@@ -18,6 +18,7 @@ const SubtasksRenderer = lazy(() => import('./responses').then(m => ({ default: 
 const BatchCommandsRenderer = lazy(() => import('./responses').then(m => ({ default: m.BatchCommandsRenderer })));
 const NotificationsRenderer = lazy(() => import('./responses').then(m => ({ default: m.NotificationsRenderer })));
 const StaleItemsRenderer = lazy(() => import('./responses').then(m => ({ default: m.StaleItemsRenderer })));
+const ActivityLogRenderer = lazy(() => import('./responses').then(m => ({ default: m.ActivityLogRenderer })));
 const HelpRenderer = lazy(() => import('./responses').then(m => ({ default: m.HelpRenderer })));
 const ThemesRenderer = lazy(() => import('./responses').then(m => ({ default: m.ThemesRenderer })));
 const NewsRenderer = lazy(() => import('./responses').then(m => ({ default: m.NewsRenderer })));
@@ -456,6 +457,19 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
       return (
         <Suspense fallback={<LoadingFallback />}>
           <NotificationsRenderer notifications={response.data.notifications} />
+        </Suspense>
+      );
+    }
+
+    // Render activity log entries
+    if (response.data.activityEntries) {
+      return (
+        <Suspense fallback={<LoadingFallback />}>
+          <ActivityLogRenderer
+            activityEntries={response.data.activityEntries}
+            hasMore={response.data.hasMore || false}
+            remainingCount={response.data.remainingCount || 0}
+          />
         </Suspense>
       );
     }

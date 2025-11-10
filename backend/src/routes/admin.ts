@@ -60,6 +60,11 @@ router.get('/users', async (req, res) => {
     const plan = req.query.plan as string;
     const status = req.query.status as string;
     const search = req.query.search as string;
+    const searchType = (req.query.searchType as string) || 'text';
+    const createdAfter = req.query.createdAfter as string;
+    const createdBefore = req.query.createdBefore as string;
+    const lastLoginAfter = req.query.lastLoginAfter as string;
+    const lastLoginBefore = req.query.lastLoginBefore as string;
 
     // Build filter object
     const filter: any = {};
@@ -95,15 +100,58 @@ router.get('/users', async (req, res) => {
       }
     }
 
-    // Search by name or email
+    // Search by name, email, ID, or email domain
     if (search && search.trim()) {
-      andConditions.push({
-        $or: [
-          { firstName: { $regex: search, $options: 'i' } },
-          { lastName: { $regex: search, $options: 'i' } },
-          { email: { $regex: search, $options: 'i' } }
-        ]
-      });
+      if (searchType === 'id') {
+        // Search by user ID
+        if (isValidObjectId(search.trim())) {
+          filter._id = search.trim();
+        } else {
+          // Invalid ID, will return no results
+          filter._id = new mongoose.Types.ObjectId();
+        }
+      } else if (searchType === 'emailDomain') {
+        // Search by email domain (e.g., gmail.com)
+        const domain = search.trim().replace(/^@/, ''); // Remove @ if present
+        andConditions.push({
+          email: { $regex: `@${domain}$`, $options: 'i' }
+        });
+      } else {
+        // Default: search by name or email
+        andConditions.push({
+          $or: [
+            { firstName: { $regex: search, $options: 'i' } },
+            { lastName: { $regex: search, $options: 'i' } },
+            { email: { $regex: search, $options: 'i' } }
+          ]
+        });
+      }
+    }
+
+    // Date range filters
+    if (createdAfter) {
+      const afterDate = new Date(createdAfter);
+      afterDate.setHours(0, 0, 0, 0);
+      if (!filter.createdAt) filter.createdAt = {};
+      filter.createdAt.$gte = afterDate;
+    }
+    if (createdBefore) {
+      const beforeDate = new Date(createdBefore);
+      beforeDate.setHours(23, 59, 59, 999);
+      if (!filter.createdAt) filter.createdAt = {};
+      filter.createdAt.$lte = beforeDate;
+    }
+    if (lastLoginAfter) {
+      const afterDate = new Date(lastLoginAfter);
+      afterDate.setHours(0, 0, 0, 0);
+      if (!filter.lastLogin) filter.lastLogin = {};
+      filter.lastLogin.$gte = afterDate;
+    }
+    if (lastLoginBefore) {
+      const beforeDate = new Date(lastLoginBefore);
+      beforeDate.setHours(23, 59, 59, 999);
+      if (!filter.lastLogin) filter.lastLogin = {};
+      filter.lastLogin.$lte = beforeDate;
     }
 
     // Combine $and conditions if any exist

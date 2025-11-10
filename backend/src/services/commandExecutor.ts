@@ -443,6 +443,8 @@ export class CommandExecutor {
           return await this.utilityHandlers.handleClearNotifications();
         case CommandType.STALE_ITEMS:
           return await this.utilityHandlers.handleStaleItems(parsed, currentProjectId);
+        case CommandType.ACTIVITY_LOG:
+          return await this.utilityHandlers.handleActivityLog(parsed, currentProjectId);
         case CommandType.LLM_CONTEXT:
           return await this.utilityHandlers.handleLLMContext(parsed, currentProjectId);
         case CommandType.GOTO:

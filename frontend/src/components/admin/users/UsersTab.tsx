@@ -37,6 +37,14 @@ const UsersTab: React.FC = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalUsers, setTotalUsers] = useState(0);
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Advanced filter states
+  const [searchType, setSearchType] = useState<'text' | 'id' | 'emailDomain'>('text');
+  const [createdAfter, setCreatedAfter] = useState('');
+  const [createdBefore, setCreatedBefore] = useState('');
+  const [lastLoginAfter, setLastLoginAfter] = useState('');
+  const [lastLoginBefore, setLastLoginBefore] = useState('');
 
   // Modal states
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -50,7 +58,7 @@ const UsersTab: React.FC = () => {
 
   useEffect(() => {
     fetchUsers();
-  }, [page, filterPlan, filterStatus, searchTerm]);
+  }, [page, filterPlan, filterStatus, searchTerm, searchType, createdAfter, createdBefore, lastLoginAfter, lastLoginBefore]);
 
   const fetchUsers = async () => {
     try {
@@ -60,7 +68,11 @@ const UsersTab: React.FC = () => {
         limit: '20',
         ...(filterPlan !== 'all' && { plan: filterPlan }),
         ...(filterStatus !== 'all' && { status: filterStatus }),
-        ...(searchTerm && { search: searchTerm })
+        ...(searchTerm && { search: searchTerm, searchType }),
+        ...(createdAfter && { createdAfter }),
+        ...(createdBefore && { createdBefore }),
+        ...(lastLoginAfter && { lastLoginAfter }),
+        ...(lastLoginBefore && { lastLoginBefore })
       });
 
       const response = await fetch(`/api/admin/users?${params}`, {
@@ -80,6 +92,23 @@ const UsersTab: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const clearFilters = () => {
+    setSearchTerm('');
+    setSearchType('text');
+    setFilterPlan('all');
+    setFilterStatus('all');
+    setCreatedAfter('');
+    setCreatedBefore('');
+    setLastLoginAfter('');
+    setLastLoginBefore('');
+    setPage(1);
+  };
+
+  const hasActiveFilters = () => {
+    return searchTerm || filterPlan !== 'all' || filterStatus !== 'all' ||
+           createdAfter || createdBefore || lastLoginAfter || lastLoginBefore;
   };
 
   const getStatusType = (user: User): 'active' | 'inactive' | 'banned' | 'admin' => {
@@ -336,87 +365,193 @@ const UsersTab: React.FC = () => {
       {/* Filters & Search */}
       <div className="card bg-base-100 shadow-md border border-base-content/10">
         <div className="card-body p-4">
-          <div className="flex flex-col lg:flex-row gap-3 items-center">
-            {/* Search */}
-            <div className="flex-1 w-full">
-              <div className="join w-full">
-                <input
-                  type="text"
-                  placeholder="Search by name or email..."
-                  className="input input-bordered join-item w-full"
-                  value={searchTerm}
+          <div className="flex flex-col gap-3">
+            {/* Top Row: Search and Quick Filters */}
+            <div className="flex flex-col lg:flex-row gap-3 items-center">
+              {/* Search with Type Selector */}
+              <div className="flex-1 w-full">
+                <div className="join w-full">
+                  <select
+                    className="select select-bordered join-item w-32"
+                    value={searchType}
+                    onChange={(e) => setSearchType(e.target.value as 'text' | 'id' | 'emailDomain')}
+                  >
+                    <option value="text">Name/Email</option>
+                    <option value="id">User ID</option>
+                    <option value="emailDomain">Domain</option>
+                  </select>
+                  <input
+                    type="text"
+                    placeholder={
+                      searchType === 'id' ? 'Enter user ID...' :
+                      searchType === 'emailDomain' ? 'Enter domain (e.g., gmail.com)...' :
+                      'Search by name or email...'
+                    }
+                    className="input input-bordered join-item flex-1"
+                    value={searchTerm}
+                    onChange={(e) => {
+                      setSearchTerm(e.target.value);
+                      setPage(1);
+                    }}
+                  />
+                  <button className="btn btn-square join-item">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              {/* Quick Filters */}
+              <div className="flex flex-wrap gap-2 items-center">
+                <select
+                  className="select select-bordered select-sm"
+                  value={filterPlan}
                   onChange={(e) => {
-                    setSearchTerm(e.target.value);
+                    setFilterPlan(e.target.value);
                     setPage(1);
                   }}
-                />
-                <button className="btn btn-square join-item">
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            {/* Filters */}
-            <div className="flex flex-wrap gap-2 items-center">
-              <select
-                className="select select-bordered select-sm"
-                value={filterPlan}
-                onChange={(e) => {
-                  setFilterPlan(e.target.value);
-                  setPage(1);
-                }}
-              >
-                <option value="all">All Plans</option>
-                <option value="free">Free</option>
-                <option value="pro">Pro</option>
-                <option value="premium">Premium</option>
-              </select>
-
-              <select
-                className="select select-bordered select-sm"
-                value={filterStatus}
-                onChange={(e) => {
-                  setFilterStatus(e.target.value);
-                  setPage(1);
-                }}
-              >
-                <option value="all">All Status</option>
-                <option value="active">Active (Logged in &lt; 30d)</option>
-                <option value="inactive">Inactive (No login 30d+)</option>
-                <option value="banned">Banned</option>
-              </select>
-
-              {/* View Toggle */}
-              <div className="join">
-                <button
-                  className={`join-item btn btn-sm ${viewMode === 'cards' ? 'btn-active' : ''}`}
-                  onClick={() => setViewMode('cards')}
-                  title="Card View"
                 >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                  </svg>
-                </button>
-                <button
-                  className={`join-item btn btn-sm ${viewMode === 'table' ? 'btn-active' : ''}`}
-                  onClick={() => setViewMode('table')}
-                  title="Table View"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
-                </button>
-              </div>
+                  <option value="all">All Plans</option>
+                  <option value="free">Free</option>
+                  <option value="pro">Pro</option>
+                  <option value="premium">Premium</option>
+                </select>
 
-              {/* Results count */}
-              {!loading && (
-                <div className="badge badge-neutral h-7 px-4 py-1 font-bold text-base">
-                  {totalUsers > 0 ? `${users.length} of ${totalUsers} users` : `${users.length} users`}
+                <select
+                  className="select select-bordered select-sm"
+                  value={filterStatus}
+                  onChange={(e) => {
+                    setFilterStatus(e.target.value);
+                    setPage(1);
+                  }}
+                >
+                  <option value="all">All Status</option>
+                  <option value="active">Active (Logged in &lt; 30d)</option>
+                  <option value="inactive">Inactive (No login 30d+)</option>
+                  <option value="banned">Banned</option>
+                </select>
+
+                {/* Advanced Filters Toggle */}
+                <button
+                  className={`btn btn-sm ${showFilters ? 'btn-primary' : 'btn-ghost'}`}
+                  onClick={() => setShowFilters(!showFilters)}
+                >
+                  <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                  </svg>
+                  Filters
+                  {hasActiveFilters() && <span className="badge badge-sm ml-1">!</span>}
+                </button>
+
+                {/* Clear Filters */}
+                {hasActiveFilters() && (
+                  <button
+                    className="btn btn-sm btn-ghost text-error"
+                    onClick={clearFilters}
+                  >
+                    Clear
+                  </button>
+                )}
+
+                {/* View Toggle */}
+                <div className="join">
+                  <button
+                    className={`join-item btn btn-sm ${viewMode === 'cards' ? 'btn-active' : ''}`}
+                    onClick={() => setViewMode('cards')}
+                    title="Card View"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                    </svg>
+                  </button>
+                  <button
+                    className={`join-item btn btn-sm ${viewMode === 'table' ? 'btn-active' : ''}`}
+                    onClick={() => setViewMode('table')}
+                    title="Table View"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                  </button>
                 </div>
-              )}
+
+                {/* Results count */}
+                {!loading && (
+                  <div className="badge badge-neutral h-7 px-4 py-1 font-bold text-base">
+                    {totalUsers > 0 ? `${users.length} of ${totalUsers} users` : `${users.length} users`}
+                  </div>
+                )}
+              </div>
             </div>
+
+            {/* Advanced Filters Panel (Collapsible) */}
+            {showFilters && (
+              <div className="bg-base-200/50 p-4 rounded-lg border border-base-content/10">
+                <h3 className="font-semibold mb-3 text-sm uppercase text-base-content/70">Date Range Filters</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Created Date Range */}
+                  <div>
+                    <label className="label">
+                      <span className="label-text font-semibold">Created Date</span>
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="date"
+                        className="input input-sm input-bordered flex-1"
+                        value={createdAfter}
+                        onChange={(e) => {
+                          setCreatedAfter(e.target.value);
+                          setPage(1);
+                        }}
+                        placeholder="From"
+                      />
+                      <span className="self-center">to</span>
+                      <input
+                        type="date"
+                        className="input input-sm input-bordered flex-1"
+                        value={createdBefore}
+                        onChange={(e) => {
+                          setCreatedBefore(e.target.value);
+                          setPage(1);
+                        }}
+                        placeholder="To"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Last Login Date Range */}
+                  <div>
+                    <label className="label">
+                      <span className="label-text font-semibold">Last Login Date</span>
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="date"
+                        className="input input-sm input-bordered flex-1"
+                        value={lastLoginAfter}
+                        onChange={(e) => {
+                          setLastLoginAfter(e.target.value);
+                          setPage(1);
+                        }}
+                        placeholder="From"
+                      />
+                      <span className="self-center">to</span>
+                      <input
+                        type="date"
+                        className="input input-sm input-bordered flex-1"
+                        value={lastLoginBefore}
+                        onChange={(e) => {
+                          setLastLoginBefore(e.target.value);
+                          setPage(1);
+                        }}
+                        placeholder="To"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

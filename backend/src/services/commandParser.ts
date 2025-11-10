@@ -42,6 +42,7 @@ export enum CommandType {
   CLEAR_NOTIFICATIONS = 'clear_notifications',
   STALE_ITEMS = 'stale_items',
   LLM_CONTEXT = 'llm_context',
+  ACTIVITY_LOG = 'activity_log',
 
   // Subtask commands
   ADD_SUBTASK = 'add_subtask',
@@ -354,6 +355,13 @@ const COMMAND_ALIASES: Record<string, CommandType> = {
   'inactive': CommandType.STALE_ITEMS,
   'inactive items': CommandType.STALE_ITEMS,
   'view stale': CommandType.STALE_ITEMS,
+
+  // Activity Log
+  'activitylog': CommandType.ACTIVITY_LOG,
+  'activity-log': CommandType.ACTIVITY_LOG,
+  'activity log': CommandType.ACTIVITY_LOG,
+  'activity': CommandType.ACTIVITY_LOG,
+  'view activity': CommandType.ACTIVITY_LOG,
 
   // LLM Context
   'llm': CommandType.LLM_CONTEXT,
@@ -988,6 +996,19 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
       '/stale',
       '/stale @project',
       '/inactive'
+    ],
+    requiresProject: false,
+    requiresArgs: false
+  },
+  [CommandType.ACTIVITY_LOG]: {
+    type: CommandType.ACTIVITY_LOG,
+    syntax: '/activitylog [@project]',
+    simpleSyntax: '/activitylog',
+    description: 'View recent activity logs. Optional: filter by specific project',
+    examples: [
+      '/activitylog',
+      '/activitylog @project',
+      '/activity @myproject'
     ],
     requiresProject: false,
     requiresArgs: false

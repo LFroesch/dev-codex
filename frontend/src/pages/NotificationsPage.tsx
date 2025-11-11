@@ -13,6 +13,16 @@ interface StaleItem {
   updatedAt: string;
 }
 
+interface DueTodoItem {
+  projectId: string;
+  projectName: string;
+  todoId: string;
+  title: string;
+  dueDate?: string;
+  status: 'overdue' | 'due_today';
+  daysPastDue?: number;
+}
+
 const NotificationsPage: React.FC = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
@@ -102,6 +112,36 @@ const NotificationsPage: React.FC = () => {
     }
   };
 
+  const handleDueTodoClick = (item: DueTodoItem) => {
+    // Dispatch event to set active project
+    window.dispatchEvent(new CustomEvent('selectProject', { detail: { projectId: item.projectId } }));
+
+    // Navigate to todos section
+    navigate('/notes?section=todos');
+  };
+
+  const handleTodoNotificationClick = (notification: Notification) => {
+    if (notification.relatedProjectId) {
+      // Extract the project ID - handle both populated object and string cases
+      const projectId = typeof notification.relatedProjectId === 'string'
+        ? notification.relatedProjectId
+        : (notification.relatedProjectId as any)._id?.toString() || (notification.relatedProjectId as any)._id || notification.relatedProjectId;
+
+      // Dispatch event to set active project
+      window.dispatchEvent(new CustomEvent('selectProject', {
+        detail: { projectId: projectId.toString() }
+      }));
+
+      // Navigate to todos section
+      navigate('/notes?section=todos');
+
+      // Mark as read
+      if (!notification.isRead) {
+        handleMarkAsRead(notification._id);
+      }
+    }
+  };
+
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'project_invitation':
@@ -122,6 +162,8 @@ const NotificationsPage: React.FC = () => {
         return '✅';
       case 'stale_items_summary':
         return '⏱️';
+      case 'daily_todo_summary':
+        return '📅';
       default:
         return '🔔';
     }
@@ -195,10 +237,26 @@ const NotificationsPage: React.FC = () => {
             >
               <div className="card-body p-4">
                 <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-start gap-3 flex-1">
+                  <div
+                    className={`flex items-start gap-3 flex-1 ${
+                      (notification.type === 'todo_overdue' || notification.type === 'todo_due_soon' || notification.type === 'todo_assigned') && notification.relatedProjectId
+                        ? 'cursor-pointer hover:opacity-80 transition-opacity'
+                        : ''
+                    }`}
+                    onClick={() => {
+                      if ((notification.type === 'todo_overdue' || notification.type === 'todo_due_soon' || notification.type === 'todo_assigned') && notification.relatedProjectId) {
+                        handleTodoNotificationClick(notification);
+                      }
+                    }}
+                  >
                     <div className="text-2xl">{getNotificationIcon(notification.type)}</div>
                     <div className="flex-1">
-                      <h3 className="font-semibold text-lg">{notification.title}</h3>
+                      <h3 className="font-semibold text-lg">
+                        {notification.title}
+                        {(notification.type === 'todo_overdue' || notification.type === 'todo_due_soon' || notification.type === 'todo_assigned') && notification.relatedProjectId && (
+                          <span className="ml-2 text-sm text-primary">→ Click to view</span>
+                        )}
+                      </h3>
                       <p className="text-base-content/70 mt-1">{notification.message}</p>
 
                       {/* Stale items summary expansion */}
@@ -257,6 +315,77 @@ const NotificationsPage: React.FC = () => {
                                           <span className="font-medium">{item.title}</span>
                                           <span className="text-sm text-base-content/60">
                                             {item.daysSinceUpdate}d ago
+                                          </span>
+                                        </div>
+                                        <div className="text-sm text-base-content/60">
+                                          {item.projectName}
+                                        </div>
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Daily todo summary expansion */}
+                      {notification.type === 'daily_todo_summary' && notification.metadata && (
+                        <div className="mt-3">
+                          <button
+                            onClick={() => toggleExpanded(notification._id)}
+                            className="btn btn-sm btn-ghost"
+                          >
+                            {expandedNotifications.has(notification._id) ? '▼ Hide' : '▶ View'}{' '}
+                            todos ({notification.metadata.totalCount})
+                          </button>
+
+                          {expandedNotifications.has(notification._id) && (
+                            <div className="mt-3 space-y-4">
+                              {notification.metadata.overdueTodos && notification.metadata.overdueTodos.length > 0 && (
+                                <div>
+                                  <h4 className="font-semibold mb-2 text-error">
+                                    Overdue Todos ({notification.metadata.overdueTodos.length})
+                                  </h4>
+                                  <div className="space-y-1">
+                                    {notification.metadata.overdueTodos.map((item: DueTodoItem) => (
+                                      <button
+                                        key={item.todoId}
+                                        onClick={() => handleDueTodoClick(item)}
+                                        className="block w-full text-left p-2 bg-error/10 hover:bg-error/20 rounded transition-colors border border-error/20"
+                                      >
+                                        <div className="flex justify-between items-center">
+                                          <span className="font-medium">{item.title}</span>
+                                          <span className="text-sm text-error font-semibold">
+                                            {item.daysPastDue}d overdue
+                                          </span>
+                                        </div>
+                                        <div className="text-sm text-base-content/60">
+                                          {item.projectName}
+                                        </div>
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {notification.metadata.dueTodayTodos && notification.metadata.dueTodayTodos.length > 0 && (
+                                <div>
+                                  <h4 className="font-semibold mb-2 text-warning">
+                                    Due Today ({notification.metadata.dueTodayTodos.length})
+                                  </h4>
+                                  <div className="space-y-1">
+                                    {notification.metadata.dueTodayTodos.map((item: DueTodoItem) => (
+                                      <button
+                                        key={item.todoId}
+                                        onClick={() => handleDueTodoClick(item)}
+                                        className="block w-full text-left p-2 bg-warning/10 hover:bg-warning/20 rounded transition-colors border border-warning/20"
+                                      >
+                                        <div className="flex justify-between items-center">
+                                          <span className="font-medium">{item.title}</span>
+                                          <span className="text-sm text-warning font-semibold">
+                                            Due today
                                           </span>
                                         </div>
                                         <div className="text-sm text-base-content/60">

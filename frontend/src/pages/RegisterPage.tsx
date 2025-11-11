@@ -4,6 +4,7 @@ import { authAPI } from '../api';
 import { useLoadingState } from '../hooks/useLoadingState';
 import { useErrorHandler } from '../hooks/useErrorHandler';
 import { toast } from '../services/toast';
+import { accountSwitchingManager } from '../utils/accountSwitching';
 import { getContrastTextColor } from '../utils/contrastTextColor';
 
 const RegisterPage: React.FC = () => {
@@ -113,13 +114,17 @@ const RegisterPage: React.FC = () => {
 
     await withLoading(async () => {
       try {
-        await authAPI.register({
+        const result = await authAPI.register({
           firstName: formData.firstName,
           lastName: formData.lastName,
           email: formData.email,
           username: formData.username.trim().toLowerCase(),
           password: formData.password
         });
+        // Set up account for new user
+        if (result.user?.email) {
+          accountSwitchingManager.handleAccountSwitch(result.user.email);
+        }
         toast.success('Account created successfully! Welcome to Dev Codex.');
         navigate('/');
       } catch (err: any) {

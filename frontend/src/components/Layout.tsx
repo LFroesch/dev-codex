@@ -12,6 +12,7 @@ import { useProjectManagement } from '../hooks/useProjectManagement';
 import { useProjectSelection } from '../hooks/useProjectSelection';
 import { useLayoutEvents } from '../hooks/useLayoutEvents';
 import { unsavedChangesManager } from '../utils/unsavedChanges';
+import { accountSwitchingManager } from '../utils/accountSwitching';
 import { getContrastTextColor } from '../utils/contrastTextColor';
 import ToastContainer from './Toast';
 import { toast } from '../services/toast';
@@ -344,15 +345,21 @@ const Layout: React.FC = () => {
           authAPI.getMe(),
           projectAPI.getAll()
         ]);
+
+        // Handle account switching - clear account-specific data if different user
+        if (userResponse.user?.email) {
+          accountSwitchingManager.handleAccountSwitch(userResponse.user.email);
+        }
+
         setUser(userResponse.user);
         setProjects(projectsResponse.projects);
-        
+
         // Load project time data
         await loadProjectTimeData();
-        
+
         // Load ideas count
         await loadIdeasCount();
-        
+
         // Update theme from user preference (always sync on login)
         if (userResponse.user?.theme) {
           const userTheme = userResponse.user.theme;
@@ -420,15 +427,15 @@ const Layout: React.FC = () => {
     try {
       // Clear user session before logout
       analytics.clearUserSession();
-      // Clear selected project from localStorage
-      localStorage.removeItem('selectedProjectId');
+      // Clear all account-specific data
+      accountSwitchingManager.clearAll();
       await authAPI.logout();
       toast.success('Successfully logged out. See you next time!');
       navigate('/login');
     } catch (err) {
       // Clear session even if logout fails
       analytics.clearUserSession();
-      localStorage.removeItem('selectedProjectId');
+      accountSwitchingManager.clearAll();
       toast.info('Logged out successfully.');
       navigate('/login');
     }
@@ -581,7 +588,7 @@ const Layout: React.FC = () => {
                       title={selectedProject.isLocked ? (selectedProject.lockedReason || 'This project is locked and cannot be edited') : `Current project: ${selectedProject.name}`}
                     >
                       <span className="text-sm font-medium truncate">
-                        {selectedProject.name}
+                        {String(selectedProject.name).split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
                       </span>
                       {selectedProject.isLocked && (
                         <svg
@@ -641,7 +648,7 @@ const Layout: React.FC = () => {
                     onClick={() => handleNavigateWithCheck('/notes')}
                     title={selectedProject.isLocked ? (selectedProject.lockedReason || 'This project is locked and cannot be edited') : `Current project: ${selectedProject.name}`}
                   >
-                    <span className="text-sm font-medium truncate">{selectedProject.name}</span>
+                    <span className="text-sm font-medium truncate">{String(selectedProject.name).split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}</span>
                     {selectedProject.isLocked && (
                       <svg
                         className="w-4 h-4 text-warning flex-shrink-0"
@@ -1108,7 +1115,7 @@ const Layout: React.FC = () => {
                     onClick={() => handleNavigateWithCheck('/notes')}
                     title={selectedProject.isLocked ? (selectedProject.lockedReason || 'This project is locked and cannot be edited') : selectedProject.name}
                   >
-                    <span className="text-sm font-medium">{selectedProject.name}</span>
+                    <span className="text-sm font-medium">{String(selectedProject.name).split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}</span>
                     {selectedProject.isLocked && (
                       <svg
                         className="w-4 h-4 text-warning flex-shrink-0"
@@ -1639,27 +1646,24 @@ const Layout: React.FC = () => {
                               <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <h3
-                                    className={`border-2 border-base-content/20 font-bold truncate px-2 py-1 rounded-md group-hover:opacity-90 transition-opacity bg-primary text-md ${
+                                    className={`border-2 border-base-content/20 font-bold truncate px-2 py-1 rounded-md group-hover:opacity-90 transition-opacity text-md ${
                                       project.isLocked ? 'opacity-50' : ''
                                     }`}
                                     style={{
-                                      color: getContrastTextColor()
+                                      backgroundColor: project.color,
+                                      color: getContrastTextColor(project.color)
                                     }}
                                   >
-                                    {project.color && (
-                                      <span
-                                        className="inline-block w-3 h-3 rounded-full"
-                                        style={{ backgroundColor: project.color }}
-                                      ></span>
-                                    )}
-                                    <span className='mr-0.5'> </span>
                                     {String(project.name).split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
                                   </h3>
                                   {project.isLocked && (
-                                    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-warning/80 text-base-content/80 border-2 border-base-content/20"
-                                    style={{ color: getContrastTextColor("warning/80") }}>
-                                      Locked
-                                    </span>
+                                    <svg
+                                      className="w-4 h-4 text-warning flex-shrink-0"
+                                      fill="currentColor"
+                                      viewBox="0 0 20 20"
+                                    >
+                                      <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                                    </svg>
                                   )}
                                 </div>
                                 {project.category && (

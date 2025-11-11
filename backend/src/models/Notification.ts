@@ -2,7 +2,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 export interface INotification extends Document {
   userId: mongoose.Types.ObjectId;
-  type: 'project_invitation' | 'project_shared' | 'team_member_added' | 'team_member_removed' | 'todo_assigned' | 'todo_due_soon' | 'todo_overdue' | 'subtask_completed' | 'stale_items_summary';
+  type: 'project_invitation' | 'project_shared' | 'team_member_added' | 'team_member_removed' | 'todo_assigned' | 'todo_due_soon' | 'todo_overdue' | 'subtask_completed' | 'stale_items_summary' | 'daily_todo_summary' | 'projects_locked' | 'projects_unlocked';
   title: string;
   message: string;
   isRead: boolean;
@@ -29,7 +29,7 @@ const NotificationSchema = new Schema<INotification>(
     },
     type: {
       type: String,
-      enum: ['project_invitation', 'project_shared', 'team_member_added', 'team_member_removed', 'todo_assigned', 'todo_due_soon', 'todo_overdue', 'subtask_completed', 'stale_items_summary'],
+      enum: ['project_invitation', 'project_shared', 'team_member_added', 'team_member_removed', 'todo_assigned', 'todo_due_soon', 'todo_overdue', 'subtask_completed', 'stale_items_summary', 'daily_todo_summary', 'projects_locked', 'projects_unlocked'],
       required: true,
     },
     title: {

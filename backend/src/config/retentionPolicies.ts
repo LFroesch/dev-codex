@@ -105,11 +105,14 @@ export const NOTIFICATION_IMPORTANCE: Record<string, 'critical' | 'standard' | '
   project_invitation: 'critical',
   team_member_added: 'critical',
   team_member_removed: 'critical',
+  projects_locked: 'critical',
+  projects_unlocked: 'critical',
 
   // Standard - medium retention
   project_shared: 'standard',
   todo_assigned: 'standard',
   stale_items_summary: 'standard',
+  daily_todo_summary: 'standard',
 
   // Transient - short retention
   todo_due_soon: 'transient',

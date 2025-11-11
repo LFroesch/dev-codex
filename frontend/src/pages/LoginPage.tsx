@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { authAPI } from '../api';
 import { useApiCall } from '../hooks/useApiCall';
 import { toast } from '../services/toast';
+import { accountSwitchingManager } from '../utils/accountSwitching';
 import { getContrastTextColor } from '../utils/contrastTextColor';
 
 const LoginPage: React.FC = () => {
@@ -19,9 +20,13 @@ const LoginPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const result = await call(() => authAPI.login({ email, password }));
     if (result) {
+      // Handle account switching - clear account-specific data if different user
+      if (result.user?.email) {
+        accountSwitchingManager.handleAccountSwitch(result.user.email);
+      }
       toast.success('Welcome back! Successfully logged in.');
       navigate('/projects');
     }

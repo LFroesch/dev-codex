@@ -1,9 +1,11 @@
 import express from 'express';
 import Stripe from 'stripe';
+import nodemailer from 'nodemailer';
 import { User } from '../models/User';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { createRateLimit } from '../middleware/rateLimit';
 import { logInfo, logError, logWarn } from '../config/logger';
+import NotificationService from '../services/notificationService';
 
 const router = express.Router();
 
@@ -370,6 +372,18 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
         const { updateExpirationOnPlanChange } = await import('../utils/retentionUtils');
         await updateExpirationOnPlanChange(user._id.toString(), oldPlanTier, newPlanTier);
         logInfo('Updated data retention after plan change', { userId: user._id, from: oldPlanTier, to: newPlanTier });
+
+        // Determine if this is an upgrade or downgrade
+        const planHierarchy = { free: 0, pro: 1, premium: 2 };
+        const isUpgrade = planHierarchy[newPlanTier] > planHierarchy[oldPlanTier];
+
+        if (isUpgrade) {
+          // Unlock projects on upgrade
+          await handleUpgradeUnlock(user._id.toString(), newPlanTier);
+        } else {
+          // Lock excess projects on downgrade (e.g., premium -> pro)
+          await handleDowngradeExcess(user._id.toString(), newPlanTier);
+        }
       }
     } else {
       logError('Could not determine plan tier for price ID', new Error(`Price ID: ${priceId}`));
@@ -499,6 +513,96 @@ router.get('/info', requireAuth, async (req: AuthRequest, res) => {
   }
 });
 
+// Email configuration
+const createTransporter = () => {
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    port: parseInt(process.env.SMTP_PORT || '587'),
+    secure: false,
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS
+    }
+  });
+};
+
+// Send email notification for locked projects
+async function sendProjectsLockedEmail(user: any, lockedProjects: any[], planTier: string) {
+  try {
+    const transporter = createTransporter();
+    const projectList = lockedProjects.map(p => `  • ${p.name}`).join('\n');
+
+    const mailOptions = {
+      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      to: user.email,
+      subject: `${lockedProjects.length} Project${lockedProjects.length > 1 ? 's' : ''} Locked - Plan Change`,
+      html: `
+        <h2>Projects Locked Due to Plan Change</h2>
+        <p>Hi ${user.firstName},</p>
+        <p>Your subscription plan has changed to <strong>${planTier}</strong>. As a result, ${lockedProjects.length} project${lockedProjects.length > 1 ? 's have' : ' has'} been locked because you've exceeded your plan limit.</p>
+
+        <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+          <strong>Locked Projects:</strong><br>
+          <pre style="margin: 10px 0;">${projectList}</pre>
+        </div>
+
+        <p>These projects are in <strong>read-only mode</strong>. You can still view them, but you won't be able to make changes.</p>
+
+        <p><strong>To unlock these projects:</strong></p>
+        <ul>
+          <li>Upgrade your plan to ${planTier === 'free' ? 'Pro or Premium' : 'Premium'}</li>
+          <li>Or archive some of your active projects to fit within your current plan limit</li>
+        </ul>
+
+        <p><a href="${process.env.FRONTEND_URL || 'http://localhost:5002'}/billing" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 20px 0;">Manage Subscription</a></p>
+
+        <p>Best regards,<br>Dev Codex Team</p>
+      `
+    };
+
+    await transporter.sendMail(mailOptions);
+    logInfo('Sent projects locked email', { userId: user._id, count: lockedProjects.length });
+  } catch (error) {
+    logError('Failed to send projects locked email', error as Error);
+  }
+}
+
+// Send email notification for unlocked projects
+async function sendProjectsUnlockedEmail(user: any, unlockedProjects: any[], planTier: string) {
+  try {
+    const transporter = createTransporter();
+    const projectList = unlockedProjects.map(p => `  • ${p.name}`).join('\n');
+
+    const mailOptions = {
+      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      to: user.email,
+      subject: `${unlockedProjects.length} Project${unlockedProjects.length > 1 ? 's' : ''} Unlocked - Welcome Back!`,
+      html: `
+        <h2>Projects Unlocked - Plan Upgrade</h2>
+        <p>Hi ${user.firstName},</p>
+        <p>Great news! Your subscription plan has been upgraded to <strong>${planTier}</strong>. As a result, ${unlockedProjects.length} previously locked project${unlockedProjects.length > 1 ? 's have' : ' has'} been unlocked.</p>
+
+        <div style="background: #e8f5e9; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #4caf50;">
+          <strong>Unlocked Projects:</strong><br>
+          <pre style="margin: 10px 0;">${projectList}</pre>
+        </div>
+
+        <p>You now have <strong>full access</strong> to these projects and can make changes again!</p>
+
+        <p><a href="${process.env.FRONTEND_URL || 'http://localhost:5002'}/projects" style="background: #4caf50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 20px 0;">View Your Projects</a></p>
+
+        <p>Thank you for your continued support!</p>
+        <p>Best regards,<br>Dev Codex Team</p>
+      `
+    };
+
+    await transporter.sendMail(mailOptions);
+    logInfo('Sent projects unlocked email', { userId: user._id, count: unlockedProjects.length });
+  } catch (error) {
+    logError('Failed to send projects unlocked email', error as Error);
+  }
+}
+
 // Handle excess projects when downgrading
 async function handleDowngradeExcess(userId: string, targetPlan: 'free' | 'pro' | 'premium') {
   const { Project } = await import('../models/Project');
@@ -531,6 +635,134 @@ async function handleDowngradeExcess(userId: string, targetPlan: 'free' | 'pro' 
       targetPlan,
       lockedCount: projectsToLock.length
     });
+
+    // Send notification and email
+    const user = await User.findById(userId);
+    if (user && projectsToLock.length > 0) {
+      const notificationService = NotificationService.getInstance();
+
+      // Create in-app notification
+      await notificationService.createNotification({
+        userId: user._id,
+        type: 'projects_locked',
+        title: `${projectsToLock.length} Project${projectsToLock.length > 1 ? 's' : ''} Locked`,
+        message: `${projectsToLock.length} of your projects ${projectsToLock.length > 1 ? 'have' : 'has'} been locked due to your plan change to ${targetPlan}. Upgrade to unlock them.`,
+        actionUrl: '/billing',
+        metadata: {
+          lockedProjectIds: projectsToLock.map(p => p._id.toString()),
+          lockedProjectNames: projectsToLock.map(p => p.name),
+          planTier: targetPlan
+        }
+      });
+
+      // Send email notification
+      await sendProjectsLockedEmail(user, projectsToLock, targetPlan);
+    }
+  }
+}
+
+// Handle unlocking projects when upgrading
+async function handleUpgradeUnlock(userId: string, newPlan: 'free' | 'pro' | 'premium') {
+  const { Project } = await import('../models/Project');
+
+  const newLimit = PLAN_LIMITS[newPlan];
+
+  // If unlimited projects, unlock all
+  if (newLimit === -1) {
+    const lockedProjects = await Project.find({
+      $or: [{ userId: userId }, { ownerId: userId }],
+      isLocked: true
+    });
+
+    for (const project of lockedProjects) {
+      project.isLocked = false;
+      project.lockedReason = undefined;
+      await project.save();
+    }
+
+    logInfo('Unlocked all projects on upgrade to unlimited', {
+      userId,
+      newPlan,
+      unlockedCount: lockedProjects.length
+    });
+
+    // Send notification if any were unlocked
+    if (lockedProjects.length > 0) {
+      const user = await User.findById(userId);
+      if (user) {
+        const notificationService = NotificationService.getInstance();
+
+        await notificationService.createNotification({
+          userId: user._id,
+          type: 'projects_unlocked',
+          title: `${lockedProjects.length} Project${lockedProjects.length > 1 ? 's' : ''} Unlocked`,
+          message: `Great news! ${lockedProjects.length} of your projects ${lockedProjects.length > 1 ? 'have' : 'has'} been unlocked with your upgrade to ${newPlan}.`,
+          actionUrl: '/projects',
+          metadata: {
+            unlockedProjectIds: lockedProjects.map(p => p._id.toString()),
+            unlockedProjectNames: lockedProjects.map(p => p.name),
+            planTier: newPlan
+          }
+        });
+
+        await sendProjectsUnlockedEmail(user, lockedProjects, newPlan);
+      }
+    }
+
+    return;
+  }
+
+  // Find locked projects sorted by most recently updated
+  const lockedProjects = await Project.find({
+    $or: [{ userId: userId }, { ownerId: userId }],
+    isLocked: true
+  }).sort({ updatedAt: -1 });
+
+  // Count active (non-locked, non-archived) projects
+  const activeProjects = await Project.countDocuments({
+    $or: [{ userId: userId }, { ownerId: userId }],
+    isArchived: false,
+    isLocked: false
+  });
+
+  // Calculate how many we can unlock
+  const slotsAvailable = newLimit - activeProjects;
+
+  if (slotsAvailable > 0 && lockedProjects.length > 0) {
+    const projectsToUnlock = lockedProjects.slice(0, slotsAvailable);
+
+    for (const project of projectsToUnlock) {
+      project.isLocked = false;
+      project.lockedReason = undefined;
+      await project.save();
+    }
+
+    logInfo('Unlocked projects on upgrade', {
+      userId,
+      newPlan,
+      unlockedCount: projectsToUnlock.length
+    });
+
+    // Send notification and email
+    const user = await User.findById(userId);
+    if (user) {
+      const notificationService = NotificationService.getInstance();
+
+      await notificationService.createNotification({
+        userId: user._id,
+        type: 'projects_unlocked',
+        title: `${projectsToUnlock.length} Project${projectsToUnlock.length > 1 ? 's' : ''} Unlocked`,
+        message: `Great news! ${projectsToUnlock.length} of your projects ${projectsToUnlock.length > 1 ? 'have' : 'has'} been unlocked with your upgrade to ${newPlan}.`,
+        actionUrl: '/projects',
+        metadata: {
+          unlockedProjectIds: projectsToUnlock.map(p => p._id.toString()),
+          unlockedProjectNames: projectsToUnlock.map(p => p.name),
+          planTier: newPlan
+        }
+      });
+
+      await sendProjectsUnlockedEmail(user, projectsToUnlock, newPlan);
+    }
   }
 }
 

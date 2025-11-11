@@ -5,6 +5,16 @@ import { User } from '../models/User';
 import NotificationService from './notificationService';
 import staleItemService from './staleItemService';
 
+export interface DueTodoItem {
+  projectId: string;
+  projectName: string;
+  todoId: string;
+  title: string;
+  dueDate?: Date;
+  status: 'overdue' | 'due_today';
+  daysPastDue?: number;
+}
+
 class ReminderService {
   private static instance: ReminderService;
   private isInitialized = false;
@@ -163,59 +173,89 @@ class ReminderService {
 
   private async sendDailySummary(): Promise<void> {
     try {
-      
       const users = await User.find({});
-      
+
       for (const user of users) {
         // Find user's projects (owned + team member)
-        const ownedProjects = await Project.find({ 
-          $or: [{ userId: user._id }, { ownerId: user._id }] 
+        const ownedProjects = await Project.find({
+          $or: [{ userId: user._id }, { ownerId: user._id }]
         });
 
-        // Get team projects (would need to implement team membership lookup)
-        
-        let overdueTodos = 0;
-        let dueTodayTodos = 0;
+        const overdueTodoItems: DueTodoItem[] = [];
+        const dueTodayTodoItems: DueTodoItem[] = [];
         const today = new Date();
+        today.setHours(0, 0, 0, 0); // Start of day
         const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
 
         for (const project of ownedProjects) {
           for (const todo of project.todos) {
             if (todo.completed) continue;
-            
+
             const assignedToUser = todo.assignedTo?.toString() === user._id.toString();
             const isOwner = project.ownerId.toString() === user._id.toString();
-            
+
             if (!assignedToUser && !isOwner) continue;
 
             if (todo.dueDate) {
               const dueDate = new Date(todo.dueDate);
+              dueDate.setHours(0, 0, 0, 0); // Normalize to start of day
+
               if (dueDate < today) {
-                overdueTodos++;
-              } else if (dueDate <= tomorrow) {
-                dueTodayTodos++;
+                // Calculate days past due
+                const daysPast = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+                overdueTodoItems.push({
+                  projectId: project._id.toString(),
+                  projectName: project.name,
+                  todoId: todo.id,
+                  title: todo.title,
+                  dueDate: new Date(todo.dueDate),
+                  status: 'overdue',
+                  daysPastDue: daysPast
+                });
+              } else if (dueDate.getTime() === today.getTime()) {
+                dueTodayTodoItems.push({
+                  projectId: project._id.toString(),
+                  projectName: project.name,
+                  todoId: todo.id,
+                  title: todo.title,
+                  dueDate: new Date(todo.dueDate),
+                  status: 'due_today'
+                });
               }
             }
           }
         }
 
+        // Sort overdue items by days past due (most overdue first)
+        overdueTodoItems.sort((a, b) => (b.daysPastDue || 0) - (a.daysPastDue || 0));
+
         // Send daily summary if there are actionable items
-        if (overdueTodos > 0 || dueTodayTodos > 0) {
+        const totalTodos = overdueTodoItems.length + dueTodayTodoItems.length;
+        if (totalTodos > 0) {
           let message = '';
-          if (overdueTodos > 0) {
-            message += `You have ${overdueTodos} overdue todo(s). `;
+          if (overdueTodoItems.length > 0) {
+            const todoText = overdueTodoItems.length === 1 ? 'todo' : 'todos';
+            message += `You have ${overdueTodoItems.length} overdue ${todoText}. `;
           }
-          if (dueTodayTodos > 0) {
-            message += `You have ${dueTodayTodos} todo(s) due today.`;
+          if (dueTodayTodoItems.length > 0) {
+            const todoText = dueTodayTodoItems.length === 1 ? 'todo' : 'todos';
+            message += `You have ${dueTodayTodoItems.length} ${todoText} due today.`;
           }
 
           const notificationService = NotificationService.getInstance();
+          // Use 'daily_todo_summary' type so it's unique per user (prevents duplicates)
+          // NotificationService will automatically replace the old notification with new one
           await notificationService.createNotification({
             userId: user._id,
-            type: 'todo_due_soon',
+            type: 'daily_todo_summary' as any,
             title: 'Daily Todo Summary',
             message: message.trim(),
-            actionUrl: '/projects'
+            actionUrl: '/notifications',
+            metadata: {
+              overdueTodos: overdueTodoItems,
+              dueTodayTodos: dueTodayTodoItems,
+              totalCount: totalTodos
+            }
           });
         }
       }

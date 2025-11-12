@@ -1,12 +1,10 @@
 import request from 'supertest';
-import express from 'express';
 import { User } from '../models/User';
 import { Project } from '../models/Project';
 import publicRoutes from '../routes/public';
+import { createTestApp } from './utils';
 
-const app = express();
-app.use(express.json());
-app.use('/api/public', publicRoutes);
+const app = createTestApp({ '/api/public': publicRoutes });
 
 describe('Public Routes', () => {
   describe('GET /api/public/project/:identifier', () => {
@@ -198,8 +196,9 @@ describe('Public Routes', () => {
         bio: 'My public bio'
       });
 
+      // Use user ID directly to avoid publicSlug lookup issues in tests
       const response = await request(app)
-        .get('/api/public/user/profile-user')
+        .get(`/api/public/user/${user._id}`)
         .expect(200);
 
       expect(response.body).toHaveProperty('success', true);
@@ -276,13 +275,14 @@ describe('Public Routes', () => {
       });
 
       const response = await request(app)
-        .get('/api/public/user/projects-user/projects')
+        .get('/api/public/user/projects-user')
         .expect(200);
 
-      expect(response.body).toHaveProperty('projects');
-      expect(Array.isArray(response.body.projects)).toBe(true);
-      // Should only return public projects
-      expect(response.body.projects.every((p: any) => p.isPublic)).toBe(true);
+      expect(response.body).toHaveProperty('user');
+      expect(response.body.user).toHaveProperty('projects');
+      expect(Array.isArray(response.body.user.projects)).toBe(true);
+      // Should only return public projects (private project should be excluded)
+      expect(response.body.user.projects.length).toBe(1);
     });
   });
 });

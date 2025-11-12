@@ -1,34 +1,9 @@
 import request from 'supertest';
-import express from 'express';
 import ideasRoutes from '../routes/ideas';
 import { User } from '../models/User';
-import jwt from 'jsonwebtoken';
+import { createTestApp, createAuthenticatedUser } from './utils';
 
-const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Mock the requireAuth middleware
-jest.mock('../middleware/auth', () => ({
-  requireAuth: (req: any, res: any, next: any) => {
-    const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.substring(7);
-      try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'test-secret') as any;
-        req.userId = decoded.userId;
-        req.user = { _id: decoded.userId, email: decoded.email };
-        next();
-      } catch (error) {
-        res.status(401).json({ message: 'Invalid token' });
-      }
-    } else {
-      res.status(401).json({ message: 'Not authenticated' });
-    }
-  }
-}));
-
-app.use('/api/ideas', ideasRoutes);
+const app = createTestApp({ '/api/ideas': ideasRoutes });
 
 beforeEach(async () => {
   await User.deleteMany({});
@@ -39,21 +14,9 @@ describe('Ideas Routes', () => {
   let userId: string;
 
   beforeEach(async () => {
-    const user = new User({
-      firstName: 'Test',
-      lastName: 'User',
-      email: 'test@example.com',
-      password: 'hashedpassword',
-      username: 'testuser',
-    });
-    await user.save();
-    userId = user._id.toString();
-
-    userToken = jwt.sign(
-      { userId: user._id, email: user.email },
-      process.env.JWT_SECRET || 'test-secret',
-      { expiresIn: '1h' }
-    );
+    const user = await createAuthenticatedUser(app);
+    userToken = user.authToken;
+    userId = user.userId;
   });
 
   describe('GET /api/ideas', () => {

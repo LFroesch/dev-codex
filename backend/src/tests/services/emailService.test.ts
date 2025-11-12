@@ -39,7 +39,7 @@ describe('emailService', () => {
       expect(mockSendMail).toHaveBeenCalledWith(
         expect.objectContaining({
           to: 'invitee@example.com',
-          subject: expect.stringContaining('invitation')
+          subject: expect.stringContaining('invited')
         })
       );
     });

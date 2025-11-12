@@ -95,7 +95,7 @@ describe('SettingsHandlers', () => {
       const result = await handler.handleSetName(parsed, projectId);
 
       expect(result.type).toBe(ResponseType.ERROR);
-      expect(result.message).toContain('valid');
+      expect(result.message).toContain('empty');
     });
   });
 
@@ -256,9 +256,9 @@ describe('SettingsHandlers', () => {
       const parsed: ParsedCommand = {
         type: CommandType.SET_PUBLIC,
         command: 'set',
-        raw: '/set public true',
-        args: ['true'],
-        flags: {},
+        raw: '/set public --enabled=true',
+        args: [],
+        flags: { enabled: 'true' },
         isValid: true,
         errors: []
       };
@@ -278,9 +278,9 @@ describe('SettingsHandlers', () => {
       const parsed: ParsedCommand = {
         type: CommandType.SET_PUBLIC,
         command: 'set',
-        raw: '/set public false',
-        args: ['false'],
-        flags: {},
+        raw: '/set public --enabled=false',
+        args: [],
+        flags: { enabled: 'false' },
         isValid: true,
         errors: []
       };

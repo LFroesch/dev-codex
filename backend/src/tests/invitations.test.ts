@@ -1,43 +1,22 @@
 import request from 'supertest';
-import express from 'express';
-import cookieParser from 'cookie-parser';
-import mongoose from 'mongoose';
-import { User } from '../models/User';
+import crypto from 'crypto';
 import { Project } from '../models/Project';
 import ProjectInvitation from '../models/ProjectInvitation';
 import TeamMember from '../models/TeamMember';
-import Notification from '../models/Notification';
 import invitationRoutes from '../routes/invitations';
 import authRoutes from '../routes/auth';
-import crypto from 'crypto';
+import { createTestApp, createAuthenticatedUser as createAuthUser, createTestProject, expectSuccess } from './utils';
 
-// Create test app
-const app = express();
-app.use(express.json());
-app.use(cookieParser());
-app.use('/api/auth', authRoutes);
-app.use('/api/invitations', invitationRoutes);
+// Create test app using utility
+const app = createTestApp({
+  '/api/auth': authRoutes,
+  '/api/invitations': invitationRoutes
+});
 
-// Helper function to create authenticated user and get token
+// Helper function wrapper for backward compatibility
 async function createAuthenticatedUser(email: string, username: string) {
-  const user = await User.create({
-    email,
-    password: 'StrongPass123!',
-    firstName: 'Test',
-    lastName: 'User',
-    username,
-    planTier: 'free'
-  });
-
-  const loginResponse = await request(app)
-    .post('/api/auth/login')
-    .send({ email, password: 'StrongPass123!' });
-
-  const cookies = loginResponse.headers['set-cookie'] as unknown as string[];
-  const tokenCookie = cookies?.find((cookie: string) => cookie.startsWith('token='));
-  const token = tokenCookie?.split('=')[1].split(';')[0] || '';
-
-  return { user, token };
+  const { user, authToken } = await createAuthUser(app, { email, username });
+  return { user, token: authToken };
 }
 
 describe('Invitation Routes', () => {

@@ -1,15 +1,9 @@
 import request from 'supertest';
-import express from 'express';
-import cookieParser from 'cookie-parser';
 import { User } from '../models/User';
 import authRoutes from '../routes/auth';
-import bcrypt from 'bcryptjs';
+import { createTestApp } from './utils';
 
-// Create test app
-const app = express();
-app.use(express.json());
-app.use(cookieParser());
-app.use('/api/auth', authRoutes);
+const app = createTestApp({ '/api/auth': authRoutes });
 
 describe('Authentication Routes', () => {
   describe('POST /api/auth/register', () => {

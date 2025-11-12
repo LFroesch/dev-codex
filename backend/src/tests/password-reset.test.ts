@@ -1,8 +1,7 @@
 import request from 'supertest';
-import express from 'express';
-import cookieParser from 'cookie-parser';
 import { User } from '../models/User';
 import authRoutes from '../routes/auth';
+import { createTestApp } from './utils';
 
 // Mock nodemailer to capture emails
 jest.mock('nodemailer', () => ({
@@ -22,10 +21,7 @@ process.env.SMTP_PASS = 'test-password';
 process.env.SMTP_PORT = '587';
 process.env.FRONTEND_URL = 'http://localhost:5002';
 
-const app = express();
-app.use(express.json());
-app.use(cookieParser());
-app.use('/api/auth', authRoutes);
+const app = createTestApp({ '/api/auth': authRoutes });
 
 describe('Password Reset Flow', () => {
   beforeEach(async () => {

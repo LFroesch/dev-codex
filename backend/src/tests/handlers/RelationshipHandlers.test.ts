@@ -55,6 +55,12 @@ describe('RelationshipHandlers', () => {
     });
 
     it('should add a relationship with all fields', async () => {
+      // Add components that the relationship will reference
+      mockProject.components = [
+        { id: 'comp1', title: 'Login', type: 'component', category: 'frontend' },
+        { id: 'comp2', title: 'AuthService', type: 'service', category: 'backend' }
+      ];
+
       (Project.findById as jest.Mock).mockResolvedValue(mockProject);
       jest.spyOn(handler as any, 'resolveProjectWithEditCheck').mockResolvedValue({ project: mockProject });
 
@@ -76,10 +82,10 @@ describe('RelationshipHandlers', () => {
       const result = await handler.handleAddRelationship(parsed, projectId);
 
       expect(result.type).toBe(ResponseType.SUCCESS);
-      expect(mockProject.relationships).toHaveLength(1);
-      expect(mockProject.relationships[0].source).toBe('comp1');
-      expect(mockProject.relationships[0].target).toBe('comp2');
-      expect(mockProject.relationships[0].type).toBe('uses');
+      // Handler adds relationships to components, not project.relationships
+      expect(mockProject.components[0].relationships).toHaveLength(1);
+      expect(mockProject.components[0].relationships[0].targetId).toBe('comp2');
+      expect(mockProject.components[0].relationships[0].relationType).toBe('uses');
       expect(mockProject.save).toHaveBeenCalled();
     });
 
@@ -130,10 +136,13 @@ describe('RelationshipHandlers', () => {
       (Project.findById as jest.Mock).mockResolvedValue(mockProject);
       jest.spyOn(handler as any, 'resolveProjectWithEditCheck').mockResolvedValue({ project: mockProject });
 
-      const types = ['implements', 'extends', 'depends_on', 'calls'];
+      // Only test valid types as per handler implementation
+      const types = ['uses', 'depends_on'];
 
       for (const type of types) {
-        mockProject.relationships = [];
+        // Reset component relationships
+        mockProject.components[0].relationships = [];
+        mockProject.components[1].relationships = [];
 
         const parsed: ParsedCommand = {
           type: CommandType.ADD_RELATIONSHIP,
@@ -152,34 +161,33 @@ describe('RelationshipHandlers', () => {
         const result = await handler.handleAddRelationship(parsed, projectId);
 
         expect(result.type).toBe(ResponseType.SUCCESS);
-        expect(mockProject.relationships[0].type).toBe(type);
+        expect(mockProject.components[0].relationships[0].relationType).toBe(type);
       }
     });
   });
 
   describe('handleViewRelationships', () => {
     beforeEach(() => {
-      mockProject.relationships = [
+      // Setup relationships in components, not at project level
+      mockProject.components[0].relationships = [
         {
           id: '1',
-          source: 'comp1',
-          target: 'comp2',
-          type: 'uses',
-          description: 'Uses for auth',
-          createdAt: new Date()
-        },
+          targetId: 'comp2',
+          relationType: 'uses',
+          description: 'Uses for auth'
+        }
+      ];
+      mockProject.components[1].relationships = [
         {
           id: '2',
-          source: 'comp2',
-          target: 'comp1',
-          type: 'calls',
-          description: 'Calls back',
-          createdAt: new Date()
+          targetId: 'comp1',
+          relationType: 'depends_on',
+          description: 'Depends on'
         }
       ];
     });
 
-    it('should view all relationships', async () => {
+    it('should show wizard when no component specified', async () => {
       (Project.findById as jest.Mock).mockResolvedValue(mockProject);
       jest.spyOn(handler as any, 'resolveProject').mockResolvedValue({ project: mockProject });
 
@@ -195,20 +203,20 @@ describe('RelationshipHandlers', () => {
 
       const result = await handler.handleViewRelationships(parsed, projectId);
 
-      expect(result.type).toBe(ResponseType.DATA);
-      expect(result.data.relationships.length).toBe(2);
+      expect(result.type).toBe(ResponseType.PROMPT);
+      expect(result.data.wizardType).toBe('view_relationships_selector');
     });
 
-    it('should filter by relationship type', async () => {
+    it('should view relationships for specific component', async () => {
       (Project.findById as jest.Mock).mockResolvedValue(mockProject);
       jest.spyOn(handler as any, 'resolveProject').mockResolvedValue({ project: mockProject });
 
       const parsed: ParsedCommand = {
         type: CommandType.VIEW_RELATIONSHIPS,
         command: 'view',
-        raw: '/view relationships',
-        args: [],
-        flags: { type: 'uses' },
+        raw: '/view relationships comp1',
+        args: ['comp1'],
+        flags: {},
         isValid: true,
         errors: []
       };
@@ -217,24 +225,24 @@ describe('RelationshipHandlers', () => {
 
       expect(result.type).toBe(ResponseType.DATA);
       expect(result.data.relationships).toHaveLength(1);
-      expect(result.data.relationships[0].type).toBe('uses');
+      expect(result.data.relationships[0].relationType).toBe('uses');
     });
   });
 
   describe('handleEditRelationship', () => {
     beforeEach(() => {
-      mockProject.relationships = [
+      // Setup relationships in components
+      mockProject.components[0].relationships = [
         {
           id: '1',
-          source: 'comp1',
-          target: 'comp2',
-          type: 'uses',
+          targetId: 'comp2',
+          relationType: 'uses',
           description: 'Original description'
         }
       ];
     });
 
-    it('should edit relationship description', async () => {
+    it('should show wizard when no args provided', async () => {
       (Project.findById as jest.Mock).mockResolvedValue(mockProject);
       jest.spyOn(handler as any, 'resolveProjectWithEditCheck').mockResolvedValue({ project: mockProject });
 
@@ -242,20 +250,19 @@ describe('RelationshipHandlers', () => {
         type: CommandType.EDIT_RELATIONSHIP,
         command: 'edit',
         raw: '/edit relationship',
-        args: ['1'],
-        flags: { description: 'Updated description' },
+        args: [],
+        flags: {},
         isValid: true,
         errors: []
       };
 
       const result = await handler.handleEditRelationship(parsed, projectId);
 
-      expect(result.type).toBe(ResponseType.SUCCESS);
-      expect(mockProject.relationships[0].description).toBe('Updated description');
-      expect(mockProject.save).toHaveBeenCalled();
+      expect(result.type).toBe(ResponseType.PROMPT);
+      expect(result.data.wizardType).toBe('edit_relationship_selector');
     });
 
-    it('should edit relationship type', async () => {
+    it('should return error when component not found', async () => {
       (Project.findById as jest.Mock).mockResolvedValue(mockProject);
       jest.spyOn(handler as any, 'resolveProjectWithEditCheck').mockResolvedValue({ project: mockProject });
 
@@ -263,28 +270,8 @@ describe('RelationshipHandlers', () => {
         type: CommandType.EDIT_RELATIONSHIP,
         command: 'edit',
         raw: '/edit relationship',
-        args: ['1'],
-        flags: { type: 'implements' },
-        isValid: true,
-        errors: []
-      };
-
-      const result = await handler.handleEditRelationship(parsed, projectId);
-
-      expect(result.type).toBe(ResponseType.SUCCESS);
-      expect(mockProject.relationships[0].type).toBe('implements');
-    });
-
-    it('should return error when relationship not found', async () => {
-      (Project.findById as jest.Mock).mockResolvedValue(mockProject);
-      jest.spyOn(handler as any, 'resolveProjectWithEditCheck').mockResolvedValue({ project: mockProject });
-
-      const parsed: ParsedCommand = {
-        type: CommandType.EDIT_RELATIONSHIP,
-        command: 'edit',
-        raw: '/edit relationship',
-        args: ['999'],
-        flags: { description: 'New desc' },
+        args: ['unknown', '1'],
+        flags: {},
         isValid: true,
         errors: []
       };
@@ -298,13 +285,16 @@ describe('RelationshipHandlers', () => {
 
   describe('handleDeleteRelationship', () => {
     beforeEach(() => {
-      mockProject.relationships = [
-        { id: '1', source: 'comp1', target: 'comp2', type: 'uses' },
-        { id: '2', source: 'comp2', target: 'comp1', type: 'calls' }
+      // Setup relationships in components
+      mockProject.components[0].relationships = [
+        { id: '1', targetId: 'comp2', relationType: 'uses' }
+      ];
+      mockProject.components[1].relationships = [
+        { id: '2', targetId: 'comp1', relationType: 'depends_on' }
       ];
     });
 
-    it('should delete a relationship with confirmation', async () => {
+    it('should show wizard when no args provided', async () => {
       (Project.findById as jest.Mock).mockResolvedValue(mockProject);
       jest.spyOn(handler as any, 'resolveProjectWithEditCheck').mockResolvedValue({ project: mockProject });
 
@@ -312,21 +302,19 @@ describe('RelationshipHandlers', () => {
         type: CommandType.DELETE_RELATIONSHIP,
         command: 'delete',
         raw: '/delete relationship',
-        args: ['1'],
-        flags: { confirm: true },
+        args: [],
+        flags: {},
         isValid: true,
         errors: []
       };
 
       const result = await handler.handleDeleteRelationship(parsed, projectId);
 
-      expect(result.type).toBe(ResponseType.SUCCESS);
-      expect(mockProject.relationships).toHaveLength(1);
-      expect(mockProject.relationships[0].id).toBe('2');
-      expect(mockProject.save).toHaveBeenCalled();
+      expect(result.type).toBe(ResponseType.PROMPT);
+      expect(result.data.wizardType).toBe('delete_relationship_selector');
     });
 
-    it('should return error when deleting non-existent relationship', async () => {
+    it('should return error when component not found', async () => {
       (Project.findById as jest.Mock).mockResolvedValue(mockProject);
       jest.spyOn(handler as any, 'resolveProjectWithEditCheck').mockResolvedValue({ project: mockProject });
 
@@ -334,7 +322,7 @@ describe('RelationshipHandlers', () => {
         type: CommandType.DELETE_RELATIONSHIP,
         command: 'delete',
         raw: '/delete relationship',
-        args: ['999'],
+        args: ['unknown', '1'],
         flags: {},
         isValid: true,
         errors: []

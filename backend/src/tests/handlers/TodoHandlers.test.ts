@@ -20,6 +20,7 @@ describe('TodoHandlers', () => {
     name: 'Test Project',
     userId: new mongoose.Types.ObjectId(userId),
     todos: [],
+    devLog: [],
     save: jest.fn().mockResolvedValue(true)
   };
 
@@ -27,6 +28,7 @@ describe('TodoHandlers', () => {
     jest.clearAllMocks();
     handler = new TodoHandlers(userId);
     mockProject.todos = [];
+    mockProject.devLog = [];
   });
 
   describe('handleAddTodo', () => {
@@ -347,6 +349,253 @@ describe('TodoHandlers', () => {
 
       expect(result.type).toBe(ResponseType.ERROR);
       expect(result.message).toContain('Usage');
+    });
+  });
+
+  describe('handlePushTodo', () => {
+    it('should push todo to devlog', async () => {
+      const sourceTodo = {
+        id: 'todo-1',
+        title: 'Todo to push',
+        description: 'Description',
+        priority: 'medium',
+        completed: false,
+        status: 'not_started'
+      };
+      mockProject.todos = [sourceTodo];
+      mockProject.devLog = [];
+
+      (Project.findById as jest.Mock).mockResolvedValue(mockProject);
+      jest.spyOn(handler as any, 'resolveProjectWithEditCheck').mockResolvedValue({ project: mockProject });
+
+      const parsed: ParsedCommand = {
+        type: CommandType.PUSH_TODO,
+        command: 'push',
+        raw: '/push todo 1',
+        args: ['1'],
+        flags: {},
+        isValid: true,
+        errors: []
+      };
+
+      const result = await handler.handlePushTodo(parsed, projectId);
+
+      expect(result.type).toBe(ResponseType.SUCCESS);
+      expect(mockProject.devLog).toHaveLength(1);
+      expect(mockProject.devLog[0].title).toBe('Todo to push');
+      expect(mockProject.todos).toHaveLength(0); // Todo removed after push
+    });
+
+    it('should return error when todo not found', async () => {
+      mockProject.todos = [];
+
+      (Project.findById as jest.Mock).mockResolvedValue(mockProject);
+      jest.spyOn(handler as any, 'resolveProjectWithEditCheck').mockResolvedValue({ project: mockProject });
+
+      const parsed: ParsedCommand = {
+        type: CommandType.PUSH_TODO,
+        command: 'push',
+        raw: '/push todo 1',
+        args: ['1'],
+        flags: {},
+        isValid: true,
+        errors: []
+      };
+
+      const result = await handler.handlePushTodo(parsed, projectId);
+
+      expect(result.type).toBe(ResponseType.ERROR);
+      expect(result.message).toContain('not found');
+    });
+  });
+
+  describe('handleAddSubtask', () => {
+    it('should add subtask to parent todo', async () => {
+      const parentTodo = {
+        id: 'parent-1',
+        title: 'Parent Todo',
+        description: '',
+        priority: 'medium',
+        completed: false,
+        status: 'not_started'
+      };
+      mockProject.todos = [parentTodo];
+
+      (Project.findById as jest.Mock).mockResolvedValue(mockProject);
+      jest.spyOn(handler as any, 'resolveProjectWithEditCheck').mockResolvedValue({ project: mockProject });
+
+      const parsed: ParsedCommand = {
+        type: CommandType.ADD_SUBTASK,
+        command: 'add',
+        raw: '/add subtask --parent="1" --title="Subtask 1"',
+        args: [],
+        flags: { parent: '1', title: 'Subtask 1' },
+        isValid: true,
+        errors: []
+      };
+
+      const result = await handler.handleAddSubtask(parsed, projectId);
+
+      expect(result.type).toBe(ResponseType.SUCCESS);
+      expect(mockProject.todos).toHaveLength(2);
+      expect(mockProject.todos[1].parentTodoId).toBe('parent-1');
+    });
+
+    it('should return error when no parent todos exist', async () => {
+      mockProject.todos = [];
+
+      (Project.findById as jest.Mock).mockResolvedValue(mockProject);
+      jest.spyOn(handler as any, 'resolveProjectWithEditCheck').mockResolvedValue({ project: mockProject });
+
+      const parsed: ParsedCommand = {
+        type: CommandType.ADD_SUBTASK,
+        command: 'add',
+        raw: '/add subtask',
+        args: [],
+        flags: {},
+        isValid: true,
+        errors: []
+      };
+
+      const result = await handler.handleAddSubtask(parsed, projectId);
+
+      expect(result.type).toBe(ResponseType.ERROR);
+      expect(result.message).toContain('No parent todos');
+    });
+  });
+
+  describe('handleViewSubtasks', () => {
+    it('should view all subtasks of parent todo', async () => {
+      mockProject.todos = [
+        {
+          id: 'parent-1',
+          title: 'Parent Todo',
+          description: '',
+          priority: 'medium',
+          completed: false,
+          status: 'not_started'
+        },
+        {
+          id: 'subtask-1',
+          title: 'Subtask 1',
+          description: '',
+          priority: 'low',
+          completed: false,
+          status: 'not_started',
+          parentTodoId: 'parent-1'
+        },
+        {
+          id: 'subtask-2',
+          title: 'Subtask 2',
+          description: '',
+          priority: 'high',
+          completed: true,
+          status: 'completed',
+          parentTodoId: 'parent-1'
+        }
+      ];
+
+      (Project.findById as jest.Mock).mockResolvedValue(mockProject);
+      jest.spyOn(handler as any, 'resolveProject').mockResolvedValue({ project: mockProject });
+
+      const parsed: ParsedCommand = {
+        type: CommandType.VIEW_SUBTASKS,
+        command: 'view',
+        raw: '/view subtasks 1',
+        args: ['1'],
+        flags: {},
+        isValid: true,
+        errors: []
+      };
+
+      const result = await handler.handleViewSubtasks(parsed, projectId);
+
+      expect(result.type).toBe(ResponseType.DATA);
+      expect(result.data.subtasks).toHaveLength(2);
+    });
+  });
+
+  describe('handleEditSubtask', () => {
+    it('should edit subtask', async () => {
+      mockProject.todos = [
+        {
+          id: 'parent-1',
+          title: 'Parent Todo',
+          description: '',
+          priority: 'medium',
+          completed: false,
+          status: 'not_started'
+        },
+        {
+          id: 'subtask-1',
+          title: 'Old Title',
+          description: '',
+          priority: 'low',
+          completed: false,
+          status: 'not_started',
+          parentTodoId: 'parent-1'
+        }
+      ];
+
+      (Project.findById as jest.Mock).mockResolvedValue(mockProject);
+      jest.spyOn(handler as any, 'resolveProjectWithEditCheck').mockResolvedValue({ project: mockProject });
+
+      const parsed: ParsedCommand = {
+        type: CommandType.EDIT_SUBTASK,
+        command: 'edit',
+        raw: '/edit subtask 1 1',
+        args: ['1', '1'],
+        flags: { title: 'New Title' },
+        isValid: true,
+        errors: []
+      };
+
+      const result = await handler.handleEditSubtask(parsed, projectId);
+
+      expect(result.type).toBe(ResponseType.SUCCESS);
+      expect(mockProject.todos[1].title).toBe('New Title');
+    });
+  });
+
+  describe('handleDeleteSubtask', () => {
+    it('should delete subtask', async () => {
+      mockProject.todos = [
+        {
+          id: 'parent-1',
+          title: 'Parent Todo',
+          description: '',
+          priority: 'medium',
+          completed: false,
+          status: 'not_started'
+        },
+        {
+          id: 'subtask-1',
+          title: 'Subtask to delete',
+          description: '',
+          priority: 'low',
+          completed: false,
+          status: 'not_started',
+          parentTodoId: 'parent-1'
+        }
+      ];
+
+      (Project.findById as jest.Mock).mockResolvedValue(mockProject);
+      jest.spyOn(handler as any, 'resolveProjectWithEditCheck').mockResolvedValue({ project: mockProject });
+
+      const parsed: ParsedCommand = {
+        type: CommandType.DELETE_SUBTASK,
+        command: 'delete',
+        raw: '/delete subtask 1 1',
+        args: ['1', '1'],
+        flags: { confirm: true },
+        isValid: true,
+        errors: []
+      };
+
+      const result = await handler.handleDeleteSubtask(parsed, projectId);
+
+      expect(result.type).toBe(ResponseType.SUCCESS);
+      expect(mockProject.todos).toHaveLength(1);
     });
   });
 });

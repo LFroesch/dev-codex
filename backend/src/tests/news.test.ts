@@ -20,6 +20,56 @@ async function createUser(email: string, username: string, isAdmin: boolean = fa
 }
 
 describe('News Routes', () => {
+  describe('GET /api/news/important', () => {
+    it('should get only important announcements', async () => {
+      const { user } = await createUser('important@example.com', 'importantuser', true);
+
+      await NewsPost.create({
+        title: 'Important Announcement',
+        content: 'Critical update',
+        summary: 'Important',
+        type: 'important',
+        isPublished: true,
+        publishedAt: new Date(),
+        authorId: user._id
+      });
+
+      await NewsPost.create({
+        title: 'Regular News',
+        content: 'Regular content',
+        summary: 'News',
+        type: 'news',
+        isPublished: true,
+        publishedAt: new Date(),
+        authorId: user._id
+      });
+
+      const response = await request(app)
+        .get('/api/news/important')
+        .expect(200);
+
+      expect(response.body.posts).toHaveLength(1);
+      expect(response.body.posts[0].type).toBe('important');
+      expect(response.body.posts[0].title).toBe('Important Announcement');
+    });
+
+    it('should not require authentication', async () => {
+      const response = await request(app)
+        .get('/api/news/important')
+        .expect(200);
+
+      expect(response.body).toHaveProperty('posts');
+    });
+
+    it('should return empty array if no important posts', async () => {
+      const response = await request(app)
+        .get('/api/news/important')
+        .expect(200);
+
+      expect(response.body.posts).toEqual([]);
+    });
+  });
+
   describe('GET /api/news', () => {
     it('should get all published news posts without authentication', async () => {
       const { user } = await createUser('admin@example.com', 'admin', true);
@@ -379,6 +429,81 @@ describe('News Routes', () => {
         .put(`/api/news/${post._id}`)
         .send({ title: 'Updated' })
         .expect(401);
+    });
+
+    it('should update only specified fields', async () => {
+      const { user, token } = await createUser('partial@example.com', 'partial', true);
+
+      const post = await NewsPost.create({
+        title: 'Original Title',
+        content: 'Original Content',
+        summary: 'Original Summary',
+        type: 'news',
+        isPublished: false,
+        authorId: user._id
+      });
+
+      // Update only title
+      await request(app)
+        .put(`/api/news/${post._id}`)
+        .set('Cookie', `token=${token}`)
+        .send({ title: 'New Title' })
+        .expect(200);
+
+      // Verify other fields unchanged
+      const updated = await NewsPost.findById(post._id);
+      expect(updated?.title).toBe('New Title');
+      expect(updated?.content).toBe('Original Content');
+      expect(updated?.summary).toBe('Original Summary');
+    });
+
+    it('should change post type', async () => {
+      const { user, token } = await createUser('typechanger@example.com', 'typechanger', true);
+
+      const post = await NewsPost.create({
+        title: 'Regular Post',
+        content: 'Content',
+        type: 'news',
+        isPublished: true,
+        publishedAt: new Date(),
+        authorId: user._id
+      });
+
+      const response = await request(app)
+        .put(`/api/news/${post._id}`)
+        .set('Cookie', `token=${token}`)
+        .send({ type: 'important' })
+        .expect(200);
+
+      expect(response.body.post.type).toBe('important');
+
+      // Verify in database
+      const updated = await NewsPost.findById(post._id);
+      expect(updated?.type).toBe('important');
+    });
+
+    it('should not reset publishedAt when already published', async () => {
+      const { user, token } = await createUser('resettest@example.com', 'resettest', true);
+
+      const originalDate = new Date('2024-01-01');
+      const post = await NewsPost.create({
+        title: 'Published Post',
+        content: 'Content',
+        type: 'news',
+        isPublished: true,
+        publishedAt: originalDate,
+        authorId: user._id
+      });
+
+      await request(app)
+        .put(`/api/news/${post._id}`)
+        .set('Cookie', `token=${token}`)
+        .send({ content: 'Updated Content' })
+        .expect(200);
+
+      // Verify publishedAt unchanged
+      const updated = await NewsPost.findById(post._id);
+      expect(updated?.publishedAt?.toISOString()).toBe(originalDate.toISOString());
     });
   });
 

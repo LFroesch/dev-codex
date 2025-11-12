@@ -1,29 +1,16 @@
 import request from 'supertest';
-import express from 'express';
-import cookieParser from 'cookie-parser';
 import { User } from '../models/User';
 import Notification from '../models/Notification';
 import authRoutes from '../routes/auth';
 import notificationRoutes from '../routes/notifications';
-import { requireAuth } from '../middleware/auth';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import { createTestApp, createAuthenticatedUser, getMockNotificationService } from './utils';
 
-// Create test app
-const app = express();
-app.use(express.json());
-app.use(cookieParser());
-app.use('/api/auth', authRoutes);
-app.use('/api/notifications', notificationRoutes);
+const app = createTestApp({
+  '/api/auth': authRoutes,
+  '/api/notifications': notificationRoutes
+});
 
-// Mock NotificationService
-const mockNotificationService = {
-  getNotifications: jest.fn(),
-  markAsRead: jest.fn(),
-  markAllAsRead: jest.fn(),
-  deleteNotification: jest.fn(),
-  clearAllNotifications: jest.fn(),
-};
+const mockNotificationService = getMockNotificationService();
 
 jest.mock('../services/notificationService', () => ({
   getInstance: () => mockNotificationService,
@@ -33,37 +20,15 @@ describe('Notification Routes', () => {
   let authToken: string;
   let userId: string;
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    const user = await createAuthenticatedUser(app);
+    authToken = user.authToken;
+    userId = user.userId;
     jest.clearAllMocks();
-  });
-
-  beforeAll(async () => {
-    // Create test user
-    const hashedPassword = await bcrypt.hash('testpass123', 10);
-    const user = new User({
-      email: 'testuser@example.com',
-      password: hashedPassword,
-      firstName: 'Test',
-      lastName: 'User',
-      username: 'testuser'
-    });
-    await user.save();
-    userId = user._id.toString();
-
-    // Generate auth token
-    authToken = jwt.sign(
-      { userId: user._id },
-      process.env.JWT_SECRET || 'test_secret'
-    );
   });
 
   afterAll(async () => {
-    await User.deleteMany({});
     await Notification.deleteMany({});
-  });
-
-  beforeEach(() => {
-    jest.clearAllMocks();
   });
 
   describe('GET /api/notifications', () => {

@@ -29,7 +29,7 @@ describe('UtilityHandlers', () => {
       save: jest.fn().mockResolvedValue(true)
     };
 
-    handler = new UtilityHandlers(mockUser, mockProject);
+    handler = new UtilityHandlers(mockUser);
   });
 
   describe('handleHelp', () => {
@@ -50,10 +50,11 @@ describe('UtilityHandlers', () => {
   });
 
   describe('handleLLMContext', () => {
-    it('should return project context', () => {
-      const result = handler.handleLLMContext();
+    it('should return project context', async () => {
+      const parsed = CommandParser.parse('/llm');
+      const result = await handler.handleLLMContext(parsed);
 
-      expect(result.type).toBe('info');
+      expect(result.type).toBe('data');
       expect(result.data).toBeDefined();
     });
   });

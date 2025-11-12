@@ -1,12 +1,9 @@
 import request from 'supertest';
-import express from 'express';
 import mongoose from 'mongoose';
 import healthRoutes from '../routes/health';
+import { createTestApp } from './utils';
 
-// Create test app
-const app = express();
-app.use(express.json());
-app.use('/api', healthRoutes);
+const app = createTestApp({ '/api': healthRoutes });
 
 describe('Health Check Routes', () => {
   describe('GET /api/health', () => {

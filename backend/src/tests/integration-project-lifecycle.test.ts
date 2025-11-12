@@ -1,17 +1,15 @@
 import request from 'supertest';
-import express from 'express';
-import cookieParser from 'cookie-parser';
 import { User } from '../models/User';
 import { Project } from '../models/Project';
 import authRoutes from '../routes/auth';
 import projectRoutes from '../routes/projects';
 import { requireAuth } from '../middleware/auth';
+import { createTestApp } from './utils';
 
-const app = express();
-app.use(express.json());
-app.use(cookieParser());
-app.use('/api/auth', authRoutes);
-app.use('/api/projects', requireAuth, projectRoutes);
+const app = createTestApp({
+  '/api/auth': authRoutes,
+  '/api/projects': [requireAuth, projectRoutes]
+});
 
 describe('Integration: Project Lifecycle', () => {
   let userCookie: string;

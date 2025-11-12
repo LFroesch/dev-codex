@@ -1,11 +1,9 @@
 import request from 'supertest';
-import express from 'express';
-import cookieParser from 'cookie-parser';
-import { User } from '../models/User';
 import authRoutes from '../routes/auth';
 import billingRoutes from '../routes/billing';
 import { requireAuth } from '../middleware/auth';
-import bcrypt from 'bcryptjs';
+import { User } from '../models/User';
+import { createTestApp, createAuthenticatedUser, expectSuccess, expectUnauthorized } from './utils';
 
 // Mock Stripe
 jest.mock('stripe', () => {
@@ -18,9 +16,7 @@ jest.mock('stripe', () => {
       retrieve: jest.fn().mockResolvedValue({
         id: 'cus_mock_customer_id',
         email: 'test@example.com',
-        subscriptions: {
-          data: []
-        }
+        subscriptions: { data: [] }
       })
     },
     checkout: {
@@ -32,18 +28,12 @@ jest.mock('stripe', () => {
       }
     },
     subscriptions: {
-      list: jest.fn().mockResolvedValue({
-        data: []
-      }),
+      list: jest.fn().mockResolvedValue({ data: [] }),
       retrieve: jest.fn().mockResolvedValue({
         id: 'sub_mock_subscription_id',
         status: 'active',
         items: {
-          data: [{
-            price: {
-              lookup_key: 'premium_monthly'
-            }
-          }]
+          data: [{ price: { lookup_key: 'premium_monthly' } }]
         }
       }),
       cancel: jest.fn().mockResolvedValue({
@@ -59,42 +49,20 @@ jest.mock('stripe', () => {
   }));
 });
 
-// Create test app
-const app = express();
-app.use(express.json());
-app.use(cookieParser());
-app.use('/api/auth', authRoutes);
-app.use('/api/billing', requireAuth, billingRoutes);
+// Create test app using utility
+const app = createTestApp({
+  '/api/auth': authRoutes,
+  '/api/billing': [requireAuth, billingRoutes]
+});
 
 describe('Billing and Payment Routes', () => {
   let authToken: string;
   let userId: string;
-  let testUser: any;
 
   beforeEach(async () => {
-    // Create test user (let the model hash the password)
-    testUser = await User.create({
-      email: 'test@example.com',
-      password: 'StrongPass123!', // Plain password - will be hashed by pre-save hook
-      firstName: 'John',
-      lastName: 'Doe',
-      username: 'testuser',
-      planTier: 'free',
-      isEmailVerified: true
-    });
-    userId = testUser._id.toString();
-
-    // Login to get auth token
-    const loginResponse = await request(app)
-      .post('/api/auth/login')
-      .send({
-        email: 'test@example.com',
-        password: 'StrongPass123!'
-      });
-
-    const cookies = loginResponse.headers['set-cookie'] as unknown as string[];
-    const tokenCookie = cookies.find((cookie: string) => cookie.startsWith('token='));
-    authToken = tokenCookie?.split('=')[1].split(';')[0] || '';
+    const auth = await createAuthenticatedUser(app);
+    authToken = auth.authToken;
+    userId = auth.userId;
   });
 
   describe('GET /api/billing/info', () => {
@@ -214,7 +182,8 @@ describe('Billing and Payment Routes', () => {
   describe('Basic functionality', () => {
     it('should handle plan limits correctly', async () => {
       // Verify user has correct plan tier
-      expect(testUser.planTier).toBe('free');
+      const user = await User.findById(userId);
+      expect(user?.planTier).toBe('free');
     });
 
     it('should allow plan upgrades', async () => {

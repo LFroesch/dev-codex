@@ -1,17 +1,15 @@
 import request from 'supertest';
-import express from 'express';
-import cookieParser from 'cookie-parser';
 import { User } from '../models/User';
 import { Project } from '../models/Project';
 import authRoutes from '../routes/auth';
 import projectRoutes from '../routes/projects';
 import { requireAuth } from '../middleware/auth';
+import { createTestApp, createAuthenticatedUser } from './utils';
 
-const app = express();
-app.use(express.json());
-app.use(cookieParser());
-app.use('/api/auth', authRoutes);
-app.use('/api/projects', requireAuth, projectRoutes);
+const app = createTestApp({
+  '/api/auth': authRoutes,
+  '/api/projects': [requireAuth, projectRoutes]
+});
 
 describe('Integration: Billing & Subscription Limits', () => {
   beforeEach(async () => {
@@ -65,29 +63,19 @@ describe('Integration: Billing & Subscription Limits', () => {
   });
 
   it('should allow more projects after upgrading plan', async () => {
-    const user = {
+    // Create user with createAuthenticatedUser to ensure it persists
+    const { user, authToken, userId } = await createAuthenticatedUser(app, {
       email: 'upgrade@test.com',
-      password: 'Upgrade123!',
-      firstName: 'Up',
-      lastName: 'Grade',
-      username: 'upgradeuser'
-    };
+      username: 'upgradeuser',
+      planTier: 'free'
+    });
 
-    await request(app).post('/api/auth/register').send(user);
-    
-    const loginRes = await request(app)
-      .post('/api/auth/login')
-      .send({ email: user.email, password: user.password });
-
-    const cookies = loginRes.headers['set-cookie'];
-    const userCookie = Array.isArray(cookies) 
-      ? cookies.find((c: string) => c.startsWith('token='))! 
-      : cookies;
+    const userCookie = `token=${authToken}`;
 
     // Upgrade to pro
-    const dbUser = await User.findOne({ email: user.email });
+    const dbUser = await User.findById(userId);
     expect(dbUser).toBeTruthy();
-    
+
     dbUser!.planTier = 'pro';
     dbUser!.projectLimit = 10;
     await dbUser!.save();

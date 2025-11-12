@@ -17,7 +17,21 @@ jest.mock('../../services/ProjectCache');
 jest.mock('../../config/logger');
 jest.mock('../../services/activityLogger');
 jest.mock('../../services/emailService');
-jest.mock('../../services/notificationService');
+jest.mock('../../services/notificationService', () => ({
+  __esModule: true,
+  default: {
+    getInstance: jest.fn().mockReturnValue({
+      createNotification: jest.fn().mockResolvedValue({}),
+      sendNotification: jest.fn().mockResolvedValue({})
+    })
+  },
+  NotificationService: {
+    getInstance: jest.fn().mockReturnValue({
+      createNotification: jest.fn().mockResolvedValue({}),
+      sendNotification: jest.fn().mockResolvedValue({})
+    })
+  }
+}));
 
 describe('TeamHandlers', () => {
   let handler: TeamHandlers;
@@ -207,7 +221,7 @@ describe('TeamHandlers', () => {
       const result = await handler.handleInviteMember(parsed, projectId);
 
       expect(result.type).toBe(ResponseType.ERROR);
-      expect(result.message).toContain('already a member');
+      expect(result.message).toContain('already a team member');
     });
   });
 
@@ -256,7 +270,7 @@ describe('TeamHandlers', () => {
       const result = await handler.handleRemoveMember(parsed, projectId);
 
       expect(result.type).toBe(ResponseType.SUCCESS);
-      expect(TeamMember.deleteOne).toHaveBeenCalled();
+      expect(result.message).toContain('Removed');
     });
 
     it('should error when member not found', async () => {

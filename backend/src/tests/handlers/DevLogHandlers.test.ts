@@ -18,14 +18,14 @@ describe('DevLogHandlers', () => {
     _id: new mongoose.Types.ObjectId(projectId),
     name: 'Test Project',
     userId: new mongoose.Types.ObjectId(userId),
-    devlogs: [],
+    devLog: [],
     save: jest.fn().mockResolvedValue(true)
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
     handler = new DevLogHandlers(userId);
-    mockProject.devlogs = [];
+    mockProject.devLog = [];
   });
 
   describe('handleAddDevLog', () => {
@@ -37,7 +37,7 @@ describe('DevLogHandlers', () => {
         command: 'devlog',
         raw: '/devlog',
         args: [],
-        flags: { content: 'Fixed authentication bug' },
+        flags: { title: 'Bug Fix', content: 'Fixed authentication bug' },
         isValid: true,
         errors: []
       };
@@ -45,8 +45,8 @@ describe('DevLogHandlers', () => {
       const result = await handler.handleAddDevLog(parsed, projectId);
 
       expect(result.type).toBe(ResponseType.SUCCESS);
-      expect(mockProject.devlogs).toHaveLength(1);
-      expect(mockProject.devlogs[0].content).toBe('Fixed authentication bug');
+      expect(mockProject.devLog).toHaveLength(1);
+      expect(mockProject.devLog[0].description).toBe('Fixed authentication bug');
       expect(mockProject.save).toHaveBeenCalled();
     });
 
@@ -72,9 +72,9 @@ describe('DevLogHandlers', () => {
 
   describe('handleViewDevLog', () => {
     beforeEach(() => {
-      mockProject.devlogs = [
-        { id: '1', content: 'Log 1', createdAt: new Date() },
-        { id: '2', content: 'Log 2', createdAt: new Date() }
+      mockProject.devLog = [
+        { id: '1', description: 'Log 1', date: new Date() },
+        { id: '2', description: 'Log 2', date: new Date() }
       ];
     });
 
@@ -94,14 +94,14 @@ describe('DevLogHandlers', () => {
       const result = await handler.handleViewDevLog(parsed, projectId);
 
       expect(result.type).toBe(ResponseType.DATA);
-      expect(result.data.devlogs).toHaveLength(2);
+      expect(result.data.entries).toHaveLength(2);
     });
   });
 
   describe('handleEditDevLog', () => {
     beforeEach(() => {
-      mockProject.devlogs = [
-        { id: '1', content: 'Original log' }
+      mockProject.devLog = [
+        { id: '1', description: 'Original log' }
       ];
     });
 
@@ -121,16 +121,16 @@ describe('DevLogHandlers', () => {
       const result = await handler.handleEditDevLog(parsed, projectId);
 
       expect(result.type).toBe(ResponseType.SUCCESS);
-      expect(mockProject.devlogs[0].content).toBe('Updated log content');
+      expect(mockProject.devLog[0].description).toBe('Updated log content');
       expect(mockProject.save).toHaveBeenCalled();
     });
   });
 
   describe('handleDeleteDevLog', () => {
     beforeEach(() => {
-      mockProject.devlogs = [
-        { id: '1', content: 'Log 1' },
-        { id: '2', content: 'Log 2' }
+      mockProject.devLog = [
+        { id: '1', description: 'Log 1' },
+        { id: '2', description: 'Log 2' }
       ];
     });
 
@@ -150,7 +150,8 @@ describe('DevLogHandlers', () => {
       const result = await handler.handleDeleteDevLog(parsed, projectId);
 
       expect(result.type).toBe(ResponseType.SUCCESS);
-      expect(mockProject.devlogs).toHaveLength(1);
+      expect(mockProject.devLog).toHaveLength(1);
+      expect(mockProject.devLog[0].id).toBe('2');
       expect(mockProject.save).toHaveBeenCalled();
     });
   });

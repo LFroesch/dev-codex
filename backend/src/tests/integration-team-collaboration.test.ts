@@ -1,6 +1,4 @@
 import request from 'supertest';
-import express from 'express';
-import cookieParser from 'cookie-parser';
 import { User } from '../models/User';
 import { Project } from '../models/Project';
 import TeamMember from '../models/TeamMember';
@@ -9,13 +7,13 @@ import authRoutes from '../routes/auth';
 import projectRoutes from '../routes/projects';
 import invitationRoutes from '../routes/invitations';
 import { requireAuth } from '../middleware/auth';
+import { createTestApp, createAuthenticatedUser } from './utils';
 
-const app = express();
-app.use(express.json());
-app.use(cookieParser());
-app.use('/api/auth', authRoutes);
-app.use('/api/projects', requireAuth, projectRoutes);
-app.use('/api/invitations', invitationRoutes);
+const app = createTestApp({
+  '/api/auth': authRoutes,
+  '/api/projects': [requireAuth, projectRoutes],
+  '/api/invitations': invitationRoutes
+});
 
 describe('Integration: Team Collaboration', () => {
   beforeEach(async () => {
@@ -34,23 +32,11 @@ describe('Integration: Team Collaboration', () => {
 
   it('should handle team invitation workflow', async () => {
     // Create owner
-    const owner = {
+    const { user: ownerUser, authToken: ownerToken } = await createAuthenticatedUser(app, {
       email: 'owner@test.com',
-      password: 'Owner123!',
-      firstName: 'Owner',
-      lastName: 'User',
       username: 'owneruser'
-    };
-
-    await request(app).post('/api/auth/register').send(owner);
-    const ownerLogin = await request(app)
-      .post('/api/auth/login')
-      .send({ email: owner.email, password: owner.password });
-
-    const ownerCookies = ownerLogin.headers['set-cookie'];
-    const ownerCookie = Array.isArray(ownerCookies) 
-      ? ownerCookies.find((c: string) => c.startsWith('token='))! 
-      : ownerCookies;
+    });
+    const ownerCookie = `token=${ownerToken}`;
 
     // Create project
     const projectRes = await request(app)
@@ -62,36 +48,24 @@ describe('Integration: Team Collaboration', () => {
     const projectId = projectRes.body.project.id;
 
     // Create member
-    const member = {
+    const { user: memberUser, authToken: memberToken } = await createAuthenticatedUser(app, {
       email: 'member@test.com',
-      password: 'Member123!',
-      firstName: 'Member',
-      lastName: 'User',
       username: 'memberuser'
-    };
-
-    await request(app).post('/api/auth/register').send(member);
-    const memberLogin = await request(app)
-      .post('/api/auth/login')
-      .send({ email: member.email, password: member.password });
-
-    const memberCookies = memberLogin.headers['set-cookie'];
-    const memberCookie = Array.isArray(memberCookies) 
-      ? memberCookies.find((c: string) => c.startsWith('token='))! 
-      : memberCookies;
+    });
+    const memberCookie = `token=${memberToken}`;
 
     // Send invitation
     const inviteRes = await request(app)
       .post(`/api/projects/${projectId}/invite`)
       .set('Cookie', ownerCookie)
-      .send({ email: member.email, role: 'editor' });
+      .send({ email: memberUser.email, role: 'editor' });
 
     expect(inviteRes.status).toBe(200);
 
     // Get invitation token
-    const invitation = await ProjectInvitation.findOne({ 
+    const invitation = await ProjectInvitation.findOne({
       projectId,
-      inviteeEmail: member.email 
+      inviteeEmail: memberUser.email
     });
     
     expect(invitation).toBeTruthy();

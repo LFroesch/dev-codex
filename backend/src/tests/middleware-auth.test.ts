@@ -1,3 +1,7 @@
+// Unmock the auth middleware that was mocked in setup.ts
+// This test file needs to test the REAL middleware implementation
+jest.unmock('../middleware/auth');
+
 // Mock ObjectId constructor first
 jest.mock('mongoose', () => {
   const actualMongoose = jest.requireActual('mongoose');

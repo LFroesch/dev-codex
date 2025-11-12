@@ -1,39 +1,22 @@
 import request from 'supertest';
-import express from 'express';
-import cookieParser from 'cookie-parser';
-import { User } from '../models/User';
 import { NewsPost } from '../models/NewsPost';
 import newsRoutes from '../routes/news';
 import authRoutes from '../routes/auth';
+import { createTestApp, createAuthenticatedUser, createAuthenticatedAdmin, expectSuccess } from './utils';
 
-// Create test app
-const app = express();
-app.use(express.json());
-app.use(cookieParser());
-app.use('/api/auth', authRoutes);
-app.use('/api/news', newsRoutes);
+// Create test app using utility
+const app = createTestApp({
+  '/api/auth': authRoutes,
+  '/api/news': newsRoutes
+});
 
-// Helper functions
+// Helper functions (simplified)
 async function createUser(email: string, username: string, isAdmin: boolean = false) {
-  const user = await User.create({
-    email,
-    password: 'StrongPass123!',
-    firstName: 'Test',
-    lastName: 'User',
-    username,
-    planTier: 'free',
-    isAdmin
-  });
+  const authHelper = isAdmin
+    ? await createAuthenticatedAdmin(app, { email, username })
+    : await createAuthenticatedUser(app, { email, username });
 
-  const loginResponse = await request(app)
-    .post('/api/auth/login')
-    .send({ email, password: 'StrongPass123!' });
-
-  const cookies = loginResponse.headers['set-cookie'] as unknown as string[];
-  const tokenCookie = cookies?.find((cookie: string) => cookie.startsWith('token='));
-  const token = tokenCookie?.split('=')[1].split(';')[0] || '';
-
-  return { user, token };
+  return { user: authHelper.user, token: authHelper.authToken };
 }
 
 describe('News Routes', () => {

@@ -1,6 +1,4 @@
 import request from 'supertest';
-import express from 'express';
-import cookieParser from 'cookie-parser';
 import mongoose from 'mongoose';
 import { User } from '../models/User';
 import { Project } from '../models/Project';
@@ -8,34 +6,17 @@ import ActivityLog from '../models/ActivityLog';
 import UserSession from '../models/UserSession';
 import activityLogsRoutes from '../routes/activityLogs';
 import authRoutes from '../routes/auth';
+import { createTestApp, createAuthenticatedUser as createAuthUser } from './utils';
 
-// Create test app
-const app = express();
-app.use(express.json());
-app.use(cookieParser());
-app.use('/api/auth', authRoutes);
-app.use('/api/activity', activityLogsRoutes);
+const app = createTestApp({
+  '/api/auth': authRoutes,
+  '/api/activity': activityLogsRoutes
+});
 
-// Helper function
+// Helper function wrapper
 async function createAuthenticatedUser(email: string, username: string) {
-  const user = await User.create({
-    email,
-    password: 'StrongPass123!',
-    firstName: 'Test',
-    lastName: 'User',
-    username,
-    planTier: 'free'
-  });
-
-  const loginResponse = await request(app)
-    .post('/api/auth/login')
-    .send({ email, password: 'StrongPass123!' });
-
-  const cookies = loginResponse.headers['set-cookie'] as unknown as string[];
-  const tokenCookie = cookies?.find((cookie: string) => cookie.startsWith('token='));
-  const token = tokenCookie?.split('=')[1].split(';')[0] || '';
-
-  return { user, token };
+  const { user, authToken } = await createAuthUser(app, { email, username });
+  return { user, token: authToken };
 }
 
 describe('Activity Logs Routes', () => {
@@ -443,8 +424,8 @@ describe('Activity Logs Routes', () => {
         .set('Cookie', `token=${token}`)
         .send({
           projectId: project._id.toString(),
-          action: 'custom_action',
-          resourceType: 'custom',
+          action: 'created',
+          resourceType: 'note',
           resourceId: 'custom123',
           details: { info: 'test' },
           sessionId: 'custom-session'

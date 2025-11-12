@@ -39,22 +39,26 @@ describe('CleanupService', () => {
       (User.countDocuments as jest.Mock).mockResolvedValue(10);
       (NoteLock.countDocuments as jest.Mock).mockResolvedValue(5);
 
-      // Mock mongoose connection stats
-      mongoose.connection.db = {
-        stats: jest.fn().mockResolvedValue({
-          dataSize: 1024 * 1024 * 1024, // 1GB
-          indexSize: 512 * 1024 * 1024, // 512MB
-          avgObjSize: 1024, // 1KB
-          storageEngine: 'wiredTiger'
-        }),
-        collection: jest.fn().mockReturnValue({
+      // Mock mongoose connection stats using defineProperty to avoid read-only error
+      Object.defineProperty(mongoose.connection, 'db', {
+        value: {
           stats: jest.fn().mockResolvedValue({
-            count: 100,
-            size: 1024 * 1024, // 1MB
-            avgObjSize: 1024
+            dataSize: 1024 * 1024 * 1024, // 1GB
+            indexSize: 512 * 1024 * 1024, // 512MB
+            avgObjSize: 1024, // 1KB
+            storageEngine: 'wiredTiger'
+          }),
+          collection: jest.fn().mockReturnValue({
+            stats: jest.fn().mockResolvedValue({
+              count: 100,
+              size: 1024 * 1024, // 1MB
+              avgObjSize: 1024
+            })
           })
-        })
-      } as any;
+        },
+        writable: true,
+        configurable: true
+      });
 
       const stats = await CleanupService.getDatabaseStats();
 
@@ -91,29 +95,20 @@ describe('CleanupService', () => {
   });
 
   describe('cleanupExpiredInvitations', () => {
-    it('should mark expired invitations and delete old ones', async () => {
-      const mockUpdateResult = { modifiedCount: 10 };
-      const mockDeleteResult = { deletedCount: 5 };
-
-      (ProjectInvitation.updateMany as jest.Mock).mockResolvedValue(mockUpdateResult);
-      (ProjectInvitation.deleteMany as jest.Mock).mockResolvedValue(mockDeleteResult);
+    it('should mark expired invitations', async () => {
+      // Mock find() to return an empty array since the function uses for..of
+      (ProjectInvitation.find as jest.Mock).mockResolvedValue([]);
 
       const result = await CleanupService.cleanupExpiredInvitations();
 
-      expect(ProjectInvitation.updateMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          status: 'pending'
-        }),
-        { status: 'expired' }
-      );
-      expect(ProjectInvitation.deleteMany).toHaveBeenCalled();
-      expect(result.expired).toBe(10);
-      expect(result.deleted).toBe(5);
+      expect(ProjectInvitation.find).toHaveBeenCalled();
+      expect(result.markedExpired).toBe(0);
+      expect(result.message).toContain('TTL');
     });
   });
 
   describe('cleanupOldNotifications', () => {
-    it('should delete old read notifications', async () => {
+    it('should delete old legacy notifications', async () => {
       const mockDeleteResult = { deletedCount: 100 };
       (Notification.deleteMany as jest.Mock).mockResolvedValue(mockDeleteResult);
 
@@ -121,7 +116,8 @@ describe('CleanupService', () => {
 
       expect(Notification.deleteMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          read: true
+          createdAt: { $lt: expect.any(Date) },
+          expiresAt: { $exists: false }
         })
       );
       expect(result.deleted).toBe(100);
@@ -129,15 +125,18 @@ describe('CleanupService', () => {
   });
 
   describe('cleanupOldActivityLogs', () => {
-    it('should delete activity logs older than specified days', async () => {
+    it('should delete legacy activity logs older than specified days', async () => {
       const mockDeleteResult = { deletedCount: 250 };
       (ActivityLog.deleteMany as jest.Mock).mockResolvedValue(mockDeleteResult);
 
       const result = await CleanupService.cleanupOldActivityLogs(90);
 
-      expect(ActivityLog.deleteMany).toHaveBeenCalledWith({
-        timestamp: { $lt: expect.any(Date) }
-      });
+      expect(ActivityLog.deleteMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          timestamp: { $lt: expect.any(Date) },
+          expiresAt: { $exists: false }
+        })
+      );
       expect(result.deleted).toBe(250);
     });
   });

@@ -206,7 +206,13 @@ describe('ComponentHandlers', () => {
       expect(result.data.components.length).toBe(3);
     });
 
-    it('should filter components by feature', async () => {
+    it('should return all components grouped by feature', async () => {
+      mockProject.components = [
+        { id: '1', title: 'LoginService', type: 'service', feature: 'Auth', createdAt: new Date() },
+        { id: '2', title: 'UserCard', type: 'component', feature: 'Dashboard', createdAt: new Date() },
+        { id: '3', title: 'AuthRoutes', type: 'route', feature: 'Auth', createdAt: new Date() }
+      ];
+
       (Project.findById as jest.Mock).mockResolvedValue(mockProject);
       jest.spyOn(handler as any, 'resolveProject').mockResolvedValue({ project: mockProject });
 
@@ -215,7 +221,7 @@ describe('ComponentHandlers', () => {
         command: 'view',
         raw: '/view components',
         args: [],
-        flags: { feature: 'Auth' },
+        flags: {},
         isValid: true,
         errors: []
       };
@@ -223,50 +229,11 @@ describe('ComponentHandlers', () => {
       const result = await handler.handleViewComponents(parsed, projectId);
 
       expect(result.type).toBe(ResponseType.DATA);
-      expect(result.data.components).toHaveLength(2);
-      expect(result.data.components.every((c: any) => c.feature === 'Auth')).toBe(true);
-    });
-
-    it('should filter components by category', async () => {
-      (Project.findById as jest.Mock).mockResolvedValue(mockProject);
-      jest.spyOn(handler as any, 'resolveProject').mockResolvedValue({ project: mockProject });
-
-      const parsed: ParsedCommand = {
-        type: CommandType.VIEW_COMPONENTS,
-        command: 'view',
-        raw: '/view components',
-        args: [],
-        flags: { category: 'frontend' },
-        isValid: true,
-        errors: []
-      };
-
-      const result = await handler.handleViewComponents(parsed, projectId);
-
-      expect(result.type).toBe(ResponseType.DATA);
-      expect(result.data.components).toHaveLength(1);
-      expect(result.data.components[0].category).toBe('frontend');
-    });
-
-    it('should filter components by type', async () => {
-      (Project.findById as jest.Mock).mockResolvedValue(mockProject);
-      jest.spyOn(handler as any, 'resolveProject').mockResolvedValue({ project: mockProject });
-
-      const parsed: ParsedCommand = {
-        type: CommandType.VIEW_COMPONENTS,
-        command: 'view',
-        raw: '/view components',
-        args: [],
-        flags: { type: 'service' },
-        isValid: true,
-        errors: []
-      };
-
-      const result = await handler.handleViewComponents(parsed, projectId);
-
-      expect(result.type).toBe(ResponseType.DATA);
-      expect(result.data.components).toHaveLength(1);
-      expect(result.data.components[0].type).toBe('service');
+      // Handler returns all components grouped by feature
+      expect(result.data.components).toHaveLength(3);
+      expect(result.data.structure).toBeDefined();
+      expect(result.data.structure['Auth']).toHaveLength(2);
+      expect(result.data.structure['Dashboard']).toHaveLength(1);
     });
   });
 

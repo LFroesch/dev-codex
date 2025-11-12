@@ -1,105 +1,36 @@
-// Set up environment variables for tests
-process.env.SUPPORT_EMAIL = 'support@test.com';
-process.env.JWT_SECRET = 'test-secret-key';
-
-// Mock nodemailer before imports
-const mockCreateTransport = jest.fn(() => ({
-  sendMail: jest.fn().mockResolvedValue({ messageId: 'test-message-id' })
-}));
-
-jest.mock('nodemailer', () => ({
-  default: {
-    createTransport: mockCreateTransport
-  },
-  createTransport: mockCreateTransport
-}));
-
 import request from 'supertest';
-import express from 'express';
-import cookieParser from 'cookie-parser';
-import { User } from '../models/User';
 import { Ticket } from '../models/Ticket';
+import { User } from '../models/User';
 import authRoutes from '../routes/auth';
 import ticketRoutes from '../routes/tickets';
-import { requireAuth } from '../middleware/auth';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import { createTestApp, createAuthenticatedUser, setupTestEnv, setupNodemailerMock, expectSuccess } from './utils';
 
-// Create test app
-const app = express();
-app.use(express.json());
-app.use(cookieParser());
-app.use('/api/auth', authRoutes);
-app.use('/api/tickets', ticketRoutes);
+// Setup environment and mocks
+setupTestEnv();
+setupNodemailerMock();
+
+// Create test app using utility
+const app = createTestApp({
+  '/api/auth': authRoutes,
+  '/api/tickets': ticketRoutes
+});
 
 describe('Ticket Routes', () => {
   let authToken: string;
   let userId: string;
   let testUser: any;
 
-  beforeAll(async () => {
-    // Create test user
-    testUser = await User.create({
-      email: 'testuser@example.com',
-      password: 'testpass123',
-      firstName: 'Test',
-      lastName: 'User',
-      username: 'testuser',
-      planTier: 'free',
-      isEmailVerified: true
-    });
-    userId = testUser._id.toString();
-
-    // Login to get real auth token
-    const loginResponse = await request(app)
-      .post('/api/auth/login')
-      .send({
-        email: 'testuser@example.com',
-        password: 'testpass123'
-      });
-
-    // Extract token from cookie
-    const cookies = loginResponse.headers['set-cookie'] as unknown as string[];
-    const tokenCookie = cookies.find((cookie: string) => cookie.startsWith('token='));
-    authToken = tokenCookie!.split('=')[1].split(';')[0];
-  });
-
-  afterAll(async () => {
-    await User.deleteMany({});
-    await Ticket.deleteMany({});
-  });
-
   beforeEach(async () => {
-    await Ticket.deleteMany({});
-    
-    // Ensure user still exists for each test
-    const userExists = await User.findById(userId);
-    if (!userExists) {
-      // Recreate user if it was deleted
-      testUser = await User.create({
-        email: 'testuser@example.com',
-        password: 'testpass123',
-        firstName: 'Test',
-        lastName: 'User',
-        username: 'testuser',
-        planTier: 'free',
-        isEmailVerified: true
-      });
-      userId = testUser._id.toString();
+    // Global beforeEach in setup.ts clears all data, so we need to recreate user for each test
+    const auth = await createAuthenticatedUser(app, {
+      email: 'testuser@example.com',
+      username: 'testuser'
+    });
+    testUser = auth.user;
+    userId = auth.userId;
+    authToken = auth.authToken;
 
-      // Get new auth token
-      const loginResponse = await request(app)
-        .post('/api/auth/login')
-        .send({
-          email: 'testuser@example.com',
-          password: 'testpass123'
-        });
-
-      const cookies = loginResponse.headers['set-cookie'] as unknown as string[];
-      const tokenCookie = cookies.find((cookie: string) => cookie.startsWith('token='));
-      authToken = tokenCookie!.split('=')[1].split(';')[0];
-    }
-    
     jest.clearAllMocks();
   });
 

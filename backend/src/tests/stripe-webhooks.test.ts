@@ -3,6 +3,7 @@ import express from 'express';
 import { User } from '../models/User';
 import billingRoutes from '../routes/billing';
 import Stripe from 'stripe';
+import { createTestApp } from './utils';
 
 // Mock Stripe
 jest.mock('stripe', () => {
@@ -20,9 +21,7 @@ jest.mock('stripe', () => {
 process.env.STRIPE_SECRET_KEY = 'sk_test_mock_key';
 process.env.STRIPE_WEBHOOK_SECRET = 'whsec_test_mock_secret';
 
-const app = express();
-app.use(express.json());
-app.use('/api/billing', billingRoutes);
+const app = createTestApp({ '/api/billing': billingRoutes });
 
 describe('Stripe Webhooks', () => {
   let testUser: any;
@@ -283,18 +282,18 @@ describe('Stripe Webhooks', () => {
       expect(updatedUser?.stripeCustomerId).toBe('cus_test_123');
     });
 
-    it('should activate enterprise subscription on checkout completion', async () => {
+    it('should activate premium subscription on checkout completion', async () => {
       const webhookEvent = {
-        id: 'evt_checkout_enterprise',
+        id: 'evt_checkout_premium',
         type: 'checkout.session.completed',
         data: {
           object: {
             id: 'cs_test_456',
             customer: 'cus_test_123',
-            subscription: 'sub_test_enterprise',
+            subscription: 'sub_test_premium',
             metadata: {
               userId: testUser._id.toString(),
-              planTier: 'enterprise'
+              planTier: 'premium'
             }
           } as unknown as Stripe.Checkout.Session
         }
@@ -308,8 +307,8 @@ describe('Stripe Webhooks', () => {
       expect(res.status).toBe(200);
 
       const updatedUser = await User.findById(testUser._id);
-      expect(updatedUser?.planTier).toBe('enterprise');
-      expect(updatedUser?.projectLimit).toBe(-1); // Unlimited
+      expect(updatedUser?.planTier).toBe('premium');
+      expect(updatedUser?.projectLimit).toBe(50); // Premium limit
       expect(updatedUser?.subscriptionStatus).toBe('active');
     });
   });

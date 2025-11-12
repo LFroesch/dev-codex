@@ -266,7 +266,7 @@ router.delete('/:id', requireProjectAccess('manage'), async (req: AuthRequest, r
   try {
     // Only project owner can delete the project
     if (!req.projectAccess?.isOwner) {
-      return res.status(403).json({ message: 'Only project owner can delete the project' });
+      return res.status(403).json({ message: 'Access denied: Only project owner can delete the project' });
     }
 
     const project = await Project.findByIdAndDelete(req.params.id);

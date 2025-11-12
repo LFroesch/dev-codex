@@ -1,19 +1,16 @@
 import request from 'supertest';
-import express from 'express';
-import cookieParser from 'cookie-parser';
 import { User } from '../models/User';
 import { Project } from '../models/Project';
 import authRoutes from '../routes/auth';
 import projectRoutes from '../routes/projects';
 import { requireAuth } from '../middleware/auth';
+import { createTestApp } from './utils';
 import bcrypt from 'bcryptjs';
 
-// Create test app with full middleware stack
-const app = express();
-app.use(express.json());
-app.use(cookieParser());
-app.use('/api/auth', authRoutes);
-app.use('/api/projects', requireAuth, projectRoutes);
+const app = createTestApp({
+  '/api/auth': authRoutes,
+  '/api/projects': [requireAuth, projectRoutes]
+});
 
 describe('Integration: Complete Auth Flow', () => {
   let testUser: {
@@ -191,7 +188,7 @@ describe('Integration: Complete Auth Flow', () => {
       const todoResponse = await request(app)
         .post(`/api/projects/${projectId}/todos`)
         .set('Cookie', authCookie!)
-        .send({ title: 'Test todo', priority: 'high' });
+        .send({ text: 'Test todo', priority: 'high' });
 
       expect(todoResponse.status).toBe(200);
       expect(todoResponse.body.todo).toBeDefined();

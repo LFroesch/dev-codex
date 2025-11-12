@@ -1,12 +1,10 @@
 import request from 'supertest';
-import express from 'express';
 import RateLimit from '../models/RateLimit';
 import authRoutes from '../routes/auth';
 import { User } from '../models/User';
+import { createTestApp } from './utils';
 
-const app = express();
-app.use(express.json());
-app.use('/api/auth', authRoutes);
+const app = createTestApp({ '/api/auth': authRoutes });
 
 describe('Rate Limiting', () => {
   beforeEach(async () => {

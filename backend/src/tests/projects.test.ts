@@ -1,49 +1,25 @@
 import request from 'supertest';
-import express from 'express';
-import cookieParser from 'cookie-parser';
-import { User } from '../models/User';
-import { Project } from '../models/Project';
 import authRoutes from '../routes/auth';
 import projectRoutes from '../routes/projects';
-import { requireAuth, requireProjectAccess } from '../middleware/auth';
-import bcrypt from 'bcryptjs';
+import { requireAuth } from '../middleware/auth';
+import { Project } from '../models/Project';
+import { User } from '../models/User';
+import { createTestApp, createAuthenticatedUser, expectSuccess, expectErrorResponse, expectUnauthorized } from './utils';
 
-// Create test app
-const app = express();
-app.use(express.json());
-app.use(cookieParser());
-app.use('/api/auth', authRoutes);
-app.use('/api/projects', requireAuth, projectRoutes);
+// Create test app using utility
+const app = createTestApp({
+  '/api/auth': authRoutes,
+  '/api/projects': [requireAuth, projectRoutes]
+});
 
 describe('Project CRUD Operations', () => {
   let authToken: string;
   let userId: string;
-  let testUser: any;
 
   beforeEach(async () => {
-    // Create test user (let the model hash the password)
-    testUser = await User.create({
-      email: 'test@example.com',
-      password: 'StrongPass123!', // Plain password - will be hashed by pre-save hook
-      firstName: 'John',
-      lastName: 'Doe',
-      username: 'testuser',
-      planTier: 'free',
-      isEmailVerified: true
-    });
-    userId = testUser._id.toString();
-
-    // Login to get auth token
-    const loginResponse = await request(app)
-      .post('/api/auth/login')
-      .send({
-        email: 'test@example.com',
-        password: 'StrongPass123!'
-      });
-
-    const cookies = loginResponse.headers['set-cookie'] as unknown as string[];
-    const tokenCookie = cookies.find((cookie: string) => cookie.startsWith('token='));
-    authToken = tokenCookie?.split('=')[1].split(';')[0] || '';
+    const auth = await createAuthenticatedUser(app);
+    authToken = auth.authToken;
+    userId = auth.userId;
   });
 
   describe('POST /api/projects', () => {
@@ -59,16 +35,16 @@ describe('Project CRUD Operations', () => {
       const response = await request(app)
         .post('/api/projects')
         .set('Cookie', `token=${authToken}`)
-        .send(projectData)
-        .expect(201);
+        .send(projectData);
 
+      expectSuccess(response, 201);
       expect(response.body).toHaveProperty('message', 'Project created successfully');
-      expect(response.body).toHaveProperty('project');
-      expect(response.body.project).toHaveProperty('name', 'Test Project');
-      expect(response.body.project).toHaveProperty('description', 'A test project description');
-      expect(response.body.project).toHaveProperty('category', 'Web Development');
-      expect(response.body.project).toHaveProperty('tags');
-      expect(response.body.project.tags).toEqual(['javascript', 'node.js']);
+      expect(response.body.project).toMatchObject({
+        name: 'Test Project',
+        description: 'A test project description',
+        category: 'Web Development',
+        tags: ['javascript', 'node.js']
+      });
 
       // Verify project was created in database
       const project = await Project.findById(response.body.project.id);
@@ -77,17 +53,11 @@ describe('Project CRUD Operations', () => {
     });
 
     it('should reject project creation without authentication', async () => {
-      const projectData = {
-        name: 'Test Project',
-        description: 'A test project description'
-      };
-
       const response = await request(app)
         .post('/api/projects')
-        .send(projectData)
-        .expect(401);
+        .send({ name: 'Test Project', description: 'A test project description' });
 
-      expect(response.body).toHaveProperty('message', 'Not authenticated');
+      expectUnauthorized(response);
     });
 
     it('should reject project creation with invalid data', async () => {

@@ -15,7 +15,7 @@ jest.mock('../middleware/auth', () => ({
       try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'test_secret') as any;
         req.userId = decoded.userId;
-        req.user = { _id: decoded.userId, email: decoded.email, role: decoded.role || 'user' };
+        req.user = { _id: decoded.userId, email: decoded.email, role: decoded.role || 'user', isAdmin: decoded.isAdmin || false };
         next();
       } catch (error) {
         res.status(401).json({ message: 'Invalid token' });
@@ -26,13 +26,20 @@ jest.mock('../middleware/auth', () => ({
       try {
         const decoded = jwt.verify(req.cookies.token, process.env.JWT_SECRET || 'test_secret') as any;
         req.userId = decoded.userId;
-        req.user = { _id: decoded.userId, email: decoded.email, role: decoded.role || 'user' };
+        req.user = { _id: decoded.userId, email: decoded.email, role: decoded.role || 'user', isAdmin: decoded.isAdmin || false };
         next();
       } catch (error) {
         res.status(401).json({ message: 'Invalid token' });
       }
     } else {
       res.status(401).json({ message: 'Not authenticated' });
+    }
+  },
+  requireAdmin: (req: any, res: any, next: any) => {
+    if (req.user && req.user.isAdmin) {
+      next();
+    } else {
+      res.status(403).json({ message: 'Admin access required' });
     }
   },
   requireProjectAccess: jest.fn().mockImplementation((permission: string) => {

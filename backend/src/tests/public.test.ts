@@ -285,4 +285,236 @@ describe('Public Routes', () => {
       expect(response.body.user.projects.length).toBe(1);
     });
   });
+
+  describe('GET /api/public/projects', () => {
+    let user: any;
+
+    beforeEach(async () => {
+      user = await User.create({
+        email: 'discovery@example.com',
+        password: 'StrongPass123!',
+        firstName: 'Discovery',
+        lastName: 'User',
+        username: 'discoveryuser',
+        planTier: 'free',
+        isPublic: true
+      });
+    });
+
+    it('should get public projects for discovery', async () => {
+      await Project.create({
+        name: 'Discovery Project 1',
+        description: 'Test project 1',
+        ownerId: user._id,
+        userId: user._id,
+        isPublic: true,
+        category: 'web'
+      });
+
+      await Project.create({
+        name: 'Discovery Project 2',
+        description: 'Test project 2',
+        ownerId: user._id,
+        userId: user._id,
+        isPublic: true,
+        category: 'mobile'
+      });
+
+      const response = await request(app)
+        .get('/api/public/projects')
+        .expect(200);
+
+      expect(response.body).toHaveProperty('success', true);
+      expect(response.body).toHaveProperty('projects');
+      expect(Array.isArray(response.body.projects)).toBe(true);
+      expect(response.body.projects.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it('should support pagination', async () => {
+      // Create multiple projects
+      for (let i = 0; i < 15; i++) {
+        await Project.create({
+          name: `Project ${i}`,
+          description: `Description ${i}`,
+          ownerId: user._id,
+          userId: user._id,
+          isPublic: true
+        });
+      }
+
+      const response = await request(app)
+        .get('/api/public/projects?page=1&limit=10')
+        .expect(200);
+
+      expect(response.body.projects.length).toBeLessThanOrEqual(10);
+      expect(response.body).toHaveProperty('pagination');
+      expect(response.body.pagination).toHaveProperty('current', 1);
+      expect(response.body.pagination).toHaveProperty('pages');
+    });
+
+    it('should filter by category', async () => {
+      await Project.create({
+        name: 'Web Project',
+        description: 'Web app',
+        ownerId: user._id,
+        userId: user._id,
+        isPublic: true,
+        category: 'web'
+      });
+
+      await Project.create({
+        name: 'Mobile Project',
+        description: 'Mobile app',
+        ownerId: user._id,
+        userId: user._id,
+        isPublic: true,
+        category: 'mobile'
+      });
+
+      const response = await request(app)
+        .get('/api/public/projects?category=web')
+        .expect(200);
+
+      expect(response.body.projects.every((p: any) => p.category === 'web')).toBe(true);
+    });
+
+    it('should filter by tag', async () => {
+      await Project.create({
+        name: 'Tagged Project',
+        description: 'Has tags',
+        ownerId: user._id,
+        userId: user._id,
+        isPublic: true,
+        tags: ['react', 'typescript']
+      });
+
+      await Project.create({
+        name: 'Other Project',
+        description: 'Different tags',
+        ownerId: user._id,
+        userId: user._id,
+        isPublic: true,
+        tags: ['vue', 'javascript']
+      });
+
+      const response = await request(app)
+        .get('/api/public/projects?tag=react')
+        .expect(200);
+
+      expect(response.body.projects.length).toBeGreaterThan(0);
+      expect(response.body.projects.some((p: any) =>
+        p.tags && p.tags.includes('react')
+      )).toBe(true);
+    });
+
+    it('should search by project name', async () => {
+      await Project.create({
+        name: 'Searchable Project Name',
+        description: 'Test description',
+        ownerId: user._id,
+        userId: user._id,
+        isPublic: true
+      });
+
+      await Project.create({
+        name: 'Different Project',
+        description: 'Other description',
+        ownerId: user._id,
+        userId: user._id,
+        isPublic: true
+      });
+
+      const response = await request(app)
+        .get('/api/public/projects?search=Searchable')
+        .expect(200);
+
+      expect(response.body.projects.length).toBeGreaterThan(0);
+      expect(response.body.projects.some((p: any) =>
+        p.name.includes('Searchable')
+      )).toBe(true);
+    });
+
+    it('should not include private projects', async () => {
+      await Project.create({
+        name: 'Private Project',
+        description: 'Should not appear',
+        ownerId: user._id,
+        userId: user._id,
+        isPublic: false
+      });
+
+      await Project.create({
+        name: 'Public Project',
+        description: 'Should appear',
+        ownerId: user._id,
+        userId: user._id,
+        isPublic: true
+      });
+
+      const response = await request(app)
+        .get('/api/public/projects')
+        .expect(200);
+
+      const privateProject = response.body.projects.find(
+        (p: any) => p.name === 'Private Project'
+      );
+      expect(privateProject).toBeUndefined();
+
+      const publicProject = response.body.projects.find(
+        (p: any) => p.name === 'Public Project'
+      );
+      expect(publicProject).toBeDefined();
+    });
+
+    it('should not include archived projects', async () => {
+      await Project.create({
+        name: 'Archived Project',
+        description: 'Should not appear',
+        ownerId: user._id,
+        userId: user._id,
+        isPublic: true,
+        isArchived: true
+      });
+
+      const response = await request(app)
+        .get('/api/public/projects')
+        .expect(200);
+
+      const archivedProject = response.body.projects.find(
+        (p: any) => p.name === 'Archived Project'
+      );
+      expect(archivedProject).toBeUndefined();
+    });
+
+    it('should include owner information with projects', async () => {
+      await Project.create({
+        name: 'Project with Owner',
+        description: 'Test',
+        ownerId: user._id,
+        userId: user._id,
+        isPublic: true
+      });
+
+      const response = await request(app)
+        .get('/api/public/projects')
+        .expect(200);
+
+      const project = response.body.projects.find(
+        (p: any) => p.name === 'Project with Owner'
+      );
+
+      expect(project).toBeDefined();
+      expect(project.owner).toHaveProperty('username', 'discoveryuser');
+      expect(project.owner).toHaveProperty('displayName');
+    });
+
+    it('should handle empty results', async () => {
+      const response = await request(app)
+        .get('/api/public/projects?search=NonexistentSearchTerm123456')
+        .expect(200);
+
+      expect(response.body.projects).toEqual([]);
+      expect(response.body.pagination.total).toBe(0);
+    });
+  });
 });

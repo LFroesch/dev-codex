@@ -1,19 +1,5 @@
 # Simple Deployment Checklist
 
-## Step 8: Deploy!
-
-Railway auto-deploys when you push to GitHub. Just commit your `railway.toml`:
-
-```bash
-git add railway.toml
-git commit -m "Add Railway configuration"
-git push origin main
-```
-
-Railway will automatically detect the push and deploy!
-
----
-
 ## Step 9: Verify It Works
 
 1. Wait for Railway deployment to finish (watch the logs in Railway dashboard)

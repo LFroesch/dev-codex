@@ -1,5 +1,6 @@
 import { Project } from '../models/Project';
 import { User } from '../models/User';
+import TeamMember from '../models/TeamMember';
 import NotificationService from './notificationService';
 
 export interface StaleItem {
@@ -39,11 +40,17 @@ class StaleItemService {
     const todoCutoffDate = new Date();
     todoCutoffDate.setDate(todoCutoffDate.getDate() - this.STALE_THRESHOLD_DAYS_TODOS);
 
-    // Find all projects owned by the user
+    // Find all projects owned by the user OR where user is a team member
+    const teamMemberships = await TeamMember.find({
+      userId,
+      isActive: true
+    }).select('projectId').lean();
+    const teamProjectIds = teamMemberships.map(tm => tm.projectId);
+
     const projects = await Project.find({
       $or: [
         { ownerId: userId },
-        { 'teamMembers.userId': userId }
+        { _id: { $in: teamProjectIds } }
       ]
     }).lean();
 

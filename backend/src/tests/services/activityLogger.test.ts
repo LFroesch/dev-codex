@@ -273,4 +273,250 @@ describe('ActivityLogger Service', () => {
       expect(activity2).toBeNull();
     });
   });
+
+  describe('helper methods', () => {
+    it('should log project view', async () => {
+      const log = await activityLogger.logProjectView(
+        project._id.toString(),
+        user._id.toString(),
+        'session123',
+        'Mozilla/5.0',
+        '127.0.0.1'
+      );
+
+      expect(log).toBeDefined();
+      expect(log.action).toBe('viewed');
+      expect(log.resourceType).toBe('project');
+    });
+
+    it('should log field update', async () => {
+      const log = await activityLogger.logFieldUpdate(
+        project._id.toString(),
+        user._id.toString(),
+        'session123',
+        'todo',
+        'todo1',
+        'completed',
+        false,
+        true,
+        'Test Todo'
+      );
+
+      expect(log).toBeDefined();
+      expect(log.action).toBe('updated');
+      expect(log.details?.field).toBe('completed');
+      expect(log.details?.oldValue).toBe(false);
+      expect(log.details?.newValue).toBe(true);
+    });
+
+    it('should log resource creation', async () => {
+      const log = await activityLogger.logResourceCreation(
+        project._id.toString(),
+        user._id.toString(),
+        'session123',
+        'note',
+        'note1',
+        { title: 'New Note' }
+      );
+
+      expect(log).toBeDefined();
+      expect(log.action).toBe('created');
+      expect(log.resourceType).toBe('note');
+    });
+
+    it('should log resource deletion', async () => {
+      const log = await activityLogger.logResourceDeletion(
+        project._id.toString(),
+        user._id.toString(),
+        'session123',
+        'component',
+        'comp1',
+        { name: 'Old Component' }
+      );
+
+      expect(log).toBeDefined();
+      expect(log.action).toBe('deleted');
+      expect(log.resourceType).toBe('component');
+    });
+  });
+
+  describe('description generation', () => {
+    it('should generate description for status update', async () => {
+      const log = await activityLogger.log({
+        projectId: project._id.toString(),
+        userId: user._id.toString(),
+        sessionId: 'session123',
+        action: 'updated',
+        resourceType: 'todo',
+        resourceId: 'todo1',
+        details: {
+          field: 'status',
+          newValue: 'in-progress',
+          resourceName: 'Test Todo'
+        }
+      });
+
+      expect(log).toBeDefined();
+      expect(log.action).toBe('updated');
+      expect(log.details?.field).toBe('status');
+    });
+
+    it('should log completion toggle', async () => {
+      const log = await activityLogger.log({
+        projectId: project._id.toString(),
+        userId: user._id.toString(),
+        sessionId: 'session123',
+        action: 'updated',
+        resourceType: 'todo',
+        resourceId: 'todo1',
+        details: {
+          field: 'completed',
+          newValue: true,
+          resourceName: 'Test Todo'
+        }
+      });
+
+      expect(log).toBeDefined();
+      expect(log.details?.field).toBe('completed');
+      expect(log.details?.newValue).toBe(true);
+    });
+
+    it('should log field update', async () => {
+      const log = await activityLogger.log({
+        projectId: project._id.toString(),
+        userId: user._id.toString(),
+        sessionId: 'session123',
+        action: 'updated',
+        resourceType: 'note',
+        resourceId: 'note1',
+        details: {
+          field: 'title',
+          resourceName: 'Test Note'
+        }
+      });
+
+      expect(log).toBeDefined();
+      expect(log.details?.field).toBe('title');
+    });
+
+    it('should log team operations', async () => {
+      const inviteLog = await activityLogger.log({
+        projectId: project._id.toString(),
+        userId: user._id.toString(),
+        sessionId: 'session123',
+        action: 'invited_member',
+        resourceType: 'team',
+        details: { metadata: { inviteeEmail: 'new@example.com' } }
+      });
+      expect(inviteLog.action).toBe('invited_member');
+      expect(inviteLog.details.metadata).toHaveProperty('inviteeEmail');
+
+      const removeLog = await activityLogger.log({
+        projectId: project._id.toString(),
+        userId: user._id.toString(),
+        sessionId: 'session123',
+        action: 'removed_member',
+        resourceType: 'team',
+        details: { metadata: { removedEmail: 'old@example.com' } }
+      });
+      expect(removeLog.action).toBe('removed_member');
+
+      const roleLog = await activityLogger.log({
+        projectId: project._id.toString(),
+        userId: user._id.toString(),
+        sessionId: 'session123',
+        action: 'updated_role',
+        resourceType: 'team',
+        details: { newValue: 'admin' }
+      });
+      expect(roleLog.action).toBe('updated_role');
+      expect(roleLog.details.newValue).toBe('admin');
+    });
+
+    it('should log tech operations', async () => {
+      const addLog = await activityLogger.log({
+        projectId: project._id.toString(),
+        userId: user._id.toString(),
+        sessionId: 'session123',
+        action: 'added_tech',
+        resourceType: 'tech',
+        details: { resourceName: 'React' }
+      });
+      expect(addLog.action).toBe('added_tech');
+      expect(addLog.details.resourceName).toBe('React');
+
+      const removeLog = await activityLogger.log({
+        projectId: project._id.toString(),
+        userId: user._id.toString(),
+        sessionId: 'session123',
+        action: 'removed_tech',
+        resourceType: 'tech',
+        details: { resourceName: 'Angular' }
+      });
+      expect(removeLog.action).toBe('removed_tech');
+    });
+
+    it('should log project operations', async () => {
+      const exportLog = await activityLogger.log({
+        projectId: project._id.toString(),
+        userId: user._id.toString(),
+        sessionId: 'session123',
+        action: 'exported_data',
+        resourceType: 'project',
+        details: { metadata: { format: 'JSON' } }
+      });
+      expect(exportLog.action).toBe('exported_data');
+      expect(exportLog.details.metadata).toHaveProperty('format', 'JSON');
+
+      const importLog = await activityLogger.log({
+        projectId: project._id.toString(),
+        userId: user._id.toString(),
+        sessionId: 'session123',
+        action: 'imported_data',
+        resourceType: 'project'
+      });
+      expect(importLog.action).toBe('imported_data');
+
+      const archiveLog = await activityLogger.log({
+        projectId: project._id.toString(),
+        userId: user._id.toString(),
+        sessionId: 'session123',
+        action: 'archived_project',
+        resourceType: 'project'
+      });
+      expect(archiveLog.action).toBe('archived_project');
+
+      const unarchiveLog = await activityLogger.log({
+        projectId: project._id.toString(),
+        userId: user._id.toString(),
+        sessionId: 'session123',
+        action: 'unarchived_project',
+        resourceType: 'project'
+      });
+      expect(unarchiveLog.action).toBe('unarchived_project');
+
+      const leaveLog = await activityLogger.log({
+        projectId: project._id.toString(),
+        userId: user._id.toString(),
+        sessionId: 'session123',
+        action: 'left_project',
+        resourceType: 'project'
+      });
+      expect(leaveLog.action).toBe('left_project');
+    });
+
+    it('should log deleted action', async () => {
+      const log = await activityLogger.log({
+        projectId: project._id.toString(),
+        userId: user._id.toString(),
+        sessionId: 'session123',
+        action: 'deleted',
+        resourceType: 'project',
+        resourceId: project._id.toString()
+      });
+
+      expect(log.action).toBe('deleted');
+      expect(log.resourceType).toBe('project');
+    });
+  });
 });

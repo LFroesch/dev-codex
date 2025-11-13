@@ -296,7 +296,10 @@ if (isDevelopment) {
 }
 
 if (!isDevelopment) {
-  const frontendDistPath = path.join(__dirname, '../../frontend/dist');
+  // In production, compiled code is at /app/backend/dist/backend/src/
+  // Frontend is at /app/frontend/dist/
+  const frontendDistPath = path.join(__dirname, '../../../../frontend/dist');
+  logInfo('Serving static files from', { path: frontendDistPath, __dirname });
   app.use(express.static(frontendDistPath));
 
   app.get('*', (req, res) => {

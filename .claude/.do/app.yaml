@@ -1,0 +1,149 @@
+# Digital Ocean App Platform Configuration
+name: dev-codex
+region: nyc1
+
+services:
+  # Backend API service
+  - name: backend
+    source_dir: /backend
+    github:
+      branch: main
+      deploy_on_push: true
+    
+    # Build configuration
+    build_command: npm run build
+    run_command: npm run start:prod
+    
+    # Environment
+    environment_slug: node-js
+    instance_count: 1
+    instance_size_slug: basic-xxs # $5/month
+    
+    # Environment variables (secrets managed in DO dashboard)
+    envs:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "8080"
+      - key: MONGODB_URI
+        scope: RUN_TIME
+        type: SECRET
+      - key: JWT_SECRET
+        scope: RUN_TIME
+        type: SECRET
+      - key: FRONTEND_URL
+        scope: RUN_TIME
+        type: SECRET
+      - key: CORS_ORIGINS
+        scope: RUN_TIME
+        type: SECRET
+      - key: SENTRY_DSN
+        scope: RUN_TIME
+        type: SECRET
+      - key: STRIPE_SECRET_KEY
+        scope: RUN_TIME
+        type: SECRET
+      - key: STRIPE_WEBHOOK_SECRET
+        scope: RUN_TIME
+        type: SECRET
+      - key: GOOGLE_CLIENT_ID
+        scope: RUN_TIME
+        type: SECRET
+      - key: GOOGLE_CLIENT_SECRET
+        scope: RUN_TIME
+        type: SECRET
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        scope: RUN_TIME
+        type: SECRET
+      - key: SMTP_PASS
+        scope: RUN_TIME
+        type: SECRET
+      - key: SUPPORT_EMAIL
+        scope: RUN_TIME
+        type: SECRET
+    
+    # Health checks
+    health_check:
+      http_path: /api/health
+      initial_delay_seconds: 60
+      period_seconds: 10
+      timeout_seconds: 5
+      success_threshold: 1
+      failure_threshold: 3
+    
+    # Resource limits
+    cpu_kind: shared
+    
+    # HTTP routing
+    http_port: 8080
+    
+    # Auto-scaling (when you need it)
+    autoscaling:
+      min_instance_count: 1
+      max_instance_count: 3
+      metrics:
+        cpu:
+          percent: 80
+
+  # Frontend static site
+  - name: frontend
+    type: static_site
+    source_dir: /frontend
+    github:
+      branch: main
+      deploy_on_push: true
+    
+    # Build configuration
+    build_command: npm run build
+    output_dir: /dist
+    
+    # Environment variables for build
+    envs:
+      - key: VITE_API_URL
+        value: ${backend.PUBLIC_URL}
+      - key: VITE_STRIPE_PUBLISHABLE_KEY
+        scope: BUILD_TIME
+        type: SECRET
+    
+    # Static site configuration
+    catchall_document: index.html
+    error_document: index.html
+    
+    # Headers for security
+    headers:
+      - path: "/*"
+        headers:
+          - name: X-Frame-Options
+            value: DENY
+          - name: X-Content-Type-Options
+            value: nosniff
+          - name: Referrer-Policy
+            value: strict-origin-when-cross-origin
+
+# Database (MongoDB Atlas recommended for production)
+databases:
+  # Uncomment if using DO Managed MongoDB (more expensive)
+  # - name: mongodb
+  #   engine: MONGODB
+  #   version: "6"
+  #   size: db-s-1vcpu-1gb
+
+# Custom domain (configure after deployment)
+domains:
+  # - domain: yourdomain.com
+  #   type: PRIMARY
+  # - domain: www.yourdomain.com
+  #   type: ALIAS
+
+# Alerts
+alerts:
+  - rule: CPU_UTILIZATION
+    value: 80
+  - rule: MEM_UTILIZATION
+    value: 80
+  - rule: RESTART_COUNT
+    value: 5

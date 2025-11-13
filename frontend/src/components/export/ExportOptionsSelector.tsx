@@ -23,8 +23,10 @@ const ExportOptionsSelector: React.FC<ExportOptionsSelectorProps> = ({
     devLog: 'Dev Log',
     components: 'Components',
     techStack: 'Tech Stack',
+    team: 'Team',
     deploymentData: 'Deployment',
     publicPageData: 'Public Page',
+    settings: 'Settings',
     timestamps: 'Timestamps'
   };
 

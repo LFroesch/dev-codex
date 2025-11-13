@@ -76,6 +76,7 @@ export interface BaseStackItem {
 
 export interface BaseProject {
   id: string;
+  _id?: string; // MongoDB compatibility - same as id
   name: string;
   description: string;
   notes: BaseNote[];

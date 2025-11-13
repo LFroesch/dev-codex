@@ -473,8 +473,7 @@ const NoteModal: React.FC<NoteModalProps> = ({
       if (type === 'devlog') {
         await projectAPI.updateDevLogEntry(projectId, note.id, {
           title: editTitle.trim(),
-          description: editContent.trim(), // For dev logs, content goes to description field
-          entry: editTitle.trim() // Keep backward compatibility
+          description: editContent.trim() // For dev logs, content goes to description field
         });
       } else {
         await projectAPI.updateNote(projectId, note.id, {

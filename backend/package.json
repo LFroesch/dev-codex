@@ -4,8 +4,8 @@
   "description": "Backend for Dev Codex app",
   "main": "dist/app.js",
   "scripts": {
-    "start": "node dist/app.js",
-    "start:prod": "NODE_ENV=production node dist/app.js",
+    "start": "node dist/backend/src/app.js",
+    "start:prod": "NODE_ENV=production node dist/backend/src/app.js",
     "dev": "nodemon src/app.ts",
     "build": "tsc",
     "test": "jest --maxWorkers=4",

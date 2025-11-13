@@ -168,7 +168,7 @@ const FeaturesPage: React.FC = () => {
 
   // Group components by feature
   const componentsByFeature: Record<string, Doc[]> = {};
-  selectedProject.components.forEach(component => {
+  selectedProject.components.forEach((component: Doc) => {
     const featureKey = component.feature || 'Ungrouped';
     if (!componentsByFeature[featureKey]) {
       componentsByFeature[featureKey] = [];
@@ -403,16 +403,6 @@ const FeaturesPage: React.FC = () => {
             <FeaturesGraph
               docs={selectedProject.components}
               projectId={selectedProject.id}
-              onDocClick={(component) => {
-                // Expand the clicked component (tab managed by Layout.tsx now)
-                if (!expandedComponents.has(component.id)) {
-                  toggleComponentExpanded(component.id);
-                }
-              }}
-              onDocEdit={(component) => {
-                // Open edit mode for this component (tab managed by Layout.tsx now)
-                handleEditComponent(component);
-              }}
               onCreateDoc={async (componentData) => {
                 setAddingComponent(true);
                 setError('');
@@ -529,7 +519,7 @@ const FeaturesPage: React.FC = () => {
           </div>
           <div className="section-content">
             <div className="space-y-3">
-              {selectedProject.components.map(component => renderComponentCard(component))}
+              {selectedProject.components.map((component: Doc) => renderComponentCard(component))}
             </div>
           </div>
         </div>

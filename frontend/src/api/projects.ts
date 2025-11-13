@@ -5,7 +5,6 @@ import type {
   CreateNoteData, UpdateNoteData, BaseNote,
   CreateTodoData, UpdateTodoData, BaseTodo,
   CreateDevLogData, UpdateDevLogData, BaseDevLogEntry,
-  CreateTechnologyData, BaseSelectedTechnology,
   CreateRelationshipData, ComponentRelationship
 } from './types';
 
@@ -119,8 +118,8 @@ class ProjectService extends BaseApiService {
     return this.delete(`/${projectId}/components/${componentId}/relationships/${relationshipId}`);
   }
 
-  // Tech stack management
-  async addTechnology(projectId: string, data: CreateTechnologyData): Promise<{ message: string; technology: BaseSelectedTechnology }> {
+  // Tech stack management (legacy endpoints - maintained for backward compatibility)
+  async addTechnology(projectId: string, data: any): Promise<{ message: string; technology: any }> {
     return this.post(`/${projectId}/technologies`, data);
   }
 
@@ -128,7 +127,7 @@ class ProjectService extends BaseApiService {
     return this.delete(`/${projectId}/technologies/${category}/${encodeURIComponent(name)}`);
   }
 
-  async updateTechnology(projectId: string, category: string, name: string, data: { version: string }): Promise<{ message: string; technology: BaseSelectedTechnology }> {
+  async updateTechnology(projectId: string, category: string, name: string, data: { version: string }): Promise<{ message: string; technology: any }> {
     return this.put(`/${projectId}/technologies/${category}/${encodeURIComponent(name)}`, data);
   }
 

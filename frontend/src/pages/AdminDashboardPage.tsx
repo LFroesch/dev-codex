@@ -669,7 +669,7 @@ const AdminDashboardPage: React.FC = () => {
         } else if (activeTab === 'news') {
           await fetchNewsPosts();
         } else {
-          await fetchTickets(1);
+          await fetchTickets();
         }
       } catch (err) {
         console.error('Failed to load data:', err);

@@ -59,9 +59,10 @@ export function generateExportData(selectedProject: Project, exportOptions: Expo
     data.techStack = selectedProject.stack;
   }
 
-  if (exportOptions.team && selectedProject.team?.length) {
-    data.team = selectedProject.team;
-  }
+  // Team data export - requires separate API call to fetch team members
+  // if (exportOptions.team && selectedProject.team?.length) {
+  //   data.team = selectedProject.team;
+  // }
 
   if (exportOptions.deploymentData && selectedProject.deploymentData) {
     data.deploymentData = selectedProject.deploymentData;

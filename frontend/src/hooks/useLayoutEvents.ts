@@ -29,8 +29,8 @@ export const useLayoutEvents = ({
 
   // Listen for custom project selection events from notifications
   useEffect(() => {
-    const handleSelectProject = async (event: CustomEvent) => {
-      const { projectId } = event.detail;
+    const handleSelectProject = async (event: Event) => {
+      const { projectId } = (event as CustomEvent).detail;
       if (projects.length > 0) {
         const project = projects.find(p => p.id === projectId);
         if (project) {
@@ -66,8 +66,8 @@ export const useLayoutEvents = ({
       }
     };
 
-    const handleProjectSync = (event: CustomEvent) => {
-      const { newProjectId } = event.detail;
+    const handleProjectSync = (event: Event) => {
+      const { newProjectId } = (event as CustomEvent).detail;
 
       if (projects.length > 0 && newProjectId) {
         const project = projects.find(p => p.id === newProjectId);

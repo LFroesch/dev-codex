@@ -179,13 +179,11 @@ if (isDevelopment) {
 } else {
   app.use(cors({
     origin: function (origin, callback) {
-      if (!origin && isDevelopment) return callback(null, true);
-      
-      if (!origin && !isDevelopment) {
-        return callback(new Error('Origin header is required'), false);
-      }
-      
-      if (origin && allowedOrigins.indexOf(origin) !== -1) {
+      // Allow requests without Origin header (for health checks, server-to-server, etc.)
+      if (!origin) return callback(null, true);
+
+      // Check if origin is in allowed list
+      if (allowedOrigins.indexOf(origin) !== -1) {
         callback(null, true);
       } else {
         callback(new Error('Not allowed by CORS'));

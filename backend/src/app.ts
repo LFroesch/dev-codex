@@ -61,13 +61,10 @@ const validateProductionEnv = () => {
     'FRONTEND_URL',
   ];
 
-  // Add SMTP requirements only if not self-hosted
+  // Add email service requirements only if not self-hosted
   if (!isSelfHosted) {
     requiredEnvVars.push(
-      'SMTP_HOST',
-      'SMTP_USER',
-      'SMTP_PASS',
-      'SMTP_FROM'
+      'RESEND_API_KEY'
     );
   }
 

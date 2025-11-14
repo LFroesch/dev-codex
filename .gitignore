@@ -11,6 +11,9 @@ frontend/dist
 node_modules
 backend/logs
 backend/coverage
+.claude/
+CLAUDE.md
+
 
 # Generated JS files from TypeScript
 shared/**/*.js

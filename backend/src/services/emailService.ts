@@ -1,15 +1,77 @@
 import nodemailer from 'nodemailer';
 
-const createTransporter = () => {
-  return nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.SMTP_PORT || '587'),
-    secure: false,
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS
+/**
+ * Unified Email Service
+ * Tries Resend first (production), falls back to SMTP (self-hosted)
+ */
+
+interface EmailOptions {
+  to: string;
+  subject: string;
+  text: string;
+  html: string;
+  from?: string;
+}
+
+/**
+ * Send email using Resend (preferred) or SMTP (fallback)
+ */
+export const sendEmail = async (options: EmailOptions): Promise<void> => {
+  const { to, subject, text, html, from } = options;
+
+  // Try Resend first (production)
+  if (process.env.RESEND_API_KEY) {
+    try {
+      const { Resend } = require('resend');
+      const resend = new Resend(process.env.RESEND_API_KEY);
+
+      await resend.emails.send({
+        from: from || 'Dev Codex <noreply@dev-codex.com>',
+        to,
+        subject,
+        text,
+        html
+      });
+
+      console.log(`✓ Email sent via Resend to ${to}`);
+      return;
+    } catch (error) {
+      console.error('Resend failed, falling back to SMTP:', error);
+      // Fall through to SMTP
     }
-  });
+  }
+
+  // Fallback to SMTP (self-hosted or Resend failed)
+  if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+    try {
+      const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST || 'smtp.gmail.com',
+        port: parseInt(process.env.SMTP_PORT || '587'),
+        secure: false,
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS
+        }
+      });
+
+      await transporter.sendMail({
+        from: from || `"Dev Codex" <${process.env.SMTP_USER}>`,
+        to,
+        subject,
+        text,
+        html
+      });
+
+      console.log(`✓ Email sent via SMTP to ${to}`);
+      return;
+    } catch (error) {
+      console.error('SMTP failed:', error);
+      throw new Error('Failed to send email via SMTP');
+    }
+  }
+
+  // No email configured
+  console.warn('⚠️ Email not sent - no email service configured (RESEND_API_KEY or SMTP)');
 };
 
 export const sendProjectInvitationEmail = async (
@@ -19,11 +81,6 @@ export const sendProjectInvitationEmail = async (
   invitationToken: string,
   role: string
 ) => {
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    return;
-  }
-
-  const transporter = createTransporter();
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5002';
   const invitationUrl = `${frontendUrl}/invitation/${invitationToken}`;
 
@@ -133,14 +190,12 @@ Project Manager Team
   `;
 
   try {
-    await transporter.sendMail({
-      from: `"Project Manager" <${process.env.SMTP_USER}>`,
+    await sendEmail({
       to: inviteeEmail,
       subject: `You're invited to collaborate on "${projectName}"`,
       text: textContent,
-      html: htmlContent,
+      html: htmlContent
     });
-    
   } catch (error) {
     console.error('Failed to send invitation email:', error);
     throw new Error('Failed to send invitation email');

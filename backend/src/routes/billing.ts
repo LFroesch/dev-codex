@@ -1,11 +1,11 @@
 import express from 'express';
 import Stripe from 'stripe';
-import nodemailer from 'nodemailer';
 import { User } from '../models/User';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { createRateLimit } from '../middleware/rateLimit';
 import { logInfo, logError, logWarn } from '../config/logger';
 import NotificationService from '../services/notificationService';
+import { sendEmail } from '../services/emailService';
 
 const router = express.Router();
 
@@ -513,54 +513,43 @@ router.get('/info', requireAuth, async (req: AuthRequest, res) => {
   }
 });
 
-// Email configuration
-const createTransporter = () => {
-  return nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.SMTP_PORT || '587'),
-    secure: false,
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS
-    }
-  });
-};
-
 // Send email notification for locked projects
 async function sendProjectsLockedEmail(user: any, lockedProjects: any[], planTier: string) {
   try {
-    const transporter = createTransporter();
     const projectList = lockedProjects.map(p => `  • ${p.name}`).join('\n');
 
-    const mailOptions = {
-      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+    const html = `
+      <h2>Projects Locked Due to Plan Change</h2>
+      <p>Hi ${user.firstName},</p>
+      <p>Your subscription plan has changed to <strong>${planTier}</strong>. As a result, ${lockedProjects.length} project${lockedProjects.length > 1 ? 's have' : ' has'} been locked because you've exceeded your plan limit.</p>
+
+      <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+        <strong>Locked Projects:</strong><br>
+        <pre style="margin: 10px 0;">${projectList}</pre>
+      </div>
+
+      <p>These projects are in <strong>read-only mode</strong>. You can still view them, but you won't be able to make changes.</p>
+
+      <p><strong>To unlock these projects:</strong></p>
+      <ul>
+        <li>Upgrade your plan to ${planTier === 'free' ? 'Pro or Premium' : 'Premium'}</li>
+        <li>Or archive some of your active projects to fit within your current plan limit</li>
+      </ul>
+
+      <p><a href="${process.env.FRONTEND_URL || 'http://localhost:5002'}/billing" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 20px 0;">Manage Subscription</a></p>
+
+      <p>Best regards,<br>Dev Codex Team</p>
+    `;
+
+    const text = `Projects Locked Due to Plan Change\n\nHi ${user.firstName},\n\nYour subscription plan has changed to ${planTier}. As a result, ${lockedProjects.length} project${lockedProjects.length > 1 ? 's have' : ' has'} been locked because you've exceeded your plan limit.\n\nLocked Projects:\n${projectList}\n\nThese projects are in read-only mode. You can still view them, but you won't be able to make changes.\n\nTo unlock these projects:\n- Upgrade your plan to ${planTier === 'free' ? 'Pro or Premium' : 'Premium'}\n- Or archive some of your active projects to fit within your current plan limit\n\nManage Subscription: ${process.env.FRONTEND_URL || 'http://localhost:5002'}/billing\n\nBest regards,\nDev Codex Team`;
+
+    await sendEmail({
       to: user.email,
       subject: `${lockedProjects.length} Project${lockedProjects.length > 1 ? 's' : ''} Locked - Plan Change`,
-      html: `
-        <h2>Projects Locked Due to Plan Change</h2>
-        <p>Hi ${user.firstName},</p>
-        <p>Your subscription plan has changed to <strong>${planTier}</strong>. As a result, ${lockedProjects.length} project${lockedProjects.length > 1 ? 's have' : ' has'} been locked because you've exceeded your plan limit.</p>
+      text,
+      html
+    });
 
-        <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
-          <strong>Locked Projects:</strong><br>
-          <pre style="margin: 10px 0;">${projectList}</pre>
-        </div>
-
-        <p>These projects are in <strong>read-only mode</strong>. You can still view them, but you won't be able to make changes.</p>
-
-        <p><strong>To unlock these projects:</strong></p>
-        <ul>
-          <li>Upgrade your plan to ${planTier === 'free' ? 'Pro or Premium' : 'Premium'}</li>
-          <li>Or archive some of your active projects to fit within your current plan limit</li>
-        </ul>
-
-        <p><a href="${process.env.FRONTEND_URL || 'http://localhost:5002'}/billing" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 20px 0;">Manage Subscription</a></p>
-
-        <p>Best regards,<br>Dev Codex Team</p>
-      `
-    };
-
-    await transporter.sendMail(mailOptions);
     logInfo('Sent projects locked email', { userId: user._id, count: lockedProjects.length });
   } catch (error) {
     logError('Failed to send projects locked email', error as Error);
@@ -570,33 +559,35 @@ async function sendProjectsLockedEmail(user: any, lockedProjects: any[], planTie
 // Send email notification for unlocked projects
 async function sendProjectsUnlockedEmail(user: any, unlockedProjects: any[], planTier: string) {
   try {
-    const transporter = createTransporter();
     const projectList = unlockedProjects.map(p => `  • ${p.name}`).join('\n');
 
-    const mailOptions = {
-      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+    const html = `
+      <h2>Projects Unlocked - Plan Upgrade</h2>
+      <p>Hi ${user.firstName},</p>
+      <p>Great news! Your subscription plan has been upgraded to <strong>${planTier}</strong>. As a result, ${unlockedProjects.length} previously locked project${unlockedProjects.length > 1 ? 's have' : ' has'} been unlocked.</p>
+
+      <div style="background: #e8f5e9; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #4caf50;">
+        <strong>Unlocked Projects:</strong><br>
+        <pre style="margin: 10px 0;">${projectList}</pre>
+      </div>
+
+      <p>You now have <strong>full access</strong> to these projects and can make changes again!</p>
+
+      <p><a href="${process.env.FRONTEND_URL || 'http://localhost:5002'}/projects" style="background: #4caf50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 20px 0;">View Your Projects</a></p>
+
+      <p>Thank you for your continued support!</p>
+      <p>Best regards,<br>Dev Codex Team</p>
+    `;
+
+    const text = `Projects Unlocked - Plan Upgrade\n\nHi ${user.firstName},\n\nGreat news! Your subscription plan has been upgraded to ${planTier}. As a result, ${unlockedProjects.length} previously locked project${unlockedProjects.length > 1 ? 's have' : ' has'} been unlocked.\n\nUnlocked Projects:\n${projectList}\n\nYou now have full access to these projects and can make changes again!\n\nView Your Projects: ${process.env.FRONTEND_URL || 'http://localhost:5002'}/projects\n\nThank you for your continued support!\n\nBest regards,\nDev Codex Team`;
+
+    await sendEmail({
       to: user.email,
       subject: `${unlockedProjects.length} Project${unlockedProjects.length > 1 ? 's' : ''} Unlocked - Welcome Back!`,
-      html: `
-        <h2>Projects Unlocked - Plan Upgrade</h2>
-        <p>Hi ${user.firstName},</p>
-        <p>Great news! Your subscription plan has been upgraded to <strong>${planTier}</strong>. As a result, ${unlockedProjects.length} previously locked project${unlockedProjects.length > 1 ? 's have' : ' has'} been unlocked.</p>
+      text,
+      html
+    });
 
-        <div style="background: #e8f5e9; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #4caf50;">
-          <strong>Unlocked Projects:</strong><br>
-          <pre style="margin: 10px 0;">${projectList}</pre>
-        </div>
-
-        <p>You now have <strong>full access</strong> to these projects and can make changes again!</p>
-
-        <p><a href="${process.env.FRONTEND_URL || 'http://localhost:5002'}/projects" style="background: #4caf50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 20px 0;">View Your Projects</a></p>
-
-        <p>Thank you for your continued support!</p>
-        <p>Best regards,<br>Dev Codex Team</p>
-      `
-    };
-
-    await transporter.sendMail(mailOptions);
     logInfo('Sent projects unlocked email', { userId: user._id, count: unlockedProjects.length });
   } catch (error) {
     logError('Failed to send projects unlocked email', error as Error);

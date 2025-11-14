@@ -53,7 +53,20 @@ export function getMockStripe() {
 }
 
 /**
- * Mock Nodemailer for email tests
+ * Mock unified email service for email tests
+ */
+export function setupEmailServiceMock() {
+  const mockSendEmail = jest.fn().mockResolvedValue(undefined);
+
+  jest.mock('../../services/emailService', () => ({
+    sendEmail: mockSendEmail
+  }));
+
+  return mockSendEmail;
+}
+
+/**
+ * @deprecated Use setupEmailServiceMock() instead - nodemailer is no longer used
  */
 export function setupNodemailerMock() {
   const mockCreateTransport = jest.fn(() => ({
@@ -93,4 +106,11 @@ export function setupTestEnv() {
   process.env.SUPPORT_EMAIL = 'support@test.com';
   process.env.JWT_SECRET = 'test-secret-key';
   process.env.NODE_ENV = 'test';
+
+  // CRITICAL: Remove real SMTP credentials to prevent sending actual emails during tests
+  delete process.env.SMTP_USER;
+  delete process.env.SMTP_PASS;
+  delete process.env.SMTP_HOST;
+  delete process.env.SMTP_PORT;
+  delete process.env.SMTP_FROM;
 }

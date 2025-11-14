@@ -473,14 +473,14 @@ const Layout: React.FC = () => {
 
 
         {/* Mobile and Tablet Layout */}
-        <div className="block desktop:hidden px-2 pt-2 pb-2">
+        <div className="block desktop:hidden px-1 pt-2 pb-2">
           <div className="flex flex-col gap-2">
 
             {/* Top row: Logo + Search (tablet), Project indicator (tablet), Session Tracker, and User Menu */}
-            <div className="flex items-center justify-between min-w-0 gap-2">
+            <div className="flex items-center justify-between min-w-0 gap-0.5">
 
               {/* Dev Codex logo */}
-              <div className="flex items-center gap-3 bg-base-200 backdrop-blur-none border-2 border-base-content/20 rounded-xl px-4 py-2 h-12 shadow-sm hover:shadow-md transition-all cursor-pointer" onClick={() => navigate('/projects')}>
+              <div className="flex items-center gap-2 sm:gap-3 bg-base-200 backdrop-blur-none border-2 border-base-content/20 rounded-xl px-2 sm:px-4 py-2 h-12 shadow-sm hover:shadow-md transition-all cursor-pointer" onClick={() => navigate('/projects')}>
                 <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-sm">
                   <svg className="icon-md text-primary-content" fill={getContrastTextColor()} viewBox="0 0 20 20">
                   <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />

@@ -53,7 +53,8 @@ export interface IAnalytics extends Document {
 
 const analyticsSchema: Schema = new Schema({
   userId: {
-    type: String,
+    type: Schema.Types.ObjectId,
+    ref: 'User',
     required: true,
     index: true
   },

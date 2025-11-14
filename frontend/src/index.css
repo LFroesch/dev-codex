@@ -92,12 +92,12 @@ body {
 
   /* Container for tab groups */
   .tabs-container {
-    @apply tabs tabs-boxed border-2 border-base-content/20 shadow-sm flex flex-nowrap overflow-x-auto pb-0.5;
+    @apply tabs tabs-boxed border-2 border-base-content/20 shadow-sm flex flex-nowrap overflow-x-auto pb-0.5 max-w-full;
   }
 
   /* Standard tab button (regular size) */
   .tab-button {
-    @apply tab tab-sm flex-shrink-0 min-h-10 px-3 font-bold text-sm whitespace-nowrap;
+    @apply tab tab-sm flex-shrink-0 min-h-10 px-2 sm:px-3 font-bold text-xs sm:text-sm whitespace-nowrap;
   }
 
   /* Smaller responsive tab button */

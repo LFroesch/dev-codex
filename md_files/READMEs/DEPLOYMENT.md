@@ -68,3 +68,46 @@ npm run create-admin
 - Support ticket management
 - System monitoring and database cleanup
 - News post creation
+
+---
+
+### Database Backup & Restore
+
+**Option 1: MongoDB Atlas (Recommended)**
+- Atlas has automatic backups built-in (Cloud Backup)
+- Point-in-time recovery available on M10+ clusters
+- Manual backups via UI or API
+- Configure backup schedule in Atlas dashboard
+- Backups are encrypted and stored in cloud
+
+**Option 2: mongodump/mongorestore (Manual)**
+
+Backup:
+```bash
+mongodump --uri="your-mongo-connection-string" --out=/backup/directory
+```
+
+Restore:
+```bash
+mongorestore --uri="your-mongo-connection-string" /backup/directory
+```
+
+**Recommended Backup Strategy:**
+1. Set up automated daily backups using a cron job or cloud scheduler
+2. Store backups in S3/cloud storage (encrypted)
+3. Test restore process monthly to verify backups work
+4. Keep at least 7 daily + 4 weekly backups
+5. Monitor backup success/failure with alerts
+
+**Railway-Specific:**
+If using Railway's MongoDB plugin, check your plan for built-in backup features.
+
+**Example Automated Backup Script:**
+```bash
+#!/bin/bash
+DATE=$(date +%Y%m%d_%H%M%S)
+BACKUP_DIR="/backups/mongodb_$DATE"
+mongodump --uri="$MONGODB_URI" --out="$BACKUP_DIR"
+# Optional: Upload to S3
+# aws s3 cp "$BACKUP_DIR" s3://your-bucket/backups/ --recursive
+```

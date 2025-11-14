@@ -133,7 +133,8 @@ export const useTutorial = (): UseTutorialReturn => {
     try {
       await tutorialAPI.skipTutorial();
       setIsActive(false);
-      // Don't reset currentStep - keep it so we know where user was
+      setCurrentStep(0); // Reset currentStep so resume button doesn't show
+      setCompletedSteps([]);
       // Clear session storage so modal won't show again
       sessionStorage.setItem('tutorialWelcomeShown', 'true');
       toast.info('Tutorial skipped. You can restart it anytime from the Help page.');

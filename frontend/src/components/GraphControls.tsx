@@ -179,7 +179,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
       </div>
 
       {/* Action Buttons */}
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         <button
           onClick={onResetView}
           className="btn btn-sm h-6 btn-primary bg-primary/20 border-thick border-primary"

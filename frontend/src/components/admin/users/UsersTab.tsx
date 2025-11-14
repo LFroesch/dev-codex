@@ -3,6 +3,7 @@ import { UserAvatar, StatusBadge, PlanBadge, LoadingSkeleton } from '../shared';
 import ConfirmationModal from '../../ConfirmationModal';
 import { csrfFetch } from '../../../utils/csrf';
 import { toast } from '../../../services/toast';
+import { adminAPI } from '../../../api/admin';
 
 interface User {
   _id: string;
@@ -55,10 +56,16 @@ const UsersTab: React.FC = () => {
   const [showBanModal, setShowBanModal] = useState(false);
   const [banReason, setBanReason] = useState('');
   const [banLoading, setBanLoading] = useState(false);
+  const [userToNotify, setUserToNotify] = useState<User | null>(null);
+  const [showNotificationModal, setShowNotificationModal] = useState(false);
+  const [notificationTitle, setNotificationTitle] = useState('');
+  const [notificationMessage, setNotificationMessage] = useState('');
+  const [notificationLoading, setNotificationLoading] = useState(false);
 
   useEffect(() => {
     fetchUsers();
   }, [page, filterPlan, filterStatus, searchTerm, searchType, createdAfter, createdBefore, lastLoginAfter, lastLoginBefore]);
+
 
   const fetchUsers = async () => {
     try {
@@ -193,6 +200,44 @@ const UsersTab: React.FC = () => {
     }
   };
 
+  const handleSendNotification = async () => {
+    if (!userToNotify) return;
+
+    // Validation
+    if (!notificationTitle.trim() || !notificationMessage.trim()) {
+      toast.error('Title and message are required');
+      return;
+    }
+
+    if (notificationTitle.length > 200) {
+      toast.error('Title must be 200 characters or less');
+      return;
+    }
+
+    if (notificationMessage.length > 1000) {
+      toast.error('Message must be 1000 characters or less');
+      return;
+    }
+
+    try {
+      setNotificationLoading(true);
+      await adminAPI.sendNotificationToUser(userToNotify._id, {
+        title: notificationTitle.trim(),
+        message: notificationMessage.trim()
+      });
+      toast.success(`Notification sent to ${userToNotify.firstName} ${userToNotify.lastName}!`);
+      setShowNotificationModal(false);
+      setUserToNotify(null);
+      setNotificationTitle('');
+      setNotificationMessage('');
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.error || err.message || 'Failed to send notification';
+      toast.error('Failed to send notification: ' + errorMessage);
+    } finally {
+      setNotificationLoading(false);
+    }
+  };
+
   const handleDeleteUser = async () => {
     if (!userToDelete) return;
     try {
@@ -265,6 +310,28 @@ const UsersTab: React.FC = () => {
                   <li><a onClick={() => handleUpdatePlan(user._id, 'pro')}>Set to Pro</a></li>
                   <li><a onClick={() => handleUpdatePlan(user._id, 'premium')}>Set to Premium</a></li>
                   <li className="divider"></li>
+                  <li className="menu-title"><span>Actions</span></li>
+                  <li>
+                    <button
+                      type="button"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const targetUser = user;
+                        setTimeout(() => {
+                          setUserToNotify(targetUser);
+                          setShowNotificationModal(true);
+                        }, 150);
+                      }}
+                      className="w-full text-left flex items-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                      </svg>
+                      Send Notification
+                    </button>
+                  </li>
+                  <li className="divider"></li>
                   {!user.isBanned ? (
                     <li><a onClick={() => { setUserToBan(user); setShowBanModal(true); }} className="text-error">Ban User</a></li>
                   ) : (
@@ -336,6 +403,28 @@ const UsersTab: React.FC = () => {
                       <li><a onClick={() => handleUpdatePlan(user._id, 'free')}>Set to Free</a></li>
                       <li><a onClick={() => handleUpdatePlan(user._id, 'pro')}>Set to Pro</a></li>
                       <li><a onClick={() => handleUpdatePlan(user._id, 'premium')}>Set to Premium</a></li>
+                      <li className="divider"></li>
+                      <li className="menu-title"><span>Actions</span></li>
+                      <li>
+                        <button
+                          type="button"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const targetUser = user;
+                            setTimeout(() => {
+                              setUserToNotify(targetUser);
+                              setShowNotificationModal(true);
+                            }, 150);
+                          }}
+                          className="w-full text-left flex items-center gap-2"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                          </svg>
+                          Send Notification
+                        </button>
+                      </li>
                       <li className="divider"></li>
                       {!user.isBanned ? (
                         <li><a onClick={() => { setUserToBan(user); setShowBanModal(true); }} className="text-error">Ban User</a></li>
@@ -631,7 +720,7 @@ const UsersTab: React.FC = () => {
         <div className="modal modal-open">
           <div className="modal-box max-w-2xl">
             <h3 className="font-bold text-lg mb-4">User Details</h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="font-semibold text-base-content/70">Name</label>
                 <p className="text-lg">{selectedUser.firstName} {selectedUser.lastName}</p>
@@ -744,6 +833,92 @@ const UsersTab: React.FC = () => {
         confirmText="Delete User"
         variant="error"
       />
+
+      {/* Send Notification Modal */}
+      {showNotificationModal && userToNotify && (
+        <div className="modal modal-open">
+          <div className="modal-box max-w-2xl">
+            <h3 className="font-bold text-lg mb-4">Send Notification</h3>
+
+            <div className="mb-4 p-3 bg-base-200 rounded-lg">
+              <p className="text-sm text-base-content/70">Sending to:</p>
+              <p className="font-semibold">{userToNotify.firstName} {userToNotify.lastName}</p>
+              <p className="text-sm text-base-content/60">{userToNotify.email}</p>
+            </div>
+
+            <div className="form-control mb-4">
+              <label className="label">
+                <span className="label-text font-semibold">Title <span className="text-error">*</span></span>
+                <span className="label-text-alt text-base-content/60">{notificationTitle.length}/200</span>
+              </label>
+              <input
+                type="text"
+                placeholder="Enter notification title"
+                className="input input-bordered w-full"
+                value={notificationTitle}
+                onChange={(e) => setNotificationTitle(e.target.value)}
+                maxLength={200}
+                disabled={notificationLoading}
+              />
+            </div>
+
+            <div className="form-control mb-6">
+              <label className="label">
+                <span className="label-text font-semibold">Message <span className="text-error">*</span></span>
+                <span className="label-text-alt text-base-content/60">{notificationMessage.length}/1000</span>
+              </label>
+              <textarea
+                placeholder="Enter notification message"
+                className="textarea textarea-bordered w-full h-32"
+                value={notificationMessage}
+                onChange={(e) => setNotificationMessage(e.target.value)}
+                maxLength={1000}
+                disabled={notificationLoading}
+              />
+            </div>
+
+            <div className="modal-action">
+              <button
+                className="btn btn-ghost"
+                onClick={() => {
+                  setShowNotificationModal(false);
+                  setUserToNotify(null);
+                  setNotificationTitle('');
+                  setNotificationMessage('');
+                }}
+                disabled={notificationLoading}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={handleSendNotification}
+                disabled={notificationLoading || !notificationTitle.trim() || !notificationMessage.trim()}
+              >
+                {notificationLoading ? (
+                  <>
+                    <span className="loading loading-spinner loading-sm"></span>
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                    </svg>
+                    Send Notification
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+          <div className="modal-backdrop" onClick={() => {
+            setShowNotificationModal(false);
+            setUserToNotify(null);
+            setNotificationTitle('');
+            setNotificationMessage('');
+          }}></div>
+        </div>
+      )}
     </div>
   );
 };

@@ -1800,7 +1800,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
           </div>
 
           {/* Quick Links Grid */}
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {/* Tech Stack Card */}
             <button
               onClick={() => handleNavigateToProject('/stack')}
@@ -2095,7 +2095,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
         <div className="mt-3 space-y-3">
           {/* Stats Summary */}
           {standup.stats && (
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
               <div className="p-2 bg-base-200 rounded-lg border-thick text-center">
                 <div className="text-xl font-bold text-base-content">{standup.stats.completedYesterday}</div>
                 <div className="text-xs text-base-content/60">Yesterday</div>

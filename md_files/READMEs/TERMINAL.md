@@ -96,6 +96,12 @@ Examples:
 - `/remove member [email]` - Remove team member
 - `/remove tag [name]` - Remove tag
 
+### Relationship Commands (Component Graph)
+- `/add relationship --from=[component] --to=[component] --type=[type] [@project]` - Add relationship between components
+- `/view relationships [@project]` - View all component relationships
+- `/edit relationship [id] [@project]` - Edit relationship type or description
+- `/delete relationship [id] [@project] --confirm` - Delete a relationship
+
 ### Project Management
 - `/add project [name] [description] [category] [color]` - Create new project
 - `/swap [project]` - Switch active project
@@ -148,6 +154,8 @@ Mixed (newlines + &&):
 - `/week [@project]` - Weekly summary and planning
 - `/standup [@project]` - Generate standup report (what I did yesterday, working on today, stuck on)
 - `/info [@project]` - Quick project overview with stats
+- `/stale [@project]` - Find stale todos and notes (not updated in 30+ days)
+- `/activity [@project]` - View activity log for a project
 
 #### Interactive Features
 - `/wizard new` - Interactive project creation wizard (aliases: `/wizard project`, `/new project`, `/new`)

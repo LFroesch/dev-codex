@@ -16,16 +16,63 @@ railway login && railway init && railway up
 - [ ] Generate JWT_SECRET & CSRF_SECRET (64 chars)
 - [ ] Set FRONTEND_URL & CORS_ORIGINS
 - [ ] MongoDB Atlas, Railway MongoDB, or your own instance
+- [ ] (Optional) Email: SMTP credentials **OR** Resend API key (pick one or both)
+- [ ] (Optional) Google OAuth credentials for social login
 - [ ] (Optional) Sentry DSN for error tracking
-- [ ] (Optional) Gmail app password for SMTP if you want email features
-- [ ] (Optional) Google OAuth credentials
 
 **What SELF_HOSTED=true does:**
 - ✅ Disables all rate limiting (unlimited requests)
 - ✅ Disables billing/subscription features
-- ✅ Makes SMTP optional (email features won't work without it)
 - ✅ Makes Stripe optional (no payment processing)
+- ✅ Makes Google OAuth optional (users can still register with email/password)
+- ✅ Makes email optional (but recommended for invitations/password resets)
 - ✅ Users get unlimited projects and team members
+
+**Email Setup (Optional but Recommended):**
+
+The app uses a **unified email service** that supports **either** Resend **or** SMTP. You only need **one** of them:
+
+**Option 1: SMTP (Recommended for self-hosting)**
+- Works with: Gmail, SendGrid, Mailgun, your own mail server
+- **Gmail setup:**
+  1. Enable 2FA on your Google Account
+  2. Generate App Password: https://myaccount.google.com/apppasswords
+  3. Set environment variables:
+     ```bash
+     SMTP_HOST=smtp.gmail.com
+     SMTP_PORT=587
+     SMTP_USER=your@gmail.com
+     SMTP_PASS=your-app-password-here
+     ```
+- **Other providers:** Use their SMTP credentials
+
+**Option 2: Resend (What production uses)**
+- Free tier: 100 emails/day, 3,000/month
+- Get API key: https://resend.com/api-keys
+- Set environment variable:
+  ```bash
+  RESEND_API_KEY=re_your_key_here
+  ```
+
+**Option 3: Both (automatic failover)**
+- Set both RESEND_API_KEY and SMTP_* variables
+- App tries Resend first, falls back to SMTP if it fails
+
+**How it works:**
+```
+All emails (invitations, password resets, tickets, etc.)
+    ↓
+Tries Resend first (if RESEND_API_KEY is set)
+    ↓
+Falls back to SMTP (if Resend fails or not configured)
+    ↓
+Email delivered! ✉️
+```
+
+**If no email configured:**
+- ✅ App works for all non-email features
+- ❌ Can't send invitations, password resets, or ticket notifications
+- ⚠️ Admin can manually reset passwords using CLI script
 
 ---
 

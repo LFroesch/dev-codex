@@ -42,15 +42,19 @@
 `GET /` `POST /` `GET /:id` `PUT /:id` `DELETE /:id`
 
 ### Admin (`/api/admin`)
-**Users:** `GET /users` `GET /users/:id` `PUT /users/:id/plan` `DELETE /users/:id` `POST /users/:id/password-reset`
+**Users:** `GET /users` `GET /users/:id` `PUT /users/:id/plan` `DELETE /users/:id` `POST /users/:id/password-reset` `POST /users/:id/ban` `POST /users/:id/unban` `POST /users/:id/refund` `POST /users/:id/notify` `GET /users/:id/projects`
 
-**Projects:** `GET /projects` `GET /stats`
+**Projects:** `GET /projects` `GET /stats` `POST /projects/:id/lock`
 
 **Tickets:** `GET /tickets` `GET /tickets/:id` `PUT /tickets/:id` `DELETE /tickets/:id`
 
-**Analytics:** `GET /analytics/combined` `GET /analytics/leaderboard` `DELETE /analytics/reset`
+**Analytics:** `GET /analytics/combined` `GET /analytics/leaderboard` `GET /analytics/overview` `GET /analytics/conversion-rate` `GET /analytics/features/adoption` `GET /analytics/users/growth` `GET /analytics/export` `DELETE /analytics/reset` `DELETE /analytics/project-time/reset`
 
-**Cleanup:** `GET /cleanup/stats` `GET /cleanup/recommendations` `POST /cleanup/run` `POST /cleanup/optimize` `POST /cleanup/emergency`
+**Activity:** `GET /activity/feed`
+
+**Performance:** `GET /performance/recommendations`
+
+**Cleanup:** `GET /cleanup/stats` `GET /cleanup/recommendations` `POST /cleanup/run` `POST /cleanup/orphaned` `POST /cleanup/optimize` `POST /cleanup/emergency` `POST /cleanup/archive-projects` `DELETE /cleanup/analytics/:days` `DELETE /cleanup/notifications/:days` `DELETE /cleanup/activity-logs/:days` `DELETE /cleanup/inactive-sessions` `DELETE /cleanup/stale-locks` `DELETE /cleanup/rate-limits`
 
 ### News (`/api/news`)
 `GET /` `GET /admin` `GET /:id` `POST /` `PUT /:id` `DELETE /:id`

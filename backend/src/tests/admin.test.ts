@@ -1,3 +1,8 @@
+// Mock email service
+jest.mock('../services/emailService', () => ({
+  sendEmail: jest.fn().mockResolvedValue(undefined)
+}));
+
 import request from 'supertest';
 import adminRoutes from '../routes/admin';
 import { User } from '../models/User';

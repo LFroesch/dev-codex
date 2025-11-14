@@ -362,7 +362,7 @@ const NotesPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 max-w-full overflow-hidden">
       {error && (
         <div className="alert alert-error shadow-md">
           <svg className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
@@ -575,7 +575,7 @@ const NotesPage: React.FC = () => {
                   rows={2}
                 />
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div className="space-y-2">
                     <label className="text-xs font-medium text-base-content/70">Priority</label>
                     <select
@@ -597,7 +597,7 @@ const NotesPage: React.FC = () => {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <DatePicker
                     label="Reminder"
                     value={newTodoReminderDate}
@@ -659,13 +659,13 @@ const NotesPage: React.FC = () => {
             </div>
           ) : (
             // Master-Detail Layout
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 min-h-[500px]">
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-3 lg:gap-4 min-h-[500px] max-w-full">
               {/* Left Panel - Compact Todo List */}
-              <div className="lg:col-span-2 space-y-3">
+              <div className="lg:col-span-2 space-y-2 lg:space-y-3 min-w-0 max-w-full">
                 {/* Filter Controls */}
                 {selectedProject.todos && selectedProject.todos.filter((todo: Todo) => !todo.parentTodoId).length > 0 && (
-                  <div className="border-2 border-base-content/20 rounded-lg p-3 bg-base-100">
-                    <div className="flex items-center gap-2">
+                  <div className="border-2 border-base-content/20 rounded-lg p-3 bg-base-100 max-w-full">
+                    <div className="flex items-center gap-2 min-w-0">
                       <span className="text-sm font-medium text-base-content/80">Filter:</span>
                       <select
                         value={todoFilterBy}
@@ -695,7 +695,7 @@ const NotesPage: React.FC = () => {
                   ];
 
                   return sections.map(section => section.todos.length > 0 && (
-                    <div key={section.key} className="border-2 border-base-content/20 rounded-lg bg-base-100">
+                    <div key={section.key} className="border-2 border-base-content/20 rounded-lg bg-base-100 max-w-full">
                       {/* Section Header */}
                       <button
                         onClick={() => toggleTodoSection(section.key)}
@@ -730,7 +730,7 @@ const NotesPage: React.FC = () => {
                                   : 'hover:bg-base-200/60 border-2 border-transparent'
                               }`}
                             >
-                              <div className="flex items-start gap-2">
+                              <div className="flex items-start gap-2 min-w-0">
                                 <input
                                   type="checkbox"
                                   checked={todo.completed}
@@ -745,9 +745,9 @@ const NotesPage: React.FC = () => {
                                   }}
                                   className="checkbox checkbox-sm checkbox-primary mt-0.5 flex-shrink-0"
                                 />
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <span className={`text-sm font-medium truncate ${todo.completed ? 'line-through text-base-content/50' : ''}`}>
+                                <div className="flex-1 min-w-0 overflow-hidden">
+                                  <div className="flex items-center gap-2 mb-1 min-w-0">
+                                    <span className={`text-sm font-medium break-words ${todo.completed ? 'line-through text-base-content/50' : ''}`}>
                                       {todo.title}
                                     </span>
                                     <span className="text-xs flex-shrink-0">
@@ -755,7 +755,7 @@ const NotesPage: React.FC = () => {
                                     </span>
                                   </div>
                                   {todo.dueDate && (
-                                    <span className="text-xs text-base-content/60">
+                                    <span className="text-xs text-base-content/60 break-words">
                                       {new Date(todo.dueDate).toLocaleDateString()}
                                     </span>
                                   )}
@@ -771,7 +771,7 @@ const NotesPage: React.FC = () => {
               </div>
 
               {/* Right Panel - Detail View */}
-              <div className="lg:col-span-3 min-h-[500px]">
+              <div className="lg:col-span-3 min-h-[500px] min-w-0 max-w-full">
                 {!selectedTodo ? (
                   <div className="border-2 border-base-content/20 rounded-lg p-8 text-center bg-base-100 h-full flex items-center justify-center">
                     <div>

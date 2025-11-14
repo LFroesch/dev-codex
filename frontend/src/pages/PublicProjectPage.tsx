@@ -141,11 +141,11 @@ const PublicProjectPage: React.FC = () => {
   const hasContent = hasAnyComponents || hasTechStack || hasDeploymentLinks;
 
   return (
-    <div className="flex-1 w-full max-w-7xl mx-auto p-2 sm:p-4 bg-base-100 flex flex-col mb-4 min-h-0">
-      <div className="space-y-6">
+    <div className="flex-1 w-full max-w-7xl mx-auto p-2 sm:p-4 bg-base-100 flex flex-col mb-4 min-h-0 overflow-hidden">
+      <div className="space-y-6 max-w-full">
         {/* Project Header */}
-        <div className="section-container">
-          <div className="section-content p-3 sm:p-4">
+        <div className="section-container max-w-full">
+          <div className="section-content p-3 sm:p-4 max-w-full">
             {/* Header with buttons and project info */}
             <div className="flex flex-wrap items-start gap-2 mb-3">
               {/* Left side: Project info (wraps internally) */}
@@ -281,7 +281,7 @@ const PublicProjectPage: React.FC = () => {
 
         {/* Content Grid */}
         {hasContent && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8 mb-12 max-w-full">
             {/* Tech Stack */}
             {hasTechStack && (
               <div className="section-container">
@@ -296,7 +296,7 @@ const PublicProjectPage: React.FC = () => {
                     {project.technologies.map((tech: any, index: number) => (
                       <div 
                         key={index} 
-                        className="badge badge-outline badge-lg hover:shadow-lg transition-colors"
+                        className="badge badge-outline border-thick p-2 border-secondary font-bold badge-lg hover:shadow-lg transition-colors"
                       >
                         {tech.name + (tech.version ? ` (v${tech.version})` : '')}
                       </div>
@@ -333,39 +333,39 @@ const PublicProjectPage: React.FC = () => {
                   
                   <div className="space-y-3">
                     {project.deploymentData.liveUrl && (
-                      <a 
-                        href={ensureHttps(project.deploymentData.liveUrl)} 
-                        target="_blank" 
+                      <a
+                        href={ensureHttps(project.deploymentData.liveUrl)}
+                        target="_blank"
                         rel="noopener noreferrer"
-                        className="btn btn-primary btn-block flex-col gap-1"
+                        className="block w-full p-4 bg-primary hover:bg-primary/90 rounded-lg border-thick transition-colors"
                         style={{ color: getContrastTextColor('primary') }}
-                        >
-                        <div className="flex items-center gap-2">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      >
+                        <div className="flex items-center justify-center gap-2 mb-2">
+                          <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                           </svg>
-                          View Live Site
+                          <span className="font-semibold">View Live Site</span>
                         </div>
-                        <div className="text-xs opacity-70 break-all">
+                        <div className="text-xs opacity-80 break-words text-center px-2">
                           {project.deploymentData.liveUrl}
                         </div>
                       </a>
                     )}
-                    
+
                     {project.deploymentData.githubRepo && (
-                      <a 
-                        href={ensureHttps(project.deploymentData.githubRepo)} 
-                        target="_blank" 
+                      <a
+                        href={ensureHttps(project.deploymentData.githubRepo)}
+                        target="_blank"
                         rel="noopener noreferrer"
-                        className="btn btn-outline btn-block flex-col gap-1"
+                        className="block w-full p-4 bg-base-200 hover:bg-base-300 border-2 border-base-content/20 rounded-lg transition-colors"
                       >
-                        <div className="flex items-center gap-2">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="flex items-center justify-center gap-2 mb-2">
+                          <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                           </svg>
-                          View Source Code
+                          <span className="font-semibold">View Source Code</span>
                         </div>
-                        <div className="text-xs opacity-70 break-all">
+                        <div className="text-xs opacity-70 break-words text-center px-2">
                           {project.deploymentData.githubRepo}
                         </div>
                       </a>
@@ -375,54 +375,6 @@ const PublicProjectPage: React.FC = () => {
                 </div>
               </div>
             )}
-          </div>
-        )}
-
-        {/* Documentation */}
-        {hasAnyComponents && (
-          <div className="section-container">
-            <div className="section-content">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="section-icon">
-                  <span className="text-lg">📚</span>
-                </div>
-                <h2 className="font-semibold text-lg px-2 py-1 rounded-md bg-base-300 inline-block w-fit">Documentation</h2>
-              </div>
-              <div className="space-y-8">
-              {componentTypes.map((componentType) => {
-                const components = componentsByType[componentType.value];
-                if (!components || components.length === 0) return null;
-
-                return (
-                  <div key={componentType.value}>
-                    <div className="flex items-center gap-4 mb-6">
-                      <div className="section-icon">
-                        <span className="text-2xl">{componentType.emoji}</span>
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-2xl font-bold text-base-content">{componentType.label}</h3>
-                        <p className="text-base-content/60">{componentType.description}</p>
-                      </div>
-                      <div className="badge badge-primary badge-lg">{components.length}</div>
-                    </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      {components.map((component: any) => (
-                        <div key={component.id} className="section-container">
-                          <div className="section-content">
-                            <h4 className="font-semibold text-base mb-3 px-2 py-1 rounded-md bg-base-300 inline-block w-fit">{component.title}</h4>
-                            <div className="mockup-code bg-base-200 text-xs">
-                              <pre><code>{component.content}</code></pre>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-              </div>
-            </div>
           </div>
         )}
 

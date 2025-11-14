@@ -59,7 +59,7 @@ const SharingPage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 max-w-full overflow-hidden">
       {/* Error Messages */}
       {error && (
         <div className="alert alert-error shadow-md mb-6">
@@ -73,7 +73,7 @@ const SharingPage: React.FC = () => {
 
       {/* Overview Section */}
       {activeSharingTab === 'overview' && (
-        <div className="section-container mb-4">
+        <div className="section-container mb-4 max-w-full">
           <div className="section-header">
             <div className="flex items-center gap-3">
               <div className="section-icon">👥</div>
@@ -81,7 +81,7 @@ const SharingPage: React.FC = () => {
             </div>
           </div>
           <div className="section-content">
-            <div className="flex items-center justify-between p-3 bg-base-200 rounded-lg border-thick">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-3 bg-base-200 rounded-lg border-thick max-w-full">
               <div className="flex items-center gap-3">
                 <div className={`w-8 h-8 rounded-full flex items-center border-thick justify-center ${
                   selectedProject.isShared ? 'bg-success/50 ' : 'bg-base-300'
@@ -159,7 +159,7 @@ const SharingPage: React.FC = () => {
 
       {/* Team Management Section */}
       {activeSharingTab === 'team' && selectedProject.isShared && (
-        <div className="section-container mb-4">
+        <div className="section-container mb-4 max-w-full">
           <div className="section-header">
             <div className="flex items-center gap-3">
               <div className="section-icon">👥</div>
@@ -178,7 +178,7 @@ const SharingPage: React.FC = () => {
 
       {/* Activity Log Section */}
       {activeSharingTab === 'activity' && (
-        <div className="section-container mb-4">
+        <div className="section-container mb-4 max-w-full">
           <div className="section-header">
             <div className="flex items-center gap-3">
               <div className="section-icon">📊</div>

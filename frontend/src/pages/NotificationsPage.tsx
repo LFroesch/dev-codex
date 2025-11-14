@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { notificationAPI } from '../api/notifications';
 import type { Notification } from '../api/types';
 import { useNavigate } from 'react-router-dom';
+import ConfirmationModal from '../components/ConfirmationModal';
 
 interface StaleItem {
   projectId: string;
@@ -27,6 +28,7 @@ const NotificationsPage: React.FC = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedNotifications, setExpandedNotifications] = useState<Set<string>>(new Set());
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -76,15 +78,18 @@ const NotificationsPage: React.FC = () => {
     }
   };
 
-  const handleClearAll = async () => {
-    if (!window.confirm('Are you sure you want to clear all notifications?')) {
-      return;
-    }
+  const handleClearAll = () => {
+    setShowClearConfirm(true);
+  };
+
+  const handleConfirmClearAll = async () => {
     try {
       await notificationAPI.clearAllNotifications();
       setNotifications([]);
+      setShowClearConfirm(false);
     } catch (error) {
       console.error('Failed to clear notifications:', error);
+      setShowClearConfirm(false);
     }
   };
 
@@ -164,6 +169,8 @@ const NotificationsPage: React.FC = () => {
         return '⏱️';
       case 'daily_todo_summary':
         return '📅';
+      case 'admin_message':
+        return '👨‍💼';
       default:
         return '🔔';
     }
@@ -200,14 +207,14 @@ const NotificationsPage: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <h1 className="text-3xl font-bold">
           Notifications
           {unreadCount > 0 && (
             <span className="ml-3 badge badge-primary">{unreadCount} unread</span>
           )}
         </h1>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {unreadCount > 0 && (
             <button onClick={handleMarkAllAsRead} className="btn btn-sm btn-outline">
               Mark all as read
@@ -442,6 +449,18 @@ const NotificationsPage: React.FC = () => {
           ))}
         </div>
       )}
+
+      {/* Clear All Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showClearConfirm}
+        onConfirm={handleConfirmClearAll}
+        onCancel={() => setShowClearConfirm(false)}
+        title="Clear All Notifications?"
+        message="Are you sure you want to clear all notifications? This action cannot be undone."
+        confirmText="Clear All"
+        cancelText="Cancel"
+        variant="warning"
+      />
     </div>
   );
 };

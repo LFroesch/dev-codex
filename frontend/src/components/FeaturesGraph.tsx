@@ -1058,7 +1058,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
           <div className="space-y-2">
             {componentEditing.isEditingComponent && componentEditing.editComponentData ? (
               <>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div>
                     <div className="text-xs font-semibold text-base-content/60 mb-1">Category</div>
                     <select

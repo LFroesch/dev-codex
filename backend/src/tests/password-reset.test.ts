@@ -3,22 +3,21 @@ import { User } from '../models/User';
 import authRoutes from '../routes/auth';
 import { createTestApp } from './utils';
 
-// Mock nodemailer to capture emails
-jest.mock('nodemailer', () => ({
-  createTransport: jest.fn(() => ({
-    sendMail: jest.fn(async (mailOptions) => {
-      // Store the last email for test inspection
-      (global as any).lastEmail = mailOptions;
-      return { messageId: 'test-message-id' };
-    })
+// Mock Resend to capture emails
+jest.mock('resend', () => ({
+  Resend: jest.fn().mockImplementation(() => ({
+    emails: {
+      send: jest.fn(async (emailData) => {
+        // Store the last email for test inspection
+        (global as any).lastEmail = emailData;
+        return { id: 'test-email-id' };
+      })
+    }
   }))
 }));
 
 // Set up email environment variables for tests
-process.env.SMTP_HOST = 'test-smtp.example.com';
-process.env.SMTP_USER = 'test@example.com';
-process.env.SMTP_PASS = 'test-password';
-process.env.SMTP_PORT = '587';
+process.env.RESEND_API_KEY = 'test-resend-api-key';
 process.env.FRONTEND_URL = 'http://localhost:5002';
 
 const app = createTestApp({ '/api/auth': authRoutes });

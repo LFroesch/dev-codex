@@ -10,6 +10,7 @@ import ActivityLog from '../models/ActivityLog';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { PLAN_LIMITS } from '../config/planLimits';
 import { CleanupService } from '../services/cleanupService';
+import NotificationService from '../services/notificationService';
 import nodemailer from 'nodemailer';
 
 const router = express.Router();
@@ -1084,6 +1085,73 @@ router.post('/users/:id/refund', async (req: AuthRequest, res) => {
     console.error('Error processing refund:', error);
     res.status(500).json({
       error: 'Failed to process refund',
+      details: error.message
+    });
+  }
+});
+
+// Send custom notification to user
+router.post('/users/:id/notify', async (req: AuthRequest, res) => {
+  try {
+    // Validate ObjectId format
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid user ID' });
+    }
+
+    // Validate request body
+    const { title, message } = req.body;
+    if (!title || !message) {
+      return res.status(400).json({ error: 'Title and message are required' });
+    }
+
+    if (typeof title !== 'string' || typeof message !== 'string') {
+      return res.status(400).json({ error: 'Title and message must be strings' });
+    }
+
+    if (title.trim().length === 0 || message.trim().length === 0) {
+      return res.status(400).json({ error: 'Title and message cannot be empty' });
+    }
+
+    if (title.length > 200) {
+      return res.status(400).json({ error: 'Title must be 200 characters or less' });
+    }
+
+    if (message.length > 1000) {
+      return res.status(400).json({ error: 'Message must be 1000 characters or less' });
+    }
+
+    // Check if user exists
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Create notification
+    const notificationService = NotificationService.getInstance();
+    const notification = await notificationService.createNotification({
+      userId: user._id.toString(),
+      type: 'admin_message',
+      title: title.trim(),
+      message: message.trim()
+    });
+
+    res.json({
+      message: 'Notification sent successfully',
+      notification: {
+        id: notification?._id,
+        title: notification?.title,
+        message: notification?.message,
+        recipient: {
+          id: user._id,
+          email: user.email,
+          name: `${user.firstName} ${user.lastName}`
+        }
+      }
+    });
+  } catch (error: any) {
+    console.error('Error sending notification:', error);
+    res.status(500).json({
+      error: 'Failed to send notification',
       details: error.message
     });
   }

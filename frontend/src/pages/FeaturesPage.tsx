@@ -190,36 +190,34 @@ const FeaturesPage: React.FC = () => {
     const typeInfo = category ? category.types.find(t => t.value === component.type) : null;
 
     return (
-      <div key={component.id} className="card-interactive group p-3">
+      <div key={component.id} className="card-interactive group p-3 max-w-full min-w-0">
         {/* Header with title and controls */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-start justify-between gap-2">
           <button
             onClick={() => toggleComponentExpanded(component.id)}
-            className="flex items-center gap-3 flex-1 text-left hover:bg-base-200 p-2 -m-2 rounded-lg transition-colors"
+            className="flex items-start gap-2 flex-1 text-left hover:bg-base-200 p-2 -m-2 rounded-lg transition-colors min-w-0"
             disabled={isEditing}
           >
-            <div className={`transform transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}>
-              <svg className="w-5 h-5 text-base-content/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className={`transform transition-transform duration-200 flex-shrink-0 mt-0.5 ${isExpanded ? 'rotate-90' : ''}`}>
+              <svg className="w-4 h-4 text-base-content/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-1">
-                <h3 className="font-semibold text-base">{component.title}</h3>
-                {category && (
-                  <span
-                    className="px-2 py-1 rounded-md text-xs font-medium"
-                    style={{
-                      backgroundColor: `${category.color}20`,
-                      color: category.color,
-                      borderColor: category.color,
-                      border: '1px solid'
-                    }}
-                  >
-                    {category.emoji} {category.label} • {typeInfo?.emoji} {typeInfo?.label || component.type}
-                  </span>
-                )}
-              </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-base mb-1 break-words">{component.title}</h3>
+              {category && (
+                <span
+                  className="inline-block px-2 py-1 rounded-md text-xs font-medium mb-1"
+                  style={{
+                    backgroundColor: `${category.color}20`,
+                    color: category.color,
+                    borderColor: category.color,
+                    border: '1px solid'
+                  }}
+                >
+                  {category.emoji} {category.label} • {typeInfo?.emoji} {typeInfo?.label || component.type}
+                </span>
+              )}
               <div className="text-xs text-base-content/50">
                 <div>Created: {new Date(component.createdAt).toLocaleDateString()}</div>
                 {component.updatedAt !== component.createdAt && (
@@ -229,12 +227,12 @@ const FeaturesPage: React.FC = () => {
             </div>
           </button>
 
-          <div className="flex gap-1 sm:gap-2 ml-2 sm:ml-4 shrink-0">
+          <div className="flex gap-1 ml-2 shrink-0">
             {isEditing ? (
               <>
                 <button
                   onClick={handleSaveEdit}
-                  className="btn btn-sm btn-primary"
+                  className="btn btn-sm btn-primary px-2"
                   style={{ color: getContrastTextColor('primary') }}
                   disabled={!editData.title.trim() || !editData.content.trim() || !editData.feature.trim()}
                   title="Save changes"
@@ -242,17 +240,15 @@ const FeaturesPage: React.FC = () => {
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span className="hidden sm:inline">Save</span>
                 </button>
                 <button
                   onClick={handleCancelEdit}
-                  className="btn btn-sm btn-ghost"
+                  className="btn btn-sm btn-ghost px-2"
                   title="Cancel editing"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
-                  <span className="hidden sm:inline">Cancel</span>
                 </button>
               </>
             ) : (
@@ -262,26 +258,24 @@ const FeaturesPage: React.FC = () => {
                     e.stopPropagation();
                     handleEditComponent(component);
                   }}
-                  className="btn btn-sm btn-ghost"
+                  className="btn btn-sm btn-ghost px-2"
                   title="Edit component"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                   </svg>
-                  <span className="hidden sm:inline">Edit</span>
                 </button>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     confirmDeleteComponent(component.id, component.title);
                   }}
-                  className="btn btn-sm btn-error btn-outline"
+                  className="btn btn-sm btn-error btn-outline px-2"
                   title="Delete component"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                   </svg>
-                  <span className="hidden sm:inline">Delete</span>
                 </button>
               </>
             )}
@@ -293,7 +287,7 @@ const FeaturesPage: React.FC = () => {
           <div className="mt-4 border-t border-base-content/20 pt-4">
             {isEditing ? (
               <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div className="form-control">
                     <label className="label">
                       <span className="label-text font-medium">Category</span>
@@ -305,7 +299,7 @@ const FeaturesPage: React.FC = () => {
                         const types = getTypesForCategory(newCategory);
                         setEditData({...editData, category: newCategory, type: types[0]?.value || ''});
                       }}
-                      className="select select-bordered select-sm"
+                      className="select select-bordered select-sm w-full"
                     >
                       {categories.map(cat => (
                         <option key={cat.value} value={cat.value}>
@@ -321,7 +315,7 @@ const FeaturesPage: React.FC = () => {
                     <select
                       value={editData.type}
                       onChange={(e) => setEditData({...editData, type: e.target.value})}
-                      className="select select-bordered select-sm"
+                      className="select select-bordered select-sm w-full"
                     >
                       {getTypesForCategory(editData.category).map(type => (
                         <option key={type.value} value={type.value}>
@@ -330,7 +324,7 @@ const FeaturesPage: React.FC = () => {
                       ))}
                     </select>
                   </div>
-                  <div className="form-control md:col-span-2">
+                  <div className="form-control sm:col-span-2">
                     <label className="label">
                       <span className="label-text font-medium">Title</span>
                     </label>
@@ -338,7 +332,7 @@ const FeaturesPage: React.FC = () => {
                       type="text"
                       value={editData.title}
                       onChange={(e) => setEditData({...editData, title: e.target.value})}
-                      className="input input-bordered input-sm"
+                      className="input input-bordered input-sm w-full"
                     />
                   </div>
                 </div>
@@ -366,8 +360,8 @@ const FeaturesPage: React.FC = () => {
                 </div>
               </div>
             ) : (
-              <div className="bg-base-200/40 rounded-lg p-4 border-2 border-base-content/20">
-                <pre className="whitespace-pre-wrap text-sm font-mono leading-relaxed">
+              <div className="bg-base-200/40 rounded-lg p-4 border-2 border-base-content/20 overflow-x-auto max-w-full">
+                <pre className="whitespace-pre-wrap text-sm font-mono leading-relaxed break-words max-w-full overflow-hidden">
                   {component.content}
                 </pre>
               </div>
@@ -379,7 +373,7 @@ const FeaturesPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 max-w-full overflow-hidden">
       {error && (
         <div className="alert alert-error shadow-md">
           <svg className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
@@ -392,7 +386,7 @@ const FeaturesPage: React.FC = () => {
       {/* Tab Content */}
       {activeFeaturesTab === 'graph' ? (
         // Graph Dashboard Tab
-        <div className="section-container">
+        <div className="section-container max-w-full">
           <div className="section-header">
             <div className="flex items-center gap-3">
               <div className="section-icon">🕸️</div>
@@ -433,7 +427,7 @@ const FeaturesPage: React.FC = () => {
         </div>
       ) : activeFeaturesTab === 'structure' ? (
         // Structure View Tab
-        <div className="section-container mb-4">
+        <div className="section-container mb-4 max-w-full">
           <div className="section-header">
             <div className="flex items-center gap-3">
               <div className="section-icon">🏗️</div>
@@ -451,12 +445,12 @@ const FeaturesPage: React.FC = () => {
                 <p className="text-sm text-base-content/60">Use the "Create" tab above to add your first component</p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-4 max-w-full">
                 {/* Featured sections */}
                 {featuredComponents.map(([feature, components]) => {
                   const isExpanded = expandedFeatures.has(feature);
                   return (
-                    <div key={feature} className="card-interactive p-0 overflow-hidden">
+                    <div key={feature} className="card-interactive p-0 overflow-hidden max-w-full">
                       <button
                         onClick={() => toggleFeatureExpanded(feature)}
                         className="w-full flex items-center justify-between p-4 hover:bg-base-200 transition-colors text-left"
@@ -482,7 +476,7 @@ const FeaturesPage: React.FC = () => {
 
                 {/* Ungrouped components */}
                 {ungroupedComponents.length > 0 && (
-                  <div className="card-interactive p-0 overflow-hidden">
+                  <div className="card-interactive p-0 overflow-hidden max-w-full">
                     <button
                       onClick={() => toggleFeatureExpanded('Ungrouped')}
                       className="w-full flex items-center justify-between p-4 hover:bg-base-200 transition-colors text-left"
@@ -510,7 +504,7 @@ const FeaturesPage: React.FC = () => {
         </div>
       ) : activeFeaturesTab === 'all' ? (
         // All Components Tab
-        <div className="section-container mb-4">
+        <div className="section-container mb-4 max-w-full">
           <div className="section-header">
             <div className="flex items-center gap-3">
               <div className="section-icon">🧩</div>
@@ -525,7 +519,7 @@ const FeaturesPage: React.FC = () => {
         </div>
       ) : (
         // Create New Tab
-        <div className="section-container mb-4">
+        <div className="section-container mb-4 max-w-full">
           <div className="section-header">
             <div className="flex items-center gap-3">
               <div className="section-icon">📝</div>
@@ -534,7 +528,7 @@ const FeaturesPage: React.FC = () => {
           </div>
           <div className="section-content">
             <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="form-control">
                   <label className="label">
                     <span className="label-text font-medium">Category</span>
@@ -546,7 +540,7 @@ const FeaturesPage: React.FC = () => {
                       const types = getTypesForCategory(newCategory);
                       setNewComponent({...newComponent, category: newCategory, type: types[0]?.value || ''});
                     }}
-                    className="select select-bordered"
+                    className="select select-bordered w-full"
                   >
                     {categories.map(cat => (
                       <option key={cat.value} value={cat.value}>
@@ -563,7 +557,7 @@ const FeaturesPage: React.FC = () => {
                   <select
                     value={newComponent.type}
                     onChange={(e) => setNewComponent({...newComponent, type: e.target.value})}
-                    className="select select-bordered"
+                    className="select select-bordered w-full"
                   >
                     {getTypesForCategory(newComponent.category).map(type => (
                       <option key={type.value} value={type.value}>
@@ -572,11 +566,11 @@ const FeaturesPage: React.FC = () => {
                     ))}
                   </select>
                   <label className="label">
-                    <span className="label-text-alt">{getTypesForCategory(newComponent.category).find(t => t.value === newComponent.type)?.description || ''}</span>
+                    <span className="label-text-alt break-words">{getTypesForCategory(newComponent.category).find(t => t.value === newComponent.type)?.description || ''}</span>
                   </label>
                 </div>
 
-                <div className="form-control md:col-span-2">
+                <div className="form-control sm:col-span-2">
                   <label className="label">
                     <span className="label-text font-medium">Title</span>
                   </label>
@@ -584,7 +578,7 @@ const FeaturesPage: React.FC = () => {
                     type="text"
                     value={newComponent.title}
                     onChange={(e) => setNewComponent({...newComponent, title: e.target.value})}
-                    className="input input-bordered text-sm"
+                    className="input input-bordered text-sm w-full"
                     placeholder="Enter component title..."
                   />
                 </div>
@@ -598,11 +592,11 @@ const FeaturesPage: React.FC = () => {
                   type="text"
                   value={newComponent.feature}
                   onChange={(e) => setNewComponent({...newComponent, feature: e.target.value})}
-                  className="input input-bordered text-sm"
+                  className="input input-bordered text-sm w-full"
                   placeholder="e.g., Authentication, User Management, Payment System"
                 />
                 <label className="label">
-                  <span className="label-text-alt">Feature name is required - components belong to features</span>
+                  <span className="label-text-alt break-words">Feature name is required - components belong to features</span>
                 </label>
               </div>
 
@@ -614,7 +608,7 @@ const FeaturesPage: React.FC = () => {
                 <textarea
                   value={newComponent.content}
                   onChange={(e) => setNewComponent({...newComponent, content: e.target.value})}
-                  className="textarea textarea-bordered h-[300px]"
+                  className="textarea textarea-bordered h-[300px] w-full"
                   placeholder="Enter your component content..."
                 />
               </div>

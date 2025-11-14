@@ -1100,7 +1100,7 @@ const AdminDashboardPage: React.FC = () => {
                     </button>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <input
                       type="text"
                       value={newsForm.title}
@@ -1110,7 +1110,7 @@ const AdminDashboardPage: React.FC = () => {
                       required
                       autoFocus
                     />
-                    
+
                     <select
                       className="select select-bordered select-sm w-full"
                       value={newsForm.type}

@@ -883,7 +883,7 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
                             placeholder="Optional description..."
                             className="textarea textarea-bordered textarea-xs w-full h-12 resize-none"
                           />
-                          <div className="grid grid-cols-2 gap-2">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             <select
                               value={editSubtaskData.priority}
                               onChange={(e) => setEditSubtaskData({ ...editSubtaskData, priority: e.target.value as any })}
@@ -1009,7 +1009,7 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
                       }}
                     />
 
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <select
                         className="select select-bordered select-sm w-full"
                         value={formData[`${step.id}_temp`]?.priority || 'medium'}

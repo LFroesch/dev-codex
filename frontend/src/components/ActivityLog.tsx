@@ -269,13 +269,13 @@ const ActivityLog: React.FC<ActivityLogProps> = ({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 max-w-full overflow-hidden">
       {showTitle && (
         <>
-          <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-xl p-2">Recent Activity</h3>
-            <div className="flex items-center gap-2 border-thick rounded-lg p-2">
-              <span className="text-xs bg-success border-thick h-7 rounded-lg p-1" style={{ color: getContrastTextColor('success') }}>{total} Total</span>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+            <h3 className="font-semibold text-base p-2">Recent Activity</h3>
+            <div className="flex items-center flex-wrap gap-2 border-thick rounded-lg p-2">
+              <span className="text-xs bg-success border-thick h-7 rounded-lg p-1 whitespace-nowrap" style={{ color: getContrastTextColor('success') }}>{total} Total</span>
               {autoRefresh && (
                 <div className="flex items-center gap-1">
                   <div className="w-2 h-2 bg-success rounded-full animate-pulse"></div>
@@ -415,49 +415,95 @@ const ActivityLog: React.FC<ActivityLogProps> = ({
         {activities.map((activity) => (
           <div
             key={activity._id}
-            className="flex gap-3 p-3 bg-base-200/50 min-h-[70px] rounded-lg border-thick hover:bg-base-200/50 items-center"
+            className="p-3 bg-base-200/50 min-h-[70px] rounded-lg border-thick hover:bg-base-200/50 max-w-full"
           >
-            <div className="flex-shrink-0 flex items-center gap-1 border-thick rounded-lg p-2 bg-base-content/20 w-14 h-10 justify-center text-lg">
-              {getActionIcon(activity.action)}
-              <span className="text-xs">{getResourceTypeIcon(activity.resourceType)}</span>
-            </div>
-            
-            <div className="flex-1 min-w-0">
+            {/* Mobile Layout: Vertical with badges at bottom corners */}
+            <div className="flex sm:hidden flex-col">
+              {/* Top: Main content */}
+              <div className="flex-1 min-w-0 mb-3">
+                <p className="text-xs text-base-content break-words">
+                  {formatActivityMessage(activity)}
+                </p>
+
+                {activity.details?.field && (
+                  <div className="mt-2 text-xs text-base-content/60">
+                    <div className="font-medium mb-1">{activity.details?.field}:</div>
+                    {(activity.details?.oldValue !== undefined || activity.details?.newValue !== undefined) && (
+                      <div className="flex flex-col gap-1 items-start">
+                        {activity.details?.oldValue !== undefined && (
+                          <div className="line-through break-words">
+                            "{formatFieldValue(activity.details?.field, activity.details?.oldValue).slice(0, 30)}"
+                          </div>
+                        )}
+                        {activity.details?.oldValue !== undefined && activity.details?.newValue !== undefined && (
+                          <div className="text-base-content/40">↓</div>
+                        )}
+                        {activity.details?.newValue !== undefined && (
+                          <span className="inline-block text-base-content bg-success border-thick rounded p-1 break-words" style={{ color: getContrastTextColor('success') }}>
+                            "{formatFieldValue(activity.details?.field, activity.details?.newValue).slice(0, 30)}"
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Bottom: Resource type badge (left) and Date badge (right) */}
               <div className="flex items-center justify-between gap-2">
-                <div className="flex-1 flex flex-col justify-center">
-                  <p className="text-sm text-base-content">
-                    {formatActivityMessage(activity)}
-                  </p>
-                  
-                  {activity.details?.field && (
-                    <div className="mt-1 text-xs text-base-content/60">
-                      <span className="font-medium">{activity.details?.field}:</span>
-                      {(activity.details?.oldValue !== undefined || activity.details?.newValue !== undefined) && (
-                        <span className="ml-1">
-                          {activity.details?.oldValue !== undefined && (
-                            <span className="line-through">
-                              "{formatFieldValue(activity.details?.field, activity.details?.oldValue).slice(0, 40)}"
-                            </span>
-                          )}
-                          {activity.details?.oldValue !== undefined && activity.details?.newValue !== undefined && (
-                            <span className='m-1'> → </span>
-                          )}
-                          {activity.details?.newValue !== undefined && (
-                            <span className="text-base-content bg-success border-thick rounded p-1" style={{ color: getContrastTextColor('success') }}>
-                              "{formatFieldValue(activity.details?.field, activity.details?.newValue).slice(0, 40)}"
-                            </span>
-                          )}
-                        </span>
-                      )}
-                    </div>
-                  )}
+                <div className="flex-shrink-0 flex items-center gap-1 border-thick rounded-lg p-2 bg-base-content/20 w-12 h-10 justify-center text-base">
+                  {getActionIcon(activity.action)}
+                  <span className="text-xs">{getResourceTypeIcon(activity.resourceType)}</span>
                 </div>
-                
-                <div className="flex items-center border-thick rounded-lg p-1 bg-primary gap-2 font-semibold text-sm text-neutral-content">
-                  <span title={new Date(activity.timestamp).toLocaleString()} style={{ color: getContrastTextColor('primary') }}>
+
+                <div className="flex items-center border-thick rounded-lg p-1 bg-primary gap-2 font-semibold text-xs text-neutral-content flex-shrink-0">
+                  <span title={new Date(activity.timestamp).toLocaleString()} className="whitespace-nowrap" style={{ color: getContrastTextColor('primary') }}>
                     {getRelativeTime(activity.timestamp)}
                   </span>
                 </div>
+              </div>
+            </div>
+
+            {/* Desktop Layout: Original horizontal layout */}
+            <div className="hidden sm:flex gap-2 sm:gap-3 items-center">
+              <div className="flex-shrink-0 flex items-center gap-1 border-thick rounded-lg p-2 bg-base-content/20 w-14 h-10 justify-center text-lg">
+                {getActionIcon(activity.action)}
+                <span className="text-xs">{getResourceTypeIcon(activity.resourceType)}</span>
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-base-content break-words">
+                  {formatActivityMessage(activity)}
+                </p>
+
+                {activity.details?.field && (
+                  <div className="mt-1 text-xs text-base-content/60">
+                    <span className="font-medium">{activity.details?.field}:</span>
+                    {(activity.details?.oldValue !== undefined || activity.details?.newValue !== undefined) && (
+                      <span className="ml-1">
+                        {activity.details?.oldValue !== undefined && (
+                          <span className="line-through">
+                            "{formatFieldValue(activity.details?.field, activity.details?.oldValue).slice(0, 30)}"
+                          </span>
+                        )}
+                        {activity.details?.oldValue !== undefined && activity.details?.newValue !== undefined && (
+                          <span className='mx-1'> → </span>
+                        )}
+                        {activity.details?.newValue !== undefined && (
+                          <span className="inline-block text-base-content bg-success border-thick rounded p-1" style={{ color: getContrastTextColor('success') }}>
+                            "{formatFieldValue(activity.details?.field, activity.details?.newValue).slice(0, 30)}"
+                          </span>
+                        )}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center border-thick rounded-lg p-1 bg-primary gap-2 font-semibold text-sm text-neutral-content flex-shrink-0">
+                <span title={new Date(activity.timestamp).toLocaleString()} className="whitespace-nowrap" style={{ color: getContrastTextColor('primary') }}>
+                  {getRelativeTime(activity.timestamp)}
+                </span>
               </div>
             </div>
           </div>

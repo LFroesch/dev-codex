@@ -202,21 +202,21 @@ const TodoItem: React.FC<TodoItemProps> = ({
   }
 
   return (
-    <div className={`group p-3 flex-1 h-full ${
+    <div className={`group p-3 flex-1 h-full max-w-full ${
       todo.completed ? 'opacity-70' : ''
     }`}>
-      <div className="flex items-start gap-3">
+      <div className="flex items-start gap-2 min-w-0">
         <input
           type="checkbox"
           checked={todo.completed}
           onChange={handleToggleComplete}
           className="checkbox checkbox-primary mt-1 flex-shrink-0"
         />
-        
+
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex flex-wrap items-center gap-2 mb-2">
             <h3
-              className={`font-semibold text-lg leading-tight px-2 py-1 rounded-md bg-primary inline-block w-fit border-thick ${
+              className={`font-semibold text-base sm:text-lg leading-tight px-2 py-1 rounded-md bg-primary border-thick break-words ${
                 todo.completed ? 'line-through text-base-content/60' : ''
               }`}
               style={{
@@ -225,25 +225,25 @@ const TodoItem: React.FC<TodoItemProps> = ({
             >
               {todo.title}
             </h3>
-            
-            <span className={`text-sm ${getPriorityColor(todo.priority || 'medium')}`}>
+
+            <span className={`text-sm flex-shrink-0 ${getPriorityColor(todo.priority || 'medium')}`}>
               {getPriorityIcon(todo.priority || 'medium')}
             </span>
-            
+
             {hasSubtasks && (
-              <span className="text-sm font-semibold bg-info/20 px-2 py-0.5 rounded-full border-thick border-info" style={{color:getContrastTextColor("info/20")}}>
+              <span className="text-xs sm:text-sm font-semibold bg-info/20 px-2 py-0.5 rounded-full border-thick border-info flex-shrink-0" style={{color:getContrastTextColor("info/20")}}>
                 {completedSubtasks}/{subtasks.length}
               </span>
             )}
 
             {isOverdue(todo.dueDate) && !todo.completed && (
-              <span className="text-sm font-semibold bg-error/20 px-2 py-0.5 rounded-full border-thick border-error" style={{color:getContrastTextColor("error/20")}}>
+              <span className="text-xs sm:text-sm font-semibold bg-error/20 px-2 py-0.5 rounded-full border-thick border-error flex-shrink-0" style={{color:getContrastTextColor("error/20")}}>
                 Overdue
               </span>
             )}
 
             {!isOverdue(todo.dueDate) && isDueSoon(todo.dueDate) && (
-              <span className="text-sm font-semibold bg-warning/20 px-2 py-0.5 rounded-full border-thick border-warning" style={{color:getContrastTextColor("warning/20")}}>
+              <span className="text-xs sm:text-sm font-semibold bg-warning/20 px-2 py-0.5 rounded-full border-thick border-warning flex-shrink-0" style={{color:getContrastTextColor("warning/20")}}>
                 Due soon
               </span>
             )}
@@ -269,47 +269,47 @@ const TodoItem: React.FC<TodoItemProps> = ({
           )}
         </div>
 
-        <div className="group-hover:opacity-100 transition-opacity flex items-center gap-1">
+        <div className="opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity flex flex-col lg:flex-row items-center gap-1 flex-shrink-0">
           {!isSubtask && canEdit && (
             <button
               onClick={() => setShowAddSubtask(true)}
-              className="btn btn-ghost btn-xs border-2 border-base-300 bg-base-200"
+              className="btn btn-ghost btn-xs border-2 border-base-300 bg-base-200 px-2"
               title="Add Subtask"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
             </button>
           )}
-          
+
           {todo.completed && (
             <button
               onClick={handleArchive}
-              className="btn btn-ghost btn-xs border-2 border-base-300 bg-base-200"
+              className="btn btn-ghost btn-xs border-2 border-base-300 bg-base-200 px-2"
               title="Archive"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8l6 6 6-6" />
               </svg>
             </button>
           )}
-          
+
           <button
             onClick={() => setIsEditing(true)}
-            className="btn btn-ghost btn-xs border-2 border-base-300 bg-base-200"
+            className="btn btn-ghost btn-xs border-2 border-base-300 bg-base-200 px-2"
             title="Edit"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>
           </button>
-          
+
           <button
             onClick={() => setShowDeleteConfirm(true)}
-            className="btn btn-ghost btn-xs text-error hover:bg-error hover:text-error-content border-2 border-base-300 bg-base-200"
+            className="btn btn-ghost btn-xs text-error hover:bg-error hover:text-error-content border-2 border-base-300 bg-base-200 px-2"
             title="Delete"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
             </svg>
           </button>

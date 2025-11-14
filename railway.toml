@@ -1,6 +1,14 @@
 [build]
 builder = "nixpacks"
 buildCommand = "npm run build"
+# Watch only source files to avoid unnecessary rebuilds
+watchPatterns = [
+  "backend/src/**",
+  "frontend/src/**",
+  "package.json",
+  "backend/package.json",
+  "frontend/package.json"
+]
 
 [deploy]
 startCommand = "npm start"
@@ -8,6 +16,18 @@ healthcheckPath = "/api/ready"
 healthcheckTimeout = 100
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 10
+# Graceful shutdown timeout
+numReplicas = 1
+# Region - change to your preferred region
+# Options: us-west1, us-east4, eu-west1, ap-south1, etc.
+region = "us-west1"
+
+# Resource limits (adjust based on your Railway plan)
+[deploy.resources]
+# Set memory limit (in MB) - 10-50 users
+memoryLimit = 1024
+# CPU limit (in millicores) - 1000 = 1 vCPU
+cpuLimit = 1000
 
 [env]
 NODE_ENV = "production"

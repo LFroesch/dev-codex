@@ -783,10 +783,6 @@ const passwordResetRateLimit = createRateLimit({
 
 router.post('/forgot-password', passwordResetRateLimit, validatePasswordReset, async (req, res) => {
   try {
-    if (!transporter) {
-      return res.status(501).json({ message: 'Email service not configured' });
-    }
-
     const { email } = req.body;
 
     const user = await User.findOne({ email });
@@ -808,17 +804,39 @@ router.post('/forgot-password', passwordResetRateLimit, validatePasswordReset, a
 
     const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5002'}/reset-password?token=${rawToken}`;
 
-    await transporter.sendMail({
-      to: user.email,
-      subject: 'Password Reset Request',
-      html: `
-        <h2>Password Reset Request</h2>
-        <p>You requested a password reset. Click the link below to reset your password:</p>
-        <a href="${resetUrl}">Reset Password</a>
-        <p>This link will expire in 15 minutes.</p>
-        <p>If you didn't request this, please ignore this email.</p>
-      `
-    });
+    // Use Resend API instead of SMTP
+    if (process.env.RESEND_API_KEY) {
+      const { Resend } = require('resend');
+      const resend = new Resend(process.env.RESEND_API_KEY);
+
+      await resend.emails.send({
+        from: 'onboarding@resend.dev',
+        to: user.email,
+        subject: 'Password Reset Request',
+        html: `
+          <h2>Password Reset Request</h2>
+          <p>You requested a password reset. Click the link below to reset your password:</p>
+          <a href="${resetUrl}">Reset Password</a>
+          <p>This link will expire in 15 minutes.</p>
+          <p>If you didn't request this, please ignore this email.</p>
+        `
+      });
+    } else if (transporter) {
+      // Fallback to SMTP for local dev
+      await transporter.sendMail({
+        to: user.email,
+        subject: 'Password Reset Request',
+        html: `
+          <h2>Password Reset Request</h2>
+          <p>You requested a password reset. Click the link below to reset your password:</p>
+          <a href="${resetUrl}">Reset Password</a>
+          <p>This link will expire in 15 minutes.</p>
+          <p>If you didn't request this, please ignore this email.</p>
+        `
+      });
+    } else {
+      throw new Error('No email service configured');
+    }
 
     res.json({ message: 'If that email exists, a reset link has been sent' });
   } catch (error) {

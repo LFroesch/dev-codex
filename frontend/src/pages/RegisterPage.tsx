@@ -155,7 +155,7 @@ const RegisterPage: React.FC = () => {
           )}
           
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="form-control">
                 <label className="label">
                   <span className="label-text">First Name</span>
@@ -170,7 +170,7 @@ const RegisterPage: React.FC = () => {
                   required
                 />
               </div>
-              
+
               <div className="form-control">
                 <label className="label">
                   <span className="label-text">Last Name</span>

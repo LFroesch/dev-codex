@@ -224,7 +224,7 @@ const FeatureAdoption: React.FC<FeatureAdoptionProps> = ({ days = 30 }) => {
                       </div>
 
                       {/* Stats Grid */}
-                      <div className="grid grid-cols-3 gap-2 mb-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mb-3">
                         <div className="bg-base-300 rounded p-2">
                           <div className="text-xs text-base-content/60">Users</div>
                           <div className="font-bold">{feature.totalUsers.toLocaleString()}</div>

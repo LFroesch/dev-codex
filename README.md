@@ -1,8 +1,8 @@
 # Dev Codex
 
-**Project management at the speed of thought.**
+**Project management that moves at the speed of thought—powered by AI collaboration.**
 
-Stop clicking through UIs. Use a terminal. Or don't—it's optional. Either way, manage projects faster than ever!
+Build your entire project structure in seconds. Export context to any LLM. Import batch commands. Iterate endlessly. The fastest way to go from idea to execution.
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-20232A?style=flat&logo=react&logoColor=61DAFB)](https://reactjs.org/)
@@ -33,20 +33,27 @@ Stop clicking through UIs. Use a terminal. Or don't—it's optional. Either way,
 
 ---
 
-## The Magic: LLM-Powered Workflow
+## Why Dev Codex?
+
+**The only project manager designed for the AI era.** Instead of manually clicking through forms, you collaborate with LLMs to build and iterate on your project structure at machine speed.
+
+### The Magic: LLM-Powered Workflow
+
+[GIF #1: Full LLM workflow - 25 seconds]
+*Coming soon: Watch the complete loop from export → LLM → batch import*
 
 ![Dev Codex Terminal](media/DevCodex.png)
 
-**Dev Codex has a full CLI built into the browser.** Here's the workflow that sets it apart:
+**Dev Codex has a full CLI built into the browser.** This isn't just a feature—it's a completely different way to work:
 
-1. **Export your project context to any LLM:**
+#### 1. Export Your Project Context to Any LLM
 ```bash
 /summary prompt all          # Full project context
 /summary json todos         # Just your todos
 /llm                        # Get command syntax reference
 ```
 
-2. **Paste into ChatGPT/Claude:**
+#### 2. Paste Into ChatGPT/Claude
 ```
 "Build a recipe app with auth, CRUD, and meal planning.
 Todos: auth setup, recipe model, UI, filters
@@ -56,7 +63,7 @@ Invite sarah@team.com as editor
 [paste /llm output for command syntax]"
 ```
 
-3. **LLM generates batch commands. Copy and paste back:**
+#### 3. LLM Generates Batch Commands → Copy & Paste Back
 ```bash
 /add todo --title="Setup authentication" --priority=high --status=in_progress
 /add todo --title="Create recipe model" --priority=high
@@ -65,50 +72,123 @@ Invite sarah@team.com as editor
 ...and 10 more commands
 ```
 
-**Instant project structure.** Then export again with `/summary prompt all` for iteration. It's bidirectional.
+**Result:** Instant project structure. Then export again with `/summary prompt all` to iterate. It's bidirectional planning at the speed of thought.
 
-*Future: Paid in-app AI. For now, BYO LLM key.*
+*Future: Paid in-app AI integration. For now, BYO LLM API key.*
+
+---
+
+### Terminal Autocomplete
+
+[GIF #2: Autocomplete in action - 10 seconds]
+*Coming soon: Watch guided autocomplete for fast, error-free commands*
+
+Full autocomplete with validation and syntax hints as you type. Feels like a modern CLI, not a chatbot.
+
+---
+
+### Speed Demo
+
+[GIF #3: 10 commands in 2 seconds - 8 seconds]
+*Coming soon: Paste 10 commands, hit enter, watch instant execution*
+
+**Paste. Execute. Done.** No clicking. No forms. No waiting.
+
+---
 
 ### Other Ways to Use the Terminal
 
-- **Interactive Wizards:** `/wizard project` → guided forms
-- **Learn the Syntax:** Autocomplete, validation, command chaining [Full Terminal Guide →](/md_files/READMEs/TERMINAL.md#available-commands-50)
-- **Skip It Entirely:** Use the traditional UI—all features available via clicks
+**Don't like terminals?** No problem:
+
+- **Interactive Wizards:** `/wizard project` → guided forms for everything
+- **Full Autocomplete:** Type `/add t` → autocomplete suggests `todo` → tab → `--title=""` → cursor jumps inside quotes
+- **Traditional UI:** Every single feature works via point-and-click too
 
 ---
 
 ## Core Features
 
-**Projects:**
-- Todos, notes, dev logs, components (with relationships), tech stack tracking
-- Import/Export JSON (100MB, sanitized)
+[GIF #4: Component Graph - 15 seconds]
+*Coming soon: Watch relationship visualization, drag components, zoom & navigate*
 
-**Team Collaboration:**
-- Owner/Editor/Viewer roles, email invites, real-time notifications
-- Note locking (10-min heartbeat), Socket.io updates, activity logs
+### **Projects & Planning**
+- **Todos** with subtasks, priorities, due dates, assignments
+- **Notes** with real-time locking (prevent edit conflicts)
+- **Dev Logs** for daily progress tracking
+- **Components** with relationship graph visualization (ReactFlow)
+- **Tech Stack** tracking (technologies, packages, deployment info)
+- **Ideas** - Personal idea parking lot (separate from projects)
+- **Import/Export** JSON (100MB limit, XSS sanitized)
 
-**Analytics:**
-- Real-time session tracking (10s heartbeats, 5-min idle detection)
-- Per-project time breakdown, heatmaps, leaderboards
+### **Terminal Power**
+- **50+ Commands** - Add, view, edit, delete, search anything
+- **Batch Execution** - Chain 10 commands with `&&` or newlines
+- **Full Autocomplete** - Tab completion for commands, flags, and values
+- **Interactive Wizards** - Guided forms when you need them (`/wizard`)
+- **Smart Search** - Full-text search across all content (`/search`)
+- **Stale Reminders** - Surface forgotten todos/notes (`/stale`)
+- **Workflow Commands** - `/today`, `/week`, `/standup` for daily planning
+- **Summary Export** - 4 formats (markdown, JSON, AI prompt, text)
 
-**Public Discovery:**
-- Custom slugs: `/public/project/@username/project-slug`
-- Granular visibility control, searchable project directory
+### **Team Collaboration**
+- **Roles:** Owner / Editor / Viewer permissions
+- **Email Invites** with token-based acceptance
+- **Real-time Updates** via Socket.io (live notifications, activity feed)
+- **Note Locking** with 10-min heartbeat (prevents conflicts)
+- **Activity Logs** - See who's working on what, when
+- **Team Analytics** - Time tracking per project, leaderboards
 
-**Admin Tools:**
-- User management, support tickets, analytics, database cleanup, news posts
+### **Analytics & Insights**
+- **Session Tracking:** 10s heartbeats, 5-min idle detection
+- **Time Breakdown:** Per-project hours, daily/weekly summaries
+- **Heatmaps:** Visualize when you work on each project
+- **Leaderboards:** Team productivity rankings
+- **Feature Adoption:** Track which features users actually use
+
+### **Public Sharing**
+- **Custom Slugs:** `/public/@username/project-slug`
+- **Granular Control:** Choose what's visible (todos, notes, components, etc.)
+- **Discover Page:** Searchable directory of public projects
+
+### **Admin Tools**
+- User management (ban/unban, plan changes, password resets, refunds)
+- Custom notification creator
+- Support ticket system with Kanban board
+- Database cleanup & optimization tools
+- Analytics dashboard (conversion rates, user growth, feature adoption)
+- News/announcement system
 
 ---
 
 ## Tech Stack
 
-**Frontend:** React 18 + TypeScript + Vite | Tailwind + DaisyUI | TanStack Query | Socket.io | ReactFlow
+**Frontend:**
+- React 18 + TypeScript + Vite
+- Tailwind CSS + DaisyUI (themes)
+- TanStack Query (data fetching)
+- Socket.io Client (real-time)
+- ReactFlow (component graph visualization)
+- @dnd-kit (drag & drop)
 
-**Backend:** Node.js + Express + TypeScript | MongoDB (30+ indexes, TTL) | JWT + Passport + Google OAuth | Stripe | Socket.io | Nodemailer | Sentry | Jest (434 tests, 35% coverage)
+**Backend:**
+- Node.js + Express + TypeScript
+- MongoDB with 30+ indexes, TTL collections
+- JWT + Passport (Google OAuth)
+- Stripe (billing)
+- Socket.io (real-time updates)
+- Resend (transactional emails)
+- Sentry (error tracking)
+- Jest (1000+ tests, ~50% coverage)
 
-**Security:** bcrypt | CSRF protection | XSS sanitization | Rate limiting | Helmet headers | Input validation
+**Security:**
+- bcrypt (password hashing)
+- CSRF protection (csrf-csrf)
+- XSS sanitization (DOMPurify)
+- Rate limiting (express-rate-limit)
+- Helmet (security headers)
+- Input validation & sanitization
 
-**API:** 100+ RESTful endpoints—[view full API docs](md_files/READMEs/API.md#complete-api-100-endpoints)
+**API:** 100+ RESTful endpoints—[view full API docs](md_files/READMEs/API.md)
 
 ---
 
@@ -141,15 +221,17 @@ railway login && railway init && railway up
 - `SELF_HOSTED=true` (disables rate limits & billing)
 
 **Optional:**
-- `SMTP_*` for email features
-- `GOOGLE_*` for OAuth
-- `SENTRY_DSN` for monitoring
+- Email: `SMTP_*` **OR** `RESEND_API_KEY` (pick one or both - production uses Resend, self-hosted can use either)
+- `GOOGLE_CLIENT_ID` & `GOOGLE_CLIENT_SECRET` for OAuth login
+- `STRIPE_*` for billing (only needed if not self-hosted)
+- `SENTRY_DSN` for error monitoring
 
 **What `SELF_HOSTED=true` does:**
 - ✅ Unlimited projects, team members, requests
 - ✅ No billing/subscription features
 - ✅ No rate limiting
-- ✅ SMTP & Stripe become optional
+- ✅ Stripe becomes optional (billing disabled)
+- ✅ Email becomes optional (but recommended for invitations/password resets)
 
 [Full deployment guide →](/md_files/READMEs/DEPLOYMENT.md#self-hosted-deployment)
 
@@ -162,7 +244,7 @@ railway login && railway init && railway up
 **Hosted Version:**
 | Plan | Projects | Team Members | Terminal Commands | Analytics Retention |
 |------|----------|--------------|-------------------|---------------------|
-| **Free** | 3 | 3/project | ~10/min | 7 days |
+| **Free** | 3 | 3/project | ~10/min | 30 days |
 | **Pro** | 20 | 10/project | 60/min | 90 days |
 | **Premium** | Unlimited | Unlimited | 120/min | 365 days |
 

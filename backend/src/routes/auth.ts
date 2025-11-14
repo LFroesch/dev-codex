@@ -3,7 +3,6 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
-import nodemailer from 'nodemailer';
 import crypto from 'crypto';
 import dotenv from 'dotenv';
 import { User } from '../models/User';
@@ -14,6 +13,7 @@ import { Project } from '../models/Project';
 import Notification from '../models/Notification';
 import { authRateLimit, createRateLimit } from '../middleware/rateLimit';
 import { validateUserRegistration, validateUserLogin, validatePasswordReset } from '../middleware/validation';
+import { sendEmail } from '../services/emailService';
 
 dotenv.config();
 
@@ -175,21 +175,6 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
       return done(error, undefined);
     }
   }));
-}
-
-// Email transporter configuration (optional)
-let transporter: any = null;
-
-if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
-  transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: parseInt(process.env.SMTP_PORT || '587'),
-    secure: false,
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS
-    }
-  });
 }
 
 // Check username availability - rate limited to prevent enumeration attacks
@@ -804,39 +789,21 @@ router.post('/forgot-password', passwordResetRateLimit, validatePasswordReset, a
 
     const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5002'}/reset-password?token=${rawToken}`;
 
-    // Use Resend API instead of SMTP
-    if (process.env.RESEND_API_KEY) {
-      const { Resend } = require('resend');
-      const resend = new Resend(process.env.RESEND_API_KEY);
+    // Send password reset email (tries Resend first, falls back to SMTP)
+    const htmlContent = `
+      <h2>Password Reset Request</h2>
+      <p>You requested a password reset. Click the link below to reset your password:</p>
+      <a href="${resetUrl}">Reset Password</a>
+      <p>This link will expire in 15 minutes.</p>
+      <p>If you didn't request this, please ignore this email.</p>
+    `;
 
-      await resend.emails.send({
-        from: 'noreply@dev-codex.com',
-        to: user.email,
-        subject: 'Password Reset Request',
-        html: `
-          <h2>Password Reset Request</h2>
-          <p>You requested a password reset. Click the link below to reset your password:</p>
-          <a href="${resetUrl}">Reset Password</a>
-          <p>This link will expire in 15 minutes.</p>
-          <p>If you didn't request this, please ignore this email.</p>
-        `
-      });
-    } else if (transporter) {
-      // Fallback to SMTP for local dev
-      await transporter.sendMail({
-        to: user.email,
-        subject: 'Password Reset Request',
-        html: `
-          <h2>Password Reset Request</h2>
-          <p>You requested a password reset. Click the link below to reset your password:</p>
-          <a href="${resetUrl}">Reset Password</a>
-          <p>This link will expire in 15 minutes.</p>
-          <p>If you didn't request this, please ignore this email.</p>
-        `
-      });
-    } else {
-      throw new Error('No email service configured');
-    }
+    await sendEmail({
+      to: user.email,
+      subject: 'Password Reset Request',
+      text: `Password Reset Request\n\nYou requested a password reset. Visit this link to reset your password:\n${resetUrl}\n\nThis link will expire in 15 minutes.\n\nIf you didn't request this, please ignore this email.`,
+      html: htmlContent
+    });
 
     res.json({ message: 'If that email exists, a reset link has been sent' });
   } catch (error) {

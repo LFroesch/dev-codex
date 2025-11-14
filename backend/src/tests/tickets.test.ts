@@ -1,14 +1,18 @@
+// Mock email service
+jest.mock('../services/emailService', () => ({
+  sendEmail: jest.fn().mockResolvedValue(undefined)
+}));
+
 import request from 'supertest';
 import { Ticket } from '../models/Ticket';
 import { User } from '../models/User';
 import authRoutes from '../routes/auth';
 import ticketRoutes from '../routes/tickets';
 import bcrypt from 'bcryptjs';
-import { createTestApp, createAuthenticatedUser, setupTestEnv, setupNodemailerMock, expectSuccess } from './utils';
+import { createTestApp, createAuthenticatedUser, setupTestEnv, expectSuccess } from './utils';
 
-// Setup environment and mocks
+// Setup environment
 setupTestEnv();
-setupNodemailerMock();
 
 // Create test app using utility
 const app = createTestApp({

@@ -11,7 +11,7 @@ import { requireAuth, AuthRequest } from '../middleware/auth';
 import { PLAN_LIMITS } from '../config/planLimits';
 import { CleanupService } from '../services/cleanupService';
 import NotificationService from '../services/notificationService';
-import nodemailer from 'nodemailer';
+import { sendEmail } from '../services/emailService';
 
 const router = express.Router();
 
@@ -22,19 +22,6 @@ if (process.env.STRIPE_SECRET_KEY) {
     apiVersion: '2025-07-30.basil',
   });
 }
-
-// Email configuration
-const createTransporter = () => {
-  return nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.SMTP_PORT || '587'),
-    secure: false,
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS
-    }
-  });
-};
 
 // Admin middleware
 const adminMiddleware = async (req: AuthRequest, res: any, next: any) => {
@@ -441,47 +428,42 @@ async function sendUnlockNotifications(userId: string, unlockedProjects: any[], 
 // Helper to send email notifications
 async function sendProjectsEmail(user: any, projects: any[], planTier: string, type: 'locked' | 'unlocked') {
   try {
-    const transporter = createTransporter();
     const projectList = projects.map(p => `  • ${p.name}`).join('\n');
 
     if (type === 'locked') {
-      const mailOptions = {
-        from: process.env.SMTP_FROM || process.env.SMTP_USER,
-        to: user.email,
-        subject: `${projects.length} Project${projects.length > 1 ? 's' : ''} Locked - Plan Change`,
-        html: `
-          <h2>Projects Locked Due to Plan Change</h2>
-          <p>Hi ${user.firstName},</p>
-          <p>Your plan has been changed to <strong>${planTier}</strong>. As a result, ${projects.length} project${projects.length > 1 ? 's have' : ' has'} been locked.</p>
-          <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
-            <strong>Locked Projects:</strong><br>
-            <pre style="margin: 10px 0;">${projectList}</pre>
-          </div>
-          <p>These projects are in read-only mode. To unlock them, upgrade your plan.</p>
-          <p><a href="${process.env.FRONTEND_URL || 'http://localhost:5002'}/billing" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Manage Subscription</a></p>
-          <p>Best regards,<br>Dev Codex Team</p>
-        `
-      };
-      await transporter.sendMail(mailOptions);
+      const subject = `${projects.length} Project${projects.length > 1 ? 's' : ''} Locked - Plan Change`;
+      const html = `
+        <h2>Projects Locked Due to Plan Change</h2>
+        <p>Hi ${user.firstName},</p>
+        <p>Your plan has been changed to <strong>${planTier}</strong>. As a result, ${projects.length} project${projects.length > 1 ? 's have' : ' has'} been locked.</p>
+        <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+          <strong>Locked Projects:</strong><br>
+          <pre style="margin: 10px 0;">${projectList}</pre>
+        </div>
+        <p>These projects are in read-only mode. To unlock them, upgrade your plan.</p>
+        <p><a href="${process.env.FRONTEND_URL || 'http://localhost:5002'}/billing" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Manage Subscription</a></p>
+        <p>Best regards,<br>Dev Codex Team</p>
+      `;
+      const text = `Projects Locked Due to Plan Change\n\nHi ${user.firstName},\n\nYour plan has been changed to ${planTier}. As a result, ${projects.length} project${projects.length > 1 ? 's have' : ' has'} been locked.\n\nLocked Projects:\n${projectList}\n\nThese projects are in read-only mode. To unlock them, upgrade your plan.\n\nManage your subscription: ${process.env.FRONTEND_URL || 'http://localhost:5002'}/billing\n\nBest regards,\nDev Codex Team`;
+
+      await sendEmail({ to: user.email, subject, text, html });
     } else {
-      const mailOptions = {
-        from: process.env.SMTP_FROM || process.env.SMTP_USER,
-        to: user.email,
-        subject: `${projects.length} Project${projects.length > 1 ? 's' : ''} Unlocked - Welcome Back!`,
-        html: `
-          <h2>Projects Unlocked - Plan Upgrade</h2>
-          <p>Hi ${user.firstName},</p>
-          <p>Great news! Your plan has been upgraded to <strong>${planTier}</strong>. ${projects.length} project${projects.length > 1 ? 's have' : ' has'} been unlocked.</p>
-          <div style="background: #e8f5e9; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #4caf50;">
-            <strong>Unlocked Projects:</strong><br>
-            <pre style="margin: 10px 0;">${projectList}</pre>
-          </div>
-          <p>You now have full access to these projects!</p>
-          <p><a href="${process.env.FRONTEND_URL || 'http://localhost:5002'}/projects" style="background: #4caf50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">View Your Projects</a></p>
-          <p>Best regards,<br>Dev Codex Team</p>
-        `
-      };
-      await transporter.sendMail(mailOptions);
+      const subject = `${projects.length} Project${projects.length > 1 ? 's' : ''} Unlocked - Welcome Back!`;
+      const html = `
+        <h2>Projects Unlocked - Plan Upgrade</h2>
+        <p>Hi ${user.firstName},</p>
+        <p>Great news! Your plan has been upgraded to <strong>${planTier}</strong>. ${projects.length} project${projects.length > 1 ? 's have' : ' has'} been unlocked.</p>
+        <div style="background: #e8f5e9; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #4caf50;">
+          <strong>Unlocked Projects:</strong><br>
+          <pre style="margin: 10px 0;">${projectList}</pre>
+        </div>
+        <p>You now have full access to these projects!</p>
+        <p><a href="${process.env.FRONTEND_URL || 'http://localhost:5002'}/projects" style="background: #4caf50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">View Your Projects</a></p>
+        <p>Best regards,<br>Dev Codex Team</p>
+      `;
+      const text = `Projects Unlocked - Plan Upgrade\n\nHi ${user.firstName},\n\nGreat news! Your plan has been upgraded to ${planTier}. ${projects.length} project${projects.length > 1 ? 's have' : ' has'} been unlocked.\n\nUnlocked Projects:\n${projectList}\n\nYou now have full access to these projects!\n\nView your projects: ${process.env.FRONTEND_URL || 'http://localhost:5002'}/projects\n\nBest regards,\nDev Codex Team`;
+
+      await sendEmail({ to: user.email, subject, text, html });
     }
   } catch (error) {
     console.error(`Failed to send ${type} email:`, error);
@@ -851,35 +833,36 @@ router.put('/tickets/:ticketId', async (req: AuthRequest, res) => {
       try {
         const user = ticket.userId as any;
         const admin = await User.findById(adminUserId);
-        const transporter = createTransporter();
-        
+
         // Email to user (if there's an admin response)
         if (adminResponse) {
-          const userMailOptions = {
-            from: process.env.SMTP_FROM || process.env.SMTP_USER,
+          const userHtml = `
+            <h2>Support Ticket Update</h2>
+            <p>Hi ${user.firstName},</p>
+            <p>Your support ticket has been updated by our team.</p>
+
+            <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+              <strong>Ticket ID:</strong> ${ticketId}<br>
+              <strong>Status:</strong> ${status || ticket.status}<br>
+              <strong>Priority:</strong> ${priority || ticket.priority}
+            </div>
+
+            <p><strong>Admin Response:</strong></p>
+            <div style="background: #f9f9f9; padding: 10px; border-left: 3px solid #28a745;">
+              ${adminResponse}
+            </div>
+
+            <p>Thank you for your patience!</p>
+            <p>Best regards,<br>Support Team</p>
+          `;
+          const userText = `Support Ticket Update\n\nHi ${user.firstName},\n\nYour support ticket has been updated by our team.\n\nTicket ID: ${ticketId}\nStatus: ${status || ticket.status}\nPriority: ${priority || ticket.priority}\n\nAdmin Response:\n${adminResponse}\n\nThank you for your patience!\n\nBest regards,\nSupport Team`;
+
+          await sendEmail({
             to: user.email,
             subject: `Support Ticket Update - ${ticketId}`,
-            html: `
-              <h2>Support Ticket Update</h2>
-              <p>Hi ${user.firstName},</p>
-              <p>Your support ticket has been updated by our team.</p>
-              
-              <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
-                <strong>Ticket ID:</strong> ${ticketId}<br>
-                <strong>Status:</strong> ${status || ticket.status}<br>
-                <strong>Priority:</strong> ${priority || ticket.priority}
-              </div>
-              
-              <p><strong>Admin Response:</strong></p>
-              <div style="background: #f9f9f9; padding: 10px; border-left: 3px solid #28a745;">
-                ${adminResponse}
-              </div>
-              
-              <p>Thank you for your patience!</p>
-              <p>Best regards,<br>Support Team</p>
-            `
-          };
-          await transporter.sendMail(userMailOptions);
+            text: userText,
+            html: userHtml
+          });
         }
 
         // Email to support team (for all updates)
@@ -888,43 +871,44 @@ router.put('/tickets/:ticketId', async (req: AuthRequest, res) => {
           console.error('CRITICAL: SUPPORT_EMAIL environment variable is not set');
           return res.status(500).json({ error: 'Server configuration error' });
         }
-        
-        const supportMailOptions = {
-          from: process.env.SMTP_FROM || process.env.SMTP_USER,
+
+        const supportHtml = `
+          <h2>🔄 Support Ticket Updated</h2>
+          <p>A support ticket has been updated by ${admin?.firstName || 'Admin'}.</p>
+
+          <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <strong>Ticket ID:</strong> ${ticketId}<br>
+            <strong>User:</strong> ${user.firstName} ${user.lastName} (${user.email})<br>
+            <strong>Plan:</strong> ${user.planTier}<br>
+            <strong>Subject:</strong> ${ticket.subject}<br>
+            <strong>Previous Status:</strong> ${ticket.status}<br>
+            <strong>New Status:</strong> ${status || ticket.status}<br>
+            ${priority ? `<strong>New Priority:</strong> ${priority}<br>` : ''}
+            <strong>Updated by:</strong> ${admin?.firstName || 'Admin'} ${admin?.lastName || ''}
+          </div>
+
+          ${adminResponse ? `
+            <p><strong>Admin Response:</strong></p>
+            <div style="background: #f9f9f9; padding: 10px; border-left: 3px solid #28a745;">
+              ${adminResponse}
+            </div>
+          ` : ''}
+
+          <p><strong>Original Message:</strong></p>
+          <div style="background: #f9f9f9; padding: 10px; border-left: 3px solid #6c757d;">
+            ${ticket.message}
+          </div>
+
+          <p><a href="${process.env.FRONTEND_URL || 'http://localhost:5002'}/admin" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">View in Admin Dashboard</a></p>
+        `;
+        const supportText = `Support Ticket Updated\n\nA support ticket has been updated by ${admin?.firstName || 'Admin'}.\n\nTicket ID: ${ticketId}\nUser: ${user.firstName} ${user.lastName} (${user.email})\nPlan: ${user.planTier}\nSubject: ${ticket.subject}\nPrevious Status: ${ticket.status}\nNew Status: ${status || ticket.status}\n${priority ? `New Priority: ${priority}\n` : ''}Updated by: ${admin?.firstName || 'Admin'} ${admin?.lastName || ''}\n\n${adminResponse ? `Admin Response:\n${adminResponse}\n\n` : ''}Original Message:\n${ticket.message}\n\nView in Admin Dashboard: ${process.env.FRONTEND_URL || 'http://localhost:5002'}/admin`;
+
+        await sendEmail({
           to: supportEmail,
           subject: `🔄 Ticket Updated - ${ticketId}`,
-          html: `
-            <h2>🔄 Support Ticket Updated</h2>
-            <p>A support ticket has been updated by ${admin?.firstName || 'Admin'}.</p>
-            
-            <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
-              <strong>Ticket ID:</strong> ${ticketId}<br>
-              <strong>User:</strong> ${user.firstName} ${user.lastName} (${user.email})<br>
-              <strong>Plan:</strong> ${user.planTier}<br>
-              <strong>Subject:</strong> ${ticket.subject}<br>
-              <strong>Previous Status:</strong> ${ticket.status}<br>
-              <strong>New Status:</strong> ${status || ticket.status}<br>
-              ${priority ? `<strong>New Priority:</strong> ${priority}<br>` : ''}
-              <strong>Updated by:</strong> ${admin?.firstName || 'Admin'} ${admin?.lastName || ''}
-            </div>
-            
-            ${adminResponse ? `
-              <p><strong>Admin Response:</strong></p>
-              <div style="background: #f9f9f9; padding: 10px; border-left: 3px solid #28a745;">
-                ${adminResponse}
-              </div>
-            ` : ''}
-            
-            <p><strong>Original Message:</strong></p>
-            <div style="background: #f9f9f9; padding: 10px; border-left: 3px solid #6c757d;">
-              ${ticket.message}
-            </div>
-            
-            <p><a href="${process.env.FRONTEND_URL || 'http://localhost:5002'}/admin" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">View in Admin Dashboard</a></p>
-          `
-        };
-
-        await transporter.sendMail(supportMailOptions);
+          text: supportText,
+          html: supportHtml
+        });
       } catch (emailError) {
         console.error('Failed to send update email:', emailError);
       }
@@ -978,34 +962,35 @@ router.post('/users/:id/password-reset', async (req, res) => {
     });
 
     try {
-      const transporter = createTransporter();
       const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5002'}/reset-password?token=${resetToken}`;
-      
-      const mailOptions = {
-        from: process.env.SMTP_FROM || process.env.SMTP_USER,
+
+      const htmlContent = `
+        <h2>Password Reset Request</h2>
+        <p>Hi ${user.firstName},</p>
+        <p>An administrator has initiated a password reset for your account.</p>
+
+        <p>Click the link below to reset your password (this link expires in 1 hour):</p>
+        <a href="${resetUrl}" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 20px 0;">Reset Password</a>
+
+        <p>If you didn't request this password reset, please contact support immediately.</p>
+        <p>Best regards,<br>Dev Codex Team</p>
+
+        <hr>
+        <p style="font-size: 12px; color: #666;">
+          If the button doesn't work, copy and paste this link into your browser:<br>
+          ${resetUrl}
+        </p>
+      `;
+
+      const textContent = `Password Reset Request\n\nHi ${user.firstName},\n\nAn administrator has initiated a password reset for your account.\n\nClick the link below to reset your password (this link expires in 1 hour):\n${resetUrl}\n\nIf you didn't request this password reset, please contact support immediately.\n\nBest regards,\nDev Codex Team`;
+
+      await sendEmail({
         to: user.email,
         subject: 'Password Reset Request - Dev Codex',
-        html: `
-          <h2>Password Reset Request</h2>
-          <p>Hi ${user.firstName},</p>
-          <p>An administrator has initiated a password reset for your account.</p>
-          
-          <p>Click the link below to reset your password (this link expires in 1 hour):</p>
-          <a href="${resetUrl}" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 20px 0;">Reset Password</a>
-          
-          <p>If you didn't request this password reset, please contact support immediately.</p>
-          <p>Best regards,<br>Dev Codex Team</p>
-          
-          <hr>
-          <p style="font-size: 12px; color: #666;">
-            If the button doesn't work, copy and paste this link into your browser:<br>
-            ${resetUrl}
-          </p>
-        `
-      };
+        text: textContent,
+        html: htmlContent
+      });
 
-      await transporter.sendMail(mailOptions);
-      
       res.json({ message: 'Password reset email sent successfully' });
     } catch (emailError) {
       console.error('Failed to send password reset email:', emailError);

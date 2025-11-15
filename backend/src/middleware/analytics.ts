@@ -321,24 +321,27 @@ export class AnalyticsService {
     try {
       const { planTier } = await this.getUserPlanInfo(userId);
       const config = getAnalyticsConfig(planTier);
-      
+
+      // Convert userId to ObjectId for MongoDB queries
+      const userObjectId = new mongoose.Types.ObjectId(userId);
+
       // Get total events
-      const totalEvents = await Analytics.countDocuments({ userId });
-      
+      const totalEvents = await Analytics.countDocuments({ userId: userObjectId });
+
       // Get events by type
       const eventsByType = await Analytics.aggregate([
-        { $match: { userId } },
+        { $match: { userId: userObjectId } },
         { $group: { _id: '$eventType', count: { $sum: 1 } } },
         { $project: { eventType: '$_id', count: 1, _id: 0 } }
-      ]).then(results => 
+      ]).then(results =>
         results.reduce((acc, { eventType, count }) => ({ ...acc, [eventType]: count }), {})
       );
-      
+
       // Get today's event count
       const startOfDay = new Date();
       startOfDay.setHours(0, 0, 0, 0);
       const todayEvents = await Analytics.countDocuments({
-        userId,
+        userId: userObjectId,
         timestamp: { $gte: startOfDay }
       });
       

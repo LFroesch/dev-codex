@@ -367,20 +367,22 @@ describe('Analytics Middleware', () => {
       // Create some events
       await Analytics.create([
         {
-          userId: user._id.toString(),
+          userId: user._id,
           eventType: 'project_open',
           eventData: {},
           planTier: 'pro',
           category: 'engagement',
-          isConversion: false
+          isConversion: false,
+          timestamp: new Date()
         },
         {
-          userId: user._id.toString(),
+          userId: user._id,
           eventType: 'feature_used',
           eventData: {},
           planTier: 'pro',
           category: 'engagement',
-          isConversion: false
+          isConversion: false,
+          timestamp: new Date()
         }
       ]);
 

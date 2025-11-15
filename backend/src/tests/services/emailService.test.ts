@@ -157,13 +157,13 @@ describe('emailService', () => {
       await expect(sendEmail(testEmailOptions)).rejects.toThrow('Failed to send email via SMTP');
     });
 
-    it('should not throw when no email service is configured', async () => {
+    it('should throw when no email service is configured', async () => {
       delete process.env.RESEND_API_KEY;
       delete process.env.SMTP_USER;
       delete process.env.SMTP_PASS;
 
-      // Should not throw, just log warning
-      await sendEmail(testEmailOptions);
+      // Should throw error when no email service configured
+      await expect(sendEmail(testEmailOptions)).rejects.toThrow('No email service configured');
 
       expect(mockResendSend).not.toHaveBeenCalled();
       expect(mockSendMail).not.toHaveBeenCalled();

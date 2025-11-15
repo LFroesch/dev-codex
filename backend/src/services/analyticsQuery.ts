@@ -56,8 +56,8 @@ export class AnalyticsQueryService {
       : Analytics.find({
           userId,
           timestamp: {
-            $gte: Math.max(startDate.getTime(), compactionCutoff.getTime()),
-            $lte: endDate.getTime()
+            $gte: compactionCutoff,
+            $lte: endDate
           }
         })
           .select('timestamp eventType category eventData conversionValue')
@@ -92,13 +92,20 @@ export class AnalyticsQueryService {
 
     // Build query for raw events
     const rawQuery: any = { ...otherFilters };
+    // Convert userId to ObjectId for MongoDB query
+    if (filters.userId) {
+      rawQuery.userId = new mongoose.Types.ObjectId(filters.userId);
+    }
+    if (filters.projectId) {
+      rawQuery['eventData.projectId'] = filters.projectId;
+      delete rawQuery.projectId;
+    }
     if (startDate || endDate) {
       rawQuery.timestamp = {};
       if (startDate) {
-        rawQuery.timestamp.$gte = Math.max(
-          startDate.getTime(),
-          compactionCutoff.getTime()
-        );
+        // Use the later of startDate or compactionCutoff
+        const effectiveStart = startDate < compactionCutoff ? compactionCutoff : startDate;
+        rawQuery.timestamp.$gte = effectiveStart;
       }
       if (endDate) rawQuery.timestamp.$lte = endDate;
     }
@@ -146,13 +153,16 @@ export class AnalyticsQueryService {
 
     // Query raw events
     const rawQuery: any = { ...otherFilters };
+    // Convert userId to ObjectId for MongoDB query
+    if (filters.userId) {
+      rawQuery.userId = new mongoose.Types.ObjectId(filters.userId);
+    }
     if (startDate || endDate) {
       rawQuery.timestamp = {};
       if (startDate) {
-        rawQuery.timestamp.$gte = Math.max(
-          startDate.getTime(),
-          compactionCutoff.getTime()
-        );
+        // Use the later of startDate or compactionCutoff
+        const effectiveStart = startDate < compactionCutoff ? compactionCutoff : startDate;
+        rawQuery.timestamp.$gte = effectiveStart;
       }
       if (endDate) rawQuery.timestamp.$lte = endDate;
     }
@@ -210,10 +220,9 @@ export class AnalyticsQueryService {
     if (startDate || endDate) {
       rawQuery.timestamp = {};
       if (startDate) {
-        rawQuery.timestamp.$gte = Math.max(
-          startDate.getTime(),
-          compactionCutoff.getTime()
-        );
+        // Use the later of startDate or compactionCutoff
+        const effectiveStart = startDate < compactionCutoff ? compactionCutoff : startDate;
+        rawQuery.timestamp.$gte = effectiveStart;
       }
       if (endDate) rawQuery.timestamp.$lte = endDate;
     }
@@ -258,13 +267,16 @@ export class AnalyticsQueryService {
 
     // Query raw events
     const rawQuery: any = { ...otherFilters, isConversion: true };
+    // Convert userId to ObjectId for MongoDB query
+    if (filters.userId) {
+      rawQuery.userId = new mongoose.Types.ObjectId(filters.userId);
+    }
     if (startDate || endDate) {
       rawQuery.timestamp = {};
       if (startDate) {
-        rawQuery.timestamp.$gte = Math.max(
-          startDate.getTime(),
-          compactionCutoff.getTime()
-        );
+        // Use the later of startDate or compactionCutoff
+        const effectiveStart = startDate < compactionCutoff ? compactionCutoff : startDate;
+        rawQuery.timestamp.$gte = effectiveStart;
       }
       if (endDate) rawQuery.timestamp.$lte = endDate;
     }

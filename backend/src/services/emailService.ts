@@ -70,8 +70,9 @@ export const sendEmail = async (options: EmailOptions): Promise<void> => {
     }
   }
 
-  // No email configured
-  console.warn('⚠️ Email not sent - no email service configured (RESEND_API_KEY or SMTP)');
+  // No email configured - throw error
+  console.error('Email not sent - no email service configured (RESEND_API_KEY or SMTP)');
+  throw new Error('No email service configured');
 };
 
 export const sendProjectInvitationEmail = async (

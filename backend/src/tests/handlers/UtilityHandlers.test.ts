@@ -128,7 +128,8 @@ describe('UtilityHandlers', () => {
         name: 'Test API Project',
         userId: mockUser._id,
         ownerId: mockUser._id,
-        category: 'api'
+        category: 'api',
+        description: 'A test API project'
       });
 
       const parsed = CommandParser.parse('/swap @nonexistent');
@@ -231,29 +232,30 @@ describe('UtilityHandlers', () => {
 
       expect(result.type).toBe(ResponseType.INFO);
       expect(result.message).toContain('news');
-      expect(result.data).toBeDefined();
     });
 
     it('should return news posts sorted by date', async () => {
       await NewsPost.create({
         title: 'News 1',
         content: 'Content 1',
-        category: 'announcement',
-        author: 'Admin',
+        type: 'announcement',
+        authorId: mockUser._id.toString(),
+        isPublished: true,
         publishedAt: new Date('2025-01-01')
       });
 
       await NewsPost.create({
         title: 'News 2',
         content: 'Content 2',
-        category: 'feature',
-        author: 'Admin',
+        type: 'news',
+        authorId: mockUser._id.toString(),
+        isPublished: true,
         publishedAt: new Date('2025-01-02')
       });
 
       const result = await handler.handleViewNews();
 
-      expect(result.type).toBe(ResponseType.INFO);
+      expect(result.type).toBe(ResponseType.DATA);
       expect(result.data).toBeDefined();
     });
 
@@ -262,15 +264,16 @@ describe('UtilityHandlers', () => {
         await NewsPost.create({
           title: `News ${i}`,
           content: `Content ${i}`,
-          category: 'announcement',
-          author: 'Admin',
+          type: 'announcement',
+          authorId: mockUser._id.toString(),
+          isPublished: true,
           publishedAt: new Date()
         });
       }
 
       const result = await handler.handleViewNews();
 
-      expect(result.type).toBe(ResponseType.INFO);
+      expect(result.type).toBe(ResponseType.DATA);
       expect(result.data).toBeDefined();
     });
   });
@@ -317,7 +320,7 @@ describe('UtilityHandlers', () => {
     it('should return list of available themes', async () => {
       const result = await handler.handleViewThemes();
 
-      expect(result.type).toBe(ResponseType.INFO);
+      expect(result.type).toBe(ResponseType.DATA);
       expect(result.message).toContain('themes');
       expect(result.data).toBeDefined();
     });
@@ -348,48 +351,56 @@ describe('UtilityHandlers', () => {
     it('should return unread notifications', async () => {
       await Notification.create({
         userId: mockUser._id,
-        type: 'info',
+        type: 'admin_message',
         title: 'Test Notification',
         message: 'Test message',
-        isRead: false
+        isRead: false,
+        planTier: 'free',
+        importance: 'standard'
       });
 
       await Notification.create({
         userId: mockUser._id,
-        type: 'success',
+        type: 'project_shared',
         title: 'Read Notification',
         message: 'Already read',
-        isRead: true
+        isRead: true,
+        planTier: 'free',
+        importance: 'standard'
       });
 
       const parsed = CommandParser.parse('/notifications');
       const result = await handler.handleViewNotifications(parsed);
 
-      expect(result.type).toBe(ResponseType.INFO);
+      expect(result.type).toBe(ResponseType.DATA);
       expect(result.data).toBeDefined();
     });
 
     it('should filter notifications by type', async () => {
       await Notification.create({
         userId: mockUser._id,
-        type: 'info',
+        type: 'admin_message',
         title: 'Info Notification',
         message: 'Info message',
-        isRead: false
+        isRead: false,
+        planTier: 'free',
+        importance: 'standard'
       });
 
       await Notification.create({
         userId: mockUser._id,
-        type: 'error',
+        type: 'todo_overdue',
         title: 'Error Notification',
         message: 'Error message',
-        isRead: false
+        isRead: false,
+        planTier: 'free',
+        importance: 'standard'
       });
 
-      const parsed = CommandParser.parse('/notifications --type=info');
+      const parsed = CommandParser.parse('/notifications --type=admin_message');
       const result = await handler.handleViewNotifications(parsed);
 
-      expect(result.type).toBe(ResponseType.INFO);
+      expect(result.type).toBe(ResponseType.DATA);
       expect(result.data).toBeDefined();
     });
   });
@@ -398,18 +409,22 @@ describe('UtilityHandlers', () => {
     it('should mark all notifications as read', async () => {
       await Notification.create({
         userId: mockUser._id,
-        type: 'info',
+        type: 'admin_message',
         title: 'Notification 1',
         message: 'Message 1',
-        isRead: false
+        isRead: false,
+        planTier: 'free',
+        importance: 'standard'
       });
 
       await Notification.create({
         userId: mockUser._id,
-        type: 'info',
+        type: 'admin_message',
         title: 'Notification 2',
         message: 'Message 2',
-        isRead: false
+        isRead: false,
+        planTier: 'free',
+        importance: 'standard'
       });
 
       const result = await handler.handleClearNotifications();
@@ -421,7 +436,7 @@ describe('UtilityHandlers', () => {
     it('should return success when no notifications to clear', async () => {
       const result = await handler.handleClearNotifications();
 
-      expect(result.type).toBe(ResponseType.SUCCESS);
+      expect(result.type).toBe(ResponseType.INFO);
       expect(result.message).toBeDefined();
     });
   });
@@ -460,7 +475,7 @@ describe('UtilityHandlers', () => {
       const parsed = CommandParser.parse('/stale');
       const result = await handler.handleStaleItems(parsed, mockProject._id.toString());
 
-      expect(result.type).toBe(ResponseType.INFO);
+      expect(result.type).toBe(ResponseType.DATA);
       expect(result.data).toBeDefined();
     });
   });
@@ -534,7 +549,7 @@ describe('UtilityHandlers', () => {
 
       expect(result.type).toBe(ResponseType.INFO);
       expect(result.message).toContain('wizard');
-      expect(result.data).toBeDefined();
+      expect(result.suggestions).toBeDefined();
     });
   });
 

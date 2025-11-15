@@ -1,3 +1,7 @@
+// Set up Stripe environment variables BEFORE importing billing routes
+process.env.STRIPE_SECRET_KEY = 'sk_test_mock_key';
+process.env.STRIPE_WEBHOOK_SECRET = 'whsec_test_mock_secret';
+
 import request from 'supertest';
 import express from 'express';
 import { User } from '../models/User';
@@ -16,10 +20,6 @@ jest.mock('stripe', () => {
     }
   }));
 });
-
-// Set up Stripe environment variables
-process.env.STRIPE_SECRET_KEY = 'sk_test_mock_key';
-process.env.STRIPE_WEBHOOK_SECRET = 'whsec_test_mock_secret';
 
 const app = createTestApp({ '/api/billing': billingRoutes });
 

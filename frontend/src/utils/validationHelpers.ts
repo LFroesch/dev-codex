@@ -40,7 +40,7 @@ export const validateMinLength = (
 ): string => {
   const trimmed = validateRequired(value, fieldName);
   if (trimmed.length < minLength) {
-    throw new Error(`${fieldName} must be at least ${minLength} characters`);
+    throw new Error(`${fieldName} is too short (${trimmed.length} / ${minLength} characters minimum)`);
   }
   return trimmed;
 };
@@ -57,7 +57,7 @@ export const validateMaxLength = (
 ): string => {
   const trimmed = value.trim();
   if (trimmed.length > maxLength) {
-    throw new Error(`${fieldName} must be at most ${maxLength} characters`);
+    throw new Error(`${fieldName} is too long (${trimmed.length} / ${maxLength} characters)`);
   }
   return trimmed;
 };

@@ -49,7 +49,7 @@ export function validateProjectName(name: string): { isValid: boolean; error?: s
   }
 
   if (sanitized.length > 100) {
-    return { isValid: false, error: 'Project name must be less than 100 characters' };
+    return { isValid: false, error: `Project name is too long (${sanitized.length} / 100 characters)` };
   }
 
   return { isValid: true, sanitized };
@@ -105,7 +105,7 @@ export function validateTodoText(text: string): { isValid: boolean; error?: stri
   }
 
   if (sanitized.length > 500) {
-    return { isValid: false, error: 'Todo text must be less than 500 characters' };
+    return { isValid: false, error: `Todo text is too long (${sanitized.length} / 500 characters)` };
   }
 
   return { isValid: true, sanitized };

@@ -29,6 +29,17 @@ router.post('/', requireAuth, async (req: AuthRequest, res) => {
       return res.status(400).json({ error: 'Title and content are required' });
     }
 
+    // Validate lengths
+    if (title.trim().length > 200) {
+      return res.status(400).json({ error: `Title is too long (${title.trim().length} / 200 characters)` });
+    }
+    if (description && description.trim().length > 500) {
+      return res.status(400).json({ error: `Description is too long (${description.trim().length} / 500 characters)` });
+    }
+    if (content.trim().length > 50000) {
+      return res.status(400).json({ error: `Content is too long (${content.trim().length} / 50,000 characters)` });
+    }
+
     const user = await User.findById(req.userId);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
@@ -62,6 +73,17 @@ router.put('/:ideaId', requireAuth, async (req: AuthRequest, res) => {
 
     if (!title || !content) {
       return res.status(400).json({ error: 'Title and content are required' });
+    }
+
+    // Validate lengths
+    if (title.trim().length > 200) {
+      return res.status(400).json({ error: `Title is too long (${title.trim().length} / 200 characters)` });
+    }
+    if (description && description.trim().length > 500) {
+      return res.status(400).json({ error: `Description is too long (${description.trim().length} / 500 characters)` });
+    }
+    if (content.trim().length > 50000) {
+      return res.status(400).json({ error: `Content is too long (${content.trim().length} / 50,000 characters)` });
     }
 
     const user = await User.findById(req.userId);

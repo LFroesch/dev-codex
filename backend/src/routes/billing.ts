@@ -5,7 +5,13 @@ import { requireAuth, AuthRequest } from '../middleware/auth';
 import { createRateLimit } from '../middleware/rateLimit';
 import { logInfo, logError, logWarn } from '../config/logger';
 import NotificationService from '../services/notificationService';
-import { sendEmail } from '../services/emailService';
+import {
+  sendEmail,
+  sendSubscriptionConfirmationEmail,
+  sendSubscriptionCancelledEmail,
+  sendSubscriptionExpiredEmail,
+  sendPlanDowngradeEmail
+} from '../services/emailService';
 
 const router = express.Router();
 
@@ -258,6 +264,19 @@ async function handleSuccessfulPayment(session: Stripe.Checkout.Session) {
     subscriptionStatus: user.subscriptionStatus
   });
 
+  // Send subscription confirmation email
+  try {
+    await sendSubscriptionConfirmationEmail(
+      user.email,
+      user.firstName || 'there',
+      planTier
+    );
+    logInfo('Subscription confirmation email sent', { userId, planTier });
+  } catch (error) {
+    logError('Failed to send subscription confirmation email', error as Error);
+    // Don't fail the whole process if email fails
+  }
+
   // Track conversion/upgrade event
   try {
     const { AnalyticsService } = await import('../middleware/analytics');
@@ -348,6 +367,29 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
       await updateExpirationOnPlanChange(user._id.toString(), oldPlanTier, 'free');
       logInfo('Updated data retention after downgrade', { userId: user._id, from: oldPlanTier, to: 'free' });
     }
+
+    // Send appropriate email based on status
+    try {
+      if (subscription.status === 'canceled') {
+        await sendSubscriptionCancelledEmail(
+          user.email,
+          user.firstName || 'there',
+          oldPlanTier,
+          new Date((subscription as any).current_period_end * 1000)
+        );
+        logInfo('Subscription cancelled email sent', { userId: user._id });
+      } else if (subscription.status === 'incomplete_expired') {
+        await sendSubscriptionExpiredEmail(
+          user.email,
+          user.firstName || 'there',
+          oldPlanTier
+        );
+        logInfo('Subscription expired email sent', { userId: user._id });
+      }
+    } catch (error) {
+      logError('Failed to send subscription status email', error as Error);
+      // Don't fail the whole process if email fails
+    }
   } else if (subscription.status === 'active') {
     // Determine plan tier from price ID
     const priceId = subscription.items.data[0]?.price.id;
@@ -383,6 +425,20 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
         } else {
           // Lock excess projects on downgrade (e.g., premium -> pro)
           await handleDowngradeExcess(user._id.toString(), newPlanTier);
+
+          // Send downgrade email
+          try {
+            await sendPlanDowngradeEmail(
+              user.email,
+              user.firstName || 'there',
+              oldPlanTier,
+              newPlanTier
+            );
+            logInfo('Plan downgrade email sent', { userId: user._id, from: oldPlanTier, to: newPlanTier });
+          } catch (error) {
+            logError('Failed to send plan downgrade email', error as Error);
+            // Don't fail the whole process if email fails
+          }
         }
       }
     } else {

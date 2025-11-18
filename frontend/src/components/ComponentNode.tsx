@@ -38,25 +38,11 @@ const ComponentNode: React.FC<NodeProps<ComponentNodeData>> = ({ data, selected 
     borderColor: category.color
   } : {};
 
-  // Health indicator classes
-  let healthRing = '';
-  if (hasDuplicates) {
-    healthRing = 'ring-4 ring-yellow-500'; // Yellow for duplicates
-  } else if (isStale) {
-    healthRing = 'ring-4 ring-red-500/60'; // Red for stale
-  } else if (isIncomplete) {
-    healthRing = 'ring-2 ring-orange-500/60'; // Orange for incomplete
-  } else if (isRecent) {
-    healthRing = 'ring-2 ring-green-500'; // Green pulse for recent
-  } else if (isOrphaned) {
-    healthRing = 'ring-2 ring-gray-500/50'; // Gray for orphaned
-  }
-
   const selectedClass = selected ? 'ring-4 ring-primary !ring-offset-2 shadow-xl scale-105' : 'shadow-md';
 
   return (
     <div
-      className={`rounded-lg border-2 transition-all duration-200 ${healthRing} ${selectedClass}`}
+      className={`rounded-lg border-2 transition-all duration-200 ${selectedClass}`}
       style={{ width: `${width}px`, ...colorStyle }}
     >
       {/* Handles on all 4 sides for dynamic edge routing */}
@@ -161,26 +147,6 @@ const ComponentNode: React.FC<NodeProps<ComponentNodeData>> = ({ data, selected 
           </div>
         )}
 
-        {/* Metadata and Health Indicators */}
-        <div className="mt-2 flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex gap-1 flex-wrap">
-            {hasDuplicates && (
-              <span className="badge badge-xs badge-warning border-thick p-2" title="Similar to another component">
-                ⚠️ Dup
-              </span>
-            )}
-            {isStale && (
-              <span className="badge badge-xs badge-error border-thick p-2" title="Not updated in 90+ days">
-                🕐 Stale
-              </span>
-            )}
-            {isRecent && !isStale && (
-              <span className="badge badge-xs badge-success border-thick p-2" title="Updated in last 24h">
-                ✨ New
-              </span>
-            )}
-          </div>
-        </div>
 
         {/* Content preview */}
         <div className="mt-2 text-sm text-base-content/70 line-clamp-4">

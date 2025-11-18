@@ -4,6 +4,8 @@ import Notification from '../models/Notification';
 import { User } from '../models/User';
 import NotificationService from './notificationService';
 import staleItemService from './staleItemService';
+import Stripe from 'stripe';
+import { sendSubscriptionExpiringEmail } from './emailService';
 
 export interface DueTodoItem {
   projectId: string;
@@ -47,6 +49,11 @@ class ReminderService {
     // Weekly stale items check on Mondays at 9 AM
     cron.schedule('0 9 * * 1', () => {
       this.checkStaleItems();
+    });
+
+    // Daily subscription expiration check at 10 AM
+    cron.schedule('0 10 * * *', () => {
+      this.checkSubscriptionExpiration();
     });
 
     this.isInitialized = true;
@@ -294,6 +301,84 @@ class ReminderService {
     }
   }
 
+  private async checkSubscriptionExpiration(): Promise<void> {
+    try {
+      console.log('[ReminderService] Starting subscription expiration check');
+
+      // Check if Stripe is configured
+      if (!process.env.STRIPE_SECRET_KEY) {
+        console.log('[ReminderService] Stripe not configured, skipping subscription expiration check');
+        return;
+      }
+
+      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+      // Find users with active subscriptions
+      const users = await User.find({
+        subscriptionStatus: 'active',
+        subscriptionId: { $exists: true, $ne: null }
+      });
+
+      const now = new Date();
+      const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+      const eightDaysFromNow = new Date(now.getTime() + 8 * 24 * 60 * 60 * 1000);
+
+      for (const user of users) {
+        try {
+          if (!user.subscriptionId) continue;
+
+          // Fetch subscription from Stripe
+          const subscription = await stripe.subscriptions.retrieve(user.subscriptionId);
+
+          // Check if subscription is set to cancel at period end
+          if ((subscription as any).cancel_at_period_end) {
+            const periodEnd = new Date((subscription as any).current_period_end * 1000);
+
+            // Check if period end is between 7 and 8 days from now
+            // This ensures we only send the email once (on the day it's exactly 7 days away)
+            if (periodEnd >= sevenDaysFromNow && periodEnd < eightDaysFromNow) {
+              // Check if we've already sent this notification recently
+              const hasRecentNotification = await Notification.findOne({
+                userId: user._id,
+                type: 'subscription_expiring',
+                createdAt: { $gte: new Date(now.getTime() - 24 * 60 * 60 * 1000) } // Within last 24 hours
+              });
+
+              if (!hasRecentNotification) {
+                // Send email
+                await sendSubscriptionExpiringEmail(
+                  user.email,
+                  user.firstName || 'there',
+                  user.planTier || 'pro',
+                  periodEnd
+                );
+
+                // Create in-app notification
+                const notificationService = NotificationService.getInstance();
+                await notificationService.createNotification({
+                  userId: user._id,
+                  type: 'subscription_expiring' as any,
+                  title: 'Subscription Expiring Soon',
+                  message: `Your ${(user.planTier || 'pro').charAt(0).toUpperCase() + (user.planTier || 'pro').slice(1)} subscription expires in 7 days. Reactivate to keep your features!`,
+                  actionUrl: '/billing'
+                });
+
+                console.log(`[ReminderService] Sent expiration warning to user ${user._id}`);
+              }
+            }
+          }
+        } catch (error) {
+          console.error(`[ReminderService] Error checking subscription for user ${user._id}:`, error);
+          // Continue with other users
+        }
+      }
+
+      console.log('[ReminderService] Completed subscription expiration check');
+    } catch (error) {
+      console.error('[ReminderService] Error in subscription expiration check:', error);
+    }
+  }
+
   // Public method to manually trigger checks (for testing)
   public async triggerChecks(): Promise<void> {
     await this.checkDueTodos();
@@ -302,6 +387,10 @@ class ReminderService {
 
   public async triggerStaleItemsCheck(): Promise<void> {
     await this.checkStaleItems();
+  }
+
+  public async triggerSubscriptionExpirationCheck(): Promise<void> {
+    await this.checkSubscriptionExpiration();
   }
 
   public stop(): void {

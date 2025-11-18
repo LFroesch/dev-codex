@@ -203,7 +203,7 @@ app.use(helmet({
       styleSrc: ["'self'", "'unsafe-inline'"], // Allow inline styles for compatibility
       scriptSrc: ["'self'", "https://static.cloudflareinsights.com", "blob:"], // blob: for web workers
       imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", "https://cloudflareinsights.com"],
+      connectSrc: ["'self'", "https://cloudflareinsights.com", "https://*.ingest.us.sentry.io"],
       fontSrc: ["'self'", "data:"],
       objectSrc: ["'none'"],
       mediaSrc: ["'self'"],

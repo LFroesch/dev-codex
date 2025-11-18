@@ -229,7 +229,7 @@ const userSchema = new Schema<IUser>({
     content: {
       type: String,
       required: true,
-      maxlength: 10000
+      maxlength: 50000
     },
     createdAt: {
       type: Date,

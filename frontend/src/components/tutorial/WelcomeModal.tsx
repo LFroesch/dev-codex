@@ -60,7 +60,7 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ user }) => {
 
           {/* Description */}
           <p className="text-center text-base-content/70 mb-6">
-            We've prepared a quick interactive tutorial to help you get started and explore all the features.
+            This is a quick interactive tutorial to help you jump in and explore all of the features.
             It will only take a few minutes!
           </p>
 
@@ -93,7 +93,7 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ user }) => {
           </div>
 
           <p className="text-xs text-center text-base-content/50 mt-4">
-            You can restart the tutorial anytime from the Help page
+            You can restart/replay the tutorial anytime from the Help page
           </p>
         </div>
       </div>

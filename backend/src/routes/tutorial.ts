@@ -57,13 +57,15 @@ const TUTORIAL_STEPS = [
     title: 'Terminal Interface',
     route: '/terminal',
     content: {
-      heading: 'Use the CLI-style terminal',
-      body: 'The terminal provides a command-line interface for quick actions. Type commands, use autocomplete, and view your command history.',
+      heading: 'Power-user terminal interface',
+      body: 'Experience a unique CLI-style interface built right into your browser. Execute commands with the speed and efficiency of a terminal, featuring intelligent autocomplete, persistent command history, and instant execution - no page reloads required.',
       tips: [
-        'Start typing to see available commands',
-        'Use Tab for autocomplete suggestions',
-        'Press Up/Down arrows to navigate command history'
-      ]
+        'Lightning-fast command execution with real-time feedback',
+        'Smart autocomplete learns your workflow patterns',
+        'Full command history with Up/Down arrow navigation',
+        'Execute complex operations in seconds, not clicks'
+      ],
+      actionRequired: 'Type /help to see all available commands'
     },
     requiresProjectSelection: true
   },

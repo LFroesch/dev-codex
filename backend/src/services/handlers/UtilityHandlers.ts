@@ -1518,7 +1518,7 @@ export class UtilityHandlers extends BaseCommandHandler {
     try {
       const summary = await staleItemService.findStaleItems(this.userId.toString());
 
-      // Determine which project to filter by (from @project mention or current project)
+      // Determine which project to filter by (only from explicit @project mention)
       let targetProjectId: string | undefined;
       let projectName: string | undefined;
 
@@ -1541,9 +1541,8 @@ export class UtilityHandlers extends BaseCommandHandler {
             message: `Project "${parsed.projectMention}" not found`
           };
         }
-      } else if (currentProjectId) {
-        targetProjectId = currentProjectId;
       }
+      // Default to all projects unless explicitly mentioned
 
       // Filter by project if specified
       let filteredNotes = summary.staleNotes;

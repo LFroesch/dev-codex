@@ -201,9 +201,9 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"], // Allow inline styles for compatibility
-      scriptSrc: ["'self'"],
+      scriptSrc: ["'self'", "https://static.cloudflareinsights.com", "blob:"], // blob: for web workers
       imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'"],
+      connectSrc: ["'self'", "https://cloudflareinsights.com"],
       fontSrc: ["'self'", "data:"],
       objectSrc: ["'none'"],
       mediaSrc: ["'self'"],

@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getContrastTextColor } from '../utils/contrastTextColor';
-import { useTutorialContext } from '../contexts/TutorialContext';
 import { tutorialAPI } from '../api/tutorial';
 
 const HelpPage: React.FC = () => {
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState<string>('getting-started');
-  const { startTutorial } = useTutorialContext();
 
   const handleRestartTutorial = async () => {
     try {
@@ -26,11 +24,9 @@ const HelpPage: React.FC = () => {
 
   const sections = [
     { id: 'getting-started', title: 'Getting Started', icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253' },
-    { id: 'projects', title: 'Projects & Teams', icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h1a1 1 0 011 1v5m-4 0h4' },
-    { id: 'todos', title: 'Tasks & Todos', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4' },
-    { id: 'notifications', title: 'Notifications', icon: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9' },
-    { id: 'collaboration', title: 'Collaboration', icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' },
-    { id: 'tips', title: 'Tips & Shortcuts', icon: 'M13 10V3L4 14h7v7l9-11h-7z' }
+    { id: 'terminal', title: 'Terminal Commands', icon: 'M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' },
+    { id: 'tips', title: 'Tips & Shortcuts', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
+    { id: 'faq', title: 'FAQ', icon: 'M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' }
   ];
 
   const renderContent = () => {
@@ -48,7 +44,7 @@ const HelpPage: React.FC = () => {
                 </svg>
                 <div className="flex-1">
                   <h3 className="font-bold">Interactive Tutorial</h3>
-                  <div className="text-xs">Take a guided tour through all 12 features of the app</div>
+                  <div className="text-xs">Take a guided tour through all 14 steps of the app</div>
                 </div>
               </div>
               <div className="flex-none">
@@ -64,20 +60,38 @@ const HelpPage: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="shadow-md p-4 rounded-lg border-2 border-base-content/20 hover:border-base-300/50 transition-all duration-200 cursor-pointer group"
-                   onClick={() => navigate('/create-project')}>
+                   onClick={() => navigate('/projects')}>
                 <div>
                   <div className="flex items-center gap-3 mb-2">
                     <div className="bg-primary/10 p-2 rounded group-hover:bg-primary/20 transition-colors">
                       <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                       </svg>
                     </div>
-                    <h3 className="font-semibold">Create Project</h3>
+                    <h3 className="font-semibold">Projects</h3>
                     <svg className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </div>
-                  <p className="text-xs text-base-content/70">Start your first project</p>
+                  <p className="text-xs text-base-content/70">Create & manage projects</p>
+                </div>
+              </div>
+
+              <div className="shadow-md p-4 rounded-lg border-2 border-base-content/20 hover:border-base-300/50 transition-all duration-200 cursor-pointer group"
+                   onClick={() => navigate('/terminal')}>
+                <div>
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="bg-success/10 p-2 rounded group-hover:bg-success/20 transition-colors">
+                      <svg className="w-5 h-5 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <h3 className="font-semibold">Terminal</h3>
+                    <svg className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                  <p className="text-xs text-base-content/70">CLI-style interface</p>
                 </div>
               </div>
 
@@ -85,17 +99,17 @@ const HelpPage: React.FC = () => {
                    onClick={() => navigate('/notes')}>
                 <div>
                   <div className="flex items-center gap-3 mb-2">
-                    <div className="bg-success/10 p-2 rounded group-hover:bg-success/20 transition-colors">
-                      <svg className="w-5 h-5 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="bg-info/10 p-2 rounded group-hover:bg-info/20 transition-colors">
+                      <svg className="w-5 h-5 text-info" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                       </svg>
                     </div>
-                    <h3 className="font-semibold">Notes</h3>
+                    <h3 className="font-semibold">Notes & Todos</h3>
                     <svg className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </div>
-                  <p className="text-xs text-base-content/70">Rich text editor & tasks</p>
+                  <p className="text-xs text-base-content/70">Markdown editor with todos</p>
                 </div>
               </div>
 
@@ -103,8 +117,8 @@ const HelpPage: React.FC = () => {
                    onClick={() => navigate('/stack')}>
                 <div>
                   <div className="flex items-center gap-3 mb-2">
-                    <div className="bg-info/10 p-2 rounded group-hover:bg-info/20 transition-colors">
-                      <svg className="w-5 h-5 text-info" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="bg-warning/10 p-2 rounded group-hover:bg-warning/20 transition-colors">
+                      <svg className="w-5 h-5 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                       </svg>
                     </div>
@@ -113,406 +127,152 @@ const HelpPage: React.FC = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </div>
-                  <p className="text-xs text-base-content/70">Manage technologies</p>
+                  <p className="text-xs text-base-content/70">Track technologies</p>
                 </div>
               </div>
 
               <div className="shadow-md p-4 rounded-lg border-2 border-base-content/20 hover:border-base-300/50 transition-all duration-200 cursor-pointer group"
-                   onClick={() => navigate('/docs')}>
-                <div>
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="bg-warning/10 p-2 rounded group-hover:bg-warning/20 transition-colors">
-                      <svg className="w-5 h-5 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                    </div>
-                    <h3 className="font-semibold">Docs</h3>
-                    <svg className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
-                  <p className="text-xs text-base-content/70">Documentation center</p>
-                </div>
-              </div>
-
-              <div className="shadow-md p-4 rounded-lg border-2 border-base-content/20 hover:border-base-300/50 transition-all duration-200 cursor-pointer group"
-                   onClick={() => navigate('/deployment')}>
+                   onClick={() => navigate('/features')}>
                 <div>
                   <div className="flex items-center gap-3 mb-2">
                     <div className="bg-error/10 p-2 rounded group-hover:bg-error/20 transition-colors">
                       <svg className="w-5 h-5 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 00 2-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                       </svg>
                     </div>
-                    <h3 className="font-semibold">Deploy</h3>
+                    <h3 className="font-semibold">Features Graph</h3>
                     <svg className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </div>
-                  <p className="text-xs text-base-content/70">Deploy & monitor</p>
+                  <p className="text-xs text-base-content/70">Visualize architecture</p>
                 </div>
               </div>
 
               <div className="shadow-md p-4 rounded-lg border-2 border-base-content/20 hover:border-base-300/50 transition-all duration-200 cursor-pointer group"
-                   onClick={() => navigate('/discover')}>
+                   onClick={() => navigate('/sharing')}>
                 <div>
                   <div className="flex items-center gap-3 mb-2">
                     <div className="bg-secondary/10 p-2 rounded group-hover:bg-secondary/20 transition-colors">
                       <svg className="w-5 h-5 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                       </svg>
                     </div>
-                    <h3 className="font-semibold">Discover</h3>
+                    <h3 className="font-semibold">Team Collaboration</h3>
                     <svg className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </div>
-                  <p className="text-xs text-base-content/70">Explore public projects</p>
+                  <p className="text-xs text-base-content/70">Invite team members</p>
                 </div>
               </div>
             </div>
           </div>
         );
         
-      case 'projects':
+      case 'terminal':
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold">Projects & Teams</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="shadow-md p-4 rounded-lg border-2 border-base-content/20 hover:border-base-300/50 transition-all duration-200 cursor-pointer group"
-                   onClick={() => navigate('/create-project')}>
-                <div>
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="bg-primary/10 p-2 rounded group-hover:bg-primary/20 transition-colors">
-                      <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                      </svg>
-                    </div>
-                    <h3 className="font-semibold">New Project</h3>
-                    <svg className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
-                  <p className="text-sm text-base-content/80">Create & configure projects</p>
-                </div>
+            <h2 className="text-2xl font-bold">Terminal Commands</h2>
+            <p className="text-base-content/70">Use <kbd className="kbd kbd-sm">/help</kbd> in the terminal to see all available commands. Here are some common ones:</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="p-3 bg-base-200 rounded-lg border border-base-content/20">
+                <kbd className="kbd kbd-sm">/new</kbd>
+                <p className="text-sm mt-1 text-base-content/70">Create a new item (note/todo/devlog)</p>
               </div>
-
-              <div className="shadow-md p-4 rounded-lg border-2 border-base-content/20 hover:border-base-300/50 transition-all duration-200 cursor-pointer group"
-                   onClick={() => navigate('/')}>
-                <div>
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="bg-secondary/10 p-2 rounded group-hover:bg-secondary/20 transition-colors">
-                      <svg className="w-5 h-5 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                    </div>
-                    <h3 className="font-semibold">Team Management</h3>
-                    <svg className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
-                  <p className="text-sm text-base-content/80">Invite & manage team members</p>
-                </div>
+              <div className="p-3 bg-base-200 rounded-lg border border-base-content/20">
+                <kbd className="kbd kbd-sm">/view</kbd>
+                <p className="text-sm mt-1 text-base-content/70">View all items in current project/section</p>
               </div>
-
-              <div className="shadow-md p-4 rounded-lg border-2 border-base-content/20 hover:border-base-300/50 transition-all duration-200 cursor-pointer group"
-                   onClick={() => navigate('/settings')}>
-                <div>
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="bg-info/10 p-2 rounded group-hover:bg-info/20 transition-colors">
-                      <svg className="w-5 h-5 text-info" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                    </div>
-                    <h3 className="font-semibold">Project Settings</h3>
-                    <svg className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
-                  <p className="text-sm text-base-content/80">Configure permissions & visibility</p>
-                </div>
+              <div className="p-3 bg-base-200 rounded-lg border border-base-content/20">
+                <kbd className="kbd kbd-sm">/search</kbd>
+                <p className="text-sm mt-1 text-base-content/70">Search across all content</p>
               </div>
-
-              <div className="shadow-md p-4 rounded-lg border-2 border-base-content/20 hover:border-base-300/50 transition-all duration-200 cursor-pointer group"
-                   onClick={() => navigate('/discover')}>
-                <div>
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="bg-success/10 p-2 rounded group-hover:bg-success/20 transition-colors">
-                      <svg className="w-5 h-5 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
-                      </svg>
-                    </div>
-                    <h3 className="font-semibold">Public Projects</h3>
-                    <svg className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
-                  <p className="text-sm text-base-content/80">Share & discover projects</p>
-                </div>
+              <div className="p-3 bg-base-200 rounded-lg border border-base-content/20">
+                <kbd className="kbd kbd-sm">/stale</kbd>
+                <p className="text-sm mt-1 text-base-content/70">Find items not updated recently</p>
+              </div>
+              <div className="p-3 bg-base-200 rounded-lg border border-base-content/20">
+                <kbd className="kbd kbd-sm">/project</kbd>
+                <p className="text-sm mt-1 text-base-content/70">Switch to a different project</p>
+              </div>
+              <div className="p-3 bg-base-200 rounded-lg border border-base-content/20">
+                <kbd className="kbd kbd-sm">/stack</kbd>
+                <p className="text-sm mt-1 text-base-content/70">Manage technology stack</p>
               </div>
             </div>
           </div>
         );
         
-      case 'todos':
+      case 'faq':
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold">Tasks & Todos</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="shadow-md p-4 rounded-lg border-2 border-base-content/20 hover:border-base-300/50 transition-all duration-200 cursor-pointer group"
-                   onClick={() => navigate('/notes')}>
-                <div>
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="bg-primary/10 p-2 rounded group-hover:bg-primary/20 transition-colors">
-                      <kbd className="kbd kbd-sm text-primary">☐</kbd>
-                    </div>
-                    <h3 className="font-semibold">Checkboxes</h3>
-                    <svg className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
-                  <p className="text-sm text-base-content/80">Create interactive task lists</p>
+            <h2 className="text-2xl font-bold">Frequently Asked Questions</h2>
+
+            <div className="space-y-3">
+              <div className="collapse collapse-arrow bg-base-200 border border-base-content/20">
+                <input type="radio" name="faq-accordion" defaultChecked />
+                <div className="collapse-title font-semibold">How do I create a new project?</div>
+                <div className="collapse-content">
+                  <p className="text-sm">Click the "+" button in the top header, then select your project and use the Terminal or navigate to different sections.</p>
                 </div>
               </div>
 
-              <div className="shadow-md p-4 rounded-lg border-2 border-base-content/20 hover:border-base-300/50 transition-all duration-200 cursor-pointer group"
-                   onClick={() => navigate('/notes')}>
-                <div>
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="bg-success/10 p-2 rounded group-hover:bg-success/20 transition-colors">
-                      <svg className="w-5 h-5 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <h3 className="font-semibold">Due Dates</h3>
-                    <svg className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
-                  <p className="text-sm text-base-content/80">Set deadlines & reminders</p>
+              <div className="collapse collapse-arrow bg-base-200 border border-base-content/20">
+                <input type="radio" name="faq-accordion" />
+                <div className="collapse-title font-semibold">How do I invite team members?</div>
+                <div className="collapse-content">
+                  <p className="text-sm">Go to the Sharing page from the navigation menu, then enter their email or username to send an invitation.</p>
                 </div>
               </div>
 
-              <div className="shadow-md p-4 rounded-lg border-2 border-base-content/20 hover:border-base-300/50 transition-all duration-200 cursor-pointer group"
-                   onClick={() => navigate('/')}>
-                <div>
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="bg-info/10 p-2 rounded group-hover:bg-info/20 transition-colors">
-                      <svg className="w-5 h-5 text-info" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
-                    </div>
-                    <h3 className="font-semibold">Assignment</h3>
-                    <svg className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
-                  <p className="text-sm text-base-content/80">Assign tasks to team members</p>
+              <div className="collapse collapse-arrow bg-base-200 border border-base-content/20">
+                <input type="radio" name="faq-accordion" />
+                <div className="collapse-title font-semibold">Can I use markdown in notes?</div>
+                <div className="collapse-content">
+                  <p className="text-sm">Yes! The notes editor supports full markdown syntax including **bold**, *italic*, `code`, lists, checkboxes, and more.</p>
                 </div>
               </div>
 
-              <div className="shadow-md p-4 rounded-lg border-2 border-base-content/20 hover:border-base-300/50 transition-all duration-200 cursor-pointer group"
-                   onClick={() => navigate('/')}>
-                <div>
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="bg-warning/10 p-2 rounded group-hover:bg-warning/20 transition-colors">
-                      <svg className="w-5 h-5 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                      </svg>
-                    </div>
-                    <h3 className="font-semibold">Notifications</h3>
-                    <svg className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
-                  <p className="text-sm text-base-content/80">Smart alerts & reminders</p>
+              <div className="collapse collapse-arrow bg-base-200 border border-base-content/20">
+                <input type="radio" name="faq-accordion" />
+                <div className="collapse-title font-semibold">How do I make my project public?</div>
+                <div className="collapse-content">
+                  <p className="text-sm">Navigate to the Public page and set a unique slug for your project. Toggle visibility to make it discoverable in the community feed.</p>
+                </div>
+              </div>
+
+              <div className="collapse collapse-arrow bg-base-200 border border-base-content/20">
+                <input type="radio" name="faq-accordion" />
+                <div className="collapse-title font-semibold">What terminal commands are available?</div>
+                <div className="collapse-content">
+                  <p className="text-sm">Type <kbd className="kbd kbd-sm">/help</kbd> in the Terminal to see all commands. Common ones include <kbd className="kbd kbd-sm">/new</kbd>, <kbd className="kbd kbd-sm">/list</kbd>, and <kbd className="kbd kbd-sm">/search</kbd>.</p>
+                </div>
+              </div>
+
+              <div className="collapse collapse-arrow bg-base-200 border border-base-content/20">
+                <input type="radio" name="faq-accordion" />
+                <div className="collapse-title font-semibold">How do I export my project data?</div>
+                <div className="collapse-content">
+                  <p className="text-sm">Go to Settings and use the Export Project feature to download all your project data as JSON.</p>
                 </div>
               </div>
             </div>
           </div>
         );
-        
-      case 'notifications':
-        return (
-          <div className="space-y-6">
-            <h2 className="text-2xl font-bold">Notifications</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="shadow-md p-4 rounded-lg border-2 border-base-content/20 hover:border-base-300/50 transition-all duration-200 cursor-pointer group"
-                   onClick={() => navigate('/')}>
-                <div>
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="bg-warning/10 p-2 rounded group-hover:bg-warning/20 transition-colors">
-                      <svg className="w-5 h-5 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                      </svg>
-                    </div>
-                    <h3 className="font-semibold">Notification Bell</h3>
-                    <svg className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
-                  <p className="text-sm text-base-content/80">View & manage alerts</p>
-                </div>
-              </div>
 
-              <div className="shadow-md p-4 rounded-lg border-2 border-base-content/20 hover:border-base-300/50 transition-all duration-200 cursor-pointer group"
-                   onClick={() => navigate('/account-settings')}>
-                <div>
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="bg-error/10 p-2 rounded group-hover:bg-error/20 transition-colors">
-                      <svg className="w-5 h-5 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                    </div>
-                    <h3 className="font-semibold">Settings</h3>
-                    <svg className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
-                  <p className="text-sm text-base-content/80">Configure preferences</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-        
-      case 'collaboration':
-        return (
-          <div className="space-y-6">
-            <h2 className="text-2xl font-bold">Collaboration</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="shadow-md p-4 rounded-lg border-2 border-base-content/20 hover:border-base-300/50 transition-all duration-200 cursor-pointer group"
-                   onClick={() => navigate('/notes')}>
-                <div>
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="bg-secondary/10 p-2 rounded group-hover:bg-secondary/20 transition-colors">
-                      <svg className="w-5 h-5 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
-                    </div>
-                    <h3 className="font-semibold">Real-time Editing</h3>
-                    <svg className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
-                  <p className="text-sm text-base-content/80">Live collaboration features</p>
-                </div>
-              </div>
-
-              <div className="shadow-md p-4 rounded-lg border-2 border-base-content/20 hover:border-base-300/50 transition-all duration-200 cursor-pointer group"
-                   onClick={() => navigate('/discover')}>
-                <div>
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="bg-info/10 p-2 rounded group-hover:bg-info/20 transition-colors">
-                      <svg className="w-5 h-5 text-info" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
-                      </svg>
-                    </div>
-                    <h3 className="font-semibold">Public Sharing</h3>
-                    <svg className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
-                  <p className="text-sm text-base-content/80">Share projects publicly</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-        
       case 'tips':
         return (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold">Tips & Shortcuts</h2>
             <div className="space-y-4">
-              <div className="shadow-md rounded-lg border-2 border-base-content/20 bg-base-100">
-                <div className="p-6">
-                  <h3 className="text-lg font-semibold mb-3">Editor Shortcuts</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="flex items-center gap-3 p-2 bg-base-100 rounded border-2 border-base-content/20 hover:border-base-300/50 cursor-pointer transition-all hover:shadow-sm group"
-                         onClick={() => navigate('/notes')}>
-                      <kbd className="kbd kbd-sm group-hover:bg-primary group-hover:text-primary-content transition-colors">**B**</kbd>
-                      <span className="text-sm"><strong>Bold</strong> text formatting</span>
-                      <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 p-2 bg-base-100 rounded border-2 border-base-content/20 hover:border-base-300/50 cursor-pointer transition-all hover:shadow-sm group"
-                         onClick={() => navigate('/notes')}>
-                      <kbd className="kbd kbd-sm group-hover:bg-primary group-hover:text-primary-content transition-colors">*I*</kbd>
-                      <span className="text-sm"><em>Italic</em> text formatting</span>
-                      <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 p-2 bg-base-100 rounded border-2 border-base-content/20 hover:border-base-300/50 cursor-pointer transition-all hover:shadow-sm group"
-                         onClick={() => navigate('/notes')}>
-                      <kbd className="kbd kbd-sm group-hover:bg-primary group-hover:text-primary-content transition-colors">`code`</kbd>
-                      <span className="text-sm font-mono">Inline code</span>
-                      <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 p-2 bg-base-100 rounded border-2 border-base-content/20 hover:border-base-300/50 cursor-pointer transition-all hover:shadow-sm group"
-                         onClick={() => navigate('/notes')}>
-                      <kbd className="kbd kbd-sm group-hover:bg-primary group-hover:text-primary-content transition-colors">☐</kbd>
-                      <span className="text-sm">Add checkboxes</span>
-                      <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 p-2 bg-base-100 rounded border-2 border-base-content/20 hover:border-base-300/50 cursor-pointer transition-all hover:shadow-sm group"
-                         onClick={() => navigate('/notes')}>
-                      <kbd className="kbd kbd-sm group-hover:bg-primary group-hover:text-primary-content transition-colors">- [ ]</kbd>
-                      <span className="text-sm">Checkbox syntax</span>
-                      <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 p-2 bg-base-100 rounded border-2 border-base-content/20 hover:border-base-300/50 cursor-pointer transition-all hover:shadow-sm group"
-                         onClick={() => navigate('/notes')}>
-                      <kbd className="kbd kbd-sm group-hover:bg-primary group-hover:text-primary-content transition-colors">Ctrl+S</kbd>
-                      <span className="text-sm">Manual save</span>
-                      <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
               
-              <div className="shadow-md rounded-lg border-2 border-base-content/20 bg-base-100">
                 <div className="p-6">
-                  <h3 className="text-lg font-semibold mb-3">Productivity Tips</h3>
                   <div className="grid grid-cols-1 gap-2">
                     <div className="flex items-center gap-3 p-2 bg-base-100 rounded border-2 border-base-content/20 hover:border-base-300/50 transition-all cursor-pointer hover:shadow-sm group"
-                         onClick={() => navigate('/notes')}>
+                         onClick={() => navigate('/notes?section=todos')}>
                       <span className="text-lg">⏰</span>
-                      <span className="text-sm flex-1"><strong>Set Reminders:</strong> Use reminder dates for important tasks</span>
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 p-2 bg-base-100 rounded border-2 border-base-content/20 hover:border-base-300/50 transition-all cursor-pointer hover:shadow-sm group"
-                         onClick={() => navigate('/notes')}>
-                      <span className="text-lg">☐</span>
-                      <span className="text-sm flex-1"><strong>Use Checkboxes:</strong> Track task completion with the new checkbox feature</span>
+                      <span className="text-sm flex-1"><strong>Set Reminders:</strong> Use reminder dates for important todos</span>
                       <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -550,7 +310,6 @@ const HelpPage: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                </div>
               </div>
             </div>
           </div>
@@ -664,51 +423,6 @@ const HelpPage: React.FC = () => {
               </svg>
               Settings
             </button>
-          </div>
-        </div>
-
-        {/* Floating Quick Actions */}
-        <div className="fixed bottom-6 right-6 z-50">
-          <div className="dropdown dropdown-top dropdown-end">
-            <label tabIndex={0} className="btn btn-primary btn-circle shadow-lg hover:shadow-xl transition-all" style={{ color: getContrastTextColor('primary') }}>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </label>
-            <ul tabIndex={0} className="dropdown-content menu p-2 shadow-xl bg-base-100 rounded-box w-52 mb-2 border border-base-300">
-              <li>
-                <button onClick={() => navigate('/notes')} className="gap-3">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                  </svg>
-                  Try Editor Features
-                </button>
-              </li>
-              <li>
-                <button onClick={() => navigate('/')} className="gap-3">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                  </svg>
-                  Check Notifications
-                </button>
-              </li>
-              <li>
-                <button onClick={() => navigate('/news')} className="gap-3">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9.5a2.5 2.5 0 00-2.5-2.5H15" />
-                  </svg>
-                  What's New?
-                </button>
-              </li>
-              <li>
-                <button onClick={() => navigate('/account-settings')} className="gap-3">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM7 3H5a2 2 0 00-2 2v12a4 4 0 004 4h2a2 2 0 002-2V5a2 2 0 00-2-2z" />
-                  </svg>
-                  Change Theme
-                </button>
-              </li>
-            </ul>
           </div>
         </div>
       </div>

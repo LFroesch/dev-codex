@@ -81,7 +81,10 @@ export const useTutorial = (): UseTutorialReturn => {
   }, []);
 
   const startTutorial = useCallback(() => {
-    if (tutorialSteps.length === 0) return;
+    if (tutorialSteps.length === 0) {
+      console.warn('Cannot start tutorial: steps not loaded yet');
+      return;
+    }
 
     setIsActive(true);
     setCurrentStep(1);

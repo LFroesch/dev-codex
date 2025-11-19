@@ -14,7 +14,7 @@ const TUTORIAL_STEPS = [
       heading: 'Welcome! Let\'s start by creating a project',
       body: 'Projects are the foundation of your workspace. Each project can contain notes, todos, devlogs, and more. You\'ll need to create and select a project to access most features.',
       tips: [
-        'Click "Create New Project" to get started',
+        'Click the "+" button in the top header to create a new project',
         'Give your project a meaningful name',
         'You can create multiple projects to organize different work streams'
       ],
@@ -57,11 +57,12 @@ const TUTORIAL_STEPS = [
     title: 'Terminal Interface',
     route: '/terminal',
     content: {
-      heading: 'Power-user terminal interface',
-      body: 'Experience a unique CLI-style interface built right into your browser. Execute commands with the speed and efficiency of a terminal, featuring intelligent autocomplete, persistent command history, and instant execution - no page reloads required.',
+      heading: 'Power-user terminal interface with AI',
+      body: 'Experience a unique CLI-style interface built right into your browser. Execute commands with the speed and efficiency of a terminal, featuring intelligent autocomplete, persistent command history, and AI-powered features.',
       tips: [
         'Lightning-fast command execution with real-time feedback',
         'Smart autocomplete learns your workflow patterns',
+        'AI integration: use /llm for context/spec or /summary to summarize content',
         'Full command history with Up/Down arrow navigation',
         'Execute complex operations in seconds, not clicks'
       ],
@@ -80,7 +81,8 @@ const TUTORIAL_STEPS = [
         'Notes are great for documentation and ideas',
         'Todos help track tasks and action items',
         'DevLogs document your development progress over time'
-      ]
+      ],
+      actionRequired: 'Try creating a note or todo to get started'
     },
     requiresProjectSelection: true
   },
@@ -95,7 +97,8 @@ const TUTORIAL_STEPS = [
         'View current stack in the "Current" tab',
         'Add new technologies in the "Add" tab',
         'Use preset stacks to quickly set up common configurations'
-      ]
+      ],
+      actionRequired: 'Add a technology to your stack using the "Add" tab'
     },
     requiresProjectSelection: true
   },
@@ -110,7 +113,8 @@ const TUTORIAL_STEPS = [
         'The graph view shows component relationships',
         'Click nodes to view details',
         'Use the structure tab for a hierarchical view'
-      ]
+      ],
+      actionRequired: 'Create a component using the sidebar controls'
     },
     requiresProjectSelection: true
   },
@@ -161,6 +165,24 @@ const TUTORIAL_STEPS = [
   },
   {
     stepNumber: 11,
+    title: 'Project Settings',
+    route: '/settings',
+    content: {
+      heading: 'Configure your project settings',
+      body: 'Manage project-specific settings including name, description, color, category, and more. Import/export project data, archive projects, or delete them when needed.',
+      tips: [
+        'Customize project color and category for better organization',
+        'Import project data from JSON files',
+        'Export your project to share or backup',
+        'Archive inactive projects to keep your workspace clean',
+        'Delete projects you no longer need (this cannot be undone)'
+      ],
+      actionRequired: 'Try changing your project color or category'
+    },
+    requiresProjectSelection: true
+  },
+  {
+    stepNumber: 12,
     title: 'Account Settings',
     route: '/account-settings',
     content: {
@@ -175,7 +197,7 @@ const TUTORIAL_STEPS = [
     requiresProjectSelection: false
   },
   {
-    stepNumber: 12,
+    stepNumber: 13,
     title: 'Discover Community',
     route: '/discover',
     content: {
@@ -188,11 +210,27 @@ const TUTORIAL_STEPS = [
       ]
     },
     requiresProjectSelection: false
+  },
+  {
+    stepNumber: 14,
+    title: 'Help & Resources',
+    route: '/help',
+    content: {
+      heading: 'Need help? We\'ve got you covered',
+      body: 'Access helpful resources and restart this tutorial anytime. Explore tips and shortcuts to boost your productivity.',
+      tips: [
+        'Restart the tutorial if you need a refresher',
+        'Learn keyboard shortcuts and markdown syntax',
+        'Browse productivity tips and best practices',
+        'Reach out via the support page if you need help'
+      ]
+    },
+    requiresProjectSelection: false
   }
 ];
 
 // Get all tutorial steps
-router.get('/steps', async (req, res) => {
+router.get('/steps', async (_req, res) => {
   try {
     res.json({ steps: TUTORIAL_STEPS });
   } catch (error) {

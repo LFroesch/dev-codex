@@ -7,7 +7,7 @@ interface WelcomeModalProps {
 }
 
 export const WelcomeModal: React.FC<WelcomeModalProps> = ({ user }) => {
-  const { startTutorial, skipTutorial } = useTutorialContext();
+  const { startTutorial, skipTutorial, totalSteps, isLoading } = useTutorialContext();
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
@@ -87,8 +87,9 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ user }) => {
             <button
               onClick={handleStart}
               className="btn btn-primary"
+              disabled={isLoading || totalSteps === 0}
             >
-              Start Tutorial
+              {isLoading || totalSteps === 0 ? 'Loading...' : 'Start Tutorial'}
             </button>
           </div>
 

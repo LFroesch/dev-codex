@@ -81,20 +81,6 @@ const StaleItemsRenderer: React.FC<StaleItemsRendererProps> = ({
 
   return (
     <div className="mt-3 space-y-3">
-      <div className="p-3 bg-warning/10 border-l-4 border-warning rounded">
-        <div className="flex items-center gap-2">
-          <span className="text-2xl">⏰</span>
-          <div>
-            <div className="font-semibold">Stale Items Found</div>
-            <div className="text-sm text-base-content/70">
-              {staleNotes.length > 0 && `${staleNotes.length} note${staleNotes.length !== 1 ? 's' : ''} (14+ days)`}
-              {staleNotes.length > 0 && staleTodos.length > 0 && ' and '}
-              {staleTodos.length > 0 && `${staleTodos.length} todo${staleTodos.length !== 1 ? 's' : ''} (7+ days)`}
-              {' '}need attention
-            </div>
-          </div>
-        </div>
-      </div>
 
       {Object.entries(projectGroups).map(([projectId, items]) => {
         const projectName = items.notes[0]?.projectName || items.todos[0]?.projectName || 'Unknown Project';

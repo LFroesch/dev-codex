@@ -755,18 +755,6 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
 
   // Relationship and component handlers are now in custom hooks
 
-  if (docs.length === 0) {
-    return (
-      <div className="h-[600px] flex items-center justify-center bg-base-200 rounded-lg border-2 border-base-content/20">
-        <div className="text-center">
-          <div className="text-6xl mb-4">🕸️</div>
-          <h3 className="text-lg font-bold mb-2">No components yet</h3>
-          <p className="text-base-content/60">Create some components to see them in the graph view</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col lg:flex-row gap-2">
       {/* Controls Sidebar */}

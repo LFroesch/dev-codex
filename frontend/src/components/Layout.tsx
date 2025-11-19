@@ -146,6 +146,28 @@ const Layout: React.FC = () => {
   const [activePublicTab, setActivePublicTab] = useState<'overview' | 'url' | 'visibility'>('overview');
   const [activeSharingTab, setActiveSharingTab] = useState<'overview' | 'team' | 'activity'>('overview');
   const [activeSettingsTab, setActiveSettingsTab] = useState<'info' | 'export' | 'danger'>('info');
+  const [projectViewMode, setProjectViewMode] = useState<'grid' | 'table'>(() => {
+    const saved = localStorage.getItem('projectViewMode');
+    return (saved === 'table' || saved === 'grid') ? saved : 'grid';
+  });
+  const [expandedProjectTodos, setExpandedProjectTodos] = useState<Set<string>>(new Set());
+
+  // Save view mode preference
+  useEffect(() => {
+    localStorage.setItem('projectViewMode', projectViewMode);
+  }, [projectViewMode]);
+
+  const toggleProjectTodos = (projectId: string) => {
+    setExpandedProjectTodos(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(projectId)) {
+        newSet.delete(projectId);
+      } else {
+        newSet.add(projectId);
+      }
+      return newSet;
+    });
+  };
 
   // when setActiveProjectTab, clear category selections
   useEffect(() => {
@@ -1242,16 +1264,46 @@ const Layout: React.FC = () => {
               {/* My Projects Tabs */}
               {location.pathname === '/projects' && (
                 <>
-                  <ProjectsTabs
-                    activeTab={activeProjectTab}
-                    onTabChange={setActiveProjectTab}
-                    getContrastColor={getContrastTextColor}
-                    counts={{
-                      active: currentProjects.length,
-                      archived: archivedProjects.length,
-                      shared: sharedProjects.length
-                    }}
-                  />
+                  {/* Tabs Row with View Toggle on Left */}
+                  <div className="relative flex items-center justify-center">
+                    {/* View Mode Toggle - Desktop (Left side) */}
+                    {(activeProjectTab === 'active' || activeProjectTab === 'archived' || activeProjectTab === 'shared') && (
+                      <div className="absolute left-1/3 -translate-x-full mr-4">
+                        <div className="btn-group">
+                          <button
+                            className={`btn btn-sm ${projectViewMode === 'grid' ? 'btn-active' : ''}`}
+                            onClick={() => setProjectViewMode('grid')}
+                            title="Grid View"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                            </svg>
+                          </button>
+                          <button
+                            className={`btn btn-sm ${projectViewMode === 'table' ? 'btn-active' : ''}`}
+                            onClick={() => setProjectViewMode('table')}
+                            title="Table View"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Centered Tabs */}
+                    <ProjectsTabs
+                      activeTab={activeProjectTab}
+                      onTabChange={setActiveProjectTab}
+                      getContrastColor={getContrastTextColor}
+                      counts={{
+                        active: currentProjects.length,
+                        archived: archivedProjects.length,
+                        shared: sharedProjects.length
+                      }}
+                    />
+                  </div>
 
                   {/* Category Selector - Desktop */}
                   {(activeProjectTab === 'active' || activeProjectTab === 'archived' || activeProjectTab === 'shared') && (
@@ -1548,6 +1600,33 @@ const Layout: React.FC = () => {
             <div className="flex-1 overflow-auto border-2 border-base-content/20 bg-base-100 rounded-lg shadow-2xl backdrop-blur-none container-height-fix">
               <div className="p-2">
                 <div className="space-y-4">
+
+                {/* View Mode Toggle - Mobile (in scrollable content) */}
+                {(activeProjectTab === 'active' || activeProjectTab === 'archived' || activeProjectTab === 'shared') && (
+                  <div className="flex justify-center pt-2 md:hidden">
+                    <div className="btn-group">
+                      <button
+                        className={`btn btn-sm border-thick ${projectViewMode === 'grid' ? 'btn-active' : ''}`}
+                        onClick={() => setProjectViewMode('grid')}
+                        title="Grid View"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                        </svg>
+                      </button>
+                      <button
+                        className={`btn btn-sm border-thick ${projectViewMode === 'table' ? 'btn-active' : ''}`}
+                        onClick={() => setProjectViewMode('table')}
+                        title="Table View"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {(activeProjectTab === 'active' || activeProjectTab === 'archived' || activeProjectTab === 'shared') && (
                   <div className="space-y-4">
                     {!analyticsReady ? (
@@ -1600,41 +1679,85 @@ const Layout: React.FC = () => {
                       </div>
                     ) : (
                       <>
-                        {/* Projects Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                          {(selectedCategory
-                            ? (activeProjectTab === 'active' ? groupedCurrentProjects :
-                               activeProjectTab === 'archived' ? groupedArchivedProjects :
-                               groupedSharedProjects)[selectedCategory] || []
-                            : Object.values(
-                                activeProjectTab === 'active' ? groupedCurrentProjects :
+                        {projectViewMode === 'grid' ? (
+                          /* Projects Grid */
+                          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                            {(selectedCategory
+                              ? (activeProjectTab === 'active' ? groupedCurrentProjects :
                                 activeProjectTab === 'archived' ? groupedArchivedProjects :
-                                groupedSharedProjects
-                              ).flat()
-                          ).sort((a, b) => {
-                            // Sort by recently updated globally
-                            const dateA = new Date(a.updatedAt).getTime();
-                            const dateB = new Date(b.updatedAt).getTime();
-                            return dateB - dateA; // Most recent first
-                          }).map((project) => (
-                            <button
+                                groupedSharedProjects)[selectedCategory] || []
+                              : Object.values(
+                                  activeProjectTab === 'active' ? groupedCurrentProjects :
+                                  activeProjectTab === 'archived' ? groupedArchivedProjects :
+                                  groupedSharedProjects
+                                ).flat()
+                            ).sort((a, b) => {
+                              // Sort by recently updated globally
+                              const dateA = new Date(a.updatedAt).getTime();
+                              const dateB = new Date(b.updatedAt).getTime();
+                              return dateB - dateA; // Most recent first
+                            }).map((project) => {
+                              const isExpanded = expandedProjectTodos.has(project.id);
+                              const activeTodos = project.todos?.filter(t => !t.completed) || [];
+
+                              // Sort todos: overdue first, then by due date, then by priority
+                              const sortedActiveTodos = [...activeTodos].sort((a, b) => {
+                                const now = new Date();
+                                const aDue = a.dueDate ? new Date(a.dueDate) : null;
+                                const bDue = b.dueDate ? new Date(b.dueDate) : null;
+                                const aOverdue = aDue && aDue < now;
+                                const bOverdue = bDue && bDue < now;
+
+                                // Overdue first
+                                if (aOverdue !== bOverdue) return aOverdue ? -1 : 1;
+
+                                // Then by due date (soonest first)
+                                if (aDue && bDue) {
+                                  const dateDiff = aDue.getTime() - bDue.getTime();
+                                  if (dateDiff !== 0) return dateDiff;
+                                }
+                                if (aDue && !bDue) return -1;
+                                if (!aDue && bDue) return 1;
+
+                                // Then by priority
+                                const priorityWeight = { high: 3, medium: 2, low: 1 };
+                                const aPriority = priorityWeight[a.priority || 'medium'];
+                                const bPriority = priorityWeight[b.priority || 'medium'];
+                                if (aPriority !== bPriority) return bPriority - aPriority;
+
+                                // Finally by creation date
+                                return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+                              });
+
+                              return (
+                            <div
                               key={project.id}
-                              onClick={() => {
-                                handleProjectSelect(project);
-                                navigate('/notes');
-                              }}
-                              disabled={!analyticsReady}
-                              className={`shadow-lg hover:shadow-xl p-4 rounded-lg border-2 transition-all duration-200 text-left group h-[225px] flex flex-col relative ${
+                              className={`shadow-lg rounded-lg border-2 transition-all duration-200 overflow-hidden ${
                                 project.isLocked
-                                  ? 'border-warning/50 bg-base-100/30 opacity-60'
+                                  ? 'border-warning/50'
                                   : !analyticsReady
-                                    ? 'border-base-300/30 bg-base-100/50 opacity-60 cursor-not-allowed'
+                                    ? 'border-base-300/30'
                                     : selectedProject?.id === project.id
-                                      ? 'border-secondary/60 bg-secondary/20 hover:border-accent/50'
+                                      ? 'border-secondary/60'
                                       : 'border-base-content/20 hover:border-secondary/50'
                               }`}
-                              title={project.isLocked ? (project.lockedReason || 'This project is locked and cannot be edited') : ''}
                             >
+                              <button
+                                onClick={() => {
+                                  handleProjectSelect(project);
+                                }}
+                                disabled={!analyticsReady}
+                                className={`w-full p-4 text-left group h-[225px] flex flex-col relative transition-colors ${
+                                  project.isLocked
+                                    ? 'bg-base-100/30 opacity-60'
+                                    : !analyticsReady
+                                      ? 'bg-base-100/50 opacity-60 cursor-not-allowed'
+                                      : selectedProject?.id === project.id
+                                        ? 'bg-secondary/20 hover:bg-secondary/25'
+                                        : 'hover:bg-base-200'
+                                }`}
+                                title={project.isLocked ? (project.lockedReason || 'This project is locked and cannot be edited') : ''}
+                              >
                               {/* Lock Icon Overlay */}
                               {project.isLocked && (
                                 <div className="absolute top-2 right-2 z-10">
@@ -1746,8 +1869,344 @@ const Layout: React.FC = () => {
                                 </div>
                               </div>
                             </button>
-                          ))}
-                        </div>
+
+                            {/* Todos Toggle Button */}
+                            {activeTodos.length > 0 && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleProjectTodos(project.id);
+                                }}
+                                className="w-full p-2 bg-base-200 hover:bg-base-300 transition-colors border-t-2 border-base-content/10 flex items-center justify-center gap-2"
+                              >
+                                <span className="text-xs font-semibold">
+                                  {activeTodos.length} Active Todo{activeTodos.length !== 1 ? 's' : ''}
+                                </span>
+                                <svg
+                                  className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                              </button>
+                            )}
+
+                            {/* Expandable Todos Section */}
+                            {isExpanded && sortedActiveTodos.length > 0 && (
+                              <div className="p-3 bg-base-100 border-t-2 border-base-content/10">
+                                <div className="space-y-2">
+                                  {sortedActiveTodos.slice(0, 5).map((todo) => {
+                                    const now = new Date();
+                                    const dueDate = todo.dueDate ? new Date(todo.dueDate) : null;
+                                    const isOverdue = dueDate && dueDate < now;
+
+                                    return (
+                                    <div
+                                      key={todo.id}
+                                      className="flex items-start gap-2 text-xs p-2 bg-base-200/50 rounded hover:bg-base-300 cursor-pointer transition-colors"
+                                      onClick={() => {
+                                        handleProjectSelect(project);
+                                        navigate(`/notes?section=todos&todoId=${todo.id}`);
+                                      }}
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        checked={todo.completed}
+                                        className="checkbox checkbox-xs mt-0.5 pointer-events-none"
+                                        readOnly
+                                      />
+                                      <div className="flex-1 min-w-0">
+                                        <p className="font-medium truncate mb-1">{todo.title}</p>
+                                        <div className="flex gap-1 flex-wrap items-center">
+                                          {isOverdue && (
+                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold bg-error/20 border border-error/40 gap-0.5"
+                                              style={{ color: getContrastTextColor("error/20") }}>
+                                              <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                              </svg>
+                                              OVERDUE
+                                            </span>
+                                          )}
+                                          {todo.dueDate && (
+                                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold border gap-0.5 ${
+                                              isOverdue ? 'bg-error/10 border-error/30' : 'bg-warning/20 border-warning/40'
+                                            }`}
+                                              style={{ color: getContrastTextColor(isOverdue ? "error/10" : "warning/20") }}>
+                                              <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                              </svg>
+                                              {new Date(todo.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                            </span>
+                                          )}
+                                          {todo.priority && todo.priority !== 'medium' && (
+                                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold border ${
+                                              todo.priority === 'high' ? 'bg-warning/20 border-warning/40' : 'bg-info/20 border-info/40'
+                                            }`}
+                                              style={{ color: getContrastTextColor(todo.priority === 'high' ? "warning/20" : "info/20") }}>
+                                              {todo.priority.toUpperCase()}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                    );
+                                  })}
+                                  {sortedActiveTodos.length > 5 && (
+                                    <button
+                                      onClick={() => {
+                                        handleProjectSelect(project);
+                                        navigate('/notes?section=todos');
+                                      }}
+                                      className="text-xs text-base-content/60 hover:text-primary transition-colors text-center w-full underline"
+                                    >
+                                      +{sortedActiveTodos.length - 5} more - Click to view all
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                          );
+                          })}
+                          </div>
+                        ) : (
+                          /* Projects Table */
+                          <div className="overflow-x-auto rounded-lg border-2 border-base-content/20">
+                            <table className="table table-zebra w-full border-separate border-spacing-0">
+                              <thead>
+                                <tr>
+                                  <th className="bg-base-200 text-base-content first:rounded-tl-lg">Project</th>
+                                  <th className="bg-base-200 text-base-content">Category</th>
+                                  <th className="bg-base-200 text-base-content">Description</th>
+                                  <th className="bg-base-200 text-base-content">Todos</th>
+                                  <th className="bg-base-200 text-base-content">Time</th>
+                                  <th className="bg-base-200 text-base-content last:rounded-tr-lg">Updated</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {(selectedCategory
+                                  ? (activeProjectTab === 'active' ? groupedCurrentProjects :
+                                    activeProjectTab === 'archived' ? groupedArchivedProjects :
+                                    groupedSharedProjects)[selectedCategory] || []
+                                  : Object.values(
+                                      activeProjectTab === 'active' ? groupedCurrentProjects :
+                                      activeProjectTab === 'archived' ? groupedArchivedProjects :
+                                      groupedSharedProjects
+                                    ).flat()
+                                ).sort((a, b) => {
+                                  const dateA = new Date(a.updatedAt).getTime();
+                                  const dateB = new Date(b.updatedAt).getTime();
+                                  return dateB - dateA;
+                                }).map((project) => {
+                                  const stats = calculateTodoStats(project);
+                                  const isExpanded = expandedProjectTodos.has(project.id);
+                                  const activeTodos = project.todos?.filter(t => !t.completed) || [];
+
+                                  // Sort todos: overdue first, then by due date, then by priority
+                                  const sortedActiveTodos = [...activeTodos].sort((a, b) => {
+                                    const now = new Date();
+                                    const aDue = a.dueDate ? new Date(a.dueDate) : null;
+                                    const bDue = b.dueDate ? new Date(b.dueDate) : null;
+                                    const aOverdue = aDue && aDue < now;
+                                    const bOverdue = bDue && bDue < now;
+
+                                    // Overdue first
+                                    if (aOverdue !== bOverdue) return aOverdue ? -1 : 1;
+
+                                    // Then by due date (soonest first)
+                                    if (aDue && bDue) {
+                                      const dateDiff = aDue.getTime() - bDue.getTime();
+                                      if (dateDiff !== 0) return dateDiff;
+                                    }
+                                    if (aDue && !bDue) return -1;
+                                    if (!aDue && bDue) return 1;
+
+                                    // Then by priority
+                                    const priorityWeight = { high: 3, medium: 2, low: 1 };
+                                    const aPriority = priorityWeight[a.priority || 'medium'];
+                                    const bPriority = priorityWeight[b.priority || 'medium'];
+                                    if (aPriority !== bPriority) return bPriority - aPriority;
+
+                                    // Finally by creation date
+                                    return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+                                  });
+
+                                  return (
+                                    <React.Fragment key={project.id}>
+                                    <tr
+                                      className={`cursor-pointer hover:bg-base-200 ${
+                                        selectedProject?.id === project.id ? 'bg-secondary/20' : ''
+                                      } ${project.isLocked ? 'opacity-60' : ''}`}
+                                      title={project.isLocked ? (project.lockedReason || 'This project is locked') : ''}
+                                    >
+                                      <td onClick={() => handleProjectSelect(project)}>
+                                        <div className="flex items-center gap-2">
+                                          <div
+                                            className="w-3 h-3 rounded-full border-thick flex-shrink-0"
+                                            style={{ backgroundColor: project.color }}
+                                          />
+                                          <span className="font-semibold">
+                                            {String(project.name).split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+                                          </span>
+                                          {project.isLocked && (
+                                            <svg className="w-4 h-4 text-warning flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                              <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                                            </svg>
+                                          )}
+                                        </div>
+                                      </td>
+                                      <td>
+                                        {project.category && (
+                                          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-info/20 border-2 border-info/40"
+                                            style={{ color: getContrastTextColor("info/20") }}>
+                                            {String(project.category).split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+                                          </span>
+                                        )}
+                                      </td>
+                                      <td>
+                                        <p className="text-sm text-base-content/70 truncate max-w-xs">
+                                          {project.description || '-'}
+                                        </p>
+                                      </td>
+                                      <td>
+                                        <div className="flex gap-1 flex-wrap items-center">
+                                          {stats.overdue > 0 && (
+                                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-error/20 border-2 border-error/40 gap-1"
+                                              style={{ color: getContrastTextColor("error/20") }}>
+                                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                              </svg>
+                                              {stats.overdue}
+                                            </span>
+                                          )}
+                                          {stats.upcoming > 0 && (
+                                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-warning/20 border-2 border-warning/40 gap-1"
+                                              style={{ color: getContrastTextColor("warning/20") }}>
+                                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                              </svg>
+                                              {stats.upcoming}
+                                            </span>
+                                          )}
+                                          {stats.overdue === 0 && stats.upcoming === 0 && (
+                                            <span className="text-base-content/40">-</span>
+                                          )}
+                                          {activeTodos.length > 0 && (
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                toggleProjectTodos(project.id);
+                                              }}
+                                              className="ml-2 p-1 hover:bg-base-300 rounded transition-colors"
+                                              title={`${isExpanded ? 'Hide' : 'Show'} ${activeTodos.length} active todos`}
+                                            >
+                                              <svg
+                                                className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                              >
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                              </svg>
+                                            </button>
+                                          )}
+                                        </div>
+                                      </td>
+                                      <td>
+                                        <span className="font-mono text-xs">{formatProjectTime(project.id)}</span>
+                                      </td>
+                                      <td>
+                                        <span className="text-xs">{getRelativeTime(project.updatedAt)}</span>
+                                      </td>
+                                    </tr>
+
+                                    {/* Expandable Todos Row */}
+                                    {isExpanded && sortedActiveTodos.length > 0 && (
+                                      <tr>
+                                        <td colSpan={100} className="p-0 bg-base-100">
+                                          <div className="p-3">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
+                                            {sortedActiveTodos.slice(0, 6).map((todo) => {
+                                              const now = new Date();
+                                              const dueDate = todo.dueDate ? new Date(todo.dueDate) : null;
+                                              const isOverdue = dueDate && dueDate < now;
+
+                                              return (
+                                              <div
+                                                key={todo.id}
+                                                className="flex items-start gap-2 text-xs p-2 bg-base-200/50 rounded hover:bg-base-300 cursor-pointer transition-colors"
+                                                onClick={() => {
+                                                  handleProjectSelect(project);
+                                                  navigate(`/notes?section=todos&todoId=${todo.id}`);
+                                                }}
+                                              >
+                                                <input
+                                                  type="checkbox"
+                                                  checked={todo.completed}
+                                                  className="checkbox checkbox-xs mt-0.5 pointer-events-none"
+                                                  readOnly
+                                                />
+                                                <div className="flex-1 min-w-0">
+                                                  <p className="font-medium truncate mb-1">{todo.title}</p>
+                                                  <div className="flex gap-1 flex-wrap items-center">
+                                                    {isOverdue && (
+                                                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold bg-error/20 border border-error/40 gap-0.5"
+                                                        style={{ color: getContrastTextColor("error/20") }}>
+                                                        <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                        </svg>
+                                                        OVERDUE
+                                                      </span>
+                                                    )}
+                                                    {todo.dueDate && (
+                                                      <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold border gap-0.5 ${
+                                                        isOverdue ? 'bg-error/10 border-error/30' : 'bg-warning/20 border-warning/40'
+                                                      }`}
+                                                        style={{ color: getContrastTextColor(isOverdue ? "error/10" : "warning/20") }}>
+                                                        <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                        </svg>
+                                                        {new Date(todo.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                                      </span>
+                                                    )}
+                                                    {todo.priority && todo.priority !== 'medium' && (
+                                                      <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold border ${
+                                                        todo.priority === 'high' ? 'bg-warning/20 border-warning/40' : 'bg-info/20 border-info/40'
+                                                      }`}
+                                                        style={{ color: getContrastTextColor(todo.priority === 'high' ? "warning/20" : "info/20") }}>
+                                                        {todo.priority.toUpperCase()}
+                                                      </span>
+                                                    )}
+                                                  </div>
+                                                </div>
+                                              </div>
+                                              );
+                                            })}
+                                            </div>
+                                            {sortedActiveTodos.length > 6 && (
+                                              <button
+                                                onClick={() => {
+                                                  handleProjectSelect(project);
+                                                  navigate('/notes?section=todos');
+                                                }}
+                                                className="mt-2 text-xs text-base-content/60 hover:text-primary transition-colors text-center w-full underline"
+                                              >
+                                                +{sortedActiveTodos.length - 6} more - Click to view all
+                                              </button>
+                                            )}
+                                          </div>
+                                        </td>
+                                      </tr>
+                                    )}
+                                    </React.Fragment>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
                       </>
                     )}
                   </div>

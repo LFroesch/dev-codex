@@ -153,7 +153,7 @@ router.post('/project/:projectId', requireAuth, async (req: AuthRequest, res: Re
           type: 'comment_on_project',
           title: 'New Comment',
           message: `${displayName} commented on "${project.name}"`,
-          actionUrl: `/discover/project/${project.publicSlug || project._id}`,
+          actionUrl: `/discover/project/${project.publicSlug || project._id}?tab=comments`,
           relatedProjectId: project._id,
           relatedUserId: new mongoose.Types.ObjectId(userId),
           relatedCommentId: comment._id
@@ -239,7 +239,7 @@ router.post('/project/:projectId/reply/:commentId', requireAuth, async (req: Aut
           type: 'reply_to_comment',
           title: 'New Reply',
           message: `${displayName} replied to your comment on "${project.name}"`,
-          actionUrl: `/discover/project/${project.publicSlug || project._id}`,
+          actionUrl: `/discover/project/${project.publicSlug || project._id}?tab=comments`,
           relatedProjectId: project._id,
           relatedUserId: new mongoose.Types.ObjectId(userId),
           relatedCommentId: reply._id

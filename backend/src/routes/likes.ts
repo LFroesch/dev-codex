@@ -61,8 +61,8 @@ router.post('/posts/:postId', requireAuth, async (req: AuthRequest, res: Respons
         .lean();
 
       const actionUrl = populatedPost?.postType === 'project' && populatedPost.projectId
-        ? `/discover/project/${(populatedPost.projectId as any).publicSlug || populatedPost.projectId}`
-        : `/discover/user/${liker?.username || userId}`;
+        ? `/discover/project/${(populatedPost.projectId as any).publicSlug || populatedPost.projectId}?tab=comments`
+        : `/discover/user/${liker?.username || userId}?tab=posts`;
 
       await notificationService.createNotification({
         userId: post.userId,
@@ -285,7 +285,7 @@ router.post('/comments/:commentId', requireAuth, async (req: AuthRequest, res: R
         type: 'comment_like',
         title: 'Comment Liked',
         message: `${likerDisplayName} liked your comment`,
-        actionUrl: `/discover/project/${project?.publicSlug || comment.projectId}`,
+        actionUrl: `/discover/project/${project?.publicSlug || comment.projectId}?tab=comments`,
         relatedUserId: new mongoose.Types.ObjectId(userId),
         relatedProjectId: comment.projectId,
         relatedCommentId: new mongoose.Types.ObjectId(commentId)

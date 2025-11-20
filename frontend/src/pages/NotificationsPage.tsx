@@ -112,9 +112,9 @@ const NotificationsPage: React.FC = () => {
 
     // Navigate to the appropriate page based on item type
     if (item.itemType === 'note') {
-      navigate('/notes');
+      window.location.href = '/notes';
     } else {
-      navigate('/notes?section=todos');
+      window.location.href = '/notes?section=todos';
     }
   };
 
@@ -123,7 +123,7 @@ const NotificationsPage: React.FC = () => {
     window.dispatchEvent(new CustomEvent('selectProject', { detail: { projectId: item.projectId } }));
 
     // Navigate to todos section
-    navigate('/notes?section=todos');
+    window.location.href = '/notes?section=todos';
   };
 
   const handleTodoNotificationClick = (notification: Notification) => {
@@ -139,7 +139,7 @@ const NotificationsPage: React.FC = () => {
       }));
 
       // Navigate to todos section
-      navigate('/notes?section=todos');
+      window.location.href = '/notes?section=todos';
 
       // Mark as read
       if (!notification.isRead) {
@@ -156,7 +156,7 @@ const NotificationsPage: React.FC = () => {
 
     // Navigate using actionUrl if available
     if (notification.actionUrl) {
-      navigate(notification.actionUrl);
+      window.location.href = notification.actionUrl;
     }
   };
 

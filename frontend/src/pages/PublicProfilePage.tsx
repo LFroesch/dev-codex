@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
 import { publicAPI, authAPI } from '../api';
 import { apiClient } from '../api/base';
 import { getContrastTextColor } from '../utils/contrastTextColor';
@@ -9,13 +9,20 @@ import LikeButton from '../components/LikeButton';
 const PublicProfilePage: React.FC = () => {
   const { identifier } = useParams<{ identifier: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const [user, setUser] = useState<any>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [postsLoading, setPostsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [activeTab, setActiveTab] = useState('projects');
+
+  // Initialize activeTab from URL params
+  const [activeTab, setActiveTab] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get('tab');
+    return tabParam || 'projects';
+  });
 
   useEffect(() => {
     const loadData = async () => {
@@ -36,6 +43,15 @@ const PublicProfilePage: React.FC = () => {
 
     loadData();
   }, [identifier]);
+
+  // Update tab when URL changes
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tabParam = params.get('tab');
+    if (tabParam) {
+      setActiveTab(tabParam);
+    }
+  }, [location.search]);
 
   const loadUser = async () => {
     try {
@@ -125,92 +141,96 @@ const PublicProfilePage: React.FC = () => {
       <div className="space-y-6">
         {/* Profile Header */}
         <div className="section-container">
-          <div className="section-content p-3 sm:p-4">
-            {/* Header with buttons and profile info */}
-            <div className="flex flex-wrap items-start gap-2 mb-3">
-              {/* Left side: Profile info (wraps internally) */}
-              <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
-
-                <h1 className="bg-primary text-lg sm:text-xl font-bold text-base-content px-3 py-1.5 rounded-md border-2 border-base-content/20"
-                  style={{ color: getContrastTextColor('primary') }}>
-
-                  {user.displayName}
-                </h1>
-                {user.publicSlug && !(currentUser && currentUser.id === user.id) && (
-                  <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-secondary border-2 border-base-content/20"
-                    style={{ color: getContrastTextColor("secondary") }}>
-                    @{user.publicSlug}
-                  </span>
-                )}
-                <div className="flex items-center bg-accent gap-1.5 border-2 border-base-content/20 px-2 py-1 rounded-md" style={{ color: getContrastTextColor("accent") }}>
-                  <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          <div className="section-content p-4 sm:p-6">
+            {/* Action Buttons - Top Right */}
+            <div className="flex justify-end gap-2 mb-4">
+              {currentUser && currentUser.id === user.id && (
+                <button
+                  onClick={() => navigate('/account-settings')}
+                  className="btn btn-sm btn-ghost gap-2 border border-base-content/20"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                   </svg>
-                  <span className="text-xs font-semibold whitespace-nowrap">
-                    <span className="hidden sm:inline">Member </span>
-                    {new Date(user.createdAt).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'short'
-                    })}
-                  </span>
-                </div>
-              </div>
+                  <span>Edit</span>
+                </button>
+              )}
 
-              {/* Right side: Action Buttons (stays on top row) */}
-              <div className="flex gap-2 flex-shrink-0">
-                {currentUser && currentUser.id === user.id && (
-                  <button
-                  // todo - make this also go to the URL section in account-settings
-                    onClick={() => navigate('/account-settings')}
-                    className="btn btn-sm btn-secondary gap-1 sm:gap-2 border-thick"
-                    style={{ color: getContrastTextColor('secondary') }}
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              {currentUser && currentUser.id !== user.id && (
+                <FollowButton type="user" id={user.id} size="md" />
+              )}
+
+              <button
+                onClick={copyProfileUrl}
+                className="btn btn-sm btn-ghost gap-2 border border-base-content/20"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                <span>Share</span>
+              </button>
+
+              <button
+                onClick={() => navigate('/discover')}
+                className="btn btn-sm btn-primary gap-2 border-thick"
+                style={{ color: getContrastTextColor('primary') }}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                <span>Back</span>
+              </button>
+            </div>
+
+            {/* Display Name */}
+            <div className="mb-4">
+              <h1
+                className="text-3xl sm:text-4xl font-bold px-4 py-2 rounded-lg inline-block border-2 border-base-content/20 bg-primary"
+                style={{ color: getContrastTextColor('primary') }}
+              >
+                {user.displayName}
+              </h1>
+            </div>
+
+            {/* Metadata Row */}
+            <div className="flex flex-wrap items-center gap-3 mb-4">
+              {/* Username */}
+              {user.publicSlug && (
+                <>
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-base-content/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
                     </svg>
-                    <span className="hidden sm:inline">Edit Profile</span>
-                    <span className="sm:hidden">Edit</span>
-                  </button>
-                )}
+                    <span className="text-sm font-medium text-base-content/80">@{user.publicSlug}</span>
+                  </div>
 
-                {/* Follow button - only show if viewing someone else's profile and user is logged in */}
-                {currentUser && currentUser.id !== user.id && (
-                  <FollowButton type="user" id={user.id} size="md" />
-                )}
+                  <span className="text-base-content/30">•</span>
+                </>
+              )}
 
-                <button
-                  onClick={() => navigate('/discover')}
-                  className="btn btn-sm btn-primary gap-1 sm:gap-2 border-thick"
-                  style={{ color: getContrastTextColor('primary') }}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                  <span className="hidden sm:inline">Back</span>
-                </button>
-
-                <button
-                  onClick={copyProfileUrl}
-                  className="btn btn-sm btn-outline gap-1 sm:gap-2"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
-                  <span className="hidden sm:inline">Share</span>
-                </button>
+              {/* Member Since */}
+              <div className="flex items-center gap-2">
+                <svg className="w-4 h-4 text-base-content/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="text-sm font-medium text-base-content/80">
+                  Joined {new Date(user.createdAt).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                  })}
+                </span>
               </div>
             </div>
 
             {/* Bio */}
-            <div className="h-[3.5rem] flex-shrink-0">
-              {user.bio && (
-                <div className="inline-flex items-start px-2 py-0.5 rounded-md text-xs font-medium text-base-content/80 h-full w-full input input-bordered">
-                  <p className="text-sm text-base-content/70 line-clamp-2 leading-relaxed">
-                    {user.bio}
-                  </p>
-                </div>
-              )}
-            </div>
+            {user.bio && (
+              <div className="px-4 py-3 rounded-lg bg-base-200/50 border border-base-content/20">
+                <p className="text-sm text-base-content/80 leading-relaxed">
+                  {user.bio}
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -287,10 +307,10 @@ const PublicProfilePage: React.FC = () => {
                     </div>
 
                     <div className="h-[3.5rem] flex-shrink-0 mb-3">
-                      {project.description && (
+                      {(project.publicShortDescription || project.description) && (
                         <div className={"inline-flex items-start px-2 py-0.5 rounded-md text-xs font-medium text-base-content/80 h-full w-full input input-bordered"}>
                           <p className="text-sm text-base-content/70 line-clamp-2 leading-relaxed">
-                            {project.description}
+                            {project.publicShortDescription || project.description}
                           </p>
                         </div>
                       )}

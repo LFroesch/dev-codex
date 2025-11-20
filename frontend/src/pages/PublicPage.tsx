@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useOutletContext, Link } from 'react-router-dom';
 import { getContrastTextColor } from '../utils/contrastTextColor';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface PublicVisibilityOptions {
   description: boolean;
@@ -19,6 +21,7 @@ const PublicPage: React.FC = () => {
   // Form state
   const [isPublic, setIsPublic] = useState(false);
   const [publicSlug, setPublicSlug] = useState('');
+  const [publicShortDescription, setPublicShortDescription] = useState('');
   const [publicDescription, setPublicDescription] = useState('');
 
   // Visibility controls
@@ -34,6 +37,7 @@ const PublicPage: React.FC = () => {
     if (selectedProject) {
       setIsPublic(selectedProject.isPublic || false);
       setPublicSlug(selectedProject.publicSlug || '');
+      setPublicShortDescription(selectedProject.publicShortDescription || '');
       setPublicDescription(selectedProject.publicDescription || '');
 
       // Load visibility options from project or set defaults
@@ -82,6 +86,7 @@ const PublicPage: React.FC = () => {
       await onProjectUpdate(selectedProject.id, {
         isPublic,
         publicSlug: publicSlug.trim() || undefined,
+        publicShortDescription: publicShortDescription.trim() || undefined,
         publicDescription: publicDescription.trim() || undefined,
         publicVisibility: visibilityOptions
       });
@@ -119,6 +124,7 @@ const PublicPage: React.FC = () => {
     return (
       isPublic !== (selectedProject.isPublic || false) ||
       publicSlug !== (selectedProject.publicSlug || '') ||
+      publicShortDescription !== (selectedProject.publicShortDescription || '') ||
       publicDescription !== (selectedProject.publicDescription || '') ||
       visibilityChanged
     );
@@ -374,28 +380,63 @@ const PublicPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Public Description */}
+            {/* Short Description */}
             <div className="form-control">
               <label className="label flex-col sm:flex-row justify-start items-start gap-2">
-                <span className="label-text font-medium">Public Description (Optional):</span>
+                <span className="label-text font-medium">Short Description:</span>
                 <span className="label-text-alt text-xs">
-                  Leave empty to use: "{selectedProject.description.substring(0, 50)}{selectedProject.description.length > 50 ? '...' : ''}"
+                  Shown in search/discovery (keep it concise!)
                 </span>
                 <span className="label-text-alt sm:ml-auto px-2 rounded-lg py-0.5 text-xs font-semibold bg-base-200 border border-thick border-base-content/20">
-                  {publicDescription.length}/300
+                  {publicShortDescription.length}/500
                 </span>
               </label>
               <textarea
-                className="textarea textarea-bordered h-24 resize-none text-sm"
-                placeholder="Describe your project for public viewers (will override the regular description)"
-                value={publicDescription}
-                onChange={(e) => setPublicDescription(e.target.value.slice(0, 300))}
+                className="textarea textarea-bordered resize-y text-sm min-h-20"
+                placeholder="A brief overview of your project (1-2 sentences)"
+                value={publicShortDescription}
+                onChange={(e) => setPublicShortDescription(e.target.value.slice(0, 500))}
               />
-              <label className="label">
+              <div className="label">
                 <span className="label-text-alt text-xs text-base-content/60">
-                  💡 Supports Markdown: **bold**, *italic*, [links](url), `code`, lists, etc.
+                  This appears in discovery cards. Keep it under 200 characters for best results.
+                </span>
+              </div>
+            </div>
+
+            {/* README / Full Description */}
+            <div className="form-control">
+              <label className="label flex-col sm:flex-row justify-start items-start gap-2">
+                <span className="label-text font-medium">README (Optional):</span>
+                <span className="label-text-alt text-xs">
+                  Full project documentation with Markdown support
+                </span>
+                <span className="label-text-alt sm:ml-auto px-2 rounded-lg py-0.5 text-xs font-semibold bg-base-200 border border-thick border-base-content/20">
+                  {publicDescription.length}/10,000
                 </span>
               </label>
+              <textarea
+                className="textarea textarea-bordered resize-y text-sm min-h-32"
+                placeholder="Write your project's README using Markdown formatting..."
+                value={publicDescription}
+                onChange={(e) => setPublicDescription(e.target.value.slice(0, 10000))}
+              />
+              <div className="mt-2 p-3 bg-primary/10 rounded-lg border-2 border-primary/30">
+                <div className="flex items-start gap-2">
+                  <svg className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div className="flex-1">
+                    <h5 className="font-semibold text-primary mb-1">Full Markdown Support</h5>
+                    <p className="text-xs text-base-content/70 mb-2">
+                      This appears in its own README tab on your project page. Use Markdown for rich formatting.
+                    </p>
+                    <p className="text-xs text-base-content/60 font-mono">
+                      **bold** | *italic* | [links](url) | `code` | lists & more
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Preview */}
@@ -407,28 +448,40 @@ const PublicPage: React.FC = () => {
                 </div>
               </div>
               <div className="bg-base-100 p-3 sm:p-4">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 mb-3">
-                  <div>
-                    <h3 
+                <div className="flex flex-col gap-2 mb-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3
                       className="text-lg font-semibold px-2 py-1 rounded-md inline-block"
-                      style={{ 
+                      style={{
                         backgroundColor: selectedProject.color,
                         color: getContrastTextColor(selectedProject.color)
                       }}
                     >
                       {selectedProject.name}
                     </h3>
-                    <p className="text-sm text-base-content/70 mt-2">
-                      {publicDescription || selectedProject.description}
-                    </p>
+                    <span className="badge badge-primary badge-sm h-6 border-2 border-base-content/20 font-semibold"
+                    style={{ color: getContrastTextColor("primary") }}>{selectedProject.category}</span>
+                    {selectedProject.tags?.slice(0, 3).map((tag: string, index: number) => (
+                      <span key={index} className="badge badge-outline badge-sm h-6 border-2 border-base-content/20 font-semibold">{tag}</span>
+                    ))}
                   </div>
-                </div>
-                <div className="flex gap-2">
-                  <span className="badge badge-primary badge-sm h-6 border-2 border-base-content/20 font-semibold"
-                  style={{ color: getContrastTextColor("primary") }}>{selectedProject.category}</span>
-                  {selectedProject.tags?.slice(0, 3).map((tag: string, index: number) => (
-                    <span key={index} className="badge badge-outline badge-sm h-6 border-2 border-base-content/20 font-semibold">{tag}</span>
-                  ))}
+                  {publicShortDescription && (
+                    <div className="mt-2">
+                      <p className="text-sm text-base-content/80 leading-relaxed">
+                        {publicShortDescription}
+                      </p>
+                    </div>
+                  )}
+                  {publicDescription && (
+                    <div className="mt-3 pt-3 border-t border-base-content/20">
+                      <h4 className="text-sm font-bold mb-2">README</h4>
+                      <div className="prose prose-sm max-w-none text-base-content/70">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {publicDescription}
+                        </ReactMarkdown>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

@@ -379,4 +379,54 @@ router.get('/filters', async (req, res) => {
   }
 });
 
+// Search for public users
+router.get('/users/search', async (req, res) => {
+  try {
+    const { search, page = 1, limit = 20 } = req.query;
+    const pageNum = parseInt(page as string);
+    const limitNum = Math.min(parseInt(limit as string), 50); // Max 50 per page
+    const skip = (pageNum - 1) * limitNum;
+
+    // Build query for public users only
+    const query: any = {
+      isPublic: true
+    };
+
+    // Add search filter if provided
+    if (search && typeof search === 'string' && search.trim()) {
+      const searchRegex = new RegExp(search.trim(), 'i');
+      query.$or = [
+        { username: searchRegex },
+        { firstName: searchRegex },
+        { lastName: searchRegex },
+        { bio: searchRegex }
+      ];
+    }
+
+    const [users, total] = await Promise.all([
+      User.find(query)
+        .select('firstName lastName username email displayPreference isPublic publicSlug bio createdAt')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum)
+        .lean(),
+      User.countDocuments(query)
+    ]);
+
+    res.json({
+      success: true,
+      users,
+      pagination: {
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum)
+      }
+    });
+  } catch (error) {
+    console.error('Search users error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 export default router;

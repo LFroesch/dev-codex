@@ -1,15 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { publicAPI, authAPI } from '../api';
+import { apiClient } from '../api/base';
 import { getContrastTextColor } from '../utils/contrastTextColor';
+import FollowButton from '../components/FollowButton';
+import LikeButton from '../components/LikeButton';
 
 const PublicProfilePage: React.FC = () => {
   const { identifier } = useParams<{ identifier: string }>();
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [postsLoading, setPostsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [activeTab, setActiveTab] = useState('projects');
 
   useEffect(() => {
     const loadData = async () => {
@@ -37,6 +43,11 @@ const PublicProfilePage: React.FC = () => {
       setError('');
       const response = await publicAPI.getUserProfile(identifier!);
       setUser(response.user);
+
+      // Load posts after user is loaded
+      if (response.user && response.user.id) {
+        loadPosts(response.user.id);
+      }
     } catch (err: any) {
       if (err.response?.status === 404) {
         setError('User not found');
@@ -47,6 +58,23 @@ const PublicProfilePage: React.FC = () => {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadPosts = async (userId: string) => {
+    try {
+      setPostsLoading(true);
+      const response = await apiClient.get(`/posts/user/${userId}`, {
+        params: { limit: 10, page: 1 }
+      });
+      if (response.data.success) {
+        setPosts(response.data.posts || []);
+      }
+    } catch (err) {
+      console.error('Error loading posts:', err);
+      // Don't show error - just leave posts empty
+    } finally {
+      setPostsLoading(false);
     }
   };
 
@@ -145,6 +173,11 @@ const PublicProfilePage: React.FC = () => {
                   </button>
                 )}
 
+                {/* Follow button - only show if viewing someone else's profile and user is logged in */}
+                {currentUser && currentUser.id !== user.id && (
+                  <FollowButton type="user" id={user.id} size="md" />
+                )}
+
                 <button
                   onClick={() => navigate('/discover')}
                   className="btn btn-sm btn-primary gap-1 sm:gap-2 border-thick"
@@ -181,17 +214,46 @@ const PublicProfilePage: React.FC = () => {
           </div>
         </div>
 
-        {/* Projects */}
-        {user.projects && user.projects.length > 0 ? (
-          <div className="space-y-6">
-            <h2 className="text-3xl font-bold text-base-content text-center">Public Projects</h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Tabs Section */}
+        <div className="flex justify-center pt-4">
+          {/* Tab Navigation */}
+          <div className="tabs-container p-1">
+            <button
+              className={`tab-button ${activeTab === 'projects' ? 'tab-active' : ''} gap-2`}
+              style={activeTab === 'projects' ? { color: getContrastTextColor('primary') } : {}}
+              onClick={() => setActiveTab('projects')}
+            >
+              <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+              </svg>
+              Projects
+            </button>
+            <button
+              className={`tab-button ${activeTab === 'posts' ? 'tab-active' : ''} gap-2`}
+              style={activeTab === 'posts' ? { color: getContrastTextColor('primary') } : {}}
+              onClick={() => setActiveTab('posts')}
+            >
+              <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+              </svg>
+              Posts
+            </button>
+          </div>
+        </div>
+
+        <div className="section-container mb-8">
+
+          {/* Tab Content */}
+          <div className="section-content p-6">
+            {/* Projects Tab */}
+            {activeTab === 'projects' && (
+              user.projects && user.projects.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {user.projects.map((project: any) => (
                 <Link
                   key={project.id}
                   to={`/discover/project/${project.publicSlug || project.id}`}
-                  className="section-container transition-all duration-300 hover:scale-[1.02] w-full group block"
+                  className="section-container transition-all duration-300 hover:border-secondary w-full group block"
                 >
                   <div className="section-content p-6 flex flex-col h-full">
                     <div className="flex items-start gap-3 mb-4">
@@ -298,25 +360,92 @@ const PublicProfilePage: React.FC = () => {
                   </div>
                 </Link>
               ))}
-            </div>
-          </div>
-        ) : (
-          <div className="section-container">
-            <div className="section-content text-center py-16">
-              <div>
-                <div className="w-24 h-24 bg-base-200 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <svg className="w-12 h-12 text-base-content/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                  </svg>
                 </div>
-                <h3 className="text-2xl font-bold text-base-content mb-2">No public projects</h3>
-                <p className="text-base-content/60 max-w-md mx-auto">
-                  This user hasn't shared any projects publicly yet.
-                </p>
-              </div>
-            </div>
+              ) : (
+                <div className="text-center py-16 text-base-content/60">
+                  <div className="w-24 h-24 bg-base-200 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <svg className="w-12 h-12 text-base-content/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                  </div>
+                  <h3 className="text-2xl font-bold text-base-content mb-2">No public projects</h3>
+                  <p className="text-base-content/60 max-w-md mx-auto">
+                    This user hasn't shared any projects publicly yet.
+                  </p>
+                </div>
+              )
+            )}
+
+            {/* Posts Tab */}
+            {activeTab === 'posts' && (
+              postsLoading ? (
+                <div className="text-center py-8">
+                  <span className="loading loading-spinner loading-lg"></span>
+                  <p className="text-base-content/60 mt-4">Loading posts...</p>
+                </div>
+              ) : posts.length > 0 ? (
+                <div className="space-y-4">
+                  {posts.map((post: any) => (
+                    <div key={post._id} className="bg-base-200 rounded-lg border-2 border-base-content/20 shadow-sm p-4 hover:border-primary/50 transition-all">
+                      {/* Post header with author info */}
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="font-semibold text-base-content">
+                          {user.displayName}
+                        </span>
+                        <span className="text-xs text-base-content/50">
+                          {new Date(post.createdAt).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: 'numeric',
+                            minute: '2-digit'
+                          })}
+                        </span>
+                        {post.isEdited && (
+                          <span className="text-xs text-base-content/40">(edited)</span>
+                        )}
+                      </div>
+
+                      {/* Post content */}
+                      <p className="text-sm text-base-content whitespace-pre-wrap mb-3 leading-relaxed">
+                        {post.content}
+                      </p>
+
+                      {/* Post metadata */}
+                      <div className="flex items-center gap-4 text-xs text-base-content/60">
+                        {post.postType === 'project' && post.projectId && (
+                          <Link
+                            to={`/discover/project/${post.projectId.publicSlug || post.projectId._id}`}
+                            className="flex items-center gap-1 hover:text-primary transition-colors"
+                          >
+                            <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                            </svg>
+                            {post.projectId.name}
+                          </Link>
+                        )}
+                        <LikeButton
+                          postId={post._id}
+                          initialLikes={post.likes || 0}
+                          size="sm"
+                          showCount={true}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-16 text-base-content/60">
+                  <div className="text-6xl mb-4">📝</div>
+                  <h3 className="text-2xl font-bold text-base-content mb-2">No posts yet</h3>
+                  <p className="text-base-content/60 max-w-md mx-auto">
+                    This user hasn't posted anything yet.
+                  </p>
+                </div>
+              )
+            )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

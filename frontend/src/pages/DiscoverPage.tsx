@@ -3,6 +3,9 @@ import { useNavigate, Link } from 'react-router-dom';
 import { publicAPI } from '../api';
 import { getContrastTextColor } from '../utils/contrastTextColor';
 import { analyticsService } from '../services/analytics';
+import FavoriteButton from '../components/FavoriteButton';
+import ActivityFeed from '../components/ActivityFeed';
+import PostComposer from '../components/PostComposer';
 
 const DiscoverPage: React.FC = () => {
   const navigate = useNavigate();
@@ -18,6 +21,7 @@ const DiscoverPage: React.FC = () => {
   const [pagination, setPagination] = useState<any>(null);
   const [categories, setCategories] = useState<string[]>([]);
   const [tags, setTags] = useState<string[]>([]);
+  const [viewMode, setViewMode] = useState<'projects' | 'activity'>('projects');
 
 
   // Debounce search term
@@ -111,6 +115,32 @@ const DiscoverPage: React.FC = () => {
   return (
     <div className="flex-1 w-full max-w-7xl mx-auto bg-base-100 flex flex-col mb-4 min-h-0">
       <div className="space-y-6">
+      {/* View Mode Toggle */}
+      <div className="flex justify-center pt-4">
+        <div className="tabs-container p-1">
+          <button
+            className={`tab-button ${viewMode === 'projects' ? 'tab-active' : ''} gap-2`}
+            style={viewMode === 'projects' ? { color: getContrastTextColor('primary') } : {}}
+            onClick={() => setViewMode('projects')}
+          >
+            <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+            </svg>
+            Projects
+          </button>
+          <button
+            className={`tab-button ${viewMode === 'activity' ? 'tab-active' : ''} gap-2`}
+            style={viewMode === 'activity' ? { color: getContrastTextColor('primary') } : {}}
+            onClick={() => setViewMode('activity')}
+          >
+            <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            Activity
+          </button>
+        </div>
+      </div>
+
       {/* Error State */}
       {error && (
         <div className="bg-base-100 rounded-lg border-2 shadow-md hover:shadow-lg border-base-content/20 transition-all duration-200 p-4">
@@ -126,6 +156,35 @@ const DiscoverPage: React.FC = () => {
         </div>
       )}
 
+      {viewMode === 'activity' ? (
+        /* Activity Feed */
+        <div className="space-y-4">
+          <div className="section-container border-thick">
+            <div className="section-header">
+              <div className="flex items-center gap-3">
+                <div className="section-icon">📢</div>
+                <span>Share Something</span>
+              </div>
+            </div>
+            <div className="section-content">
+              <PostComposer postType="profile" />
+            </div>
+          </div>
+
+          <div className="section-container border-thick">
+            <div className="section-header">
+              <div className="flex items-center gap-3">
+                <div className="section-icon">📊</div>
+                <span>Your Feed</span>
+              </div>
+            </div>
+            <div className="section-content">
+              <ActivityFeed limit={50} />
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
       {/* Search and Filters */}
       <div className="section-container">
         <div className="section-header">
@@ -337,7 +396,8 @@ const DiscoverPage: React.FC = () => {
 
                     {/* Footer - Always at bottom */}
                     <div className="flex items-center justify-between text-sm pt-2 border-t-2 border-base-content/20 mt-auto">
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-2">
+                        <FavoriteButton projectId={project.id} size="sm" showCount={true} />
                         {project.owner ? (
                           project.owner.isPublic || project.owner.publicSlug ? (
                             <span
@@ -430,6 +490,8 @@ const DiscoverPage: React.FC = () => {
           </div>
         </div>
       </div>
+      </>
+      )}
       </div>
     </div>
   );

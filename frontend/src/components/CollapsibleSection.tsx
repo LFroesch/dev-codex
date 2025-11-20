@@ -5,13 +5,21 @@ interface CollapsibleSectionProps {
   children: React.ReactNode;
   defaultOpen?: boolean;
   className?: string;
+  icon?: string;
+  badge?: string | number;
+  headerClassName?: string;
+  contentClassName?: string;
 }
 
 const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
   title,
   children,
   defaultOpen = false,
-  className = ''
+  className = '',
+  icon,
+  badge,
+  headerClassName = '',
+  contentClassName = ''
 }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
@@ -19,18 +27,24 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
     <div className={`bg-base-100 rounded-lg border border-base-content/10 ${className}`}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-6 py-4 flex items-center gap-3 text-left hover:bg-base-200 transition-colors"
+        className={`w-full px-6 py-4 flex items-center gap-3 text-left hover:bg-base-200 transition-colors ${headerClassName}`}
       >
         <div className={`transform transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`}>
           <svg className="w-5 h-5 text-base-content/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
         </div>
-        <div className="flex-1">{title}</div>
+        {icon && <div className="text-2xl">{icon}</div>}
+        <div className="flex-1 font-bold text-lg">{title}</div>
+        {badge !== undefined && (
+          <div className="badge badge-lg badge-primary border-thick">
+            {badge}
+          </div>
+        )}
       </button>
-      
+
       {isOpen && (
-        <div className="px-6 pb-6 border-t border-base-content/10">
+        <div className={`px-6 pb-6 border-t border-base-content/10 ${contentClassName}`}>
           {children}
         </div>
       )}

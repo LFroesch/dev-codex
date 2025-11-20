@@ -5,8 +5,7 @@ import { getContrastTextColor } from '../utils/contrastTextColor';
 interface PublicVisibilityOptions {
   description: boolean;
   tags: boolean;
-  links: boolean;
-  docs: boolean;
+  components: boolean;
   techStack: boolean;
   timestamps: boolean;
 }
@@ -26,8 +25,7 @@ const PublicPage: React.FC = () => {
   const [visibilityOptions, setVisibilityOptions] = useState<PublicVisibilityOptions>({
     description: true,
     tags: true,
-    links: true,
-    docs: true,
+    components: true,
     techStack: true,
     timestamps: true,
   });
@@ -37,13 +35,13 @@ const PublicPage: React.FC = () => {
       setIsPublic(selectedProject.isPublic || false);
       setPublicSlug(selectedProject.publicSlug || '');
       setPublicDescription(selectedProject.publicDescription || '');
-      
+
       // Load visibility options from project or set defaults
       if (selectedProject.publicVisibility) {
         setVisibilityOptions(selectedProject.publicVisibility);
       }
     }
-  }, [selectedProject]);
+  }, [selectedProject?.id]); // Only reset form when project ID changes, not on every selectedProject update
 
   const generateSlugFromName = () => {
     if (selectedProject?.name) {
@@ -109,8 +107,7 @@ const PublicPage: React.FC = () => {
     const currentVisibility = selectedProject.publicVisibility || {
       description: true,
       tags: true,
-      links: true,
-      docs: true,
+      components: true,
       techStack: true,
       timestamps: true,
     };
@@ -394,6 +391,11 @@ const PublicPage: React.FC = () => {
                 value={publicDescription}
                 onChange={(e) => setPublicDescription(e.target.value.slice(0, 300))}
               />
+              <label className="label">
+                <span className="label-text-alt text-xs text-base-content/60">
+                  💡 Supports Markdown: **bold**, *italic*, [links](url), `code`, lists, etc.
+                </span>
+              </label>
             </div>
 
             {/* Preview */}
@@ -481,20 +483,71 @@ const PublicPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-              {Object.entries(visibilityOptions).map(([key, checked]) => (
-                <label key={key} className="label cursor-pointer justify-start p-2 card-interactive">
-                  <input
-                    type="checkbox"
-                    className="checkbox checkbox-primary checkbox-sm mr-3"
-                    checked={checked}
-                    onChange={() => toggleVisibilityOption(key as keyof PublicVisibilityOptions)}
-                  />
-                  <span className="label-text text-sm font-medium capitalize">
-                    {key === 'techStack' ? 'Tech Stack' : key}
-                  </span>
-                </label>
-              ))}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <label className="label cursor-pointer justify-start p-3 card-interactive">
+                <input
+                  type="checkbox"
+                  className="checkbox checkbox-primary mr-3"
+                  checked={visibilityOptions.description}
+                  onChange={() => toggleVisibilityOption('description')}
+                />
+                <div className="flex-1">
+                  <span className="label-text font-medium block">Description</span>
+                  <span className="label-text-alt text-xs opacity-70">Show project description</span>
+                </div>
+              </label>
+
+              <label className="label cursor-pointer justify-start p-3 card-interactive">
+                <input
+                  type="checkbox"
+                  className="checkbox checkbox-primary mr-3"
+                  checked={visibilityOptions.tags}
+                  onChange={() => toggleVisibilityOption('tags')}
+                />
+                <div className="flex-1">
+                  <span className="label-text font-medium block">Tags</span>
+                  <span className="label-text-alt text-xs opacity-70">Show project tags</span>
+                </div>
+              </label>
+
+              <label className="label cursor-pointer justify-start p-3 card-interactive">
+                <input
+                  type="checkbox"
+                  className="checkbox checkbox-primary mr-3"
+                  checked={visibilityOptions.components}
+                  onChange={() => toggleVisibilityOption('components')}
+                />
+                <div className="flex-1">
+                  <span className="label-text font-medium block">Architecture & Components</span>
+                  <span className="label-text-alt text-xs opacity-70">Show models, routes, APIs, utils</span>
+                </div>
+              </label>
+
+              <label className="label cursor-pointer justify-start p-3 card-interactive">
+                <input
+                  type="checkbox"
+                  className="checkbox checkbox-primary mr-3"
+                  checked={visibilityOptions.techStack}
+                  onChange={() => toggleVisibilityOption('techStack')}
+                />
+                <div className="flex-1">
+                  <span className="label-text font-medium block">Tech Stack</span>
+                  <span className="label-text-alt text-xs opacity-70">Show technologies & frameworks</span>
+                </div>
+              </label>
+
+              <label className="label cursor-pointer justify-start p-3 card-interactive">
+                <input
+                  type="checkbox"
+                  className="checkbox checkbox-primary mr-3"
+                  checked={visibilityOptions.timestamps}
+                  onChange={() => toggleVisibilityOption('timestamps')}
+                />
+                <div className="flex-1">
+                  <span className="label-text font-medium block">Timestamps</span>
+                  <span className="label-text-alt text-xs opacity-70">Show created/updated dates</span>
+                </div>
+              </label>
             </div>
             </div>
           </div>

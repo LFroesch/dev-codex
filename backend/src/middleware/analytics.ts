@@ -547,8 +547,10 @@ export class AnalyticsService {
       }
 
       // Update the session with the new data
-      Object.assign(session, updateData);
-      await session.save();
+      await UserSession.updateOne(
+        { sessionId },
+        updateData
+      );
     } catch (error) {
       console.error('Error updating session:', error);
     }

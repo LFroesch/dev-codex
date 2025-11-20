@@ -36,6 +36,11 @@ import newsRoutes from './routes/news';
 import healthRoutes from './routes/health';
 import terminalRoutes from './routes/terminal';
 import tutorialRoutes from './routes/tutorial';
+import commentsRoutes from './routes/comments';
+import favoritesRoutes from './routes/favorites';
+import followsRoutes from './routes/follows';
+import postsRoutes from './routes/posts';
+import likesRoutes from './routes/likes';
 import { normalRateLimit, authRateLimit, devRateLimit, publicRateLimit, adminRateLimit } from './middleware/rateLimit';
 import { terminalExecuteSecurity, terminalSuggestionsSecurity } from './middleware/commandSecurity';
 import { sessionMiddleware, AnalyticsService } from './middleware/analytics';
@@ -287,6 +292,11 @@ app.use('/api/ideas', conditionalCSRF, rateLimitMiddleware, ideasRoutes);
 app.use('/api/news', conditionalCSRF, rateLimitMiddleware, newsRoutes);
 app.use('/api/terminal', conditionalCSRF, rateLimitMiddleware, terminalRoutes);
 app.use('/api/tutorial', conditionalCSRF, rateLimitMiddleware, tutorialRoutes);
+app.use('/api/comments', conditionalCSRF, rateLimitMiddleware, commentsRoutes);
+app.use('/api/favorites', conditionalCSRF, rateLimitMiddleware, favoritesRoutes);
+app.use('/api/follows', conditionalCSRF, rateLimitMiddleware, followsRoutes);
+app.use('/api/posts', conditionalCSRF, rateLimitMiddleware, postsRoutes);
+app.use('/api/likes', conditionalCSRF, rateLimitMiddleware, likesRoutes);
 
 if (isDevelopment) {
   app.use('/api/debug', debugRoutes);

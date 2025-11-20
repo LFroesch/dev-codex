@@ -75,10 +75,20 @@ class ReminderService {
           const isDueSoon = dueDate <= tomorrow && dueDate > now;
 
           // Send overdue notification
-          if (isOverdue && !await this.hasRecentNotification(todo.assignedTo || project.ownerId, 'todo_overdue', todo.id)) {
+          if (isOverdue) {
+            const userId = todo.assignedTo || project.ownerId;
+
+            // Delete any existing overdue notifications for this todo to ensure uniqueness
+            await Notification.deleteMany({
+              userId,
+              type: 'todo_overdue',
+              relatedTodoId: todo.id
+            });
+
+            // Create the new notification
             const notificationService = NotificationService.getInstance();
             await notificationService.createNotification({
-              userId: todo.assignedTo || project.ownerId,
+              userId,
               type: 'todo_overdue',
               title: 'Todo Overdue',
               message: `Todo "${todo.title}" in project "${project.name}" is overdue`,
@@ -89,10 +99,20 @@ class ReminderService {
           }
 
           // Send due soon notification
-          if (isDueSoon && !await this.hasRecentNotification(todo.assignedTo || project.ownerId, 'todo_due_soon', todo.id)) {
+          if (isDueSoon) {
+            const userId = todo.assignedTo || project.ownerId;
+
+            // Delete any existing due_soon notifications for this todo to ensure uniqueness
+            await Notification.deleteMany({
+              userId,
+              type: 'todo_due_soon',
+              relatedTodoId: todo.id
+            });
+
+            // Create the new notification
             const notificationService = NotificationService.getInstance();
             await notificationService.createNotification({
-              userId: todo.assignedTo || project.ownerId,
+              userId,
               type: 'todo_due_soon',
               title: 'Todo Due Soon',
               message: `Todo "${todo.title}" in project "${project.name}" is due within 24 hours`,
@@ -124,25 +144,26 @@ class ReminderService {
           if (todo.reminderDate) {
             const reminderDate = new Date(todo.reminderDate);
             if (reminderDate <= reminderWindow && reminderDate >= pastWindow) {
-              const hasRecent = await this.hasRecentNotification(
-                todo.assignedTo || project.ownerId, 
-                'todo_due_soon', 
-                todo.id,
-                60 // Within last 60 minutes
-              );
+              const userId = todo.assignedTo || project.ownerId;
 
-              if (!hasRecent) {
-                const notificationService = NotificationService.getInstance();
-                await notificationService.createNotification({
-                  userId: todo.assignedTo || project.ownerId,
-                  type: 'todo_due_soon',
-                  title: 'Todo Reminder',
-                  message: `Reminder: "${todo.title}" in project "${project.name}"`,
-                  relatedProjectId: project._id,
-                  relatedTodoId: todo.id,
-                  actionUrl: `/projects/${project._id}`
-                });
-              }
+              // Delete any existing reminder notifications for this todo to ensure uniqueness
+              await Notification.deleteMany({
+                userId,
+                type: 'todo_due_soon',
+                relatedTodoId: todo.id,
+                title: 'Todo Reminder' // Only delete reminder-type due_soon notifications
+              });
+
+              const notificationService = NotificationService.getInstance();
+              await notificationService.createNotification({
+                userId,
+                type: 'todo_due_soon',
+                title: 'Todo Reminder',
+                message: `Reminder: "${todo.title}" in project "${project.name}"`,
+                relatedProjectId: project._id,
+                relatedTodoId: todo.id,
+                actionUrl: `/projects/${project._id}`
+              });
             }
           }
 
@@ -150,25 +171,26 @@ class ReminderService {
           if (todo.dueDate) {
             const dueDate = new Date(todo.dueDate);
             if (dueDate <= reminderWindow && dueDate >= pastWindow) {
-              const hasRecent = await this.hasRecentNotification(
-                todo.assignedTo || project.ownerId, 
-                'todo_due_soon', 
-                todo.id,
-                60 // Within last 60 minutes
-              );
+              const userId = todo.assignedTo || project.ownerId;
 
-              if (!hasRecent) {
-                const notificationService = NotificationService.getInstance();
-                await notificationService.createNotification({
-                  userId: todo.assignedTo || project.ownerId,
-                  type: 'todo_due_soon',
-                  title: 'Todo Due Soon',
-                  message: `Todo "${todo.title}" in project "${project.name}" is due soon`,
-                  relatedProjectId: project._id,
-                  relatedTodoId: todo.id,
-                  actionUrl: `/projects/${project._id}`
-                });
-              }
+              // Delete any existing due_soon notifications for this todo to ensure uniqueness
+              await Notification.deleteMany({
+                userId,
+                type: 'todo_due_soon',
+                relatedTodoId: todo.id,
+                title: 'Todo Due Soon' // Only delete due-soon-type notifications
+              });
+
+              const notificationService = NotificationService.getInstance();
+              await notificationService.createNotification({
+                userId,
+                type: 'todo_due_soon',
+                title: 'Todo Due Soon',
+                message: `Todo "${todo.title}" in project "${project.name}" is due soon`,
+                relatedProjectId: project._id,
+                relatedTodoId: todo.id,
+                actionUrl: `/projects/${project._id}`
+              });
             }
           }
         }
@@ -192,7 +214,6 @@ class ReminderService {
         const dueTodayTodoItems: DueTodoItem[] = [];
         const today = new Date();
         today.setHours(0, 0, 0, 0); // Start of day
-        const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
 
         for (const project of ownedProjects) {
           for (const todo of project.todos) {
@@ -270,24 +291,6 @@ class ReminderService {
     } catch (error) {
       console.error('Error sending daily summaries:', error);
     }
-  }
-
-  private async hasRecentNotification(
-    userId: any, 
-    type: string, 
-    todoId: string, 
-    minutesWindow: number = 60
-  ): Promise<boolean> {
-    const cutoff = new Date(Date.now() - minutesWindow * 60 * 1000);
-    
-    const existingNotification = await Notification.findOne({
-      userId,
-      type,
-      relatedTodoId: todoId,
-      createdAt: { $gte: cutoff }
-    });
-
-    return !!existingNotification;
   }
 
 

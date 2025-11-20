@@ -42,7 +42,7 @@ export interface BaseProjectInvitation {
 export interface BaseNotification {
   _id: string;
   userId: string;
-  type: 'project_invitation' | 'project_shared' | 'team_member_added' | 'team_member_removed' | 'todo_assigned' | 'todo_due_soon' | 'todo_overdue' | 'subtask_completed' | 'stale_items_summary' | 'daily_todo_summary';
+  type: 'project_invitation' | 'project_shared' | 'team_member_added' | 'team_member_removed' | 'todo_assigned' | 'todo_due_soon' | 'todo_overdue' | 'subtask_completed' | 'stale_items_summary' | 'daily_todo_summary' | 'post_like' | 'comment_on_project' | 'reply_to_comment' | 'project_favorited' | 'project_followed' | 'new_follower' | 'user_post' | 'project_update' | 'admin_message';
   title: string;
   message: string;
   isRead: boolean;
@@ -59,6 +59,8 @@ export interface BaseNotification {
     lastName: string;
   };
   relatedTodoId?: string;
+  relatedCommentId?: string;
+  relatedPostId?: string;
   metadata?: Record<string, any>;
   createdAt: string;
   updatedAt: string;

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../api/base';
+import LikeButton from './LikeButton';
 
 interface User {
   _id?: string;
@@ -19,6 +20,7 @@ interface Comment {
   user?: User;
   projectId: string;
   parentCommentId?: string;
+  likes: number;
   isEdited: boolean;
   isDeleted: boolean;
   createdAt: string;
@@ -265,6 +267,11 @@ const ProjectComments: React.FC<ProjectCommentsProps> = ({ projectId, currentUse
 
                 {/* Actions */}
                 <div className="flex items-center gap-3 text-xs">
+                  <LikeButton
+                    commentId={comment._id}
+                    initialLikes={comment.likes || 0}
+                    size="sm"
+                  />
                   <button
                     className="text-base-content/60 hover:text-base-content font-medium"
                     onClick={() => {

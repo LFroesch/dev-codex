@@ -142,6 +142,22 @@ const NotificationBell: React.FC = () => {
       if (canNavigate) {
         navigate('/notifications');
       }
+    } else if (['comment_on_project', 'reply_to_comment', 'project_favorited', 'project_followed', 'project_update'].includes(notification.type)) {
+      // Social media notifications related to projects go to public project page
+      if (notification.actionUrl) {
+        const canNavigate = await unsavedChangesManager.checkNavigationAllowed();
+        if (canNavigate) {
+          navigate(notification.actionUrl);
+        }
+      }
+    } else if (['new_follower', 'user_post'].includes(notification.type)) {
+      // User-related social notifications go to user profile or use actionUrl
+      if (notification.actionUrl) {
+        const canNavigate = await unsavedChangesManager.checkNavigationAllowed();
+        if (canNavigate) {
+          navigate(notification.actionUrl);
+        }
+      }
     } else if (notification.relatedProjectId) {
       // For other notification types, redirect to the notes section
       const canNavigate = await unsavedChangesManager.checkNavigationAllowed();

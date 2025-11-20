@@ -141,6 +141,7 @@ export interface IProject extends Document {
     components: boolean;
     techStack: boolean;
     timestamps: boolean;
+    devLog: boolean;
   };
   createdAt: Date;
   updatedAt: Date;
@@ -323,7 +324,8 @@ const projectSchema = new Schema<IProject>({
     tags: { type: Boolean, default: true },
     components: { type: Boolean, default: true },
     techStack: { type: Boolean, default: true },
-    timestamps: { type: Boolean, default: true }
+    timestamps: { type: Boolean, default: true },
+    devLog: { type: Boolean, default: true }
   },
   
   // Deployment Section

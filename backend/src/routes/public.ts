@@ -36,6 +36,7 @@ router.get('/project/:identifier', async (req, res) => {
       components: true,
       techStack: true,
       timestamps: true,
+      devLog: true,
     };
 
     // Return sanitized public project data based on visibility settings
@@ -84,7 +85,11 @@ router.get('/project/:identifier', async (req, res) => {
       publicProject.createdAt = project.createdAt;
       publicProject.updatedAt = project.updatedAt;
     }
-    
+
+    if (visibility.devLog && project.devLog?.length) {
+      publicProject.devLog = project.devLog;
+    }
+
     // Always include deployment data if it exists (replaces links functionality)
     if (project.deploymentData) {
       publicProject.deploymentData = project.deploymentData;

@@ -65,6 +65,8 @@ router.get('/project/:identifier', async (req, res) => {
     // Add fields based on visibility settings
     if (visibility.description) {
       publicProject.description = project.publicDescription || project.description;
+      publicProject.publicShortDescription = project.publicShortDescription;
+      publicProject.publicDescription = project.publicDescription;
     }
     
     if (visibility.tags && project.tags?.length) {
@@ -138,7 +140,7 @@ router.get('/user/:identifier', async (req, res) => {
       ownerId: user._id,
       isPublic: true,
       isArchived: false
-    }).select('name description publicDescription color category tags publicSlug createdAt updatedAt stack');
+    }).select('name description publicShortDescription publicDescription color category tags publicSlug createdAt updatedAt stack');
 
     // Return sanitized public user data
     const publicUser = {
@@ -157,7 +159,8 @@ router.get('/user/:identifier', async (req, res) => {
       projects: publicProjects.map(project => ({
         id: project._id,
         name: project.name,
-        description: project.publicDescription || project.description,
+        description: project.publicShortDescription || project.description,
+        publicShortDescription: project.publicShortDescription,
         publicDescription: project.publicDescription,
         color: project.color,
         category: project.category,
@@ -218,6 +221,7 @@ router.get('/projects', async (req, res) => {
       query.$or = [
         { name: { $regex: sanitizedSearch, $options: 'i' } },
         { description: { $regex: sanitizedSearch, $options: 'i' } },
+        { publicShortDescription: { $regex: sanitizedSearch, $options: 'i' } },
         { publicDescription: { $regex: sanitizedSearch, $options: 'i' } },
         { tags: { $regex: sanitizedSearch, $options: 'i' } }
       ];
@@ -251,6 +255,7 @@ router.get('/projects', async (req, res) => {
             $or: [
               { name: searchRegex },
               { description: searchRegex },
+              { publicShortDescription: searchRegex },
               { publicDescription: searchRegex },
               { tags: searchRegex },
               { 'owner.firstName': searchRegex },
@@ -267,6 +272,7 @@ router.get('/projects', async (req, res) => {
           $project: {
             name: 1,
             description: 1,
+            publicShortDescription: 1,
             publicDescription: 1,
             color: 1,
             category: 1,
@@ -306,7 +312,7 @@ router.get('/projects', async (req, res) => {
       [projects, total] = await Promise.all([
         Project.find(query)
           .populate('ownerId', 'firstName lastName username displayPreference publicSlug isPublic')
-          .select('name description publicDescription color category tags publicSlug createdAt updatedAt stack')
+          .select('name description publicShortDescription publicDescription color category tags publicSlug createdAt updatedAt stack')
           .sort({ updatedAt: -1 })
           .skip(skip)
           .limit(parseInt(limit as string)),
@@ -321,7 +327,8 @@ router.get('/projects', async (req, res) => {
       return {
         id: project._id,
         name: project.name,
-        description: project.publicDescription || project.description,
+        description: project.publicShortDescription || project.description,
+        publicShortDescription: project.publicShortDescription,
         color: project.color,
         category: project.category,
         tags: project.tags,

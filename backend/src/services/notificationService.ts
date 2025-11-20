@@ -5,10 +5,11 @@ import {
   calculateNotificationExpiration,
   getNotificationImportance,
 } from '../utils/retentionUtils';
+import { SOCIAL_CONSTANTS } from '../config/socialConstants';
 
 interface CreateNotificationData {
   userId: mongoose.Types.ObjectId | string;
-  type: 'project_invitation' | 'project_shared' | 'team_member_added' | 'team_member_removed' | 'todo_assigned' | 'todo_due_soon' | 'todo_overdue' | 'subtask_completed' | 'stale_items_summary' | 'daily_todo_summary' | 'projects_locked' | 'projects_unlocked' | 'admin_message';
+  type: 'project_invitation' | 'project_shared' | 'team_member_added' | 'team_member_removed' | 'todo_assigned' | 'todo_due_soon' | 'todo_overdue' | 'subtask_completed' | 'stale_items_summary' | 'daily_todo_summary' | 'projects_locked' | 'projects_unlocked' | 'admin_message' | 'comment_on_project' | 'reply_to_comment' | 'project_favorited' | 'new_follower' | 'project_followed' | 'user_post' | 'project_update' | 'post_like';
   title: string;
   message: string;
   actionUrl?: string;
@@ -16,6 +17,7 @@ interface CreateNotificationData {
   relatedInvitationId?: mongoose.Types.ObjectId | string;
   relatedUserId?: mongoose.Types.ObjectId | string;
   relatedTodoId?: string;
+  relatedCommentId?: mongoose.Types.ObjectId | string;
   metadata?: Record<string, any>;
 }
 
@@ -30,80 +32,130 @@ class NotificationService {
   }
 
   /**
-   * Create a new notification and emit real-time event
-   *
-   * UNIQUENESS LOGIC:
-   * This method ensures notification uniqueness by detecting and replacing duplicates.
-   * Uniqueness is determined by a combination of:
-   * - userId + type (always)
-   * - Plus ONE of the following related entities (in priority order):
-   *   1. relatedTodoId - For todo-specific notifications (assigned, due soon, overdue)
-   *   2. relatedInvitationId - For project invitation notifications
-   *   3. relatedProjectId - For project-level notifications (shared, etc.)
-   *   4. relatedUserId - For team_member_added notifications
-   *
-   * BEHAVIOR:
-   * - If a duplicate is found, the OLD notification is deleted first
-   * - A NEW notification is created with updated data
-   * - Socket events are emitted for both deletion and creation
-   *
-   * SPAM PREVENTION:
-   * - For additional spam prevention, use hasRecentNotification() before calling this method
-   * - This method handles uniqueness by replacement, not by blocking creation
-   *
-   * @param data - Notification data including userId, type, and related entities
-   * @returns The newly created notification
+   * Create or update notification with smart aggregation for social actions.
+   * Aggregates multiple actions (favorites, comments, follows) within 1 hour into single notification.
    */
   async createNotification(data: CreateNotificationData): Promise<INotification> {
     try {
-      // Step 1: Build uniqueness query
-      // Start with base criteria: same user and same notification type
-      const duplicateQuery: any = {
-        userId: data.userId,
-        type: data.type,
-      };
+      // Define which notification types should be aggregated (social actions)
+      const aggregatableTypes = [
+        'comment_on_project',
+        'reply_to_comment',
+        'project_favorited',
+        'project_followed',
+        'new_follower'
+      ];
 
-      // Step 2: Add related entity to uniqueness check
-      // Priority: todo > invitation > user (for team_member_added) > project
-      // This ensures we don't create multiple notifications for the same entity/action
+      const shouldAggregate = aggregatableTypes.includes(data.type);
 
-      if (data.relatedTodoId) {
-        // Todo-specific: prevents multiple "todo assigned/due" notifications for same todo
-        duplicateQuery.relatedTodoId = data.relatedTodoId;
-      }
-      if (data.relatedInvitationId) {
-        // Invitation-specific: prevents multiple invitations for same invitation
-        duplicateQuery.relatedInvitationId = data.relatedInvitationId;
-      }
-      if (data.relatedProjectId && !data.relatedInvitationId && !data.relatedTodoId) {
-        // Project-specific: only used if no more specific entity (todo/invitation) exists
-        // Prevents multiple "project shared" notifications for the same project
-        duplicateQuery.relatedProjectId = data.relatedProjectId;
-      }
-      if (data.relatedUserId && data.type === 'team_member_added') {
-        // User-specific for team additions: prevents duplicate "X joined team" notifications
-        duplicateQuery.relatedUserId = data.relatedUserId;
+      if (shouldAggregate) {
+        const aggregationWindowMs = SOCIAL_CONSTANTS.NOTIFICATION_AGGREGATION_WINDOW_HOURS * 60 * 60 * 1000;
+        const aggregationCutoff = new Date(Date.now() - aggregationWindowMs);
+
+        // Build query based on notification type
+        const aggregationQuery: any = {
+          userId: data.userId,
+          type: data.type,
+          createdAt: { $gte: aggregationCutoff }
+        };
+
+        // Add relatedProjectId if it exists (for project-related notifications)
+        if (data.relatedProjectId) {
+          aggregationQuery.relatedProjectId = data.relatedProjectId;
+        }
+
+        const recentNotification = await Notification.findOne(aggregationQuery);
+
+        if (recentNotification) {
+          // UPDATE existing notification with aggregation
+          const metadata = recentNotification.metadata || {};
+          const actors = metadata.actors || [];
+          const actorId = data.relatedUserId?.toString();
+
+          // Only add if this actor hasn't already been counted
+          if (actorId && !actors.includes(actorId)) {
+            actors.push(actorId);
+          }
+
+          const count = actors.length;
+
+          // Get project name for message
+          const Project = (await import('../models/Project')).Project;
+          const project = await Project.findById(data.relatedProjectId).select('name');
+          const projectName = project?.name || 'your project';
+
+          // Generate aggregated message
+          let newMessage = '';
+          let newTitle = '';
+
+          if (data.type === 'comment_on_project' || data.type === 'reply_to_comment') {
+            newTitle = count === 1 ? 'New Comment' : 'New Activity';
+            newMessage = count === 1
+              ? `New comment on "${projectName}"`
+              : `${count} people commented on "${projectName}"`;
+          } else if (data.type === 'project_favorited') {
+            newTitle = count === 1 ? 'Project Favorited' : 'New Favorites';
+            newMessage = count === 1
+              ? `Someone favorited your project "${projectName}"`
+              : `${count} people favorited your project "${projectName}"`;
+          } else if (data.type === 'project_followed') {
+            newTitle = count === 1 ? 'Project Followed' : 'New Followers';
+            newMessage = count === 1
+              ? `Someone started following "${projectName}"`
+              : `${count} people started following "${projectName}"`;
+          } else if (data.type === 'new_follower') {
+            newTitle = count === 1 ? 'New Follower' : 'New Followers';
+            newMessage = count === 1
+              ? `Someone started following you`
+              : `${count} people started following you`;
+          }
+
+          // Update the notification
+          recentNotification.message = newMessage;
+          recentNotification.title = newTitle;
+          recentNotification.isRead = false; // Mark as unread again
+          recentNotification.metadata = {
+            ...metadata,
+            actors,
+            count,
+            lastActorId: actorId,
+            lastUpdated: new Date()
+          };
+          // Update createdAt to bubble to top of notification list
+          recentNotification.createdAt = new Date();
+
+          await recentNotification.save();
+
+          // Populate and emit update event
+          const populatedNotification = await Notification.findById(recentNotification._id)
+            .populate('relatedProjectId', 'name color')
+            .populate('relatedUserId', 'firstName lastName');
+
+          this.emitNotificationEvent('notification-updated', data.userId.toString(), populatedNotification);
+
+          return recentNotification;
+        }
       }
 
-      // Step 3: Check for existing duplicate
-      const existingNotification = await Notification.findOne(duplicateQuery);
-
-      if (existingNotification) {
-        // Step 4: Replace duplicate by deleting old and creating new
-        // This ensures users always see the most recent/updated version
-        await Notification.findByIdAndDelete(existingNotification._id);
-        // Emit deletion event so frontend removes old notification
-        this.emitNotificationEvent('notification-deleted', data.userId.toString(), existingNotification._id.toString());
-      }
+      // No recent notification to aggregate, or non-aggregatable type
+      // Create new notification
 
       // Get user's plan tier and calculate retention
       const planTier = await getUserPlanTier(data.userId);
       const importance = getNotificationImportance(data.type);
       const expiresAt = calculateNotificationExpiration(planTier, data.type);
 
-      // Create the new notification with retention fields
+      // Initialize metadata with first actor
+      const initialMetadata = data.metadata || {};
+      if (shouldAggregate && data.relatedUserId) {
+        initialMetadata.actors = [data.relatedUserId.toString()];
+        initialMetadata.count = 1;
+      }
+
+      // Create the new notification
       const notification = await Notification.create({
         ...data,
+        metadata: initialMetadata,
         planTier,
         importance,
         expiresAt,
@@ -218,7 +270,8 @@ class NotificationService {
         .populate('relatedUserId', 'firstName lastName')
         .sort({ createdAt: -1 })
         .limit(limit)
-        .skip(skip);
+        .skip(skip)
+        .lean();
 
       const unreadCount = await Notification.countDocuments({
         userId,

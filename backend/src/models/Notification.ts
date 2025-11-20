@@ -2,7 +2,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 export interface INotification extends Document {
   userId: mongoose.Types.ObjectId;
-  type: 'project_invitation' | 'project_shared' | 'team_member_added' | 'team_member_removed' | 'todo_assigned' | 'todo_due_soon' | 'todo_overdue' | 'subtask_completed' | 'stale_items_summary' | 'daily_todo_summary' | 'projects_locked' | 'projects_unlocked' | 'admin_message';
+  type: 'project_invitation' | 'project_shared' | 'team_member_added' | 'team_member_removed' | 'todo_assigned' | 'todo_due_soon' | 'todo_overdue' | 'subtask_completed' | 'stale_items_summary' | 'daily_todo_summary' | 'projects_locked' | 'projects_unlocked' | 'admin_message' | 'comment_on_project' | 'reply_to_comment' | 'project_favorited' | 'new_follower' | 'project_followed' | 'user_post' | 'project_update' | 'post_like';
   title: string;
   message: string;
   isRead: boolean;
@@ -11,6 +11,7 @@ export interface INotification extends Document {
   relatedInvitationId?: mongoose.Types.ObjectId;
   relatedUserId?: mongoose.Types.ObjectId;
   relatedTodoId?: string;
+  relatedCommentId?: mongoose.Types.ObjectId;
   metadata?: Record<string, any>;
   createdAt: Date;
   updatedAt: Date;
@@ -29,7 +30,7 @@ const NotificationSchema = new Schema<INotification>(
     },
     type: {
       type: String,
-      enum: ['project_invitation', 'project_shared', 'team_member_added', 'team_member_removed', 'todo_assigned', 'todo_due_soon', 'todo_overdue', 'subtask_completed', 'stale_items_summary', 'daily_todo_summary', 'projects_locked', 'projects_unlocked', 'admin_message'],
+      enum: ['project_invitation', 'project_shared', 'team_member_added', 'team_member_removed', 'todo_assigned', 'todo_due_soon', 'todo_overdue', 'subtask_completed', 'stale_items_summary', 'daily_todo_summary', 'projects_locked', 'projects_unlocked', 'admin_message', 'comment_on_project', 'reply_to_comment', 'project_favorited', 'new_follower', 'project_followed', 'user_post', 'project_update', 'post_like'],
       required: true,
     },
     title: {
@@ -64,6 +65,10 @@ const NotificationSchema = new Schema<INotification>(
     },
     relatedTodoId: {
       type: String,
+    },
+    relatedCommentId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Comment',
     },
     metadata: {
       type: Schema.Types.Mixed,

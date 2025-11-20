@@ -113,6 +113,15 @@ export const NOTIFICATION_IMPORTANCE: Record<string, 'critical' | 'standard' | '
   todo_assigned: 'standard',
   stale_items_summary: 'standard',
   daily_todo_summary: 'standard',
+  admin_message: 'standard',
+  comment_on_project: 'standard',
+  reply_to_comment: 'standard',
+  project_favorited: 'standard',
+  new_follower: 'standard',
+  project_followed: 'standard',
+  user_post: 'standard',
+  project_update: 'standard',
+  post_like: 'standard',
 
   // Transient - short retention
   todo_due_soon: 'transient',

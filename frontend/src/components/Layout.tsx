@@ -1269,9 +1269,9 @@ const Layout: React.FC = () => {
                     {/* View Mode Toggle - Desktop (Left side) */}
                     {(activeProjectTab === 'active' || activeProjectTab === 'archived' || activeProjectTab === 'shared') && (
                       <div className="absolute left-1/3 -translate-x-full mr-4">
-                        <div className="btn-group">
+                        <div className="join border-2 border-base-content/20 rounded-lg shadow-sm">
                           <button
-                            className={`btn btn-sm ${projectViewMode === 'grid' ? 'btn-active' : ''}`}
+                            className={`join-item btn btn-sm ${projectViewMode === 'grid' ? 'btn-primary' : 'btn-ghost'}`}
                             onClick={() => setProjectViewMode('grid')}
                             title="Grid View"
                           >
@@ -1280,7 +1280,7 @@ const Layout: React.FC = () => {
                             </svg>
                           </button>
                           <button
-                            className={`btn btn-sm ${projectViewMode === 'table' ? 'btn-active' : ''}`}
+                            className={`join-item btn btn-sm ${projectViewMode === 'table' ? 'btn-primary' : 'btn-ghost'}`}
                             onClick={() => setProjectViewMode('table')}
                             title="Table View"
                           >
@@ -1604,9 +1604,9 @@ const Layout: React.FC = () => {
                 {/* View Mode Toggle - Mobile (in scrollable content) */}
                 {(activeProjectTab === 'active' || activeProjectTab === 'archived' || activeProjectTab === 'shared') && (
                   <div className="flex justify-center pt-2 md:hidden">
-                    <div className="btn-group">
+                    <div className="join border-2 border-base-content/20 rounded-lg shadow-sm">
                       <button
-                        className={`btn btn-sm border-thick ${projectViewMode === 'grid' ? 'btn-active' : ''}`}
+                        className={`join-item btn btn-sm ${projectViewMode === 'grid' ? 'btn-primary' : 'btn-ghost'}`}
                         onClick={() => setProjectViewMode('grid')}
                         title="Grid View"
                       >
@@ -1615,7 +1615,7 @@ const Layout: React.FC = () => {
                         </svg>
                       </button>
                       <button
-                        className={`btn btn-sm border-thick ${projectViewMode === 'table' ? 'btn-active' : ''}`}
+                        className={`join-item btn btn-sm ${projectViewMode === 'table' ? 'btn-primary' : 'btn-ghost'}`}
                         onClick={() => setProjectViewMode('table')}
                         title="Table View"
                       >
@@ -2115,10 +2115,22 @@ const Layout: React.FC = () => {
                                         </div>
                                       </td>
                                       <td>
-                                        <span className="font-mono text-xs">{formatProjectTime(project.id)}</span>
+                                        <div className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold font-mono bg-success/40 text-base-content/80 border-2 border-base-content/20 gap-1"
+                                        style={{ color: getContrastTextColor("success/40") }}>
+                                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                          </svg>
+                                          <span>{formatProjectTime(project.id)}</span>
+                                        </div>
                                       </td>
                                       <td>
-                                        <span className="text-xs">{getRelativeTime(project.updatedAt)}</span>
+                                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-accent/20 border-2 border-accent/40 font-mono gap-1"
+                                        style={{ color: getContrastTextColor("accent/20") }}>
+                                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                          </svg>
+                                          {getRelativeTime(project.updatedAt)}
+                                        </span>
                                       </td>
                                     </tr>
 

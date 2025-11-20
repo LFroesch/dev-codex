@@ -3,6 +3,7 @@ import { notificationAPI } from '../api/notifications';
 import type { Notification } from '../api/types';
 import { useNavigate } from 'react-router-dom';
 import ConfirmationModal from '../components/ConfirmationModal';
+import { getContrastTextColor } from '../utils/contrastTextColor';
 
 interface StaleItem {
   projectId: string;
@@ -147,6 +148,18 @@ const NotificationsPage: React.FC = () => {
     }
   };
 
+  const handleSocialNotificationClick = (notification: Notification) => {
+    // Mark as read first
+    if (!notification.isRead) {
+      handleMarkAsRead(notification._id);
+    }
+
+    // Navigate using actionUrl if available
+    if (notification.actionUrl) {
+      navigate(notification.actionUrl);
+    }
+  };
+
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'project_invitation':
@@ -171,6 +184,22 @@ const NotificationsPage: React.FC = () => {
         return '📅';
       case 'admin_message':
         return '👨‍💼';
+      case 'post_like':
+        return '❤️';
+      case 'comment_on_project':
+        return '💬';
+      case 'reply_to_comment':
+        return '↩️';
+      case 'project_favorited':
+        return '⭐';
+      case 'project_followed':
+        return '👁️';
+      case 'new_follower':
+        return '👤';
+      case 'user_post':
+        return '📝';
+      case 'project_update':
+        return '🔄';
       default:
         return '🔔';
     }
@@ -211,17 +240,17 @@ const NotificationsPage: React.FC = () => {
         <h1 className="text-3xl font-bold">
           Notifications
           {unreadCount > 0 && (
-            <span className="ml-3 badge badge-primary">{unreadCount} unread</span>
+            <span className="ml-3 badge badge-primary border-thick border-2 border-base-content/20">{unreadCount} unread</span>
           )}
         </h1>
         <div className="flex gap-2 flex-wrap">
           {unreadCount > 0 && (
-            <button onClick={handleMarkAllAsRead} className="btn btn-sm btn-outline">
+            <button onClick={handleMarkAllAsRead} className="btn btn-sm btn-outline border-thick">
               Mark all as read
             </button>
           )}
           {notifications.length > 0 && (
-            <button onClick={handleClearAll} className="btn btn-sm btn-error btn-outline">
+            <button onClick={handleClearAll} className="btn btn-sm btn-error btn-outline border-thick">
               Clear all
             </button>
           )}
@@ -238,7 +267,7 @@ const NotificationsPage: React.FC = () => {
           {notifications.map(notification => (
             <div
               key={notification._id}
-              className={`card bg-base-200 shadow-md ${
+              className={`card bg-base-200 shadow-md border-thick border-2 border-base-content/20 ${
                 !notification.isRead ? 'border-l-4 border-primary' : ''
               }`}
             >
@@ -246,13 +275,16 @@ const NotificationsPage: React.FC = () => {
                 <div className="flex items-start justify-between gap-4">
                   <div
                     className={`flex items-start gap-3 flex-1 ${
-                      (notification.type === 'todo_overdue' || notification.type === 'todo_due_soon' || notification.type === 'todo_assigned') && notification.relatedProjectId
+                      ((notification.type === 'todo_overdue' || notification.type === 'todo_due_soon' || notification.type === 'todo_assigned') && notification.relatedProjectId) ||
+                      (['post_like', 'comment_on_project', 'reply_to_comment', 'project_favorited', 'project_followed', 'new_follower', 'user_post', 'project_update'].includes(notification.type) && notification.actionUrl)
                         ? 'cursor-pointer hover:opacity-80 transition-opacity'
                         : ''
                     }`}
                     onClick={() => {
                       if ((notification.type === 'todo_overdue' || notification.type === 'todo_due_soon' || notification.type === 'todo_assigned') && notification.relatedProjectId) {
                         handleTodoNotificationClick(notification);
+                      } else if (['post_like', 'comment_on_project', 'reply_to_comment', 'project_favorited', 'project_followed', 'new_follower', 'user_post', 'project_update'].includes(notification.type) && notification.actionUrl) {
+                        handleSocialNotificationClick(notification);
                       }
                     }}
                   >
@@ -261,6 +293,9 @@ const NotificationsPage: React.FC = () => {
                       <h3 className="font-semibold text-lg">
                         {notification.title}
                         {(notification.type === 'todo_overdue' || notification.type === 'todo_due_soon' || notification.type === 'todo_assigned') && notification.relatedProjectId && (
+                          <span className="ml-2 text-sm text-primary">→ Click to view</span>
+                        )}
+                        {['post_like', 'comment_on_project', 'reply_to_comment', 'project_favorited', 'project_followed', 'new_follower', 'user_post', 'project_update'].includes(notification.type) && notification.actionUrl && (
                           <span className="ml-2 text-sm text-primary">→ Click to view</span>
                         )}
                       </h3>
@@ -414,8 +449,11 @@ const NotificationsPage: React.FC = () => {
                           <>
                             <span>•</span>
                             <span
-                              className="badge badge-sm"
-                              style={{ backgroundColor: notification.relatedProjectId.color }}
+                              className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border-2 border-base-content/20 border-thick"
+                              style={{
+                                backgroundColor: notification.relatedProjectId.color,
+                                color: getContrastTextColor(notification.relatedProjectId.color)
+                              }}
                             >
                               {notification.relatedProjectId.name}
                             </span>
@@ -429,7 +467,7 @@ const NotificationsPage: React.FC = () => {
                     {!notification.isRead && (
                       <button
                         onClick={() => handleMarkAsRead(notification._id)}
-                        className="btn btn-xs btn-primary"
+                        className="btn btn-xs btn-primary border-thick"
                         title="Mark as read"
                       >
                         Mark read
@@ -437,7 +475,7 @@ const NotificationsPage: React.FC = () => {
                     )}
                     <button
                       onClick={() => handleDelete(notification._id)}
-                      className="btn btn-xs btn-ghost"
+                      className="btn btn-xs btn-ghost border-thick"
                       title="Delete"
                     >
                       ✕

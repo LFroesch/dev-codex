@@ -122,6 +122,7 @@ export const NOTIFICATION_IMPORTANCE: Record<string, 'critical' | 'standard' | '
   user_post: 'standard',
   project_update: 'standard',
   post_like: 'standard',
+  comment_like: 'standard',
 
   // Transient - short retention
   todo_due_soon: 'transient',

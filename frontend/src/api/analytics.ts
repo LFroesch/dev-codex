@@ -94,12 +94,31 @@ class PublicService extends BaseApiService {
   }
 
   // Fetches available filter options for public projects
-  async getFilters(): Promise<{ 
-    success: boolean; 
-    categories: string[]; 
+  async getFilters(): Promise<{
+    success: boolean;
+    categories: string[];
     tags: string[];
   }> {
     return this.get('/filters');
+  }
+
+  // Search for public users
+  async searchUsers(params?: {
+    search?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{
+    success: boolean;
+    users: any[];
+    pagination: any;
+  }> {
+    const queryParams = new URLSearchParams();
+    if (params?.search) queryParams.append('search', params.search);
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+
+    const queryString = queryParams.toString();
+    return this.get(`/users/search${queryString ? `?${queryString}` : ''}`);
   }
 }
 

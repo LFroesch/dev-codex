@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { publicAPI } from '../api';
 import { getContrastTextColor } from '../utils/contrastTextColor';
@@ -21,10 +21,16 @@ const DiscoverPage: React.FC = () => {
   const [pagination, setPagination] = useState<any>(null);
   const [categories, setCategories] = useState<string[]>([]);
   const [tags, setTags] = useState<string[]>([]);
-  const [viewMode, setViewMode] = useState<'projects' | 'activity'>('projects');
+  const [viewMode, setViewMode] = useState<'projects' | 'activity' | 'users'>('projects');
+  const [users, setUsers] = useState<any[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [usersPagination, setUsersPagination] = useState<any>(null);
+  const [usersPage, setUsersPage] = useState(1);
+  const [usersSearchTerm, setUsersSearchTerm] = useState('');
+  const [debouncedUsersSearch, setDebouncedUsersSearch] = useState('');
 
 
-  // Debounce search term
+  // Debounce search term for projects
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
@@ -32,6 +38,52 @@ const DiscoverPage: React.FC = () => {
 
     return () => clearTimeout(timer);
   }, [searchTerm]);
+
+  // Debounce search term for users
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedUsersSearch(usersSearchTerm);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [usersSearchTerm]);
+
+  // Define loadUsers function before useEffects
+  const loadUsers = useCallback(async () => {
+    console.log('🔍 loadUsers called with:', { debouncedUsersSearch, usersPage });
+    try {
+      setUsersLoading(true);
+      console.log('📡 Calling API...');
+      const response = await publicAPI.searchUsers({
+        search: debouncedUsersSearch,
+        page: usersPage,
+        limit: 20
+      });
+      console.log('✅ API response:', response);
+      setUsers(response.users || []);
+      setUsersPagination(response.pagination);
+    } catch (err: any) {
+      console.error('❌ Failed to load users:', err);
+    } finally {
+      setUsersLoading(false);
+    }
+  }, [debouncedUsersSearch, usersPage]);
+
+  // Reset to page 1 when search term changes (before loading)
+  useEffect(() => {
+    if (viewMode === 'users') {
+      setUsersPage(1);
+    }
+  }, [debouncedUsersSearch]);
+
+  // Load users when in users mode, search changes, or page changes
+  useEffect(() => {
+    console.log('👀 useEffect triggered - viewMode:', viewMode);
+    if (viewMode === 'users') {
+      console.log('🚀 Calling loadUsers...');
+      loadUsers();
+    }
+  }, [viewMode, loadUsers]);
 
   useEffect(() => {
     loadFilters();
@@ -129,6 +181,16 @@ const DiscoverPage: React.FC = () => {
             Projects
           </button>
           <button
+            className={`tab-button ${viewMode === 'users' ? 'tab-active' : ''} gap-2`}
+            style={viewMode === 'users' ? { color: getContrastTextColor('primary') } : {}}
+            onClick={() => setViewMode('users')}
+          >
+            <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+            People
+          </button>
+          <button
             className={`tab-button ${viewMode === 'activity' ? 'tab-active' : ''} gap-2`}
             style={viewMode === 'activity' ? { color: getContrastTextColor('primary') } : {}}
             onClick={() => setViewMode('activity')}
@@ -182,6 +244,110 @@ const DiscoverPage: React.FC = () => {
               <ActivityFeed limit={50} />
             </div>
           </div>
+        </div>
+      ) : viewMode === 'users' ? (
+        /* User Search */
+        <div className="space-y-4">
+          <div className="section-container">
+            <div className="section-header">
+              <div className="flex items-center gap-3">
+                <div className="section-icon">
+                  <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+                <span>Find People</span>
+                {usersPagination && (
+                  <span className="text-sm text-base-content/60 ml-auto">
+                    {usersPagination.total} users found
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="section-content">
+              <div className="form-control">
+                <input
+                  type="text"
+                  placeholder="Search by name or username..."
+                  className="input input-bordered w-full border-thick"
+                  value={usersSearchTerm}
+                  onChange={(e) => setUsersSearchTerm(e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+
+          {usersLoading ? (
+            <div className="flex justify-center p-12">
+              <div className="loading loading-spinner loading-lg"></div>
+            </div>
+          ) : users.length === 0 ? (
+            <div className="section-container">
+              <div className="section-content">
+                <div className="text-center py-12 text-base-content/60">
+                  <svg className="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  <p className="text-lg font-medium mb-2">No users found</p>
+                  <p className="text-sm">Try adjusting your search</p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {users.map((user: any) => (
+                <div key={user._id} className="section-container">
+                  <div className="section-content">
+                    <div className="flex flex-col gap-3">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold truncate">
+                          {user.displayPreference === 'username' ? `@${user.username}` : `${user.firstName} ${user.lastName}`}
+                        </h3>
+                        {user.displayPreference === 'name' && user.username && (
+                          <p className="text-sm text-base-content/60">@{user.username}</p>
+                        )}
+                        <p className="text-xs text-base-content/50 mt-1">
+                          Member since {new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          className="btn btn-primary btn-sm w-full"
+                          style={{ color: getContrastTextColor('primary') }}
+                          onClick={() => navigate(`/discover/user/${user.publicSlug || user.username}`)}
+                        >
+                          View Profile
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Pagination */}
+          {usersPagination && usersPagination.totalPages > 1 && (
+            <div className="flex justify-center gap-2 mt-6">
+              <button
+                className="btn btn-sm"
+                disabled={usersPage === 1}
+                onClick={() => setUsersPage(usersPage - 1)}
+              >
+                Previous
+              </button>
+              <span className="flex items-center px-4 text-sm">
+                Page {usersPage} of {usersPagination.totalPages}
+              </span>
+              <button
+                className="btn btn-sm"
+                disabled={usersPage === usersPagination.totalPages}
+                onClick={() => setUsersPage(usersPage + 1)}
+              >
+                Next
+              </button>
+            </div>
+          )}
         </div>
       ) : (
         <>
@@ -335,7 +501,7 @@ const DiscoverPage: React.FC = () => {
                         style={{ color: getContrastTextColor() }}
                       >
                         {project.category}
-                      </span>
+                      </span> 
                       <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-base-200 text-base-content/80 border-2 border-base-content/20 h-[1.5rem]">
                         {new Date(project.updatedAt).toLocaleDateString()}
                       </span>

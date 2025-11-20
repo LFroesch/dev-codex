@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { apiClient } from '../api/base';
 
 interface LikeButtonProps {
-  postId: string;
+  postId?: string;
+  commentId?: string;
   initialLikes?: number;
   size?: 'sm' | 'md' | 'lg';
   showCount?: boolean;
@@ -10,6 +11,7 @@ interface LikeButtonProps {
 
 const LikeButton: React.FC<LikeButtonProps> = ({
   postId,
+  commentId,
   initialLikes = 0,
   size = 'md',
   showCount = true
@@ -17,6 +19,9 @@ const LikeButton: React.FC<LikeButtonProps> = ({
   const [isLiked, setIsLiked] = useState(false);
   const [count, setCount] = useState(initialLikes);
   const [loading, setLoading] = useState(false);
+
+  const targetType = postId ? 'posts' : 'comments';
+  const targetId = postId || commentId;
 
   const sizeClasses = {
     sm: 'btn-xs',
@@ -31,12 +36,15 @@ const LikeButton: React.FC<LikeButtonProps> = ({
   };
 
   useEffect(() => {
-    checkLikeStatus();
-  }, [postId]);
+    if (targetId) {
+      checkLikeStatus();
+    }
+  }, [targetId]);
 
   const checkLikeStatus = async () => {
+    if (!targetId) return;
     try {
-      const response = await apiClient.get(`/likes/posts/${postId}/check`);
+      const response = await apiClient.get(`/likes/${targetType}/${targetId}/check`);
       if (response.data.success) {
         setIsLiked(response.data.isLiked);
       }
@@ -49,18 +57,18 @@ const LikeButton: React.FC<LikeButtonProps> = ({
     e.preventDefault();
     e.stopPropagation();
 
-    if (loading) return;
+    if (loading || !targetId) return;
     setLoading(true);
 
     try {
       if (isLiked) {
-        const response = await apiClient.delete(`/likes/posts/${postId}`);
+        const response = await apiClient.delete(`/likes/${targetType}/${targetId}`);
         if (response.data.success) {
           setIsLiked(false);
           setCount(response.data.likesCount);
         }
       } else {
-        const response = await apiClient.post(`/likes/posts/${postId}`);
+        const response = await apiClient.post(`/likes/${targetType}/${targetId}`);
         if (response.data.success) {
           setIsLiked(true);
           setCount(response.data.likesCount);
@@ -69,7 +77,7 @@ const LikeButton: React.FC<LikeButtonProps> = ({
     } catch (err: any) {
       if (err.response?.status === 401) {
         // User not logged in - could show a message or redirect
-        console.log('Please log in to like posts');
+        console.log(`Please log in to like ${targetType}`);
       } else {
         console.error('Failed to toggle like:', err);
       }

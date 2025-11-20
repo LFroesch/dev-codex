@@ -9,7 +9,7 @@ import { SOCIAL_CONSTANTS } from '../config/socialConstants';
 
 interface CreateNotificationData {
   userId: mongoose.Types.ObjectId | string;
-  type: 'project_invitation' | 'project_shared' | 'team_member_added' | 'team_member_removed' | 'todo_assigned' | 'todo_due_soon' | 'todo_overdue' | 'subtask_completed' | 'stale_items_summary' | 'daily_todo_summary' | 'projects_locked' | 'projects_unlocked' | 'admin_message' | 'comment_on_project' | 'reply_to_comment' | 'project_favorited' | 'new_follower' | 'project_followed' | 'user_post' | 'project_update' | 'post_like';
+  type: 'project_invitation' | 'project_shared' | 'team_member_added' | 'team_member_removed' | 'todo_assigned' | 'todo_due_soon' | 'todo_overdue' | 'subtask_completed' | 'stale_items_summary' | 'daily_todo_summary' | 'projects_locked' | 'projects_unlocked' | 'admin_message' | 'comment_on_project' | 'reply_to_comment' | 'project_favorited' | 'new_follower' | 'project_followed' | 'user_post' | 'project_update' | 'post_like' | 'comment_like';
   title: string;
   message: string;
   actionUrl?: string;

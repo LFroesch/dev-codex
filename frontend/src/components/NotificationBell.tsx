@@ -136,18 +136,18 @@ const NotificationBell: React.FC = () => {
           navigate('/notes?section=todos');
         }
       }
-    } else if (notification.type === 'stale_items_summary') {
-      // Stale items summary goes to notifications page
+    } else if (notification.type === 'stale_items_summary' || notification.type === 'daily_todo_summary') {
+      // Stale items and daily todo summary go to notifications page
       const canNavigate = await unsavedChangesManager.checkNavigationAllowed();
       if (canNavigate) {
         navigate('/notifications');
       }
-    } else if (['comment_on_project', 'reply_to_comment', 'project_favorited', 'project_followed', 'project_update'].includes(notification.type)) {
+    } else if (['comment_on_project', 'reply_to_comment', 'project_favorited', 'project_followed', 'project_update', 'post_like', 'comment_like'].includes(notification.type)) {
       // Social media notifications related to projects go to public project page
       if (notification.actionUrl) {
         const canNavigate = await unsavedChangesManager.checkNavigationAllowed();
         if (canNavigate) {
-          navigate(notification.actionUrl);
+          window.location.href = notification.actionUrl;
         }
       }
     } else if (['new_follower', 'user_post'].includes(notification.type)) {
@@ -155,7 +155,7 @@ const NotificationBell: React.FC = () => {
       if (notification.actionUrl) {
         const canNavigate = await unsavedChangesManager.checkNavigationAllowed();
         if (canNavigate) {
-          navigate(notification.actionUrl);
+          window.location.href = notification.actionUrl;
         }
       }
     } else if (notification.relatedProjectId) {

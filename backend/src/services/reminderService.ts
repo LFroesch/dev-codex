@@ -61,7 +61,7 @@ class ReminderService {
 
   private async checkDueTodos(): Promise<void> {
     try {
-      
+
       const projects = await Project.find({}).populate('ownerId');
       const now = new Date();
       const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
@@ -74,28 +74,29 @@ class ReminderService {
           const isOverdue = dueDate < now;
           const isDueSoon = dueDate <= tomorrow && dueDate > now;
 
-          // Send overdue notification
+          // Send overdue notification ONCE when todo first becomes overdue
           if (isOverdue) {
             const userId = todo.assignedTo || project.ownerId;
 
-            // Delete any existing overdue notifications for this todo to ensure uniqueness
-            await Notification.deleteMany({
+            // Check if notification already exists - only create if it doesn't exist
+            const existingNotification = await Notification.findOne({
               userId,
               type: 'todo_overdue',
               relatedTodoId: todo.id
             });
 
-            // Create the new notification
-            const notificationService = NotificationService.getInstance();
-            await notificationService.createNotification({
-              userId,
-              type: 'todo_overdue',
-              title: 'Todo Overdue',
-              message: `Todo "${todo.title}" in project "${project.name}" is overdue`,
-              relatedProjectId: project._id,
-              relatedTodoId: todo.id,
-              actionUrl: `/projects/${project._id}`
-            });
+            if (!existingNotification) {
+              const notificationService = NotificationService.getInstance();
+              await notificationService.createNotification({
+                userId,
+                type: 'todo_overdue',
+                title: 'Todo Overdue',
+                message: `Todo "${todo.title}" in project "${project.name}" is overdue`,
+                relatedProjectId: project._id,
+                relatedTodoId: todo.id,
+                actionUrl: `/projects/${project._id}`
+              });
+            }
           }
 
           // Send due soon notification

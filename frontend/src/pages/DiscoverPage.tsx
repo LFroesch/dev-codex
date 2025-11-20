@@ -78,9 +78,7 @@ const DiscoverPage: React.FC = () => {
 
   // Load users when in users mode, search changes, or page changes
   useEffect(() => {
-    console.log('👀 useEffect triggered - viewMode:', viewMode);
     if (viewMode === 'users') {
-      console.log('🚀 Calling loadUsers...');
       loadUsers();
     }
   }, [viewMode, loadUsers]);
@@ -509,10 +507,10 @@ const DiscoverPage: React.FC = () => {
 
                     {/* Description - Fixed height */}
                     <div className="h-[3.5rem] flex-shrink-0 mb-3">
-                    {project.description && (
+                    {(project.publicShortDescription || project.description) && (
                       <div className={"inline-flex items-start px-2 py-0.5 rounded-md text-xs font-medium text-base-content/80 h-full w-full input input-bordered"}>
                         <p className="text-sm text-base-content/70 line-clamp-2 leading-relaxed">
-                          {project.description}
+                          {project.publicShortDescription || project.description}
                         </p>
                       </div>
                       )}

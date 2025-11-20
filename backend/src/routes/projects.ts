@@ -172,7 +172,7 @@ router.put('/:id', requireProjectAccess('edit'), checkProjectLock, async (req: A
       'name', 'description', 'notes', 'todos', 'devLog', 'components',
       'stack', 'stagingEnvironment', 'color', 'category', 'tags',
       'deploymentData', 'isArchived', 'isShared', 'isPublic',
-      'publicSlug', 'publicDescription', 'publicVisibility'
+      'publicSlug', 'publicShortDescription', 'publicDescription', 'publicVisibility'
     ];
 
     const updateData: any = {};
@@ -1387,6 +1387,7 @@ function formatProjectResponse(project: any) {
     isShared: project.isShared,
     isPublic: project.isPublic,
     publicSlug: project.publicSlug,
+    publicShortDescription: project.publicShortDescription,
     publicDescription: project.publicDescription,
     deploymentData: project.deploymentData,
     createdAt: project.createdAt,

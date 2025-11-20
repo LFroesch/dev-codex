@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
 import { publicAPI, authAPI } from '../api';
 import { getContrastTextColor } from '../utils/contrastTextColor';
 import ProjectComments from '../components/ProjectComments';
@@ -11,11 +11,20 @@ import remarkGfm from 'remark-gfm';
 const PublicProjectPage: React.FC = () => {
   const { identifier } = useParams<{ identifier: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const [project, setProject] = useState<any>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [activeTab, setActiveTab] = useState('overview');
+
+  // Initialize activeTab from URL params
+  const [activeTab, setActiveTab] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get('tab');
+    if (tabParam) return tabParam;
+    if (window.location.hash === '#comments') return 'comments';
+    return 'readme';
+  });
 
   useEffect(() => {
     const loadData = async () => {
@@ -36,6 +45,17 @@ const PublicProjectPage: React.FC = () => {
 
     loadData();
   }, [identifier]);
+
+  // Update tab when URL changes
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tabParam = params.get('tab');
+    if (tabParam) {
+      setActiveTab(tabParam);
+    } else if (location.hash === '#comments') {
+      setActiveTab('comments');
+    }
+  }, [location.search, location.hash]);
 
   const loadProject = async () => {
     try {
@@ -159,95 +179,53 @@ const PublicProjectPage: React.FC = () => {
       <div className="space-y-6 max-w-full">
         {/* Project Header */}
         <div className="section-container max-w-full">
-          <div className="section-content p-3 sm:p-4 max-w-full">
-            {/* Header with buttons and project info */}
-            <div className="flex flex-wrap items-start gap-2 mb-3">
-              {/* Left side: Project info (wraps internally) */}
-              <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
-                {/* Project Title */}
-                <h3
-                  className="border-2 border-base-content/20 font-semibold text-lg sm:text-xl px-3 py-1.5 rounded-md"
-                  style={{
-                    backgroundColor: project.color,
-                    color: getContrastTextColor(project.color)
-                  }}
-                >
-                  {project.name}
-                </h3>
+          <div className="section-content p-4 sm:p-6 max-w-full">
+            {/* Title Row with Action Buttons */}
+            <div className="flex flex-wrap items-center gap-3 mb-4">
+              {/* Project Title */}
+              <h1
+                className="text-2xl sm:text-3xl lg:text-4xl font-bold px-4 py-2 rounded-lg border-2 border-base-content/20"
+                style={{
+                  backgroundColor: project.color,
+                  color: getContrastTextColor(project.color)
+                }}
+              >
+                {project.name}
+              </h1>
 
-                {/* Category Badge */}
-                <span
-                  className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-primary border-2 border-base-content/20"
-                  style={{ color: getContrastTextColor() }}
-                >
-                  {project.category}
-                </span>
+              {/* Spacer to push buttons to the right */}
+              <div className="flex-1 min-w-[20px]"></div>
 
-                {/* Owner Badge */}
-                {project.owner && (
-                  <div
-                    className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-secondary border-2 border-base-content/20"
-                    style={{ color: getContrastTextColor("secondary") }}
-                  >
-                    {project.owner.isPublic || project.owner.publicSlug ? (
-                      <Link
-                        to={`/discover/user/${project.owner.publicSlug || project.owner.username || project.owner.id}`}
-                        className="font-semibold hover:underline"
-                      >
-                        {project.owner.displayName}
-                      </Link>
-                    ) : (
-                      <span className="font-semibold">
-                        {project.owner.displayName}
-                      </span>
-                    )}
-                  </div>
-                )}
-
-                {/* Timestamp Badge */}
-                {visibility.timestamps && (
-                  <div className="flex items-center bg-accent gap-1.5 border-2 border-base-content/20 px-2 py-1 rounded-md" style={{ color: getContrastTextColor("accent") }}>
-                    <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span
-                      className="text-xs font-semibold whitespace-nowrap"
-                    >
-                      <span className="hidden sm:inline">Updated </span>
-                      {new Date(project.updatedAt).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'short'
-                      })}
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              {/* Right side: Action Buttons (stays on top row) */}
-              <div className="flex gap-2 flex-shrink-0 items-center">
-                <FavoriteButton projectId={project.id} size="md" showCount={true} />
-
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2">
                 {currentUser && project.owner && currentUser.id === project.owner.id && (
                   <button
                     onClick={() => {
-                      // Set this project as the selected project before navigating
                       localStorage.setItem('selectedProjectId', project.id);
                       navigate('/public');
                     }}
-                    className="btn btn-sm btn-secondary gap-1 sm:gap-2 border-thick"
-                    style={{ color: getContrastTextColor('secondary') }}
+                    className="btn btn-sm btn-ghost gap-2 border border-base-content/20"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                     </svg>
-                    <span className="hidden sm:inline">Edit Project</span>
-                    <span className="sm:hidden">Edit</span>
+                    <span className="hidden sm:inline">Edit</span>
                   </button>
                 )}
 
                 <button
+                  onClick={copyProjectUrl}
+                  className="btn btn-sm btn-ghost gap-2 border border-base-content/20"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  <span className="hidden sm:inline">Share</span>
+                </button>
+
+                <button
                   onClick={() => navigate('/discover')}
-                  className="btn btn-sm btn-primary gap-1 sm:gap-2 border-thick"
+                  className="btn btn-sm btn-primary gap-2 border-thick"
                   style={{ color: getContrastTextColor('primary') }}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -256,38 +234,86 @@ const PublicProjectPage: React.FC = () => {
                   <span className="hidden sm:inline">Back</span>
                 </button>
 
-                <button
-                  onClick={copyProjectUrl}
-                  className="btn btn-sm btn-outline gap-1 sm:gap-2"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
-                  <span className="hidden sm:inline">Share</span>
-                </button>
+                {/* Favorite Button */}
+                <FavoriteButton projectId={project.id} size="md" showCount={true} />
               </div>
             </div>
-            
-            {/* Tags */}
-            {visibility.tags && project.tags && project.tags.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-3">
-                {project.tags.map((tag: string, index: number) => (
-                  <span key={index} className="inline-flex items-center px-2 py-1 rounded-md text-sm font-medium bg-base-200 text-base-content/80 border-2 border-base-content/20">
-                    {tag}
+
+            {/* Metadata Row */}
+            <div className="flex flex-wrap items-center gap-3 mb-4">
+              {/* Category */}
+              <div className="flex items-center gap-2">
+                <svg className="w-4 h-4 text-base-content/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                </svg>
+                <span className="text-sm font-medium text-base-content/80">{project.category}</span>
+              </div>
+
+              {/* Divider */}
+              <span className="text-base-content/30">•</span>
+
+              {/* Owner */}
+              {project.owner && (
+                <>
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-base-content/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    {project.owner.isPublic || project.owner.publicSlug ? (
+                      <Link
+                        to={`/discover/user/${project.owner.publicSlug || project.owner.username || project.owner.id}`}
+                        className="text-sm font-medium text-primary hover:underline"
+                      >
+                        {project.owner.displayName}
+                      </Link>
+                    ) : (
+                      <span className="text-sm font-medium text-base-content/80">
+                        {project.owner.displayName}
+                      </span>
+                    )}
+                  </div>
+
+                  {visibility.timestamps && <span className="text-base-content/30">•</span>}
+                </>
+              )}
+
+              {/* Timestamp */}
+              {visibility.timestamps && (
+                <div className="flex items-center gap-2">
+                  <svg className="w-4 h-4 text-base-content/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="text-sm font-medium text-base-content/80">
+                    Updated {new Date(project.updatedAt).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric'
+                    })}
                   </span>
-                ))}
+                </div>
+              )}
+            </div>
+
+            {/* Short Description */}
+            {project.publicShortDescription && (
+              <div className="mt-3">
+                <p className="text-sm sm:text-base text-base-content/80 leading-relaxed">
+                  {project.publicShortDescription}
+                </p>
               </div>
             )}
-            
 
-            {/* Description */}
-            {project.description && (
-              <div className="px-3 py-2 rounded-md text-base-content/80 w-full border-2 border-base-content/20 bg-base-200/30">
-                <div className="prose prose-sm max-w-none text-base-content/90">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {project.description}
-                  </ReactMarkdown>
-                </div>
+            {/* Tags */}
+            {visibility.tags && project.tags && project.tags.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-3">
+                {project.tags.map((tag: string, index: number) => (
+                  <span
+                    key={index}
+                    className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-base-200 text-base-content border border-base-content/20 hover:bg-base-300 transition-colors"
+                  >
+                    #{tag}
+                  </span>
+                ))}
               </div>
             )}
 
@@ -295,10 +321,22 @@ const PublicProjectPage: React.FC = () => {
         </div>
 
         {/* Tabs Section */}
-        {hasContent && (
+        {(hasContent || project.publicDescription) && (
           <div className="flex justify-center">
             {/* Tab Navigation */}
             <div className="tabs-container p-1">
+              {project.publicDescription && (
+                <button
+                  className={`tab-button ${activeTab === 'readme' ? 'tab-active' : ''} gap-2`}
+                  style={activeTab === 'readme' ? { color: getContrastTextColor('primary') } : {}}
+                  onClick={() => setActiveTab('readme')}
+                >
+                  <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  README
+                </button>
+              )}
               <button
                 className={`tab-button ${activeTab === 'overview' ? 'tab-active' : ''} gap-2`}
                 style={activeTab === 'overview' ? { color: getContrastTextColor('primary') } : {}}
@@ -345,15 +383,57 @@ const PublicProjectPage: React.FC = () => {
                   DevLog
                 </button>
               )}
+              <button
+                className={`tab-button ${activeTab === 'comments' ? 'tab-active' : ''} gap-2`}
+                style={activeTab === 'comments' ? { color: getContrastTextColor('primary') } : {}}
+                onClick={() => setActiveTab('comments')}
+              >
+                <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                Comments
+              </button>
             </div>
           </div>
         )}
 
-        {hasContent && (
+        {(hasContent || project.publicDescription) && (
           <div className="section-container mb-8">
 
             {/* Tab Content */}
             <div className="section-content p-6">
+              {/* README Tab */}
+              {activeTab === 'readme' && project.publicDescription && (
+                <div>
+                  <h3 className="text-xl font-bold mb-4">README</h3>
+                  <div className="prose prose-base max-w-none [&>*]:text-base-content [&_a]:text-primary [&_code]:text-accent [&_pre]:bg-base-200 [&_blockquote]:border-primary">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        h1: ({node, ...props}) => <h1 className="text-2xl font-bold mt-4 mb-3 text-base-content" {...props} />,
+                        h2: ({node, ...props}) => <h2 className="text-xl font-bold mt-3 mb-2 text-base-content" {...props} />,
+                        h3: ({node, ...props}) => <h3 className="text-lg font-semibold mt-3 mb-2 text-base-content" {...props} />,
+                        p: ({node, ...props}) => <p className="mb-3 text-base-content/90 leading-relaxed" {...props} />,
+                        ul: ({node, ...props}) => <ul className="list-disc list-inside mb-3 space-y-1" {...props} />,
+                        ol: ({node, ...props}) => <ol className="list-decimal list-inside mb-3 space-y-1" {...props} />,
+                        li: ({node, ...props}) => <li className="text-base-content/90" {...props} />,
+                        code: ({node, inline, ...props}: any) =>
+                          inline
+                            ? <code className="bg-base-200 px-1.5 py-0.5 rounded text-sm font-mono text-accent" {...props} />
+                            : <code className="block bg-base-200 p-3 rounded-lg text-sm font-mono overflow-x-auto" {...props} />,
+                        pre: ({node, ...props}) => <pre className="bg-base-200 p-3 rounded-lg overflow-x-auto mb-3" {...props} />,
+                        a: ({node, ...props}) => <a className="text-primary hover:underline font-medium" {...props} />,
+                        blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-primary pl-4 italic my-3 text-base-content/80" {...props} />,
+                        strong: ({node, ...props}) => <strong className="font-bold text-base-content" {...props} />,
+                        em: ({node, ...props}) => <em className="italic text-base-content" {...props} />,
+                      }}
+                    >
+                      {project.publicDescription}
+                    </ReactMarkdown>
+                  </div>
+                </div>
+              )}
+
               {/* Overview Tab */}
               {activeTab === 'overview' && (
                 <div className="space-y-6">
@@ -524,69 +604,45 @@ const PublicProjectPage: React.FC = () => {
                   </div>
                 </div>
               )}
-            </div>
-          </div>
-        )}
 
-        {/* Empty State */}
-        {!hasContent && (
-          <div className="hero bg-base-100 rounded-2xl shadow-xl border-thick">
-            <div className="hero-content text-center py-16">
-              <div>
-                <div className="w-24 h-24 bg-base-200 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <svg className="w-12 h-12 text-base-content/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
+              {/* Comments Tab */}
+              {activeTab === 'comments' && (
+                <div>
+                  <h3 className="text-xl font-bold mb-4">Comments & Discussion</h3>
+                  {currentUser && project.userId === currentUser.id && (
+                    <div className="mb-6 p-4 bg-base-200 rounded-lg border-2 border-base-content/20">
+                      <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+                        </svg>
+                        Post Update
+                      </h4>
+                      <PostComposer postType="project" projectId={project.id} />
+                    </div>
+                  )}
+                  {currentUser ? (
+                    <ProjectComments projectId={project.id} currentUserId={currentUser.id} />
+                  ) : (
+                    <div className="text-center py-12 text-base-content/60">
+                      <svg className="w-16 h-16 mx-auto mb-4 text-base-content/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                      </svg>
+                      <p className="text-lg mb-4">Sign in to comment on this project</p>
+                      <button
+                        onClick={() => navigate('/login')}
+                        className="btn btn-primary border-thick"
+                        style={{ color: getContrastTextColor('primary') }}
+                      >
+                        Sign In
+                      </button>
+                    </div>
+                  )}
                 </div>
-                <h3 className="text-2xl font-bold text-base-content mb-2">No additional details</h3>
-                <p className="text-base-content/60 max-w-md mx-auto">
-                  This project doesn't have any additional information shared publicly yet.
-                </p>
-              </div>
+              )}
             </div>
           </div>
         )}
 
-        {/* Project Updates Section */}
-        {currentUser && project.userId === currentUser.id && (
-          <div className="section-container border-thick mb-8">
-            <div className="section-header">
-              <div className="flex items-center gap-3">
-                <div className="section-icon">📢</div>
-                <span>Post Update</span>
-              </div>
-            </div>
-            <div className="section-content">
-              <PostComposer postType="project" projectId={project.id} />
-            </div>
-          </div>
-        )}
-
-        {/* Comments Section - Always visible below all content */}
-        <div className="section-container border-thick">
-          <div className="section-header">
-            <div className="flex items-center gap-3">
-              <div className="section-icon">💬</div>
-              <span>Comments & Discussion</span>
-            </div>
-          </div>
-          <div className="section-content">
-            {currentUser ? (
-              <ProjectComments projectId={project.id} currentUserId={currentUser.id} />
-            ) : (
-              <div className="text-center py-8 text-base-content/60">
-                <p className="mb-4">Sign in to comment on this project</p>
-                <button
-                  onClick={() => navigate('/login')}
-                  className="btn btn-primary border-thick"
-                  style={{ color: getContrastTextColor('primary') }}
-                >
-                  Sign In
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
       </div>
     </div>
   );

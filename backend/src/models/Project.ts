@@ -134,6 +134,7 @@ export interface IProject extends Document {
   isShared: boolean;
   isPublic: boolean;
   publicSlug?: string;
+  publicShortDescription?: string;
   publicDescription?: string;
   publicVisibility?: {
     description: boolean;
@@ -314,10 +315,15 @@ const projectSchema = new Schema<IProject>({
     trim: true,
     match: /^[a-z0-9-]+$/
   },
+  publicShortDescription: {
+    type: String,
+    required: false,
+    maxlength: 500
+  },
   publicDescription: {
     type: String,
     required: false,
-    maxlength: 300
+    maxlength: 10000
   },
   publicVisibility: {
     description: { type: Boolean, default: true },

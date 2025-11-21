@@ -92,6 +92,69 @@ export class CommandExecutor {
   }
 
   /**
+   * Remove comments from a command line
+   * @param command - Command string that may contain comments
+   * @returns Cleaned command or null if the line is entirely a comment
+   */
+  private removeComments(command: string): string | null {
+    const trimmed = command.trim();
+
+    // Skip lines that start with # (full-line comments)
+    if (trimmed.startsWith('#')) {
+      return null;
+    }
+
+    // Strip inline comments (# outside of quotes)
+    let cleaned = '';
+    let inQuotes = false;
+    let quoteChar = '';
+    let escaped = false;
+
+    for (let i = 0; i < trimmed.length; i++) {
+      const char = trimmed[i];
+
+      // Handle escape sequences
+      if (escaped) {
+        cleaned += char;
+        escaped = false;
+        continue;
+      }
+
+      if (char === '\\') {
+        cleaned += char;
+        escaped = true;
+        continue;
+      }
+
+      // Handle quotes
+      if ((char === '"' || char === "'") && !inQuotes) {
+        inQuotes = true;
+        quoteChar = char;
+        cleaned += char;
+        continue;
+      }
+
+      if (char === quoteChar && inQuotes) {
+        inQuotes = false;
+        quoteChar = '';
+        cleaned += char;
+        continue;
+      }
+
+      // If we encounter # outside of quotes, stop processing
+      if (!inQuotes && char === '#') {
+        break;
+      }
+
+      cleaned += char;
+    }
+
+    // Return null if the command is empty after removing comments
+    const result = cleaned.trim();
+    return result.length > 0 ? result : null;
+  }
+
+  /**
    * Split batch commands on && and newlines while respecting quoted strings
    * @param commandStr - Raw batch command string
    * @returns Array of individual commands
@@ -139,8 +202,9 @@ export class CommandExecutor {
       // Check for && separator (only when not in quotes)
       if (!inQuotes && char === ' ' && nextChar === '&' && nextNextChar === '&') {
         // Found &&, save current command and skip the &&
-        if (currentCommand.trim()) {
-          commands.push(currentCommand.trim());
+        const cleaned = this.removeComments(currentCommand);
+        if (cleaned) {
+          commands.push(cleaned);
         }
         currentCommand = '';
         i += 2; // Skip the &&
@@ -154,8 +218,9 @@ export class CommandExecutor {
       // Check for newline separator (only when not in quotes)
       if (!inQuotes && (char === '\n' || char === '\r')) {
         // Save current command if not empty
-        if (currentCommand.trim()) {
-          commands.push(currentCommand.trim());
+        const cleaned = this.removeComments(currentCommand);
+        if (cleaned) {
+          commands.push(cleaned);
         }
         currentCommand = '';
 
@@ -184,8 +249,9 @@ export class CommandExecutor {
     }
 
     // Add the last command
-    if (currentCommand.trim()) {
-      commands.push(currentCommand.trim());
+    const cleaned = this.removeComments(currentCommand);
+    if (cleaned) {
+      commands.push(cleaned);
     }
 
     return commands;

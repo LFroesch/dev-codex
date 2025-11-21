@@ -30,8 +30,11 @@ const getPageRoute = (command: string): string | null => {
   const patterns = [
     { pattern: /\/(add|edit|view|delete)\s+(todo|todos)/, route: '/notes?section=todos' },
     { pattern: /\/(add|edit|view|delete)\s+(note|notes)/, route: '/notes' },
+    { pattern: /\/(add|edit|view|delete)\s+(devlog|devlogs)/, route: '/notes?section=devlog' },
     { pattern: /\/(add|edit|view|delete)\s+(project|projects)/, route: '/projects' },
-    { pattern: /\/(add|edit|view|delete)\s+(component|components)/, route: '/components' },
+    { pattern: /\/(add|edit|view|delete)\s+(component|components)/, route: '/features' },
+    { pattern: /\/(add|edit|view|delete)\s+(relationship|relationships)/, route: '/features' },
+    { pattern: /\/(add|edit|view|delete|remove)\s+(stack)/, route: '/stack' },
     { pattern: /\/(add|edit|view|delete)\s+(idea|ideas)/, route: '/ideas' },
   ];
 

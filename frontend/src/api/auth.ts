@@ -57,6 +57,10 @@ class AuthService extends BaseApiService {
   async updateUsername(data: { username: string }): Promise<{ message: string; user: User }> {
     return this.patch('/update-username', data);
   }
+
+  async exchangeToken(token: string): Promise<{ message: string; user: User }> {
+    return this.post('/exchange-token', { token });
+  }
 }
 
 export const authAPI = new AuthService();

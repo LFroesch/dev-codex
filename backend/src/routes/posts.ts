@@ -1,5 +1,6 @@
 import { Router, Response } from 'express';
 import { requireAuth, AuthRequest } from '../middleware/auth';
+import { blockDemoWrites } from '../middleware/blockDemoWrites';
 import Post from '../models/Post';
 import Follow from '../models/Follow';
 import Favorite from '../models/Favorite';
@@ -11,6 +12,7 @@ import mongoose from 'mongoose';
 import { SOCIAL_CONSTANTS } from '../config/socialConstants';
 
 const router = Router();
+router.use(blockDemoWrites);
 
 // Get personalized feed (posts from followed users and favorited projects)
 router.get('/feed', requireAuth, async (req: AuthRequest, res: Response) => {

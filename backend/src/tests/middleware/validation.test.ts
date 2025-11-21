@@ -512,14 +512,14 @@ describe('Validation Middleware', () => {
     it('should reject name that is too long', () => {
       mockReq.method = 'POST';
       mockReq.body = {
-        name: 'a'.repeat(101),
+        name: 'a'.repeat(31),
         description: 'A project'
       };
 
       validateProjectData(mockReq as Request, mockRes as Response, nextFunction);
 
       expect(mockRes.status).toHaveBeenCalledWith(400);
-      expect(mockRes.json).toHaveBeenCalledWith({ message: 'Project name must be 1-100 characters' });
+      expect(mockRes.json).toHaveBeenCalledWith({ message: 'Project name must be 1-30 characters' });
     });
 
     it('should reject description that is too long', () => {

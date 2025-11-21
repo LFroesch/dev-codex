@@ -1,5 +1,6 @@
 import { Router, Response } from 'express';
 import { requireAuth, AuthRequest } from '../middleware/auth';
+import { blockDemoWrites } from '../middleware/blockDemoWrites';
 import Follow from '../models/Follow';
 import { User } from '../models/User';
 import { Project } from '../models/Project';
@@ -7,6 +8,9 @@ import NotificationService from '../services/notificationService';
 import mongoose from 'mongoose';
 
 const router = Router();
+
+// Block demo users from write operations (follows, unfollows)
+router.use(blockDemoWrites);
 
 // Get user's following list (users and projects they follow)
 router.get('/following', requireAuth, async (req: AuthRequest, res: Response) => {

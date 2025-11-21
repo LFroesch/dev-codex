@@ -1,5 +1,6 @@
 import { Router, Response } from 'express';
 import { requireAuth, AuthRequest } from '../middleware/auth';
+import { blockDemoWrites } from '../middleware/blockDemoWrites';
 import Comment from '../models/Comment';
 import { Project } from '../models/Project';
 import { User } from '../models/User';
@@ -10,6 +11,7 @@ import mongoose from 'mongoose';
 import { SOCIAL_CONSTANTS } from '../config/socialConstants';
 
 const router = Router();
+router.use(blockDemoWrites);
 
 // Get all comments for a project
 router.get('/project/:projectId', requireAuth, async (req: AuthRequest, res: Response) => {

@@ -185,21 +185,52 @@ router.get('/user/:identifier', async (req, res) => {
 // Get public projects for discovery
 router.get('/projects', async (req, res) => {
   try {
-    const { 
-      page = 1, 
-      limit = 12, 
-      category, 
-      tag, 
-      search 
+    const {
+      page = 1,
+      limit = 12,
+      category,
+      tag,
+      search
     } = req.query;
 
     const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
-    
+
+    // Check if current user is demo user (via cookie or Authorization header)
+    let isCurrentUserDemo = false;
+    let currentUserId: string | null = null;
+
+    try {
+      const jwt = await import('jsonwebtoken');
+      const token = req.cookies?.token || req.headers.authorization?.replace('Bearer ', '');
+
+      if (token && process.env.JWT_SECRET) {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET) as any;
+        currentUserId = decoded.userId;
+
+        // Check if this user is the demo user
+        if (currentUserId) {
+          const user = await User.findById(currentUserId).select('isDemo').lean();
+          isCurrentUserDemo = user?.isDemo || false;
+        }
+      }
+    } catch (err) {
+      // Token validation failed or no token - treat as non-demo user
+    }
+
     // Build query
-    const query: any = { 
-      isPublic: true, 
-      isArchived: false 
+    // For demo users: show both demo projects AND real user projects (everything)
+    // For real users: exclude demo user projects
+    const demoUser = await User.findOne({ isDemo: true }).select('_id').lean();
+    const query: any = {
+      isPublic: true,
+      isArchived: false
     };
+
+    if (demoUser && !isCurrentUserDemo) {
+      // Real users don't see demo projects
+      query.ownerId = { $ne: demoUser._id };
+    }
+    // Demo users see everything (no filter applied)
 
     if (category && category !== 'all') {
       query.category = category;
@@ -238,6 +269,8 @@ router.get('/projects', async (req, res) => {
           $match: {
             isPublic: true,
             isArchived: false,
+            // Only exclude demo projects for real users (not for demo users)
+            ...(demoUser && !isCurrentUserDemo ? { ownerId: { $ne: demoUser._id } } : {}),
             ...(category && category !== 'all' ? { category } : {}),
             ...(tag ? { tags: { $in: [tag] } } : {})
           }
@@ -394,9 +427,10 @@ router.get('/users/search', async (req, res) => {
     const limitNum = Math.min(parseInt(limit as string), 50); // Max 50 per page
     const skip = (pageNum - 1) * limitNum;
 
-    // Build query for public users only
+    // Build query for public users only (exclude demo user)
     const query: any = {
-      isPublic: true
+      isPublic: true,
+      isDemo: { $ne: true }
     };
 
     // Add search filter if provided

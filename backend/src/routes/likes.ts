@@ -1,5 +1,6 @@
 import { Router, Response } from 'express';
 import { requireAuth, AuthRequest } from '../middleware/auth';
+import { blockDemoWrites } from '../middleware/blockDemoWrites';
 import Like from '../models/Like';
 import Post from '../models/Post';
 import Comment from '../models/Comment';
@@ -10,6 +11,7 @@ import mongoose from 'mongoose';
 import { SOCIAL_CONSTANTS } from '../config/socialConstants';
 
 const router = Router();
+router.use(blockDemoWrites);
 
 // Like a post
 router.post('/posts/:postId', requireAuth, async (req: AuthRequest, res: Response) => {

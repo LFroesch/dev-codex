@@ -496,6 +496,47 @@ const Layout: React.FC = () => {
   return (
     <TutorialProvider>
       <div className={`bg-base-100 flex flex-col ${location.pathname === '/terminal' || location.pathname === '/features' ? 'h-screen overflow-hidden' : ''}`}>
+
+      {/* Demo Mode Banner - Hidden on features page to avoid layout issues */}
+      {user?.isDemo && location.pathname !== '/features' && (
+        <div className="bg-warning text-warning-content px-4 py-2 text-center font-medium shadow-md sticky top-0 z-50">
+          <div className="flex items-center justify-center gap-2 flex-wrap">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+            <span>You're viewing demo mode - Explore features but you can't save changes.</span>
+            <button
+              onClick={async () => {
+                try {
+                  // Reset tutorial on backend
+                  const { tutorialAPI } = await import('../api/tutorial');
+                  await tutorialAPI.resetTutorial();
+                  // Clear session storage
+                  sessionStorage.removeItem('tutorialWelcomeShown');
+                  // Add a small delay before reload to ensure state is cleared
+                  await new Promise(resolve => setTimeout(resolve, 100));
+                  // Reload the page to get fresh user data, then start tutorial
+                  window.location.href = '/projects?startTutorial=true';
+                } catch (error) {
+                  console.error('Failed to start tutorial:', error);
+                }
+              }}
+              className="btn btn-sm btn-info ml-2"
+            >
+              Start Tutorial
+            </button>
+            <button
+              onClick={() => navigate('/register')}
+              className="btn btn-sm btn-primary ml-2"
+              style={{ color: getContrastTextColor('primary') }}
+            >
+              Sign Up to Save Your Work
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="bg-base-100 border-b-2 border-base-content/20 shadow-sm sticky top-0 z-40 w-full">
 

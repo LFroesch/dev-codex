@@ -390,11 +390,70 @@ router.post('/logout', async (req, res) => {
   }
 });
 
+// Exchange OAuth token for cookie (mobile-friendly approach)
+router.post('/exchange-token', async (req, res) => {
+  try {
+    const { token } = req.body;
+
+    if (!token) {
+      return res.status(400).json({ message: 'Token is required' });
+    }
+
+    if (!process.env.JWT_SECRET) {
+      console.error('CRITICAL: JWT_SECRET environment variable is not set');
+      return res.status(500).json({ message: 'Server configuration error' });
+    }
+
+    // Verify the token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET) as any;
+    const user = await User.findById(decoded.userId).select('-password');
+
+    if (!user) {
+      return res.status(401).json({ message: 'User not found' });
+    }
+
+    // Set HTTP-only cookie (this is a same-site request, works on mobile)
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
+
+    res.json({
+      message: 'Token exchanged successfully',
+      user: {
+        id: user._id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        username: user.username,
+        displayPreference: user.displayPreference,
+        theme: user.theme,
+        hasGoogleAccount: !!user.googleId,
+        isAdmin: user.isAdmin,
+        bio: user.bio || '',
+        planTier: user.planTier || 'free',
+        projectLimit: user.projectLimit || 3,
+        isPublic: user.isPublic || false,
+        publicSlug: user.publicSlug,
+        publicDescription: user.publicDescription,
+        tutorialCompleted: user.tutorialCompleted,
+        tutorialProgress: user.tutorialProgress,
+        createdAt: user.createdAt
+      }
+    });
+  } catch (error) {
+    console.error('Token exchange error:', error);
+    res.status(401).json({ message: 'Invalid token' });
+  }
+});
+
 // Check auth status
 router.get('/me', async (req, res) => {
   try {
     const token = req.cookies.token;
-    
+
     if (!token) {
       return res.status(401).json({ message: 'Not authenticated' });
     }
@@ -403,10 +462,10 @@ router.get('/me', async (req, res) => {
       console.error('CRITICAL: JWT_SECRET environment variable is not set');
       return res.status(500).json({ message: 'Server configuration error' });
     }
-    
+
     const decoded = jwt.verify(token, process.env.JWT_SECRET) as any;
     const user = await User.findById(decoded.userId).select('-password');
-    
+
     if (!user) {
       return res.status(401).json({ message: 'User not found' });
     }
@@ -720,20 +779,18 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
             { expiresIn: '7d' }
           );
 
-          res.cookie('token', token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 7 * 24 * 60 * 60 * 1000
-          });
+          // Create login notifications for due today tasks
+          await createLoginNotifications(user._id.toString());
 
-          res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5002'}/?auth=success`);
+          // NEW: Redirect with token in URL instead of setting cookie directly
+          // This works reliably on mobile browsers (Safari, Chrome mobile, etc.)
+          res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5002'}/auth/callback?token=${token}`);
         }
       } catch (error) {
         console.error('Google OAuth callback error:', error);
         const errorMsg = error instanceof Error ? error.message : 'auth_failed';
         const stateParam = req.query.state as string;
-        
+
         // Check if this was a linking attempt
         if (stateParam && linkingStore.has(stateParam)) {
           linkingStore.delete(stateParam); // Clean up

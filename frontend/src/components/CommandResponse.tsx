@@ -339,6 +339,46 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
   const renderData = () => {
     if (!response.data) return null;
 
+    // Special handling for demo mode
+    if (response.data.demo && response.data.action === 'signup_required') {
+      return (
+        <div className="mt-3 space-y-3">
+          <div className="p-4 bg-info/10 border-2 border-info/50 rounded-lg">
+            <div className="flex items-start gap-3">
+              <svg
+                className="w-6 h-6 text-info flex-shrink-0 mt-0.5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-sm font-semibold text-info mb-1">{response.data.title || 'Demo Mode - Account Required'}</h4>
+                <p className="text-sm text-base-content/80 mb-2">
+                  {response.data.description || response.data.message || "You're in demo mode with read-only access. Sign up to create, edit, and manage your own projects!"}
+                </p>
+                <div className="text-xs text-base-content/60">
+                  Create a free account to unlock full functionality including creating projects, adding tasks, and saving your work.
+                </div>
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={() => navigate('/register')}
+            className="btn btn-primary btn-sm gap-2"
+            style={{ color: getContrastTextColor('primary') }}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+            </svg>
+            {response.data.ctaText || 'Create Free Account'}
+          </button>
+        </div>
+      );
+    }
+
     // Special handling for lock errors
     if (response.type === 'error' && response.data.isLocked) {
       return (

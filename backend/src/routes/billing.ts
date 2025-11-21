@@ -2,6 +2,7 @@ import express from 'express';
 import Stripe from 'stripe';
 import { User } from '../models/User';
 import { requireAuth, AuthRequest } from '../middleware/auth';
+import { blockDemoWrites } from '../middleware/blockDemoWrites';
 import { createRateLimit } from '../middleware/rateLimit';
 import { logInfo, logError, logWarn } from '../config/logger';
 import NotificationService from '../services/notificationService';
@@ -41,7 +42,7 @@ const PLAN_LIMITS = {
 };
 
 // Create checkout session
-router.post('/create-checkout-session', billingRateLimit, requireAuth, async (req: AuthRequest, res) => {
+router.post('/create-checkout-session', billingRateLimit, requireAuth, blockDemoWrites, async (req: AuthRequest, res) => {
   try {
     // Check if self-hosted mode is enabled
     if (process.env.SELF_HOSTED === 'true') {

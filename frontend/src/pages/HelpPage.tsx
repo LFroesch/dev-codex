@@ -15,6 +15,9 @@ const HelpPage: React.FC = () => {
       // Clear session storage
       sessionStorage.removeItem('tutorialWelcomeShown');
 
+      // Add a small delay before reload to ensure state is cleared
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       // Reload the page to get fresh user data, then start tutorial
       window.location.href = '/projects?startTutorial=true';
     } catch (error) {

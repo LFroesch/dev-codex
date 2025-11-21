@@ -192,8 +192,8 @@ export const validateProjectData = (req: Request, res: Response, next: NextFunct
     
     if (name) {
       req.body.name = sanitizeString(name);
-      if (req.body.name.length < 1 || req.body.name.length > 100) {
-        return res.status(400).json({ message: 'Project name must be 1-100 characters' });
+      if (req.body.name.length < 1 || req.body.name.length > 30) {
+        return res.status(400).json({ message: 'Project name must be 1-30 characters' });
       }
     }
     

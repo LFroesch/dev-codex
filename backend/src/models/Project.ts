@@ -236,7 +236,8 @@ const projectSchema = new Schema<IProject>({
   name: {
     type: String,
     required: true,
-    trim: true
+    trim: true,
+    maxlength: 30
   },
   description: {
     type: String,

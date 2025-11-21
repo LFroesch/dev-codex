@@ -1,9 +1,11 @@
 import express from 'express';
 import { requireAuth, AuthRequest } from '../middleware/auth';
+import { blockDemoWrites } from '../middleware/blockDemoWrites';
 import { User } from '../models/User';
 import { v4 as uuidv4 } from 'uuid';
 
 const router = express.Router();
+router.use(blockDemoWrites);
 
 // Get all ideas for the authenticated user
 router.get('/', requireAuth, async (req: AuthRequest, res) => {

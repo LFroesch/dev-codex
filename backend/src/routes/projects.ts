@@ -1,7 +1,7 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import { Project } from '../models/Project';
-import { requireAuth, requireProjectAccess, AuthRequest } from '../middleware/auth';
+import { requireAuth, requireAuthOrDemo, requireProjectAccess, AuthRequest } from '../middleware/auth';
 import { validateProjectData, validateObjectId } from '../middleware/validation';
 import TeamMember from '../models/TeamMember';
 import ProjectInvitation from '../models/ProjectInvitation';
@@ -32,9 +32,8 @@ import { checkProjectLock } from '../middleware/projectLock';
 
 const router = express.Router();
 
-// All routes require authentication
-router.use(requireAuth);
-router.use(trackProjectAccess); // Track project access
+// Track project access for all routes
+router.use(trackProjectAccess);
 
 // Check for locked projects on all modification routes (PUT, POST, DELETE with :id)
 router.use('/:id', (req, res, next) => {
@@ -45,8 +44,18 @@ router.use('/:id', (req, res, next) => {
 });
 
 // Create project
-router.post('/', checkProjectLimit, async (req: AuthRequest, res) => {
+router.post('/', requireAuth, validateProjectData, checkProjectLimit, async (req: AuthRequest, res) => {
   try {
+    // Check if user is demo user
+    const user = await User.findById(req.userId);
+    if (user?.isDemo) {
+      return res.status(403).json({
+        message: 'Demo users cannot create new projects',
+        demo: true,
+        action: 'signup_required'
+      });
+    }
+
     const { name, description, stagingEnvironment, color, category, tags } = req.body;
 
     if (!name || !description) {
@@ -81,7 +90,7 @@ router.post('/', checkProjectLimit, async (req: AuthRequest, res) => {
 });
 
 // Get user's projects (owned + team projects)
-router.get('/', async (req: AuthRequest, res) => {
+router.get('/', requireAuthOrDemo, async (req: AuthRequest, res) => {
   try {
     const userId = req.userId!;
     
@@ -140,7 +149,7 @@ router.get('/', async (req: AuthRequest, res) => {
 });
 
 // Get single project
-router.get('/:id', requireProjectAccess('view'), async (req: AuthRequest, res) => {
+router.get('/:id', requireAuthOrDemo, requireProjectAccess('view'), async (req: AuthRequest, res) => {
   try {
     const project = await Project.findById(req.params.id)
       .populate('todos.assignedTo', 'firstName lastName username displayPreference email')
@@ -171,8 +180,18 @@ router.get('/:id', requireProjectAccess('view'), async (req: AuthRequest, res) =
 });
 
 // Update project
-router.put('/:id', requireProjectAccess('edit'), checkProjectLock, async (req: AuthRequest, res) => {
+router.put('/:id', requireAuth, validateProjectData, requireProjectAccess('edit'), checkProjectLock, async (req: AuthRequest, res) => {
   try {
+    // Check if user is demo user
+    const user = await User.findById(req.userId);
+    if (user?.isDemo) {
+      return res.status(403).json({
+        message: 'Demo users cannot edit projects',
+        demo: true,
+        action: 'signup_required'
+      });
+    }
+
     // SEC-005 FIX: Whitelist allowed fields to prevent mass assignment vulnerability
     const allowedFields = [
       'name', 'description', 'notes', 'todos', 'devLog', 'components',
@@ -268,8 +287,18 @@ router.patch('/:id/archive', requireProjectAccess('manage'), async (req: AuthReq
 });
 
 // Delete project (owner only)
-router.delete('/:id', requireProjectAccess('manage'), async (req: AuthRequest, res) => {
+router.delete('/:id', requireAuth, requireProjectAccess('manage'), async (req: AuthRequest, res) => {
   try {
+    // Check if user is demo user
+    const user = await User.findById(req.userId);
+    if (user?.isDemo) {
+      return res.status(403).json({
+        message: 'Demo users cannot delete projects',
+        demo: true,
+        action: 'signup_required'
+      });
+    }
+
     // Only project owner can delete the project
     if (!req.projectAccess?.isOwner) {
       return res.status(403).json({ message: 'Access denied: Only project owner can delete the project' });

@@ -45,6 +45,7 @@ export interface IUser extends Document {
   subscriptionStatus?: 'active' | 'inactive' | 'canceled' | 'past_due' | 'incomplete_expired';
   lastBillingUpdate?: Date;
   isAdmin: boolean;
+  isDemo: boolean;
   isBanned: boolean;
   bannedAt?: Date;
   banReason?: string;
@@ -154,6 +155,10 @@ const userSchema = new Schema<IUser>({
     required: false
   },
   isAdmin: {
+    type: Boolean,
+    default: false
+  },
+  isDemo: {
     type: Boolean,
     default: false
   },

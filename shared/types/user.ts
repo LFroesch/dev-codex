@@ -9,6 +9,7 @@ export interface BaseUser {
   planTier: 'free' | 'pro' | 'premium';
   projectLimit: number;
   isAdmin: boolean;
+  isDemo?: boolean;
   bio?: string;
   isPublic: boolean;
   publicSlug?: string;

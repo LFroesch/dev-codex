@@ -118,7 +118,7 @@ describe('Integration: Complete Auth Flow', () => {
 
       // Step 5: Update project
       const updateData = {
-        name: 'Updated Integration Test Project',
+        name: 'Updated Integration Project',
         description: 'Updated during integration testing'
       };
 

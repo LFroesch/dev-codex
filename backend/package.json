@@ -20,7 +20,10 @@
     "fix-user-plan": "ts-node src/scripts/fix-user-plan.ts",
     "debug-billing": "ts-node src/scripts/debug-billing.ts",
     "nuke-billing": "ts-node src/scripts/nuke-billing.ts",
-    "cleanup": "ts-node src/scripts/cleanup-database.ts"
+    "cleanup": "ts-node src/scripts/cleanup-database.ts",
+    "seed-demo": "ts-node src/scripts/seedDemoUser.ts",
+    "delete-demo": "ts-node src/scripts/deleteDemoUser.ts",
+    "reset-demo": "npm run delete-demo && npm run seed-demo"
   },
   "dependencies": {
     "@sentry/node": "^10.11.0",

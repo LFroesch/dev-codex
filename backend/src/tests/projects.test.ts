@@ -1,15 +1,14 @@
 import request from 'supertest';
 import authRoutes from '../routes/auth';
 import projectRoutes from '../routes/projects';
-import { requireAuth } from '../middleware/auth';
 import { Project } from '../models/Project';
 import { User } from '../models/User';
 import { createTestApp, createAuthenticatedUser, expectSuccess, expectErrorResponse, expectUnauthorized } from './utils';
 
-// Create test app using utility
+// Create test app using utility - routes now handle their own auth
 const app = createTestApp({
   '/api/auth': authRoutes,
-  '/api/projects': [requireAuth, projectRoutes]
+  '/api/projects': projectRoutes
 });
 
 describe('Project CRUD Operations', () => {
@@ -75,8 +74,20 @@ describe('Project CRUD Operations', () => {
       expect(response.body).toHaveProperty('message');
     });
 
-    // Note: Name length validation is not implemented in the current API
-    // This test would fail because the validation middleware is not applied to the create route
+    it('should reject project creation with name exceeding 30 characters', async () => {
+      const projectData = {
+        name: 'A'.repeat(31), // Exceeds 30 character limit
+        description: 'A test project description'
+      };
+
+      const response = await request(app)
+        .post('/api/projects')
+        .set('Cookie', `token=${authToken}`)
+        .send(projectData)
+        .expect(400);
+
+      expect(response.body).toHaveProperty('message', 'Project name must be 1-30 characters');
+    });
   });
 
   describe('GET /api/projects', () => {
@@ -209,20 +220,19 @@ describe('Project CRUD Operations', () => {
       expect(updatedProject?.name).toBe('Updated Project');
     });
 
-    // Note: Update validation is not implemented in the current API
-    // The route doesn't use validateProjectData middleware, so large names are accepted
-    it('should accept update with long name (validation not implemented)', async () => {
+    // Test that validation rejects names that are too long
+    it('should reject update with name exceeding 30 characters', async () => {
       const updateData = {
-        name: 'A'.repeat(101) // Would exceed limit if validation were implemented
+        name: 'A'.repeat(31) // Exceeds 30 character limit
       };
 
       const response = await request(app)
         .put(`/api/projects/${projectId}`)
         .set('Cookie', `token=${authToken}`)
         .send(updateData)
-        .expect(200);
+        .expect(400);
 
-      expect(response.body).toHaveProperty('message', 'Project updated successfully');
+      expect(response.body).toHaveProperty('message', 'Project name must be 1-30 characters');
     });
 
     it('should reject update for non-existent project', async () => {

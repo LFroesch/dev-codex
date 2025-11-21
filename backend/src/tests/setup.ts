@@ -35,6 +35,32 @@ jest.mock('../middleware/auth', () => ({
       res.status(401).json({ message: 'Not authenticated' });
     }
   },
+  requireAuthOrDemo: async (req: any, res: any, next: any) => {
+    // Same as requireAuth for tests - demo user will still need to auth with a token
+    const authHeader = req.headers?.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'test_secret') as any;
+        req.userId = decoded.userId;
+        req.user = { _id: decoded.userId, email: decoded.email, role: decoded.role || 'user', isAdmin: decoded.isAdmin || false };
+        next();
+      } catch (error) {
+        res.status(401).json({ message: 'Invalid token' });
+      }
+    } else if (req.cookies && req.cookies.token) {
+      try {
+        const decoded = jwt.verify(req.cookies.token, process.env.JWT_SECRET || 'test_secret') as any;
+        req.userId = decoded.userId;
+        req.user = { _id: decoded.userId, email: decoded.email, role: decoded.role || 'user', isAdmin: decoded.isAdmin || false };
+        next();
+      } catch (error) {
+        res.status(401).json({ message: 'Invalid token' });
+      }
+    } else {
+      res.status(401).json({ message: 'Not authenticated' });
+    }
+  },
   requireAdmin: (req: any, res: any, next: any) => {
     if (req.user && req.user.isAdmin) {
       next();

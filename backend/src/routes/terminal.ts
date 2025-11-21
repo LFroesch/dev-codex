@@ -31,10 +31,49 @@ router.post('/execute', terminalRateLimit, async (req: AuthRequest, res) => {
 
     const userId = req.userId!;
 
+    // Check if user is demo user and command is a write operation
+    const { User } = await import('../models/User');
+    const user = await User.findById(userId);
+
+    if (user?.isDemo) {
+      const commandLower = command.toLowerCase().trim();
+
+      // Allow theme changes for demo users to try different themes
+      const isThemeCommand = commandLower.includes('theme') || commandLower.startsWith('/theme') || commandLower.startsWith('theme');
+
+      if (!isThemeCommand) {
+        // Define write commands that demo users cannot execute
+        const writeCommands = [
+          'add', 'new', 'create', 'edit', 'update', 'delete', 'remove',
+          'complete', 'assign', 'push', 'invite', 'set', 'clear', 'export'
+        ];
+
+        const isWriteCommand = writeCommands.some(cmd =>
+          commandLower.startsWith(`/${cmd}`) || commandLower.startsWith(cmd)
+        );
+
+        if (isWriteCommand) {
+          return res.json({
+            type: 'error',
+            message: '🎭 Demo Mode - Account Required',
+            data: {
+              demo: true,
+              action: 'signup_required',
+              title: 'This action requires a full account',
+              description: 'You\'re in demo mode with read-only access. Sign up to create, edit, and manage your own projects!',
+              signupUrl: '/register',
+              ctaText: 'Create Free Account'
+            }
+          });
+        }
+      }
+    }
+
     logInfo('Terminal command execution', {
       userId,
       command: command.slice(0, 100), // Log only first 100 chars for security
-      currentProjectId
+      currentProjectId,
+      isDemo: user?.isDemo || false
     });
 
     // Execute command

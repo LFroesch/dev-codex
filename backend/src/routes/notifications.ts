@@ -1,9 +1,11 @@
 import express from 'express';
 import { requireAuth, AuthRequest } from '../middleware/auth';
+import { blockDemoWrites } from '../middleware/blockDemoWrites';
 import Notification from '../models/Notification';
 import NotificationService from '../services/notificationService';
 
 const router = express.Router();
+router.use(blockDemoWrites);
 
 // GET /api/notifications - Get user's notifications
 router.get('/', requireAuth, async (req: AuthRequest, res) => {

@@ -370,16 +370,74 @@ router.post('/login', authRateLimit, validateUserLogin, async (req, res) => {
   }
 });
 
+// Demo login route - no password required
+router.post('/demo-login', authRateLimit, async (req, res) => {
+  try {
+    // Find the demo user
+    const demoUser = await User.findOne({ isDemo: true });
+
+    if (!demoUser) {
+      return res.status(404).json({ message: 'Demo mode not available' });
+    }
+
+    // Create JWT token for demo user
+    if (!process.env.JWT_SECRET) {
+      console.error('CRITICAL: JWT_SECRET environment variable is not set');
+      return res.status(500).json({ message: 'Server configuration error' });
+    }
+
+    const token = jwt.sign(
+      { userId: demoUser._id, email: demoUser.email, isDemo: true },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    // Set HTTP-only cookie
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
+
+    res.json({
+      message: 'Demo login successful',
+      user: {
+        id: demoUser._id,
+        email: demoUser.email,
+        firstName: demoUser.firstName,
+        lastName: demoUser.lastName,
+        username: demoUser.username,
+        displayPreference: demoUser.displayPreference,
+        theme: demoUser.theme,
+        isDemo: true,
+        bio: demoUser.bio || '',
+        planTier: demoUser.planTier || 'free',
+        projectLimit: demoUser.projectLimit || 3,
+        isPublic: demoUser.isPublic || false,
+        publicSlug: demoUser.publicSlug,
+        publicDescription: demoUser.publicDescription,
+        tutorialCompleted: demoUser.tutorialCompleted,
+        tutorialProgress: demoUser.tutorialProgress,
+        createdAt: demoUser.createdAt
+      }
+    });
+  } catch (error) {
+    console.error('Demo login error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Logout route
 router.post('/logout', async (req, res) => {
   try {
     const sessionId = req.headers['x-session-id'] as string;
-    
+
     // End the analytics session if one exists
     if (sessionId) {
       await AnalyticsService.endSession(sessionId);
     }
-    
+
     res.clearCookie('token');
     res.json({ message: 'Logged out successfully' });
   } catch (error) {
@@ -482,6 +540,7 @@ router.get('/me', async (req, res) => {
         theme: user.theme,
         hasGoogleAccount: !!user.googleId,
         isAdmin: user.isAdmin,
+        isDemo: user.isDemo || false,
         bio: user.bio || '',
         planTier: user.planTier || 'free',
         projectLimit: user.projectLimit || 3,

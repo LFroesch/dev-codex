@@ -14,6 +14,10 @@ class AuthService extends BaseApiService {
     return this.post('/login', data);
   }
 
+  async demoLogin(): Promise<AuthResponse> {
+    return this.post('/demo-login');
+  }
+
   async logout(): Promise<{ message: string }> {
     return this.post('/logout');
   }

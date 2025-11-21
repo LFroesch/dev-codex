@@ -249,7 +249,6 @@ const COMMAND_ALIASES: Record<string, CommandType> = {
   'wizard-new': CommandType.WIZARD_NEW,
   'wizard project': CommandType.WIZARD_NEW,
   'wizard-project': CommandType.WIZARD_NEW,
-  'new project': CommandType.WIZARD_NEW,
   'new': CommandType.WIZARD_NEW,
 
   // Export commands
@@ -510,6 +509,7 @@ const COMMAND_ALIASES: Record<string, CommandType> = {
   'add project': CommandType.ADD_PROJECT,
   'add-project': CommandType.ADD_PROJECT,
   'create project': CommandType.ADD_PROJECT,
+  'new project': CommandType.ADD_PROJECT,
   'view projects': CommandType.VIEW_PROJECTS,
   'view-projects': CommandType.VIEW_PROJECTS,
   'projects': CommandType.VIEW_PROJECTS,
@@ -1355,10 +1355,11 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
     type: CommandType.ADD_PROJECT,
     syntax: '/add project --name="name" --description="description" --category="category" --color="color"',
     simpleSyntax: '/add project',
-    description: 'Create a new project with specified properties',
+    description: 'Create a new project with specified properties (aliases: /new project, /create project)',
     examples: [
       '/add project --name="My App" --description="A new web app"',
-      '/add project --name="API Service" --category=backend --color=#3B82F6'
+      '/new project --name="API Service" --category=backend --color=#3B82F6',
+      '/create project --name="Recipe App" --description="Full-stack recipe sharing platform" --category="web app" --color=#FF6B6B'
     ],
     requiresProject: false,
     requiresArgs: false

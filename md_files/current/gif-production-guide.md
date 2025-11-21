@@ -1,241 +1,193 @@
-# GIF Production Guide for Dev Codex
+# GIF Production Guide - Dev Codex
 
-## Overview
-This guide provides everything needed to create compelling promotional gifs showcasing Dev Codex's unique features.
-
----
-
-## Seed Account Setup
-
-### User Account
-- **Username**: `demo_user` or `alex_dev`
-- **Email**: `demo@devcodex.com`
-- **Display Name**: Alex Chen
-- **Plan**: Premium (for unlimited features in demo)
-
-### Project: "Recipe App"
-A realistic SaaS app project that demonstrates all features effectively.
-
-**Project Details:**
-- **Name**: Recipe App
-- **Color**: `#FF6B6B` (warm red)
-- **Category**: Web App
-- **Description**: "Full-stack recipe sharing platform with meal planning, user auth, and social features"
-- **Tags**: `react`, `node`, `postgresql`, `typescript`, `tailwind`
-- **Status**: In Progress
+**Project**: Recipe App (Full-stack recipe sharing platform)
+**Setup**: Premium demo account, clean workspace, dark mode
 
 ---
 
-## Seed Data Structure
+## Core GIF Scripts (5 Essential Demos)
 
-### 1. Tech Stack
+### 1. LLM Workflow (25s) - The Killer Feature
+**Show**: Export → LLM → Batch Import Loop
+
+1. Type `/summary prompt all` in terminal (exports project context)
+2. Copy output, switch to ChatGPT/Claude
+3. (Optional) Type `/llm` to get command syntax guide, copy
+4. Paste context + syntax guide + "Build recipe app with auth, CRUD, meal planning"
+5. LLM generates commands, copy output
+6. Switch back, paste into terminal, execute
+7. Show rapid execution: "1/10... 2/10... 10/10 Complete!"
+8. Pan to UI showing populated project
+
+**What `/llm` provides** (command syntax reference for the LLM):
+- General terminal guide with all command syntax
+- Entity-specific guides: `/llm todos`, `/llm components`, `/llm stack`, etc.
+- Shows project data when entity specified
+- Downloadable text file format
+
+**Commands LLM generates**:
 ```bash
-# Frontend
-/add tech --name="React 18" --category=frontend --type=framework
-/add tech --name="TypeScript" --category=frontend --type=language
-/add tech --name="Tailwind CSS" --category=frontend --type=styling
-/add tech --name="TanStack Query" --category=frontend --type=library
-
-# Backend
-/add tech --name="Node.js" --category=backend --type=runtime
-/add tech --name="Express" --category=backend --type=framework
-/add tech --name="PostgreSQL" --category=database --type=database
-/add tech --name="Prisma" --category=backend --type=orm
-
-# Infrastructure
-/add tech --name="Vercel" --category=deployment --type=hosting
-/add tech --name="Railway" --category=deployment --type=hosting
-```
-
-### 2. Components (for Feature Graph visualization)
-```bash
-# Frontend Components
-/add component --feature="Authentication" --category=frontend --type=page --title="Login Page" --content="User login with email/password and Google OAuth"
-/add component --feature="Authentication" --category=frontend --type=component --title="Auth Form" --content="Reusable authentication form component with validation"
-/add component --feature="Recipes" --category=frontend --type=page --title="Recipe Feed" --content="Infinite scroll recipe feed with filters and search"
-/add component --feature="Recipes" --category=frontend --type=component --title="Recipe Card" --content="Recipe display card with image, rating, and quick actions"
-/add component --feature="Meal Planning" --category=frontend --type=page --title="Meal Planner" --content="Weekly meal planning calendar with drag-and-drop"
-
-# Backend Components
-/add component --feature="Authentication" --category=backend --type=service --title="Auth Service" --content="JWT-based authentication with session management"
-/add component --feature="Recipes" --category=backend --type=service --title="Recipe Service" --content="CRUD operations for recipes with search and filtering"
-/add component --feature="Meal Planning" --category=backend --type=service --title="Meal Plan Service" --content="Meal planning logic and weekly generation"
-
-# API Endpoints
-/add component --feature="Authentication" --category=api --type=endpoint --title="POST /auth/login" --content="Authenticate user and return JWT token"
-/add component --feature="Authentication" --category=api --type=endpoint --title="POST /auth/register" --content="Register new user with validation"
-/add component --feature="Recipes" --category=api --type=endpoint --title="GET /recipes" --content="Fetch paginated recipes with filters"
-/add component --feature="Recipes" --category=api --type=endpoint --title="POST /recipes" --content="Create new recipe with image upload"
-
-# Database
-/add component --feature="Authentication" --category=database --type=model --title="User Model" --content="User schema with auth fields, preferences, and relationships"
-/add component --feature="Recipes" --category=database --type=model --title="Recipe Model" --content="Recipe schema with ingredients, steps, images, and metadata"
-/add component --feature="Meal Planning" --category=database --type=model --title="MealPlan Model" --content="Weekly meal plan with recipe associations"
-```
-
-### 3. Relationships (for graph visualization)
-```bash
-# Show component relationships
-/relationship add --from="Login Page" --to="Auth Form" --type=uses
-/relationship add --from="Auth Form" --to="POST /auth/login" --type=calls
-/relationship add --from="POST /auth/login" --to="Auth Service" --type=uses
-/relationship add --from="Auth Service" --to="User Model" --type=depends_on
-/relationship add --from="Recipe Feed" --to="Recipe Card" --type=contains
-/relationship add --from="Recipe Feed" --to="GET /recipes" --type=calls
-/relationship add --from="GET /recipes" --to="Recipe Service" --type=uses
-/relationship add --from="Recipe Service" --to="Recipe Model" --type=depends_on
-/relationship add --from="Meal Planner" --to="Meal Plan Service" --type=uses
-/relationship add --from="Meal Plan Service" --to="Recipe Service" --type=depends_on
-```
-
-### 4. Todos (for task demonstration)
-```bash
-# High Priority - In Progress
-/add todo --title="Implement JWT authentication" --priority=high --status=in_progress --assigned="Alex Chen" --due="2025-12-01"
-/add todo --title="Build recipe CRUD endpoints" --priority=high --status=in_progress --due="2025-12-03"
-
-# High Priority - Not Started
-/add todo --title="Set up PostgreSQL schema" --priority=high --status=not_started --due="2025-12-05"
-/add todo --title="Create recipe feed UI" --priority=high --status=not_started --due="2025-12-07"
-
-# Medium Priority
-/add todo --title="Add image upload to S3" --priority=medium --status=not_started --due="2025-12-10"
-/add todo --title="Implement search filters" --priority=medium --status=not_started --due="2025-12-12"
-/add todo --title="Build meal planner calendar" --priority=medium --status=not_started --due="2025-12-15"
-
-# Low Priority
-/add todo --title="Add recipe sharing" --priority=low --status=not_started --due="2025-12-20"
-/add todo --title="Social features (likes, comments)" --priority=low --status=not_started --due="2025-12-25"
-
-# Completed
-/add todo --title="Project setup and configuration" --priority=high --status=completed --completed="2025-11-15"
-```
-
-### 5. Notes (for documentation)
-```bash
-/add note --title="Authentication Architecture" --content="Using JWT tokens with 7-day expiry. Refresh tokens stored in httpOnly cookies. Google OAuth via Passport.js. Password hashing with bcrypt (10 rounds)."
-
-/add note --title="Database Schema Design" --content="PostgreSQL with Prisma ORM. Users -> Recipes (1:many). Users -> MealPlans (1:many). MealPlans -> Recipes (many:many through MealPlanRecipes junction table)."
-
-/add note --title="API Design Decisions" --content="RESTful API with /api/v1 prefix. Pagination using cursor-based approach for infinite scroll. Rate limiting: 100 req/min for authenticated users."
-
-/add note --title="Deployment Strategy" --content="Frontend on Vercel (auto-deploy from main). Backend on Railway with Docker. PostgreSQL managed instance. Environment: staging + production."
-
-/add note --title="Performance Optimizations" --content="Image CDN for recipe photos. Database indexing on user_id, created_at. React Query for client-side caching. API response caching with Redis (5min TTL)."
-```
-
-### 6. Dev Logs (for activity tracking)
-```bash
-/add devlog --title="Day 1: Project Setup" --content="Initialized React + Vite frontend. Set up Express backend. Configured TypeScript and ESLint. Created database connection."
-
-/add devlog --title="Day 2: Authentication Flow" --content="Implemented login/register endpoints. Built JWT middleware. Created protected routes. Added Google OAuth integration."
-
-/add devlog --title="Day 3: Recipe Model" --content="Designed recipe schema with ingredients array. Built CRUD endpoints. Added image upload to temp storage. Testing with Postman."
+/add todo --title="Implement JWT auth" --priority=high --status=in_progress
+/add todo --title="Build recipe CRUD" --priority=high
+/add component --feature="Auth" --category=backend --type=service --title="Auth Service" --content="JWT authentication"
+/add component --feature="Recipes" --category=api --type=endpoint --title="GET /recipes" --content="Fetch recipes"
+/add note --title="Architecture" --content="Next.js + PostgreSQL + Prisma"
+# ... 5 more commands
 ```
 
 ---
 
-## GIF Recording Scripts
+### 2. Terminal Autocomplete (10s)
+**Show**: Fast, guided, error-free command building
 
-### GIF 1: The LLM Workflow (25-30 seconds)
-**Objective**: Show the complete loop: export → LLM → batch import
+1. Type `/add` → tab shows options
+2. Select `todo` → type ` --t` → autocomplete `--title=""`
+3. Type inside quotes: `Implement search`
+4. Type ` --p` → autocomplete `--priority=`
+5. Select `high` from dropdown
+6. Enter → success ✓
 
-**Script:**
-1. **Start**: Terminal open, empty Recipe App project visible
-2. **Type**: `/summary prompt all` (show autocomplete)
-3. **Show**: Copy the generated context (highlight clipboard action)
-4. **Switch**: To ChatGPT/Claude tab (already have prompt ready)
-5. **Paste**: Context into LLM chat
-6. **Show**: LLM generating batch commands (scroll through output)
-7. **Copy**: Generated commands
-8. **Switch**: Back to Dev Codex terminal
-9. **Paste**: Commands and hit enter
-10. **Show**: Rapid execution with progress: "Executing 1/10... 2/10... 3/10..."
-11. **Pan**: To UI showing populated project (todos, components, notes visible)
-12. **End**: Zoom out to show full project structure
+**Final command**: `/add todo --title="Implement search" --priority=high`
 
-**Terminal Commands to Demonstrate:**
+---
+
+### 3. Features Graph (15s)
+**Show**: Visual architecture with relationships
+
+1. Start in Components view (graph mode)
+2. Zoom out to show all feature clusters
+3. Use minimap to jump to "Authentication"
+4. Zoom into cluster, show connections
+5. Drag "Login Page" node to reposition
+6. Click "Auto Layout" → smooth reorganization
+7. Toggle to Cards view → back to Graph
+
+**Seed data needed**:
 ```bash
-# In Dev Codex terminal
-/summary prompt all
-
-# (Copy output, paste to LLM)
-# LLM returns commands like:
-/add todo --title="Build login page" --priority=high --status=in_progress
-/add component --feature="Auth" --category=frontend --type=page --title="Login" --content="User login page"
-/add note --title="API Design" --content="RESTful endpoints with JWT auth"
-# ... 7 more commands
-
-# (Copy LLM output, paste back to terminal)
-# All commands execute in sequence
+/add component --feature="Auth" --category=frontend --type=page --title="Login" --content="User login"
+/add component --feature="Auth" --category=backend --type=service --title="Auth Service" --content="JWT logic"
+/add component --feature="Auth" --category=api --type=endpoint --title="POST /auth/login" --content="Login endpoint"
+/add component --feature="Auth" --category=database --type=model --title="User Model" --content="User schema"
+/add relationship --source="Login" --target="POST /auth/login" --type=uses
+/add relationship --source="POST /auth/login" --target="Auth Service" --type=uses
+/add relationship --source="Auth Service" --target="User Model" --type=depends_on
 ```
 
 ---
 
-### GIF 2: Terminal Autocomplete (10 seconds)
-**Objective**: Show guided, error-free command building
+### 4. Speed Demo (8s)
+**Show**: Paste 10 commands, instant execution
 
-**Script:**
-1. **Type**: `/add` → autocomplete shows: `todo`, `note`, `component`, `tech`, `devlog`
-2. **Tab**: Complete to `/add todo`
-3. **Type**: ` --t` → autocomplete shows: `--title`, `--tags`, `--team`
-4. **Tab**: Complete to `--title=""`
-5. **Show**: Cursor jumps inside quotes automatically
-6. **Type**: `Implement search feature`
-7. **Type**: ` --p` → autocomplete shows `--priority`
-8. **Tab**: Complete to `--priority=`
-9. **Show**: Dropdown with `high`, `medium`, `low`
-10. **Select**: `high`
-11. **Enter**: Success message with checkmark
+1. Show empty project
+2. Paste 10 commands (pre-written)
+3. Hit enter
+4. Show blur effect for speed
+5. Pan to populated UI (todos, notes, components, stack)
 
-**Commands:**
+**Pre-written batch** (use newlines or &&):
 ```bash
-# Show progressive autocomplete
-/add todo --title="Implement search feature" --priority=high --status=not_started --due="2025-12-10"
+/add todo --title="Setup auth" --priority=high --status=in_progress
+/add todo --title="Build CRUD" --priority=high
+/add todo --title="Database schema" --priority=high
+/add note --title="Architecture" --content="React + Node + PostgreSQL"
+/add note --title="Auth Strategy" --content="JWT with refresh tokens"
+/add component --feature="Auth" --category=backend --type=service --title="Auth Service" --content="JWT authentication"
+/add component --feature="Recipes" --category=backend --type=service --title="Recipe Service" --content="CRUD logic"
+/add stack --name="React" --category=framework --version="18"
+/add stack --name="PostgreSQL" --category=database --version="15"
+/add devlog --title="Day 1" --content="Project initialized"
 ```
 
 ---
 
-### GIF 3: Speed Demo (8 seconds)
-**Objective**: Raw power - paste and execute instantly
+### 5. Discovery & Search (12s)
+**Show**: Todo management + search
 
-**Script:**
-1. **Start**: Empty project screen
-2. **Switch**: To terminal (already has 10 commands pre-written)
-3. **Paste**: All commands at once
-4. **Hit**: Enter
-5. **Show**: Rapid-fire execution messages (blur effect for speed)
-6. **Pan**: To UI showing everything populated instantly
-7. **Show**: Todos (5), Notes (3), Components (2), Tech Stack filled
+1. Type `/view todos` → show list with priorities
+2. Type `/today` → show today's tasks
+3. Type `/search "auth"` → instant results across todos, notes, components
+4. Type `/complete 1` → mark first todo complete
+5. Show updated list with strikethrough
 
-**Pre-written Commands:**
+---
+
+## Additional Ideas (No Scripts - Just Concepts)
+
+- **Team Collab**: Invite member, assign todo, show real-time notification
+- **Analytics**: Navigate to analytics, show heatmap + time tracking
+- **Public Sharing**: Toggle public, copy URL, open in incognito
+- **Stale Detection**: `/stale todos` → highlight 30+ day old items
+- **Workflow**: `/week` → weekly summary, `/standup` → daily report
+
+---
+
+## Seed Data (Minimal Setup)
+
+**Quick batch for demos**:
 ```bash
-/add todo --title="Setup auth system" --priority=high --status=in_progress && /add todo --title="Build recipe CRUD" --priority=high --status=not_started && /add todo --title="Design database schema" --priority=high --status=not_started && /add note --title="Architecture Overview" --content="Full-stack recipe app with React + Node + PostgreSQL" && /add note --title="Auth Strategy" --content="JWT with refresh tokens and Google OAuth" && /add component --feature="Auth" --category=frontend --type=page --title="Login" --content="User authentication page" && /add component --feature="Recipes" --category=backend --type=service --title="Recipe Service" --content="Business logic for recipes" && /add tech --name="React" --category=frontend --type=framework && /add tech --name="PostgreSQL" --category=database --type=database && /add devlog --title="Day 1" --content="Project initialized, planning complete"
+/add todo --title="Implement JWT auth" --priority=high --status=in_progress --due="12-01-2025"
+/add todo --title="Build recipe CRUD" --priority=high --status=not_started --due="12-03-2025"
+/add todo --title="PostgreSQL schema" --priority=high --status=not_started --due="12-05-2025"
+/add todo --title="Image upload to S3" --priority=medium --status=not_started --due="12-10-2025"
+/add todo --title="Project setup" --priority=high --status=completed
+/add note --title="Auth Architecture" --content="JWT with 7-day expiry, refresh tokens in httpOnly cookies, Google OAuth"
+/add note --title="Database Design" --content="PostgreSQL + Prisma. Users->Recipes (1:many), Users->MealPlans (1:many)"
+/add note --title="API Design" --content="REST with /api/v1 prefix, cursor pagination, 100 req/min rate limit"
+/add devlog --title="Day 1: Setup" --content="React + Vite frontend, Express backend, TypeScript + ESLint"
+/add devlog --title="Day 2: Auth" --content="Login/register endpoints, JWT middleware, Google OAuth"
+/add stack --name="React" --category=framework --version="18"
+/add stack --name="TypeScript" --category=runtime --version="5.0"
+/add stack --name="PostgreSQL" --category=database --version="15"
+/add stack --name="Prisma" --category=data --version="5.0"
 ```
 
 ---
 
-### GIF 4: Features Graph (15 seconds)
-**Objective**: Show component relationship visualization
+## Key Commands Reference
 
-**Script:**
-1. **Start**: Components view with graph displayed
-2. **Show**: Zoom out to see all features clustered
-3. **Click**: Minimap to jump to "Authentication" cluster
-4. **Zoom**: Into cluster to show relationships
-5. **Drag**: "Login Page" node to reposition
-6. **Click**: Node to show relationship sidebar
-7. **Add**: New relationship: "Login Page" → "Auth Service" (type: "uses")
-8. **Show**: Edge appears instantly with animation
-9. **Click**: "Auto Layout" button to reorganize
-10. **Show**: Smooth animation to optimal positions
-11. **Toggle**: Between "Graph" and "Cards" view
-12. **End**: Return to graph view showing full architecture
+### `/help` - Show command help
+```bash
+/help              # Show all commands
+/help "add todo"   # Show help for specific command
+/help "llm"        # Show help for LLM guide
+```
 
-**Setup:**
-- Ensure all components from seed data are created
-- All relationships added
-- Graph should show clear hierarchy: Frontend → API → Backend → Database
+### `/llm` - LLM interaction guide (for AI context)
+```bash
+/llm               # General terminal command syntax guide
+/llm todos         # Todos guide with current project todos
+/llm components    # Components guide with architecture
+/llm notes         # Notes guide with project notes
+/llm stack         # Tech stack guide
+/llm team          # Team management guide
+/llm deployment    # Deployment guide
+/llm settings      # Settings guide
+/llm projects      # Projects overview
+```
+**Use case**: Copy `/llm` output + project context from `/summary prompt` → paste to ChatGPT/Claude → get valid commands back
+
+### `/summary` - Export project data
+```bash
+/summary prompt all      # AI-optimized format with full project data
+/summary markdown all    # README-style markdown
+/summary json todos      # JSON export of todos only
+/summary text projects   # Plain text list of projects
+```
+
+---
+
+## Recording Tips
+
+**Software**: Cleanshot X (Mac), OBS Studio (Win/Linux)
+**Settings**: 1920x1080 @ 30fps → convert to 1280x720 GIF
+**Target**: <5MB per GIF
+**Style**: Dark mode, slow typing (70% speed), 0.5s pauses
+
+**Conversion**:
+```bash
+ffmpeg -i input.mp4 -vf "fps=20,scale=1280:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" output.gif
+gifsicle -O3 --colors 256 output.gif -o final.gif
+```
 
 ---
 

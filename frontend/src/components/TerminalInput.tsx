@@ -152,11 +152,30 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
     }
   };
 
-  // Generate command template from syntax
-  const generateTemplate = (syntax: string): string => {
-    // Extract command base and convert flags to empty placeholders
-    // Example: "/set deployment --url=[url] --platform=[platform]" → "/set deployment --url= --platform="
+  // Generate command template with ALL flags (for Shift+Tab shortcut)
+  const generateAllFlagsTemplate = (syntax: string): string => {
+    const cleanedSyntax = syntax.replace(/@project\s*$/, '').trim();
+    const withoutBrackets = cleanedSyntax.replace(/\[([^\]]*)\]/g, '');
 
+    if (withoutBrackets.includes('--')) {
+      const parts = withoutBrackets.split(/\s+--/);
+      const baseCommand = parts[0].trim();
+
+      const flags = parts.slice(1).map(part => {
+        const flagMatch = part.match(/^(\w+)/);
+        return flagMatch ? `--${flagMatch[1]}=` : '';
+      }).filter(Boolean);
+
+      return flags.length > 0 ? `${baseCommand} ${flags.join(' ')}` : `${baseCommand} `;
+    }
+
+    const baseMatch = withoutBrackets.match(/^(\/[^\[]+)/);
+    const cleanBase = baseMatch ? baseMatch[1].trim() : withoutBrackets.trim();
+    return `${cleanBase} `;
+  };
+
+  // Generate command template from syntax (base command only)
+  const generateTemplate = (syntax: string): string => {
     // Remove @project from syntax if present
     const cleanedSyntax = syntax.replace(/@project\s*$/, '').trim();
 
@@ -170,13 +189,8 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
       const parts = withoutBrackets.split(/\s+--/);
       const baseCommand = parts[0].trim();
 
-      // Extract flag names from patterns like url=[url], role=[editor/viewer], or just flagname
-      const flags = parts.slice(1).map(part => {
-        const flagMatch = part.match(/^(\w+)/);
-        return flagMatch ? `--${flagMatch[1]}=` : '';
-      }).filter(Boolean);
-
-      return flags.length > 0 ? `${baseCommand} ${flags.join(' ')}` : `${baseCommand} `;
+      // ONLY return base command - user adds flags with -- autocomplete
+      return `${baseCommand} `;
     }
 
     // No flags - return base command with space, removing anything in brackets
@@ -194,6 +208,55 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
     const workingText = lastAndAndIndex !== -1
       ? textBeforeCursor.slice(lastAndAndIndex + 3) // Get text after "&& "
       : textBeforeCursor;
+
+    // CHECK FOR -- FLAG AUTOCOMPLETE FIRST (before command autocomplete)
+    const lastDashDashIndex = workingText.lastIndexOf('--');
+    if (lastDashDashIndex !== -1) {
+      const charBeforeDash = lastDashDashIndex > 0 ? workingText[lastDashDashIndex - 1] : ' ';
+      if (charBeforeDash === ' ' || lastDashDashIndex === 0) {
+        const afterDashes = workingText.slice(lastDashDashIndex + 2);
+
+        if (!afterDashes.includes(' ') && workingText.startsWith('/')) {
+          // Extract command to get its flags
+          const cmdMatch = workingText.match(/^\/\w+(?:\s+\w+)?/);
+          if (cmdMatch) {
+            const cmd = commands.find(c => c.value.toLowerCase().startsWith(cmdMatch[0].toLowerCase()));
+
+            if (cmd) {
+              // Parse flags from syntax
+              const flagPattern = /--(\w+)(?:="([^"]+)")?/g;
+              const allFlags: Array<{name: string; values?: string}> = [];
+              let m;
+              while ((m = flagPattern.exec(cmd.label)) !== null) {
+                allFlags.push({
+                  name: m[1],
+                  values: m[2]?.includes('|') ? m[2] : undefined
+                });
+              }
+
+              // Filter by partial match and exclude already used
+              const usedFlags = new Set(Array.from(workingText.matchAll(/--(\w+)=/g)).map(x => x[1]));
+              const matchingFlags = allFlags.filter(f =>
+                f.name.toLowerCase().startsWith(afterDashes.toLowerCase()) &&
+                !usedFlags.has(f.name)
+              );
+
+              if (matchingFlags.length > 0) {
+                setAutocompleteItems(matchingFlags.map(f => ({
+                  value: `--${f.name}=`,
+                  label: f.name,
+                  description: f.values || 'string',
+                  type: 'command' as const
+                })));
+                setShowAutocomplete(true);
+                setSelectedIndex(0);
+                return;
+              }
+            }
+          }
+        }
+      }
+    }
 
     // Check for / command autocomplete
     if (workingText.startsWith('/')) {
@@ -337,7 +400,14 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
       if (e.key === 'Tab') {
         if (autocompleteItems.length > 0) {
           e.preventDefault();
-          selectAutocompleteItem(autocompleteItems[selectedIndex]);
+          // Shift+Tab: Insert ALL flags at once (power user shortcut)
+          if (e.shiftKey && autocompleteItems[0].value.startsWith('/')) {
+            const item = autocompleteItems[selectedIndex];
+            const allFlagsTemplate = generateAllFlagsTemplate(item.syntax || item.label);
+            selectAutocompleteItem({ ...item, template: allFlagsTemplate });
+          } else {
+            selectAutocompleteItem(autocompleteItems[selectedIndex]);
+          }
           return;
         }
       }
@@ -347,11 +417,11 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
         setShowAutocomplete(false);
         return;
       }
-      if (e.key === 'ArrowDown' && e.shiftKey) {
+      if (e.key === 'ArrowDown') {
         e.preventDefault();
         setSelectedIndex(prev => (prev < autocompleteItems.length - 1 ? prev + 1 : 0));
       }
-      if (e.key === 'ArrowUp' && e.shiftKey) {
+      if (e.key === 'ArrowUp') {
         e.preventDefault();
         setSelectedIndex(prev => prev > 0 ? prev - 1 : autocompleteItems.length - 1);
       }
@@ -364,14 +434,14 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
       return;
     }
 
-    // Handle command history (when autocomplete is not shown)
-    if (e.key === 'ArrowUp' && e.shiftKey && !showAutocomplete) {
+    // Handle command history with Ctrl+Arrow (works even when autocomplete is shown)
+    if (e.key === 'ArrowUp' && e.ctrlKey) {
       e.preventDefault();
       navigateHistory('up');
       return;
     }
 
-    if (e.key === 'ArrowDown' && e.shiftKey && !showAutocomplete) {
+    if (e.key === 'ArrowDown' && e.ctrlKey) {
       e.preventDefault();
       navigateHistory('down');
       return;
@@ -386,6 +456,35 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
   };
 
   const selectAutocompleteItem = (item: AutocompleteItem) => {
+    // Handle flag insertion (value starts with --)
+    if (item.value.startsWith('--')) {
+      const textBeforeCursor = input.slice(0, cursorPosition);
+      const lastDashDashIndex = textBeforeCursor.lastIndexOf('--');
+
+      if (lastDashDashIndex !== -1) {
+        const before = input.slice(0, lastDashDashIndex);
+        const after = input.slice(cursorPosition);
+        // Insert flag with quotes: --flag=""
+        const flagWithQuotes = item.value + '""';
+        const newInput = before + flagWithQuotes + after;
+        // Position cursor between the quotes
+        const newCursorPos = before.length + item.value.length + 1;
+
+        setInput(newInput);
+        setCursorPosition(newCursorPos);
+
+        setTimeout(() => {
+          if (inputRef.current) {
+            inputRef.current.focus();
+            inputRef.current.setSelectionRange(newCursorPos, newCursorPos);
+          }
+        }, 0);
+      }
+
+      setShowAutocomplete(false);
+      return;
+    }
+
     if (item.type === 'command') {
       // Check if we're in a chained command (after &&)
       const textBeforeCursor = input.slice(0, cursorPosition);
@@ -523,7 +622,15 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
           <div className="p-0.5">
             <div className="text-xs font-semibold text-base-content/80 px-2 py-1 bg-base-200 rounded-lg sticky top-0.5 border-thick">
               {autocompleteItems[0].type === 'command' ? '🔧 Commands' : '📁 Projects'}
-              <span className="ml-2 opacity-70">({autocompleteItems.length}) - Esc to Exit - Tab to Accept</span>
+              <span className="ml-2 opacity-70">({autocompleteItems.length})</span>
+              <span className="ml-2 text-primary font-bold">ESC</span>
+              <span className="ml-1 opacity-70">closes •</span>
+              <span className="ml-1 font-bold">↑↓</span>
+              <span className="ml-1 opacity-70">navigate •</span>
+              <span className="ml-1 font-bold">TAB</span>
+              <span className="ml-1 opacity-70">accepts •</span>
+              <span className="ml-1 font-bold">Shift+TAB</span>
+              <span className="ml-1 opacity-70">all flags</span>
             </div>
             <div className="mt-1 space-y-1">
               {autocompleteItems.map((item, index) => (
@@ -606,11 +713,11 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
             </div>
             <span className="text-base-content/50 hidden sm:inline">•</span>
             <div className="flex items-center gap-1 hidden sm:flex">
-              <kbd className="kbd kbd-xs">Shift</kbd>
+              <kbd className="kbd kbd-xs">Ctrl</kbd>
               <span>+</span>
               <kbd className="kbd kbd-xs">↑</kbd>
               <kbd className="kbd kbd-xs">↓</kbd>
-              <span>history/autocomplete</span>
+              <span>history</span>
             </div>
             <span className="text-base-content/50 hidden sm:inline">•</span>
             <div className="flex items-center gap-1 hidden md:flex">

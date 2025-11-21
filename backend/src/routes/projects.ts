@@ -8,13 +8,19 @@ import ProjectInvitation from '../models/ProjectInvitation';
 import Notification from '../models/Notification';
 import { User } from '../models/User';
 import { sendProjectInvitationEmail } from '../services/emailService';
+import ActivityLog from '../models/ActivityLog';
+import NoteLock from '../models/NoteLock';
+import Favorite from '../models/Favorite';
+import Post from '../models/Post';
+import Comment from '../models/Comment';
+import Analytics from '../models/Analytics';
+import CompactedAnalytics from '../models/CompactedAnalytics';
 import { checkProjectLimit, checkTeamMemberLimit } from '../middleware/planLimits';
 import { trackProjectAccess } from '../middleware/analytics';
 import { AnalyticsService } from '../middleware/analytics';
 import activityLogger from '../services/activityLogger';
 import { logInfo, logError, logWarn } from '../config/logger';
 import { v4 as uuidv4 } from 'uuid';
-import NoteLock from '../models/NoteLock';
 import {
   importExportRateLimit,
   importSizeLimit,
@@ -275,9 +281,38 @@ router.delete('/:id', requireProjectAccess('manage'), async (req: AuthRequest, r
       return res.status(404).json({ message: 'Project not found' });
     }
 
-    // Clean up team members and invitations
-    await TeamMember.deleteMany({ projectId: req.params.id });
-    // Note: We might want to keep invitations for audit purposes
+    // CASCADE DELETE: Clean up all associated data to prevent orphaned records
+    await Promise.all([
+      // Team & Collaboration
+      TeamMember.deleteMany({ projectId: req.params.id }),
+
+      // Activity & Notifications
+      ActivityLog.deleteMany({ projectId: req.params.id }),
+      Notification.deleteMany({ relatedProjectId: req.params.id }),
+
+      // Locks & State
+      NoteLock.deleteMany({ projectId: req.params.id }),
+
+      // Social Features
+      Favorite.deleteMany({ projectId: req.params.id }),
+      Post.deleteMany({ $or: [
+        { projectId: req.params.id },
+        { linkedProjectId: req.params.id }
+      ]}),
+      Comment.deleteMany({ projectId: req.params.id }),
+
+      // Analytics
+      Analytics.deleteMany({ 'eventData.projectId': req.params.id }),
+      CompactedAnalytics.deleteMany({ projectId: req.params.id })
+
+      // Note: ProjectInvitations are kept for audit purposes (intentional)
+    ]);
+
+    logInfo('Project deleted with cascade cleanup', {
+      projectId: req.params.id,
+      projectName: project.name,
+      userId: req.userId
+    });
 
     res.json({ message: 'Project deleted successfully' });
   } catch (error) {

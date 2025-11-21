@@ -34,7 +34,7 @@
 - `/add note [text] [@project]` - Create note
 - `/add devlog [text] [@project]` - Create dev log entry
 - `/add doc [type] [title] - [content] [@project] --feature="Feature Name"` - Create documentation (optional feature grouping)
-- `/add tech [name] --category=[category]` - Add technology to stack
+- `/add stack [name] --category=[category]` - Add technology to stack
 - `/add package [name]` - Add package to project
 - `/add tag [name]` - Add tag to project
 - `/add idea --title="title" --description="description" --content="content"` - Add a personal idea to your account
@@ -103,7 +103,7 @@ Examples:
 - `/delete relationship [id] [@project] --confirm` - Delete a relationship
 
 ### Project Management
-- `/add project [name] [description] [category] [color]` - Create new project
+- `/add project --name="name" [--description="..." --category="..." --color="#..."]` - Create new project (aliases: `/new project`, `/create project`)
 - `/swap [project]` - Switch active project
 - `/export [@project]` - Export project data
 - `/invite [email] --role=[role]` - Invite team member
@@ -158,7 +158,7 @@ Mixed (newlines + &&):
 - `/activity [@project]` - View activity log for a project
 
 #### Interactive Features
-- `/wizard new` - Interactive project creation wizard (aliases: `/wizard project`, `/new project`, `/new`)
+- `/wizard new` - Interactive project creation wizard (aliases: `/wizard project`, `/new`)
 - `/suggest [request]` - AI-powered suggestions (see clippy.md)
 - `/dump [requests]` - Batch AI operations
 

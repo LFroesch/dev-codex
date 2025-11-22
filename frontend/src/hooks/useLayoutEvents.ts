@@ -113,7 +113,7 @@ export const useLayoutEvents = ({
         navigate('/projects');
 
         // Show unique feedback to user
-        toast.info('Session timed out due to inactivity. Time has been saved. Please select a project to continue.', 5000, true);
+        toast.info('Session timed out due to inactivity. Time has been saved. Please select a project to continue.', 5000);
       } finally {
         setIsHandlingTimeout(false);
       }

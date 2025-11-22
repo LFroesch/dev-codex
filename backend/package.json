@@ -21,8 +21,8 @@
     "debug-billing": "ts-node src/scripts/debug-billing.ts",
     "nuke-billing": "ts-node src/scripts/nuke-billing.ts",
     "cleanup": "ts-node src/scripts/cleanup-database.ts",
-    "seed-demo": "ts-node src/scripts/seedDemoUser.ts",
-    "delete-demo": "ts-node src/scripts/deleteDemoUser.ts",
+    "seed-demo": "node dist/backend/src/scripts/seedDemoUser.js || ts-node src/scripts/seedDemoUser.ts",
+    "delete-demo": "node dist/backend/src/scripts/deleteDemoUser.js || ts-node src/scripts/deleteDemoUser.ts",
     "reset-demo": "npm run delete-demo && npm run seed-demo"
   },
   "dependencies": {

@@ -34,6 +34,11 @@ export const createRateLimit = (options: RateLimitOptions) => {
         return next();
       }
 
+      // Skip rate limiting for demo user
+      if (req.user && req.user.isDemo) {
+        return next();
+      }
+
       // Generate identifier
       let identifier: string;
       let type: 'ip' | 'user';
@@ -132,7 +137,7 @@ export const strictRateLimit = createRateLimit({
 // Normal rate limiter for general API usage
 export const normalRateLimit = createRateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
-  maxRequests: process.env.NODE_ENV === 'production' ? 60 : 200, // Production: 60/min, Dev: 200/min
+  maxRequests: process.env.NODE_ENV === 'production' ? 500 : 1000, // Production: 500/min, Dev: 1000/min
   endpoint: 'normal',
   message: 'Too many requests. Please wait a moment before trying again.'
 });
@@ -171,7 +176,7 @@ export const premiumRateLimit = createRateLimit({
 // Public routes rate limiter - more restrictive for unauthenticated users
 export const publicRateLimit = createRateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
-  maxRequests: process.env.NODE_ENV === 'production' ? 30 : 60, // Lower for public access
+  maxRequests: process.env.NODE_ENV === 'production' ? 150 : 300, // Lower for public access
   endpoint: 'public',
   message: 'Public API rate limit exceeded. Please register for higher limits.'
 });

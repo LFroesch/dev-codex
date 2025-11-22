@@ -267,7 +267,7 @@ const HelpPage: React.FC = () => {
       case 'tips':
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold">Tips</h2>
+            <h2 className="text-2xl font-bold">Tips & Shortcuts</h2>
             <div className="space-y-4">
               
                 <div className="p-6">

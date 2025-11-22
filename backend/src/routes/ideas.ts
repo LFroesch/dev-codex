@@ -5,7 +5,7 @@ import { User } from '../models/User';
 import { v4 as uuidv4 } from 'uuid';
 
 const router = express.Router();
-router.use(blockDemoWrites);
+// blockDemoWrites applied per-route after requireAuth
 
 // Get all ideas for the authenticated user
 router.get('/', requireAuth, async (req: AuthRequest, res) => {
@@ -23,7 +23,7 @@ router.get('/', requireAuth, async (req: AuthRequest, res) => {
 });
 
 // Create a new idea
-router.post('/', requireAuth, async (req: AuthRequest, res) => {
+router.post('/', requireAuth, blockDemoWrites, async (req: AuthRequest, res) => {
   try {
     const { title, description, content } = req.body;
 
@@ -68,7 +68,7 @@ router.post('/', requireAuth, async (req: AuthRequest, res) => {
 });
 
 // Update an existing idea
-router.put('/:ideaId', requireAuth, async (req: AuthRequest, res) => {
+router.put('/:ideaId', requireAuth, blockDemoWrites, async (req: AuthRequest, res) => {
   try {
     const { ideaId } = req.params;
     const { title, description, content } = req.body;
@@ -114,7 +114,7 @@ router.put('/:ideaId', requireAuth, async (req: AuthRequest, res) => {
 });
 
 // Delete an idea
-router.delete('/:ideaId', requireAuth, async (req: AuthRequest, res) => {
+router.delete('/:ideaId', requireAuth, blockDemoWrites, async (req: AuthRequest, res) => {
   try {
     const { ideaId } = req.params;
 

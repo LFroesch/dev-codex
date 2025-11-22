@@ -11,7 +11,6 @@ import mongoose from 'mongoose';
 import { SOCIAL_CONSTANTS } from '../config/socialConstants';
 
 const router = Router();
-router.use(blockDemoWrites);
 
 // Get all comments for a project
 router.get('/project/:projectId', requireAuth, async (req: AuthRequest, res: Response) => {
@@ -101,7 +100,7 @@ router.get('/project/:projectId', requireAuth, async (req: AuthRequest, res: Res
 });
 
 // Create a new comment on a project
-router.post('/project/:projectId', requireAuth, async (req: AuthRequest, res: Response) => {
+router.post('/project/:projectId', requireAuth, blockDemoWrites, async (req: AuthRequest, res: Response) => {
   try {
     const { projectId } = req.params;
     const { content } = req.body;
@@ -180,7 +179,7 @@ router.post('/project/:projectId', requireAuth, async (req: AuthRequest, res: Re
 });
 
 // Reply to a comment
-router.post('/project/:projectId/reply/:commentId', requireAuth, async (req: AuthRequest, res: Response) => {
+router.post('/project/:projectId/reply/:commentId', requireAuth, blockDemoWrites, async (req: AuthRequest, res: Response) => {
   try {
     const { projectId, commentId } = req.params;
     const { content } = req.body;
@@ -266,7 +265,7 @@ router.post('/project/:projectId/reply/:commentId', requireAuth, async (req: Aut
 });
 
 // Edit a comment
-router.put('/:commentId', requireAuth, async (req: AuthRequest, res: Response) => {
+router.put('/:commentId', requireAuth, blockDemoWrites, async (req: AuthRequest, res: Response) => {
   try {
     const { commentId } = req.params;
     const { content } = req.body;
@@ -311,7 +310,7 @@ router.put('/:commentId', requireAuth, async (req: AuthRequest, res: Response) =
 });
 
 // Delete a comment
-router.delete('/:commentId', requireAuth, async (req: AuthRequest, res: Response) => {
+router.delete('/:commentId', requireAuth, blockDemoWrites, async (req: AuthRequest, res: Response) => {
   try {
     const { commentId } = req.params;
     const userId = req.userId!;

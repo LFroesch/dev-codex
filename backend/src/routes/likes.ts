@@ -11,10 +11,9 @@ import mongoose from 'mongoose';
 import { SOCIAL_CONSTANTS } from '../config/socialConstants';
 
 const router = Router();
-router.use(blockDemoWrites);
 
 // Like a post
-router.post('/posts/:postId', requireAuth, async (req: AuthRequest, res: Response) => {
+router.post('/posts/:postId', requireAuth, blockDemoWrites, async (req: AuthRequest, res: Response) => {
   try {
     const { postId } = req.params;
     const userId = req.userId!;
@@ -89,7 +88,7 @@ router.post('/posts/:postId', requireAuth, async (req: AuthRequest, res: Respons
 });
 
 // Unlike a post
-router.delete('/posts/:postId', requireAuth, async (req: AuthRequest, res: Response) => {
+router.delete('/posts/:postId', requireAuth, blockDemoWrites, async (req: AuthRequest, res: Response) => {
   try {
     const { postId } = req.params;
     const userId = req.userId!;
@@ -237,7 +236,7 @@ router.get('/user/:userId/posts', async (req: AuthRequest, res: Response) => {
 // ============ COMMENT LIKES ============
 
 // Like a comment
-router.post('/comments/:commentId', requireAuth, async (req: AuthRequest, res: Response) => {
+router.post('/comments/:commentId', requireAuth, blockDemoWrites, async (req: AuthRequest, res: Response) => {
   try {
     const { commentId } = req.params;
     const userId = req.userId!;
@@ -306,7 +305,7 @@ router.post('/comments/:commentId', requireAuth, async (req: AuthRequest, res: R
 });
 
 // Unlike a comment
-router.delete('/comments/:commentId', requireAuth, async (req: AuthRequest, res: Response) => {
+router.delete('/comments/:commentId', requireAuth, blockDemoWrites, async (req: AuthRequest, res: Response) => {
   try {
     const { commentId } = req.params;
     const userId = req.userId!;

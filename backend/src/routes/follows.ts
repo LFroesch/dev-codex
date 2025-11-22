@@ -9,9 +9,6 @@ import mongoose from 'mongoose';
 
 const router = Router();
 
-// Block demo users from write operations (follows, unfollows)
-router.use(blockDemoWrites);
-
 // Get user's following list (users and projects they follow)
 router.get('/following', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
@@ -114,7 +111,7 @@ router.get('/check/:type/:id', requireAuth, async (req: AuthRequest, res: Respon
 });
 
 // Follow a user
-router.post('/user/:userId', requireAuth, async (req: AuthRequest, res: Response) => {
+router.post('/user/:userId', requireAuth, blockDemoWrites, async (req: AuthRequest, res: Response) => {
   try {
     const { userId: targetUserId } = req.params;
     const userId = req.userId!;
@@ -186,7 +183,7 @@ router.post('/user/:userId', requireAuth, async (req: AuthRequest, res: Response
 });
 
 // Follow a project
-router.post('/project/:projectId', requireAuth, async (req: AuthRequest, res: Response) => {
+router.post('/project/:projectId', requireAuth, blockDemoWrites, async (req: AuthRequest, res: Response) => {
   try {
     const { projectId } = req.params;
     const userId = req.userId!;
@@ -256,7 +253,7 @@ router.post('/project/:projectId', requireAuth, async (req: AuthRequest, res: Re
 });
 
 // Unfollow
-router.delete('/:type/:id', requireAuth, async (req: AuthRequest, res: Response) => {
+router.delete('/:type/:id', requireAuth, blockDemoWrites, async (req: AuthRequest, res: Response) => {
   try {
     const { type, id } = req.params;
     const userId = req.userId!;

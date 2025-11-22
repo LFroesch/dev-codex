@@ -11,15 +11,13 @@ class ToastService {
   private toasts: Toast[] = [];
   private listeners: Set<(toasts: Toast[]) => void> = new Set();
 
-  show(message: string, type: ToastType = 'info', duration: number = 4000, unique: boolean = false) {
-    // If unique is true, check if message already exists
-    if (unique && this.toasts.some(t => t.message === message && t.type === type)) {
-      return null; // Don't show duplicate
-    }
-    
+  show(message: string, type: ToastType = 'info', duration: number = 4000) {
+    // Clear all existing toasts - only one toast at a time
+    this.toasts = [];
+
     const id = Math.random().toString(36).substr(2, 9);
     const toast: Toast = { id, message, type, duration };
-    
+
     this.toasts.push(toast);
     this.notifyListeners();
 
@@ -53,8 +51,8 @@ class ToastService {
     return this.show(message, 'warning', duration);
   }
 
-  info(message: string, duration?: number, unique?: boolean) {
-    return this.show(message, 'info', duration, unique);
+  info(message: string, duration?: number) {
+    return this.show(message, 'info', duration);
   }
 
   subscribe(callback: (toasts: Toast[]) => void) {

@@ -11,7 +11,7 @@ watchPatterns = [
 ]
 
 [deploy]
-startCommand = "cd backend && npm run seed-demo && cd .. && npm start"
+startCommand = "npm start"
 healthcheckPath = "/api/ready"
 healthcheckTimeout = 100
 restartPolicyType = "on_failure"

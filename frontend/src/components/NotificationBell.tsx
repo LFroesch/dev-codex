@@ -10,6 +10,7 @@ const NotificationBell: React.FC = () => {
   const [showInvitationModal, setShowInvitationModal] = useState(false);
   const [selectedInvitation, setSelectedInvitation] = useState<Notification | null>(null);
   const [showClearAllModal, setShowClearAllModal] = useState(false);
+  const [showMarkAllAsReadModal, setShowMarkAllAsReadModal] = useState(false);
   const [showInviteSuccessModal, setShowInviteSuccessModal] = useState(false);
   const [showInviteErrorModal, setShowInviteErrorModal] = useState(false);
   const [inviteMessage, setInviteMessage] = useState('');
@@ -29,7 +30,7 @@ const NotificationBell: React.FC = () => {
     };
 
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000); // Check every 30 seconds for testing
+    const interval = setInterval(fetchNotifications, 30000); // Check every 30 seconds
     return () => clearInterval(interval);
   }, []);
 
@@ -252,17 +253,30 @@ const NotificationBell: React.FC = () => {
         <div className="absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-2rem)] bg-base-100 rounded-box z-[10000] p-2 shadow-lg border-2 border-base-content/20">
         <div className="flex justify-between items-center p-2">
           <h3 className="font-semibold">Notifications</h3>
-          {notifications.length > 0 && (
-            <button 
-              className="btn btn-xs btn-ghost text-sm"
-              onClick={() => {
-                setShowClearAllModal(true);
-                setIsOpen(false);
-              }}
-            >
-              Clear all
-            </button>
-          )}
+          <div className="flex gap-2">
+            {unreadCount > 0 && (
+              <button
+                className="btn btn-xs btn-ghost text-sm"
+                onClick={() => {
+                  setShowMarkAllAsReadModal(true);
+                  setIsOpen(false);
+                }}
+              >
+                Mark all read
+              </button>
+            )}
+            {notifications.length > 0 && (
+              <button
+                className="btn btn-xs btn-ghost text-sm"
+                onClick={() => {
+                  setShowClearAllModal(true);
+                  setIsOpen(false);
+                }}
+              >
+                Clear all
+              </button>
+            )}
+          </div>
         </div>
         <div className="max-h-64 overflow-y-auto">
           {notifications.length === 0 ? (
@@ -342,6 +356,48 @@ const NotificationBell: React.FC = () => {
         </div>
       )}
 
+      {/* Mark All As Read Modal */}
+      {showMarkAllAsReadModal && (
+        <div className="fixed inset-0 translate-y-48 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-base-100 rounded-lg shadow-xl p-6 w-full max-w-md">
+            <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-primary/10 rounded-full">
+              <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+
+            <h3 className="text-xl font-bold text-center mb-4">Mark All As Read</h3>
+
+            <p className="text-center text-base-content/70 mb-6">
+              Mark all {unreadCount} notification{unreadCount !== 1 ? 's' : ''} as read?
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                className="btn btn-ghost flex-1"
+                onClick={() => setShowMarkAllAsReadModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn-primary flex-1"
+                onClick={async () => {
+                  try {
+                    await notificationAPI.markAllAsRead();
+                    setShowMarkAllAsReadModal(false);
+                  } catch (error) {
+                    console.error('Failed to mark all as read:', error);
+                    setShowMarkAllAsReadModal(false);
+                  }
+                }}
+              >
+                Mark All Read
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Clear All Notifications Modal */}
       {showClearAllModal && (
         <div className="fixed inset-0 translate-y-48 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -351,27 +407,25 @@ const NotificationBell: React.FC = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
               </svg>
             </div>
-            
+
             <h3 className="text-xl font-bold text-center mb-4">Clear All Notifications</h3>
-            
+
             <p className="text-center text-base-content/70 mb-6">
               Are you sure you want to clear all notifications? This action cannot be undone.
             </p>
 
             <div className="flex gap-3">
-              <button 
+              <button
                 className="btn btn-ghost flex-1"
                 onClick={() => setShowClearAllModal(false)}
               >
                 Cancel
               </button>
-              <button 
+              <button
                 className="btn btn-warning flex-1"
                 onClick={async () => {
                   try {
                     await notificationAPI.clearAllNotifications();
-                    setNotifications([]);
-                    setUnreadCount(0);
                     setShowClearAllModal(false);
                   } catch (error) {
                     console.error('Failed to clear notifications:', error);

@@ -12,7 +12,6 @@ import mongoose from 'mongoose';
 import { SOCIAL_CONSTANTS } from '../config/socialConstants';
 
 const router = Router();
-router.use(blockDemoWrites);
 
 // Get personalized feed (posts from followed users and favorited projects)
 router.get('/feed', requireAuth, async (req: AuthRequest, res: Response) => {
@@ -190,7 +189,7 @@ router.get('/project/:projectId', async (req: AuthRequest, res: Response) => {
 });
 
 // Create a post
-router.post('/', requireAuth, async (req: AuthRequest, res: Response) => {
+router.post('/', requireAuth, blockDemoWrites, async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.userId!;
     const { content, postType = 'profile', projectId, linkedProjectId, visibility = 'public' } = req.body;
@@ -331,7 +330,7 @@ router.post('/', requireAuth, async (req: AuthRequest, res: Response) => {
 });
 
 // Edit a post
-router.put('/:postId', requireAuth, async (req: AuthRequest, res: Response) => {
+router.put('/:postId', requireAuth, blockDemoWrites, async (req: AuthRequest, res: Response) => {
   try {
     const { postId } = req.params;
     const { content } = req.body;
@@ -375,7 +374,7 @@ router.put('/:postId', requireAuth, async (req: AuthRequest, res: Response) => {
 });
 
 // Delete a post
-router.delete('/:postId', requireAuth, async (req: AuthRequest, res: Response) => {
+router.delete('/:postId', requireAuth, blockDemoWrites, async (req: AuthRequest, res: Response) => {
   try {
     const { postId } = req.params;
     const userId = req.userId!;

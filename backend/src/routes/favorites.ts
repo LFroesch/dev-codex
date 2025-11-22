@@ -11,7 +11,6 @@ import mongoose from 'mongoose';
 import { SOCIAL_CONSTANTS } from '../config/socialConstants';
 
 const router = Router();
-router.use(blockDemoWrites);
 
 // Get all favorites for the current user
 router.get('/', requireAuth, async (req: AuthRequest, res: Response) => {
@@ -65,7 +64,7 @@ router.get('/check/:projectId', requireAuth, async (req: AuthRequest, res: Respo
 });
 
 // Add a project to favorites
-router.post('/:projectId', requireAuth, async (req: AuthRequest, res: Response) => {
+router.post('/:projectId', requireAuth, blockDemoWrites, async (req: AuthRequest, res: Response) => {
   try {
     const { projectId } = req.params;
     const userId = req.userId!;
@@ -161,7 +160,7 @@ router.post('/:projectId', requireAuth, async (req: AuthRequest, res: Response) 
 });
 
 // Remove a project from favorites
-router.delete('/:projectId', requireAuth, async (req: AuthRequest, res: Response) => {
+router.delete('/:projectId', requireAuth, blockDemoWrites, async (req: AuthRequest, res: Response) => {
   try {
     const { projectId } = req.params;
     const userId = req.userId!;

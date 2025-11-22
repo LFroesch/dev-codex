@@ -5,7 +5,6 @@ import Notification from '../models/Notification';
 import NotificationService from '../services/notificationService';
 
 const router = express.Router();
-router.use(blockDemoWrites);
 
 // GET /api/notifications - Get user's notifications
 router.get('/', requireAuth, async (req: AuthRequest, res) => {
@@ -31,7 +30,7 @@ router.get('/', requireAuth, async (req: AuthRequest, res) => {
 });
 
 // PATCH /api/notifications/:id/read - Mark notification as read
-router.patch('/:id/read', requireAuth, async (req: AuthRequest, res) => {
+router.patch('/:id/read', requireAuth, blockDemoWrites, async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
     const userId = req.userId!;
@@ -54,14 +53,34 @@ router.patch('/:id/read', requireAuth, async (req: AuthRequest, res) => {
 });
 
 // PATCH /api/notifications/read-all - Mark all notifications as read
-router.patch('/read-all', requireAuth, async (req: AuthRequest, res) => {
+router.patch('/read-all', requireAuth, blockDemoWrites, async (req: AuthRequest, res) => {
   try {
     const userId = req.userId!;
+
+    // Get all unread notifications before updating
+    const unreadNotifications = await Notification.find({ userId, isRead: false });
 
     const result = await Notification.updateMany(
       { userId, isRead: false },
       { isRead: true }
     );
+
+    // Emit socket events for each updated notification
+    const io = (global as any).io;
+    if (io && result.modifiedCount > 0) {
+      // Fetch updated notifications with populated fields
+      const updatedNotifications = await Notification.find({
+        _id: { $in: unreadNotifications.map(n => n._id) }
+      })
+        .populate('relatedProjectId', 'name color')
+        .populate('relatedUserId', 'firstName lastName')
+        .populate('relatedInvitationId');
+
+      // Emit update events for each notification
+      updatedNotifications.forEach(notification => {
+        io.to(`user-${userId}`).emit('notification-updated', notification);
+      });
+    }
 
     res.json({
       success: true,
@@ -75,7 +94,7 @@ router.patch('/read-all', requireAuth, async (req: AuthRequest, res) => {
 });
 
 // DELETE /api/notifications/clear-all - Clear all notifications
-router.delete('/clear-all', requireAuth, async (req: AuthRequest, res) => {
+router.delete('/clear-all', requireAuth, blockDemoWrites, async (req: AuthRequest, res) => {
   try {
     const userId = req.userId!;
 
@@ -94,7 +113,7 @@ router.delete('/clear-all', requireAuth, async (req: AuthRequest, res) => {
 });
 
 // DELETE /api/notifications/:id - Delete notification
-router.delete('/:id', requireAuth, async (req: AuthRequest, res) => {
+router.delete('/:id', requireAuth, blockDemoWrites, async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
     const userId = req.userId!;

@@ -37,6 +37,17 @@ class NotificationService {
    */
   async createNotification(data: CreateNotificationData): Promise<INotification> {
     try {
+      // Define which notification types should be unique (only one per user)
+      const uniqueTypes = ['daily_todo_summary', 'stale_items_summary'];
+
+      // Delete old notification if this is a unique type
+      if (uniqueTypes.includes(data.type)) {
+        await Notification.deleteMany({
+          userId: data.userId,
+          type: data.type
+        });
+      }
+
       // Define which notification types should be aggregated (social actions)
       const aggregatableTypes = [
         'comment_on_project',

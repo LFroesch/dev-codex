@@ -31,7 +31,7 @@ class AuthService extends BaseApiService {
   }
 
   linkGoogle(): void {
-    window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:5003'}/api/auth/google/link`;
+    window.location.href = '/api/auth/google/link';
   }
 
   async unlinkGoogle(): Promise<{ message: string }> {

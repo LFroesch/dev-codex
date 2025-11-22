@@ -2,6 +2,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import { Project } from '../models/Project';
 import { requireAuth, requireAuthOrDemo, requireProjectAccess, AuthRequest } from '../middleware/auth';
+import { blockDemoWrites } from '../middleware/blockDemoWrites';
 import { validateProjectData, validateObjectId } from '../middleware/validation';
 import TeamMember from '../models/TeamMember';
 import ProjectInvitation from '../models/ProjectInvitation';
@@ -44,18 +45,8 @@ router.use('/:id', (req, res, next) => {
 });
 
 // Create project
-router.post('/', requireAuth, validateProjectData, checkProjectLimit, async (req: AuthRequest, res) => {
+router.post('/', requireAuth, blockDemoWrites, validateProjectData, checkProjectLimit, async (req: AuthRequest, res) => {
   try {
-    // Check if user is demo user
-    const user = await User.findById(req.userId);
-    if (user?.isDemo) {
-      return res.status(403).json({
-        message: 'Demo users cannot create new projects',
-        demo: true,
-        action: 'signup_required'
-      });
-    }
-
     const { name, description, stagingEnvironment, color, category, tags } = req.body;
 
     if (!name || !description) {
@@ -180,18 +171,8 @@ router.get('/:id', requireAuthOrDemo, requireProjectAccess('view'), async (req: 
 });
 
 // Update project
-router.put('/:id', requireAuth, validateProjectData, requireProjectAccess('edit'), checkProjectLock, async (req: AuthRequest, res) => {
+router.put('/:id', requireAuth, blockDemoWrites, validateProjectData, requireProjectAccess('edit'), checkProjectLock, async (req: AuthRequest, res) => {
   try {
-    // Check if user is demo user
-    const user = await User.findById(req.userId);
-    if (user?.isDemo) {
-      return res.status(403).json({
-        message: 'Demo users cannot edit projects',
-        demo: true,
-        action: 'signup_required'
-      });
-    }
-
     // SEC-005 FIX: Whitelist allowed fields to prevent mass assignment vulnerability
     const allowedFields = [
       'name', 'description', 'notes', 'todos', 'devLog', 'components',
@@ -258,7 +239,7 @@ router.put('/:id', requireAuth, validateProjectData, requireProjectAccess('edit'
 });
 
 // Archive/Unarchive project
-router.patch('/:id/archive', requireProjectAccess('manage'), async (req: AuthRequest, res) => {
+router.patch('/:id/archive', requireAuth, blockDemoWrites, requireProjectAccess('manage'), async (req: AuthRequest, res) => {
   try {
     const { isArchived } = req.body;
     
@@ -287,18 +268,8 @@ router.patch('/:id/archive', requireProjectAccess('manage'), async (req: AuthReq
 });
 
 // Delete project (owner only)
-router.delete('/:id', requireAuth, requireProjectAccess('manage'), async (req: AuthRequest, res) => {
+router.delete('/:id', requireAuth, blockDemoWrites, requireProjectAccess('manage'), async (req: AuthRequest, res) => {
   try {
-    // Check if user is demo user
-    const user = await User.findById(req.userId);
-    if (user?.isDemo) {
-      return res.status(403).json({
-        message: 'Demo users cannot delete projects',
-        demo: true,
-        action: 'signup_required'
-      });
-    }
-
     // Only project owner can delete the project
     if (!req.projectAccess?.isOwner) {
       return res.status(403).json({ message: 'Access denied: Only project owner can delete the project' });
@@ -351,7 +322,7 @@ router.delete('/:id', requireAuth, requireProjectAccess('manage'), async (req: A
 });
 
 // NOTES MANAGEMENT - NEW ROUTES
-router.post('/:id/notes', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
+router.post('/:id/notes', requireAuth, blockDemoWrites, requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
     const { title, description, content } = req.body;
     
@@ -388,7 +359,7 @@ router.post('/:id/notes', requireProjectAccess('edit'), async (req: AuthRequest,
 });
 
 // Note lock management routes
-router.post('/:id/notes/:noteId/lock', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
+router.post('/:id/notes/:noteId/lock', requireAuth, blockDemoWrites, requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
     const noteId = req.params.noteId;
     const projectId = req.params.id;
@@ -457,7 +428,7 @@ router.post('/:id/notes/:noteId/lock', requireProjectAccess('edit'), async (req:
   }
 });
 
-router.delete('/:id/notes/:noteId/lock', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
+router.delete('/:id/notes/:noteId/lock', requireAuth, blockDemoWrites, requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
     const noteId = req.params.noteId;
     const projectId = req.params.id;
@@ -482,7 +453,7 @@ router.delete('/:id/notes/:noteId/lock', requireProjectAccess('edit'), async (re
   }
 });
 
-router.put('/:id/notes/:noteId/lock/heartbeat', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
+router.put('/:id/notes/:noteId/lock/heartbeat', requireAuth, blockDemoWrites, requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
     const noteId = req.params.noteId;
     const projectId = req.params.id;
@@ -502,7 +473,7 @@ router.put('/:id/notes/:noteId/lock/heartbeat', requireProjectAccess('edit'), as
   }
 });
 
-router.get('/:id/notes/:noteId/lock', requireProjectAccess('view'), async (req: AuthRequest, res) => {
+router.get('/:id/notes/:noteId/lock', requireAuth, requireProjectAccess('view'), async (req: AuthRequest, res) => {
   try {
     const noteId = req.params.noteId;
     const projectId = req.params.id;
@@ -527,7 +498,7 @@ router.get('/:id/notes/:noteId/lock', requireProjectAccess('view'), async (req: 
   }
 });
 
-router.put('/:id/notes/:noteId', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
+router.put('/:id/notes/:noteId', requireAuth, blockDemoWrites, requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
     const { title, description, content } = req.body;
     const noteId = req.params.noteId;
@@ -616,7 +587,7 @@ router.put('/:id/notes/:noteId', requireProjectAccess('edit'), async (req: AuthR
   }
 });
 
-router.delete('/:id/notes/:noteId', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
+router.delete('/:id/notes/:noteId', requireAuth, blockDemoWrites, requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
     const project = await Project.findById(req.params.id);
 
@@ -635,7 +606,7 @@ router.delete('/:id/notes/:noteId', requireProjectAccess('edit'), async (req: Au
 });
 
 // TECH STACK MANAGEMENT (Unified Stack)
-router.post('/:id/technologies', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
+router.post('/:id/technologies', requireAuth, blockDemoWrites, requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
     const { category, name, version, description } = req.body;
 
@@ -682,7 +653,7 @@ router.post('/:id/technologies', requireProjectAccess('edit'), async (req: AuthR
   }
 });
 
-router.delete('/:id/technologies/:category/:name', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
+router.delete('/:id/technologies/:category/:name', requireAuth, blockDemoWrites, requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
     const { category, name } = req.params;
 
@@ -704,7 +675,7 @@ router.delete('/:id/technologies/:category/:name', requireProjectAccess('edit'),
   }
 });
 
-router.put('/:id/technologies/:category/:name', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
+router.put('/:id/technologies/:category/:name', requireAuth, blockDemoWrites, requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
     const { category, name } = req.params;
     const { version } = req.body;
@@ -739,7 +710,7 @@ router.put('/:id/technologies/:category/:name', requireProjectAccess('edit'), as
 });
 
 // TODO MANAGEMENT
-router.post('/:id/todos', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
+router.post('/:id/todos', requireAuth, blockDemoWrites, requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
     const { text, description, priority, status, dueDate, reminderDate, assignedTo, parentTodoId } = req.body;
     
@@ -860,7 +831,7 @@ router.post('/:id/todos', requireProjectAccess('edit'), async (req: AuthRequest,
   }
 });
 
-router.put('/:id/todos/:todoId', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
+router.put('/:id/todos/:todoId', requireAuth, blockDemoWrites, requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
     const { text, description, priority, completed, status, dueDate, reminderDate, assignedTo, parentTodoId } = req.body;
 
@@ -990,7 +961,7 @@ router.put('/:id/todos/:todoId', requireProjectAccess('edit'), async (req: AuthR
   }
 });
 
-router.delete('/:id/todos/:todoId', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
+router.delete('/:id/todos/:todoId', requireAuth, blockDemoWrites, requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
     const project = await Project.findById(req.params.id);
 
@@ -1041,7 +1012,7 @@ router.delete('/:id/todos/:todoId', requireProjectAccess('edit'), async (req: Au
 });
 
 // DEV LOG MANAGEMENT
-router.post('/:id/devlog', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
+router.post('/:id/devlog', requireAuth, blockDemoWrites, requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
     const { title, description} = req.body;
 
@@ -1075,7 +1046,7 @@ router.post('/:id/devlog', requireProjectAccess('edit'), async (req: AuthRequest
   }
 });
 
-router.put('/:id/devlog/:entryId', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
+router.put('/:id/devlog/:entryId', requireAuth, blockDemoWrites, requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
     const { title, description } = req.body;
 
@@ -1109,7 +1080,7 @@ router.put('/:id/devlog/:entryId', requireProjectAccess('edit'), async (req: Aut
   }
 });
 
-router.delete('/:id/devlog/:entryId', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
+router.delete('/:id/devlog/:entryId', requireAuth, blockDemoWrites, requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
     const project = await Project.findById(req.params.id);
 
@@ -1171,7 +1142,7 @@ function detectRelationships(newComponent: any, existingComponents: any[]): any[
 }
 
 // COMPONENT MANAGEMENT (Feature Components)
-router.post('/:id/components', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
+router.post('/:id/components', requireAuth, blockDemoWrites, requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
     const { category, type, title, content, feature, filePath, tags, relationships, metadata } = req.body;
 
@@ -1231,7 +1202,7 @@ router.post('/:id/components', requireProjectAccess('edit'), async (req: AuthReq
   }
 });
 
-router.put('/:id/components/:componentId', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
+router.put('/:id/components/:componentId', requireAuth, blockDemoWrites, requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
     const { category, type, title, content, feature, filePath, tags, relationships, metadata } = req.body;
 
@@ -1282,7 +1253,7 @@ router.put('/:id/components/:componentId', requireProjectAccess('edit'), async (
   }
 });
 
-router.delete('/:id/components/:componentId', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
+router.delete('/:id/components/:componentId', requireAuth, blockDemoWrites, requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
     const project = await Project.findById(req.params.id);
 
@@ -1301,7 +1272,7 @@ router.delete('/:id/components/:componentId', requireProjectAccess('edit'), asyn
 });
 
 // RELATIONSHIP MANAGEMENT
-router.post('/:id/components/:componentId/relationships', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
+router.post('/:id/components/:componentId/relationships', requireAuth, blockDemoWrites, requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
     const { targetId, relationType, description } = req.body;
 
@@ -1383,7 +1354,7 @@ router.post('/:id/components/:componentId/relationships', requireProjectAccess('
   }
 });
 
-router.delete('/:id/components/:componentId/relationships/:relationshipId', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
+router.delete('/:id/components/:componentId/relationships/:relationshipId', requireAuth, blockDemoWrites, requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
     const project = await Project.findById(req.params.id);
 
@@ -1556,7 +1527,7 @@ router.get('/:id/members', requireAuth, requireProjectAccess('view'), async (req
 });
 
 // POST /api/projects/:id/invite - Invite user to project (with team member limit check)
-router.post('/:id/invite', requireAuth, requireProjectAccess('manage'), checkTeamMemberLimit, async (req: AuthRequest, res) => {
+router.post('/:id/invite', requireAuth, blockDemoWrites, requireProjectAccess('manage'), checkTeamMemberLimit, async (req: AuthRequest, res) => {
   try {
     const { id: projectId } = req.params;
     const { email, role = 'viewer' } = req.body;
@@ -1675,7 +1646,7 @@ router.post('/:id/invite', requireAuth, requireProjectAccess('manage'), checkTea
 });
 
 // DELETE /api/projects/:id/members/:userId - Remove team member
-router.delete('/:id/members/:userId', requireAuth, requireProjectAccess('manage'), async (req: AuthRequest, res) => {
+router.delete('/:id/members/:userId', requireAuth, blockDemoWrites, requireProjectAccess('manage'), async (req: AuthRequest, res) => {
   try {
     const { id: projectId, userId: memberUserId } = req.params;
 
@@ -1715,7 +1686,7 @@ router.delete('/:id/members/:userId', requireAuth, requireProjectAccess('manage'
 });
 
 // PATCH /api/projects/:id/members/:userId - Update team member role
-router.patch('/:id/members/:userId', requireAuth, requireProjectAccess('manage'), async (req: AuthRequest, res) => {
+router.patch('/:id/members/:userId', requireAuth, blockDemoWrites, requireProjectAccess('manage'), async (req: AuthRequest, res) => {
   try {
     const { id: projectId, userId: memberUserId } = req.params;
     const { role } = req.body;
@@ -2078,7 +2049,7 @@ router.post('/import',
 
 export default router;
 // TEST ONLY: Manually lock/unlock a project for testing
-router.post('/:id/test-lock', requireProjectAccess('edit'), async (req: AuthRequest, res) => {
+router.post('/:id/test-lock', requireAuth, blockDemoWrites, requireProjectAccess('edit'), async (req: AuthRequest, res) => {
   try {
     const { lock } = req.body;
     const project = await Project.findById(req.params.id);

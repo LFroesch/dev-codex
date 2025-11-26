@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html data-theme="light">
+<head>
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.24/dist/full.min.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+  <script>
+    const root = document.documentElement;
+    const styles = getComputedStyle(root);
+    console.log('--p:', styles.getPropertyValue('--p'));
+    console.log('--pc:', styles.getPropertyValue('--pc'));
+    console.log('--s:', styles.getPropertyValue('--s'));
+    console.log('--in:', styles.getPropertyValue('--in'));
+  </script>
+</body>
+</html>

@@ -69,9 +69,20 @@ const CreateProject: React.FC = () => {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+
+    // Validate color input - must be hex format
+    if (name === 'color') {
+      const hexRegex = /^#[0-9A-Fa-f]{6}$/;
+      if (value && !hexRegex.test(value)) {
+        // Don't update if invalid hex
+        return;
+      }
+    }
+
     setFormData(prev => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [name]: value
     }));
   };
 
@@ -205,10 +216,13 @@ const CreateProject: React.FC = () => {
                       />
                       <input
                         type="text"
+                        name="color"
                         value={formData.color}
-                        onChange={(e) => setFormData(prev => ({...prev, color: e.target.value}))}
+                        onChange={handleChange}
                         className="input input-bordered flex-1 font-mono text-sm w-5"
                         placeholder="#3B82F6"
+                        pattern="^#[0-9A-Fa-f]{6}$"
+                        title="Must be a valid hex color (e.g., #3B82F6)"
                       />
                     </div>
                   </div>

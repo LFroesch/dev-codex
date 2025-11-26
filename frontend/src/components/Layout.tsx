@@ -150,12 +150,21 @@ const Layout: React.FC = () => {
     const saved = localStorage.getItem('projectViewMode');
     return (saved === 'table' || saved === 'grid') ? saved : 'grid';
   });
+  const [projectSortMode, setProjectSortMode] = useState<'name-asc' | 'name-desc' | 'date-created' | 'last-updated'>(() => {
+    const saved = localStorage.getItem('projectSortMode');
+    return (saved === 'name-asc' || saved === 'name-desc' || saved === 'date-created' || saved === 'last-updated') ? saved : 'name-asc';
+  });
   const [expandedProjectTodos, setExpandedProjectTodos] = useState<Set<string>>(new Set());
 
   // Save view mode preference
   useEffect(() => {
     localStorage.setItem('projectViewMode', projectViewMode);
   }, [projectViewMode]);
+
+  // Save sort mode preference
+  useEffect(() => {
+    localStorage.setItem('projectSortMode', projectSortMode);
+  }, [projectSortMode]);
 
   const toggleProjectTodos = (projectId: string) => {
     setExpandedProjectTodos(prev => {
@@ -167,6 +176,31 @@ const Layout: React.FC = () => {
       }
       return newSet;
     });
+  };
+
+  // Sort projects based on current sort mode
+  const sortProjects = (projects: any[]) => {
+    const sorted = [...projects];
+    switch (projectSortMode) {
+      case 'name-asc':
+        return sorted.sort((a, b) => a.name.localeCompare(b.name));
+      case 'name-desc':
+        return sorted.sort((a, b) => b.name.localeCompare(a.name));
+      case 'date-created':
+        return sorted.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+      case 'last-updated':
+        return sorted.sort((a, b) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime());
+      default:
+        return sorted;
+    }
+  };
+
+  // Cycle through sort modes
+  const cycleSortMode = () => {
+    const modes: Array<'name-asc' | 'name-desc' | 'date-created' | 'last-updated'> = ['name-asc', 'name-desc', 'date-created', 'last-updated'];
+    const currentIndex = modes.indexOf(projectSortMode);
+    const nextIndex = (currentIndex + 1) % modes.length;
+    setProjectSortMode(modes[nextIndex]);
   };
 
   // when setActiveProjectTab, clear category selections
@@ -546,70 +580,69 @@ const Layout: React.FC = () => {
             <div className="flex items-center justify-between min-w-0 gap-0.5">
 
               {/* Dev Codex logo */}
-              <div className="flex items-center gap-2 sm:gap-3 bg-base-200 backdrop-blur-none border-2 border-base-content/20 rounded-xl px-2 sm:px-4 py-2 h-12 shadow-sm hover:shadow-md transition-all cursor-pointer" onClick={() => navigate('/projects')}>
-                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-sm">
-                  <svg className="icon-md text-primary-content" fill={getContrastTextColor()} viewBox="0 0 20 20">
-                  <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
-                </svg>
-                </div>
-                {location.pathname !== '/terminal' && (
-                  <h1 className="text-xl font-bold bg-primary bg-clip-text whitespace-nowrap">Dev Codex</h1>
-                )}
-
-                {/* Search bar on tablet - hidden on mobile and terminal */}
-                {user && location.pathname !== '/terminal' && (
-                  <div className="hidden tablet:flex relative ml-4 flex-center-gap-2">
-                    <div className="relative">
-                        <svg className="absolute left-2.5 top-1/2 transform -translate-y-1/2 icon-sm text-base-content/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                      </svg>
-                      <input
-                        type="text"
-                        placeholder="Search"
-                        value={searchTerm}
-                        onChange={(e) => {
-                          setSearchTerm(e.target.value);
-                          if (e.target.value.trim() && location.pathname !== '/projects') {
-                            navigate('/projects');
-                          }
-                        }}
-                        className="input-field input-sm pl-9 pr-8 w-48 h-10 bg-base-100/80 backdrop-blur-none shadow-sm"
-                      />
-                      {searchTerm && (
-                        <button
-                          onClick={() => setSearchTerm('')}
-                          className="absolute right-3 top-3 w-4 h-4 text-base-content/70 hover:text-base-content/80 transition-colors"
-                        >
-                          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      )}
-                    </div>
-                    <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      navigate('/create-project');
-                    }}
-                    className="btn btn-primary btn-sm btn-circle h-10 w-10 shadow-sm relative"
-                    title="New Project"
-                    style={{ pointerEvents: 'auto' }}
-                  >
-                    <svg className="icon-sm" fill="none" stroke={getContrastTextColor()} viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                  </button>
+              {location.pathname !== '/terminal' && (
+                <div className="flex items-center gap-2 sm:gap-3 bg-base-200 backdrop-blur-none border-2 border-base-content/20 rounded-xl px-2 sm:px-4 py-2 h-12 shadow-sm hover:shadow-md transition-all cursor-pointer" onClick={() => navigate('/projects')}>
+                  <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-sm">
+                    <svg className="icon-md text-primary-content" fill={getContrastTextColor()} viewBox="0 0 20 20">
+                    <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
+                  </svg>
                   </div>
-                )}
-              </div>
+                  <h1 className="text-xl font-bold bg-primary bg-clip-text whitespace-nowrap">Dev Codex</h1>
+
+                  {/* Search bar on tablet - hidden on mobile and terminal */}
+                  {user && (
+                    <div className="hidden tablet:flex relative ml-4 flex-center-gap-2">
+                      <div className="relative">
+                          <svg className="absolute left-2.5 top-1/2 transform -translate-y-1/2 icon-sm text-base-content/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        <input
+                          type="text"
+                          placeholder="Search"
+                          value={searchTerm}
+                          onChange={(e) => {
+                            setSearchTerm(e.target.value);
+                            if (e.target.value.trim() && location.pathname !== '/projects') {
+                              navigate('/projects');
+                            }
+                          }}
+                          className="input-field input-sm pl-9 pr-8 w-48 h-10 bg-base-100/80 backdrop-blur-none shadow-sm"
+                        />
+                        {searchTerm && (
+                          <button
+                            onClick={() => setSearchTerm('')}
+                            className="absolute right-3 top-3 w-4 h-4 text-base-content/70 hover:text-base-content/80 transition-colors"
+                          >
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                      <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        navigate('/create-project');
+                      }}
+                      className="btn btn-primary btn-sm btn-circle h-10 w-10 shadow-sm relative"
+                      title="New Project"
+                      style={{ pointerEvents: 'auto' }}
+                    >
+                      <svg className="icon-sm" fill="none" stroke={getContrastTextColor()} viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                    </button>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Navigation tabs - Terminal page only */}
               {location.pathname === '/terminal' && (
                 <div className="tabs-container p-1">
                   <button
                     className={`tab tab-sm flex-shrink-0 min-h-10 gap-1 sm:gap-2 font-bold whitespace-nowrap px-2 sm:px-4`}
-                    style={{color: getContrastTextColor()}}
                     onClick={() => handleNavigateWithCheck('/projects')}
                     title='Projects'
                   >
@@ -628,13 +661,20 @@ const Layout: React.FC = () => {
                   </button>
                   <button
                     className={`tab tab-sm flex-shrink-0 min-h-10 gap-1 sm:gap-2 font-bold whitespace-nowrap px-2 sm:px-4`}
-                    onClick={() => {
-                      handleNavigateWithCheck('/discover');
-                    }}
+                    onClick={() => handleNavigateWithCheck('/discover')}
                     title='Discover'
                   >
                     <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </button>
+                  <button
+                    className={`tab tab-sm flex-shrink-0 min-h-10 gap-1 sm:gap-2 font-bold whitespace-nowrap px-2 sm:px-4 tab-active`}
+                    style={{color: getContrastTextColor()}}
+                    title='Terminal'
+                  >
+                    <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                   </button>
                 </div>
@@ -1330,6 +1370,34 @@ const Layout: React.FC = () => {
                       </div>
                     )}
 
+                    {/* Sort Toggle - Desktop (Right side) */}
+                    {(activeProjectTab === 'active' || activeProjectTab === 'archived' || activeProjectTab === 'shared') && (
+                      <div className="absolute right-1/3 translate-x-full ml-4">
+                        <div className="join border-2 border-base-content/20 rounded-lg shadow-sm">
+                          <button
+                            className="join-item btn btn-sm btn-ghost gap-1.5"
+                            onClick={cycleSortMode}
+                            title={
+                              projectSortMode === 'name-asc' ? 'Sorted: Name A-Z' :
+                              projectSortMode === 'name-desc' ? 'Sorted: Name Z-A' :
+                              projectSortMode === 'date-created' ? 'Sorted: Date Created' :
+                              'Sorted: Last Updated'
+                            }
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+                            </svg>
+                            <span className="text-xs">
+                              {projectSortMode === 'name-asc' ? 'A-Z' :
+                               projectSortMode === 'name-desc' ? 'Z-A' :
+                               projectSortMode === 'date-created' ? 'Created' :
+                               'Updated'}
+                            </span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Centered Tabs */}
                     <ProjectsTabs
                       activeTab={activeProjectTab}
@@ -1641,7 +1709,7 @@ const Layout: React.FC = () => {
 
                 {/* View Mode Toggle - Mobile (in scrollable content) */}
                 {(activeProjectTab === 'active' || activeProjectTab === 'archived' || activeProjectTab === 'shared') && (
-                  <div className="flex justify-center pt-2 md:hidden">
+                  <div className="flex justify-center gap-2 pt-2 md:hidden">
                     <div className="join border-2 border-base-content/20 rounded-lg shadow-sm">
                       <button
                         className={`join-item btn btn-sm ${projectViewMode === 'grid' ? 'btn-primary' : 'btn-ghost'}`}
@@ -1660,6 +1728,30 @@ const Layout: React.FC = () => {
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                         </svg>
+                      </button>
+                    </div>
+
+                    {/* Sort Toggle - Mobile */}
+                    <div className="join border-2 border-base-content/20 rounded-lg shadow-sm">
+                      <button
+                        className="join-item btn btn-sm btn-ghost gap-1.5"
+                        onClick={cycleSortMode}
+                        title={
+                          projectSortMode === 'name-asc' ? 'Sorted: Name A-Z' :
+                          projectSortMode === 'name-desc' ? 'Sorted: Name Z-A' :
+                          projectSortMode === 'date-created' ? 'Sorted: Date Created' :
+                          'Sorted: Last Updated'
+                        }
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+                        </svg>
+                        <span className="text-xs">
+                          {projectSortMode === 'name-asc' ? 'A-Z' :
+                           projectSortMode === 'name-desc' ? 'Z-A' :
+                           projectSortMode === 'date-created' ? 'Created' :
+                           'Updated'}
+                        </span>
                       </button>
                     </div>
                   </div>
@@ -1720,7 +1812,7 @@ const Layout: React.FC = () => {
                         {projectViewMode === 'grid' ? (
                           /* Projects Grid */
                           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                            {(selectedCategory
+                            {sortProjects(selectedCategory
                               ? (activeProjectTab === 'active' ? groupedCurrentProjects :
                                 activeProjectTab === 'archived' ? groupedArchivedProjects :
                                 groupedSharedProjects)[selectedCategory] || []
@@ -1729,12 +1821,7 @@ const Layout: React.FC = () => {
                                   activeProjectTab === 'archived' ? groupedArchivedProjects :
                                   groupedSharedProjects
                                 ).flat()
-                            ).sort((a, b) => {
-                              // Sort by recently updated globally
-                              const dateA = new Date(a.updatedAt).getTime();
-                              const dateB = new Date(b.updatedAt).getTime();
-                              return dateB - dateA; // Most recent first
-                            }).map((project) => {
+                            ).map((project) => {
                               const isExpanded = expandedProjectTodos.has(project.id);
                               const activeTodos = project.todos?.filter(t => !t.completed) || [];
 
@@ -2024,7 +2111,7 @@ const Layout: React.FC = () => {
                                 </tr>
                               </thead>
                               <tbody>
-                                {(selectedCategory
+                                {sortProjects(selectedCategory
                                   ? (activeProjectTab === 'active' ? groupedCurrentProjects :
                                     activeProjectTab === 'archived' ? groupedArchivedProjects :
                                     groupedSharedProjects)[selectedCategory] || []
@@ -2033,11 +2120,7 @@ const Layout: React.FC = () => {
                                       activeProjectTab === 'archived' ? groupedArchivedProjects :
                                       groupedSharedProjects
                                     ).flat()
-                                ).sort((a, b) => {
-                                  const dateA = new Date(a.updatedAt).getTime();
-                                  const dateB = new Date(b.updatedAt).getTime();
-                                  return dateB - dateA;
-                                }).map((project) => {
+                                ).map((project) => {
                                   const stats = calculateTodoStats(project);
                                   const isExpanded = expandedProjectTodos.has(project.id);
                                   const activeTodos = project.todos?.filter(t => !t.completed) || [];

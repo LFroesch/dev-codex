@@ -43,7 +43,7 @@ router.get('/project/:projectId', requireAuth, async (req: AuthRequest, res: Res
       }
     });
   } catch (error) {
-    console.error('Error fetching project activities:', error);
+    
     res.status(500).json({ success: false, message: 'Failed to fetch activity logs' });
   }
 });
@@ -64,7 +64,7 @@ router.get('/project/:projectId/recent', requireAuth, async (req: AuthRequest, r
       activities
     });
   } catch (error) {
-    console.error('Error fetching recent activities:', error);
+    
     res.status(500).json({ success: false, message: 'Failed to fetch recent activities' });
   }
 });
@@ -110,7 +110,7 @@ router.get('/project/:projectId/active-users', requireAuth, async (req: AuthRequ
       count: activeUsers.length
     });
   } catch (error) {
-    console.error('Error fetching active users:', error);
+    
     res.status(500).json({ success: false, message: 'Failed to fetch active users' });
   }
 });
@@ -155,7 +155,7 @@ router.get('/user/:userId', requireAuth, async (req: AuthRequest, res: Response)
       }
     });
   } catch (error) {
-    console.error('Error fetching user activities:', error);
+    
     res.status(500).json({ success: false, message: 'Failed to fetch user activities' });
   }
 });
@@ -182,7 +182,7 @@ router.post('/smart-join', requireAuth, async (req: AuthRequest, res: Response) 
       activity
     });
   } catch (error) {
-    console.error('Error logging smart project join:', error);
+    
     res.status(500).json({ success: false, message: 'Failed to log project join' });
   }
 });
@@ -219,7 +219,7 @@ router.delete('/project/:projectId/clear', requireAuth, async (req: AuthRequest,
       message: `Cleared ${result.deletedCount} activity log entries`
     });
   } catch (error) {
-    console.error('Error clearing activity logs:', error);
+    
     res.status(500).json({ success: false, message: 'Failed to clear activity logs' });
   }
 });
@@ -257,7 +257,7 @@ router.post('/log', requireAuth, async (req: AuthRequest, res: Response) => {
       activity
     });
   } catch (error) {
-    console.error('Error logging activity:', error);
+    
     res.status(500).json({ success: false, message: 'Failed to log activity' });
   }
 });

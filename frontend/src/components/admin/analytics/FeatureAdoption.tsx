@@ -47,7 +47,6 @@ const FeatureAdoption: React.FC<FeatureAdoptionProps> = ({ days = 30 }) => {
       const result = await response.json();
       setFeatures(result.features || []);
     } catch (err) {
-      console.error('Error fetching feature adoption:', err);
     } finally {
       setLoading(false);
     }

@@ -37,7 +37,7 @@ export const checkProjectLimit = async (req: AuthRequest, res: Response, next: N
 
     next();
   } catch (error) {
-    console.error('Error checking project limit:', error);
+    
     res.status(500).json({ error: 'Failed to check project limits' });
   }
 };
@@ -97,7 +97,7 @@ export const checkTeamMemberLimit = async (req: AuthRequest, res: Response, next
 
     next();
   } catch (error) {
-    console.error('Error checking team member limit:', error);
+    
     res.status(500).json({ error: 'Failed to check team member limits' });
   }
 };

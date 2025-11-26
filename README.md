@@ -1,14 +1,14 @@
 # Dev Codex
 
-**Project management that moves at the speed of thought—powered by AI collaboration.**
+**The first project manager built for the AI era.**
 
-Build your entire project structure in seconds. Export context to any LLM. Import batch commands. Iterate endlessly. The fastest way to go from idea to execution.
+Export your project to any LLM. Get back executable commands. Paste and run. Your entire project structure—built in seconds, not hours.
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-20232A?style=flat&logo=react&logoColor=61DAFB)](https://reactjs.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-43853D?style=flat&logo=node.js&logoColor=white)](https://nodejs.org/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-4EA94B?style=flat&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
-[![Tests](https://img.shields.io/badge/tests-434%20passing-success)](https://github.com/LFroesch/project-management)
+[![Tests](https://img.shields.io/badge/tests-1100%20passing-success)](https://github.com/LFroesch/project-management)
 
 ---
 
@@ -35,46 +35,42 @@ Build your entire project structure in seconds. Export context to any LLM. Impor
 
 ## Why Dev Codex?
 
-**The only project manager designed for the AI era.** Instead of manually clicking through forms, you collaborate with LLMs to build and iterate on your project structure at machine speed.
+**Stop clicking through forms. Start thinking in commands.**
 
-### The Magic: LLM-Powered Workflow
+Traditional project managers force you to manually create every task, note, and component through a UI. Dev Codex flips this: describe what you want to an LLM, get executable commands back, paste them in. Done.
 
-[GIF #1: Full LLM workflow - 25 seconds]
-*Coming soon: Watch the complete loop from export → LLM → batch import*
+### The LLM Loop (3 Steps)
 
 ![Dev Codex Terminal](media/DevCodex.png)
 
-**Dev Codex has a full CLI built into the browser.** This isn't just a feature—it's a completely different way to work:
-
-#### 1. Export Your Project Context to Any LLM
+**1. Export project context**
 ```bash
-/summary prompt all          # Full project context
-/summary json todos         # Just your todos
-/llm                        # Get command syntax reference
+/summary prompt all    # → Full project exported as AI-optimized prompt
 ```
 
-#### 2. Paste Into ChatGPT/Claude
+**2. Get AI to generate or update your structure**
 ```
+Paste into ChatGPT/Claude:
+
 "Build a recipe app with auth, CRUD, and meal planning.
-Todos: auth setup, recipe model, UI, filters
 Stack: Next.js, PostgreSQL, Prisma, NextAuth
-Invite sarah@team.com as editor
+Create 12 todos for the full implementation..."
 
-[paste /llm output for command syntax]"
+[AI returns 15 executable commands in 3 seconds]
 ```
 
-#### 3. LLM Generates Batch Commands → Copy & Paste Back
+**3. Paste commands back**
 ```bash
-/add todo --title="Setup authentication" --priority=high --status=in_progress
-/add todo --title="Create recipe model" --priority=high
-/add note --title="Architecture" --content="Next.js 14, Prisma ORM, PostgreSQL"
-/add component --feature="Auth" --category=backend --title="Auth Service"
-...and 10 more commands
+/add todo --title="Setup authentication" --priority=high
+/add todo --title="Create recipe model"
+/add note --title="Architecture" --content="Next.js 14 with Prisma"
+/add component --feature="Auth" --category=backend
+...paste 10 more commands, hit enter, done
 ```
 
-**Result:** Instant project structure. Then export again with `/summary prompt all` to iterate. It's bidirectional planning at the speed of thought.
+**What just happened?** You went from idea to structured project in 30 seconds. Traditional tools take 20+ minutes of clicking.
 
-*Future: Paid in-app AI integration. For now, BYO LLM API key.*
+*Supported: ChatGPT, Claude, any LLM. Self-host or use our hosted version.*
 
 ---
 
@@ -111,52 +107,56 @@ Full autocomplete with validation and syntax hints as you type. Feels like a mod
 [GIF #4: Component Graph - 15 seconds]
 *Coming soon: Watch relationship visualization, drag components, zoom & navigate*
 
-### **Projects & Planning**
-- **Todos** with subtasks, priorities, due dates, assignments
-- **Notes** with real-time locking (prevent edit conflicts)
-- **Dev Logs** for daily progress tracking
-- **Components** with relationship graph visualization (ReactFlow)
-- **Tech Stack** tracking (technologies, packages, deployment info)
-- **Ideas** - Personal idea parking lot (separate from projects)
-- **Import/Export** JSON (100MB limit, XSS sanitized)
+### **Browser-Native Terminal (50+ Commands)**
+- **Lightning Fast:** Chain 10 commands in one paste—execute in <1s
+- **Smart Autocomplete:** Tab completion learns your patterns
+- **Batch Operations:** `/add todo "task 1" && /add note "doc" && /add devlog "progress"`
+- **Interactive Wizards:** Prefer forms? Use `/wizard new` for guided setup
+- **Workflow Helpers:** `/today`, `/week`, `/standup`, `/stale`, `/info`
+- **Export Formats:** Markdown README, JSON, AI prompt, plain text
+- **Full History:** Navigate with ↑/↓ arrows
 
-### **Terminal Power**
-- **50+ Commands** - Add, view, edit, delete, search anything
-- **Batch Execution** - Chain 10 commands with `&&` or newlines
-- **Full Autocomplete** - Tab completion for commands, flags, and values
-- **Interactive Wizards** - Guided forms when you need them (`/wizard`)
-- **Smart Search** - Full-text search across all content (`/search`)
-- **Stale Reminders** - Surface forgotten todos/notes (`/stale`)
-- **Workflow Commands** - `/today`, `/week`, `/standup` for daily planning
-- **Summary Export** - 4 formats (markdown, JSON, AI prompt, text)
+### **Project Management**
+- **Todos:** Subtasks, priorities, due dates, assignments, dependencies
+- **Notes:** Real-time locking (10-min heartbeat prevents edit conflicts)
+- **Dev Logs:** Daily progress journal with timestamps
+- **Components:** Visual relationship graph (ReactFlow) with drag & zoom
+- **Tech Stack:** Track technologies, packages, deployment config
+- **Ideas:** Personal parking lot (separate from projects)
+- **Import/Export:** JSON (100MB limit, XSS sanitized)
+
+### **Social & Discovery**
+- **Posts:** Share profile or project updates (public/followers/private)
+- **Comments:** Threaded discussions on public projects (with replies)
+- **Likes:** React to posts and comments
+- **Follow System:** Follow users for feed updates
+- **Favorites:** Bookmark projects, get notified on updates
+- **Discover Feed:** Explore public projects by technology, category
+- **Custom Slugs:** `/discover/@username/project-slug`
 
 ### **Team Collaboration**
-- **Roles:** Owner / Editor / Viewer permissions
+- **3 Roles:** Owner / Editor / Viewer permissions
 - **Email Invites** with token-based acceptance
-- **Real-time Updates** via Socket.io (live notifications, activity feed)
-- **Note Locking** with 10-min heartbeat (prevents conflicts)
-- **Activity Logs** - See who's working on what, when
-- **Team Analytics** - Time tracking per project, leaderboards
+- **Real-time Sync:** Socket.io (live notifications, activity feed, presence)
+- **Activity Logs:** See who changed what, when
+- **Team Analytics:** Time tracking, heatmaps, leaderboards
+- **Note Locking:** Automatic conflict prevention
 
-### **Analytics & Insights**
+### **Analytics**
 - **Session Tracking:** 10s heartbeats, 5-min idle detection
 - **Time Breakdown:** Per-project hours, daily/weekly summaries
 - **Heatmaps:** Visualize when you work on each project
-- **Leaderboards:** Team productivity rankings
-- **Feature Adoption:** Track which features users actually use
+- **Team Stats:** Leaderboards, contribution tracking
+- **Feature Adoption:** See which features drive engagement
+- **Retention Data:** 30/90/365-day windows (plan-based)
 
-### **Public Sharing**
-- **Custom Slugs:** `/public/@username/project-slug`
-- **Granular Control:** Choose what's visible (todos, notes, components, etc.)
-- **Discover Page:** Searchable directory of public projects
-
-### **Admin Tools**
+### **Admin Dashboard** *(Self-Hosted: Full Access)*
 - User management (ban/unban, plan changes, password resets, refunds)
-- Custom notification creator
-- Support ticket system with Kanban board
+- Support tickets with Kanban board
 - Database cleanup & optimization tools
-- Analytics dashboard (conversion rates, user growth, feature adoption)
+- Analytics: conversion rates, user growth, feature adoption
 - News/announcement system
+- Performance recommendations
 
 ---
 
@@ -188,7 +188,9 @@ Full autocomplete with validation and syntax hints as you type. Feels like a mod
 - Helmet (security headers)
 - Input validation & sanitization
 
-**API:** 100+ RESTful endpoints—[view full API docs](md_files/READMEs/API.md)
+**API:** 130+ RESTful endpoints—[view full API docs](md_files/READMEs/API.md)
+
+**Onboarding:** Interactive 14-step tutorial system for new users
 
 ---
 
@@ -198,7 +200,7 @@ Full autocomplete with validation and syntax hints as you type. Feels like a mod
 git clone https://github.com/LFroesch/project-management.git
 cd project-management
 npm install
-cp backend/.env.example backend/.env  # Add your MongoDB URI, JWT secret
+cp backend/.env.example backend/.env  # Add your MongoDB URI, JWT secret, etc
 npm run dev
 ```
 

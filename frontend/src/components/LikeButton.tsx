@@ -49,7 +49,6 @@ const LikeButton: React.FC<LikeButtonProps> = ({
         setIsLiked(response.data.isLiked);
       }
     } catch (err) {
-      console.error('Failed to check like status:', err);
     }
   };
 
@@ -77,9 +76,7 @@ const LikeButton: React.FC<LikeButtonProps> = ({
     } catch (err: any) {
       if (err.response?.status === 401) {
         // User not logged in - could show a message or redirect
-        console.log(`Please log in to like ${targetType}`);
       } else {
-        console.error('Failed to toggle like:', err);
       }
     } finally {
       setLoading(false);

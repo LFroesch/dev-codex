@@ -116,7 +116,6 @@ export const useThemeManager = () => {
         setCurrentTheme('retro');
       }
     } catch (error) {
-      console.error('Error applying custom theme:', error);
       // Fall back to retro theme on error
       document.documentElement.setAttribute('data-theme', 'retro');
       setCurrentTheme('retro');

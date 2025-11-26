@@ -150,7 +150,6 @@ const AccountSettingsPage: React.FC = () => {
           const parsed = JSON.parse(saved);
           setCustomThemes(parsed);
         } catch (err) {
-          console.error('Failed to parse custom themes:', err);
         }
       }
     }
@@ -165,7 +164,6 @@ const AccountSettingsPage: React.FC = () => {
       localStorage.setItem('customThemes', JSON.stringify(themes));
       setCustomThemes(themes);
     } catch (error) {
-      console.error('Error saving custom themes:', error);
       // Fallback to localStorage only
       localStorage.setItem('customThemes', JSON.stringify(themes));
       setCustomThemes(themes);
@@ -842,7 +840,6 @@ const AccountSettingsPage: React.FC = () => {
                             setPreviewTheme(null);
                           } catch (error) {
                             // Don't stop preview if there was an error
-                            console.error('Failed to apply theme:', error);
                           }
                         }} 
                         className="btn btn-sm btn-success border-2 border-success/50 hover:border-success shadow-sm"

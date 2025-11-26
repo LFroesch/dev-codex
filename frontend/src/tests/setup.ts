@@ -13,7 +13,6 @@ const originalError = console.error;
 const originalWarn = console.warn;
 
 beforeAll(() => {
-  console.error = (...args) => {
     if (
       typeof args[0] === 'string' && 
       (args[0].includes('Warning:') || 
@@ -23,7 +22,6 @@ beforeAll(() => {
     originalError(...args);
   };
   
-  console.warn = (...args) => {
     if (
       typeof args[0] === 'string' && 
       args[0].includes('React Router Future Flag')
@@ -33,8 +31,6 @@ beforeAll(() => {
 });
 
 afterAll(() => {
-  console.error = originalError;
-  console.warn = originalWarn;
 });
 
 // Mock environment variables

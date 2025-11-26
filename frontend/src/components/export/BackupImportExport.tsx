@@ -43,7 +43,6 @@ const BackupImportExport: React.FC<BackupImportExportProps> = ({
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (error: any) {
-      console.error('Export error:', error);
       setImportError('Failed to export project: ' + (error.response?.data?.message || error.message));
     } finally {
       setIsExporting(false);
@@ -83,7 +82,6 @@ const BackupImportExport: React.FC<BackupImportExportProps> = ({
         throw new Error(result.message || 'Import failed');
       }
     } catch (error: any) {
-      console.error('Import error:', error);
       
       if (error instanceof SyntaxError) {
         setImportError('Invalid JSON file format');

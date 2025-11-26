@@ -24,7 +24,7 @@ router.get('/user/:userId', requireAuth, async (req: AuthRequest, res) => {
 
     res.json(analytics);
   } catch (error) {
-    console.error('Error fetching user analytics:', error);
+    
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -41,7 +41,7 @@ router.get('/me', requireAuth, async (req: AuthRequest, res) => {
 
     res.json(analytics);
   } catch (error) {
-    console.error('Error fetching analytics:', error);
+    
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -67,7 +67,7 @@ router.post('/track', requireAuth, async (req: AuthRequest, res) => {
     await AnalyticsService.trackEvent(req.userId!, eventType, eventData, req);
     res.json({ success: true });
   } catch (error) {
-    console.error('Error tracking event:', error);
+    
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -95,7 +95,7 @@ router.post('/session/start', requireAuth, async (req: AuthRequest, res) => {
       res.json({ sessionId });
     }
   } catch (error) {
-    console.error('Error starting session:', error);
+    
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -112,7 +112,7 @@ router.post('/session/end', requireAuth, async (req: AuthRequest, res) => {
     await AnalyticsService.endSession(sessionId, req.userId!);
     res.json({ success: true });
   } catch (error) {
-    console.error('Error ending session:', error);
+    
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -123,7 +123,7 @@ router.get('/session/active', requireAuth, async (req: AuthRequest, res) => {
     const session = await AnalyticsService.getActiveSession(req.userId!);
     res.json(session);
   } catch (error) {
-    console.error('Error getting active session:', error);
+    
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -148,7 +148,7 @@ router.post('/heartbeat', requireAuth, async (req: AuthRequest, res) => {
 
     res.json({ success: true });
   } catch (error) {
-    console.error('Error processing heartbeat:', error);
+    
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -182,7 +182,7 @@ router.post('/feature', requireAuth, async (req: AuthRequest, res) => {
 
     res.json({ success: true });
   } catch (error) {
-    console.error('Error tracking feature usage:', error);
+    
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -208,7 +208,7 @@ router.post('/project/switch', requireAuth, async (req: AuthRequest, res) => {
       res.status(400).json({ error: result.error });
     }
   } catch (error) {
-    console.error('Error switching project:', error);
+    
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -293,7 +293,7 @@ router.get('/projects/time', requireAuth, async (req: AuthRequest, res) => {
 
     res.json({ projects: sessions, period: `${days} days` });
   } catch (error) {
-    console.error('Error fetching project time data:', error);
+    
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -351,7 +351,7 @@ router.get('/project/:projectId/time', requireAuth, async (req: AuthRequest, res
       period: `${days} days`
     });
   } catch (error) {
-    console.error('Error fetching project time data:', error);
+    
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -457,7 +457,7 @@ router.get('/project/:projectId/team-time', requireAuth, async (req: AuthRequest
       period: `${days} days`
     });
   } catch (error) {
-    console.error('Error fetching team project time data:', error);
+    
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -479,7 +479,7 @@ router.post('/plan/update', requireAuth, async (req: AuthRequest, res) => {
       message: `Analytics retention updated for ${planTier} plan` 
     });
   } catch (error) {
-    console.error('Error updating analytics plan:', error);
+    
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -494,7 +494,7 @@ router.post('/plan/cancel', requireAuth, async (req: AuthRequest, res) => {
       message: 'Analytics converted to free tier retention' 
     });
   } catch (error) {
-    console.error('Error handling subscription cancellation:', error);
+    
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -505,7 +505,7 @@ router.get('/plan/summary', requireAuth, async (req: AuthRequest, res) => {
     const summary = await AnalyticsService.getAnalyticsSummary(req.userId!);
     res.json(summary);
   } catch (error) {
-    console.error('Error fetching analytics summary:', error);
+    
     res.status(500).json({ error: 'Internal server error' });
   }
 });

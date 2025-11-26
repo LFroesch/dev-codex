@@ -67,6 +67,17 @@ export class UtilityHandlers extends BaseCommandHandler {
       },
       {
         type: 'syntax_tip',
+        syntax: '🤖 Working with AI Assistants',
+        description: 'Get project context + command guide for Claude, ChatGPT, or other LLMs. Use /summary to export data, then copy with "Summary + LLM Guide" button for complete context.',
+        examples: [
+          '/summary prompt all - Get project summary optimized for LLMs',
+          '/summary text projects - Quick list of all your projects',
+          '/llm - General terminal command guide for AI assistants',
+          'Workflow: /summary prompt all → Click "🤖 Summary + LLM Guide" → Paste to AI → AI generates commands'
+        ]
+      },
+      {
+        type: 'syntax_tip',
         syntax: '🔗 Batch Commands',
         description: 'Chain commands with && or newlines (max 10 per batch). Execution stops on first error. Newlines are easier to read/edit.',
         examples: [
@@ -779,10 +790,15 @@ export class UtilityHandlers extends BaseCommandHandler {
         if (project.category) prompt += `**Category:** ${project.category}\n`;
         if (project.stagingEnvironment) prompt += `**Current Environment:** ${project.stagingEnvironment}\n`;
 
-        // Tech Stack
+        // Tech Stack (full details)
         if (stack.length > 0) {
           prompt += `\n## ⚡ TECH STACK\n\n`;
-          prompt += `**Stack:** ${stack.map((t: any) => t.name).join(' • ')}\n`;
+          stack.forEach((t: any) => {
+            prompt += `• **${t.name}** (${t.category})`;
+            if (t.version) prompt += ` - v${t.version}`;
+            if (t.description) prompt += `\n  ${t.description}`;
+            prompt += `\n`;
+          });
         }
 
         // Tasks (Hierarchical with subtasks)
@@ -837,35 +853,25 @@ export class UtilityHandlers extends BaseCommandHandler {
           }
         }
 
-        // Recent Development Log
+        // Development Log (ALL entries)
         if (devLog.length > 0) {
-          const recentEntries = devLog.slice(-5);
-          prompt += `\n## 📝 RECENT DEVELOPMENT LOG\n`;
-          recentEntries.forEach((entry: any) => {
-            const entryContent = entry.content?.length > 500 ?
-              entry.content.substring(0, 500) + '...' :
-              entry.content || '';
+          prompt += `\n## 📝 DEVELOPMENT LOG\n`;
+          devLog.forEach((entry: any) => {
             prompt += `\n**${entry.date}${entry.title ? ' - ' + entry.title : ''}**\n`;
-            prompt += `${entryContent}\n`;
+            prompt += `${entry.content || ''}\n`;
           });
-          if (devLog.length > 5) {
-            prompt += `\n*(Showing ${recentEntries.length} most recent entries out of ${devLog.length} total)*\n`;
-          }
         }
 
-        // Notes
+        // Notes (full content)
         if (notes.length > 0) {
           prompt += `\n## 📋 PROJECT NOTES\n`;
           notes.forEach((note: any) => {
-            const noteContent = note.content?.length > 1000 ?
-              note.content.substring(0, 1000) + '...' :
-              note.content || '';
             prompt += `\n**${note.title || 'Untitled Note'}**\n`;
-            prompt += `${noteContent}\n`;
+            prompt += `${note.content || ''}\n`;
           });
         }
 
-        // Components - Grouped by features
+        // Components - Grouped by features (full content)
         if (components.length > 0) {
           prompt += `\n## 🧩 COMPONENTS (Grouped by Features)\n`;
 
@@ -881,10 +887,7 @@ export class UtilityHandlers extends BaseCommandHandler {
           Object.entries(componentsByFeature).sort().forEach(([feature, componentList]: [string, any]) => {
             prompt += `\n**FEATURE: ${feature}**\n`;
             componentList.forEach((component: any) => {
-              const componentContent = component.content?.length > 800 ?
-                component.content.substring(0, 800) + '...' :
-                component.content || '';
-              prompt += `• [${component.type}] **${component.title || 'Untitled'}:** ${componentContent}\n`;
+              prompt += `• [${component.type}] **${component.title || 'Untitled'}:** ${component.content || ''}\n`;
             });
           });
         }
@@ -964,39 +967,32 @@ export class UtilityHandlers extends BaseCommandHandler {
         }
 
 
-        // Notes
+        // Notes (full content)
         if (notes.length > 0) {
           md += `## Notes\n\n`;
           notes.forEach((note: any) => {
-            const noteContent = note.content?.length > 2000 ?
-              note.content.substring(0, 2000) + '...' :
-              note.content || '';
-            md += `### ${note.title || 'Untitled Note'}\n${noteContent}\n\n`;
+            md += `### ${note.title || 'Untitled Note'}\n${note.content || ''}\n\n`;
           });
         }
 
-        // Todo Items (Hierarchical with subtasks)
+        // Todo Items (Hierarchical with subtasks - full content)
         if (todos.length > 0) {
           const parentTodos = todos.filter((t: any) => !t.parentTodoId);
           md += `## Todo Items\n\n`;
 
           parentTodos.forEach((todo: any) => {
-            const todoDesc = todo.content?.length > 200 ?
-              todo.content.substring(0, 200) + '...' :
-              todo.content;
-            md += `- [${todo.completed ? 'x' : ' '}] **${todo.title || 'Untitled Task'}**${todoDesc ? `: ${todoDesc}` : ''}`;
+            md += `- [${todo.completed ? 'x' : ' '}] **${todo.title || 'Untitled Task'}**${todo.content ? `: ${todo.content}` : ''}`;
             if (todo.priority) md += ` [${todo.priority.toUpperCase()}]`;
+            if (todo.dueDate) md += ` (Due: ${new Date(todo.dueDate).toLocaleDateString()})`;
             md += `\n`;
 
             // Show subtasks indented
             const subtasks = todos.filter((t: any) => t.parentTodoId === todo.id);
             if (subtasks.length > 0) {
               subtasks.forEach((sub: any) => {
-                const subDesc = sub.content?.length > 100 ?
-                  sub.content.substring(0, 100) + '...' :
-                  sub.content;
-                md += `  - [${sub.completed ? 'x' : ' '}] ${sub.title}${subDesc ? `: ${subDesc}` : ''}`;
+                md += `  - [${sub.completed ? 'x' : ' '}] ${sub.title}${sub.content ? `: ${sub.content}` : ''}`;
                 if (sub.priority) md += ` [${sub.priority.toUpperCase()}]`;
+                if (sub.dueDate) md += ` (Due: ${new Date(sub.dueDate).toLocaleDateString()})`;
                 md += `\n`;
               });
             }
@@ -1004,25 +1000,19 @@ export class UtilityHandlers extends BaseCommandHandler {
           md += `\n`;
         }
 
-        // Development Log
+        // Development Log (full content)
         if (devLog.length > 0) {
           md += `## Development Log\n\n`;
           devLog.forEach((entry: any) => {
-            const entryContent = entry.content?.length > 1500 ?
-              entry.content.substring(0, 1500) + '...' :
-              entry.content || '';
-            md += `### ${entry.date} - ${entry.title || 'Development Entry'}\n${entryContent}\n\n`;
+            md += `### ${entry.date} - ${entry.title || 'Development Entry'}\n${entry.content || ''}\n\n`;
           });
         }
 
-        // Components
+        // Components (full content)
         if (components.length > 0) {
           md += `## Components\n\n`;
           components.forEach((component: any) => {
-            const componentContent = component.content?.length > 2000 ?
-              component.content.substring(0, 2000) + '...' :
-              component.content || '';
-            md += `### ${component.title || 'Untitled'} (${component.type}) - Feature: ${component.feature}\n${componentContent}\n\n`;
+            md += `### ${component.title || 'Untitled'} (${component.type}) - Feature: ${component.feature}\n${component.content || ''}\n\n`;
           });
         }
 
@@ -1039,10 +1029,15 @@ export class UtilityHandlers extends BaseCommandHandler {
           md += `\n`;
         }
 
-        // Tech Stack
+        // Tech Stack (with descriptions)
         if (stack.length > 0) {
           md += `## Tech Stack\n\n`;
-          md += `${stack.map((t: any) => `- **${t.name}** (${t.category})${t.version ? ` - v${t.version}` : ''}`).join('\n')}\n\n`;
+          stack.forEach((t: any) => {
+            md += `- **${t.name}** (${t.category})${t.version ? ` - v${t.version}` : ''}`;
+            if (t.description) md += `\n  ${t.description}`;
+            md += `\n`;
+          });
+          md += `\n`;
         }
 
         // Team
@@ -1106,52 +1101,61 @@ export class UtilityHandlers extends BaseCommandHandler {
           text += `${project.description}\n\n`;
         }
 
-        // Notes
+        // Notes (full content)
         if (notes.length > 0) {
           text += `NOTES\n`;
           text += `-----\n`;
           notes.forEach((note: any) => {
-            text += `${note.title || 'Untitled'}: ${note.content?.substring(0, 200) || ''}${note.content?.length > 200 ? '...' : ''}\n`;
+            text += `\n${note.title || 'Untitled'}:\n`;
+            text += `${note.content || ''}\n`;
           });
           text += `\n`;
         }
 
-        // Todos (Hierarchical with subtasks)
+        // Todos (Hierarchical with subtasks - full content)
         if (todos.length > 0) {
           const parentTodos = todos.filter((t: any) => !t.parentTodoId);
           text += `TODO ITEMS\n`;
           text += `----------\n`;
 
           parentTodos.forEach((todo: any) => {
-            text += `[${todo.completed ? 'X' : ' '}] [${todo.priority?.toUpperCase() || 'MED'}] ${todo.title}\n`;
+            text += `[${todo.completed ? 'X' : ' '}] [${todo.priority?.toUpperCase() || 'MED'}] ${todo.title}`;
+            if (todo.content) text += ` - ${todo.content}`;
+            if (todo.dueDate) text += ` (Due: ${new Date(todo.dueDate).toLocaleDateString()})`;
+            text += `\n`;
 
             // Show subtasks indented
             const subtasks = todos.filter((t: any) => t.parentTodoId === todo.id);
             if (subtasks.length > 0) {
               subtasks.forEach((sub: any) => {
-                text += `  [${sub.completed ? 'X' : ' '}] [${sub.priority?.toUpperCase() || 'MED'}] ${sub.title}\n`;
+                text += `  [${sub.completed ? 'X' : ' '}] [${sub.priority?.toUpperCase() || 'MED'}] ${sub.title}`;
+                if (sub.content) text += ` - ${sub.content}`;
+                if (sub.dueDate) text += ` (Due: ${new Date(sub.dueDate).toLocaleDateString()})`;
+                text += `\n`;
               });
             }
           });
           text += `\n`;
         }
 
-        // Dev Log
+        // Dev Log (full content)
         if (devLog.length > 0) {
           text += `DEVELOPMENT LOG\n`;
           text += `---------------\n`;
           devLog.forEach((entry: any) => {
-            text += `${entry.date} - ${entry.title || 'Entry'}: ${entry.content?.substring(0, 150) || ''}${entry.content?.length > 150 ? '...' : ''}\n`;
+            text += `\n${entry.date} - ${entry.title || 'Entry'}:\n`;
+            text += `${entry.content || ''}\n`;
           });
           text += `\n`;
         }
 
-        // Components
+        // Components (full content)
         if (components.length > 0) {
           text += `COMPONENTS\n`;
           text += `----------\n`;
           components.forEach((component: any) => {
-            text += `${component.title || 'Untitled'} (${component.type}) [${component.feature}]: ${component.content?.substring(0, 150) || ''}${component.content?.length > 150 ? '...' : ''}\n`;
+            text += `\n${component.title || 'Untitled'} (${component.type}) [${component.feature}]:\n`;
+            text += `${component.content || ''}\n`;
           });
           text += `\n`;
         }
@@ -1170,12 +1174,14 @@ export class UtilityHandlers extends BaseCommandHandler {
           text += `\n`;
         }
 
-        // Tech Stack
+        // Tech Stack (with descriptions)
         if (stack.length > 0) {
           text += `TECH STACK\n`;
           text += `----------\n`;
           stack.forEach((t: any) => {
-            text += `- ${t.name} (${t.category})${t.version ? ` v${t.version}` : ''}\n`;
+            text += `- ${t.name} (${t.category})${t.version ? ` v${t.version}` : ''}`;
+            if (t.description) text += `\n  ${t.description}`;
+            text += `\n`;
           });
           text += `\n`;
         }
@@ -1764,84 +1770,23 @@ export class UtilityHandlers extends BaseCommandHandler {
   /**
    * Handle /llm command - Generate LLM context guide
    */
-  async handleLLMContext(parsed: ParsedCommand, currentProjectId?: string): Promise<CommandResponse> {
-    let entity = parsed.args[0]?.toLowerCase() || 'all';
-
-    // Normalize entity aliases
-    const entityAliases: Record<string, string> = {
-      'todo': 'todos',
-      'todos': 'todos',
-      'note': 'notes',
-      'notes': 'notes',
-      'devlog': 'devlog',
-      'devlogs': 'devlog',
-      'component': 'components',
-      'components': 'components',
-      'stack': 'stack',
-      'team': 'team',
-      'deployment': 'deployment',
-      'deploy': 'deployment',
-      'setting': 'settings',
-      'settings': 'settings',
-      'project': 'projects',
-      'projects': 'projects',
-      'all': 'all'
-    };
-
-    if (entity && !entityAliases[entity]) {
-      return {
-        type: ResponseType.ERROR,
-        message: `Invalid entity "${entity}". Available: all, todos, notes, devlog, components, stack, team, deployment, settings, projects`,
-        suggestions: ['/help llm']
-      };
-    }
-
-    entity = entityAliases[entity] || 'all';
-
-    // If 'all' or no entity specified, return general terminal guide
-    if (entity === 'all') {
-      const guide = this.generateGeneralLLMGuide();
-      const metrics = calculateTextMetrics(guide);
-
-      return {
-        type: ResponseType.DATA,
-        message: '🤖 LLM Terminal Interaction Guide',
-        data: {
-          summary: guide,
-          format: 'text',
-          fileName: 'llm-terminal-guide.txt',
-          projectName: 'Terminal Guide',
-          downloadable: true,
-          textMetrics: metrics
-        }
-      };
-    }
-
-    // For entity-specific guides, resolve project
-    const resolution = await this.resolveProject(parsed.projectMention, currentProjectId);
-    if (!resolution.project) {
-      return this.buildProjectErrorResponse(resolution);
-    }
-
-    const project = resolution.project;
-    const guide = this.generateEntityLLMGuide(project, entity);
+  async handleLLMContext(): Promise<CommandResponse> {
+    // /llm just returns the general terminal guide (no entity support - use /summary for that)
+    const guide = this.generateGeneralLLMGuide();
     const metrics = calculateTextMetrics(guide);
 
     return {
       type: ResponseType.DATA,
-      message: `🤖 LLM Guide: ${entity.charAt(0).toUpperCase() + entity.slice(1)} for ${project.name}`,
+      message: '🤖 LLM Terminal Interaction Guide',
       data: {
         summary: guide,
         format: 'text',
-        fileName: `llm-guide-${entity}-${project.name.replace(/\s+/g, '-')}.txt`,
-        projectName: project.name,
-        entityType: entity,
+        fileName: 'llm-terminal-guide.txt',
+        projectName: 'Terminal Guide',
         downloadable: true,
         textMetrics: metrics
       },
       metadata: {
-        projectId: project._id.toString(),
-        projectName: project.name,
         action: 'llm-guide'
       }
     };
@@ -1862,25 +1807,51 @@ Help users interact with their project management terminal. Generate commands to
 
 ### Project Management
 \`/add project --name="..." [--description="..." --category="..." --color="#..."]\`
+\`/view projects\` - List all projects
+\`/edit project --name="..." --description="..."\` (uses current project)
+\`/delete project @projectname\` - Delete a project
 \`/add idea --title="..." --content="..." [--description="..."]\`
+\`/view ideas\` - List all ideas
+\`/edit idea "idx|text" [...flags]\`
+\`/delete idea "idx|text"\`
 \`/swap @project\` - Switch to different project context
+\`/goto /path\` - Navigate to a specific page (e.g., /goto /notes, /goto /components)
+\`/wizard new\` - Interactive project creation wizard
 \`/summary text projects\` - Get concise list of all projects/ideas for AI context
 
 ### Tasks & Todos
 \`/add todo --title="..." [--content="..." --priority=low|medium|high --status=not_started|in_progress|blocked|completed --due="MM-DD-YYYY HH:MM"]\`
-\`/edit todo "idx|text" [...flags]\` \`/delete todo "idx|text"\`
-\`/complete "idx|text"\` \`/assign "idx|text" "email"\` \`/push "idx|text"\` (push to devlog)
-\`/add subtask --parent="idx|text" --title="..."\` \`/edit subtask parent_idx subtask_idx\`
+\`/view todos\` - List all todos for current project
+\`/edit todo "idx|text" [...flags]\`
+\`/delete todo "idx|text"\`
+\`/complete "idx|text"\` - Mark todo as completed
+\`/assign "idx|text" "email"\` - Assign todo to team member
+\`/push "idx|text"\` - Push todo to devlog
+\`/add subtask --parent="idx|text" --title="..."\`
+\`/view subtasks "parent_idx"\` - View subtasks for a todo
+\`/edit subtask parent_idx subtask_idx\`
+\`/delete subtask parent_idx subtask_idx\`
 
 ### Notes & Dev Log
-\`/add note --title="..." --content="..."\` \`/edit note "idx|text"\` \`/delete note "idx|text"\`
+\`/add note --title="..." --content="..."\`
+\`/view notes\` - List all notes
+\`/edit note "idx|text"\`
+\`/delete note "idx|text"\`
 **Note:** Notes support full Markdown formatting (headers, lists, code blocks, links, etc.)
-\`/add devlog --title="..." --content="..."\` \`/edit devlog "idx|text"\` \`/delete devlog "idx|text"\`
+\`/add devlog --title="..." --content="..."\`
+\`/view devlog\` - List dev log entries
+\`/edit devlog "idx|text"\`
+\`/delete devlog "idx|text"\`
 
 ### Components & Architecture
 \`/add component --feature="..." --category="..." --type="..." --title="..." --content="..."\`
-\`/edit component "idx|text"\` \`/delete component "idx|text"\`
+\`/view components\` - List all components
+\`/edit component "idx|text"\`
+\`/delete component "idx|text"\`
 \`/add relationship --source="..." --target="..." --type=uses|depends_on\`
+\`/view relationships\` - View component relationships
+\`/edit relationship "idx"\`
+\`/delete relationship "idx"\`
 
 **Component types by category:**
 frontend: page|component|hook|context|layout|util|custom
@@ -1893,8 +1864,9 @@ documentation: area|section|guide|architecture|api-doc|readme|changelog|custom
 asset: image|font|video|audio|document|dependency|custom
 
 ### Tech Stack
-\`/add stack --name="..." --category=framework|runtime|database|styling|deployment|testing|tooling|ui|state|routing [--version="..."]\`
-\`/remove stack --name="..."\`
+\`/add stack --name="..." --category=framework|runtime|database|styling|deployment|testing|tooling|ui|state|routing|forms|animation|api|auth|data|utility [--version="..." --description="..."]\`
+\`/view stack\` - List tech stack
+\`/remove stack "name"\`
 
 ### Insights & Reports
 \`/info\` - Project overview with stats
@@ -1902,37 +1874,39 @@ asset: image|font|video|audio|document|dependency|custom
 \`/week\` - Weekly summary and upcoming tasks
 \`/standup\` - Standup report (yesterday/today/blockers)
 \`/search "query"\` - Search across project
+\`/stale\` - View stale items (todos, notes that haven't been updated)
+\`/activity\` - View activity log for current project
 \`/summary [format] [entity]\` - Export data (formats: markdown|json|prompt|text; entities: all|todos|notes|devlog|components|stack|team|deployment|settings|projects)
 
 ### Team & Deployment
-\`/invite "email" --role=editor|viewer\` \`/remove member "email"\` \`/view team\`
+\`/invite "email" --role=editor|viewer\`
+\`/view team\` - List team members
+\`/remove member "email"\`
 \`/set deployment --url="..." --platform="..." --status=active|inactive|error\`
+\`/view deployment\` - View deployment settings
 \`/set public --enabled=true|false --slug="..."\`
+\`/view public\` - View public sharing settings
 
 ### Project Settings
-\`/set name "..."\` \`/set description "..."\` \`/add tag "..."\` \`/remove tag "..."\` \`/export\`
+\`/set name "..."\` - Update project name
+\`/set description "..."\` - Update project description
+\`/add tag "..."\` - Add a tag to the project
+\`/remove tag "..."\` - Remove a tag from the project
+\`/view settings\` - View all project settings
+\`/export\` - Export project data
+
+### Notifications & Themes
+\`/view notifications\` - View recent notifications
+\`/clear notifications\` - Clear all notifications
+\`/view news\` - View latest news and updates
+\`/view themes\` - View available themes
+\`/set theme "theme_name"\` - Change theme
 
 ## Key Rules
 **MUST:** Components need \`--feature\` flag | Dates: "MM-DD-YYYY HH:MM" | Priorities: low/medium/high | Max 10 batch commands
-**ALWAYS:** Search/view before edit/delete | Validate item existence | Use quotes for multi-word args | Prefer newlines over \`&&\`
-**TIPS:** Start with \`/summary text projects\` to see all projects → get details with \`/summary prompt\` → generate commands → ask clarifying questions if uncertain`;
-  }
-
-  private generateEntityLLMGuide(project: any, entity: string): string {
-    const guides: Record<string, () => string> = {
-      'todos': () => this.generateTodosGuide(project),
-      'notes': () => this.generateNotesGuide(project),
-      'devlog': () => this.generateDevlogGuide(project),
-      'components': () => this.generateComponentsGuide(project),
-      'stack': () => this.generateStackGuide(project),
-      'team': () => this.generateTeamGuide(project),
-      'deployment': () => this.generateDeploymentGuide(project),
-      'settings': () => this.generateSettingsGuide(project),
-      'projects': () => this.generateProjectsGuide(project)
-    };
-
-    const generator = guides[entity];
-    return generator ? generator() : this.generateGeneralLLMGuide();
+**ALWAYS:** Use \`/summary\` commands before edit/delete | Validate item existence | Use quotes for multi-word args | Prefer newlines over \`&&\`
+**DATA SIZE:** \`/summary\` includes FULL content (no truncation). For large projects, use entity filtering: \`/summary prompt todos\` or \`/summary prompt notes\` instead of \`/summary prompt all\`
+**TIPS:** Start with \`/summary text projects\` to see all projects → get details with \`/summary prompt all\` (or specific entity) → generate commands → ask clarifying questions if uncertain`;
   }
 
   /**
@@ -2808,379 +2782,6 @@ asset: image|font|video|audio|document|dependency|custom
         message: 'Failed to fetch projects'
       };
     }
-  }
-
-  // Entity-specific LLM guide generators
-  private generateTodosGuide(project: any): string {
-    const todos = project.todos || [];
-    const activeTodos = todos.filter((t: any) => t.status !== 'completed');
-
-    return `# AI Guide: Todos for ${project.name}
-
-## Best Practices
-- Break down large tasks into smaller, actionable subtasks
-- Use priorities (low/medium/high) to communicate urgency
-- Set status (not_started/in_progress/blocked/completed) to track progress
-- Add due dates for time-sensitive tasks
-- Use /push command to convert completed todos into devlog entries
-- Match todos by index (1-based), UUID, or partial title text
-
-## Common Commands
-\`/add todo --title="..." [--content="..." --priority=low|medium|high --status=not_started --due="MM-DD-YYYY HH:MM"]\`
-\`/edit todo "idx|text" --title="..." --content="..." --priority=medium --status=in_progress\`
-\`/delete todo "idx|text"\`
-\`/complete "idx|text"\` - Mark todo as completed
-\`/assign "idx|text" "email"\` - Assign to team member
-\`/push "idx|text"\` - Push completed todo to devlog
-\`/add subtask --parent="idx|text" --title="..."\`
-\`/edit subtask parent_idx subtask_idx --title="..."\`
-\`/delete subtask parent_idx subtask_idx\`
-
-## Workflow Patterns
-1. **New feature workflow**: Add parent todo → break into subtasks → assign → track progress → complete → push to devlog
-2. **Bug fix workflow**: Add high-priority todo → set blocked if waiting → update status → complete
-3. **Daily planning**: Use /today to see active todos → prioritize → work through list
-4. **Weekly planning**: Use /week to see upcoming todos and deadlines
-
-## Current Project Data
-Total Todos: ${todos.length}
-Active: ${activeTodos.length}
-Completed: ${todos.filter((t: any) => t.status === 'completed').length}
-
-${activeTodos.length > 0 ? `\nActive Todos:\n${activeTodos.map((t: any, i: number) =>
-  `${i + 1}. [${t.priority || 'medium'}] ${t.title}${t.status !== 'not_started' ? ` (${t.status})` : ''}${t.dueDate ? ` - Due: ${new Date(t.dueDate).toLocaleDateString()}` : ''}${t.content ? `\n   ${t.content}` : ''}${t.subtasks?.length > 0 ? `\n   Subtasks: ${t.subtasks.map((st: any) => st.title).join(', ')}` : ''}`
-).join('\n')}` : '\nNo active todos'}`;
-  }
-
-  private generateNotesGuide(project: any): string {
-    const notes = project.notes || [];
-
-    return `# AI Guide: Notes for ${project.name}
-
-## Best Practices
-- Use notes for documentation, research, decisions, and reference material
-- Support full Markdown formatting (headers, lists, code blocks, links, tables)
-- Keep notes focused on single topics for easier searching
-- Use descriptive titles that indicate content
-- Reference other entities (todos, components) within note content
-- Update notes as information changes rather than creating duplicates
-
-## Common Commands
-\`/add note --title="..." --content="..."\`
-\`/edit note "idx|text" --title="..." --content="..."\`
-\`/delete note "idx|text"\`
-\`/search "query"\` - Search note content across project
-
-## Workflow Patterns
-1. **Meeting notes**: Add note with title "Meeting - [Date] - [Topic]" → capture decisions and action items
-2. **Research documentation**: Create note → add findings → link to relevant components/todos
-3. **Decision records**: Document why decisions were made → reference in future work
-4. **Code snippets**: Store reusable patterns, configurations, or examples
-5. **API documentation**: Document external APIs, endpoints, authentication
-
-## Current Project Data
-Total Notes: ${notes.length}
-
-${notes.length > 0 ? `\nAll Notes:\n${notes.map((n: any, i: number) =>
-  `${i + 1}. ${n.title}${n.updatedAt ? ` (Updated: ${new Date(n.updatedAt).toLocaleDateString()})` : ''}\n${n.content ? `   ${n.content}\n` : ''}`
-).join('\n')}` : '\nNo notes yet'}`;
-  }
-
-  private generateDevlogGuide(project: any): string {
-    const devlogs = project.devLog || [];
-
-    return `# AI Guide: Dev Log for ${project.name}
-
-## Best Practices
-- Log significant development milestones, not every small change
-- Use devlog for: feature completions, bug fixes, architecture decisions, deployments
-- Automatically create entries using /push command on completed todos
-- Include what was done, why it matters, and any notable challenges
-- Regular devlog entries help with standups, retrospectives, and documentation
-
-## Common Commands
-\`/add devlog --title="..." --content="..."\`
-\`/edit devlog "idx|text" --title="..." --content="..."\`
-\`/delete devlog "idx|text"\`
-\`/push "todo_idx"\` - Convert completed todo to devlog entry
-\`/standup\` - Generate standup report from recent devlog entries
-\`/week\` - See recent activity including devlog entries
-
-## Workflow Patterns
-1. **Feature completion**: Complete todos → /push to devlog → summarize changes
-2. **Daily logging**: End of day → add devlog summarizing accomplishments
-3. **Bug resolution**: Fix bug → create devlog documenting issue and solution
-4. **Standup prep**: Use /standup to review yesterday's devlog entries
-5. **Sprint review**: Filter devlog by date range to prepare sprint summary
-
-## Current Project Data
-Total Entries: ${devlogs.length}
-
-${devlogs.length > 0 ? `\nAll Dev Log Entries:\n${devlogs.map((d: any, i: number) =>
-  `${i + 1}. ${d.title} (${new Date(d.createdAt).toLocaleDateString()})\n${d.content ? `   ${d.content}\n` : ''}`
-).join('\n')}` : '\nNo dev log entries yet'}`;
-  }
-
-  private generateComponentsGuide(project: any): string {
-    const components = project.components || [];
-    const groupedByCategory = components.reduce((acc: any, c: any) => {
-      acc[c.category] = (acc[c.category] || 0) + 1;
-      return acc;
-    }, {});
-
-    // Build relationships list
-    const allRelationships: any[] = [];
-    components.forEach((comp: any) => {
-      if (comp.relationships && comp.relationships.length > 0) {
-        comp.relationships.forEach((rel: any) => {
-          const targetComp = components.find((c: any) => c.id === rel.targetId);
-          if (targetComp) {
-            allRelationships.push({
-              source: comp.title,
-              type: rel.relationType,
-              target: targetComp.title,
-              description: rel.description
-            });
-          }
-        });
-      }
-    });
-
-    // Remove duplicate bidirectional relationships
-    const uniqueRelationships = allRelationships.filter((rel, index, self) =>
-      index === self.findIndex(r =>
-        (r.source === rel.source && r.target === rel.target && r.type === rel.type) ||
-        (r.source === rel.target && r.target === rel.source && r.type === rel.type)
-      )
-    );
-
-    return `# AI Guide: Components for ${project.name}
-
-## Best Practices
-- Components represent code architecture: files, modules, services, pages, etc.
-- MUST include --feature flag to group related components
-- Use --category to organize by layer (frontend/backend/database/infrastructure/etc.)
-- Use --type to specify specific component type within category
-- Add relationships to document dependencies and connections
-- Keep component content up-to-date with actual implementation
-
-## Common Commands
-\`/add component --feature="..." --category="..." --type="..." --title="..." --content="..."\`
-\`/edit component "idx|text" --title="..." --content="..."\`
-\`/delete component "idx|text"\`
-\`/add relationship --source="comp_idx" --target="comp_idx" --type=uses|depends_on\`
-\`/edit relationship "rel_id" --type="..." --description="..."\`
-\`/delete relationship "rel_id"\`
-
-## Component Types by Category
-**frontend**: page, component, hook, context, layout, util, custom
-**backend**: service, route, model, controller, middleware, util, custom
-**database**: schema, migration, seed, query, index, custom
-**infrastructure**: deployment, cicd, env, config, monitoring, docker, custom
-**security**: auth, authz, encryption, validation, sanitization, custom
-**api**: client, integration, webhook, contract, graphql, custom
-**documentation**: area, section, guide, architecture, api-doc, readme, changelog, custom
-**asset**: image, font, video, audio, document, dependency, custom
-
-## Workflow Patterns
-1. **New feature**: Create feature group → add components → link relationships → implement
-2. **Refactoring**: Update component content → modify relationships → document changes
-3. **Architecture review**: Export components as /summary json components → analyze structure
-4. **Onboarding**: New team members review components to understand codebase structure
-
-## Current Project Data
-Total Components: ${components.length}
-Total Relationships: ${uniqueRelationships.length}
-
-${Object.keys(groupedByCategory).length > 0 ? `\nComponents by Category:\n${Object.entries(groupedByCategory).map(([cat, count]) =>
-  `- ${cat}: ${count}`
-).join('\n')}` : '\nNo components yet'}
-
-${components.length > 0 ? `\nAll Components:\n${components.map((c: any, i: number) =>
-  `${i + 1}. [${c.category}/${c.type}] ${c.title} (Feature: ${c.feature})\n${c.content ? `   ${c.content}\n` : ''}`
-).join('\n')}` : ''}
-
-${uniqueRelationships.length > 0 ? `\nAll Relationships:\n${uniqueRelationships.map((r: any, i: number) =>
-  `${i + 1}. "${r.source}" ${r.type} "${r.target}"${r.description ? ` - ${r.description}` : ''}`
-).join('\n')}` : ''}`;
-  }
-
-  private generateStackGuide(project: any): string {
-    const stack = project.stack || [];
-    const groupedByCategory = stack.reduce((acc: any, s: any) => {
-      acc[s.category] = (acc[s.category] || []);
-      acc[s.category].push(s);
-      return acc;
-    }, {});
-
-    return `# AI Guide: Tech Stack for ${project.name}
-
-## Best Practices
-- Document all major technologies, frameworks, and tools
-- Include version numbers for critical dependencies
-- Use categories to organize stack by purpose
-- Keep stack list current as technologies are added/removed
-- Reference stack items in component descriptions and notes
-
-## Common Commands
-\`/add stack --name="..." --category=framework|runtime|database|styling|deployment|testing|tooling|ui|state|routing [--version="..."]\`
-\`/remove stack --name="..."\`
-
-## Stack Categories
-- **framework**: React, Vue, Angular, Next.js, Express, NestJS
-- **runtime**: Node.js, Deno, Bun
-- **database**: PostgreSQL, MongoDB, Redis, MySQL
-- **styling**: Tailwind, CSS Modules, Styled Components
-- **deployment**: Vercel, AWS, Docker, Kubernetes
-- **testing**: Jest, Vitest, Playwright, Cypress
-- **tooling**: Webpack, Vite, ESLint, Prettier
-- **ui**: shadcn/ui, Material-UI, Chakra UI
-- **state**: Redux, Zustand, Jotai, Context
-- **routing**: React Router, Next.js Router
-
-## Workflow Patterns
-1. **New project setup**: Add core stack items → document versions → reference in components
-2. **Dependency updates**: Edit stack item with new version → test → update
-3. **Tech evaluation**: Add stack item as research → test → decide to keep or remove
-4. **Onboarding**: New team members review stack to understand tech choices
-
-## Current Project Data
-Total Stack Items: ${stack.length}
-
-${Object.keys(groupedByCategory).length > 0 ? `\nStack by Category:\n${Object.entries(groupedByCategory).map(([cat, items]: [string, any]) =>
-  `- ${cat}: ${items.map((s: any) => `${s.name}${s.version ? `@${s.version}` : ''}`).join(', ')}`
-).join('\n')}` : '\nNo stack items yet'}`;
-  }
-
-  private generateTeamGuide(project: any): string {
-    const team = project.team || [];
-
-    return `# AI Guide: Team for ${project.name}
-
-## Best Practices
-- Invite team members with appropriate roles (editor/viewer)
-- Editors can modify project, viewers can only read
-- Assign todos to specific team members using /assign command
-- Remove team members who no longer need access
-- Use team view to see all members and their roles
-
-## Common Commands
-\`/invite "email" --role=editor|viewer\`
-\`/remove member "email"\`
-\`/view team\` - List all team members and roles
-\`/assign "todo_idx" "email"\` - Assign todo to team member
-
-## Workflow Patterns
-1. **New team member**: Invite with viewer role → onboard → upgrade to editor if needed
-2. **Task delegation**: Create todo → assign to team member → track completion
-3. **Access control**: Review team regularly → remove inactive members
-4. **Role management**: Adjust roles based on responsibilities
-
-## Current Project Data
-Total Team Members: ${team.length}
-
-${team.length > 0 ? `\nTeam Members:\n${team.map((m: any, i: number) =>
-  `${i + 1}. ${m.user?.email || 'Unknown'} (${m.role})`
-).join('\n')}` : '\nNo team members yet - invite collaborators with /invite'}`;
-  }
-
-  private generateDeploymentGuide(project: any): string {
-    const deployment = project.deployment;
-
-    return `# AI Guide: Deployment for ${project.name}
-
-## Best Practices
-- Keep deployment info current with actual environment
-- Document platform (Vercel, AWS, Heroku, etc.)
-- Track deployment status (active/inactive/error)
-- Include production URLs for easy access
-- Update status when deployments change
-
-## Common Commands
-\`/set deployment --url="..." --platform="..." --status=active|inactive|error\`
-\`/set public --enabled=true|false --slug="..."\` - Enable/configure public project page
-
-## Workflow Patterns
-1. **Initial deployment**: Deploy to platform → set deployment info → verify
-2. **Status updates**: Deployment fails → set status=error → fix → set status=active
-3. **Platform migration**: Update platform and URL → redeploy → verify
-4. **Public sharing**: Enable public page → set custom slug → share URL
-
-## Current Project Data
-${deployment ? `
-Deployment Status: ${deployment.status || 'Not set'}
-Platform: ${deployment.platform || 'Not specified'}
-URL: ${deployment.url || 'Not specified'}
-${deployment.lastDeployedAt ? `Last Deployed: ${new Date(deployment.lastDeployedAt).toLocaleDateString()}` : ''}
-` : 'No deployment configured yet'}
-
-${project.publicPage?.enabled ? `
-Public Page: Enabled
-Public URL: ${project.publicPage.slug ? `/${project.publicPage.slug}` : 'Default slug'}
-` : 'Public page: Disabled'}`;
-  }
-
-  private generateSettingsGuide(project: any): string {
-    return `# AI Guide: Settings for ${project.name}
-
-## Best Practices
-- Keep project name and description current
-- Use tags for categorization and filtering
-- Set meaningful project color for visual organization
-- Export project data regularly for backups
-- Update settings as project evolves
-
-## Common Commands
-\`/set name "..."\` - Update project name
-\`/set description "..."\` - Update description
-\`/add tag "..."\` - Add project tag
-\`/remove tag "..."\` - Remove project tag
-\`/export\` - Export all project data
-
-## Workflow Patterns
-1. **Project setup**: Set name/description → add tags → choose color
-2. **Reorganization**: Update tags for better categorization
-3. **Archival**: Export data → archive or delete project
-4. **Renaming**: Update name to reflect project evolution
-
-## Current Project Data
-Name: ${project.name}
-Description: ${project.description || 'No description'}
-Category: ${project.category || 'Not set'}
-Tags: ${project.tags?.length > 0 ? project.tags.join(', ') : 'No tags'}
-Color: ${project.color || 'Default'}
-Environment: ${project.stagingEnvironment || 'development'}
-Created: ${new Date(project.createdAt).toLocaleDateString()}
-Last Updated: ${new Date(project.updatedAt).toLocaleDateString()}`;
-  }
-
-  private generateProjectsGuide(project: any): string {
-    return `# AI Guide: Projects Overview
-
-## Best Practices
-- Use /summary text projects to get list of all projects for AI context
-- Create separate projects for different applications/products
-- Use project ideas to capture future project concepts
-- Switch between projects using /swap @project command
-- Archive completed projects to keep workspace organized
-
-## Common Commands
-\`/add project --name="..." [--description="..." --category="..." --color="#..."]\`
-\`/swap @project\` - Switch to different project
-\`/add idea --title="..." --content="..." [--description="..."]\`
-\`/edit idea "idx|text" --title="..." --content="..."\`
-\`/delete idea "idx|text"\`
-\`/summary text projects\` - List all projects concisely
-
-## Workflow Patterns
-1. **New project**: Capture idea → create project → set up initial structure
-2. **Context switching**: /summary text projects → identify target → /swap @project
-3. **Project planning**: Review ideas → convert promising ones to projects
-4. **Portfolio management**: Regularly review all projects → archive completed ones
-
-## Current Context
-You are currently viewing the "${project.name}" project.
-Use /summary text projects to see all available projects.`;
   }
 
 }

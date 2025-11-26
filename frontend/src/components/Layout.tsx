@@ -204,7 +204,6 @@ const Layout: React.FC = () => {
         const response = await newsAPI.getImportant();
         setImportantAnnouncements(response.posts);
       } catch (err) {
-        console.error('Error fetching important announcements:', err);
       }
     };
 
@@ -411,7 +410,6 @@ const Layout: React.FC = () => {
           await analytics.startSession();
           setAnalyticsReady(true);
         } catch (error) {
-          console.error('Failed to initialize analytics session:', error);
           setAnalyticsReady(true); // Set to true anyway to avoid blocking UI
         }
         
@@ -519,7 +517,6 @@ const Layout: React.FC = () => {
                   // Reload the page to get fresh user data, then start tutorial
                   window.location.href = '/projects?startTutorial=true';
                 } catch (error) {
-                  console.error('Failed to start tutorial:', error);
                 }
               }}
               className="btn btn-sm btn-info ml-2"

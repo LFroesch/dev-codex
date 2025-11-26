@@ -58,7 +58,6 @@ const TodoItem: React.FC<TodoItemProps> = ({
       setIsEditing(false);
       await onUpdate();
     } catch (error) {
-      console.error('Failed to update todo:', error);
     } finally {
       setLoading(false);
     }
@@ -69,7 +68,6 @@ const TodoItem: React.FC<TodoItemProps> = ({
       await projectAPI.updateTodo(projectId, todo.id, { completed: !todo.completed });
       await onUpdate();
     } catch (error) {
-      console.error('Failed to toggle todo:', error);
     }
   };
 
@@ -79,7 +77,6 @@ const TodoItem: React.FC<TodoItemProps> = ({
       await onUpdate();
       setShowDeleteConfirm(false);
     } catch (error) {
-      console.error('Failed to delete todo:', error);
       setShowDeleteConfirm(false);
     }
   };
@@ -388,7 +385,6 @@ const QuickAddForm: React.FC<QuickAddFormProps> = ({
       setTitle('');
       await onAdd();
     } catch (error) {
-      console.error('Failed to create todo:', error);
     } finally {
       setLoading(false);
     }

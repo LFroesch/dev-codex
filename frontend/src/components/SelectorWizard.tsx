@@ -154,7 +154,6 @@ const SelectorWizard: React.FC<SelectorWizardProps> = ({ wizardType, step, proje
         setIsSubmitting(false);
       }
     } catch (error) {
-      console.error('Failed to delete:', error);
       toast.error(`Failed to delete: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setIsSubmitting(false);
     }

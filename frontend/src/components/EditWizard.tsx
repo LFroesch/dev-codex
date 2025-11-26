@@ -172,7 +172,6 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
       setEditRelData({ relationType: 'uses', description: '' });
 
     } catch (error) {
-      console.error('Failed to update relationship:', error);
       toast.error('Failed to update relationship');
 
       // ROLLBACK - Restore original state on error
@@ -233,7 +232,6 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
       setEditSubtaskData({ title: '', description: '', priority: 'medium', status: 'not_started' });
 
     } catch (error) {
-      console.error('Failed to update subtask:', error);
       toast.error('Failed to update subtask');
 
       // ROLLBACK - Restore original state on error
@@ -267,7 +265,6 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
       toast.success('Subtask deleted');
 
     } catch (error) {
-      console.error('Failed to delete subtask:', error);
       toast.error('Failed to delete subtask');
 
       // ROLLBACK - Restore original state on error
@@ -296,7 +293,6 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
       toast.success('Relationship deleted');
 
     } catch (error) {
-      console.error('Failed to delete relationship:', error);
       toast.error('Failed to delete relationship');
 
       // ROLLBACK - Restore original state on error
@@ -321,7 +317,6 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
 
     // Validate that we have a project context
     if (!currentProjectId) {
-      console.error('❌ No currentProjectId provided to EditWizard!');
       toast.error('No project context. Please refresh and try again.');
       setIsSubmitting(false);
       return;
@@ -369,7 +364,6 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
             successCount++;
           }
         } catch (cmdError) {
-          console.error('Failed to execute edit command:', cmdError);
           errorCount++;
           toast.error('Failed to update');
         }
@@ -402,7 +396,6 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
 
               await new Promise(resolve => setTimeout(resolve, 100));
             } catch (relError) {
-              console.error('Failed to add relationship:', relError);
               errorCount++;
               toast.error('Failed to add relationship');
             }
@@ -430,7 +423,6 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
       }
 
     } catch (error) {
-      console.error('Failed to update item:', error);
       toast.error(`Failed to update: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsSubmitting(false);
@@ -1071,7 +1063,6 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
                             setFormData(newData);
                             toast.success('Subtask added');
                           } catch (error) {
-                            console.error('Failed to add subtask:', error);
                             toast.error('Failed to add subtask');
                           }
                         }}

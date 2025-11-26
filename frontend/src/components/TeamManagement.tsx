@@ -75,7 +75,6 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
       const response = await teamAPI.getMembers(projectId);
       setMembers(response.members);
     } catch (error) {
-      console.error('Failed to fetch team members:', error);
     } finally {
       setLoading(false);
     }
@@ -93,7 +92,6 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
         setTeamTimeData(timeMap);
       }
     } catch (err) {
-      console.error('Failed to load team time data:', err);
     }
   };
 
@@ -102,7 +100,6 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
       const response = await activityLogsAPI.getActiveUsers(projectId, 3); // Consider active if seen in last 3 minutes
       setActiveUsers(response.activeUsers);
     } catch (err) {
-      console.error('Failed to load active users:', err);
     }
   };
 
@@ -179,7 +176,6 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
       toast.success(`Invitation sent successfully to ${inviteEmail}!`);
       setInviteEmail('');
     } catch (error: any) {
-      console.error('Failed to invite user:', error);
       const errorMessage = error.response?.data?.message || error.message || 'Failed to send invitation';
       toast.error(errorMessage);
     } finally {
@@ -208,7 +204,6 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
       setMemberToRemove(null);
       toast.success(`${memberToRemove.name} removed from team successfully!`);
     } catch (error) {
-      console.error('Failed to remove member:', error);
       toast.error('Failed to remove team member. Please try again.');
       setShowRemoveModal(false);
       setMemberToRemove(null);
@@ -225,7 +220,6 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
       const memberName = (member?.userId as any)?.displayName || member?.userId?.firstName || 'Member';
       toast.success(`${memberName}'s role updated to ${newRole}!`);
     } catch (error) {
-      console.error('Failed to update role:', error);
       toast.error('Failed to update member role. Please try again.');
       setModalMessage('Failed to update role');
       setShowErrorModal(true);
@@ -253,7 +247,6 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ projectId, canManageTea
         throw new Error('Failed to clear activities');
       }
     } catch (error) {
-      console.error('Failed to clear activities:', error);
       setModalMessage('Failed to clear activity log');
       setShowErrorModal(true);
     } finally {

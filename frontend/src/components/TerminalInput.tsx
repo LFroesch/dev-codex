@@ -30,7 +30,6 @@ const saveCommandHistory = (history: string[]) => {
   try {
     localStorage.setItem(COMMAND_HISTORY_KEY, JSON.stringify(history));
   } catch (error) {
-    console.warn('Failed to save command history to localStorage:', error);
   }
 };
 
@@ -39,7 +38,6 @@ const loadCommandHistory = (): string[] => {
     const stored = localStorage.getItem(COMMAND_HISTORY_KEY);
     return stored ? JSON.parse(stored) : [];
   } catch (error) {
-    console.warn('Failed to load command history from localStorage:', error);
     return [];
   }
 };
@@ -139,7 +137,6 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
       const response = await terminalAPI.getCommands();
       setCommands(response.commands);
     } catch (error) {
-      console.error('Failed to load commands:', error);
     }
   };
 
@@ -148,7 +145,6 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
       const response = await terminalAPI.getProjects();
       setProjects(response.projects);
     } catch (error) {
-      console.error('Failed to load projects:', error);
     }
   };
 
@@ -178,6 +174,11 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
   const generateTemplate = (syntax: string): string => {
     // Remove @project from syntax if present
     const cleanedSyntax = syntax.replace(/@project\s*$/, '').trim();
+
+    // SPECIAL: /summary should just complete to "/summary " to trigger smart autocomplete
+    if (cleanedSyntax.startsWith('/summary')) {
+      return '/summary ';
+    }
 
     // Remove content inside [...] brackets (placeholder text)
     // Example: "/add subtask "[parent todo]" "[subtask text]"" → "/add subtask "" ""
@@ -254,6 +255,72 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
               }
             }
           }
+        }
+      }
+    }
+
+    // SPECIAL: /summary positional arg autocomplete
+    // Match /summary or /summary with args (no space required initially)
+    const summaryMatch = workingText.match(/^\/summary(\s+(.*))?$/);
+    if (summaryMatch) {
+      const afterSummary = summaryMatch[2] || ''; // Everything after "/summary " (or empty if just /summary)
+      const parts = afterSummary.split(' ');
+
+      // If just "/summary" with no space, or "/summary " with optional partial text, show formats
+      if (parts.length === 1) {
+        const formats = [
+          { value: 'prompt', description: 'AI-friendly format (recommended for LLMs)' },
+          { value: 'markdown', description: 'Markdown format' },
+          { value: 'json', description: 'JSON format' },
+          { value: 'text', description: 'Plain text format' }
+        ];
+
+        const matching = formats.filter(f =>
+          f.value.toLowerCase().startsWith(parts[0].toLowerCase())
+        );
+
+        if (matching.length > 0) {
+          setAutocompleteItems(matching.map(f => ({
+            value: f.value,
+            label: f.value,
+            description: f.description,
+            type: 'command' as const
+          })));
+          setShowAutocomplete(true);
+          setSelectedIndex(0);
+          return;
+        }
+      }
+
+      // Second arg: entity (only show after format is selected and space is typed)
+      if (parts.length === 2) {
+        const entities = [
+          { value: 'all', description: 'Everything (todos, notes, devlog, components, stack, team, deployment)' },
+          { value: 'todos', description: 'Just todos and subtasks' },
+          { value: 'notes', description: 'Just notes' },
+          { value: 'devlog', description: 'Just development log entries' },
+          { value: 'components', description: 'Just components and relationships' },
+          { value: 'stack', description: 'Just tech stack' },
+          { value: 'team', description: 'Just team members' },
+          { value: 'deployment', description: 'Just deployment settings' },
+          { value: 'settings', description: 'Just project settings' },
+          { value: 'projects', description: 'All projects and ideas (ignores current project)' }
+        ];
+
+        const matching = entities.filter(e =>
+          e.value.toLowerCase().startsWith(parts[1].toLowerCase())
+        );
+
+        if (matching.length > 0) {
+          setAutocompleteItems(matching.map(e => ({
+            value: e.value,
+            label: e.value,
+            description: e.description,
+            type: 'command' as const
+          })));
+          setShowAutocomplete(true);
+          setSelectedIndex(0);
+          return;
         }
       }
     }
@@ -489,6 +556,76 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
       // Check if we're in a chained command (after &&)
       const textBeforeCursor = input.slice(0, cursorPosition);
       const lastAndAndIndex = textBeforeCursor.lastIndexOf('&& ');
+
+      // SPECIAL: Handle /summary positional args - insert value only, not replace command
+      const workingText = lastAndAndIndex !== -1
+        ? textBeforeCursor.slice(lastAndAndIndex + 3)
+        : textBeforeCursor;
+
+      const summaryMatch = workingText.match(/^\/summary(\s+(.*))?$/);
+      if (summaryMatch) {
+        const afterSummary = summaryMatch[2] || '';
+        const parts = afterSummary.split(' ');
+
+        // Determine what we're replacing
+        let replaceStart: number;
+        let replaceEnd: number;
+
+        if (parts.length === 1) {
+          // Replacing first arg (format) or just /summary
+          if (afterSummary === '') {
+            // Just "/summary" or "/summary " - add value
+            replaceStart = cursorPosition;
+            replaceEnd = cursorPosition;
+            const before = input.slice(0, replaceStart);
+            const after = input.slice(cursorPosition);
+
+            // Check if there's already a trailing space
+            const needsSpace = !before.endsWith(' ');
+            const newInput = `${before}${needsSpace ? ' ' : ''}${item.value} ${after}`;
+            const newCursorPos = before.length + (needsSpace ? 1 : 0) + item.value.length + 1;
+
+            setInput(newInput);
+            setCursorPosition(newCursorPos);
+
+            setTimeout(() => {
+              if (inputRef.current) {
+                inputRef.current.focus();
+                inputRef.current.setSelectionRange(newCursorPos, newCursorPos);
+              }
+            }, 0);
+
+            setShowAutocomplete(false);
+            return;
+          } else {
+            // Replacing partial format text
+            replaceStart = textBeforeCursor.lastIndexOf(parts[0]);
+            replaceEnd = cursorPosition;
+          }
+        } else {
+          // Replacing second arg (entity)
+          replaceStart = textBeforeCursor.lastIndexOf(parts[parts.length - 1]);
+          replaceEnd = cursorPosition;
+        }
+
+        const before = input.slice(0, replaceStart);
+        const after = input.slice(cursorPosition);
+        const newInput = `${before}${item.value} ${after}`;
+        const newCursorPos = before.length + item.value.length + 1;
+
+        setInput(newInput);
+        setCursorPosition(newCursorPos);
+
+        setTimeout(() => {
+          if (inputRef.current) {
+            inputRef.current.focus();
+            inputRef.current.setSelectionRange(newCursorPos, newCursorPos);
+          }
+        }, 0);
+
+        setShowAutocomplete(false);
+        return;
+      }
 
       // Use template if available, otherwise use value with space
       const commandText = item.template || `${item.value} `;

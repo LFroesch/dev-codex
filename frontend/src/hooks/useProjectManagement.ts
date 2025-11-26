@@ -57,7 +57,6 @@ export const useProjectManagement = () => {
         setProjectTimeData(timeMap);
       }
     } catch (err) {
-      console.error('Failed to load project time data:', err);
     }
   };
 
@@ -66,7 +65,6 @@ export const useProjectManagement = () => {
       const response = await ideasAPI.getAll();
       setIdeasCount(response.ideas.length);
     } catch (err) {
-      console.error('Failed to load ideas count:', err);
     }
   };
 
@@ -105,7 +103,6 @@ export const useProjectManagement = () => {
       await loadIdeasCount();
 
     } catch (err) {
-      console.error('Failed to load projects:', err);
     }
   };
 
@@ -154,7 +151,6 @@ export const useProjectManagement = () => {
       toast.success('Project deleted successfully!');
     } catch (error) {
       toast.error('Failed to delete project. Please try again.');
-      console.error('Failed to delete project:', error);
       throw error;
     }
   };

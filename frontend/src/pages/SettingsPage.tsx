@@ -63,7 +63,6 @@ const SettingsPage: React.FC = () => {
       });
       setHasUnsavedChanges(false);
     } catch (error) {
-      console.error('Failed to save settings:', error);
       setError('Failed to save settings');
     } finally {
       setLoading(false);
@@ -124,7 +123,6 @@ const SettingsPage: React.FC = () => {
       await onProjectArchive(selectedProject.id, !selectedProject.isArchived);
       await onProjectRefresh();
     } catch (error) {
-      console.error('Failed to update project archive status:', error);
       setError('Failed to update project archive status');
     } finally {
       setArchiveLoading(false);
@@ -139,7 +137,6 @@ const SettingsPage: React.FC = () => {
       navigate('/');
       setDeleteConfirm(false);
     } catch (error) {
-      console.error('Failed to delete project:', error);
       setError('Failed to delete project');
       setDeleteConfirm(false);
     }

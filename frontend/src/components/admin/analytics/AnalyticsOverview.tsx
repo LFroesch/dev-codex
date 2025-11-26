@@ -53,7 +53,6 @@ const AnalyticsOverview: React.FC<AnalyticsOverviewProps> = ({ days = 30 }) => {
       const result = await response.json();
       setData(result);
     } catch (err) {
-      console.error('Error fetching analytics overview:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setLoading(false);

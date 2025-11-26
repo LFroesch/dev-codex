@@ -120,7 +120,6 @@ class LockSignalingService {
       try {
         callback(data);
       } catch (error) {
-        console.error('Error in lock signaling callback:', error);
       }
     });
   }

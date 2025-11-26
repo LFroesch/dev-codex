@@ -51,7 +51,6 @@ const saveEntriesToStorage = (entries: TerminalEntry[]) => {
 
     localStorage.setItem(TERMINAL_ENTRIES_KEY, JSON.stringify(serialized));
   } catch (error) {
-    console.warn('Failed to save terminal entries to localStorage:', error);
   }
 };
 
@@ -69,7 +68,6 @@ const loadEntriesFromStorage = (): TerminalEntry[] => {
       fromStorage: true
     }));
   } catch (error) {
-    console.warn('Failed to load terminal entries from localStorage:', error);
     return [];
   }
 };
@@ -130,7 +128,6 @@ const TerminalPage: React.FC = () => {
         }, 500);
       }
     } catch (error: any) {
-      console.error('Terminal command error:', error);
 
       // Check if it's an authentication error
       if (error.response?.status === 401) {
@@ -183,7 +180,6 @@ const TerminalPage: React.FC = () => {
     try {
       localStorage.removeItem(TERMINAL_ENTRIES_KEY);
     } catch (error) {
-      console.warn('Failed to clear terminal entries from localStorage:', error);
     }
   };
 
@@ -240,7 +236,6 @@ const TerminalPage: React.FC = () => {
         return updated;
       });
     } catch (error) {
-      console.error('Failed to transition to edit wizard:', error);
     }
   };
 
@@ -284,7 +279,6 @@ const TerminalPage: React.FC = () => {
               }
             }
           } catch (error) {
-            console.error('Failed to load custom theme:', error);
             // Fallback to localStorage
             const saved = localStorage.getItem('customThemes');
             if (saved) {
@@ -304,7 +298,6 @@ const TerminalPage: React.FC = () => {
         localStorage.setItem('theme', theme);
       }
     } catch (error) {
-      console.error('Failed to change theme:', error);
     }
   };
 

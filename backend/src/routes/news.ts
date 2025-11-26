@@ -27,7 +27,7 @@ router.get('/', async (req: Request, res: Response) => {
 
     res.json({ posts });
   } catch (error) {
-    console.error('Error fetching news posts:', error);
+    
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -42,7 +42,7 @@ router.get('/important', async (req: Request, res: Response) => {
 
     res.json({ posts });
   } catch (error) {
-    console.error('Error fetching important announcements:', error);
+    
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -54,7 +54,7 @@ router.get('/admin', requireAuth, adminMiddleware, async (req: AuthRequest, res:
     
     res.json({ posts });
   } catch (error) {
-    console.error('Error fetching admin news posts:', error);
+    
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -90,7 +90,7 @@ router.get('/:id', async (req: Request, res: Response) => {
     
     res.json({ post });
   } catch (error) {
-    console.error('Error fetching news post:', error);
+    
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -118,7 +118,7 @@ router.post('/', requireAuth, adminMiddleware, async (req: AuthRequest, res: Res
     
     res.status(201).json({ post: newsPost });
   } catch (error) {
-    console.error('Error creating news post:', error);
+    
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -154,7 +154,7 @@ router.put('/:id', requireAuth, adminMiddleware, async (req: AuthRequest, res: R
     
     res.json({ post });
   } catch (error) {
-    console.error('Error updating news post:', error);
+    
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -169,7 +169,7 @@ router.delete('/:id', requireAuth, adminMiddleware, async (req: AuthRequest, res
     
     res.json({ message: 'Post deleted successfully' });
   } catch (error) {
-    console.error('Error deleting news post:', error);
+    
     res.status(500).json({ error: 'Internal server error' });
   }
 });

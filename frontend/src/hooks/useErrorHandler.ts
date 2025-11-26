@@ -13,7 +13,6 @@ export const useErrorHandler = (): UseErrorHandlerReturn => {
   const clearError = () => setError(null);
 
   const handleError = (err: any) => {
-    console.error('Error:', err);
     
     let errorMessage = 'An unexpected error occurred';
     

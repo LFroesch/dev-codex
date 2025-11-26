@@ -168,11 +168,7 @@ export class TodoHandlers extends BaseCommandHandler {
 
     // Track analytics
     try {
-      console.log('[TODO ANALYTICS] Tracking todo create:', {
-        userId: this.userId,
-        projectId: project._id.toString(),
-        priority: newTodo.priority
-      });
+      
 
       const result = await AnalyticsService.trackEvent(this.userId, 'feature_used', {
         feature: 'todo_create_terminal',
@@ -185,9 +181,9 @@ export class TodoHandlers extends BaseCommandHandler {
         }
       });
 
-      console.log('[TODO ANALYTICS] Track result:', result ? 'SUCCESS' : 'NULL (throttled or limit reached)');
+      
     } catch (error) {
-      console.error('[TODO ANALYTICS] Failed to track terminal todo create:', error);
+      
     }
 
     const dueDateMsg = dueDate ? ` (due: ${formatDueDate(dueDate)})` : '';
@@ -305,7 +301,7 @@ export class TodoHandlers extends BaseCommandHandler {
         }
       });
     } catch (error) {
-      console.error('Failed to track terminal todo complete:', error);
+      
     }
 
     return this.buildSuccessResponse(
@@ -866,7 +862,7 @@ export class TodoHandlers extends BaseCommandHandler {
         try {
           await project.save();
         } catch (saveError) {
-          console.error('[EDIT TODO] Save failed:', saveError);
+          
           return {
             type: ResponseType.ERROR,
             message: `Failed to save todo: ${saveError instanceof Error ? saveError.message : 'Unknown error'}`,
@@ -1190,7 +1186,7 @@ export class TodoHandlers extends BaseCommandHandler {
         try {
           await project.save();
         } catch (saveError) {
-          console.error('[EDIT SUBTASK] Save failed:', saveError);
+          
           return {
             type: ResponseType.ERROR,
             message: `Failed to save subtask: ${saveError instanceof Error ? saveError.message : 'Unknown error'}`,
@@ -1392,7 +1388,7 @@ export class TodoHandlers extends BaseCommandHandler {
         projectName: project.name
       });
     } catch (error) {
-      console.error('Failed to track terminal todo delete:', error);
+      
     }
 
     return this.buildSuccessResponse(

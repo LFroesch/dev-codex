@@ -87,7 +87,6 @@ const PublicProfilePage: React.FC = () => {
         setPosts(response.data.posts || []);
       }
     } catch (err) {
-      console.error('Error loading posts:', err);
       // Don't show error - just leave posts empty
     } finally {
       setPostsLoading(false);

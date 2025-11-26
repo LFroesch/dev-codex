@@ -66,7 +66,6 @@ const DeploymentPage: React.FC = () => {
       });
       setHasUnsavedChanges(false);
     } catch (error) {
-      console.error('Failed to save deployment data:', error);
     } finally {
       setLoading(false);
     }
@@ -105,7 +104,6 @@ const DeploymentPage: React.FC = () => {
         });
         setHasUnsavedChanges(false);
       } catch (error) {
-        console.error('Failed to save after removal:', error);
         setHasUnsavedChanges(true);
       } finally {
         setLoading(false);

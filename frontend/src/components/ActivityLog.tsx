@@ -77,7 +77,6 @@ const ActivityLog: React.FC<ActivityLogProps> = ({
       }
       setTotal(selectedAction !== 'all' ? filteredActivities.length : response.total);
     } catch (err) {
-      console.error('Failed to load activities:', err);
       setError('Failed to load activity logs');
     } finally {
       setLoading(false);
@@ -159,7 +158,6 @@ const ActivityLog: React.FC<ActivityLogProps> = ({
         throw new Error('Failed to clear activities');
       }
     } catch (err) {
-      console.error('Failed to clear activities:', err);
       setError('Failed to clear activity logs');
     } finally {
       setClearing(false);

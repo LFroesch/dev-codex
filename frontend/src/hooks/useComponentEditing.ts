@@ -60,7 +60,6 @@ export const useComponentEditing = ({
         await onRefresh();
       }
     } catch (error) {
-      console.error('Failed to update component:', error);
       setToast({ message: 'Failed to update component', type: 'error' });
     }
   }, [selectedComponent, editComponentData, projectId, onRefresh, setToast]);
@@ -88,7 +87,6 @@ export const useComponentEditing = ({
         await onRefresh();
       }
     } catch (error) {
-      console.error('Failed to delete component:', error);
       setToast({ message: 'Failed to delete component', type: 'error' });
     }
   }, [selectedComponent, projectId, onRefresh, onClose, setToast]);

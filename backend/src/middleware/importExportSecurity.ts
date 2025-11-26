@@ -223,7 +223,7 @@ export function validateAndSanitizeImport(req: Request, res: Response, next: Nex
     
     next();
   } catch (error: any) {
-    console.error('Import validation/sanitization error:', error);
+    
     res.status(400).json({
       error: 'Invalid import data',
       message: error.message || 'Failed to validate import data'
@@ -250,7 +250,7 @@ export function validateExportRequest(req: Request, res: Response, next: NextFun
     req.query.format = format;
     next();
   } catch (error: any) {
-    console.error('Export validation error:', error);
+    
     res.status(400).json({
       error: 'Export validation failed',
       message: error.message || 'Failed to validate export request'

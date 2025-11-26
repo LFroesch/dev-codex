@@ -55,7 +55,6 @@ const NotificationsRenderer: React.FC<NotificationsRendererProps> = ({ notificat
       : (notification.relatedProject?.id || notification.relatedProject?._id);
 
     if (!projectId) {
-      console.warn('No projectId found in notification');
       return;
     }
 

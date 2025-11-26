@@ -22,7 +22,7 @@ if (process.env.NODE_ENV !== 'production') {
         deletedCount: deleted.deletedCount 
       });
     } catch (error) {
-      console.error('Error clearing rate limits:', error);
+      
       res.status(500).json({ error: 'Internal server error' });
     }
   });
@@ -41,7 +41,7 @@ if (process.env.NODE_ENV !== 'production') {
         deletedCount: deleted.deletedCount 
       });
     } catch (error) {
-      console.error('Error clearing IP rate limits:', error);
+      
       res.status(500).json({ error: 'Internal server error' });
     }
   });
@@ -56,7 +56,7 @@ if (process.env.NODE_ENV !== 'production') {
         timestamp: new Date().toISOString()
       });
     } catch (error) {
-      console.error('Error triggering reminder checks:', error);
+      
       res.status(500).json({ error: 'Internal server error' });
     }
   });
@@ -90,7 +90,7 @@ if (process.env.NODE_ENV !== 'production') {
         }))
       });
     } catch (error) {
-      console.error('Error getting rate limit status:', error);
+      
       res.status(500).json({ error: 'Internal server error' });
     }
   });
@@ -106,7 +106,7 @@ if (process.env.NODE_ENV !== 'production') {
         deletedCount: deleted.deletedCount
       });
     } catch (error) {
-      console.error('Error clearing all rate limits:', error);
+      
       res.status(500).json({ error: 'Internal server error' });
     }
   });
@@ -136,7 +136,7 @@ if (process.env.NODE_ENV !== 'production') {
       
       res.json(results);
     } catch (error) {
-      console.error('Debug error:', error);
+      
       res.status(500).json({ error: 'Debug failed' });
     }
   });

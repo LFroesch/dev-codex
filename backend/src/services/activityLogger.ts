@@ -146,7 +146,7 @@ class ActivityLogger {
 
       return await activityLog.save();
     } catch (error) {
-      console.error('Failed to log activity:', error);
+      
       throw error;
     }
   }
@@ -473,7 +473,7 @@ class ActivityLogger {
         ipAddress
       });
     } catch (error) {
-      console.error('Failed to log project join:', error);
+      
       throw error;
     }
   }

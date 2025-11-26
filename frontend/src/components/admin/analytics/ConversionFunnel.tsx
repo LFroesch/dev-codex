@@ -35,7 +35,6 @@ const ConversionFunnel: React.FC = () => {
       const result = await response.json();
       setData(result);
     } catch (err) {
-      console.error('Error fetching conversion data:', err);
     } finally {
       setLoading(false);
     }

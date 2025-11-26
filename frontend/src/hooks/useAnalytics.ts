@@ -21,7 +21,6 @@ export const useAnalytics = (options: UseAnalyticsOptions = {}) => {
           await analyticsService.startSession();
           setSessionReady(true);
         } catch (error) {
-          console.error('Failed to initialize analytics session:', error);
           setSessionReady(true); // Set to true anyway to avoid blocking
         }
         sessionInitialized.current = true;

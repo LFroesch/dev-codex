@@ -78,7 +78,7 @@ router.get('/feed', requireAuth, async (req: AuthRequest, res: Response) => {
       }
     });
   } catch (error) {
-    console.error(`Error fetching feed for user ${req.userId}:`, error);
+    
     res.status(500).json({ success: false, message: 'Database error while fetching feed' });
   }
 });
@@ -137,7 +137,7 @@ router.get('/user/:userId', async (req: AuthRequest, res: Response) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching user posts:', error);
+    
     res.status(500).json({ success: false, message: 'Failed to fetch posts' });
   }
 });
@@ -183,7 +183,7 @@ router.get('/project/:projectId', async (req: AuthRequest, res: Response) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching project posts:', error);
+    
     res.status(500).json({ success: false, message: 'Failed to fetch posts' });
   }
 });
@@ -290,7 +290,7 @@ router.post('/', requireAuth, blockDemoWrites, async (req: AuthRequest, res: Res
           relatedUserId: new mongoose.Types.ObjectId(userId),
           relatedProjectId: projectId ? new mongoose.Types.ObjectId(projectId) : undefined
         }).catch(err => {
-          console.error(`Failed to send notification to user ${recipient.followerId}:`, err);
+          
           return null;
         })
       );
@@ -324,7 +324,7 @@ router.post('/', requireAuth, blockDemoWrites, async (req: AuthRequest, res: Res
       post: populatedPost
     });
   } catch (error) {
-    console.error(`Error creating post for user ${req.userId}:`, error);
+    
     res.status(500).json({ success: false, message: 'Database error while creating post' });
   }
 });
@@ -368,7 +368,7 @@ router.put('/:postId', requireAuth, blockDemoWrites, async (req: AuthRequest, re
       post: populatedPost
     });
   } catch (error) {
-    console.error('Error editing post:', error);
+    
     res.status(500).json({ success: false, message: 'Failed to edit post' });
   }
 });
@@ -398,7 +398,7 @@ router.delete('/:postId', requireAuth, blockDemoWrites, async (req: AuthRequest,
       message: 'Post deleted successfully'
     });
   } catch (error) {
-    console.error('Error deleting post:', error);
+    
     res.status(500).json({ success: false, message: 'Failed to delete post' });
   }
 });

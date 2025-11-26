@@ -108,7 +108,6 @@ const AdminActivityFeed: React.FC = () => {
       setPeriod(data.period || '');
     } catch (err: any) {
       setError(err.message);
-      console.error('Error fetching activity feed:', err);
     } finally {
       setLoading(false);
       setRefreshing(false);

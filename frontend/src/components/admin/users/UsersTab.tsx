@@ -95,7 +95,6 @@ const UsersTab: React.FC = () => {
       setTotalUsers(data.pagination?.total || 0);
       setTotalPages(data.pagination?.totalPages || 1);
     } catch (err) {
-      console.error('Error fetching users:', err);
     } finally {
       setLoading(false);
     }

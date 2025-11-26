@@ -29,7 +29,6 @@ const FollowButton: React.FC<FollowButtonProps> = ({ type, id, size = 'md', clas
         setIsFollowing(response.data.isFollowing);
       }
     } catch (err) {
-      console.error('Failed to check follow status:', err);
     }
   };
 
@@ -53,7 +52,6 @@ const FollowButton: React.FC<FollowButtonProps> = ({ type, id, size = 'md', clas
         }
       }
     } catch (err: any) {
-      console.error('Failed to toggle follow:', err);
     } finally {
       setLoading(false);
     }

@@ -40,7 +40,6 @@ export async function getUserPlanTier(userId: string | mongoose.Types.ObjectId):
 
     return tier;
   } catch (error) {
-    console.error('Error fetching user plan tier:', error);
     return DEFAULT_PLAN_TIER;
   }
 }
@@ -59,7 +58,6 @@ export async function getProjectOwnerPlanTier(
 
     return getUserPlanTier(project.ownerId);
   } catch (error) {
-    console.error('Error fetching project owner plan tier:', error);
     return DEFAULT_PLAN_TIER;
   }
 }
@@ -222,6 +220,4 @@ export async function updateExpirationOnPlanChange(
       }
     );
   }
-
-  console.log(`Updated retention policies for user ${userId}: ${oldPlanTier} → ${newPlanTier}`);
 }

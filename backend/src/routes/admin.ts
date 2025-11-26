@@ -221,7 +221,7 @@ router.get('/users', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching users:', error);
+    
     res.status(500).json({ error: 'Failed to fetch users' });
   }
 });
@@ -246,7 +246,7 @@ router.get('/users/:id', async (req, res) => {
       projectCount
     });
   } catch (error) {
-    console.error('Error fetching user:', error);
+    
     res.status(500).json({ error: 'Failed to fetch user' });
   }
 });
@@ -305,7 +305,7 @@ router.put('/users/:id/plan', async (req, res) => {
     const updatedUser = await User.findById(req.params.id).select('-password');
     res.json(updatedUser);
   } catch (error) {
-    console.error('Error updating user plan:', error);
+    
     res.status(500).json({ error: 'Failed to update user plan' });
   }
 });
@@ -466,7 +466,7 @@ async function sendProjectsEmail(user: any, projects: any[], planTier: string, t
       await sendEmail({ to: user.email, subject, text, html });
     }
   } catch (error) {
-    console.error(`Failed to send ${type} email:`, error);
+    
   }
 }
 
@@ -510,7 +510,7 @@ router.post('/users/:id/ban', async (req: AuthRequest, res) => {
 
     res.json({ message: 'User banned successfully', user });
   } catch (error) {
-    console.error('Error banning user:', error);
+    
     res.status(500).json({ error: 'Failed to ban user' });
   }
 });
@@ -536,7 +536,7 @@ router.post('/users/:id/unban', async (req: AuthRequest, res) => {
 
     res.json({ message: 'User unbanned successfully', user });
   } catch (error) {
-    console.error('Error unbanning user:', error);
+    
     res.status(500).json({ error: 'Failed to unban user' });
   }
 });
@@ -570,7 +570,7 @@ router.delete('/users/:id', async (req, res) => {
 
     res.json({ message: 'User deleted successfully' });
   } catch (error) {
-    console.error('Error deleting user:', error);
+    
     res.status(500).json({ error: 'Failed to delete user' });
   }
 });
@@ -657,7 +657,7 @@ router.get('/stats', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching admin stats:', error);
+    
     res.status(500).json({ error: 'Failed to fetch statistics' });
   }
 });
@@ -690,7 +690,7 @@ router.get('/projects', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching projects:', error);
+    
     res.status(500).json({ error: 'Failed to fetch projects' });
   }
 });
@@ -767,7 +767,7 @@ router.get('/tickets', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching tickets:', error);
+    
     res.status(500).json({ error: 'Failed to fetch tickets' });
   }
 });
@@ -787,7 +787,7 @@ router.get('/tickets/:ticketId', async (req, res) => {
 
     res.json(ticket);
   } catch (error) {
-    console.error('Error fetching ticket:', error);
+    
     res.status(500).json({ error: 'Failed to fetch ticket' });
   }
 });
@@ -868,7 +868,7 @@ router.put('/tickets/:ticketId', async (req: AuthRequest, res) => {
         // Email to support team (for all updates)
         const supportEmail = process.env.SUPPORT_EMAIL;
         if (!supportEmail) {
-          console.error('CRITICAL: SUPPORT_EMAIL environment variable is not set');
+          
           return res.status(500).json({ error: 'Server configuration error' });
         }
 
@@ -910,13 +910,13 @@ router.put('/tickets/:ticketId', async (req: AuthRequest, res) => {
           html: supportHtml
         });
       } catch (emailError) {
-        console.error('Failed to send update email:', emailError);
+        
       }
     }
 
     res.json(ticket);
   } catch (error) {
-    console.error('Error updating ticket:', error);
+    
     res.status(500).json({ error: 'Failed to update ticket' });
   }
 });
@@ -933,7 +933,7 @@ router.delete('/tickets/:ticketId', async (req, res) => {
 
     res.json({ message: 'Ticket deleted successfully' });
   } catch (error) {
-    console.error('Error deleting ticket:', error);
+    
     res.status(500).json({ error: 'Failed to delete ticket' });
   }
 });
@@ -993,11 +993,11 @@ router.post('/users/:id/password-reset', async (req, res) => {
 
       res.json({ message: 'Password reset email sent successfully' });
     } catch (emailError) {
-      console.error('Failed to send password reset email:', emailError);
+      
       res.status(500).json({ error: 'Failed to send password reset email' });
     }
   } catch (error) {
-    console.error('Error initiating password reset:', error);
+    
     res.status(500).json({ error: 'Failed to initiate password reset' });
   }
 });
@@ -1067,7 +1067,7 @@ router.post('/users/:id/refund', async (req: AuthRequest, res) => {
       }
     });
   } catch (error: any) {
-    console.error('Error processing refund:', error);
+    
     res.status(500).json({
       error: 'Failed to process refund',
       details: error.message
@@ -1134,7 +1134,7 @@ router.post('/users/:id/notify', async (req: AuthRequest, res) => {
       }
     });
   } catch (error: any) {
-    console.error('Error sending notification:', error);
+    
     res.status(500).json({
       error: 'Failed to send notification',
       details: error.message
@@ -1162,7 +1162,7 @@ router.delete('/analytics/reset', async (_req, res) => {
       projectTimeDataCleared: true
     });
   } catch (error) {
-    console.error('Error resetting analytics:', error);
+    
     res.status(500).json({ error: 'Failed to reset analytics data' });
   }
 });
@@ -1186,7 +1186,7 @@ router.delete('/analytics/project-time/reset', async (_req, res) => {
       updatedSessions: result.modifiedCount
     });
   } catch (error) {
-    console.error('Error resetting project time data:', error);
+    
     res.status(500).json({ error: 'Failed to reset project time data' });
   }
 });
@@ -1454,7 +1454,7 @@ router.get('/analytics/combined', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error getting combined analytics:', error);
+    
     res.status(500).json({ error: 'Failed to get combined analytics' });
   }
 });
@@ -1632,7 +1632,7 @@ router.get('/analytics/leaderboard', async (req, res) => {
       generatedAt: new Date().toISOString()
     });
   } catch (error) {
-    console.error('Error fetching analytics leaderboard:', error);
+    
     res.status(500).json({ error: 'Failed to fetch analytics leaderboard' });
   }
 });
@@ -1644,7 +1644,7 @@ router.get('/cleanup/stats', async (req, res) => {
     const stats = await CleanupService.getDatabaseStats();
     res.json(stats);
   } catch (error) {
-    console.error('Error fetching cleanup stats:', error);
+    
     res.status(500).json({ error: 'Failed to fetch cleanup stats' });
   }
 });
@@ -1654,7 +1654,7 @@ router.get('/cleanup/recommendations', async (req, res) => {
     const recommendations = await CleanupService.getCleanupRecommendations();
     res.json(recommendations);
   } catch (error) {
-    console.error('Error fetching cleanup recommendations:', error);
+    
     res.status(500).json({ error: 'Failed to fetch cleanup recommendations' });
   }
 });
@@ -1667,7 +1667,7 @@ router.post('/cleanup/run', async (req, res) => {
       results
     });
   } catch (error) {
-    console.error('Error running cleanup:', error);
+    
     res.status(500).json({ error: 'Failed to run cleanup' });
   }
 });
@@ -1681,7 +1681,7 @@ router.post('/cleanup/orphaned', async (req, res) => {
       results
     });
   } catch (error) {
-    console.error('Error cleaning orphaned data:', error);
+    
     res.status(500).json({ error: 'Failed to cleanup orphaned data' });
   }
 });
@@ -1694,7 +1694,7 @@ router.post('/cleanup/optimize', async (req, res) => {
       results
     });
   } catch (error) {
-    console.error('Error optimizing database:', error);
+    
     res.status(500).json({ error: 'Failed to optimize database' });
   }
 });
@@ -1707,7 +1707,7 @@ router.post('/cleanup/emergency', async (req, res) => {
       results
     });
   } catch (error) {
-    console.error('Error running emergency cleanup:', error);
+    
     res.status(500).json({ error: 'Failed to run emergency cleanup' });
   }
 });
@@ -1721,7 +1721,7 @@ router.post('/cleanup/archive-projects', async (req, res) => {
       results
     });
   } catch (error) {
-    console.error('Error archiving projects:', error);
+    
     res.status(500).json({ error: 'Failed to archive projects' });
   }
 });
@@ -1735,7 +1735,7 @@ router.delete('/cleanup/analytics/:days', async (req, res) => {
       results
     });
   } catch (error) {
-    console.error('Error cleaning analytics:', error);
+    
     res.status(500).json({ error: 'Failed to cleanup analytics' });
   }
 });
@@ -1749,7 +1749,7 @@ router.delete('/cleanup/notifications/:days', async (req, res) => {
       results
     });
   } catch (error) {
-    console.error('Error cleaning notifications:', error);
+    
     res.status(500).json({ error: 'Failed to cleanup notifications' });
   }
 });
@@ -1763,7 +1763,7 @@ router.delete('/cleanup/activity-logs/:days', async (req, res) => {
       results
     });
   } catch (error) {
-    console.error('Error cleaning activity logs:', error);
+    
     res.status(500).json({ error: 'Failed to cleanup activity logs' });
   }
 });
@@ -1776,7 +1776,7 @@ router.delete('/cleanup/inactive-sessions', async (req, res) => {
       results
     });
   } catch (error) {
-    console.error('Error cleaning inactive sessions:', error);
+    
     res.status(500).json({ error: 'Failed to cleanup inactive sessions' });
   }
 });
@@ -1789,7 +1789,7 @@ router.delete('/cleanup/stale-locks', async (req, res) => {
       results
     });
   } catch (error) {
-    console.error('Error cleaning stale locks:', error);
+    
     res.status(500).json({ error: 'Failed to cleanup stale locks' });
   }
 });
@@ -1802,7 +1802,7 @@ router.delete('/cleanup/rate-limits', async (req, res) => {
       results
     });
   } catch (error) {
-    console.error('Error cleaning rate limits:', error);
+    
     res.status(500).json({ error: 'Failed to cleanup rate limits' });
   }
 });
@@ -1813,7 +1813,7 @@ router.get('/performance/recommendations', async (req, res) => {
     const recommendations = await CleanupService.getPerformanceRecommendations();
     res.json(recommendations);
   } catch (error) {
-    console.error('Error fetching performance recommendations:', error);
+    
     res.status(500).json({ error: 'Failed to fetch performance recommendations' });
   }
 });
@@ -1846,7 +1846,7 @@ router.post('/projects/:id/lock', requireAuth, adminMiddleware, async (req: Auth
       }
     });
   } catch (error) {
-    console.error('Error locking/unlocking project:', error);
+    
     res.status(500).json({ error: 'Failed to update project lock status' });
   }
 });
@@ -1866,7 +1866,7 @@ router.get('/users/:id/projects', requireAuth, adminMiddleware, async (req: Auth
 
     res.json({ projects });
   } catch (error) {
-    console.error('Error fetching user projects:', error);
+    
     res.status(500).json({ error: 'Failed to fetch projects' });
   }
 });
@@ -1947,7 +1947,7 @@ router.get('/analytics/overview', async (req: AuthRequest, res) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching analytics overview:', error);
+    
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -1972,7 +1972,7 @@ router.get('/analytics/conversion-rate', async (_req: AuthRequest, res) => {
       projectCreationRate: parseFloat(projectCreationRate)
     });
   } catch (error) {
-    console.error('Error fetching conversion rate:', error);
+    
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -2081,7 +2081,7 @@ router.get('/analytics/features/adoption', async (req: AuthRequest, res) => {
 
     res.json({ features });
   } catch (error) {
-    console.error('Error fetching feature adoption:', error);
+    
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -2119,7 +2119,7 @@ router.get('/analytics/users/growth', async (req: AuthRequest, res) => {
 
     res.json({ growth: userGrowth });
   } catch (error) {
-    console.error('Error fetching user growth:', error);
+    
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -2178,7 +2178,7 @@ router.get('/activity/feed', async (req: AuthRequest, res) => {
 
     res.json({ feed: combined, period: `Last ${hours} hours` });
   } catch (error) {
-    console.error('Error fetching activity feed:', error);
+    
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -2242,7 +2242,7 @@ router.get('/analytics/export', async (req: AuthRequest, res) => {
     res.setHeader('Content-Disposition', `attachment; filename="analytics-export-${new Date().toISOString().split('T')[0]}.csv"`);
     res.send(csv);
   } catch (error) {
-    console.error('Error exporting analytics:', error);
+    
     res.status(500).json({ error: 'Failed to export analytics data' });
   }
 });

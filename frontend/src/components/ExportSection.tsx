@@ -73,7 +73,6 @@ const ExportSection: React.FC<ExportSectionProps> = ({ selectedProject, onProjec
       setExportedData(output);
       setShowExportResult(true);
     } catch (error) {
-      console.error('Export generation error:', error);
       setExportedData(`Error generating export: ${error}`);
       setShowExportResult(true);
     }

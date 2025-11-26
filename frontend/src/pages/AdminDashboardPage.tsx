@@ -163,7 +163,6 @@ const AdminDashboardPage: React.FC = () => {
       const data = await response.json();
       setStats(data);
     } catch (err: any) {
-      console.error('Failed to fetch stats:', err);
     }
   };
 
@@ -672,7 +671,6 @@ const AdminDashboardPage: React.FC = () => {
           await fetchTickets();
         }
       } catch (err) {
-        console.error('Failed to load data:', err);
       } finally {
         setLoading(false);
       }

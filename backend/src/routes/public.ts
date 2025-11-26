@@ -102,7 +102,7 @@ router.get('/project/:identifier', async (req, res) => {
       project: publicProject
     });
   } catch (error) {
-    console.error('Get public project error:', error);
+    
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -177,7 +177,7 @@ router.get('/user/:identifier', async (req, res) => {
       user: publicUser
     });
   } catch (error) {
-    console.error('Get public user error:', error);
+    
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -395,7 +395,7 @@ router.get('/projects', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Get public projects error:', error);
+    
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -414,7 +414,7 @@ router.get('/filters', async (req, res) => {
       tags: tags.filter(Boolean).flat()
     });
   } catch (error) {
-    console.error('Get filters error:', error);
+    
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -465,7 +465,7 @@ router.get('/users/search', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Search users error:', error);
+    
     res.status(500).json({ message: 'Server error' });
   }
 });

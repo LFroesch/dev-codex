@@ -188,7 +188,7 @@ export class RelationshipHandlers extends BaseCommandHandler {
         }
       });
     } catch (error) {
-      console.error('Failed to track terminal relationship create:', error);
+      
     }
 
     return this.buildSuccessResponse(
@@ -729,7 +729,7 @@ export class RelationshipHandlers extends BaseCommandHandler {
         projectName: project.name
       });
     } catch (error) {
-      console.error('Failed to track terminal relationship delete:', error);
+      
     }
 
     return this.buildSuccessResponse(

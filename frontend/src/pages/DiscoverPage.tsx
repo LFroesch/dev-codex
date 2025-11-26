@@ -50,20 +50,16 @@ const DiscoverPage: React.FC = () => {
 
   // Define loadUsers function before useEffects
   const loadUsers = useCallback(async () => {
-    console.log('🔍 loadUsers called with:', { debouncedUsersSearch, usersPage });
     try {
       setUsersLoading(true);
-      console.log('📡 Calling API...');
       const response = await publicAPI.searchUsers({
         search: debouncedUsersSearch,
         page: usersPage,
         limit: 20
       });
-      console.log('✅ API response:', response);
       setUsers(response.users || []);
       setUsersPagination(response.pagination);
     } catch (err: any) {
-      console.error('❌ Failed to load users:', err);
     } finally {
       setUsersLoading(false);
     }
@@ -105,7 +101,6 @@ const DiscoverPage: React.FC = () => {
       setCategories(response.categories || []);
       setTags(response.tags || []);
     } catch (err) {
-      console.error('Failed to load filters:', err);
     }
   };
 
@@ -124,7 +119,6 @@ const DiscoverPage: React.FC = () => {
       setPagination(response.pagination);
     } catch (err: any) {
       setError('Failed to load projects');
-      console.error('Load projects error:', err);
     } finally {
       setLoading(false);
     }

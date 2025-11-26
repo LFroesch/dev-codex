@@ -42,7 +42,6 @@ const FavoriteButton: React.FC<FavoriteButtonProps> = ({
         setIsFavorited(response.data.isFavorited);
       }
     } catch (err) {
-      console.error('Failed to check favorite status:', err);
     }
   };
 
@@ -53,7 +52,6 @@ const FavoriteButton: React.FC<FavoriteButtonProps> = ({
         setCount(response.data.count);
       }
     } catch (err) {
-      console.error('Failed to fetch favorite count:', err);
     }
   };
 
@@ -79,7 +77,6 @@ const FavoriteButton: React.FC<FavoriteButtonProps> = ({
         }
       }
     } catch (err: any) {
-      console.error('Failed to toggle favorite:', err);
     } finally {
       setLoading(false);
     }

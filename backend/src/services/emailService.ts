@@ -33,10 +33,10 @@ export const sendEmail = async (options: EmailOptions): Promise<void> => {
         html
       });
 
-      console.log(`✓ Email sent via Resend to ${to}`);
+      
       return;
     } catch (error) {
-      console.error('Resend failed, falling back to SMTP:', error);
+      
       // Fall through to SMTP
     }
   }
@@ -62,16 +62,16 @@ export const sendEmail = async (options: EmailOptions): Promise<void> => {
         html
       });
 
-      console.log(`✓ Email sent via SMTP to ${to}`);
+      
       return;
     } catch (error) {
-      console.error('SMTP failed:', error);
+      
       throw new Error('Failed to send email via SMTP');
     }
   }
 
   // No email configured - throw error
-  console.error('Email not sent - no email service configured (RESEND_API_KEY or SMTP)');
+  
   throw new Error('No email service configured');
 };
 
@@ -198,7 +198,7 @@ Project Manager Team
       html: htmlContent
     });
   } catch (error) {
-    console.error('Failed to send invitation email:', error);
+    
     throw new Error('Failed to send invitation email');
   }
 };
@@ -331,7 +331,7 @@ Thank you for choosing Dev Codex!
       html: htmlContent
     });
   } catch (error) {
-    console.error('Failed to send subscription confirmation email:', error);
+    
   }
 };
 
@@ -459,7 +459,7 @@ Thank you for being part of Dev Codex!
       html: htmlContent
     });
   } catch (error) {
-    console.error('Failed to send subscription cancelled email:', error);
+    
   }
 };
 
@@ -582,7 +582,7 @@ Thank you for being part of Dev Codex!
       html: htmlContent
     });
   } catch (error) {
-    console.error('Failed to send subscription expired email:', error);
+    
   }
 };
 
@@ -710,7 +710,7 @@ Thank you for using Dev Codex!
       html: htmlContent
     });
   } catch (error) {
-    console.error('Failed to send subscription expiring email:', error);
+    
   }
 };
 
@@ -844,6 +844,6 @@ Thank you for using Dev Codex!
       html: htmlContent
     });
   } catch (error) {
-    console.error('Failed to send plan downgrade email:', error);
+    
   }
 };

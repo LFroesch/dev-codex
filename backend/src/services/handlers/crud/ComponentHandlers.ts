@@ -218,7 +218,7 @@ export class ComponentHandlers extends BaseCommandHandler {
         }
       });
     } catch (error) {
-      console.error('Failed to track terminal component create:', error);
+      
     }
 
     return this.buildSuccessResponse(
@@ -640,7 +640,7 @@ export class ComponentHandlers extends BaseCommandHandler {
         try {
           await project.save();
         } catch (saveError) {
-          console.error('[EDIT COMPONENT] Save failed:', saveError);
+          
           return {
             type: ResponseType.ERROR,
             message: `Failed to save component: ${saveError instanceof Error ? saveError.message : 'Unknown error'}`,
@@ -879,7 +879,7 @@ export class ComponentHandlers extends BaseCommandHandler {
         projectName: project.name
       });
     } catch (error) {
-      console.error('Failed to track terminal component delete:', error);
+      
     }
 
     const message = orphanedRelationshipsCount > 0

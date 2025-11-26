@@ -24,7 +24,7 @@ router.get('/', requireAuth, async (req: AuthRequest, res) => {
       ...result,
     });
   } catch (error) {
-    console.error('Get notifications error:', error);
+    
     res.status(500).json({ message: 'Server error fetching notifications' });
   }
 });
@@ -47,7 +47,7 @@ router.patch('/:id/read', requireAuth, blockDemoWrites, async (req: AuthRequest,
       notification,
     });
   } catch (error) {
-    console.error('Mark notification as read error:', error);
+    
     res.status(500).json({ message: 'Server error updating notification' });
   }
 });
@@ -88,7 +88,7 @@ router.patch('/read-all', requireAuth, blockDemoWrites, async (req: AuthRequest,
       modifiedCount: result.modifiedCount,
     });
   } catch (error) {
-    console.error('Mark all notifications as read error:', error);
+    
     res.status(500).json({ message: 'Server error updating notifications' });
   }
 });
@@ -107,7 +107,7 @@ router.delete('/clear-all', requireAuth, blockDemoWrites, async (req: AuthReques
       deletedCount,
     });
   } catch (error) {
-    console.error('Clear all notifications error:', error);
+    
     res.status(500).json({ message: 'Server error clearing notifications' });
   }
 });
@@ -130,7 +130,7 @@ router.delete('/:id', requireAuth, blockDemoWrites, async (req: AuthRequest, res
       message: 'Notification deleted successfully',
     });
   } catch (error) {
-    console.error('Delete notification error:', error);
+    
     res.status(500).json({ message: 'Server error deleting notification' });
   }
 });
@@ -166,7 +166,7 @@ router.get('/invitation/:invitationId', requireAuth, async (req: AuthRequest, re
       project: notification.relatedProjectId,
     });
   } catch (error) {
-    console.error('Get invitation notification error:', error);
+    
     res.status(500).json({ message: 'Server error fetching invitation notification' });
   }
 });

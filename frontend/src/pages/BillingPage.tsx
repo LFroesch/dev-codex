@@ -93,7 +93,6 @@ const BillingPage: React.FC = () => {
         window.location.href = response.data.url;
       }
     } catch (error: any) {
-      console.error('Failed to create checkout session:', error);
       const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Failed to start checkout process. Please try again.';
       toast.error(errorMessage);
     } finally {
@@ -110,7 +109,6 @@ const BillingPage: React.FC = () => {
       toast.success(response.data.message || 'Subscription canceled. You will retain access until the end of your billing period.');
       refetch();
     } catch (error: any) {
-      console.error('Failed to cancel subscription:', error);
       const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Failed to cancel subscription. Please try again.';
       toast.error(errorMessage);
     } finally {
@@ -126,7 +124,6 @@ const BillingPage: React.FC = () => {
       toast.success(response.data.message || 'Subscription resumed successfully!');
       refetch();
     } catch (error: any) {
-      console.error('Failed to resume subscription:', error);
       const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Failed to resume subscription. Please try again.';
       toast.error(errorMessage);
     } finally {

@@ -64,7 +64,6 @@ export const useRelationshipManagement = ({
         await onRefresh();
       }
     } catch (error) {
-      console.error('Failed to add relationship:', error);
       setToast({ message: 'Failed to add relationship', type: 'error' });
     } finally {
       setIsAddingRelationship(false);
@@ -88,7 +87,6 @@ export const useRelationshipManagement = ({
         await onRefresh();
       }
     } catch (error) {
-      console.error('Failed to delete relationship:', error);
       setToast({ message: 'Failed to delete relationship', type: 'error' });
     }
   }, [selectedComponent, projectId, onRefresh, setToast]);
@@ -130,7 +128,6 @@ export const useRelationshipManagement = ({
         await onRefresh();
       }
     } catch (error) {
-      console.error('Failed to update relationship:', error);
       setToast({ message: 'Failed to update relationship', type: 'error' });
     }
   }, [selectedComponent, editingRelationshipId, editRelationshipData, projectId, onRefresh, setToast]);

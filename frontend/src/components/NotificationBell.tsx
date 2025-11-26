@@ -25,7 +25,6 @@ const NotificationBell: React.FC = () => {
         setNotifications(response.notifications);
         setUnreadCount(response.unreadCount);
       } catch (error) {
-        console.error('Failed to fetch notifications:', error);
       }
     };
 
@@ -69,7 +68,6 @@ const NotificationBell: React.FC = () => {
       setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
       setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (error) {
-      console.error('Failed to mark as read:', error);
     }
   };
 
@@ -105,7 +103,6 @@ const NotificationBell: React.FC = () => {
           }
         }
       } catch (error) {
-        console.error('Failed to check invitation status:', error);
         // Fallback: show modal anyway
         setSelectedInvitation(notification);
         setShowInvitationModal(true);
@@ -209,7 +206,6 @@ const NotificationBell: React.FC = () => {
         setShowInviteErrorModal(true);
       }
     } catch (error: any) {
-      console.error('Failed to accept invitation:', error);
       const errorMessage = error.response?.data?.message || error.message || 'Failed to accept invitation';
       setInviteMessage(errorMessage);
       setShowInvitationModal(false);
@@ -386,7 +382,6 @@ const NotificationBell: React.FC = () => {
                     await notificationAPI.markAllAsRead();
                     setShowMarkAllAsReadModal(false);
                   } catch (error) {
-                    console.error('Failed to mark all as read:', error);
                     setShowMarkAllAsReadModal(false);
                   }
                 }}
@@ -428,7 +423,6 @@ const NotificationBell: React.FC = () => {
                     await notificationAPI.clearAllNotifications();
                     setShowClearAllModal(false);
                   } catch (error) {
-                    console.error('Failed to clear notifications:', error);
                     setShowClearAllModal(false);
                   }
                 }}

@@ -41,7 +41,7 @@ router.get('/following', requireAuth, async (req: AuthRequest, res: Response) =>
       total: follows.length
     });
   } catch (error) {
-    console.error(`Error fetching following list for user ${req.userId}:`, error);
+    
     res.status(500).json({ success: false, message: 'Database error while fetching following' });
   }
 });
@@ -71,7 +71,7 @@ router.get('/followers', requireAuth, async (req: AuthRequest, res: Response) =>
       total: followers.length
     });
   } catch (error) {
-    console.error('Error fetching followers:', error);
+    
     res.status(500).json({ success: false, message: 'Failed to fetch followers' });
   }
 });
@@ -105,7 +105,7 @@ router.get('/check/:type/:id', requireAuth, async (req: AuthRequest, res: Respon
       followId: follow?._id
     });
   } catch (error) {
-    console.error('Error checking follow status:', error);
+    
     res.status(500).json({ success: false, message: 'Failed to check follow status' });
   }
 });
@@ -164,7 +164,7 @@ router.post('/user/:userId', requireAuth, blockDemoWrites, async (req: AuthReque
         relatedUserId: new mongoose.Types.ObjectId(userId)
       });
     } catch (notifError) {
-      console.error('Error creating follow notification:', notifError);
+      
       // Continue - don't fail the request if notification fails
     }
 
@@ -177,7 +177,7 @@ router.post('/user/:userId', requireAuth, blockDemoWrites, async (req: AuthReque
       }
     });
   } catch (error) {
-    console.error(`Error following user ${req.params.userId}:`, error);
+    
     res.status(500).json({ success: false, message: 'Database error while following user' });
   }
 });
@@ -233,7 +233,7 @@ router.post('/project/:projectId', requireAuth, blockDemoWrites, async (req: Aut
           relatedUserId: new mongoose.Types.ObjectId(userId)
         });
       } catch (notifError) {
-        console.error('Error creating project follow notification:', notifError);
+        
         // Continue - don't fail the request if notification fails
       }
     }
@@ -247,7 +247,7 @@ router.post('/project/:projectId', requireAuth, blockDemoWrites, async (req: Aut
       }
     });
   } catch (error) {
-    console.error('Error following project:', error);
+    
     res.status(500).json({ success: false, message: 'Failed to follow project' });
   }
 });
@@ -284,7 +284,7 @@ router.delete('/:type/:id', requireAuth, blockDemoWrites, async (req: AuthReques
       message: 'Unfollowed successfully'
     });
   } catch (error) {
-    console.error('Error unfollowing:', error);
+    
     res.status(500).json({ success: false, message: 'Failed to unfollow' });
   }
 });
@@ -312,7 +312,7 @@ router.get('/stats/:userId', async (req: AuthRequest, res: Response) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching stats:', error);
+    
     res.status(500).json({ success: false, message: 'Failed to fetch stats' });
   }
 });

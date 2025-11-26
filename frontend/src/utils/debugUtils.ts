@@ -14,10 +14,8 @@ export const debugUtils = {
         const result = await response.json();
         return result;
       } else {
-        console.error('❌ Failed to clear rate limits:', response.status);
       }
     } catch (error) {
-      console.error('❌ Error clearing rate limits:', error);
     }
   },
 
@@ -32,10 +30,8 @@ export const debugUtils = {
         const result = await response.json();
         return result;
       } else {
-        console.error('❌ Failed to clear IP rate limits:', response.status);
       }
     } catch (error) {
-      console.error('❌ Error clearing IP rate limits:', error);
     }
   },
 
@@ -51,10 +47,8 @@ export const debugUtils = {
         const result = await response.json();
         return result;
       } else {
-        console.error('❌ Failed to get rate limit status:', response.status);
       }
     } catch (error) {
-      console.error('❌ Error getting rate limit status:', error);
     }
   },
 

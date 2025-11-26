@@ -43,7 +43,7 @@ export class AnalyticsCompoundingService {
     };
 
     try {
-      console.log('[Analytics Compounding] Starting compaction process...');
+      
 
       // Calculate cutoff date (7 days ago)
       const cutoffDate = new Date();
@@ -58,10 +58,10 @@ export class AnalyticsCompoundingService {
       });
 
       result.eventsProcessed = totalEvents;
-      console.log(`[Analytics Compounding] Found ${totalEvents} events to compact`);
+      
 
       if (totalEvents === 0) {
-        console.log('[Analytics Compounding] No events to compact');
+        
         return result;
       }
 
@@ -120,7 +120,7 @@ export class AnalyticsCompoundingService {
         }
       ]);
 
-      console.log(`[Analytics Compounding] Created ${aggregated.length} aggregated records`);
+      
 
       // Insert compacted records
       const compacted = aggregated.map(a => ({
@@ -157,7 +157,7 @@ export class AnalyticsCompoundingService {
 
       result.eventsDeleted = deleteResult.deletedCount || 0;
 
-      console.log('[Analytics Compounding] Compaction summary:', result);
+      
 
       // Log compaction results to analytics (meta!)
       await this.logCompaction(result);
@@ -165,7 +165,7 @@ export class AnalyticsCompoundingService {
       return result;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('[Analytics Compounding] Error during compaction:', error);
+      
       result.errors.push(errorMessage);
       return result;
     }
@@ -177,16 +177,9 @@ export class AnalyticsCompoundingService {
   private async logCompaction(result: CompactionResult): Promise<void> {
     try {
       // You could log this to a separate monitoring collection or external service
-      console.log('[Analytics Compounding] Compaction completed:', {
-        timestamp: new Date().toISOString(),
-        eventsProcessed: result.eventsProcessed,
-        compactedRecordsCreated: result.compactedRecordsCreated,
-        eventsDeleted: result.eventsDeleted,
-        errors: result.errors.length,
-        success: result.errors.length === 0
-      });
+      
     } catch (error) {
-      console.error('[Analytics Compounding] Failed to log compaction result:', error);
+      
     }
   }
 
@@ -194,7 +187,7 @@ export class AnalyticsCompoundingService {
    * Manual trigger for compaction (for testing or emergency use)
    */
   async manualCompact(daysOld: number = 7): Promise<CompactionResult> {
-    console.log(`[Analytics Compounding] Manual compaction triggered for events older than ${daysOld} days`);
+    
 
     // Temporarily adjust the cutoff for manual runs
     const originalCompact = this.compactOldEvents.bind(this);
@@ -247,7 +240,7 @@ export class AnalyticsCompoundingService {
         }
       };
     } catch (error) {
-      console.error('[Analytics Compounding] Error getting compaction stats:', error);
+      
       throw error;
     }
   }

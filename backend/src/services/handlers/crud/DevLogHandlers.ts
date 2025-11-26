@@ -122,7 +122,7 @@ export class DevLogHandlers extends BaseCommandHandler {
         }
       });
     } catch (error) {
-      console.error('Failed to track terminal devlog create:', error);
+      
     }
 
     return this.buildSuccessResponse(
@@ -254,7 +254,7 @@ export class DevLogHandlers extends BaseCommandHandler {
         try {
           await project.save();
         } catch (saveError) {
-          console.error('[EDIT DEVLOG] Save failed:', saveError);
+          
           return {
             type: ResponseType.ERROR,
             message: `Failed to save dev log: ${saveError instanceof Error ? saveError.message : 'Unknown error'}`,
@@ -403,7 +403,7 @@ export class DevLogHandlers extends BaseCommandHandler {
         projectName: project.name
       });
     } catch (error) {
-      console.error('Failed to track terminal devlog delete:', error);
+      
     }
 
     return this.buildSuccessResponse(

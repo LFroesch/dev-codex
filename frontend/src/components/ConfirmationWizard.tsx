@@ -54,7 +54,6 @@ const ConfirmationWizard: React.FC<ConfirmationWizardProps> = ({
         setIsCompleted(true);
       }
     } catch (error) {
-      console.error('Failed to execute command:', error);
       toast.error(`Failed to delete: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setIsSubmitting(false);
     }

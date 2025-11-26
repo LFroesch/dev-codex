@@ -126,7 +126,7 @@ class ReminderService {
       }
 
     } catch (error) {
-      console.error('Error checking due todos:', error);
+      
     }
   }
 
@@ -197,7 +197,7 @@ class ReminderService {
         }
       }
     } catch (error) {
-      console.error('Error checking reminder notifications:', error);
+      
     }
   }
 
@@ -290,28 +290,28 @@ class ReminderService {
       }
 
     } catch (error) {
-      console.error('Error sending daily summaries:', error);
+      
     }
   }
 
 
   private async checkStaleItems(): Promise<void> {
     try {
-      console.log('[ReminderService] Starting weekly stale items check');
+      
       await staleItemService.checkAllUsers();
-      console.log('[ReminderService] Completed weekly stale items check');
+      
     } catch (error) {
-      console.error('[ReminderService] Error in weekly stale items check:', error);
+      
     }
   }
 
   private async checkSubscriptionExpiration(): Promise<void> {
     try {
-      console.log('[ReminderService] Starting subscription expiration check');
+      
 
       // Check if Stripe is configured
       if (!process.env.STRIPE_SECRET_KEY) {
-        console.log('[ReminderService] Stripe not configured, skipping subscription expiration check');
+        
         return;
       }
 
@@ -367,19 +367,19 @@ class ReminderService {
                   actionUrl: '/billing'
                 });
 
-                console.log(`[ReminderService] Sent expiration warning to user ${user._id}`);
+                
               }
             }
           }
         } catch (error) {
-          console.error(`[ReminderService] Error checking subscription for user ${user._id}:`, error);
+          
           // Continue with other users
         }
       }
 
-      console.log('[ReminderService] Completed subscription expiration check');
+      
     } catch (error) {
-      console.error('[ReminderService] Error in subscription expiration check:', error);
+      
     }
   }
 

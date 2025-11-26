@@ -33,7 +33,6 @@ const PostComposer: React.FC<PostComposerProps> = ({ postType, projectId, onPost
         setAvailableProjects(publicProjects);
       }
     } catch (err) {
-      console.error('Failed to fetch projects:', err);
     } finally {
       setLoadingProjects(false);
     }

@@ -124,7 +124,7 @@ export class NoteHandlers extends BaseCommandHandler {
         }
       });
     } catch (error) {
-      console.error('Failed to track terminal note create:', error);
+      
     }
 
     return this.buildSuccessResponse(
@@ -257,7 +257,7 @@ export class NoteHandlers extends BaseCommandHandler {
         try {
           await project.save();
         } catch (saveError) {
-          console.error('[EDIT NOTE] Save failed:', saveError);
+          
           return {
             type: ResponseType.ERROR,
             message: `Failed to save note: ${saveError instanceof Error ? saveError.message : 'Unknown error'}`,
@@ -406,7 +406,7 @@ export class NoteHandlers extends BaseCommandHandler {
         projectName: project.name
       });
     } catch (error) {
-      console.error('Failed to track terminal note delete:', error);
+      
     }
 
     return this.buildSuccessResponse(

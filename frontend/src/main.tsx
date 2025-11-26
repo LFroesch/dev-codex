@@ -46,15 +46,12 @@ if (sentryDsn) {
     },
   })
 
-  console.log('Sentry initialized for frontend error tracking')
 
   // Expose Sentry to window for testing (dev only)
   if (sentryEnvironment === 'development') {
     (window as any).Sentry = Sentry
-    console.log('Sentry exposed to window.Sentry for testing')
   }
 } else {
-  console.warn('Sentry DSN not configured - error tracking disabled')
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

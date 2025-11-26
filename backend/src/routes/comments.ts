@@ -94,7 +94,7 @@ router.get('/project/:projectId', requireAuth, async (req: AuthRequest, res: Res
       total: comments.length
     });
   } catch (error) {
-    console.error(`Error fetching comments for project ${req.params.projectId}:`, error);
+    
     res.status(500).json({ success: false, message: 'Database error while fetching comments' });
   }
 });
@@ -160,7 +160,7 @@ router.post('/project/:projectId', requireAuth, blockDemoWrites, async (req: Aut
           relatedCommentId: comment._id
         });
       } catch (notifError) {
-        console.error('Error creating comment notification:', notifError);
+        
         // Continue - don't fail the request if notification fails
       }
     }
@@ -173,7 +173,7 @@ router.post('/project/:projectId', requireAuth, blockDemoWrites, async (req: Aut
       }
     });
   } catch (error) {
-    console.error(`Error creating comment on project ${req.params.projectId}:`, error);
+    
     res.status(500).json({ success: false, message: 'Database error while creating comment' });
   }
 });
@@ -246,7 +246,7 @@ router.post('/project/:projectId/reply/:commentId', requireAuth, blockDemoWrites
           relatedCommentId: reply._id
         });
       } catch (notifError) {
-        console.error('Error creating reply notification:', notifError);
+        
         // Continue - don't fail the request if notification fails
       }
     }
@@ -259,7 +259,7 @@ router.post('/project/:projectId/reply/:commentId', requireAuth, blockDemoWrites
       }
     });
   } catch (error) {
-    console.error(`Error creating reply to comment ${req.params.commentId}:`, error);
+    
     res.status(500).json({ success: false, message: 'Database error while creating reply' });
   }
 });
@@ -304,7 +304,7 @@ router.put('/:commentId', requireAuth, blockDemoWrites, async (req: AuthRequest,
       }
     });
   } catch (error) {
-    console.error('Error editing comment:', error);
+    
     res.status(500).json({ success: false, message: 'Failed to edit comment' });
   }
 });
@@ -344,7 +344,7 @@ router.delete('/:commentId', requireAuth, blockDemoWrites, async (req: AuthReque
       message: 'Comment deleted successfully'
     });
   } catch (error) {
-    console.error('Error deleting comment:', error);
+    
     res.status(500).json({ success: false, message: 'Failed to delete comment' });
   }
 });
@@ -377,7 +377,7 @@ router.get('/my-projects', requireAuth, async (req: AuthRequest, res: Response) 
       comments
     });
   } catch (error) {
-    console.error('Error fetching my project comments:', error);
+    
     res.status(500).json({ success: false, message: 'Failed to fetch comments' });
   }
 });

@@ -77,7 +77,7 @@ router.post('/', requireAuth, ticketRateLimit, async (req: AuthRequest, res) => 
       // Email to support team
       const supportEmail = process.env.SUPPORT_EMAIL;
       if (!supportEmail) {
-        console.error('CRITICAL: SUPPORT_EMAIL environment variable is not set');
+        
         return res.status(500).json({ error: 'Server configuration error' });
       }
 
@@ -118,7 +118,7 @@ router.post('/', requireAuth, ticketRateLimit, async (req: AuthRequest, res) => 
         })
       ]);
     } catch (emailError) {
-      console.error('Failed to send confirmation email:', emailError);
+      
     }
 
     res.status(201).json({
@@ -134,7 +134,7 @@ router.post('/', requireAuth, ticketRateLimit, async (req: AuthRequest, res) => 
     });
 
   } catch (error) {
-    console.error('Error creating ticket:', error);
+    
     res.status(500).json({ error: 'Failed to create ticket' });
   }
 });
@@ -175,7 +175,7 @@ router.get('/', requireAuth, async (req: AuthRequest, res) => {
     });
 
   } catch (error) {
-    console.error('Error fetching user tickets:', error);
+    
     res.status(500).json({ error: 'Failed to fetch tickets' });
   }
 });
@@ -201,7 +201,7 @@ router.get('/:ticketId', requireAuth, async (req: AuthRequest, res) => {
     });
 
   } catch (error) {
-    console.error('Error fetching ticket:', error);
+    
     res.status(500).json({ error: 'Failed to fetch ticket' });
   }
 });

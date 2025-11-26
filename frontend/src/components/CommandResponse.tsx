@@ -257,7 +257,6 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
         try {
           await authAPI.updateTheme(themeName);
         } catch (error) {
-          console.error('Failed to save theme to database:', error);
         }
 
         // Apply the theme
@@ -282,7 +281,6 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
               }
             }
           } catch (error) {
-            console.error('Failed to load custom theme:', error);
             // Fallback to localStorage
             const saved = localStorage.getItem('customThemes');
             if (saved) {
@@ -700,6 +698,9 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
 
     // Render summary
     if (response.data.summary) {
+      const [isLoadingLlm, setIsLoadingLlm] = React.useState(false);
+      const [llmGuide, setLlmGuide] = React.useState<string | null>(null);
+
       const downloadSummary = () => {
         const blob = new Blob([response.data.summary], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
@@ -712,6 +713,63 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
         URL.revokeObjectURL(url);
       };
 
+      const fetchLlmGuide = async () => {
+        if (llmGuide) return llmGuide; // Return cached version
+
+        setIsLoadingLlm(true);
+        try {
+          // Determine entity type from response data
+          const entity = response.data.entityType || 'all';
+
+          // Build /llm command based on context
+          let llmCommand = '/llm';
+          if (entity !== 'projects' && entity !== 'all') {
+            llmCommand += ` ${entity}`;
+            if (response.metadata?.projectId) {
+              llmCommand += ` @${response.data.projectName || 'project'}`;
+            }
+          }
+
+          const result = await terminalAPI.executeCommand(llmCommand, currentProjectId);
+
+          if (result.type === 'data' && result.data?.summary) {
+            setLlmGuide(result.data.summary);
+            return result.data.summary;
+          } else {
+            toast.error('Failed to fetch LLM guide');
+            return null;
+          }
+        } catch (error) {
+          console.error('Error fetching LLM guide:', error);
+          toast.error('Failed to fetch LLM guide');
+          return null;
+        } finally {
+          setIsLoadingLlm(false);
+        }
+      };
+
+      const copySummaryOnly = () => {
+        navigator.clipboard.writeText(response.data.summary);
+        toast.success('Summary copied to clipboard');
+      };
+
+      const copyLlmOnly = async () => {
+        const guide = await fetchLlmGuide();
+        if (guide) {
+          navigator.clipboard.writeText(guide);
+          toast.success('LLM guide copied to clipboard');
+        }
+      };
+
+      const copySummaryAndLlm = async () => {
+        const guide = await fetchLlmGuide();
+        if (guide) {
+          const combined = `# Project Summary\n\n${response.data.summary}\n\n${'='.repeat(80)}\n\n${guide}`;
+          navigator.clipboard.writeText(combined);
+          toast.success('Summary + LLM guide copied to clipboard');
+        }
+      };
+
       return (
         <div className="mt-3 space-y-2">
           <div className="p-3 bg-base-200 rounded-lg border-thick max-h-96 overflow-y-auto">
@@ -719,41 +777,86 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
               {response.data.summary}
             </pre>
           </div>
+
+          {/* Primary action buttons - the 3 copy options (only for /summary) */}
+          {response.metadata?.action === 'summary' && (
+            <div className="flex flex-col gap-2">
+              <div className="text-xs font-semibold text-base-content/70 px-1">
+                📋 Copy Options:
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={copySummaryOnly}
+                  className="btn-primary-sm gap-2 border-thick"
+                  style={{ color: getContrastTextColor('primary') }}
+                  title="Copy just the project summary"
+                >
+                  📄 Summary Only
+                </button>
+                <button
+                  onClick={copySummaryAndLlm}
+                  disabled={isLoadingLlm}
+                  className="btn-primary-sm gap-2 border-thick"
+                  style={{ color: getContrastTextColor('primary') }}
+                  title="Copy summary + LLM command guide (best for AI assistants)"
+                >
+                  {isLoadingLlm ? '⏳ Loading...' : '🤖 Summary + LLM Guide'}
+                </button>
+                <button
+                  onClick={copyLlmOnly}
+                  disabled={isLoadingLlm}
+                  className="btn-primary-sm gap-2 border-thick"
+                  style={{ color: getContrastTextColor('primary') }}
+                  title="Copy just the LLM command guide"
+                >
+                  {isLoadingLlm ? '⏳ Loading...' : '📚 LLM Guide Only'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Copy button for /llm output */}
+          {response.metadata?.action === 'llm-guide' && (
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={copySummaryOnly}
+                className="btn-primary-sm gap-2 border-thick"
+                style={{ color: getContrastTextColor('primary') }}
+                title="Copy LLM guide to clipboard"
+              >
+                📋 Copy Guide
+              </button>
+            </div>
+          )}
+
+          {/* Secondary actions */}
           <div className="flex flex-wrap gap-2">
             <button
               onClick={downloadSummary}
-              className="btn-primary-sm gap-2 border-thick"
-              style={{ color: getContrastTextColor('primary') }}
+              className="btn-sm gap-2 border-thick bg-base-300 hover:bg-base-content/10"
             >
-              📥 Download {response.data.format || 'summary'}
-            </button>
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(response.data.summary);
-              }}
-              className="btn-primary-sm gap-2 border-thick"
-              style={{ color: getContrastTextColor('primary') }}
-            >
-              📋 Copy to Clipboard
+              📥 Download
             </button>
             {response.metadata?.projectId && (
               <button
                 onClick={() => handleNavigateToProject('/notes')}
-                className="btn-primary-sm gap-2 border-thick"
-                style={{ color: getContrastTextColor('primary') }}
+                className="btn-sm gap-2 border-thick bg-base-300 hover:bg-base-content/10"
               >
                 📁 Open Project
               </button>
             )}
-          </div>
           {response.data.textMetrics && (
             <div className="text-xs text-base-content/70 bg-base-300/50 px-3 py-2 rounded border border-base-content/10">
               📊 <span className="font-semibold">{response.data.textMetrics.characterCount.toLocaleString()}</span> characters • ~<span className="font-semibold">{response.data.textMetrics.estimatedTokens.toLocaleString()}</span> tokens
             </div>
           )}
-          <div className="text-xs text-base-content/60">
-            💡 Use <code className="bg-base-300 px-1 rounded">/summary [format]</code> to change format (markdown, json, prompt, text)
           </div>
+
+          {response.metadata?.action === 'summary' && (
+            <div className="text-xs text-base-content/60 bg-info/10 border border-info/30 rounded px-3 py-2">
+              💡 <strong>For AI Assistants:</strong> Use "Summary + LLM Guide" to get both project context and command syntax in one copy.
+            </div>
+          )}
         </div>
       );
     }
@@ -1401,7 +1504,6 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
             }
           }
         } catch (error) {
-          console.error('Failed to execute command:', error);
           toast.error(`Failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
           setIsSubmitting(false);
         }

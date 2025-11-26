@@ -54,7 +54,6 @@ export const accountSwitchingManager = {
    */
   handleAccountSwitch(newEmail: string): void {
     if (this.isAccountSwitch(newEmail)) {
-      console.log('[Account Switch] Detected account switch, clearing account-specific data');
       this.clearAccountData();
     }
     this.setCurrentAccount(newEmail);

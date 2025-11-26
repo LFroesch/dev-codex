@@ -31,9 +31,9 @@ const ProjectsRenderer: React.FC<ProjectsRendererProps> = ({ projects, onProject
               />
             )}
             <div className="flex-1 min-w-0 space-y-1">
-              <div className="font-semibold text-sm text-base-content truncate">{project.name}</div>
+              <div className="font-semibold text-sm text-base-content truncate capitalize">{project.name}</div>
               {project.category && (
-                <div className="badge h-5 badge-xs border-thick">{project.category}</div>
+                <div className="badge h-5 badge-xs border-thick capitalize">{project.category}</div>
               )}
               {project.description && (
                 <p className="text-xs text-base-content/60 line-clamp-2">

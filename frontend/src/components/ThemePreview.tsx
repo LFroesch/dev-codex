@@ -61,88 +61,88 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({ colors }) => {
   } as React.CSSProperties;
 
   return (
-    <div className="bg-base-100 rounded-lg p-4 border border-base-300">
+    <div className="bg-base-100 rounded-lg p-4 border-2 border-base-content/20">
       <h4 className="font-semibold mb-3">Live Theme Preview</h4>
-      <div 
-        className="bg-base-100 rounded-lg p-4 border border-base-300 space-y-4"
+      <div
+        className="bg-base-100 rounded-lg p-4 border-2 border-base-content/20 space-y-4"
         style={previewStyles}
       >
         {/* Navigation Bar Preview */}
-        <div className="bg-base-200 border-subtle rounded-xl px-3 py-2 shadow-sm">
+        <div className="bg-base-200 border-2 border-base-content/20 rounded-xl px-3 py-2 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-primary rounded-lg flex items-center justify-center shadow-sm">
+              <div className="w-6 h-6 bg-primary rounded-lg flex items-center justify-center shadow-sm border-2 border-base-content/20">
                 <svg className="w-3 h-3 text-primary-content" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
                 </svg>
               </div>
-              <span className="font-bold bg-primary bg-clip-text text-sm">Dev Codex</span>
+              <span className="font-bold text-sm">Project Manager</span>
             </div>
             <div className="flex gap-1">
-              <button className="btn btn-primary btn-xs">Menu</button>
+              <button className="btn btn-primary btn-xs border-2 border-base-content/20" style={{color: getContrastTextColor('primary')}}>Menu</button>
             </div>
           </div>
         </div>
 
         {/* Buttons & Tabs */}
         <div className="space-y-2">
-          <div className="tabs-container p-1 border-subtle">
-            <button className="tab-button-xs tab-active" style={{color: getContrastTextColor()}}>Projects</button>
-            <button className="tab-button-xs">Details</button>
-            <button className="tab-button-xs">Discover</button>
+          <div className="tabs-container p-1">
+            <button className="tab-button text-xs tab-active" style={{color: getContrastTextColor('primary')}}>Projects</button>
+            <button className="tab-button text-xs">Details</button>
+            <button className="tab-button text-xs">Discover</button>
           </div>
           <div className="flex flex-wrap gap-1">
-            <button className="btn btn-primary btn-xs">Primary</button>
-            <button className="btn btn-secondary btn-xs">Secondary</button>
-            <button className="btn btn-accent btn-xs">Accent</button>
-            <button className="btn btn-outline btn-xs">Outline</button>
+            <button className="btn btn-primary btn-xs border-2 border-base-content/20" style={{color: getContrastTextColor('primary')}}>Primary</button>
+            <button className="btn btn-secondary btn-xs border-2 border-base-content/20" style={{color: getContrastTextColor('secondary')}}>Secondary</button>
+            <button className="btn btn-accent btn-xs border-2 border-base-content/20" style={{color: getContrastTextColor('accent')}}>Accent</button>
+            <button className="btn btn-outline btn-xs border-2 border-base-content/20">Outline</button>
           </div>
         </div>
 
         {/* Cards Preview */}
         <div className="grid grid-cols-2 gap-2">
-          <div className="bg-base-100 rounded-xl p-3 border-subtle shadow-lg">
+          <div className="bg-base-200 rounded-xl p-3 border-2 border-base-content/20 shadow-lg">
             <div className="flex items-center gap-2 mb-1">
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: colors.primary }}></div>
-              <h4 className="text-xs font-bold">Sample Project</h4>
+              <div className="w-3 h-3 rounded-full border-2 border-base-content/20" style={{ backgroundColor: colors.primary }}></div>
+              <h4 className="text-xs font-bold capitalize">sample project</h4>
             </div>
             <p className="text-xs text-base-content/60 mb-2">Web App project preview</p>
-            <button className="btn btn-primary btn-xs">View</button>
+            <button className="btn btn-primary btn-xs border-2 border-base-content/20" style={{color: getContrastTextColor('primary')}}>View</button>
           </div>
-          <div className="bg-base-100 rounded-xl p-3 border-subtle shadow-lg">
+          <div className="bg-base-200 rounded-xl p-3 border-2 border-base-content/20 shadow-lg">
             <div className="flex items-center gap-2 mb-1">
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: colors.secondary }}></div>
-              <h4 className="text-xs font-bold">Another Project</h4>
+              <div className="w-3 h-3 rounded-full border-2 border-base-content/20" style={{ backgroundColor: colors.secondary }}></div>
+              <h4 className="text-xs font-bold capitalize">another project</h4>
             </div>
             <p className="text-xs text-base-content/60 mb-2">Mobile app project</p>
-            <button className="btn btn-secondary btn-xs">Edit</button>
+            <button className="btn btn-secondary btn-xs border-2 border-base-content/20" style={{color: getContrastTextColor('secondary')}}>Edit</button>
           </div>
         </div>
 
         {/* Status Messages & Forms */}
         <div className="space-y-2">
           <div className="grid grid-cols-2 gap-1">
-            <div className="alert alert-info py-1 text-xs">
+            <div className="alert alert-info py-1 text-xs border-2 border-info/20">
               <span>Info</span>
             </div>
-            <div className="alert alert-success py-1 text-xs">
+            <div className="alert alert-success py-1 text-xs border-2 border-success/20">
               <span>Success</span>
             </div>
-            <div className="alert alert-warning py-1 text-xs">
+            <div className="alert alert-warning py-1 text-xs border-2 border-warning/20">
               <span>Warning</span>
             </div>
-            <div className="alert alert-error py-1 text-xs">
+            <div className="alert alert-error py-1 text-xs border-2 border-error/20">
               <span>Error</span>
             </div>
           </div>
           <div className="form-control">
-            <input type="text" placeholder="Sample input" className="input input-bordered input-sm text-xs" />
+            <input type="text" placeholder="Sample input" className="input input-bordered input-sm text-xs border-2" />
           </div>
           <div className="flex justify-between items-center">
             <div className="flex gap-1">
-              <div className="badge badge-primary badge-sm">Primary</div>
-              <div className="badge badge-secondary badge-sm">Secondary</div>
-              <div className="badge badge-accent badge-sm">Accent</div>
+              <div className="badge badge-primary badge-sm border-2 border-base-content/20" style={{color: getContrastTextColor('primary')}}>Primary</div>
+              <div className="badge badge-secondary badge-sm border-2 border-base-content/20" style={{color: getContrastTextColor('secondary')}}>Secondary</div>
+              <div className="badge badge-accent badge-sm border-2 border-base-content/20" style={{color: getContrastTextColor('accent')}}>Accent</div>
             </div>
             <input type="checkbox" className="toggle toggle-primary toggle-sm" defaultChecked />
           </div>

@@ -98,29 +98,6 @@
 /add devlog --title="Day 1" --content="Project initialized"
 ```
 
----
-
-### 5. Discovery & Search (12s)
-**Show**: Todo management + search
-
-1. Type `/view todos` → show list with priorities
-2. Type `/today` → show today's tasks
-3. Type `/search "auth"` → instant results across todos, notes, components
-4. Type `/complete 1` → mark first todo complete
-5. Show updated list with strikethrough
-
----
-
-## Additional Ideas (No Scripts - Just Concepts)
-
-- **Team Collab**: Invite member, assign todo, show real-time notification
-- **Analytics**: Navigate to analytics, show heatmap + time tracking
-- **Public Sharing**: Toggle public, copy URL, open in incognito
-- **Stale Detection**: `/stale todos` → highlight 30+ day old items
-- **Workflow**: `/week` → weekly summary, `/standup` → daily report
-
----
-
 ## Seed Data (Minimal Setup)
 
 **Quick batch for demos**:
@@ -140,86 +117,6 @@
 /add stack --name="PostgreSQL" --category=database --version="15"
 /add stack --name="Prisma" --category=data --version="5.0"
 ```
-
----
-
-## Key Commands Reference
-
-### `/help` - Show command help
-```bash
-/help              # Show all commands
-/help "add todo"   # Show help for specific command
-/help "llm"        # Show help for LLM guide
-```
-
-### `/llm` - LLM interaction guide (for AI context)
-```bash
-/llm               # General terminal command syntax guide
-```
-**Use case**: Copy `/llm` output + project context from `/summary prompt` → paste to ChatGPT/Claude → get valid commands back
-
-### `/summary` - Export project data
-```bash
-/summary prompt all      # AI-optimized format with full project data
-/summary markdown all    # README-style markdown
-/summary json todos      # JSON export of todos only
-/summary text projects   # Plain text list of projects
-```
-
----
-
-## Recording Tips
-
-**Software**: Cleanshot X (Mac), OBS Studio (Win/Linux)
-**Settings**: 1920x1080 @ 30fps → convert to 1280x720 GIF
-**Target**: <5MB per GIF
-**Style**: Dark mode, slow typing (70% speed), 0.5s pauses
-
-**Conversion**:
-```bash
-ffmpeg -i input.mp4 -vf "fps=20,scale=1280:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" output.gif
-gifsicle -O3 --colors 256 output.gif -o final.gif
-```
-
----
-
-## Recording Setup
-
-### Software Recommendations
-- **Screen Recording**:
-  - Mac: Cleanshot X or ScreenFlow
-  - Windows: OBS Studio or ShareX
-  - Linux: Peek or SimpleScreenRecorder
-- **GIF Conversion**:
-  - Gifski (best quality)
-  - ffmpeg (command-line)
-  - ezgif.com (online)
-
-### Recording Settings
-- **Resolution**: 1920x1080 (scale to 1280x720 for smaller file size)
-- **Frame Rate**: 30 FPS (sufficient for smooth playback)
-- **Duration**: Follow scripts (8-30 seconds per gif)
-- **Format**: Record in MP4, convert to GIF
-- **File Size Target**: < 5MB per GIF for GitHub README
-
-### Conversion Command (ffmpeg)
-```bash
-# High-quality GIF with optimized palette
-ffmpeg -i input.mp4 -vf "fps=20,scale=1280:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" -loop 0 output.gif
-
-# Further optimize with gifsicle
-gifsicle -O3 --colors 256 output.gif -o output-optimized.gif
-```
-
-### UI Tips for Recording
-1. **Clean workspace**: Close unnecessary tabs/windows
-2. **Cursor visibility**: Use cursor highlighting (Cleanshot X has this)
-3. **Slow down typing**: Type at 60-70% normal speed for clarity
-4. **Wait between actions**: 0.5s pause after autocomplete, 1s after command execution
-5. **Smooth panning**: Use mouse for slow, deliberate movements
-6. **Dark mode**: Use dark theme for better contrast in GIFs
-
----
 
 ## Terminal Recording Tips
 

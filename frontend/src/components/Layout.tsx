@@ -653,8 +653,8 @@ const Layout: React.FC = () => {
                       onClick={() => handleNavigateWithCheck('/notes')}
                       title={selectedProject.isLocked ? (selectedProject.lockedReason || 'This project is locked and cannot be edited') : `Current project: ${selectedProject.name}`}
                     >
-                      <span className="text-sm font-medium truncate">
-                        {String(selectedProject.name).split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+                      <span className="text-sm font-medium truncate capitalize">
+                        {selectedProject.name}
                       </span>
                       {selectedProject.isLocked && (
                         <svg
@@ -714,7 +714,7 @@ const Layout: React.FC = () => {
                     onClick={() => handleNavigateWithCheck('/notes')}
                     title={selectedProject.isLocked ? (selectedProject.lockedReason || 'This project is locked and cannot be edited') : `Current project: ${selectedProject.name}`}
                   >
-                    <span className="text-sm font-medium truncate">{String(selectedProject.name).split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}</span>
+                    <span className="text-sm font-medium truncate capitalize">{selectedProject.name}</span>
                     {selectedProject.isLocked && (
                       <svg
                         className="w-4 h-4 text-warning flex-shrink-0"
@@ -1181,7 +1181,7 @@ const Layout: React.FC = () => {
                     onClick={() => handleNavigateWithCheck('/notes')}
                     title={selectedProject.isLocked ? (selectedProject.lockedReason || 'This project is locked and cannot be edited') : selectedProject.name}
                   >
-                    <span className="text-sm font-medium">{String(selectedProject.name).split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}</span>
+                    <span className="text-sm font-medium capitalize">{selectedProject.name}</span>
                     {selectedProject.isLocked && (
                       <svg
                         className="w-4 h-4 text-warning flex-shrink-0"
@@ -1813,7 +1813,7 @@ const Layout: React.FC = () => {
                               <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <h3
-                                    className={`border-2 border-base-content/20 font-bold truncate px-2 py-1 rounded-md group-hover:opacity-90 transition-opacity text-md ${
+                                    className={`border-2 border-base-content/20 font-bold truncate px-2 py-1 rounded-md group-hover:opacity-90 transition-opacity text-md capitalize ${
                                       project.isLocked ? 'opacity-50' : ''
                                     }`}
                                     style={{
@@ -1821,7 +1821,7 @@ const Layout: React.FC = () => {
                                       color: getContrastTextColor(project.color)
                                     }}
                                   >
-                                    {String(project.name).split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+                                    {project.name}
                                   </h3>
                                   {project.isLocked && (
                                     <svg
@@ -1834,11 +1834,11 @@ const Layout: React.FC = () => {
                                   )}
                                 </div>
                                 {project.category && (
-                                  <h3 className={`border-2 border-base-content/20 font-semibold bg-info/20 truncate px-2 py-1 rounded-md group-hover:opacity-90 transition-opacity text-sm ${
+                                  <h3 className={`border-2 border-base-content/20 font-semibold bg-info/20 truncate px-2 py-1 rounded-md group-hover:opacity-90 transition-opacity text-sm capitalize ${
                                     project.isLocked ? 'opacity-50' : ''
                                   }`}
                                   style={{ color: getContrastTextColor("info/20") }}>
-                                    {String(project.category).split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+                                    {project.category}
                                   </h3>
                                 )}
                               </div>
@@ -2085,8 +2085,8 @@ const Layout: React.FC = () => {
                                             className="w-3 h-3 rounded-full border-thick flex-shrink-0"
                                             style={{ backgroundColor: project.color }}
                                           />
-                                          <span className="font-semibold">
-                                            {String(project.name).split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+                                          <span className="font-semibold capitalize">
+                                            {project.name}
                                           </span>
                                           {project.isLocked && (
                                             <svg className="w-4 h-4 text-warning flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -2097,9 +2097,9 @@ const Layout: React.FC = () => {
                                       </td>
                                       <td>
                                         {project.category && (
-                                          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-info/20 border-2 border-info/40"
+                                          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-info/20 border-2 border-info/40 capitalize"
                                             style={{ color: getContrastTextColor("info/20") }}>
-                                            {String(project.category).split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+                                            {project.category}
                                           </span>
                                         )}
                                       </td>

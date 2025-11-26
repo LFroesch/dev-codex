@@ -399,8 +399,8 @@ const DiscoverPage: React.FC = () => {
               >
                 <option value="all" >All Categories</option>
                 {categories.map((category) => (
-                  <option key={category} value={category}>
-                    {category.charAt(0).toUpperCase() + category.slice(1)}
+                  <option key={category} value={category} className="capitalize">
+                    {category}
                   </option>
                 ))}
               </select>
@@ -476,9 +476,9 @@ const DiscoverPage: React.FC = () => {
                   >
                     {/* Project Header */}
                     <div className="flex items-center gap-3 mb-3">
-                      <h3 
-                        className="font-semibold text-base truncate px-2 py-1 rounded-md group-hover:opacity-90 transition-opacity border-thick"
-                        style={{ 
+                      <h3
+                        className="font-semibold text-base truncate px-2 py-1 rounded-md group-hover:opacity-90 transition-opacity border-thick capitalize"
+                        style={{
                           backgroundColor: project.color,
                           color: getContrastTextColor(project.color)
                         }}
@@ -489,7 +489,7 @@ const DiscoverPage: React.FC = () => {
                     
                     {/* Category and Date */}
                     <div className="flex items-center gap-2 mb-3">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-primary border-2 border-base-content/20 h-[1.5rem]"
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-primary border-2 border-base-content/20 h-[1.5rem] capitalize"
                         style={{ color: getContrastTextColor() }}
                       >
                         {project.category}
@@ -517,7 +517,7 @@ const DiscoverPage: React.FC = () => {
                           {project.tags.slice(0, 3).map((tag: string, index: number) => (
                             <span
                               key={index}
-                              className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-secondary text-base-content/80 border-2 border-base-content/20 h-[1.5rem]"
+                              className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-secondary text-base-content/80 border-2 border-base-content/20 h-[1.5rem] capitalize"
                               style={{ color: getContrastTextColor("secondary") }}
                             >
                               {tag}
@@ -539,7 +539,7 @@ const DiscoverPage: React.FC = () => {
                       {project.technologies && project.technologies.length > 0 && (
                         <div className="flex flex-wrap gap-1">
                           {project.technologies.slice(0, 4).map((tech: any, index: number) => (
-                            <span key={index} className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-base-200 text-base-content/80 border-2 border-base-content/20">
+                            <span key={index} className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-base-200 text-base-content/80 border-2 border-base-content/20 capitalize">
                               {tech.name}
                             </span>
                           ))}

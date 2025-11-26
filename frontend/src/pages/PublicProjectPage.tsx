@@ -184,7 +184,7 @@ const PublicProjectPage: React.FC = () => {
             <div className="flex flex-wrap items-center gap-3 mb-4">
               {/* Project Title */}
               <h1
-                className="text-2xl sm:text-3xl lg:text-4xl font-bold px-4 py-2 rounded-lg border-2 border-base-content/20"
+                className="text-2xl sm:text-3xl lg:text-4xl font-bold px-4 py-2 rounded-lg border-2 border-base-content/20 capitalize"
                 style={{
                   backgroundColor: project.color,
                   color: getContrastTextColor(project.color)
@@ -246,7 +246,7 @@ const PublicProjectPage: React.FC = () => {
                 <svg className="w-4 h-4 text-base-content/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                 </svg>
-                <span className="text-sm font-medium text-base-content/80">{project.category}</span>
+                <span className="text-sm font-medium text-base-content/80 capitalize">{project.category}</span>
               </div>
 
               {/* Divider */}
@@ -309,7 +309,7 @@ const PublicProjectPage: React.FC = () => {
                 {project.tags.map((tag: string, index: number) => (
                   <span
                     key={index}
-                    className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-base-200 text-base-content border border-base-content/20 hover:bg-base-300 transition-colors"
+                    className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-base-200 text-base-content border border-base-content/20 hover:bg-base-300 transition-colors capitalize"
                   >
                     #{tag}
                   </span>
@@ -508,7 +508,7 @@ const PublicProjectPage: React.FC = () => {
                     {project.technologies.map((tech: any, index: number) => (
                       <div
                         key={index}
-                        className="badge badge-outline border-thick p-3 border-secondary font-bold badge-lg hover:shadow-lg transition-colors"
+                        className="badge badge-outline border-thick p-3 border-secondary font-bold badge-lg hover:shadow-lg transition-colors capitalize"
                       >
                         {tech.name + (tech.version ? ` (v${tech.version})` : '')}
                       </div>

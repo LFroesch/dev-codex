@@ -864,15 +864,15 @@ const AccountSettingsPage: React.FC = () => {
                       {THEMES.map((theme) => (
                         <button
                           key={theme}
-                          className={`group flex flex-col items-center gap-1 sm:gap-2 p-2 sm:p-3 rounded-lg transition-all hover:scale-105 ${
-                            currentTheme === theme 
-                              ? "bg-primary/20 ring-2 ring-primary" 
-                              : "hover:bg-base-200"
+                          className={`group flex flex-col items-center gap-1 sm:gap-2 p-2 sm:p-3 rounded-lg transition-all hover:scale-105 border-2 ${
+                            currentTheme === theme
+                              ? "bg-primary/20 border-primary"
+                              : "border-base-content/20 hover:bg-base-200"
                           }`}
                           onClick={() => handleThemeChange(theme)}
                           disabled={saving}
                         >
-                          <div className="h-8 sm:h-12 w-full rounded-lg overflow-hidden shadow-sm" data-theme={theme}>
+                          <div className="h-8 sm:h-12 w-full rounded-lg overflow-hidden shadow-sm border-2 border-base-content/20" data-theme={theme}>
                             <div className="h-full grid grid-cols-4 gap-px p-1">
                               <div className="rounded bg-primary"></div>
                               <div className="rounded bg-secondary"></div>
@@ -888,6 +888,93 @@ const AccountSettingsPage: React.FC = () => {
                           )}
                         </button>
                       ))}
+                    </div>
+
+                    {/* Current Theme Preview */}
+                    <div className="mt-6 p-4 bg-base-200 rounded-lg border-2 border-base-content/20">
+                      <h4 className="font-semibold mb-3">Current Theme Preview</h4>
+                      <div className="bg-base-100 rounded-lg p-4 border-2 border-base-content/20 space-y-4">
+                        {/* Navigation Bar Preview */}
+                        <div className="bg-base-200 border-2 border-base-content/20 rounded-xl px-3 py-2 shadow-sm">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className="w-6 h-6 bg-primary rounded-lg flex items-center justify-center shadow-sm border-2 border-base-content/20">
+                                <svg className="w-3 h-3 text-primary-content" fill="currentColor" viewBox="0 0 20 20">
+                                  <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
+                                </svg>
+                              </div>
+                              <span className="font-bold text-sm">Project Manager</span>
+                            </div>
+                            <div className="flex gap-1">
+                              <button className="btn btn-primary btn-xs border-2 border-base-content/20" style={{color: getContrastTextColor('primary')}}>Menu</button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Buttons & Tabs */}
+                        <div className="space-y-2">
+                          <div className="tabs-container p-1">
+                            <button className="tab-button text-xs tab-active" style={{color: getContrastTextColor('primary')}}>Projects</button>
+                            <button className="tab-button text-xs">Details</button>
+                            <button className="tab-button text-xs">Discover</button>
+                          </div>
+                          <div className="flex flex-wrap gap-1">
+                            <button className="btn btn-primary btn-xs border-2 border-base-content/20" style={{color: getContrastTextColor('primary')}}>Primary</button>
+                            <button className="btn btn-secondary btn-xs border-2 border-base-content/20" style={{color: getContrastTextColor('secondary')}}>Secondary</button>
+                            <button className="btn btn-accent btn-xs border-2 border-base-content/20" style={{color: getContrastTextColor('accent')}}>Accent</button>
+                            <button className="btn btn-outline btn-xs border-2 border-base-content/20">Outline</button>
+                          </div>
+                        </div>
+
+                        {/* Cards Preview */}
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="bg-base-200 rounded-xl p-3 border-2 border-base-content/20 shadow-lg">
+                            <div className="flex items-center gap-2 mb-1">
+                              <div className="w-3 h-3 rounded-full bg-primary border-2 border-base-content/20"></div>
+                              <h4 className="text-xs font-bold capitalize">sample project</h4>
+                            </div>
+                            <p className="text-xs text-base-content/60 mb-2">Web App project preview</p>
+                            <button className="btn btn-primary btn-xs border-2 border-base-content/20" style={{color: getContrastTextColor('primary')}}>View</button>
+                          </div>
+                          <div className="bg-base-200 rounded-xl p-3 border-2 border-base-content/20 shadow-lg">
+                            <div className="flex items-center gap-2 mb-1">
+                              <div className="w-3 h-3 rounded-full bg-secondary border-2 border-base-content/20"></div>
+                              <h4 className="text-xs font-bold capitalize">another project</h4>
+                            </div>
+                            <p className="text-xs text-base-content/60 mb-2">Mobile app project</p>
+                            <button className="btn btn-secondary btn-xs border-2 border-base-content/20" style={{color: getContrastTextColor('secondary')}}>Edit</button>
+                          </div>
+                        </div>
+
+                        {/* Status & Badges */}
+                        <div className="space-y-2">
+                          <div className="grid grid-cols-2 gap-1">
+                            <div className="alert alert-info py-1 text-xs border-2 border-info/20">
+                              <span>Info</span>
+                            </div>
+                            <div className="alert alert-success py-1 text-xs border-2 border-success/20">
+                              <span>Success</span>
+                            </div>
+                            <div className="alert alert-warning py-1 text-xs border-2 border-warning/20">
+                              <span>Warning</span>
+                            </div>
+                            <div className="alert alert-error py-1 text-xs border-2 border-error/20">
+                              <span>Error</span>
+                            </div>
+                          </div>
+                          <div className="form-control">
+                            <input type="text" placeholder="Sample input" className="input input-bordered input-sm text-xs border-2" />
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <div className="flex gap-1">
+                              <div className="badge badge-primary badge-sm border-2 border-base-content/20" style={{color: getContrastTextColor('primary')}}>Primary</div>
+                              <div className="badge badge-secondary badge-sm border-2 border-base-content/20" style={{color: getContrastTextColor('secondary')}}>Secondary</div>
+                              <div className="badge badge-accent badge-sm border-2 border-base-content/20" style={{color: getContrastTextColor('accent')}}>Accent</div>
+                            </div>
+                            <input type="checkbox" className="toggle toggle-primary toggle-sm" defaultChecked />
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -1284,10 +1371,10 @@ const AccountSettingsPage: React.FC = () => {
                 {/* Current Theme Info */}
                 <div className="bg-base-200 rounded-lg p-4 border-thick">
                   <h3 className="font-semibold mb-2">
-                    Current Theme: {currentTheme.startsWith('custom-') 
+                    Current Theme: <span className="capitalize">{currentTheme.startsWith('custom-')
                       ? customThemes.find(t => t.id === currentTheme.replace('custom-', ''))?.name || 'Unknown Custom Theme'
-                      : currentTheme.charAt(0).toUpperCase() + currentTheme.slice(1)
-                    }
+                      : currentTheme
+                    }</span>
                   </h3>
                   <div className="text-sm text-base-content/60">
                     <p>Theme preference is saved to your account and will be applied across all devices.</p>

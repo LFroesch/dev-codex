@@ -1806,7 +1806,7 @@ Help users interact with their project management terminal. Generate commands to
 ## Command Reference
 
 ### Project Management
-\`/add project --name="..." [--description="..." --category="..." --color="#..."]\`
+\`/add project --name="..." [--description="..." --category="..." --color="#HEXCODE"]\`
 \`/view projects\` - List all projects
 \`/edit project --name="..." --description="..."\` (uses current project)
 \`/delete project @projectname\` - Delete a project
@@ -2000,7 +2000,7 @@ asset: image|font|video|audio|document|dependency|custom
             label: 'Project Color',
             defaultValue: '#3B82F6',
             required: false,
-            description: 'Pick a color theme for your project'
+            description: 'Pick a color theme for your project (MUST be hex format like #3B82F6)'
           },
           {
             id: 'tags',
@@ -2693,7 +2693,13 @@ asset: image|font|video|audio|document|dependency|custom
       const name = getFlag(parsed.flags, 'name') as string;
       const description = (getFlag(parsed.flags, 'description') as string) || '';
       const category = (getFlag(parsed.flags, 'category') as string) || 'general';
-      const color = (getFlag(parsed.flags, 'color') as string) || '#3B82F6';
+      let color = (getFlag(parsed.flags, 'color') as string) || '#3B82F6';
+
+      // Validate color is hex format, fallback to default if invalid
+      const hexRegex = /^#[0-9A-Fa-f]{6}$/;
+      if (!hexRegex.test(color)) {
+        color = '#3B82F6'; // Default blue if invalid
+      }
 
       if (!name) {
         return {

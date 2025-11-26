@@ -81,6 +81,12 @@ const SettingsPage: React.FC = () => {
         setStagingEnvironment(value as 'development' | 'staging' | 'production');
         break;
       case 'color':
+        // Validate hex color format
+        const hexRegex = /^#[0-9A-Fa-f]{6}$/;
+        if (value && !hexRegex.test(value)) {
+          // Don't update if invalid hex
+          return;
+        }
         setColor(value as string);
         break;
       case 'category':
@@ -227,6 +233,8 @@ const SettingsPage: React.FC = () => {
                       onChange={(e) => updateField('color', e.target.value)}
                       className="input input-bordered input-sm flex-1 font-mono text-xs h-10"
                       placeholder="#3B82F6"
+                      pattern="^#[0-9A-Fa-f]{6}$"
+                      title="Must be a valid hex color (e.g., #3B82F6)"
                     />
                   </div>
                   {/* Color preset buttons */}

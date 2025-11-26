@@ -83,25 +83,25 @@ class StaleItemService {
       // Check todos for staleness
       // Only check todos WITHOUT due dates or reminders
       if (project.todos && Array.isArray(project.todos)) {
-        console.log(`[StaleItemService] Checking ${project.todos.length} todos in project ${project.name}`);
+        
 
         for (const todo of project.todos) {
           // Skip completed todos
           if (todo.completed || todo.status === 'completed') {
-            console.log(`  - Skipping completed todo: ${todo.title}`);
+            
             continue;
           }
 
           // Skip todos that have due dates or reminders (they have their own notification system)
           if (todo.dueDate || todo.reminderDate) {
-            console.log(`  - Skipping todo with due/reminder date: ${todo.title}`);
+            
             continue;
           }
 
           // Use updatedAt if available, fallback to createdAt for older todos
           const lastUpdate = (todo as any).updatedAt || todo.createdAt;
           if (!lastUpdate) {
-            console.log(`  - Skipping todo without date: ${todo.title}`);
+            
             continue;
           }
 
@@ -110,11 +110,11 @@ class StaleItemService {
             (Date.now() - lastUpdateDate.getTime()) / (1000 * 60 * 60 * 24)
           );
 
-          console.log(`  - Todo "${todo.title}": ${daysSince} days old (cutoff: ${this.STALE_THRESHOLD_DAYS_TODOS})`);
+          
 
           // Check if todo is stale
           if (lastUpdateDate < todoCutoffDate) {
-            console.log(`    ✓ STALE - Adding to list`);
+            
             staleTodos.push({
               projectId: project._id.toString(),
               projectName: project.name,
@@ -133,7 +133,7 @@ class StaleItemService {
     staleNotes.sort((a, b) => b.daysSinceUpdate - a.daysSinceUpdate);
     staleTodos.sort((a, b) => b.daysSinceUpdate - a.daysSinceUpdate);
 
-    console.log(`[StaleItemService] Found ${staleNotes.length} stale notes and ${staleTodos.length} stale todos`);
+    
 
     return {
       staleNotes,
@@ -194,7 +194,7 @@ class StaleItemService {
     try {
       const users = await User.find({}).select('_id').lean();
 
-      console.log(`[StaleItemService] Checking stale items for ${users.length} users`);
+      
 
       let notificationsSent = 0;
       for (const user of users) {
@@ -202,14 +202,14 @@ class StaleItemService {
           await this.notifyStaleItems(user._id.toString());
           notificationsSent++;
         } catch (error) {
-          console.error(`[StaleItemService] Error checking stale items for user ${user._id}:`, error);
+          
           // Continue with other users even if one fails
         }
       }
 
-      console.log(`[StaleItemService] Sent ${notificationsSent} stale item notifications`);
+      
     } catch (error) {
-      console.error('[StaleItemService] Error in checkAllUsers:', error);
+      
       throw error;
     }
   }

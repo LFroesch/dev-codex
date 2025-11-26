@@ -26,7 +26,6 @@ const OAuthCallbackPage: React.FC = () => {
           navigate('/?auth=success', { replace: true });
         }
       } catch (err) {
-        console.error('Token exchange failed:', err);
         setError('Authentication failed. Please try again.');
         setTimeout(() => navigate('/login'), 3000);
       }

@@ -44,7 +44,6 @@ export const useTutorial = (): UseTutorialReturn => {
       const { steps } = await tutorialAPI.getSteps();
       setTutorialSteps(steps);
     } catch (error) {
-      console.error('Failed to load tutorial steps:', error);
       toast.error('Failed to load tutorial');
     } finally {
       setIsLoading(false);
@@ -65,7 +64,6 @@ export const useTutorial = (): UseTutorialReturn => {
         }
       }
     } catch (error) {
-      console.error('Failed to load tutorial progress:', error);
     }
   };
 
@@ -76,13 +74,11 @@ export const useTutorial = (): UseTutorialReturn => {
         completedSteps: completed
       });
     } catch (error) {
-      console.error('Failed to save tutorial progress:', error);
     }
   }, []);
 
   const startTutorial = useCallback(() => {
     if (tutorialSteps.length === 0) {
-      console.warn('Cannot start tutorial: steps not loaded yet');
       return;
     }
 
@@ -142,7 +138,6 @@ export const useTutorial = (): UseTutorialReturn => {
       sessionStorage.setItem('tutorialWelcomeShown', 'true');
       toast.info('Tutorial skipped. You can restart it anytime from the Help page.');
     } catch (error) {
-      console.error('Failed to skip tutorial:', error);
       toast.error('Failed to skip tutorial');
     }
   }, []);
@@ -157,7 +152,6 @@ export const useTutorial = (): UseTutorialReturn => {
       sessionStorage.setItem('tutorialWelcomeShown', 'true');
       toast.success('🎉 Tutorial completed! You\'re all set to explore on your own.');
     } catch (error) {
-      console.error('Failed to complete tutorial:', error);
       toast.error('Failed to complete tutorial');
     }
   }, [tutorialSteps]);

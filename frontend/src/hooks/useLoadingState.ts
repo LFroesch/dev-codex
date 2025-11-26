@@ -15,7 +15,6 @@ export const useLoadingState = (initialState = false): UseLoadingStateReturn => 
       const result = await fn();
       return result;
     } catch (error) {
-      console.error('Error in withLoading:', error);
       throw error;
     } finally {
       setLoading(false);

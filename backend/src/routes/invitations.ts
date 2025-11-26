@@ -37,7 +37,7 @@ router.get('/pending', requireAuth, async (req: AuthRequest, res) => {
       invitations,
     });
   } catch (error) {
-    console.error('Get pending invitations error:', error);
+    
     res.status(500).json({ message: 'Server error fetching invitations' });
   }
 });
@@ -135,7 +135,7 @@ router.post('/:token/accept', requireAuth, async (req: AuthRequest, res) => {
       role: invitation.role,
     });
   } catch (error) {
-    console.error('Accept invitation error:', error);
+    
     res.status(500).json({ message: 'Server error accepting invitation' });
   }
 });
@@ -185,7 +185,7 @@ router.post('/:token/decline', requireAuth, async (req: AuthRequest, res) => {
       message: 'Invitation declined successfully',
     });
   } catch (error) {
-    console.error('Decline invitation error:', error);
+    
     res.status(500).json({ message: 'Server error declining invitation' });
   }
 });
@@ -222,7 +222,7 @@ router.get('/:token', async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Get invitation details error:', error);
+    
     res.status(500).json({ message: 'Server error fetching invitation details' });
   }
 });

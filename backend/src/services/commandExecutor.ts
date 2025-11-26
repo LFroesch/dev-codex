@@ -512,7 +512,7 @@ export class CommandExecutor {
         case CommandType.ACTIVITY_LOG:
           return await this.utilityHandlers.handleActivityLog(parsed, currentProjectId);
         case CommandType.LLM_CONTEXT:
-          return await this.utilityHandlers.handleLLMContext(parsed, currentProjectId);
+          return await this.utilityHandlers.handleLLMContext();
         case CommandType.GOTO:
           return await this.utilityHandlers.handleGoto(parsed, currentProjectId);
         case CommandType.TODAY:

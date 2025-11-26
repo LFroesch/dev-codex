@@ -40,7 +40,6 @@ const SharingPage: React.FC = () => {
       await onProjectRefresh();
       setMakePrivateConfirm(false);
     } catch (err) {
-      console.error('Failed to make project private:', err);
       setError('Failed to make project private');
       setMakePrivateConfirm(false);
     }

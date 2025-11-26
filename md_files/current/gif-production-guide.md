@@ -155,14 +155,6 @@
 ### `/llm` - LLM interaction guide (for AI context)
 ```bash
 /llm               # General terminal command syntax guide
-/llm todos         # Todos guide with current project todos
-/llm components    # Components guide with architecture
-/llm notes         # Notes guide with project notes
-/llm stack         # Tech stack guide
-/llm team          # Team management guide
-/llm deployment    # Deployment guide
-/llm settings      # Settings guide
-/llm projects      # Projects overview
 ```
 **Use case**: Copy `/llm` output + project context from `/summary prompt` → paste to ChatGPT/Claude → get valid commands back
 

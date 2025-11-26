@@ -80,7 +80,6 @@ class NotificationService {
     });
 
     this.socket.on('connect_error', (error) => {
-      console.error('Notification service connection error:', error);
       this.handleReconnect();
     });
 
@@ -104,7 +103,6 @@ class NotificationService {
 
   private handleReconnect() {
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.error('Max reconnection attempts reached');
       return;
     }
 
@@ -143,7 +141,6 @@ class NotificationService {
       this.connect();
       
     } catch (error) {
-      console.error('Failed to initialize notification service:', error);
     }
   }
 
@@ -162,7 +159,6 @@ class NotificationService {
       this.notifyNotificationListeners();
       this.notifyUnreadCountListeners();
     } catch (error) {
-      console.error('Failed to fetch notifications:', error);
     }
   }
 
@@ -267,7 +263,6 @@ class NotificationService {
       try {
         callback([...this.notifications]);
       } catch (error) {
-        console.error('Error in notification listener:', error);
       }
     });
   }
@@ -277,7 +272,6 @@ class NotificationService {
       try {
         callback(this.unreadCount);
       } catch (error) {
-        console.error('Error in unread count listener:', error);
       }
     });
   }
@@ -312,7 +306,6 @@ class NotificationService {
         isRead: true
       });
     } catch (error) {
-      console.error('Failed to mark notification as read:', error);
       // Refetch to sync state
       this.fetchNotifications();
     }
@@ -326,7 +319,6 @@ class NotificationService {
       // Update local state optimistically
       this.removeNotification(notificationId);
     } catch (error) {
-      console.error('Failed to delete notification:', error);
       // Refetch to sync state
       this.fetchNotifications();
     }
@@ -344,7 +336,6 @@ class NotificationService {
       // Update local state
       this.clearAllNotifications();
     } catch (error) {
-      console.error('Failed to clear all notifications:', error);
       // Refetch to sync state
       this.fetchNotifications();
     }

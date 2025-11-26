@@ -218,7 +218,6 @@ class AnalyticsService {
               restoredSession = true;
             }
           } catch (e) {
-            console.error('Failed to parse stored analytics session:', e);
           }
         }
         
@@ -244,7 +243,6 @@ class AnalyticsService {
         return sessionId;
       }
     } catch (error) {
-      console.error('Failed to start analytics session:', error);
     }
 
     // Fallback to offline session
@@ -302,7 +300,6 @@ class AnalyticsService {
         await this.flushPendingEvents();
       }
     } catch (error) {
-      console.error('Analytics: Failed to end session:', error);
     }
 
     localStorage.removeItem('analytics_session');
@@ -369,7 +366,6 @@ class AnalyticsService {
           }
         }
       } catch (error) {
-        console.error('Analytics: Failed to log smart project join:', error);
       }
     }
 
@@ -509,7 +505,6 @@ class AnalyticsService {
             return;
           }
         } catch (error) {
-          console.error('Analytics: Failed to switch project:', error);
         }
       }
       
@@ -607,7 +602,6 @@ class AnalyticsService {
         await new Promise(resolve => setTimeout(resolve, this.RETRY_DELAY * attempt));
         return this.sendEventWithRetry(event, attempt + 1);
       }
-      console.error(`Analytics: Failed to send event after ${this.RETRY_ATTEMPTS} attempts:`, error);
     }
   }
 
@@ -626,7 +620,7 @@ class AnalyticsService {
   private async recordActivity() {
     // Only start sessions if user is authenticated
     if (!this.session && this.isAuthenticated) {
-      await this.startSession().catch(console.error);
+      await this.startSession().catch(() => {});
     }
 
     if (this.session) {
@@ -731,7 +725,6 @@ class AnalyticsService {
         }));
       }
     } catch (error) {
-      console.error('Analytics: Heartbeat network error:', error);
       // Don't terminate session on network errors, just log
     }
   }
@@ -755,7 +748,6 @@ class AnalyticsService {
 
       return await response.json();
     } catch (error) {
-      console.error('Failed to fetch projects time data:', error);
       return { projects: [], period: `${days} days` };
     }
   }
@@ -772,7 +764,6 @@ class AnalyticsService {
 
       return await response.json();
     } catch (error) {
-      console.error('Failed to fetch project time data:', error);
       return { projectId, totalTime: 0, dailyBreakdown: [], period: `${days} days` };
     }
   }
@@ -797,7 +788,6 @@ class AnalyticsService {
         })
       });
     } catch (error) {
-      console.error('Failed to track feature usage:', error);
     }
   }
 }

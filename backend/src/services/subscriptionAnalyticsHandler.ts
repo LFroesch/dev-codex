@@ -41,7 +41,7 @@ export class SubscriptionAnalyticsHandler {
       }
 
     } catch (error) {
-      console.error(`❌ Error handling subscription change for user ${event.userId}:`, error);
+      
       throw error;
     }
   }

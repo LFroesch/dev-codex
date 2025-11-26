@@ -37,7 +37,7 @@ router.get('/', requireAuth, async (req: AuthRequest, res: Response) => {
       total: favorites.length
     });
   } catch (error) {
-    console.error(`Error fetching favorites for user ${req.userId}:`, error);
+    
     res.status(500).json({ success: false, message: 'Database error while fetching favorites' });
   }
 });
@@ -58,7 +58,7 @@ router.get('/check/:projectId', requireAuth, async (req: AuthRequest, res: Respo
       isFavorited: !!favorite
     });
   } catch (error) {
-    console.error('Error checking favorite status:', error);
+    
     res.status(500).json({ success: false, message: 'Failed to check favorite status' });
   }
 });
@@ -122,7 +122,7 @@ router.post('/:projectId', requireAuth, blockDemoWrites, async (req: AuthRequest
           relatedUserId: new mongoose.Types.ObjectId(userId)
         });
       } catch (notifError) {
-        console.error('Error creating favorite notification:', notifError);
+        
         // Continue - don't fail the request if notification fails
       }
     }
@@ -141,7 +141,7 @@ router.post('/:projectId', requireAuth, blockDemoWrites, async (req: AuthRequest
         }
       });
     } catch (logError) {
-      console.error('Error creating activity log:', logError);
+      
       // Continue - don't fail the request if logging fails
     }
 
@@ -154,7 +154,7 @@ router.post('/:projectId', requireAuth, blockDemoWrites, async (req: AuthRequest
       }
     });
   } catch (error) {
-    console.error(`Error adding favorite for project ${req.params.projectId}:`, error);
+    
     res.status(500).json({ success: false, message: 'Database error while adding favorite' });
   }
 });
@@ -179,7 +179,7 @@ router.delete('/:projectId', requireAuth, blockDemoWrites, async (req: AuthReque
       message: 'Favorite removed successfully'
     });
   } catch (error) {
-    console.error('Error removing favorite:', error);
+    
     res.status(500).json({ success: false, message: 'Failed to remove favorite' });
   }
 });
@@ -198,7 +198,7 @@ router.get('/count/:projectId', requireAuth, async (req: AuthRequest, res: Respo
       count
     });
   } catch (error) {
-    console.error('Error counting favorites:', error);
+    
     res.status(500).json({ success: false, message: 'Failed to count favorites' });
   }
 });
@@ -230,7 +230,7 @@ router.get('/my-projects', requireAuth, async (req: AuthRequest, res: Response) 
       favorites
     });
   } catch (error) {
-    console.error('Error fetching my project favorites:', error);
+    
     res.status(500).json({ success: false, message: 'Failed to fetch favorites' });
   }
 });

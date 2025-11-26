@@ -31,7 +31,6 @@ const ActiveUsers: React.FC<ActiveUsersProps> = ({
       
       setActiveUsers(filteredUsers);
     } catch (err) {
-      console.error('Failed to load active users:', err);
       setError('Failed to load active users');
     } finally {
       setLoading(false);

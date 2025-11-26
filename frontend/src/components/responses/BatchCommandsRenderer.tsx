@@ -89,7 +89,6 @@ const BatchCommandsRenderer: React.FC<BatchCommandsRendererProps> = ({
       setCopySuccess(true);
       setTimeout(() => setCopySuccess(false), 2000);
     } catch (err) {
-      console.error('Failed to copy:', err);
     }
   };
 

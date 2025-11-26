@@ -159,7 +159,7 @@ export class StackHandlers extends BaseCommandHandler {
         }
       });
     } catch (error) {
-      console.error('Failed to track terminal stack add:', error);
+      
     }
 
     return this.buildSuccessResponse(
@@ -308,7 +308,7 @@ export class StackHandlers extends BaseCommandHandler {
         }
       });
     } catch (error) {
-      console.error('Failed to track terminal stack remove:', error);
+      
     }
 
     return this.buildSuccessResponse(

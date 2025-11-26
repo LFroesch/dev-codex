@@ -30,7 +30,6 @@ const IdeasPage: React.FC<IdeasPageProps> = ({ onIdeasCountChange }) => {
       setIdeas(response.ideas);
       onIdeasCountChange?.(response.ideas.length);
     } catch (err) {
-      console.error('Failed to load ideas:', err);
       setError('Failed to load ideas');
     } finally {
       setLoading(false);
@@ -50,7 +49,6 @@ const IdeasPage: React.FC<IdeasPageProps> = ({ onIdeasCountChange }) => {
         return newIdeas;
       });
     } catch (err) {
-      console.error('Failed to create idea:', err);
       setError('Failed to create idea');
     }
   };
@@ -69,7 +67,6 @@ const IdeasPage: React.FC<IdeasPageProps> = ({ onIdeasCountChange }) => {
         return newIdeas;
       });
     } catch (err) {
-      console.error('Failed to delete idea:', err);
       setError('Failed to delete idea');
     }
   };
@@ -189,7 +186,6 @@ const NewIdeaForm: React.FC<NewIdeaFormProps> = ({ onAdd }) => {
       setContent('');
       setShowCreateForm(false);
     } catch (error) {
-      console.error('Failed to create idea:', error);
     } finally {
       setLoading(false);
     }
@@ -330,7 +326,6 @@ const IdeaModal: React.FC<IdeaModalProps> = ({
       onModeChange('view');
       onUpdate();
     } catch (error) {
-      console.error('Failed to update idea:', error);
     } finally {
       setLoading(false);
     }

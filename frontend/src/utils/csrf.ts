@@ -32,7 +32,6 @@ async function fetchCsrfToken(): Promise<string> {
 
     return token;
   } catch (error) {
-    console.error('Error fetching CSRF token:', error);
     throw error;
   }
 }
@@ -105,7 +104,6 @@ export async function csrfFetch(url: string, options: RequestInit = {}): Promise
   if (response.status === 403) {
     const errorData = await response.json().catch(() => ({}));
     if (errorData.code === 'EBADCSRFTOKEN' || errorData.message?.includes('CSRF')) {
-      console.warn('CSRF token invalid, fetching new token and retrying...');
 
       // Clear old token and fetch new one
       clearCsrfToken();

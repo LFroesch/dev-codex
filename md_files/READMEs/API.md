@@ -1,4 +1,4 @@
-## Complete API (100+ endpoints)
+## Complete API (130+ endpoints)
 
 ### Auth (`/api/auth`)
 `POST /register` `POST /login` `GET /google` `GET /google/callback` `POST /logout` `POST /forgot-password` `POST /reset-password` `GET /me`
@@ -58,6 +58,26 @@
 
 ### News (`/api/news`)
 `GET /` `GET /admin` `GET /:id` `POST /` `PUT /:id` `DELETE /:id`
+
+### Posts (`/api/posts`)
+`GET /feed` `GET /user/:userId` `GET /project/:projectId` `POST /` `PUT /:postId` `DELETE /:postId`
+
+### Comments (`/api/comments`)
+`GET /project/:projectId` `POST /project/:projectId` `POST /project/:projectId/reply/:commentId` `PUT /:commentId` `DELETE /:commentId` `GET /my-projects`
+
+### Likes (`/api/likes`)
+**Posts:** `POST /posts/:postId` `DELETE /posts/:postId` `GET /posts/:postId/check` `GET /posts/:postId/users` `GET /user/:userId/posts`
+
+**Comments:** `POST /comments/:commentId` `DELETE /comments/:commentId` `GET /comments/:commentId/check` `GET /comments/:commentId/users`
+
+### Follows (`/api/follows`)
+`GET /following` `GET /followers` `GET /check/:type/:id` `POST /user/:userId` `POST /project/:projectId` `DELETE /:type/:id` `GET /stats/:userId`
+
+### Favorites (`/api/favorites`)
+`GET /` `GET /check/:projectId` `POST /:projectId` `DELETE /:projectId` `GET /count/:projectId` `GET /my-projects`
+
+### Tutorial (`/api/tutorial`)
+`GET /steps` `GET /progress` `PATCH /progress` `POST /complete` `PATCH /skip` `POST /reset`
 
 ### Billing (`/api/billing`)
 `POST /create-checkout-session` `POST /webhook` `GET /info` `POST /cancel-subscription` `POST /resume-subscription`

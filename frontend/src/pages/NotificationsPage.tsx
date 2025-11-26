@@ -42,7 +42,6 @@ const NotificationsPage: React.FC = () => {
       const response = await notificationAPI.getNotifications({ limit: 50 });
       setNotifications(response.notifications);
     } catch (error) {
-      console.error('Failed to load notifications:', error);
     } finally {
       setLoading(false);
     }
@@ -57,7 +56,6 @@ const NotificationsPage: React.FC = () => {
         )
       );
     } catch (error) {
-      console.error('Failed to mark notification as read:', error);
     }
   };
 
@@ -66,7 +64,6 @@ const NotificationsPage: React.FC = () => {
       await notificationAPI.markAllAsRead();
       setNotifications(prev => prev.map(notif => ({ ...notif, isRead: true })));
     } catch (error) {
-      console.error('Failed to mark all as read:', error);
     }
   };
 
@@ -75,7 +72,6 @@ const NotificationsPage: React.FC = () => {
       await notificationAPI.deleteNotification(notificationId);
       setNotifications(prev => prev.filter(notif => notif._id !== notificationId));
     } catch (error) {
-      console.error('Failed to delete notification:', error);
     }
   };
 
@@ -89,7 +85,6 @@ const NotificationsPage: React.FC = () => {
       setNotifications([]);
       setShowClearConfirm(false);
     } catch (error) {
-      console.error('Failed to clear notifications:', error);
       setShowClearConfirm(false);
     }
   };

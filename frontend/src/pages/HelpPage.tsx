@@ -21,7 +21,6 @@ const HelpPage: React.FC = () => {
       // Reload the page to get fresh user data, then start tutorial
       window.location.href = '/projects?startTutorial=true';
     } catch (error) {
-      console.error('Failed to reset tutorial:', error);
     }
   };
 

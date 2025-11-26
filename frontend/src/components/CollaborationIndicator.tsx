@@ -32,7 +32,6 @@ const CollaborationIndicator: React.FC<CollaborationIndicatorProps> = ({
       
       setActiveUsers(filteredUsers);
     } catch (err) {
-      console.error('Failed to load active users:', err);
     } finally {
       setLoading(false);
     }

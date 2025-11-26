@@ -371,7 +371,7 @@ export class CleanupService {
         orphanedProjects: orphanedProjects.slice(0, 10) // Return first 10 for review
       };
     } catch (error) {
-      console.error('Error cleaning orphaned projects:', error);
+      
       return { error: (error as Error).message, orphanedFound: 0, deleted: 0 };
     }
   }
@@ -393,7 +393,7 @@ export class CleanupService {
         cutoffTime: oneHourAgo.toISOString()
       };
     } catch (error) {
-      console.error('Error cleaning stale note locks:', error);
+      
       return { error: (error as Error).message, deleted: 0 };
     }
   }
@@ -415,7 +415,7 @@ export class CleanupService {
         cutoffDate: oneDayAgo.toISOString()
       };
     } catch (error) {
-      console.error('Error cleaning old rate limits:', error);
+      
       return { error: (error as Error).message, deleted: 0 };
     }
   }
@@ -555,7 +555,7 @@ export class CleanupService {
         success: true
       };
     } catch (error) {
-      console.error('Emergency cleanup failed:', error);
+      
       return {
         success: false,
         error: (error as Error).message
@@ -590,7 +590,7 @@ export class CleanupService {
         cutoffDate: cutoffDate.toISOString()
       };
     } catch (error) {
-      console.error('Error archiving old projects:', error);
+      
       return { error: (error as Error).message, archived: 0 };
     }
   }

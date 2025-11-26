@@ -2068,7 +2068,7 @@ router.post('/:id/test-lock', requireAuth, blockDemoWrites, requireProjectAccess
       message: lock ? 'Project locked for testing' : 'Project unlocked'
     });
   } catch (error) {
-    console.error('Error toggling project lock:', error);
+    
     res.status(500).json({ message: 'Server error' });
   }
 });

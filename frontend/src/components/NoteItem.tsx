@@ -52,7 +52,6 @@ const NoteItem: React.FC<NoteItemProps> = ({
       setShowDeleteConfirm(false);
       toast.success('Note deleted successfully!');
     } catch (error) {
-      console.error('Failed to delete note:', error);
       setShowDeleteConfirm(false);
       toast.error('Failed to delete note. Please try again.');
     }
@@ -70,7 +69,6 @@ const NoteItem: React.FC<NoteItemProps> = ({
       toast.success('Note content copied to clipboard!');
     } catch (error) {
       toast.error('Failed to copy to clipboard.');
-      console.error('Failed to copy note content:', error);
     }
   };
 
@@ -310,7 +308,6 @@ const NoteModal: React.FC<NoteModalProps> = ({
       setIsLocked(lockStatus.locked);
       setLockedBy(lockStatus.lockedBy || null);
     } catch (error) {
-      console.error('Failed to check lock status:', error);
     }
   };
 
@@ -364,7 +361,6 @@ const NoteModal: React.FC<NoteModalProps> = ({
       setLockedBy(null);
       setLockError('');
     } catch (error) {
-      console.error('Failed to release lock:', error);
     }
   };
 
@@ -376,7 +372,6 @@ const NoteModal: React.FC<NoteModalProps> = ({
         try {
           await projectAPI.heartbeatNoteLock(projectId, note.id);
         } catch (error) {
-          console.error('Heartbeat failed:', error);
         }
       }
     }, 60000); // Every minute
@@ -538,7 +533,6 @@ const NoteModal: React.FC<NoteModalProps> = ({
       } else if (error.response?.status === 401) {
         toast.error(`You need to be logged in to edit ${type}s`, 5000);
       } else {
-        console.error(`Failed to update ${type}:`, error);
         toast.error(`Failed to save ${type}. Please try again.`, 5000);
       }
     } finally {
@@ -572,7 +566,6 @@ const NoteModal: React.FC<NoteModalProps> = ({
       setShowDeleteConfirm(false);
       toast.success(`${type === 'devlog' ? 'Dev log entry' : 'Note'} deleted successfully!`);
     } catch (error) {
-      console.error(`Failed to delete ${type}:`, error);
       setShowDeleteConfirm(false);
       toast.error(`Failed to delete ${type}. Please try again.`);
     }
@@ -606,7 +599,6 @@ const NoteModal: React.FC<NoteModalProps> = ({
     try {
       await navigator.clipboard.writeText(note.content);
     } catch (error) {
-      console.error('Failed to copy note content:', error);
     }
   };
 
@@ -1056,7 +1048,6 @@ const NewNoteForm: React.FC<NewNoteFormProps> = ({ projectId, onAdd }) => {
       onAdd();
       toast.success('Note created successfully!');
     } catch (error) {
-      console.error('Failed to create note:', error);
       toast.error('Failed to create note. Please try again.');
     } finally {
       setLoading(false);

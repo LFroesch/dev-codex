@@ -32,7 +32,6 @@ const TeamMemberSelect: React.FC<TeamMemberSelectProps> = ({
         const response = await teamAPI.getMembers(projectId);
         setMembers(response.members);
       } catch (err: any) {
-        console.error('Failed to fetch team members:', err);
         setError('Failed to load team members');
       } finally {
         setLoading(false);

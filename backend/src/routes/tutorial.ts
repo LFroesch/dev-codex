@@ -234,7 +234,7 @@ router.get('/steps', async (_req, res) => {
   try {
     res.json({ steps: TUTORIAL_STEPS });
   } catch (error) {
-    console.error('Error fetching tutorial steps:', error);
+    
     res.status(500).json({ error: 'Failed to fetch tutorial steps' });
   }
 });
@@ -261,7 +261,7 @@ router.get('/progress', requireAuth, async (req: AuthRequest, res) => {
       tutorialProgress
     });
   } catch (error) {
-    console.error('Error fetching tutorial progress:', error);
+    
     res.status(500).json({ error: 'Failed to fetch tutorial progress' });
   }
 });
@@ -304,7 +304,7 @@ router.patch('/progress', requireAuth, async (req: AuthRequest, res) => {
       tutorialProgress: user.tutorialProgress
     });
   } catch (error) {
-    console.error('Error updating tutorial progress:', error);
+    
     res.status(500).json({ error: 'Failed to update tutorial progress' });
   }
 });
@@ -341,7 +341,7 @@ router.post('/complete', requireAuth, async (req: AuthRequest, res) => {
       message: 'Tutorial completed successfully!'
     });
   } catch (error) {
-    console.error('Error completing tutorial:', error);
+    
     res.status(500).json({ error: 'Failed to complete tutorial' });
   }
 });
@@ -376,7 +376,7 @@ router.patch('/skip', requireAuth, async (req: AuthRequest, res) => {
       tutorialProgress: user.tutorialProgress
     });
   } catch (error) {
-    console.error('Error skipping tutorial:', error);
+    
     res.status(500).json({ error: 'Failed to skip tutorial' });
   }
 });
@@ -414,7 +414,7 @@ router.post('/reset', requireAuth, async (req: AuthRequest, res) => {
       tutorialProgress: user.tutorialProgress
     });
   } catch (error) {
-    console.error('Error resetting tutorial:', error);
+    
     res.status(500).json({ error: 'Failed to reset tutorial' });
   }
 });

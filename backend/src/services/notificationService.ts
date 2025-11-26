@@ -183,7 +183,7 @@ class NotificationService {
 
       return notification;
     } catch (error) {
-      console.error('Error creating notification:', error);
+      
       throw error;
     }
   }
@@ -208,7 +208,7 @@ class NotificationService {
 
       return notification;
     } catch (error) {
-      console.error('Error marking notification as read:', error);
+      
       throw error;
     }
   }
@@ -230,7 +230,7 @@ class NotificationService {
 
       return false;
     } catch (error) {
-      console.error('Error deleting notification:', error);
+      
       throw error;
     }
   }
@@ -248,7 +248,7 @@ class NotificationService {
 
       return result.deletedCount;
     } catch (error) {
-      console.error('Error clearing notifications:', error);
+      
       throw error;
     }
   }
@@ -297,7 +297,7 @@ class NotificationService {
         total,
       };
     } catch (error) {
-      console.error('Error getting notifications:', error);
+      
       throw error;
     }
   }
@@ -344,7 +344,7 @@ class NotificationService {
 
       return !!existingNotification;
     } catch (error) {
-      console.error('Error checking recent notification:', error);
+      
       // Return false on error to avoid blocking notification creation
       return false;
     }
@@ -361,7 +361,7 @@ class NotificationService {
       } else {
       }
     } catch (error) {
-      console.error('Error emitting notification event:', error);
+      
     }
   }
 
@@ -388,7 +388,7 @@ class NotificationService {
 
       return createdNotifications as INotification[];
     } catch (error) {
-      console.error('Error creating bulk notifications:', error);
+      
       throw error;
     }
   }

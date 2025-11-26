@@ -116,7 +116,7 @@ export const createRateLimit = (options: RateLimitOptions) => {
 
       next();
     } catch (error) {
-      console.error('Rate limiting error:', error);
+      
       // Don't fail the request if rate limiting has issues
       next();
     }
@@ -215,7 +215,7 @@ export const createSmartRateLimit = (baseOptions: RateLimitOptions & { maxReques
 
       return dynamicRateLimit(req, res, next);
     } catch (error) {
-      console.error('Smart rate limiting error:', error);
+      
       // Fall back to base rate limiter
       const fallbackRateLimit = createRateLimit({
         ...baseOptions,

@@ -86,7 +86,7 @@ export class AnalyticsService {
         subscriptionStatus: user?.subscriptionStatus
       };
     } catch (error) {
-      console.error('Error fetching user plan:', error);
+      
       return { planTier: 'free' };
     }
   }
@@ -189,7 +189,7 @@ export class AnalyticsService {
 
       return analyticsData;
     } catch (error) {
-      console.error('Error tracking analytics event:', error);
+      
       return null;
     }
   }
@@ -297,7 +297,7 @@ export class AnalyticsService {
         
       }
     } catch (error) {
-      console.error('Error updating user analytics retention:', error);
+      
     }
   }
 
@@ -306,7 +306,7 @@ export class AnalyticsService {
     try {
       await this.updateUserAnalyticsRetention(userId, 'free', 'canceled');
     } catch (error) {
-      console.error('Error handling subscription cancellation:', error);
+      
     }
   }
 
@@ -355,7 +355,7 @@ export class AnalyticsService {
         dailyEventsRemaining: config.maxEventsPerDay - todayEvents
       };
     } catch (error) {
-      console.error('Error getting analytics summary:', error);
+      
       return {
         totalEvents: 0,
         eventsByType: {},
@@ -386,7 +386,7 @@ export class AnalyticsService {
 
       return sessionId;
     } catch (error) {
-      console.error('Error starting session:', error);
+      
       return uuidv4(); // Return a session ID even if DB fails
     }
   }
@@ -465,7 +465,7 @@ export class AnalyticsService {
         });
       }
     } catch (error) {
-      console.error('Error ending session:', error);
+      
     }
   }
 
@@ -552,7 +552,7 @@ export class AnalyticsService {
         updateData
       );
     } catch (error) {
-      console.error('Error updating session:', error);
+      
     }
   }
 
@@ -643,7 +643,7 @@ export class AnalyticsService {
       await session.save();
       return { success: true };
     } catch (error) {
-      console.error('Error switching project:', error);
+      
       return { success: false, error: (error as Error).message };
     }
   }
@@ -681,7 +681,7 @@ export class AnalyticsService {
 
       return { projects: sessions, period: `${days} days` };
     } catch (error) {
-      console.error('Error fetching project time data:', error);
+      
       return null;
     }
   }
@@ -736,7 +736,7 @@ export class AnalyticsService {
         period: `${days} days`
       };
     } catch (error) {
-      console.error('Error fetching project time breakdown:', error);
+      
       return null;
     }
   }
@@ -824,7 +824,7 @@ export class AnalyticsService {
         period: `${days} days`
       };
     } catch (error) {
-      console.error('Error fetching team project time data:', error);
+      
       return null;
     }
   }
@@ -836,7 +836,7 @@ export class AnalyticsService {
         isActive: true 
       }).sort({ startTime: -1 });
     } catch (error) {
-      console.error('Error getting active session:', error);
+      
       return null;
     }
   }
@@ -970,7 +970,7 @@ export class AnalyticsService {
         period: `${days} days`
       };
     } catch (error) {
-      console.error('Error getting user analytics:', error);
+      
       return null;
     }
   }
@@ -1077,14 +1077,14 @@ export const trackProjectAccess = (req: AuthenticatedRequest, res: Response, nex
             projectName,
             endpoint: req.path,
             method: req.method
-          }, req).catch(console.error);
+          }, req).catch(() => {});
         } catch (error) {
           // Fallback to tracking without project name if there's an error
           AnalyticsService.trackEvent(req.userId!, 'project_open', {
             projectId,
             endpoint: req.path,
             method: req.method
-          }, req).catch(console.error);
+          }, req).catch(() => {});
         }
       })();
     }
@@ -1119,7 +1119,7 @@ export const sessionMiddleware = async (req: AuthenticatedRequest, res: Response
     
     next();
   } catch (error) {
-    console.error('Session middleware error:', error);
+    
     next(); // Continue even if session update fails
   }
 };

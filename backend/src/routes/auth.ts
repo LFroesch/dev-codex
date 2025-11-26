@@ -81,7 +81,7 @@ const createLoginNotifications = async (userId: string) => {
       }
     }
   } catch (error) {
-    console.error('Error creating login notifications:', error);
+    
   }
 };
 
@@ -204,7 +204,7 @@ router.get('/check-username/:username', authRateLimit, async (req, res) => {
       message: existingUser ? 'Username is already taken' : 'Username is available'
     });
   } catch (error) {
-    console.error('Check username error:', error);
+    
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -266,12 +266,12 @@ router.post('/register', authRateLimit, validateUserRegistration, async (req, re
         }
       );
     } catch (error) {
-      console.error('Failed to track signup analytics:', error);
+      
     }
 
     // Create JWT token
     if (!process.env.JWT_SECRET) {
-      console.error('CRITICAL: JWT_SECRET environment variable is not set');
+      
       return res.status(500).json({ message: 'Server configuration error' });
     }
 
@@ -302,7 +302,7 @@ router.post('/register', authRateLimit, validateUserRegistration, async (req, re
       }
     });
   } catch (error) {
-    console.error('Auth error:', error);
+    
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -330,7 +330,7 @@ router.post('/login', authRateLimit, validateUserLogin, async (req, res) => {
 
     // Create JWT token
     if (!process.env.JWT_SECRET) {
-      console.error('CRITICAL: JWT_SECRET environment variable is not set');
+      
       return res.status(500).json({ message: 'Server configuration error' });
     }
     
@@ -365,7 +365,7 @@ router.post('/login', authRateLimit, validateUserLogin, async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Auth error:', error);
+    
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -382,7 +382,7 @@ router.post('/demo-login', authRateLimit, async (req, res) => {
 
     // Create JWT token for demo user
     if (!process.env.JWT_SECRET) {
-      console.error('CRITICAL: JWT_SECRET environment variable is not set');
+      
       return res.status(500).json({ message: 'Server configuration error' });
     }
 
@@ -423,7 +423,7 @@ router.post('/demo-login', authRateLimit, async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Demo login error:', error);
+    
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -441,7 +441,7 @@ router.post('/logout', async (req, res) => {
     res.clearCookie('token');
     res.json({ message: 'Logged out successfully' });
   } catch (error) {
-    console.error('Error during logout:', error);
+    
     // Still clear cookie even if session cleanup fails
     res.clearCookie('token');
     res.json({ message: 'Logged out successfully' });
@@ -458,7 +458,7 @@ router.post('/exchange-token', async (req, res) => {
     }
 
     if (!process.env.JWT_SECRET) {
-      console.error('CRITICAL: JWT_SECRET environment variable is not set');
+      
       return res.status(500).json({ message: 'Server configuration error' });
     }
 
@@ -502,7 +502,7 @@ router.post('/exchange-token', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Token exchange error:', error);
+    
     res.status(401).json({ message: 'Invalid token' });
   }
 });
@@ -517,7 +517,7 @@ router.get('/me', async (req, res) => {
     }
 
     if (!process.env.JWT_SECRET) {
-      console.error('CRITICAL: JWT_SECRET environment variable is not set');
+      
       return res.status(500).json({ message: 'Server configuration error' });
     }
 
@@ -597,7 +597,7 @@ router.patch('/theme', requireAuth, async (req: AuthRequest, res) => {
       }
     });
   } catch (error) {
-    console.error('Update theme error:', error);
+    
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -643,7 +643,7 @@ router.patch('/update-name', requireAuth, async (req: AuthRequest, res) => {
       }
     });
   } catch (error) {
-    console.error('Update name error:', error);
+    
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -710,7 +710,7 @@ router.patch('/update-username', requireAuth, async (req: AuthRequest, res) => {
       }
     });
   } catch (error) {
-    console.error('Update username error:', error);
+    
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -764,7 +764,7 @@ router.patch('/profile', requireAuth, async (req: AuthRequest, res) => {
       }
     });
   } catch (error) {
-    console.error('Update profile error:', error);
+    
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -807,7 +807,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 
       res.json({ message: 'Google account unlinked successfully' });
     } catch (error) {
-      console.error('Unlink Google account error:', error);
+      
       res.status(500).json({ message: 'Failed to unlink Google account' });
     }
   });
@@ -828,7 +828,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
           await User.findByIdAndUpdate(user._id, { lastLogin: new Date() });
 
           if (!process.env.JWT_SECRET) {
-            console.error('CRITICAL: JWT_SECRET environment variable is not set');
+            
             return res.status(500).json({ message: 'Server configuration error' });
           }
 
@@ -846,7 +846,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
           res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5002'}/auth/callback?token=${token}`);
         }
       } catch (error) {
-        console.error('Google OAuth callback error:', error);
+        
         const errorMsg = error instanceof Error ? error.message : 'auth_failed';
         const stateParam = req.query.state as string;
 
@@ -889,7 +889,7 @@ router.post('/forgot-password', passwordResetRateLimit, validatePasswordReset, a
     const user = await User.findOne({ email });
     if (!user) {
       // SEC-002 FIX: Don't reveal if email exists - return same message as success case
-      console.log(`Password reset attempted for non-existent email: ${email}`);
+      
       return res.status(200).json({
         message: 'If that email exists, a reset link has been sent'
       });
@@ -923,7 +923,7 @@ router.post('/forgot-password', passwordResetRateLimit, validatePasswordReset, a
 
     res.json({ message: 'If that email exists, a reset link has been sent' });
   } catch (error) {
-    console.error('Password reset error:', error);
+    
     res.status(500).json({ message: 'Failed to send password reset email' });
   }
 });
@@ -952,7 +952,7 @@ router.post('/reset-password', passwordResetRateLimit, validatePasswordReset, as
 
     res.json({ message: 'Password reset successful' });
   } catch (error) {
-    console.error('Password reset error:', error);
+    
     res.status(500).json({ message: 'Failed to reset password' });
   }
 });
@@ -967,7 +967,7 @@ if (process.env.NODE_ENV !== 'production') {
         deletedCount: result.deletedCount 
       });
     } catch (error) {
-      console.error('Error clearing rate limits:', error);
+      
       res.status(500).json({ error: 'Failed to clear rate limits' });
     }
   });
@@ -990,7 +990,7 @@ router.post('/custom-themes', requireAuth, async (req: AuthRequest, res) => {
 
     res.json({ customThemes: user.customThemes });
   } catch (error) {
-    console.error('Error saving custom themes:', error);
+    
     res.status(500).json({ error: 'Failed to save custom themes' });
   }
 });
@@ -1005,7 +1005,7 @@ router.get('/custom-themes', requireAuth, async (req: AuthRequest, res) => {
 
     res.json({ customThemes: user.customThemes || [] });
   } catch (error) {
-    console.error('Error fetching custom themes:', error);
+    
     res.status(500).json({ error: 'Failed to fetch custom themes' });
   }
 });

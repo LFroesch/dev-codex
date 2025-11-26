@@ -41,7 +41,6 @@ class ActivityTracker {
       });
 
     } catch (error) {
-      console.error('Failed to track create action:', error);
     }
   }
 
@@ -73,7 +72,6 @@ class ActivityTracker {
       });
 
     } catch (error) {
-      console.error('Failed to track update action:', error);
     }
   }
 
@@ -101,7 +99,6 @@ class ActivityTracker {
       });
 
     } catch (error) {
-      console.error('Failed to track delete action:', error);
     }
   }
 
@@ -120,7 +117,6 @@ class ActivityTracker {
         resourceId
       });
     } catch (error) {
-      console.error('Failed to track view action:', error);
     }
   }
 
@@ -139,7 +135,6 @@ class ActivityTracker {
         details: { metadata }
       });
     } catch (error) {
-      console.error('Failed to track team action:', error);
     }
   }
 
@@ -159,7 +154,6 @@ class ActivityTracker {
         details: { metadata }
       });
     } catch (error) {
-      console.error('Failed to track project action:', error);
     }
   }
 
@@ -175,7 +169,6 @@ class ActivityTracker {
         resourceId: this.currentProjectId
       });
     } catch (error) {
-      console.error('Failed to track project presence:', error);
     }
   }
 }

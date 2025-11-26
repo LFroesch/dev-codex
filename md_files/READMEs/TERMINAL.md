@@ -26,7 +26,7 @@
 
 ---
 
-## Available Commands (50+)
+## Available Commands (55+)
 
 ### Add Commands
 - `/add todo [text] [@project]` - Create todo
@@ -55,6 +55,7 @@
 - `/view themes` - List available themes
 - `/view ideas` - View all your personal ideas
 - `/view projects` - List all your projects
+- `/view notifications` - View your notifications
 
 ### Edit Commands (Interactive Wizards + Direct Updates)
 - `/edit todo [id] [@project]` - Opens interactive wizard to edit todo (or use `--title=`, `--content=`, `--priority=`, `--status=`, `--due=` for direct updates)
@@ -95,6 +96,10 @@ Examples:
 - `/remove package [name]` - Remove package
 - `/remove member [email]` - Remove team member
 - `/remove tag [name]` - Remove tag
+
+### Utility Commands
+- `/clear notifications` - Clear all notifications
+- `/llm` - Get command syntax reference for LLM context
 
 ### Relationship Commands (Component Graph)
 - `/add relationship --from=[component] --to=[component] --type=[type] [@project]` - Add relationship between components
@@ -156,6 +161,7 @@ Mixed (newlines + &&):
 - `/info [@project]` - Quick project overview with stats
 - `/stale [@project]` - Find stale todos and notes (not updated in 30+ days)
 - `/activity [@project]` - View activity log for a project
+- `/goto [route]` - Navigate to a specific page/route in the app
 
 #### Interactive Features
 - `/wizard new` - Interactive project creation wizard (aliases: `/wizard project`, `/new`)

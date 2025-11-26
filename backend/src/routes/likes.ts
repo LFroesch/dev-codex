@@ -82,7 +82,7 @@ router.post('/posts/:postId', requireAuth, blockDemoWrites, async (req: AuthRequ
       likesCount: post.likes
     });
   } catch (error) {
-    console.error(`Error liking post ${req.params.postId}:`, error);
+    
     res.status(500).json({ success: false, message: 'Database error while liking post' });
   }
 });
@@ -123,7 +123,7 @@ router.delete('/posts/:postId', requireAuth, blockDemoWrites, async (req: AuthRe
       });
     }
   } catch (error) {
-    console.error('Error unliking post:', error);
+    
     res.status(500).json({ success: false, message: 'Failed to unlike post' });
   }
 });
@@ -145,7 +145,7 @@ router.get('/posts/:postId/check', requireAuth, async (req: AuthRequest, res: Re
       isLiked: !!like
     });
   } catch (error) {
-    console.error('Error checking like status:', error);
+    
     res.status(500).json({ success: false, message: 'Failed to check like status' });
   }
 });
@@ -185,7 +185,7 @@ router.get('/posts/:postId/users', async (req: AuthRequest, res: Response) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching post likes:', error);
+    
     res.status(500).json({ success: false, message: 'Failed to fetch post likes' });
   }
 });
@@ -228,7 +228,7 @@ router.get('/user/:userId/posts', async (req: AuthRequest, res: Response) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching user likes:', error);
+    
     res.status(500).json({ success: false, message: 'Failed to fetch user likes' });
   }
 });
@@ -299,7 +299,7 @@ router.post('/comments/:commentId', requireAuth, blockDemoWrites, async (req: Au
       likesCount: comment.likes
     });
   } catch (error) {
-    console.error(`Error liking comment ${req.params.commentId}:`, error);
+    
     res.status(500).json({ success: false, message: 'Database error while liking comment' });
   }
 });
@@ -340,7 +340,7 @@ router.delete('/comments/:commentId', requireAuth, blockDemoWrites, async (req: 
       });
     }
   } catch (error) {
-    console.error('Error unliking comment:', error);
+    
     res.status(500).json({ success: false, message: 'Failed to unlike comment' });
   }
 });
@@ -362,7 +362,7 @@ router.get('/comments/:commentId/check', requireAuth, async (req: AuthRequest, r
       isLiked: !!like
     });
   } catch (error) {
-    console.error('Error checking comment like status:', error);
+    
     res.status(500).json({ success: false, message: 'Failed to check like status' });
   }
 });
@@ -402,7 +402,7 @@ router.get('/comments/:commentId/users', async (req: AuthRequest, res: Response)
       }
     });
   } catch (error) {
-    console.error('Error fetching comment likes:', error);
+    
     res.status(500).json({ success: false, message: 'Failed to fetch comment likes' });
   }
 });

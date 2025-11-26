@@ -47,7 +47,6 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       setAnalyticsData(data as AnalyticsData);
     } catch (err) {
       setError('Failed to load analytics data');
-      console.error('Analytics error:', err);
     } finally {
       setLoading(false);
     }

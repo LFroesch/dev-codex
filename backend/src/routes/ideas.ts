@@ -17,7 +17,7 @@ router.get('/', requireAuth, async (req: AuthRequest, res) => {
 
     res.json({ ideas: user.ideas || [] });
   } catch (error) {
-    console.error('Error fetching ideas:', error);
+    
     res.status(500).json({ error: 'Failed to fetch ideas' });
   }
 });
@@ -62,7 +62,7 @@ router.post('/', requireAuth, blockDemoWrites, async (req: AuthRequest, res) => 
 
     res.status(201).json({ idea: newIdea });
   } catch (error) {
-    console.error('Error creating idea:', error);
+    
     res.status(500).json({ error: 'Failed to create idea' });
   }
 });
@@ -108,7 +108,7 @@ router.put('/:ideaId', requireAuth, blockDemoWrites, async (req: AuthRequest, re
 
     res.json({ idea: user.ideas[ideaIndex] });
   } catch (error) {
-    console.error('Error updating idea:', error);
+    
     res.status(500).json({ error: 'Failed to update idea' });
   }
 });
@@ -134,7 +134,7 @@ router.delete('/:ideaId', requireAuth, blockDemoWrites, async (req: AuthRequest,
 
     res.json({ message: 'Idea deleted successfully' });
   } catch (error) {
-    console.error('Error deleting idea:', error);
+    
     res.status(500).json({ error: 'Failed to delete idea' });
   }
 });

@@ -50,14 +50,6 @@ class ErrorService {
       severity
     };
 
-    // Log to console in development
-    if (process.env.NODE_ENV === 'development') {
-      console.group(`🚨 Error [${severity.toUpperCase()}]: ${errorReport.name}`);
-      console.error('Message:', errorReport.message);
-      if (errorReport.stack) console.error('Stack:', errorReport.stack);
-      console.groupEnd();
-    }
-
     // Send to Sentry for error tracking
     try {
       Sentry.withScope((scope) => {

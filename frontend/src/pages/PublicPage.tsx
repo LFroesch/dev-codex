@@ -183,7 +183,7 @@ const PublicPage: React.FC = () => {
               <div className="flex-1 w-full">
                 <div className="flex flex-wrap items-center gap-2 mb-2">
                   <h3
-                    className="text-lg sm:text-xl font-semibold px-2 sm:px-3 py-1 rounded-md inline-block border border-thick border-base-content/20"
+                    className="text-lg sm:text-xl font-semibold px-2 sm:px-3 py-1 rounded-md inline-block border border-thick border-base-content/20 capitalize"
                     style={{
                       backgroundColor: selectedProject.color,
                       color: getContrastTextColor(selectedProject.color)
@@ -451,7 +451,7 @@ const PublicPage: React.FC = () => {
                 <div className="flex flex-col gap-2 mb-3">
                   <div className="flex flex-wrap items-center gap-2">
                     <h3
-                      className="text-lg font-semibold px-2 py-1 rounded-md inline-block"
+                      className="text-lg font-semibold px-2 py-1 rounded-md inline-block capitalize"
                       style={{
                         backgroundColor: selectedProject.color,
                         color: getContrastTextColor(selectedProject.color)
@@ -459,10 +459,10 @@ const PublicPage: React.FC = () => {
                     >
                       {selectedProject.name}
                     </h3>
-                    <span className="badge badge-primary badge-sm h-6 border-2 border-base-content/20 font-semibold"
+                    <span className="badge badge-primary badge-sm h-6 border-2 border-base-content/20 font-semibold capitalize"
                     style={{ color: getContrastTextColor("primary") }}>{selectedProject.category}</span>
                     {selectedProject.tags?.slice(0, 3).map((tag: string, index: number) => (
-                      <span key={index} className="badge badge-outline badge-sm h-6 border-2 border-base-content/20 font-semibold">{tag}</span>
+                      <span key={index} className="badge badge-outline badge-sm h-6 border-2 border-base-content/20 font-semibold capitalize">{tag}</span>
                     ))}
                   </div>
                   {publicShortDescription && (

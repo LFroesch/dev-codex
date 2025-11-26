@@ -286,11 +286,11 @@ const PublicProfilePage: React.FC = () => {
                         {project.name.charAt(0).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="card-title text-lg mb-2 group-hover:text-primary transition-colors">
+                        <h3 className="card-title text-lg mb-2 group-hover:text-primary transition-colors capitalize">
                           {project.name}
                         </h3>
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-bold bg-primary border-2 border-base-content/20"
+                          <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-bold bg-primary border-2 border-base-content/20 capitalize"
                             style={{ color: getContrastTextColor() }}>
                             {project.category}
                           </span>
@@ -321,13 +321,13 @@ const PublicProfilePage: React.FC = () => {
                       {project.tags && project.tags.length > 0 && (
                         <div className="flex flex-wrap gap-2">
                           {project.tags.slice(0, 3).map((tag: string, index: number) => (
-                            <span key={index} className="inline-flex items-center px-2 py-1 rounded-md text-sm font-medium bg-secondary text-base-content/80 border-2 border-base-content/20"
+                            <span key={index} className="inline-flex items-center px-2 py-1 rounded-md text-sm font-medium bg-secondary text-base-content/80 border-2 border-base-content/20 capitalize"
                               style={{ color: getContrastTextColor("secondary") }}>
                               {tag}
                             </span>
                           ))}
                           {project.tags.length > 3 && (
-                            <span className="inline-flex items-center px-2 py-1 rounded-md text-sm font-medium bg-secondary text-base-content/80 border-2 border-base-content/20"
+                            <span className="inline-flex items-center px-2 py-1 rounded-md text-sm font-medium bg-secondary text-base-content/80 border-2 border-base-content/20 capitalize"
                               style={{ color: getContrastTextColor("secondary") }}>
                               +{project.tags.length - 3}
                             </span>
@@ -347,7 +347,7 @@ const PublicProfilePage: React.FC = () => {
                       {project.technologies && project.technologies.length > 0 && (
                         <div className="flex flex-wrap gap-2">
                           {project.technologies.slice(0, 4).map((tech: any, index: number) => (
-                            <span key={index} className="inline-flex items-center px-2 py-1 rounded-md text-sm font-medium bg-base-200 text-base-content/80 border-2 border-base-content/20">
+                            <span key={index} className="inline-flex items-center px-2 py-1 rounded-md text-sm font-medium bg-base-200 text-base-content/80 border-2 border-base-content/20 capitalize">
                               {tech.name}
                             </span>
                           ))}
@@ -440,7 +440,7 @@ const PublicProfilePage: React.FC = () => {
                             <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                             </svg>
-                            {post.projectId.name}
+                            <span className="capitalize">{post.projectId.name}</span>
                           </Link>
                         )}
                         <LikeButton

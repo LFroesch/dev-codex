@@ -1015,8 +1015,8 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
                     {getAllCategories().find(c => c.value === selectedComponent.category)?.emoji} {getAllCategories().find(c => c.value === selectedComponent.category)?.label}
                   </span>
                   {selectedComponent.type && (
-                    <span className="badge badge-sm text-xs font-semibold badge-primary" style={{color:getContrastTextColor("primary")}}>
-                      {selectedComponent.type.charAt(0).toUpperCase() + selectedComponent.type.slice(1)}
+                    <span className="badge badge-sm text-xs font-semibold badge-primary capitalize" style={{color:getContrastTextColor("primary")}}>
+                      {selectedComponent.type}
                     </span>
                   )}
                 </div>

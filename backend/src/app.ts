@@ -19,6 +19,7 @@ import { Server } from 'socket.io';
 import { createServer } from 'http';
 import { connectDatabase } from './config/database';
 import { logInfo, logError } from './config/logger';
+import { sendErrorResponse } from './utils/errorHandler';
 import { requestLogger } from './middleware/requestLogger';
 import authRoutes from './routes/auth';
 import projectRoutes from './routes/projects';
@@ -324,6 +325,11 @@ app.get('/health', (_, res) => {
 
 // Sentry error handler - MUST be after routes but BEFORE other error handlers
 Sentry.setupExpressErrorHandler(app);
+
+// Global error handler - handles all errors thrown in routes
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  sendErrorResponse(res, err);
+});
 
 // Handles graceful server shutdown and cleanup
 const gracefulShutdown = async (_signal: string) => {

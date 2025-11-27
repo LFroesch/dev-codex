@@ -1,6 +1,7 @@
 import { Router, Response } from 'express';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { blockDemoWrites } from '../middleware/blockDemoWrites';
+import { asyncHandler, NotFoundError, BadRequestError } from '../utils/errorHandler';
 import Like from '../models/Like';
 import Post from '../models/Post';
 import Comment from '../models/Comment';
@@ -13,27 +14,26 @@ import { SOCIAL_CONSTANTS } from '../config/socialConstants';
 const router = Router();
 
 // Like a post
-router.post('/posts/:postId', requireAuth, blockDemoWrites, async (req: AuthRequest, res: Response) => {
-  try {
-    const { postId } = req.params;
-    const userId = req.userId!;
+router.post('/posts/:postId', requireAuth, blockDemoWrites, asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { postId } = req.params;
+  const userId = req.userId!;
 
-    // Check if post exists
-    const post = await Post.findById(postId);
-    if (!post || post.isDeleted) {
-      return res.status(404).json({ success: false, message: 'Post not found' });
-    }
+  // Check if post exists
+  const post = await Post.findById(postId);
+  if (!post || post.isDeleted) {
+    throw NotFoundError('Post not found', 'POST_NOT_FOUND');
+  }
 
-    // Check if already liked
-    const existingLike = await Like.findOne({
-      userId: new mongoose.Types.ObjectId(userId),
-      likeableType: 'Post',
-      likeableId: new mongoose.Types.ObjectId(postId)
-    });
+  // Check if already liked
+  const existingLike = await Like.findOne({
+    userId: new mongoose.Types.ObjectId(userId),
+    likeableType: 'Post',
+    likeableId: new mongoose.Types.ObjectId(postId)
+  });
 
-    if (existingLike) {
-      return res.status(400).json({ success: false, message: 'Post already liked' });
-    }
+  if (existingLike) {
+    throw BadRequestError('Post already liked', 'ALREADY_LIKED');
+  }
 
     // Create like
     const like = new Like({
@@ -76,33 +76,28 @@ router.post('/posts/:postId', requireAuth, blockDemoWrites, async (req: AuthRequ
       });
     }
 
-    res.status(201).json({
-      success: true,
-      like,
-      likesCount: post.likes
-    });
-  } catch (error) {
-    
-    res.status(500).json({ success: false, message: 'Database error while liking post' });
-  }
-});
+  res.status(201).json({
+    success: true,
+    like,
+    likesCount: post.likes
+  });
+}));
 
 // Unlike a post
-router.delete('/posts/:postId', requireAuth, blockDemoWrites, async (req: AuthRequest, res: Response) => {
-  try {
-    const { postId } = req.params;
-    const userId = req.userId!;
+router.delete('/posts/:postId', requireAuth, blockDemoWrites, asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { postId } = req.params;
+  const userId = req.userId!;
 
-    // Find and delete the like
-    const like = await Like.findOneAndDelete({
-      userId: new mongoose.Types.ObjectId(userId),
-      likeableType: 'Post',
-      likeableId: new mongoose.Types.ObjectId(postId)
-    });
+  // Find and delete the like
+  const like = await Like.findOneAndDelete({
+    userId: new mongoose.Types.ObjectId(userId),
+    likeableType: 'Post',
+    likeableId: new mongoose.Types.ObjectId(postId)
+  });
 
-    if (!like) {
-      return res.status(404).json({ success: false, message: 'Like not found' });
-    }
+  if (!like) {
+    throw NotFoundError('Like not found', 'LIKE_NOT_FOUND');
+  }
 
     // Decrement post likes counter
     const post = await Post.findById(postId);
@@ -116,49 +111,39 @@ router.delete('/posts/:postId', requireAuth, blockDemoWrites, async (req: AuthRe
         likesCount: post.likes
       });
     } else {
-      res.json({
-        success: true,
-        message: 'Post unliked successfully',
-        likesCount: 0
-      });
-    }
-  } catch (error) {
-    
-    res.status(500).json({ success: false, message: 'Failed to unlike post' });
-  }
-});
-
-// Check if user liked a post
-router.get('/posts/:postId/check', requireAuth, async (req: AuthRequest, res: Response) => {
-  try {
-    const { postId } = req.params;
-    const userId = req.userId!;
-
-    const like = await Like.exists({
-      userId: new mongoose.Types.ObjectId(userId),
-      likeableType: 'Post',
-      likeableId: new mongoose.Types.ObjectId(postId)
-    });
-
     res.json({
       success: true,
-      isLiked: !!like
+      message: 'Post unliked successfully',
+      likesCount: 0
     });
-  } catch (error) {
-    
-    res.status(500).json({ success: false, message: 'Failed to check like status' });
   }
-});
+}));
+
+// Check if user liked a post
+router.get('/posts/:postId/check', requireAuth, asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { postId } = req.params;
+  const userId = req.userId!;
+
+  const like = await Like.exists({
+    userId: new mongoose.Types.ObjectId(userId),
+    likeableType: 'Post',
+    likeableId: new mongoose.Types.ObjectId(postId)
+  });
+
+  res.json({
+    success: true,
+    isLiked: !!like
+  });
+}));
 
 // Get users who liked a post
-router.get('/posts/:postId/users', async (req: AuthRequest, res: Response) => {
-  try {
-    const { postId } = req.params;
-    const { limit = SOCIAL_CONSTANTS.DEFAULT_PAGE_LIMIT, page = 1 } = req.query;
-    const limitNum = parseInt(limit as string);
-    const skip = (parseInt(page as string) - 1) * limitNum;
+router.get('/posts/:postId/users', asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { postId } = req.params;
+  const { limit = SOCIAL_CONSTANTS.DEFAULT_PAGE_LIMIT, page = 1 } = req.query;
+  const limitNum = parseInt(limit as string);
+  const skip = (parseInt(page as string) - 1) * limitNum;
 
-    const [likes, total] = await Promise.all([
+  const [likes, total] = await Promise.all([
       Like.find({
         likeableType: 'Post',
         likeableId: new mongoose.Types.ObjectId(postId)
@@ -174,31 +159,26 @@ router.get('/posts/:postId/users', async (req: AuthRequest, res: Response) => {
       })
     ]);
 
-    res.json({
-      success: true,
-      likes,
-      pagination: {
-        total,
-        page: parseInt(page as string),
-        limit: limitNum,
-        totalPages: Math.ceil(total / limitNum)
-      }
-    });
-  } catch (error) {
-    
-    res.status(500).json({ success: false, message: 'Failed to fetch post likes' });
-  }
-});
+  res.json({
+    success: true,
+    likes,
+    pagination: {
+      total,
+      page: parseInt(page as string),
+      limit: limitNum,
+      totalPages: Math.ceil(total / limitNum)
+    }
+  });
+}));
 
 // Get posts liked by a user
-router.get('/user/:userId/posts', async (req: AuthRequest, res: Response) => {
-  try {
-    const { userId } = req.params;
-    const { limit = SOCIAL_CONSTANTS.DEFAULT_PAGE_LIMIT, page = 1 } = req.query;
-    const limitNum = parseInt(limit as string);
-    const skip = (parseInt(page as string) - 1) * limitNum;
+router.get('/user/:userId/posts', asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { userId } = req.params;
+  const { limit = SOCIAL_CONSTANTS.DEFAULT_PAGE_LIMIT, page = 1 } = req.query;
+  const limitNum = parseInt(limit as string);
+  const skip = (parseInt(page as string) - 1) * limitNum;
 
-    const [likes, total] = await Promise.all([
+  const [likes, total] = await Promise.all([
       Like.find({ userId: new mongoose.Types.ObjectId(userId) })
         .sort({ createdAt: -1 })
         .skip(skip)
@@ -217,46 +197,41 @@ router.get('/user/:userId/posts', async (req: AuthRequest, res: Response) => {
     // Filter out deleted posts
     const validLikes = likes.filter((like: any) => like.postId && !like.postId.isDeleted);
 
-    res.json({
-      success: true,
-      likes: validLikes,
-      pagination: {
-        total,
-        page: parseInt(page as string),
-        limit: limitNum,
-        totalPages: Math.ceil(total / limitNum)
-      }
-    });
-  } catch (error) {
-    
-    res.status(500).json({ success: false, message: 'Failed to fetch user likes' });
-  }
-});
+  res.json({
+    success: true,
+    likes: validLikes,
+    pagination: {
+      total,
+      page: parseInt(page as string),
+      limit: limitNum,
+      totalPages: Math.ceil(total / limitNum)
+    }
+  });
+}));
 
 // ============ COMMENT LIKES ============
 
 // Like a comment
-router.post('/comments/:commentId', requireAuth, blockDemoWrites, async (req: AuthRequest, res: Response) => {
-  try {
-    const { commentId } = req.params;
-    const userId = req.userId!;
+router.post('/comments/:commentId', requireAuth, blockDemoWrites, asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { commentId } = req.params;
+  const userId = req.userId!;
 
-    // Check if comment exists
-    const comment = await Comment.findById(commentId);
-    if (!comment || comment.isDeleted) {
-      return res.status(404).json({ success: false, message: 'Comment not found' });
-    }
+  // Check if comment exists
+  const comment = await Comment.findById(commentId);
+  if (!comment || comment.isDeleted) {
+    throw NotFoundError('Comment not found', 'COMMENT_NOT_FOUND');
+  }
 
-    // Check if already liked
-    const existingLike = await Like.findOne({
-      userId: new mongoose.Types.ObjectId(userId),
-      likeableType: 'Comment',
-      likeableId: new mongoose.Types.ObjectId(commentId)
-    });
+  // Check if already liked
+  const existingLike = await Like.findOne({
+    userId: new mongoose.Types.ObjectId(userId),
+    likeableType: 'Comment',
+    likeableId: new mongoose.Types.ObjectId(commentId)
+  });
 
-    if (existingLike) {
-      return res.status(400).json({ success: false, message: 'Comment already liked' });
-    }
+  if (existingLike) {
+    throw BadRequestError('Comment already liked', 'ALREADY_LIKED');
+  }
 
     // Create like
     const like = new Like({
@@ -293,33 +268,28 @@ router.post('/comments/:commentId', requireAuth, blockDemoWrites, async (req: Au
       });
     }
 
-    res.status(201).json({
-      success: true,
-      like,
-      likesCount: comment.likes
-    });
-  } catch (error) {
-    
-    res.status(500).json({ success: false, message: 'Database error while liking comment' });
-  }
-});
+  res.status(201).json({
+    success: true,
+    like,
+    likesCount: comment.likes
+  });
+}));
 
 // Unlike a comment
-router.delete('/comments/:commentId', requireAuth, blockDemoWrites, async (req: AuthRequest, res: Response) => {
-  try {
-    const { commentId } = req.params;
-    const userId = req.userId!;
+router.delete('/comments/:commentId', requireAuth, blockDemoWrites, asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { commentId } = req.params;
+  const userId = req.userId!;
 
-    // Find and delete the like
-    const like = await Like.findOneAndDelete({
-      userId: new mongoose.Types.ObjectId(userId),
-      likeableType: 'Comment',
-      likeableId: new mongoose.Types.ObjectId(commentId)
-    });
+  // Find and delete the like
+  const like = await Like.findOneAndDelete({
+    userId: new mongoose.Types.ObjectId(userId),
+    likeableType: 'Comment',
+    likeableId: new mongoose.Types.ObjectId(commentId)
+  });
 
-    if (!like) {
-      return res.status(404).json({ success: false, message: 'Like not found' });
-    }
+  if (!like) {
+    throw NotFoundError('Like not found', 'LIKE_NOT_FOUND');
+  }
 
     // Decrement comment likes counter
     const comment = await Comment.findById(commentId);
@@ -333,49 +303,39 @@ router.delete('/comments/:commentId', requireAuth, blockDemoWrites, async (req: 
         likesCount: comment.likes
       });
     } else {
-      res.json({
-        success: true,
-        message: 'Comment unliked successfully',
-        likesCount: 0
-      });
-    }
-  } catch (error) {
-    
-    res.status(500).json({ success: false, message: 'Failed to unlike comment' });
-  }
-});
-
-// Check if user liked a comment
-router.get('/comments/:commentId/check', requireAuth, async (req: AuthRequest, res: Response) => {
-  try {
-    const { commentId } = req.params;
-    const userId = req.userId!;
-
-    const like = await Like.exists({
-      userId: new mongoose.Types.ObjectId(userId),
-      likeableType: 'Comment',
-      likeableId: new mongoose.Types.ObjectId(commentId)
-    });
-
     res.json({
       success: true,
-      isLiked: !!like
+      message: 'Comment unliked successfully',
+      likesCount: 0
     });
-  } catch (error) {
-    
-    res.status(500).json({ success: false, message: 'Failed to check like status' });
   }
-});
+}));
+
+// Check if user liked a comment
+router.get('/comments/:commentId/check', requireAuth, asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { commentId } = req.params;
+  const userId = req.userId!;
+
+  const like = await Like.exists({
+    userId: new mongoose.Types.ObjectId(userId),
+    likeableType: 'Comment',
+    likeableId: new mongoose.Types.ObjectId(commentId)
+  });
+
+  res.json({
+    success: true,
+    isLiked: !!like
+  });
+}));
 
 // Get users who liked a comment
-router.get('/comments/:commentId/users', async (req: AuthRequest, res: Response) => {
-  try {
-    const { commentId } = req.params;
-    const { limit = SOCIAL_CONSTANTS.DEFAULT_PAGE_LIMIT, page = 1 } = req.query;
-    const limitNum = parseInt(limit as string);
-    const skip = (parseInt(page as string) - 1) * limitNum;
+router.get('/comments/:commentId/users', asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { commentId } = req.params;
+  const { limit = SOCIAL_CONSTANTS.DEFAULT_PAGE_LIMIT, page = 1 } = req.query;
+  const limitNum = parseInt(limit as string);
+  const skip = (parseInt(page as string) - 1) * limitNum;
 
-    const [likes, total] = await Promise.all([
+  const [likes, total] = await Promise.all([
       Like.find({
         likeableType: 'Comment',
         likeableId: new mongoose.Types.ObjectId(commentId)
@@ -391,20 +351,16 @@ router.get('/comments/:commentId/users', async (req: AuthRequest, res: Response)
       })
     ]);
 
-    res.json({
-      success: true,
-      likes,
-      pagination: {
-        total,
-        page: parseInt(page as string),
-        limit: limitNum,
-        totalPages: Math.ceil(total / limitNum)
-      }
-    });
-  } catch (error) {
-    
-    res.status(500).json({ success: false, message: 'Failed to fetch comment likes' });
-  }
-});
+  res.json({
+    success: true,
+    likes,
+    pagination: {
+      total,
+      page: parseInt(page as string),
+      limit: limitNum,
+      totalPages: Math.ceil(total / limitNum)
+    }
+  });
+}));
 
 export default router;

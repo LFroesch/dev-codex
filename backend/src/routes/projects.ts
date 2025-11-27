@@ -30,6 +30,7 @@ import {
   securityHeaders
 } from '../middleware/importExportSecurity';
 import { checkProjectLock } from '../middleware/projectLock';
+import { asyncHandler, AppError, BadRequestError, NotFoundError, ConflictError } from '../utils/errorHandler';
 
 const router = express.Router();
 
@@ -45,1058 +46,928 @@ router.use('/:id', (req, res, next) => {
 });
 
 // Create project
-router.post('/', requireAuth, blockDemoWrites, validateProjectData, checkProjectLimit, async (req: AuthRequest, res) => {
-  try {
-    const { name, description, stagingEnvironment, color, category, tags } = req.body;
+router.post('/', requireAuth, blockDemoWrites, validateProjectData, checkProjectLimit, asyncHandler(async (req: AuthRequest, res: express.Response) => {
+  const { name, description, stagingEnvironment, color, category, tags } = req.body;
 
-    if (!name || !description) {
-      return res.status(400).json({ message: 'Name and description are required' });
-    }
-
-    const project = new Project({
-      name: name.trim(),
-      description: description.trim(),
-      notes: [], // Initialize as empty array
-      todos: [],
-      devLog: [],
-      components: [],
-      stack: [], // Unified tech stack
-      stagingEnvironment: stagingEnvironment || 'development',
-      color: color || '#3B82F6',
-      category: category || 'general',
-      tags: tags || [],
-      userId: req.userId, // Legacy field for compatibility
-      ownerId: req.userId // New owner field
-    });
-
-    await project.save();
-    res.status(201).json({
-      message: 'Project created successfully',
-      project: formatProjectResponse(project)
-    });
-  } catch (error) {
-    logError('Create project error', error as Error);
-    res.status(500).json({ message: 'Server error' });
+  if (!name || !description) {
+    throw BadRequestError('Name and description are required', 'MISSING_FIELDS');
   }
-});
+
+  const project = new Project({
+    name: name.trim(),
+    description: description.trim(),
+    notes: [], // Initialize as empty array
+    todos: [],
+    devLog: [],
+    components: [],
+    stack: [], // Unified tech stack
+    stagingEnvironment: stagingEnvironment || 'development',
+    color: color || '#3B82F6',
+    category: category || 'general',
+    tags: tags || [],
+    userId: req.userId, // Legacy field for compatibility
+    ownerId: req.userId // New owner field
+  });
+
+  await project.save();
+  res.status(201).json({
+    message: 'Project created successfully',
+    project: formatProjectResponse(project)
+  });
+}));
 
 // Get user's projects (owned + team projects)
-router.get('/', requireAuthOrDemo, async (req: AuthRequest, res) => {
-  try {
-    const userId = req.userId!;
-    
-    // Get projects owned by user
-    const ownedProjects = await Project.find({
-      $or: [
-        { userId: userId },
-        { ownerId: userId }
-      ]
-    })
-    .populate('todos.assignedTo', 'firstName lastName username displayPreference email')
-    .populate('todos.createdBy', 'firstName lastName username displayPreference')
-    .populate('todos.updatedBy', 'firstName lastName username displayPreference')
-    .populate('notes.createdBy', 'firstName lastName username displayPreference')
-    .populate('notes.updatedBy', 'firstName lastName username displayPreference')
-    .populate('devLog.createdBy', 'firstName lastName username displayPreference')
-    .populate('devLog.updatedBy', 'firstName lastName username displayPreference')
-    .sort({ createdAt: -1 });
+router.get('/', requireAuthOrDemo, asyncHandler(async (req: AuthRequest, res: express.Response) => {
+  const userId = req.userId!;
 
-    // Get projects where user is a team member (optimized: single query with lean())
-    const teamProjectIds = await TeamMember.find({ userId })
-      .select('projectId')
-      .lean()
-      .then(memberships => memberships.map(tm => tm.projectId));
-    
-    const teamProjects = teamProjectIds.length > 0
-      ? await Project.find({
-          _id: { $in: teamProjectIds },
-          // Exclude projects user already owns
-          $nor: [
-            { userId: userId },
-            { ownerId: userId }
-          ]
-        })
-        .populate('todos.assignedTo', 'firstName lastName username displayPreference email')
-        .populate('todos.createdBy', 'firstName lastName username displayPreference')
-        .populate('todos.updatedBy', 'firstName lastName username displayPreference')
-        .populate('notes.createdBy', 'firstName lastName username displayPreference')
-        .populate('notes.updatedBy', 'firstName lastName username displayPreference')
-        .populate('devLog.createdBy', 'firstName lastName username displayPreference')
-        .populate('devLog.updatedBy', 'firstName lastName username displayPreference')
-        .sort({ createdAt: -1 })
-      : [];
+  // Get projects owned by user
+  const ownedProjects = await Project.find({
+    $or: [
+      { userId: userId },
+      { ownerId: userId }
+    ]
+  })
+  .populate('todos.assignedTo', 'firstName lastName username displayPreference email')
+  .populate('todos.createdBy', 'firstName lastName username displayPreference')
+  .populate('todos.updatedBy', 'firstName lastName username displayPreference')
+  .populate('notes.createdBy', 'firstName lastName username displayPreference')
+  .populate('notes.updatedBy', 'firstName lastName username displayPreference')
+  .populate('devLog.createdBy', 'firstName lastName username displayPreference')
+  .populate('devLog.updatedBy', 'firstName lastName username displayPreference')
+  .sort({ createdAt: -1 });
 
-    // Combine and format projects, marking ownership status
-    const allProjects = [
-      ...ownedProjects.map(p => ({ ...formatProjectResponse(p), isOwner: true })),
-      ...teamProjects.map(p => ({ ...formatProjectResponse(p), isOwner: false }))
-    ];
+  // Get projects where user is a team member (optimized: single query with lean())
+  const teamProjectIds = await TeamMember.find({ userId })
+    .select('projectId')
+    .lean()
+    .then(memberships => memberships.map(tm => tm.projectId));
 
-    res.json({ projects: allProjects });
-  } catch (error) {
-    logError('Get projects error', error as Error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// Get single project
-router.get('/:id', requireAuthOrDemo, requireProjectAccess('view'), async (req: AuthRequest, res) => {
-  try {
-    const project = await Project.findById(req.params.id)
+  const teamProjects = teamProjectIds.length > 0
+    ? await Project.find({
+        _id: { $in: teamProjectIds },
+        // Exclude projects user already owns
+        $nor: [
+          { userId: userId },
+          { ownerId: userId }
+        ]
+      })
       .populate('todos.assignedTo', 'firstName lastName username displayPreference email')
       .populate('todos.createdBy', 'firstName lastName username displayPreference')
       .populate('todos.updatedBy', 'firstName lastName username displayPreference')
       .populate('notes.createdBy', 'firstName lastName username displayPreference')
       .populate('notes.updatedBy', 'firstName lastName username displayPreference')
       .populate('devLog.createdBy', 'firstName lastName username displayPreference')
-      .populate('devLog.updatedBy', 'firstName lastName username displayPreference');
+      .populate('devLog.updatedBy', 'firstName lastName username displayPreference')
+      .sort({ createdAt: -1 })
+    : [];
 
-    if (!project) {
-      return res.status(404).json({ message: 'Project not found' });
-    }
+  // Combine and format projects, marking ownership status
+  const allProjects = [
+    ...ownedProjects.map(p => ({ ...formatProjectResponse(p), isOwner: true })),
+    ...teamProjects.map(p => ({ ...formatProjectResponse(p), isOwner: false }))
+  ];
 
-    res.json({ 
-      project: {
-        ...formatProjectResponse(project),
-        userRole: req.projectAccess?.role,
-        canEdit: req.projectAccess?.canEdit,
-        canManageTeam: req.projectAccess?.canManageTeam,
-        isOwner: req.projectAccess?.isOwner
-      }
-    });
-  } catch (error) {
-    logError('Get single project error', error as Error);
-    res.status(500).json({ message: 'Server error' });
+  res.json({ projects: allProjects });
+}));
+
+// Get single project
+router.get('/:id', requireAuthOrDemo, requireProjectAccess('view'), asyncHandler(async (req: AuthRequest, res: express.Response) => {
+  const project = await Project.findById(req.params.id)
+    .populate('todos.assignedTo', 'firstName lastName username displayPreference email')
+    .populate('todos.createdBy', 'firstName lastName username displayPreference')
+    .populate('todos.updatedBy', 'firstName lastName username displayPreference')
+    .populate('notes.createdBy', 'firstName lastName username displayPreference')
+    .populate('notes.updatedBy', 'firstName lastName username displayPreference')
+    .populate('devLog.createdBy', 'firstName lastName username displayPreference')
+    .populate('devLog.updatedBy', 'firstName lastName username displayPreference');
+
+  if (!project) {
+    throw NotFoundError('Project not found');
   }
-});
+
+  res.json({
+    project: {
+      ...formatProjectResponse(project),
+      userRole: req.projectAccess?.role,
+      canEdit: req.projectAccess?.canEdit,
+      canManageTeam: req.projectAccess?.canManageTeam,
+      isOwner: req.projectAccess?.isOwner
+    }
+  });
+}));
 
 // Update project
-router.put('/:id', requireAuth, blockDemoWrites, validateProjectData, requireProjectAccess('edit'), checkProjectLock, async (req: AuthRequest, res) => {
-  try {
-    // SEC-005 FIX: Whitelist allowed fields to prevent mass assignment vulnerability
-    const allowedFields = [
-      'name', 'description', 'notes', 'todos', 'devLog', 'components',
-      'stack', 'stagingEnvironment', 'color', 'category', 'tags',
-      'deploymentData', 'isArchived', 'isShared', 'isPublic',
-      'publicSlug', 'publicShortDescription', 'publicDescription', 'publicVisibility'
-    ];
+router.put('/:id', requireAuth, blockDemoWrites, validateProjectData, requireProjectAccess('edit'), checkProjectLock, asyncHandler(async (req: AuthRequest, res: express.Response) => {
+  // SEC-005 FIX: Whitelist allowed fields to prevent mass assignment vulnerability
+  const allowedFields = [
+    'name', 'description', 'notes', 'todos', 'devLog', 'components',
+    'stack', 'stagingEnvironment', 'color', 'category', 'tags',
+    'deploymentData', 'isArchived', 'isShared', 'isPublic',
+    'publicSlug', 'publicShortDescription', 'publicDescription', 'publicVisibility'
+  ];
 
-    const updateData: any = {};
-    allowedFields.forEach(field => {
-      if (field in req.body) {
-        updateData[field] = req.body[field];
-      }
-    });
-
-    logInfo('Project update request', { projectId: req.params.id, updateData });
-
-    if (updateData.name && !updateData.name.trim()) {
-      return res.status(400).json({ message: 'Name cannot be empty' });
+  const updateData: any = {};
+  allowedFields.forEach(field => {
+    if (field in req.body) {
+      updateData[field] = req.body[field];
     }
+  });
 
-    if (updateData.description && !updateData.description.trim()) {
-      return res.status(400).json({ message: 'Description cannot be empty' });
-    }
+  logInfo('Project update request', { projectId: req.params.id, updateData });
 
-    if (updateData.stagingEnvironment && !['development', 'staging', 'production'].includes(updateData.stagingEnvironment)) {
-      return res.status(400).json({ message: 'Invalid staging environment' });
-    }
-
-    // Get the old project data for change tracking
-    const oldProject = await Project.findById(req.params.id);
-    if (!oldProject) {
-      return res.status(404).json({ message: 'Project not found' });
-    }
-
-    const project = await Project.findByIdAndUpdate(
-      req.params.id,
-      updateData,
-      { new: true, runValidators: true }
-    );
-    
-    logInfo('Project after update', { deploymentData: project?.deploymentData });
-
-    if (!project) {
-      return res.status(404).json({ message: 'Project not found' });
-    }
-
-
-    res.json({
-      message: 'Project updated successfully',
-      project: formatProjectResponse(project)
-    });
-  } catch (error: any) {
-    logError('Update project error', error as Error);
-    if (error.name === 'ValidationError') {
-      logError('Validation details', new Error(JSON.stringify(error.errors)));
-      return res.status(400).json({ 
-        message: 'Validation error', 
-        details: error.errors 
-      });
-    }
-    res.status(500).json({ message: 'Server error' });
+  if (updateData.name && !updateData.name.trim()) {
+    throw BadRequestError('Name cannot be empty', 'EMPTY_NAME');
   }
-});
+
+  if (updateData.description && !updateData.description.trim()) {
+    throw BadRequestError('Description cannot be empty', 'EMPTY_DESCRIPTION');
+  }
+
+  if (updateData.stagingEnvironment && !['development', 'staging', 'production'].includes(updateData.stagingEnvironment)) {
+    throw BadRequestError('Invalid staging environment', 'INVALID_ENVIRONMENT');
+  }
+
+  // Get the old project data for change tracking
+  const oldProject = await Project.findById(req.params.id);
+  if (!oldProject) {
+    throw NotFoundError('Project not found');
+  }
+
+  const project = await Project.findByIdAndUpdate(
+    req.params.id,
+    updateData,
+    { new: true, runValidators: true }
+  );
+  
+  logInfo('Project after update', { deploymentData: project?.deploymentData });
+
+  if (!project) {
+    throw NotFoundError('Project not found');
+  }
+
+  res.json({
+    message: 'Project updated successfully',
+    project: formatProjectResponse(project)
+  });
+}));
 
 // Archive/Unarchive project
-router.patch('/:id/archive', requireAuth, blockDemoWrites, requireProjectAccess('manage'), async (req: AuthRequest, res) => {
-  try {
-    const { isArchived } = req.body;
-    
-    if (typeof isArchived !== 'boolean') {
-      return res.status(400).json({ message: 'isArchived must be a boolean value' });
-    }
-
-    const project = await Project.findOneAndUpdate(
-      { _id: req.params.id, userId: req.userId },
-      { isArchived },
-      { new: true, runValidators: true }
-    );
-
-    if (!project) {
-      return res.status(404).json({ message: 'Project not found' });
-    }
-
-    res.json({
-      message: `Project ${isArchived ? 'archived' : 'unarchived'} successfully`,
-      project: formatProjectResponse(project)
-    });
-  } catch (error) {
-    logError('Archive project error', error as Error);
-    res.status(500).json({ message: 'Server error' });
+router.patch('/:id/archive', requireAuth, blockDemoWrites, requireProjectAccess('manage'), asyncHandler(async (req: AuthRequest, res: express.Response) => {
+  const { isArchived } = req.body;
+  
+  if (typeof isArchived !== 'boolean') {
+    throw BadRequestError('isArchived must be a boolean value', 'INVALID_TYPE');
   }
-});
+
+  const project = await Project.findOneAndUpdate(
+    { _id: req.params.id, userId: req.userId },
+    { isArchived },
+    { new: true, runValidators: true }
+  );
+
+  if (!project) {
+    throw NotFoundError('Project not found');
+  }
+
+  res.json({
+    message: `Project ${isArchived ? 'archived' : 'unarchived'} successfully`,
+    project: formatProjectResponse(project)
+  });
+}));
 
 // Delete project (owner only)
-router.delete('/:id', requireAuth, blockDemoWrites, requireProjectAccess('manage'), async (req: AuthRequest, res) => {
-  try {
-    // Only project owner can delete the project
-    if (!req.projectAccess?.isOwner) {
-      return res.status(403).json({ message: 'Access denied: Only project owner can delete the project' });
-    }
-
-    const project = await Project.findByIdAndDelete(req.params.id);
-
-    if (!project) {
-      return res.status(404).json({ message: 'Project not found' });
-    }
-
-    // CASCADE DELETE: Clean up all associated data to prevent orphaned records
-    await Promise.all([
-      // Team & Collaboration
-      TeamMember.deleteMany({ projectId: req.params.id }),
-
-      // Activity & Notifications
-      ActivityLog.deleteMany({ projectId: req.params.id }),
-      Notification.deleteMany({ relatedProjectId: req.params.id }),
-
-      // Locks & State
-      NoteLock.deleteMany({ projectId: req.params.id }),
-
-      // Social Features
-      Favorite.deleteMany({ projectId: req.params.id }),
-      Post.deleteMany({ $or: [
-        { projectId: req.params.id },
-        { linkedProjectId: req.params.id }
-      ]}),
-      Comment.deleteMany({ projectId: req.params.id }),
-
-      // Analytics
-      Analytics.deleteMany({ 'eventData.projectId': req.params.id }),
-      CompactedAnalytics.deleteMany({ projectId: req.params.id })
-
-      // Note: ProjectInvitations are kept for audit purposes (intentional)
-    ]);
-
-    logInfo('Project deleted with cascade cleanup', {
-      projectId: req.params.id,
-      projectName: project.name,
-      userId: req.userId
-    });
-
-    res.json({ message: 'Project deleted successfully' });
-  } catch (error) {
-    logError('Delete project error', error as Error);
-    res.status(500).json({ message: 'Server error' });
+router.delete('/:id', requireAuth, blockDemoWrites, requireProjectAccess('manage'), asyncHandler(async (req: AuthRequest, res: express.Response) => {
+  // Only project owner can delete the project
+  if (!req.projectAccess?.isOwner) {
+    throw new AppError(403, 'Access denied: Only project owner can delete the project', 'OWNER_ONLY');
   }
-});
+
+  const project = await Project.findByIdAndDelete(req.params.id);
+
+  if (!project) {
+    throw NotFoundError('Project not found');
+  }
+
+  // CASCADE DELETE: Clean up all associated data to prevent orphaned records
+  await Promise.all([
+    // Team & Collaboration
+    TeamMember.deleteMany({ projectId: req.params.id }),
+
+    // Activity & Notifications
+    ActivityLog.deleteMany({ projectId: req.params.id }),
+    Notification.deleteMany({ relatedProjectId: req.params.id }),
+
+    // Locks & State
+    NoteLock.deleteMany({ projectId: req.params.id }),
+
+    // Social Features
+    Favorite.deleteMany({ projectId: req.params.id }),
+    Post.deleteMany({ $or: [
+      { projectId: req.params.id },
+      { linkedProjectId: req.params.id }
+    ]}),
+    Comment.deleteMany({ projectId: req.params.id }),
+
+    // Analytics
+    Analytics.deleteMany({ 'eventData.projectId': req.params.id }),
+    CompactedAnalytics.deleteMany({ projectId: req.params.id })
+
+    // Note: ProjectInvitations are kept for audit purposes (intentional)
+  ]);
+
+  logInfo('Project deleted with cascade cleanup', {
+    projectId: req.params.id,
+    projectName: project.name,
+    userId: req.userId
+  });
+
+  res.json({ message: 'Project deleted successfully' });
+}));
 
 // NOTES MANAGEMENT - NEW ROUTES
-router.post('/:id/notes', requireAuth, blockDemoWrites, requireProjectAccess('edit'), async (req: AuthRequest, res) => {
-  try {
-    const { title, description, content } = req.body;
-    
-    if (!title || !title.trim() || !content || !content.trim()) {
-      return res.status(400).json({ message: 'Title and content are required' });
-    }
-
-    const project = await Project.findById(req.params.id);
-
-    if (!project) {
-      return res.status(404).json({ message: 'Project not found' });
-    }
-
-    const newNote = {
-      id: uuidv4(),
-      title: title.trim(),
-      description: description?.trim() || '',
-      content: content.trim(),
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-
-    project.notes.push(newNote);
-    await project.save();
-
-    res.json({
-      message: 'Note added successfully',
-      note: newNote
-    });
-  } catch (error) {
-    logError('Add note error', error as Error);
-    res.status(500).json({ message: 'Server error' });
+router.post('/:id/notes', requireAuth, blockDemoWrites, requireProjectAccess('edit'), asyncHandler(async (req: AuthRequest, res: express.Response) => {
+  const { title, description, content } = req.body;
+  
+  if (!title || !title.trim() || !content || !content.trim()) {
+    throw BadRequestError('Title and content are required', 'MISSING_FIELDS');
   }
-});
+
+  const project = await Project.findById(req.params.id);
+
+  if (!project) {
+    throw NotFoundError('Project not found');
+  }
+
+  const newNote = {
+    id: uuidv4(),
+    title: title.trim(),
+    description: description?.trim() || '',
+    content: content.trim(),
+    createdAt: new Date(),
+    updatedAt: new Date()
+  };
+
+  project.notes.push(newNote);
+  await project.save();
+
+  res.json({
+    message: 'Note added successfully',
+    note: newNote
+  });
+}));
 
 // Note lock management routes
-router.post('/:id/notes/:noteId/lock', requireAuth, blockDemoWrites, requireProjectAccess('edit'), async (req: AuthRequest, res) => {
-  try {
-    const noteId = req.params.noteId;
-    const projectId = req.params.id;
-    const userId = req.userId!;
+router.post('/:id/notes/:noteId/lock', requireAuth, blockDemoWrites, requireProjectAccess('edit'), asyncHandler(async (req: AuthRequest, res: express.Response) => {
+  const noteId = req.params.noteId;
+  const projectId = req.params.id;
+  const userId = req.userId!;
 
-    // Get user details
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
+  // Get user details
+  const user = await User.findById(userId);
+  if (!user) {
+    throw NotFoundError('User not found');
+  }
 
-    // Check if note is already locked by someone else
-    const existingLock = await NoteLock.findOne({ noteId, projectId });
-    if (existingLock && existingLock.userId.toString() !== userId.toString()) {
-      return res.status(423).json({ 
-        message: 'Note is currently being edited by another user',
-        lockedBy: {
-          email: existingLock.userEmail,
-          name: existingLock.userName
-        }
-      });
-    }
+  // Check if note is already locked by someone else
+  const existingLock = await NoteLock.findOne({ noteId, projectId });
+  if (existingLock && existingLock.userId.toString() !== userId.toString()) {
+    throw new AppError(423, 'Note is currently being edited by another user', 'NOTE_LOCKED');
+  }
 
-    // If locked by current user, extend the lock
-    if (existingLock && existingLock.userId.toString() === userId.toString()) {
-      existingLock.expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-      existingLock.lastHeartbeat = new Date();
-      await existingLock.save();
-      
-      return res.json({ 
-        message: 'Lock extended',
-        lock: existingLock
-      });
-    }
+  // If locked by current user, extend the lock
+  if (existingLock && existingLock.userId.toString() === userId.toString()) {
+    existingLock.expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    existingLock.lastHeartbeat = new Date();
+    await existingLock.save();
+    
+    return res.json({ 
+      message: 'Lock extended',
+      lock: existingLock
+    });
+  }
 
-    // Create new lock
-    const lock = new NoteLock({
+  // Create new lock
+  const lock = new NoteLock({
+    noteId,
+    projectId: new mongoose.Types.ObjectId(projectId),
+    userId: new mongoose.Types.ObjectId(userId),
+    userEmail: user.email,
+    userName: `${user.firstName} ${user.lastName}`,
+    expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes
+  });
+
+  await lock.save();
+
+  // Signal to other users in the project that this note is now locked
+  if ((global as any).io) {
+    (global as any).io.to(`project-${projectId}`).emit('note-locked', {
       noteId,
-      projectId: new mongoose.Types.ObjectId(projectId),
-      userId: new mongoose.Types.ObjectId(userId),
-      userEmail: user.email,
-      userName: `${user.firstName} ${user.lastName}`,
-      expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes
-    });
-
-    await lock.save();
-
-    // Signal to other users in the project that this note is now locked
-    if ((global as any).io) {
-      (global as any).io.to(`project-${projectId}`).emit('note-locked', {
-        noteId,
-        lockedBy: {
-          email: user.email,
-          name: `${user.firstName} ${user.lastName}`
-        }
-      });
-    }
-
-    res.json({ 
-      message: 'Note locked successfully',
-      lock
-    });
-  } catch (error) {
-    logError('Lock note error', error as Error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-router.delete('/:id/notes/:noteId/lock', requireAuth, blockDemoWrites, requireProjectAccess('edit'), async (req: AuthRequest, res) => {
-  try {
-    const noteId = req.params.noteId;
-    const projectId = req.params.id;
-    const userId = req.userId!;
-
-    const lock = await NoteLock.findOne({ noteId, projectId, userId });
-    if (lock) {
-      await NoteLock.deleteOne({ _id: lock._id });
-      
-      // Signal to other users that this note is now unlocked
-      if ((global as any).io) {
-        (global as any).io.to(`project-${projectId}`).emit('note-unlocked', {
-          noteId
-        });
-      }
-    }
-
-    res.json({ message: 'Note unlocked successfully' });
-  } catch (error) {
-    logError('Unlock note error', error as Error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-router.put('/:id/notes/:noteId/lock/heartbeat', requireAuth, blockDemoWrites, requireProjectAccess('edit'), async (req: AuthRequest, res) => {
-  try {
-    const noteId = req.params.noteId;
-    const projectId = req.params.id;
-    const userId = req.userId!;
-
-    const lock = await NoteLock.findOne({ noteId, projectId, userId });
-    if (lock) {
-      lock.lastHeartbeat = new Date();
-      lock.expiresAt = new Date(Date.now() + 10 * 60 * 1000); // Extend by 10 minutes
-      await lock.save();
-    }
-
-    res.json({ message: 'Heartbeat updated' });
-  } catch (error) {
-    logError('Heartbeat error', error as Error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-router.get('/:id/notes/:noteId/lock', requireAuth, requireProjectAccess('view'), async (req: AuthRequest, res) => {
-  try {
-    const noteId = req.params.noteId;
-    const projectId = req.params.id;
-
-    const lock = await NoteLock.findOne({ noteId, projectId });
-    
-    if (!lock) {
-      return res.json({ locked: false });
-    }
-
-    res.json({ 
-      locked: true,
       lockedBy: {
-        email: lock.userEmail,
-        name: lock.userName,
-        isCurrentUser: lock.userId.toString() === req.userId!.toString()
+        email: user.email,
+        name: `${user.firstName} ${user.lastName}`
       }
     });
-  } catch (error) {
-    logError('Check lock error', error as Error);
-    res.status(500).json({ message: 'Server error' });
   }
-});
 
-router.put('/:id/notes/:noteId', requireAuth, blockDemoWrites, requireProjectAccess('edit'), async (req: AuthRequest, res) => {
-  try {
-    const { title, description, content } = req.body;
-    const noteId = req.params.noteId;
-    const projectId = req.params.id;
-    const userId = req.userId!;
+  res.json({ 
+    message: 'Note locked successfully',
+    lock
+  });
+}));
 
-    if (!title || !title.trim() || !content || !content.trim()) {
-      return res.status(400).json({ message: 'Title and content are required' });
+router.delete('/:id/notes/:noteId/lock', requireAuth, blockDemoWrites, requireProjectAccess('edit'), asyncHandler(async (req: AuthRequest, res: express.Response) => {
+  const noteId = req.params.noteId;
+  const projectId = req.params.id;
+  const userId = req.userId!;
+
+  const lock = await NoteLock.findOne({ noteId, projectId, userId });
+  if (lock) {
+    await NoteLock.deleteOne({ _id: lock._id });
+    
+    // Signal to other users that this note is now unlocked
+    if ((global as any).io) {
+      (global as any).io.to(`project-${projectId}`).emit('note-unlocked', {
+        noteId
+      });
     }
+  }
 
-    // Check if note is locked by someone else
-    const lock = await NoteLock.findOne({ noteId, projectId });
-    if (lock && lock.userId.toString() !== userId.toString()) {
-      return res.status(423).json({ 
-        message: 'Note is currently being edited by another user',
-        lockedBy: {
-          email: lock.userEmail,
-          name: lock.userName
+  res.json({ message: 'Note unlocked successfully' });
+}));
+
+router.put('/:id/notes/:noteId/lock/heartbeat', requireAuth, blockDemoWrites, requireProjectAccess('edit'), asyncHandler(async (req: AuthRequest, res: express.Response) => {
+  const noteId = req.params.noteId;
+  const projectId = req.params.id;
+  const userId = req.userId!;
+
+  const lock = await NoteLock.findOne({ noteId, projectId, userId });
+  if (lock) {
+    lock.lastHeartbeat = new Date();
+    lock.expiresAt = new Date(Date.now() + 10 * 60 * 1000); // Extend by 10 minutes
+    await lock.save();
+  }
+
+  res.json({ message: 'Heartbeat updated' });
+}));
+
+router.get('/:id/notes/:noteId/lock', requireAuth, requireProjectAccess('view'), asyncHandler(async (req: AuthRequest, res: express.Response) => {
+  const noteId = req.params.noteId;
+  const projectId = req.params.id;
+
+  const lock = await NoteLock.findOne({ noteId, projectId });
+  
+  if (!lock) {
+    return res.json({ locked: false });
+  }
+
+  res.json({ 
+    locked: true,
+    lockedBy: {
+      email: lock.userEmail,
+      name: lock.userName,
+      isCurrentUser: lock.userId.toString() === req.userId!.toString()
+    }
+  });
+}));
+
+router.put('/:id/notes/:noteId', requireAuth, blockDemoWrites, requireProjectAccess('edit'), asyncHandler(async (req: AuthRequest, res: express.Response) => {
+  const { title, description, content } = req.body;
+  const noteId = req.params.noteId;
+  const projectId = req.params.id;
+  const userId = req.userId!;
+
+  if (!title || !title.trim() || !content || !content.trim()) {
+    throw BadRequestError('Title and content are required', 'MISSING_FIELDS');
+  }
+
+  // Check if note is locked by someone else
+  const lock = await NoteLock.findOne({ noteId, projectId });
+  if (lock && lock.userId.toString() !== userId.toString()) {
+    throw new AppError(423, 'Note is currently being edited by another user', 'NOTE_LOCKED');
+  }
+
+  const project = await Project.findById(req.params.id);
+
+  if (!project) {
+    throw NotFoundError('Project not found');
+  }
+
+  const note = project.notes.find(n => n.id === req.params.noteId);
+  if (!note) {
+    throw NotFoundError('Note not found');
+  }
+
+  note.title = title.trim();
+  note.description = description?.trim() || '';
+  note.content = content.trim();
+  note.updatedAt = new Date();
+
+  await project.save();
+
+  // Release the lock after successful save
+  if (lock && lock.userId.toString() === userId.toString()) {
+    await NoteLock.deleteOne({ _id: lock._id });
+    
+    // Signal that note is unlocked and updated
+    if ((global as any).io) {
+      (global as any).io.to(`project-${projectId}`).emit('note-unlocked', {
+        noteId
+      });
+      (global as any).io.to(`project-${projectId}`).emit('note-updated', {
+        noteId,
+        note: note
+      });
+    }
+  }
+
+  // Send broadcast event to all team members (we'll add this notification for real-time updates)
+  const teamMemberIds = await TeamMember.find({ projectId: new mongoose.Types.ObjectId(projectId) })
+    .select('userId')
+    .lean();
+  
+  for (const member of teamMemberIds) {
+    if (member.userId.toString() !== userId.toString()) {
+      // Create a notification for other team members about the note update
+      await Notification.create({
+        userId: member.userId,
+        type: 'project_shared',
+        title: 'Note Updated',
+        message: `"${note.title}" was updated in ${project.name}`,
+        relatedProjectId: project._id,
+        metadata: {
+          noteId: note.id,
+          action: 'note_updated'
         }
       });
     }
-
-    const project = await Project.findById(req.params.id);
-
-    if (!project) {
-      return res.status(404).json({ message: 'Project not found' });
-    }
-
-    const note = project.notes.find(n => n.id === req.params.noteId);
-    if (!note) {
-      return res.status(404).json({ message: 'Note not found' });
-    }
-
-    note.title = title.trim();
-    note.description = description?.trim() || '';
-    note.content = content.trim();
-    note.updatedAt = new Date();
-
-    await project.save();
-
-    // Release the lock after successful save
-    if (lock && lock.userId.toString() === userId.toString()) {
-      await NoteLock.deleteOne({ _id: lock._id });
-      
-      // Signal that note is unlocked and updated
-      if ((global as any).io) {
-        (global as any).io.to(`project-${projectId}`).emit('note-unlocked', {
-          noteId
-        });
-        (global as any).io.to(`project-${projectId}`).emit('note-updated', {
-          noteId,
-          note: note
-        });
-      }
-    }
-
-    // Send broadcast event to all team members (we'll add this notification for real-time updates)
-    const teamMemberIds = await TeamMember.find({ projectId: new mongoose.Types.ObjectId(projectId) })
-      .select('userId')
-      .lean();
-    
-    for (const member of teamMemberIds) {
-      if (member.userId.toString() !== userId.toString()) {
-        // Create a notification for other team members about the note update
-        await Notification.create({
-          userId: member.userId,
-          type: 'project_shared',
-          title: 'Note Updated',
-          message: `"${note.title}" was updated in ${project.name}`,
-          relatedProjectId: project._id,
-          metadata: {
-            noteId: note.id,
-            action: 'note_updated'
-          }
-        });
-      }
-    }
-
-    res.json({
-      message: 'Note updated successfully',
-      note: note
-    });
-  } catch (error) {
-    logError('Update note error', error as Error);
-    res.status(500).json({ message: 'Server error' });
   }
-});
 
-router.delete('/:id/notes/:noteId', requireAuth, blockDemoWrites, requireProjectAccess('edit'), async (req: AuthRequest, res) => {
-  try {
-    const project = await Project.findById(req.params.id);
+  res.json({
+    message: 'Note updated successfully',
+    note: note
+  });
+}));
 
-    if (!project) {
-      return res.status(404).json({ message: 'Project not found' });
-    }
+router.delete('/:id/notes/:noteId', requireAuth, blockDemoWrites, requireProjectAccess('edit'), asyncHandler(async (req: AuthRequest, res: express.Response) => {
+  const project = await Project.findById(req.params.id);
 
-    project.notes = project.notes.filter(n => n.id !== req.params.noteId);
-    await project.save();
-
-    res.json({ message: 'Note deleted successfully' });
-  } catch (error) {
-    logError('Delete note error', error as Error);
-    res.status(500).json({ message: 'Server error' });
+  if (!project) {
+    throw NotFoundError('Project not found');
   }
-});
+
+  project.notes = project.notes.filter(n => n.id !== req.params.noteId);
+  await project.save();
+
+  res.json({ message: 'Note deleted successfully' });
+}));
 
 // TECH STACK MANAGEMENT (Unified Stack)
-router.post('/:id/technologies', requireAuth, blockDemoWrites, requireProjectAccess('edit'), async (req: AuthRequest, res) => {
-  try {
-    const { category, name, version, description } = req.body;
+router.post('/:id/technologies', requireAuth, blockDemoWrites, requireProjectAccess('edit'), asyncHandler(async (req: AuthRequest, res: express.Response) => {
+  const { category, name, version, description } = req.body;
 
-    if (!category || !name) {
-      return res.status(400).json({ message: 'Category and name are required' });
-    }
-
-    const validCategories = ['styling', 'database', 'framework', 'runtime', 'deployment', 'testing', 'tooling'];
-    if (!validCategories.includes(category)) {
-      return res.status(400).json({ message: 'Invalid technology category' });
-    }
-
-    const project = await Project.findById(req.params.id);
-
-    if (!project) {
-      return res.status(404).json({ message: 'Project not found' });
-    }
-
-    const existingItem = project.stack.find(
-      item => item.category === category && item.name === name
-    );
-
-    if (existingItem) {
-      return res.status(400).json({ message: 'Technology already added to this category' });
-    }
-
-    const newItem = {
-      category,
-      name: name.trim(),
-      version: version?.trim() || '',
-      description: description?.trim() || ''
-    };
-
-    project.stack.push(newItem);
-    await project.save();
-
-    res.json({
-      message: 'Technology added successfully',
-      technology: newItem
-    });
-  } catch (error) {
-    logError('Add technology error', error as Error);
-    res.status(500).json({ message: 'Server error' });
+  if (!category || !name) {
+    throw BadRequestError('Category and name are required', 'MISSING_FIELDS');
   }
-});
 
-router.delete('/:id/technologies/:category/:name', requireAuth, blockDemoWrites, requireProjectAccess('edit'), async (req: AuthRequest, res) => {
-  try {
-    const { category, name } = req.params;
-
-    const project = await Project.findById(req.params.id);
-
-    if (!project) {
-      return res.status(404).json({ message: 'Project not found' });
-    }
-
-    project.stack = project.stack.filter(
-      item => !(item.category === category && item.name === decodeURIComponent(name))
-    );
-    await project.save();
-
-    res.json({ message: 'Technology removed successfully' });
-  } catch (error) {
-    logError('Remove technology error', error as Error);
-    res.status(500).json({ message: 'Server error' });
+  const validCategories = ['styling', 'database', 'framework', 'runtime', 'deployment', 'testing', 'tooling'];
+  if (!validCategories.includes(category)) {
+    throw BadRequestError('Invalid technology category', 'INVALID_CATEGORY');
   }
-});
 
-router.put('/:id/technologies/:category/:name', requireAuth, blockDemoWrites, requireProjectAccess('edit'), async (req: AuthRequest, res) => {
-  try {
-    const { category, name } = req.params;
-    const { version } = req.body;
+  const project = await Project.findById(req.params.id);
 
-    const project = await Project.findById(req.params.id);
-
-    if (!project) {
-      return res.status(404).json({ message: 'Project not found' });
-    }
-
-    const stackItem = project.stack.find(
-      item => item.category === category && item.name === decodeURIComponent(name)
-    );
-
-    if (!stackItem) {
-      return res.status(404).json({ message: 'Technology not found' });
-    }
-
-    // Update the technology version
-    if (version !== undefined) stackItem.version = version;
-
-    await project.save();
-
-    res.json({
-      message: 'Technology updated successfully',
-      technology: stackItem
-    });
-  } catch (error) {
-    logError('Update technology error', error as Error);
-    res.status(500).json({ message: 'Server error' });
+  if (!project) {
+    throw NotFoundError('Project not found');
   }
-});
+
+  const existingItem = project.stack.find(
+    item => item.category === category && item.name === name
+  );
+
+  if (existingItem) {
+    throw BadRequestError('Technology already added to this category', 'DUPLICATE_TECH');
+  }
+
+  const newItem = {
+    category,
+    name: name.trim(),
+    version: version?.trim() || '',
+    description: description?.trim() || ''
+  };
+
+  project.stack.push(newItem);
+  await project.save();
+
+  res.json({
+    message: 'Technology added successfully',
+    technology: newItem
+  });
+}));
+
+router.delete('/:id/technologies/:category/:name', requireAuth, blockDemoWrites, requireProjectAccess('edit'), asyncHandler(async (req: AuthRequest, res: express.Response) => {
+  const { category, name } = req.params;
+
+  const project = await Project.findById(req.params.id);
+
+  if (!project) {
+    throw NotFoundError('Project not found');
+  }
+
+  project.stack = project.stack.filter(
+    item => !(item.category === category && item.name === decodeURIComponent(name))
+  );
+  await project.save();
+
+  res.json({ message: 'Technology removed successfully' });
+}));
+
+router.put('/:id/technologies/:category/:name', requireAuth, blockDemoWrites, requireProjectAccess('edit'), asyncHandler(async (req: AuthRequest, res: express.Response) => {
+  const { category, name } = req.params;
+  const { version } = req.body;
+
+  const project = await Project.findById(req.params.id);
+
+  if (!project) {
+    throw NotFoundError('Project not found');
+  }
+
+  const stackItem = project.stack.find(
+    item => item.category === category && item.name === decodeURIComponent(name)
+  );
+
+  if (!stackItem) {
+    throw NotFoundError('Technology not found');
+  }
+
+  // Update the technology version
+  if (version !== undefined) stackItem.version = version;
+
+  await project.save();
+
+  res.json({
+    message: 'Technology updated successfully',
+    technology: stackItem
+  });
+}));
 
 // TODO MANAGEMENT
-router.post('/:id/todos', requireAuth, blockDemoWrites, requireProjectAccess('edit'), async (req: AuthRequest, res) => {
+router.post('/:id/todos', requireAuth, blockDemoWrites, requireProjectAccess('edit'), asyncHandler(async (req: AuthRequest, res: express.Response) => {
+  const { text, description, priority, status, dueDate, reminderDate, assignedTo, parentTodoId } = req.body;
+  
+  if (!text || !text.trim()) {
+    throw BadRequestError('Todo text is required', 'MISSING_TODO_TEXT');
+  }
+
+  const project = await Project.findById(req.params.id);
+
+  if (!project) {
+    throw NotFoundError('Project not found');
+  }
+
+  // Validate assignedTo user is a team member or project owner for shared projects
+  if (assignedTo && project.isShared) {
+    const isOwner = project.ownerId?.toString() === assignedTo || project.userId?.toString() === assignedTo;
+    const isTeamMember = await TeamMember.findOne({ 
+      projectId: project._id, 
+      userId: assignedTo 
+    });
+    if (!isOwner && !isTeamMember) {
+      throw BadRequestError('Assigned user must be a team member or project owner', 'INVALID_ASSIGNEE');
+    }
+  }
+
+  const newTodo = {
+    id: uuidv4(),
+    title: text.trim(),
+    description: description?.trim() || '',
+    priority: priority || 'medium',
+    completed: false,
+    status: status || 'not_started',
+    dueDate: dueDate ? new Date(dueDate) : undefined,
+    reminderDate: reminderDate ? new Date(reminderDate) : undefined,
+    assignedTo: assignedTo ? new mongoose.Types.ObjectId(assignedTo) : undefined,
+    parentTodoId: parentTodoId || undefined,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    createdBy: req.userId ? new mongoose.Types.ObjectId(req.userId) : undefined
+  };
+
+  project.todos.push(newTodo);
+  await project.save();
+
+  // Log todo creation activity
   try {
-    const { text, description, priority, status, dueDate, reminderDate, assignedTo, parentTodoId } = req.body;
-    
-    if (!text || !text.trim()) {
-      return res.status(400).json({ message: 'Todo text is required' });
-    }
+    await activityLogger.logResourceCreation(
+      req.params.id,
+      req.userId!,
+      (req as any).sessionId || req.headers['x-session-id'] || 'unknown',
+      'todo',
+      newTodo.id,
+      {
+        todoTitle: newTodo.title,
+        priority: newTodo.priority,
+        status: newTodo.status,
+        isSubtask: !!parentTodoId,
+        assignedTo: assignedTo,
+        dueDate: newTodo.dueDate,
+        reminderDate: newTodo.reminderDate
+      },
+      req.get('user-agent'),
+      req.ip
+    );
+  } catch (error) {
+    logWarn('Failed to log todo creation', { error });
+  }
 
-    const project = await Project.findById(req.params.id);
-
-    if (!project) {
-      return res.status(404).json({ message: 'Project not found' });
-    }
-
-    // Validate assignedTo user is a team member or project owner for shared projects
-    if (assignedTo && project.isShared) {
-      const isOwner = project.ownerId?.toString() === assignedTo || project.userId?.toString() === assignedTo;
-      const isTeamMember = await TeamMember.findOne({ 
-        projectId: project._id, 
-        userId: assignedTo 
-      });
-      if (!isOwner && !isTeamMember) {
-        return res.status(400).json({ message: 'Assigned user must be a team member or project owner' });
-      }
-    }
-
-    const newTodo = {
-      id: uuidv4(),
-      title: text.trim(),
-      description: description?.trim() || '',
-      priority: priority || 'medium',
-      completed: false,
-      status: status || 'not_started',
-      dueDate: dueDate ? new Date(dueDate) : undefined,
-      reminderDate: reminderDate ? new Date(reminderDate) : undefined,
-      assignedTo: assignedTo ? new mongoose.Types.ObjectId(assignedTo) : undefined,
-      parentTodoId: parentTodoId || undefined,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      createdBy: req.userId ? new mongoose.Types.ObjectId(req.userId) : undefined
-    };
-
-    project.todos.push(newTodo);
-    await project.save();
-
-    // Log todo creation activity
+  // Create assignment notification if assigning to someone else
+  if (assignedTo && assignedTo !== req.userId?.toString()) {
+    logInfo(`Creating assignment notification for user ${assignedTo}, todo: ${text.trim()}`);
     try {
-      await activityLogger.logResourceCreation(
+      await Notification.create({
+        userId: assignedTo,
+        type: 'todo_assigned',
+        title: 'Todo Assigned',
+        message: `You have been assigned a new todo: "${text.trim()}"`,
+        relatedProjectId: project._id,
+        relatedTodoId: newTodo.id,
+        actionUrl: `/projects/${project._id}`
+      });
+      logInfo(`Assignment notification created successfully`);
+    } catch (notifError) {
+      logWarn('Failed to create assignment notification', { error: notifError });
+    }
+
+    // Log todo assignment activity with user name
+    try {
+      const assignedUser = await User.findById(assignedTo).select('firstName lastName');
+      const assignedUserName = assignedUser ? `${assignedUser.firstName} ${assignedUser.lastName}` : assignedTo;
+      
+      await activityLogger.logFieldUpdate(
         req.params.id,
         req.userId!,
         (req as any).sessionId || req.headers['x-session-id'] || 'unknown',
         'todo',
         newTodo.id,
-        {
-          todoTitle: newTodo.title,
-          priority: newTodo.priority,
-          status: newTodo.status,
-          isSubtask: !!parentTodoId,
-          assignedTo: assignedTo,
-          dueDate: newTodo.dueDate,
-          reminderDate: newTodo.reminderDate
-        },
+        'assignedTo',
+        null,
+        assignedUserName,
+        newTodo.title,
+        undefined,
         req.get('user-agent'),
         req.ip
       );
     } catch (error) {
-      logWarn('Failed to log todo creation', { error });
+      logError('Failed to log todo assignment:', error as Error);
     }
+  }
 
-    // Create assignment notification if assigning to someone else
-    if (assignedTo && assignedTo !== req.userId?.toString()) {
-      logInfo(`Creating assignment notification for user ${assignedTo}, todo: ${text.trim()}`);
-      try {
-        await Notification.create({
-          userId: assignedTo,
-          type: 'todo_assigned',
-          title: 'Todo Assigned',
-          message: `You have been assigned a new todo: "${text.trim()}"`,
-          relatedProjectId: project._id,
-          relatedTodoId: newTodo.id,
-          actionUrl: `/projects/${project._id}`
-        });
-        logInfo(`Assignment notification created successfully`);
-      } catch (notifError) {
-        logWarn('Failed to create assignment notification', { error: notifError });
-      }
+  res.json({
+    message: 'Todo added successfully',
+    todo: newTodo
+  });
+}));
 
-      // Log todo assignment activity with user name
+router.put('/:id/todos/:todoId', requireAuth, blockDemoWrites, requireProjectAccess('edit'), asyncHandler(async (req: AuthRequest, res: express.Response) => {
+  const { text, description, priority, completed, status, dueDate, reminderDate, assignedTo, parentTodoId } = req.body;
+
+  const project = await Project.findById(req.params.id);
+
+  if (!project) {
+    throw NotFoundError('Project not found');
+  }
+
+  const todo = project.todos.find(t => t.id === req.params.todoId);
+  if (!todo) {
+    throw NotFoundError('Todo not found');
+  }
+
+  // Validate assignedTo user is a team member or project owner for shared projects
+  if (assignedTo && project.isShared) {
+    const isOwner = project.ownerId?.toString() === assignedTo || project.userId?.toString() === assignedTo;
+    const isTeamMember = await TeamMember.findOne({ 
+      projectId: project._id, 
+      userId: assignedTo 
+    });
+    if (!isOwner && !isTeamMember) {
+      throw BadRequestError('Assigned user must be a team member or project owner', 'INVALID_ASSIGNEE');
+    }
+  }
+
+  // Store original values for activity logging
+  const originalValues = {
+    text: todo.title,
+    description: todo.description,
+    priority: todo.priority,
+    completed: todo.completed,
+    status: todo.status,
+    dueDate: todo.dueDate,
+    reminderDate: todo.reminderDate,
+    assignedTo: todo.assignedTo?.toString(),
+    parentTodoId: todo.parentTodoId
+  };
+
+  const previousAssignedTo = todo.assignedTo?.toString();
+
+  if (text !== undefined) todo.title = text.trim();
+  if (description !== undefined) todo.description = description.trim();
+  if (priority !== undefined) todo.priority = priority;
+  if (completed !== undefined) todo.completed = completed;
+  if (status !== undefined) todo.status = status;
+  if (dueDate !== undefined) todo.dueDate = dueDate ? new Date(dueDate) : undefined;
+  if (reminderDate !== undefined) todo.reminderDate = reminderDate ? new Date(reminderDate) : undefined;
+  if (assignedTo !== undefined) todo.assignedTo = assignedTo ? new mongoose.Types.ObjectId(assignedTo) : undefined;
+  if (parentTodoId !== undefined) todo.parentTodoId = parentTodoId;
+  todo.updatedBy = req.userId ? new mongoose.Types.ObjectId(req.userId) : undefined;
+  (todo as any).updatedAt = new Date();
+
+  await project.save();
+
+  // Log field changes for activity tracking
+  const fieldMappings = [
+    { field: 'text', oldValue: originalValues.text, newValue: text },
+    { field: 'description', oldValue: originalValues.description, newValue: description },
+    { field: 'priority', oldValue: originalValues.priority, newValue: priority },
+    { field: 'completed', oldValue: originalValues.completed, newValue: completed },
+    { field: 'status', oldValue: originalValues.status, newValue: status },
+    { field: 'dueDate', oldValue: originalValues.dueDate, newValue: dueDate },
+    { field: 'reminderDate', oldValue: originalValues.reminderDate, newValue: reminderDate },
+    { field: 'assignedTo', oldValue: originalValues.assignedTo, newValue: assignedTo },
+    { field: 'parentTodoId', oldValue: originalValues.parentTodoId, newValue: parentTodoId }
+  ];
+
+  for (const mapping of fieldMappings) {
+    if (mapping.newValue !== undefined && mapping.oldValue !== mapping.newValue) {
       try {
-        const assignedUser = await User.findById(assignedTo).select('firstName lastName');
-        const assignedUserName = assignedUser ? `${assignedUser.firstName} ${assignedUser.lastName}` : assignedTo;
-        
+        let logOldValue = mapping.oldValue;
+        let logNewValue = mapping.newValue;
+
+        // Resolve user names for assignedTo field
+        if (mapping.field === 'assignedTo') {
+          if (mapping.oldValue) {
+            const oldUser = await User.findById(mapping.oldValue).select('firstName lastName');
+            logOldValue = oldUser ? `${oldUser.firstName} ${oldUser.lastName}` : mapping.oldValue;
+          }
+          if (mapping.newValue) {
+            const newUser = await User.findById(mapping.newValue).select('firstName lastName');
+            logNewValue = newUser ? `${newUser.firstName} ${newUser.lastName}` : mapping.newValue;
+          }
+        }
+
         await activityLogger.logFieldUpdate(
           req.params.id,
           req.userId!,
           (req as any).sessionId || req.headers['x-session-id'] || 'unknown',
           'todo',
-          newTodo.id,
-          'assignedTo',
-          null,
-          assignedUserName,
-          newTodo.title,
+          req.params.todoId,
+          mapping.field,
+          logOldValue,
+          logNewValue,
+          todo.title,
           undefined,
           req.get('user-agent'),
           req.ip
         );
       } catch (error) {
-        logError('Failed to log todo assignment:', error as Error);
+        logError(`Failed to log todo ${mapping.field} update:`, error as Error);
       }
     }
+  }
 
-    res.json({
-      message: 'Todo added successfully',
-      todo: newTodo
+  // Create assignment notification if assigned to a new user
+  if (assignedTo && assignedTo !== previousAssignedTo && assignedTo !== req.userId?.toString()) {
+    await Notification.create({
+      userId: assignedTo,
+      type: 'todo_assigned',
+      title: 'Todo Assigned',
+      message: `You have been assigned a todo: "${todo.title}"`,
+      relatedProjectId: project._id,
+      relatedTodoId: todo.id,
+      actionUrl: `/projects/${project._id}`
     });
-  } catch (error) {
-    logError('Add todo error', error as Error);
-    res.status(500).json({ message: 'Server error' });
   }
-});
 
-router.put('/:id/todos/:todoId', requireAuth, blockDemoWrites, requireProjectAccess('edit'), async (req: AuthRequest, res) => {
+  res.json({
+    message: 'Todo updated successfully',
+    todo: todo
+  });
+}));
+
+router.delete('/:id/todos/:todoId', requireAuth, blockDemoWrites, requireProjectAccess('edit'), asyncHandler(async (req: AuthRequest, res: express.Response) => {
+  const project = await Project.findById(req.params.id);
+
+  if (!project) {
+    throw NotFoundError('Project not found');
+  }
+
+  // Find the todo to get its details before deletion
+  const todoToDelete = project.todos.find(t => t.id === req.params.todoId);
+  
+  if (!todoToDelete) {
+    throw NotFoundError('Todo not found');
+  }
+
+  // Log todo deletion activity
   try {
-    const { text, description, priority, completed, status, dueDate, reminderDate, assignedTo, parentTodoId } = req.body;
-
-    const project = await Project.findById(req.params.id);
-
-    if (!project) {
-      return res.status(404).json({ message: 'Project not found' });
-    }
-
-    const todo = project.todos.find(t => t.id === req.params.todoId);
-    if (!todo) {
-      return res.status(404).json({ message: 'Todo not found' });
-    }
-
-    // Validate assignedTo user is a team member or project owner for shared projects
-    if (assignedTo && project.isShared) {
-      const isOwner = project.ownerId?.toString() === assignedTo || project.userId?.toString() === assignedTo;
-      const isTeamMember = await TeamMember.findOne({ 
-        projectId: project._id, 
-        userId: assignedTo 
-      });
-      if (!isOwner && !isTeamMember) {
-        return res.status(400).json({ message: 'Assigned user must be a team member or project owner' });
-      }
-    }
-
-    // Store original values for activity logging
-    const originalValues = {
-      text: todo.title,
-      description: todo.description,
-      priority: todo.priority,
-      completed: todo.completed,
-      status: todo.status,
-      dueDate: todo.dueDate,
-      reminderDate: todo.reminderDate,
-      assignedTo: todo.assignedTo?.toString(),
-      parentTodoId: todo.parentTodoId
-    };
-
-    const previousAssignedTo = todo.assignedTo?.toString();
-
-    if (text !== undefined) todo.title = text.trim();
-    if (description !== undefined) todo.description = description.trim();
-    if (priority !== undefined) todo.priority = priority;
-    if (completed !== undefined) todo.completed = completed;
-    if (status !== undefined) todo.status = status;
-    if (dueDate !== undefined) todo.dueDate = dueDate ? new Date(dueDate) : undefined;
-    if (reminderDate !== undefined) todo.reminderDate = reminderDate ? new Date(reminderDate) : undefined;
-    if (assignedTo !== undefined) todo.assignedTo = assignedTo ? new mongoose.Types.ObjectId(assignedTo) : undefined;
-    if (parentTodoId !== undefined) todo.parentTodoId = parentTodoId;
-    todo.updatedBy = req.userId ? new mongoose.Types.ObjectId(req.userId) : undefined;
-    (todo as any).updatedAt = new Date();
-
-    await project.save();
-
-    // Log field changes for activity tracking
-    const fieldMappings = [
-      { field: 'text', oldValue: originalValues.text, newValue: text },
-      { field: 'description', oldValue: originalValues.description, newValue: description },
-      { field: 'priority', oldValue: originalValues.priority, newValue: priority },
-      { field: 'completed', oldValue: originalValues.completed, newValue: completed },
-      { field: 'status', oldValue: originalValues.status, newValue: status },
-      { field: 'dueDate', oldValue: originalValues.dueDate, newValue: dueDate },
-      { field: 'reminderDate', oldValue: originalValues.reminderDate, newValue: reminderDate },
-      { field: 'assignedTo', oldValue: originalValues.assignedTo, newValue: assignedTo },
-      { field: 'parentTodoId', oldValue: originalValues.parentTodoId, newValue: parentTodoId }
-    ];
-
-    for (const mapping of fieldMappings) {
-      if (mapping.newValue !== undefined && mapping.oldValue !== mapping.newValue) {
-        try {
-          let logOldValue = mapping.oldValue;
-          let logNewValue = mapping.newValue;
-
-          // Resolve user names for assignedTo field
-          if (mapping.field === 'assignedTo') {
-            if (mapping.oldValue) {
-              const oldUser = await User.findById(mapping.oldValue).select('firstName lastName');
-              logOldValue = oldUser ? `${oldUser.firstName} ${oldUser.lastName}` : mapping.oldValue;
-            }
-            if (mapping.newValue) {
-              const newUser = await User.findById(mapping.newValue).select('firstName lastName');
-              logNewValue = newUser ? `${newUser.firstName} ${newUser.lastName}` : mapping.newValue;
-            }
-          }
-
-          await activityLogger.logFieldUpdate(
-            req.params.id,
-            req.userId!,
-            (req as any).sessionId || req.headers['x-session-id'] || 'unknown',
-            'todo',
-            req.params.todoId,
-            mapping.field,
-            logOldValue,
-            logNewValue,
-            todo.title,
-            undefined,
-            req.get('user-agent'),
-            req.ip
-          );
-        } catch (error) {
-          logError(`Failed to log todo ${mapping.field} update:`, error as Error);
-        }
-      }
-    }
-
-    // Create assignment notification if assigned to a new user
-    if (assignedTo && assignedTo !== previousAssignedTo && assignedTo !== req.userId?.toString()) {
-      await Notification.create({
-        userId: assignedTo,
-        type: 'todo_assigned',
-        title: 'Todo Assigned',
-        message: `You have been assigned a todo: "${todo.title}"`,
-        relatedProjectId: project._id,
-        relatedTodoId: todo.id,
-        actionUrl: `/projects/${project._id}`
-      });
-    }
-
-    res.json({
-      message: 'Todo updated successfully',
-      todo: todo
-    });
+    await activityLogger.logResourceDeletion(
+      req.params.id,
+      req.userId!,
+      (req as any).sessionId || req.headers['x-session-id'] || 'unknown',
+      'todo',
+      req.params.todoId,
+      {
+        todoTitle: todoToDelete.title,
+        priority: todoToDelete.priority,
+        status: todoToDelete.status,
+        completed: todoToDelete.completed,
+        isSubtask: !!todoToDelete.parentTodoId,
+        assignedTo: todoToDelete.assignedTo?.toString(),
+        dueDate: todoToDelete.dueDate,
+        reminderDate: todoToDelete.reminderDate
+      },
+      req.get('user-agent'),
+      req.ip
+    );
   } catch (error) {
-    logError('Update todo error', error as Error);
-    res.status(500).json({ message: 'Server error' });
+    logError('Failed to log todo deletion:', error as Error);
   }
-});
 
-router.delete('/:id/todos/:todoId', requireAuth, blockDemoWrites, requireProjectAccess('edit'), async (req: AuthRequest, res) => {
-  try {
-    const project = await Project.findById(req.params.id);
+  project.todos = project.todos.filter(t => t.id !== req.params.todoId);
+  await project.save();
 
-    if (!project) {
-      return res.status(404).json({ message: 'Project not found' });
-    }
-
-    // Find the todo to get its details before deletion
-    const todoToDelete = project.todos.find(t => t.id === req.params.todoId);
-    
-    if (!todoToDelete) {
-      return res.status(404).json({ message: 'Todo not found' });
-    }
-
-    // Log todo deletion activity
-    try {
-      await activityLogger.logResourceDeletion(
-        req.params.id,
-        req.userId!,
-        (req as any).sessionId || req.headers['x-session-id'] || 'unknown',
-        'todo',
-        req.params.todoId,
-        {
-          todoTitle: todoToDelete.title,
-          priority: todoToDelete.priority,
-          status: todoToDelete.status,
-          completed: todoToDelete.completed,
-          isSubtask: !!todoToDelete.parentTodoId,
-          assignedTo: todoToDelete.assignedTo?.toString(),
-          dueDate: todoToDelete.dueDate,
-          reminderDate: todoToDelete.reminderDate
-        },
-        req.get('user-agent'),
-        req.ip
-      );
-    } catch (error) {
-      logError('Failed to log todo deletion:', error as Error);
-    }
-
-    project.todos = project.todos.filter(t => t.id !== req.params.todoId);
-    await project.save();
-
-    res.json({ message: 'Todo deleted successfully' });
-  } catch (error) {
-    logError('Delete todo error:', error as Error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
+  res.json({ message: 'Todo deleted successfully' });
+}));
 
 // DEV LOG MANAGEMENT
-router.post('/:id/devlog', requireAuth, blockDemoWrites, requireProjectAccess('edit'), async (req: AuthRequest, res) => {
-  try {
-    const { title, description} = req.body;
+router.post('/:id/devlog', requireAuth, blockDemoWrites, requireProjectAccess('edit'), asyncHandler(async (req: AuthRequest, res: express.Response) => {
+  const { title, description} = req.body;
 
-    if (!description || !description.trim()) {
-      return res.status(400).json({ message: 'Dev log description is required' });
-    }
-
-    const project = await Project.findById(req.params.id);
-
-    if (!project) {
-      return res.status(404).json({ message: 'Project not found' });
-    }
-
-    const newEntry = {
-      id: uuidv4(),
-      title: title?.trim() || '',
-      description: description?.trim() || '',
-      date: new Date()
-    };
-
-    project.devLog.push(newEntry);
-    await project.save();
-
-    res.json({
-      message: 'Dev log entry added successfully',
-      entry: newEntry
-    });
-  } catch (error) {
-    logError('Add dev log error:', error as Error);
-    res.status(500).json({ message: 'Server error' });
+  if (!description || !description.trim()) {
+    throw BadRequestError('Dev log description is required', 'DESCRIPTION_REQUIRED');
   }
-});
 
-router.put('/:id/devlog/:entryId', requireAuth, blockDemoWrites, requireProjectAccess('edit'), async (req: AuthRequest, res) => {
-  try {
-    const { title, description } = req.body;
+  const project = await Project.findById(req.params.id);
 
-    if (!description || !description.trim()) {
-      return res.status(400).json({ message: 'Dev log description is required' });
-    }
-
-    const project = await Project.findById(req.params.id);
-
-    if (!project) {
-      return res.status(404).json({ message: 'Project not found' });
-    }
-
-    const devLogEntry = project.devLog.find(e => e.id === req.params.entryId);
-    if (!devLogEntry) {
-      return res.status(404).json({ message: 'Dev log entry not found' });
-    }
-
-    if (title !== undefined) devLogEntry.title = title.trim();
-    if (description !== undefined) devLogEntry.description = description.trim();
-    
-    await project.save();
-
-    res.json({
-      message: 'Dev log entry updated successfully',
-      entry: devLogEntry
-    });
-  } catch (error) {
-    logError('Update dev log error:', error as Error);
-    res.status(500).json({ message: 'Server error' });
+  if (!project) {
+    throw NotFoundError('Project not found', 'PROJECT_NOT_FOUND');
   }
-});
 
-router.delete('/:id/devlog/:entryId', requireAuth, blockDemoWrites, requireProjectAccess('edit'), async (req: AuthRequest, res) => {
-  try {
-    const project = await Project.findById(req.params.id);
+  const newEntry = {
+    id: uuidv4(),
+    title: title?.trim() || '',
+    description: description?.trim() || '',
+    date: new Date()
+  };
 
-    if (!project) {
-      return res.status(404).json({ message: 'Project not found' });
-    }
+  project.devLog.push(newEntry);
+  await project.save();
 
-    project.devLog = project.devLog.filter(e => e.id !== req.params.entryId);
-    await project.save();
+  res.json({
+    message: 'Dev log entry added successfully',
+    entry: newEntry
+  });
+}));
 
-    res.json({ message: 'Dev log entry deleted successfully' });
-  } catch (error) {
-    logError('Delete dev log error:', error as Error);
-    res.status(500).json({ message: 'Server error' });
+router.put('/:id/devlog/:entryId', requireAuth, blockDemoWrites, requireProjectAccess('edit'), asyncHandler(async (req: AuthRequest, res: express.Response) => {
+  const { title, description } = req.body;
+
+  if (!description || !description.trim()) {
+    throw BadRequestError('Dev log description is required', 'DESCRIPTION_REQUIRED');
   }
-});
+
+  const project = await Project.findById(req.params.id);
+
+  if (!project) {
+    throw NotFoundError('Project not found', 'PROJECT_NOT_FOUND');
+  }
+
+  const devLogEntry = project.devLog.find(e => e.id === req.params.entryId);
+  if (!devLogEntry) {
+    throw NotFoundError('Dev log entry not found', 'DEVLOG_NOT_FOUND');
+  }
+
+  if (title !== undefined) devLogEntry.title = title.trim();
+  if (description !== undefined) devLogEntry.description = description.trim();
+  
+  await project.save();
+
+  res.json({
+    message: 'Dev log entry updated successfully',
+    entry: devLogEntry
+  });
+}));
+
+router.delete('/:id/devlog/:entryId', requireAuth, blockDemoWrites, requireProjectAccess('edit'), asyncHandler(async (req: AuthRequest, res: express.Response) => {
+  const project = await Project.findById(req.params.id);
+
+  if (!project) {
+    throw NotFoundError('Project not found', 'PROJECT_NOT_FOUND');
+  }
+
+  project.devLog = project.devLog.filter(e => e.id !== req.params.entryId);
+  await project.save();
+
+  res.json({ message: 'Dev log entry deleted successfully' });
+}));
 
 // Helper function for calculating string similarity (Jaccard similarity)
 function calculateSimilarity(str1: string, str2: string): number {
@@ -1142,263 +1013,238 @@ function detectRelationships(newComponent: any, existingComponents: any[]): any[
 }
 
 // COMPONENT MANAGEMENT (Feature Components)
-router.post('/:id/components', requireAuth, blockDemoWrites, requireProjectAccess('edit'), async (req: AuthRequest, res) => {
-  try {
-    const { category, type, title, content, feature, filePath, tags, relationships, metadata } = req.body;
+router.post('/:id/components', requireAuth, blockDemoWrites, requireProjectAccess('edit'), asyncHandler(async (req: AuthRequest, res: express.Response) => {
+  const { category, type, title, content, feature, filePath, tags, relationships, metadata } = req.body;
 
-    if (!category || !type || !title || !content || !feature) {
-      return res.status(400).json({ message: 'Category, type, title, content, and feature are required' });
-    }
+  if (!category || !type || !title || !content || !feature) {
+    throw BadRequestError('Category, type, title, content, and feature are required', 'REQUIRED_FIELDS');
+  }
 
+  const validCategories = ['frontend', 'backend', 'database', 'infrastructure', 'security', 'api', 'documentation', 'asset'];
+  if (!validCategories.includes(category)) {
+    throw BadRequestError('Invalid component category', 'INVALID_CATEGORY');
+  }
+
+  const project = await Project.findById(req.params.id);
+
+  if (!project) {
+    throw NotFoundError('Project not found', 'PROJECT_NOT_FOUND');
+  }
+
+  const newComponent = {
+    id: uuidv4(),
+    category: category,
+    type: type.trim(),
+    title: title.trim(),
+    content: content.trim(),
+    feature: feature.trim(),
+    filePath: filePath?.trim() || '',
+    tags: tags || [],
+    relationships: [] as any[],
+    metadata: metadata || {},
+    createdAt: new Date(),
+    updatedAt: new Date()
+  };
+
+  // Auto-detect relationships with existing components (runs only on creation)
+  const autoDetectedRelationships = detectRelationships(newComponent, project.components);
+
+  // Combine manually provided relationships with auto-detected ones
+  const manualRelationships = (relationships || []).map((rel: any) => ({
+    id: uuidv4(),
+    targetId: rel.targetId,
+    relationType: rel.relationType,
+    description: rel.description || ''
+  }));
+
+  newComponent.relationships = [...manualRelationships, ...autoDetectedRelationships];
+
+  project.components.push(newComponent);
+  await project.save();
+
+  res.json({
+    message: 'Component added successfully',
+    component: newComponent
+  });
+}));
+
+router.put('/:id/components/:componentId', requireAuth, blockDemoWrites, requireProjectAccess('edit'), asyncHandler(async (req: AuthRequest, res: express.Response) => {
+  const { category, type, title, content, feature, filePath, tags, relationships, metadata } = req.body;
+
+  const project = await Project.findById(req.params.id);
+
+  if (!project) {
+    throw NotFoundError('Project not found', 'PROJECT_NOT_FOUND');
+  }
+
+  const component = project.components.find(c => c.id === req.params.componentId);
+  if (!component) {
+    throw NotFoundError('Component not found', 'COMPONENT_NOT_FOUND');
+  }
+
+  if (category !== undefined) {
     const validCategories = ['frontend', 'backend', 'database', 'infrastructure', 'security', 'api', 'documentation', 'asset'];
     if (!validCategories.includes(category)) {
-      return res.status(400).json({ message: 'Invalid component category' });
+      throw BadRequestError('Invalid component category', 'INVALID_CATEGORY');
     }
-
-    const project = await Project.findById(req.params.id);
-
-    if (!project) {
-      return res.status(404).json({ message: 'Project not found' });
-    }
-
-    const newComponent = {
-      id: uuidv4(),
-      category: category,
-      type: type.trim(),
-      title: title.trim(),
-      content: content.trim(),
-      feature: feature.trim(),
-      filePath: filePath?.trim() || '',
-      tags: tags || [],
-      relationships: [] as any[],
-      metadata: metadata || {},
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-
-    // Auto-detect relationships with existing components (runs only on creation)
-    const autoDetectedRelationships = detectRelationships(newComponent, project.components);
-
-    // Combine manually provided relationships with auto-detected ones
-    const manualRelationships = (relationships || []).map((rel: any) => ({
-      id: uuidv4(),
+    component.category = category;
+  }
+  if (type !== undefined) component.type = type.trim();
+  if (title !== undefined) component.title = title.trim();
+  if (content !== undefined) component.content = content.trim();
+  if (feature !== undefined) component.feature = feature.trim();
+  if (filePath !== undefined) component.filePath = filePath.trim();
+  if (tags !== undefined) component.tags = tags;
+  if (relationships !== undefined) {
+    component.relationships = relationships.map((rel: any) => ({
+      id: rel.id || uuidv4(),
       targetId: rel.targetId,
       relationType: rel.relationType,
       description: rel.description || ''
     }));
-
-    newComponent.relationships = [...manualRelationships, ...autoDetectedRelationships];
-
-    project.components.push(newComponent);
-    await project.save();
-
-    res.json({
-      message: 'Component added successfully',
-      component: newComponent
-    });
-  } catch (error) {
-    logError('Add component error:', error as Error);
-    res.status(500).json({ message: 'Server error' });
   }
-});
+  if (metadata !== undefined) component.metadata = metadata;
+  component.updatedAt = new Date();
 
-router.put('/:id/components/:componentId', requireAuth, blockDemoWrites, requireProjectAccess('edit'), async (req: AuthRequest, res) => {
-  try {
-    const { category, type, title, content, feature, filePath, tags, relationships, metadata } = req.body;
+  await project.save();
 
-    const project = await Project.findById(req.params.id);
+  res.json({
+    message: 'Component updated successfully',
+    component: component
+  });
+}));
 
-    if (!project) {
-      return res.status(404).json({ message: 'Project not found' });
-    }
+router.delete('/:id/components/:componentId', requireAuth, blockDemoWrites, requireProjectAccess('edit'), asyncHandler(async (req: AuthRequest, res: express.Response) => {
+  const project = await Project.findById(req.params.id);
 
-    const component = project.components.find(c => c.id === req.params.componentId);
-    if (!component) {
-      return res.status(404).json({ message: 'Component not found' });
-    }
-
-    if (category !== undefined) {
-      const validCategories = ['frontend', 'backend', 'database', 'infrastructure', 'security', 'api', 'documentation', 'asset'];
-      if (!validCategories.includes(category)) {
-        return res.status(400).json({ message: 'Invalid component category' });
-      }
-      component.category = category;
-    }
-    if (type !== undefined) component.type = type.trim();
-    if (title !== undefined) component.title = title.trim();
-    if (content !== undefined) component.content = content.trim();
-    if (feature !== undefined) component.feature = feature.trim();
-    if (filePath !== undefined) component.filePath = filePath.trim();
-    if (tags !== undefined) component.tags = tags;
-    if (relationships !== undefined) {
-      component.relationships = relationships.map((rel: any) => ({
-        id: rel.id || uuidv4(),
-        targetId: rel.targetId,
-        relationType: rel.relationType,
-        description: rel.description || ''
-      }));
-    }
-    if (metadata !== undefined) component.metadata = metadata;
-    component.updatedAt = new Date();
-
-    await project.save();
-
-    res.json({
-      message: 'Component updated successfully',
-      component: component
-    });
-  } catch (error) {
-    logError('Update component error:', error as Error);
-    res.status(500).json({ message: 'Server error' });
+  if (!project) {
+    throw NotFoundError('Project not found', 'PROJECT_NOT_FOUND');
   }
-});
 
-router.delete('/:id/components/:componentId', requireAuth, blockDemoWrites, requireProjectAccess('edit'), async (req: AuthRequest, res) => {
-  try {
-    const project = await Project.findById(req.params.id);
+  project.components = project.components.filter(c => c.id !== req.params.componentId);
+  await project.save();
 
-    if (!project) {
-      return res.status(404).json({ message: 'Project not found' });
-    }
-
-    project.components = project.components.filter(c => c.id !== req.params.componentId);
-    await project.save();
-
-    res.json({ message: 'Component deleted successfully' });
-  } catch (error) {
-    logError('Delete component error:', error as Error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
+  res.json({ message: 'Component deleted successfully' });
+}));
 
 // RELATIONSHIP MANAGEMENT
-router.post('/:id/components/:componentId/relationships', requireAuth, blockDemoWrites, requireProjectAccess('edit'), async (req: AuthRequest, res) => {
-  try {
-    const { targetId, relationType, description } = req.body;
+router.post('/:id/components/:componentId/relationships', requireAuth, blockDemoWrites, requireProjectAccess('edit'), asyncHandler(async (req: AuthRequest, res: express.Response) => {
+  const { targetId, relationType, description } = req.body;
 
-    if (!targetId || !relationType) {
-      return res.status(400).json({ message: 'targetId and relationType are required' });
-    }
-
-    const validRelationTypes = ['uses', 'implements', 'extends', 'depends_on', 'calls', 'contains'];
-    if (!validRelationTypes.includes(relationType)) {
-      return res.status(400).json({ message: 'Invalid relationship type' });
-    }
-
-    const project = await Project.findById(req.params.id);
-
-    if (!project) {
-      return res.status(404).json({ message: 'Project not found' });
-    }
-
-    const component = project.components.find(c => c.id === req.params.componentId);
-    if (!component) {
-      return res.status(404).json({ message: 'Component not found' });
-    }
-
-    // Verify target component exists
-    const targetComponent = project.components.find(c => c.id === targetId);
-    if (!targetComponent) {
-      return res.status(404).json({ message: 'Target component not found' });
-    }
-
-    // Check for duplicate relationship
-    const existingRelationship = component.relationships?.find(
-      r => r.targetId === targetId && r.relationType === relationType
-    );
-    if (existingRelationship) {
-      return res.status(400).json({ message: 'Relationship already exists' });
-    }
-
-    // Create shared relationship ID for bidirectional linking
-    const sharedRelationshipId = uuidv4();
-
-    // Create forward relationship (A -> B)
-    const forwardRelationship = {
-      id: sharedRelationshipId,
-      targetId,
-      relationType,
-      description: description || ''
-    };
-
-    // Create inverse relationship (B -> A)
-    const inverseRelationship = {
-      id: sharedRelationshipId, // Same ID for linking
-      targetId: req.params.componentId,
-      relationType,
-      description: description || ''
-    };
-
-    if (!component.relationships) {
-      component.relationships = [];
-    }
-    if (!targetComponent.relationships) {
-      targetComponent.relationships = [];
-    }
-
-    component.relationships.push(forwardRelationship);
-    targetComponent.relationships.push(inverseRelationship);
-
-    component.updatedAt = new Date();
-    targetComponent.updatedAt = new Date();
-
-    await project.save();
-
-    res.json({
-      message: 'Relationship added successfully',
-      relationship: forwardRelationship
-    });
-  } catch (error) {
-    logError('Add relationship error:', error as Error);
-    res.status(500).json({ message: 'Server error' });
+  if (!targetId || !relationType) {
+    throw BadRequestError('targetId and relationType are required', 'REQUIRED_FIELDS');
   }
-});
 
-router.delete('/:id/components/:componentId/relationships/:relationshipId', requireAuth, blockDemoWrites, requireProjectAccess('edit'), async (req: AuthRequest, res) => {
-  try {
-    const project = await Project.findById(req.params.id);
+  const validRelationTypes = ['uses', 'implements', 'extends', 'depends_on', 'calls', 'contains'];
+  if (!validRelationTypes.includes(relationType)) {
+    throw BadRequestError('Invalid relationship type', 'INVALID_RELATION_TYPE');
+  }
 
-    if (!project) {
-      return res.status(404).json({ message: 'Project not found' });
-    }
+  const project = await Project.findById(req.params.id);
 
-    const component = project.components.find(c => c.id === req.params.componentId);
-    if (!component) {
-      return res.status(404).json({ message: 'Component not found' });
-    }
+  if (!project) {
+    throw NotFoundError('Project not found', 'PROJECT_NOT_FOUND');
+  }
 
-    if (!component.relationships) {
-      return res.status(404).json({ message: 'Relationship not found' });
-    }
+  const component = project.components.find(c => c.id === req.params.componentId);
+  if (!component) {
+    throw NotFoundError('Component not found', 'COMPONENT_NOT_FOUND');
+  }
 
-    const relationshipIndex = component.relationships.findIndex(r => r.id === req.params.relationshipId);
-    if (relationshipIndex === -1) {
-      return res.status(404).json({ message: 'Relationship not found' });
-    }
+  // Verify target component exists
+  const targetComponent = project.components.find(c => c.id === targetId);
+  if (!targetComponent) {
+    throw NotFoundError('Target component not found', 'TARGET_NOT_FOUND');
+  }
 
-    // Remove relationship from source component
-    component.relationships.splice(relationshipIndex, 1);
-    component.updatedAt = new Date();
+  // Check for duplicate relationship
+  const existingRelationship = component.relationships?.find(
+    r => r.targetId === targetId && r.relationType === relationType
+  );
+  if (existingRelationship) {
+    throw ConflictError('Relationship already exists', 'RELATIONSHIP_EXISTS');
+  }
 
-    // Remove the inverse relationship from all other components (since they share the same ID)
-    project.components.forEach(otherComponent => {
-      if (otherComponent.id !== req.params.componentId && otherComponent.relationships) {
-        const inverseIndex = otherComponent.relationships.findIndex(r => r.id === req.params.relationshipId);
-        if (inverseIndex !== -1) {
-          otherComponent.relationships.splice(inverseIndex, 1);
-          otherComponent.updatedAt = new Date();
-        }
+  // Create shared relationship ID for bidirectional linking
+  const sharedRelationshipId = uuidv4();
+
+  // Create forward relationship (A -> B)
+  const forwardRelationship = {
+    id: sharedRelationshipId,
+    targetId,
+    relationType,
+    description: description || ''
+  };
+
+  // Create inverse relationship (B -> A)
+  const inverseRelationship = {
+    id: sharedRelationshipId, // Same ID for linking
+    targetId: req.params.componentId,
+    relationType,
+    description: description || ''
+  };
+
+  if (!component.relationships) {
+    component.relationships = [];
+  }
+  if (!targetComponent.relationships) {
+    targetComponent.relationships = [];
+  }
+
+  component.relationships.push(forwardRelationship);
+  targetComponent.relationships.push(inverseRelationship);
+
+  component.updatedAt = new Date();
+  targetComponent.updatedAt = new Date();
+
+  await project.save();
+
+  res.json({
+    message: 'Relationship added successfully',
+    relationship: forwardRelationship
+  });
+}));
+
+router.delete('/:id/components/:componentId/relationships/:relationshipId', requireAuth, blockDemoWrites, requireProjectAccess('edit'), asyncHandler(async (req: AuthRequest, res: express.Response) => {
+  const project = await Project.findById(req.params.id);
+
+  if (!project) {
+    throw NotFoundError('Project not found', 'PROJECT_NOT_FOUND');
+  }
+
+  const component = project.components.find(c => c.id === req.params.componentId);
+  if (!component) {
+    throw NotFoundError('Component not found', 'COMPONENT_NOT_FOUND');
+  }
+
+  if (!component.relationships) {
+    throw NotFoundError('Relationship not found', 'RELATIONSHIP_NOT_FOUND');
+  }
+
+  const relationshipIndex = component.relationships.findIndex(r => r.id === req.params.relationshipId);
+  if (relationshipIndex === -1) {
+    throw NotFoundError('Relationship not found', 'RELATIONSHIP_NOT_FOUND');
+  }
+
+  // Remove relationship from source component
+  component.relationships.splice(relationshipIndex, 1);
+  component.updatedAt = new Date();
+
+  // Remove the inverse relationship from all other components (since they share the same ID)
+  project.components.forEach(otherComponent => {
+    if (otherComponent.id !== req.params.componentId && otherComponent.relationships) {
+      const inverseIndex = otherComponent.relationships.findIndex(r => r.id === req.params.relationshipId);
+      if (inverseIndex !== -1) {
+        otherComponent.relationships.splice(inverseIndex, 1);
+        otherComponent.updatedAt = new Date();
       }
-    });
+    }
+  });
 
-    await project.save();
+  await project.save();
 
-    res.json({ message: 'Relationship deleted successfully' });
-  } catch (error) {
-    logError('Delete relationship error:', error as Error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
+  res.json({ message: 'Relationship deleted successfully' });
+}));
 
 
 // Helper function to format project response
@@ -1527,60 +1373,59 @@ router.get('/:id/members', requireAuth, requireProjectAccess('view'), async (req
 });
 
 // POST /api/projects/:id/invite - Invite user to project (with team member limit check)
-router.post('/:id/invite', requireAuth, blockDemoWrites, requireProjectAccess('manage'), checkTeamMemberLimit, async (req: AuthRequest, res) => {
-  try {
-    const { id: projectId } = req.params;
-    const { email, role = 'viewer' } = req.body;
-    const inviterUserId = req.userId!;
+router.post('/:id/invite', requireAuth, blockDemoWrites, requireProjectAccess('manage'), checkTeamMemberLimit, asyncHandler(async (req: AuthRequest, res: express.Response) => {
+  const { id: projectId } = req.params;
+  const { email, role = 'viewer' } = req.body;
+  const inviterUserId = req.userId!;
 
-    if (!email || !email.includes('@')) {
-      return res.status(400).json({ message: 'Valid email is required' });
-    }
+  if (!email || !email.includes('@')) {
+    throw BadRequestError('Valid email is required', 'INVALID_EMAIL');
+  }
 
-    if (!['editor', 'viewer'].includes(role)) {
-      return res.status(400).json({ message: 'Role must be editor or viewer' });
-    }
+  if (!['editor', 'viewer'].includes(role)) {
+    throw BadRequestError('Role must be editor or viewer', 'INVALID_ROLE');
+  }
 
-    // Check if project exists and get project details
-    const project = await Project.findById(projectId).populate('ownerId', 'firstName lastName');
-    if (!project) {
-      return res.status(404).json({ message: 'Project not found' });
-    }
+  // Check if project exists and get project details
+  const project = await Project.findById(projectId).populate('ownerId', 'firstName lastName');
+  if (!project) {
+    throw NotFoundError('Project not found', 'PROJECT_NOT_FOUND');
+  }
 
-    // Check if user is trying to invite themselves
-    const inviter = await User.findById(inviterUserId);
-    if (inviter?.email.toLowerCase() === email.toLowerCase()) {
-      return res.status(400).json({ message: 'Cannot invite yourself to the project' });
-    }
+  // Check if user is trying to invite themselves
+  const inviter = await User.findById(inviterUserId);
+  if (inviter?.email.toLowerCase() === email.toLowerCase()) {
+    throw BadRequestError('Cannot invite yourself to the project', 'SELF_INVITE');
+  }
 
-    // Check if user is already a member
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
-    if (existingUser) {
-      const existingMember = await TeamMember.findOne({
-        projectId,
-        userId: existingUser._id,
-      });
-
-      if (existingMember) {
-        return res.status(400).json({ message: 'User is already a team member' });
-      }
-
-      // Check if user is the owner
-      if (project.ownerId?.toString() === existingUser._id.toString()) {
-        return res.status(400).json({ message: 'User is already the project owner' });
-      }
-    }
-
-    // Check if there's already a pending invitation
-    const existingInvitation = await ProjectInvitation.findOne({
+  // Check if user is already a member
+  const existingUser = await User.findOne({ email: email.toLowerCase() });
+  if (existingUser) {
+    const existingMember = await TeamMember.findOne({
       projectId,
-      inviteeEmail: email.toLowerCase(),
-      status: 'pending',
+      userId: existingUser._id,
     });
 
-    if (existingInvitation) {
-      return res.status(400).json({ message: 'Invitation already sent to this email' });
+    if (existingMember) {
+      throw BadRequestError('User is already a team member', 'ALREADY_MEMBER');
     }
+
+    // Check if user is the owner
+    if (project.ownerId?.toString() === existingUser._id.toString()) {
+      throw BadRequestError('User is already the project owner', 'ALREADY_OWNER');
+    }
+  }
+
+  // Check if there's already a pending invitation
+  const existingInvitation = await ProjectInvitation.findOne({
+    projectId,
+    inviteeEmail: email.toLowerCase(),
+    status: 'pending',
+  });
+
+  if (existingInvitation) {
+    throw BadRequestError('Invitation already sent to this email', 'ALREADY_INVITED');
+  }
 
     // Create invitation
     const invitation = new ProjectInvitation({
@@ -1628,43 +1473,38 @@ router.post('/:id/invite', requireAuth, blockDemoWrites, requireProjectAccess('m
       await project.save();
     }
 
-    res.json({
-      success: true,
-      message: 'Invitation sent successfully',
-      invitation: {
-        id: invitation._id,
-        email: invitation.inviteeEmail,
-        role: invitation.role,
-        status: invitation.status,
-        expiresAt: invitation.expiresAt,
-      },
-    });
-  } catch (error) {
-    logError('Invite user error:', error as Error);
-    res.status(500).json({ message: 'Server error sending invitation' });
-  }
-});
+  res.json({
+    success: true,
+    message: 'Invitation sent successfully',
+    invitation: {
+      id: invitation._id,
+      email: invitation.inviteeEmail,
+      role: invitation.role,
+      status: invitation.status,
+      expiresAt: invitation.expiresAt,
+    },
+  });
+}));
 
 // DELETE /api/projects/:id/members/:userId - Remove team member
-router.delete('/:id/members/:userId', requireAuth, blockDemoWrites, requireProjectAccess('manage'), async (req: AuthRequest, res) => {
-  try {
-    const { id: projectId, userId: memberUserId } = req.params;
+router.delete('/:id/members/:userId', requireAuth, blockDemoWrites, requireProjectAccess('manage'), asyncHandler(async (req: AuthRequest, res: express.Response) => {
+  const { id: projectId, userId: memberUserId } = req.params;
 
-    // Check if trying to remove the owner
-    const project = await Project.findById(projectId);
-    if (project?.ownerId?.toString() === memberUserId) {
-      return res.status(400).json({ message: 'Cannot remove the project owner' });
-    }
+  // Check if trying to remove the owner
+  const project = await Project.findById(projectId);
+  if (project?.ownerId?.toString() === memberUserId) {
+    throw BadRequestError('Cannot remove the project owner', 'CANNOT_REMOVE_OWNER');
+  }
 
-    // Remove team member
-    const deletedMember = await TeamMember.findOneAndDelete({
-      projectId,
-      userId: memberUserId,
-    });
+  // Remove team member
+  const deletedMember = await TeamMember.findOneAndDelete({
+    projectId,
+    userId: memberUserId,
+  });
 
-    if (!deletedMember) {
-      return res.status(404).json({ message: 'Team member not found' });
-    }
+  if (!deletedMember) {
+    throw NotFoundError('Team member not found', 'MEMBER_NOT_FOUND');
+  }
 
     // Create notification for removed user
     await Notification.create({
@@ -1675,53 +1515,44 @@ router.delete('/:id/members/:userId', requireAuth, blockDemoWrites, requireProje
       relatedProjectId: projectId,
     });
 
-    res.json({
-      success: true,
-      message: 'Team member removed successfully',
-    });
-  } catch (error) {
-    logError('Remove team member error:', error as Error);
-    res.status(500).json({ message: 'Server error removing team member' });
-  }
-});
+  res.json({
+    success: true,
+    message: 'Team member removed successfully',
+  });
+}));
 
 // PATCH /api/projects/:id/members/:userId - Update team member role
-router.patch('/:id/members/:userId', requireAuth, blockDemoWrites, requireProjectAccess('manage'), async (req: AuthRequest, res) => {
-  try {
-    const { id: projectId, userId: memberUserId } = req.params;
-    const { role } = req.body;
+router.patch('/:id/members/:userId', requireAuth, blockDemoWrites, requireProjectAccess('manage'), asyncHandler(async (req: AuthRequest, res: express.Response) => {
+  const { id: projectId, userId: memberUserId } = req.params;
+  const { role } = req.body;
 
-    if (!['editor', 'viewer'].includes(role)) {
-      return res.status(400).json({ message: 'Role must be editor or viewer' });
-    }
-
-    // Check if trying to change the owner's role
-    const project = await Project.findById(projectId);
-    if (project?.ownerId?.toString() === memberUserId) {
-      return res.status(400).json({ message: 'Cannot change the owner role' });
-    }
-
-    // Update team member role
-    const updatedMember = await TeamMember.findOneAndUpdate(
-      { projectId, userId: memberUserId },
-      { role },
-      { new: true }
-    ).populate('userId', 'firstName lastName username displayPreference email');
-
-    if (!updatedMember) {
-      return res.status(404).json({ message: 'Team member not found' });
-    }
-
-    res.json({
-      success: true,
-      message: 'Team member role updated successfully',
-      member: updatedMember,
-    });
-  } catch (error) {
-    logError('Update team member role error:', error as Error);
-    res.status(500).json({ message: 'Server error updating team member role' });
+  if (!['editor', 'viewer'].includes(role)) {
+    throw BadRequestError('Role must be editor or viewer', 'INVALID_ROLE');
   }
-});
+
+  // Check if trying to change the owner's role
+  const project = await Project.findById(projectId);
+  if (project?.ownerId?.toString() === memberUserId) {
+    throw BadRequestError('Cannot change the owner role', 'CANNOT_CHANGE_OWNER_ROLE');
+  }
+
+  // Update team member role
+  const updatedMember = await TeamMember.findOneAndUpdate(
+    { projectId, userId: memberUserId },
+    { role },
+    { new: true }
+  ).populate('userId', 'firstName lastName username displayPreference email');
+
+  if (!updatedMember) {
+    throw NotFoundError('Team member not found', 'MEMBER_NOT_FOUND');
+  }
+
+  res.json({
+    success: true,
+    message: 'Team member role updated successfully',
+    member: updatedMember,
+  });
+}));
 
 
 // Export project data (GET /api/projects/:id/export)
@@ -1731,18 +1562,17 @@ router.get('/:id/export',
   requireAuth, 
   requireProjectAccess('view'), 
   validateExportRequest,
-  async (req: AuthRequest, res) => {
-  try {
-    const projectId = req.params.id;
-    
-    // Get project with all data
-    const project = await Project.findById(projectId)
-      .populate('ownerId', 'firstName lastName email')
-      .lean();
-    
-    if (!project) {
-      return res.status(404).json({ message: 'Project not found' });
-    }
+  asyncHandler(async (req: AuthRequest, res: express.Response) => {
+  const projectId = req.params.id;
+  
+  // Get project with all data
+  const project = await Project.findById(projectId)
+    .populate('ownerId', 'firstName lastName email')
+    .lean();
+  
+  if (!project) {
+    throw NotFoundError('Project not found', 'PROJECT_NOT_FOUND');
+  }
 
     // Get team members
     const teamMembers = await TeamMember.find({ projectId })
@@ -1841,16 +1671,11 @@ router.get('/:id/export',
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.setHeader('Content-Length', exportSize.toString());
     
-    // Log export activity for security monitoring
-    logInfo(`Project export: ${projectId} by user ${req.userId}, size: ${exportSize} bytes`);
-    
-    res.json(exportData);
-    
-  } catch (error) {
-    logError('Export project error:', error as Error);
-    res.status(500).json({ message: 'Server error exporting project' });
-  }
-});
+  // Log export activity for security monitoring
+  logInfo(`Project export: ${projectId} by user ${req.userId}, size: ${exportSize} bytes`);
+  
+  res.json(exportData);
+}));
 
 // Import project data (POST /api/projects/import)
 router.post('/import', 
@@ -1860,11 +1685,10 @@ router.post('/import',
   requireAuth, 
   checkProjectLimit,
   validateAndSanitizeImport,
-  async (req: AuthRequest, res) => {
-  try {
-    // Input validation and sanitization is now handled by middleware
-    const importData = req.body;
-    const { project: projectData } = importData;
+  asyncHandler(async (req: AuthRequest, res: express.Response) => {
+  // Input validation and sanitization is now handled by middleware
+  const importData = req.body;
+  const { project: projectData } = importData;
 
     // Create sanitized project data with enhanced validation
     const sanitizedProject = {
@@ -2024,51 +1848,35 @@ router.post('/import',
       logWarn('Failed to log import activity:', { error: logError });
     }
 
-    res.status(201).json({
-      success: true,
-      message: 'Project imported successfully',
-      project: {
-        _id: newProject._id,
-        name: newProject.name,
-        description: newProject.description
-      }
-    });
-    
-  } catch (error) {
-    logError('Import project error:', error as Error);
-    if (error instanceof mongoose.Error.ValidationError) {
-      const errorMessages = Object.values(error.errors).map(err => err.message);
-      return res.status(400).json({ 
-        message: 'Validation error during import',
-        errors: errorMessages 
-      });
+  res.status(201).json({
+    success: true,
+    message: 'Project imported successfully',
+    project: {
+      _id: newProject._id,
+      name: newProject.name,
+      description: newProject.description
     }
-    res.status(500).json({ message: 'Server error importing project' });
+  });
+}));
+
+// TEST ONLY: Manually lock/unlock a project for testing
+router.post('/:id/test-lock', requireAuth, blockDemoWrites, requireProjectAccess('edit'), asyncHandler(async (req: AuthRequest, res: express.Response) => {
+  const { lock } = req.body;
+  const project = await Project.findById(req.params.id);
+  
+  if (!project) {
+    throw NotFoundError('Project not found', 'PROJECT_NOT_FOUND');
   }
-});
+
+  project.isLocked = lock === true;
+  project.lockedReason = lock ? 'Test lock - simulate plan downgrade' : undefined;
+  await project.save();
+
+  res.json({ 
+    success: true, 
+    isLocked: project.isLocked,
+    message: lock ? 'Project locked for testing' : 'Project unlocked'
+  });
+}));
 
 export default router;
-// TEST ONLY: Manually lock/unlock a project for testing
-router.post('/:id/test-lock', requireAuth, blockDemoWrites, requireProjectAccess('edit'), async (req: AuthRequest, res) => {
-  try {
-    const { lock } = req.body;
-    const project = await Project.findById(req.params.id);
-    
-    if (!project) {
-      return res.status(404).json({ message: 'Project not found' });
-    }
-
-    project.isLocked = lock === true;
-    project.lockedReason = lock ? 'Test lock - simulate plan downgrade' : undefined;
-    await project.save();
-
-    res.json({ 
-      success: true, 
-      isLocked: project.isLocked,
-      message: lock ? 'Project locked for testing' : 'Project unlocked'
-    });
-  } catch (error) {
-    
-    res.status(500).json({ message: 'Server error' });
-  }
-});

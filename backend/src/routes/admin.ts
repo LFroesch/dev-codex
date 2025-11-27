@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Response, Request } from 'express';
 import mongoose, { isValidObjectId } from 'mongoose';
 import Stripe from 'stripe';
 import { User } from '../models/User';
@@ -12,6 +12,7 @@ import { PLAN_LIMITS } from '../config/planLimits';
 import { CleanupService } from '../services/cleanupService';
 import NotificationService from '../services/notificationService';
 import { sendEmail } from '../services/emailService';
+import { asyncHandler, ForbiddenError, NotFoundError, BadRequestError, ConflictError } from '../utils/errorHandler';
 
 const router = express.Router();
 
@@ -24,35 +25,30 @@ if (process.env.STRIPE_SECRET_KEY) {
 }
 
 // Admin middleware
-const adminMiddleware = async (req: AuthRequest, res: any, next: any) => {
-  try {
-    const user = await User.findById(req.userId!);
-    if (!user || !user.isAdmin) {
-      return res.status(403).json({ error: 'Admin access required' });
-    }
-    next();
-  } catch (error) {
-    res.status(500).json({ error: 'Authentication error' });
+const adminMiddleware = asyncHandler(async (req: AuthRequest, res: any, next: any) => {
+  const user = await User.findById(req.userId!);
+  if (!user || !user.isAdmin) {
+    throw ForbiddenError('Admin access required', 'ADMIN_REQUIRED');
   }
-};
+  next();
+});
 
 // Use auth and admin middleware for all admin routes
 router.use(requireAuth, adminMiddleware);
 
 // Get all users with pagination
-router.get('/users', async (req, res) => {
-  try {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
-    const skip = (page - 1) * limit;
-    const plan = req.query.plan as string;
-    const status = req.query.status as string;
-    const search = req.query.search as string;
-    const searchType = (req.query.searchType as string) || 'text';
-    const createdAfter = req.query.createdAfter as string;
-    const createdBefore = req.query.createdBefore as string;
-    const lastLoginAfter = req.query.lastLoginAfter as string;
-    const lastLoginBefore = req.query.lastLoginBefore as string;
+router.get('/users', asyncHandler(async (req: Request, res: Response) => {
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 10;
+  const skip = (page - 1) * limit;
+  const plan = req.query.plan as string;
+  const status = req.query.status as string;
+  const search = req.query.search as string;
+  const searchType = (req.query.searchType as string) || 'text';
+  const createdAfter = req.query.createdAfter as string;
+  const createdBefore = req.query.createdBefore as string;
+  const lastLoginAfter = req.query.lastLoginAfter as string;
+  const lastLoginBefore = req.query.lastLoginBefore as string;
 
     // Build filter object
     const filter: any = {};
@@ -209,67 +205,57 @@ router.get('/users', async (req, res) => {
     const total = await User.countDocuments(filter);
     const totalPages = Math.ceil(total / limit);
 
-    res.json({
-      users: usersWithProjectCounts,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages,
-        hasNext: page < totalPages,
-        hasPrev: page > 1
-      }
-    });
-  } catch (error) {
-    
-    res.status(500).json({ error: 'Failed to fetch users' });
-  }
-});
+  res.json({
+    users: usersWithProjectCounts,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages,
+      hasNext: page < totalPages,
+      hasPrev: page > 1
+    }
+  });
+}));
 
 // Get user by ID
-router.get('/users/:id', async (req, res) => {
-  try {
-    // SEC-008 FIX: Validate ObjectId format
-    if (!isValidObjectId(req.params.id)) {
-      return res.status(400).json({ error: 'Invalid user ID' });
-    }
-
-    const user = await User.findById(req.params.id).select('-password');
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    const projectCount = await Project.countDocuments({ userId: user._id });
-    
-    res.json({
-      ...user.toObject(),
-      projectCount
-    });
-  } catch (error) {
-    
-    res.status(500).json({ error: 'Failed to fetch user' });
+router.get('/users/:id', asyncHandler(async (req: Request, res: Response) => {
+  // SEC-008 FIX: Validate ObjectId format
+  if (!isValidObjectId(req.params.id)) {
+    throw BadRequestError('Invalid user ID', 'INVALID_ID');
   }
-});
+
+  const user = await User.findById(req.params.id).select('-password');
+  if (!user) {
+    throw NotFoundError('User not found', 'USER_NOT_FOUND');
+  }
+
+  const projectCount = await Project.countDocuments({ userId: user._id });
+  
+  res.json({
+    ...user.toObject(),
+    projectCount
+  });
+}));
 
 // Update user plan
-router.put('/users/:id/plan', async (req, res) => {
-  try {
-    // SEC-008 FIX: Validate ObjectId format
-    if (!isValidObjectId(req.params.id)) {
-      return res.status(400).json({ error: 'Invalid user ID' });
-    }
+router.put('/users/:id/plan', asyncHandler(async (req: Request, res: Response) => {
+  // SEC-008 FIX: Validate ObjectId format
+  if (!isValidObjectId(req.params.id)) {
+    throw BadRequestError('Invalid user ID', 'INVALID_ID');
+  }
 
-    const { planTier } = req.body;
+  const { planTier } = req.body;
 
-    if (!['free', 'pro', 'premium'].includes(planTier)) {
-      return res.status(400).json({ error: 'Invalid plan tier' });
-    }
+  if (!['free', 'pro', 'premium'].includes(planTier)) {
+    throw BadRequestError('Invalid plan tier', 'INVALID_PLAN');
+  }
 
-    // Get user's current plan before updating
-    const user = await User.findById(req.params.id);
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
+  // Get user's current plan before updating
+  const user = await User.findById(req.params.id);
+  if (!user) {
+    throw NotFoundError('User not found', 'USER_NOT_FOUND');
+  }
 
     const oldPlanTier = user.planTier;
     const newPlanTier = planTier as 'free' | 'pro' | 'premium';
@@ -301,14 +287,10 @@ router.put('/users/:id/plan', async (req, res) => {
       }
     }
 
-    // Return updated user without password
-    const updatedUser = await User.findById(req.params.id).select('-password');
-    res.json(updatedUser);
-  } catch (error) {
-    
-    res.status(500).json({ error: 'Failed to update user plan' });
-  }
-});
+  // Return updated user without password
+  const updatedUser = await User.findById(req.params.id).select('-password');
+  res.json(updatedUser);
+}));
 
 // Helper function for handling downgrades
 async function handleDowngrade(userId: string, targetPlan: 'free' | 'pro' | 'premium', targetLimit: number) {
@@ -474,118 +456,102 @@ async function sendProjectsEmail(user: any, projects: any[], planTier: string, t
 // This endpoint is disabled for security reasons
 
 // Ban user
-router.post('/users/:id/ban', async (req: AuthRequest, res) => {
-  try {
-    // SEC-008 FIX: Validate ObjectId format
-    if (!isValidObjectId(req.params.id)) {
-      return res.status(400).json({ error: 'Invalid user ID' });
-    }
-
-    const { reason } = req.body;
-
-    if (!reason || reason.trim().length === 0) {
-      return res.status(400).json({ error: 'Ban reason is required' });
-    }
-
-    const user = await User.findById(req.params.id);
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    // Don't allow banning admins
-    if (user.isAdmin) {
-      return res.status(400).json({ error: 'Cannot ban admin users' });
-    }
-
-    // Don't allow banning yourself
-    if (req.params.id === req.userId) {
-      return res.status(400).json({ error: 'Cannot ban yourself' });
-    }
-
-    user.isBanned = true;
-    user.bannedAt = new Date();
-    user.banReason = reason.trim();
-    user.bannedBy = req.userId;
-    await user.save();
-
-    res.json({ message: 'User banned successfully', user });
-  } catch (error) {
-    
-    res.status(500).json({ error: 'Failed to ban user' });
+router.post('/users/:id/ban', asyncHandler(async (req: AuthRequest, res: Response) => {
+  // SEC-008 FIX: Validate ObjectId format
+  if (!isValidObjectId(req.params.id)) {
+    throw BadRequestError('Invalid user ID', 'INVALID_ID');
   }
-});
+
+  const { reason } = req.body;
+
+  if (!reason || reason.trim().length === 0) {
+    throw BadRequestError('Ban reason is required', 'MISSING_REASON');
+  }
+
+  const user = await User.findById(req.params.id);
+  if (!user) {
+    throw NotFoundError('User not found', 'USER_NOT_FOUND');
+  }
+
+  // Don't allow banning admins
+  if (user.isAdmin) {
+    throw BadRequestError('Cannot ban admin users', 'CANNOT_BAN_ADMIN');
+  }
+
+  // Don't allow banning yourself
+  if (req.params.id === req.userId) {
+    throw BadRequestError('Cannot ban yourself', 'CANNOT_BAN_SELF');
+  }
+
+  user.isBanned = true;
+  user.bannedAt = new Date();
+  user.banReason = reason.trim();
+  user.bannedBy = req.userId;
+  await user.save();
+
+  res.json({ message: 'User banned successfully', user });
+}));
 
 // Unban user
-router.post('/users/:id/unban', async (req: AuthRequest, res) => {
-  try {
-    // SEC-008 FIX: Validate ObjectId format
-    if (!isValidObjectId(req.params.id)) {
-      return res.status(400).json({ error: 'Invalid user ID' });
-    }
-
-    const user = await User.findById(req.params.id);
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    user.isBanned = false;
-    user.bannedAt = undefined;
-    user.banReason = undefined;
-    user.bannedBy = undefined;
-    await user.save();
-
-    res.json({ message: 'User unbanned successfully', user });
-  } catch (error) {
-    
-    res.status(500).json({ error: 'Failed to unban user' });
+router.post('/users/:id/unban', asyncHandler(async (req: AuthRequest, res: Response) => {
+  // SEC-008 FIX: Validate ObjectId format
+  if (!isValidObjectId(req.params.id)) {
+    throw BadRequestError('Invalid user ID', 'INVALID_ID');
   }
-});
+
+  const user = await User.findById(req.params.id);
+  if (!user) {
+    throw NotFoundError('User not found', 'USER_NOT_FOUND');
+  }
+
+  user.isBanned = false;
+  user.bannedAt = undefined;
+  user.banReason = undefined;
+  user.bannedBy = undefined;
+  await user.save();
+
+  res.json({ message: 'User unbanned successfully', user });
+}));
 
 // Delete user
-router.delete('/users/:id', async (req, res) => {
-  try {
-    // SEC-008 FIX: Validate ObjectId format
-    if (!isValidObjectId(req.params.id)) {
-      return res.status(400).json({ error: 'Invalid user ID' });
-    }
-
-    const user = await User.findById(req.params.id);
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    // Don't allow deleting the last admin
-    if (user.isAdmin) {
-      const adminCount = await User.countDocuments({ isAdmin: true });
-      if (adminCount <= 1) {
-        return res.status(400).json({ error: 'Cannot delete the last admin user' });
-      }
-    }
-
-    // Delete user's projects
-    await Project.deleteMany({ userId: req.params.id });
-
-    // Delete user
-    await User.findByIdAndDelete(req.params.id);
-
-    res.json({ message: 'User deleted successfully' });
-  } catch (error) {
-    
-    res.status(500).json({ error: 'Failed to delete user' });
+router.delete('/users/:id', asyncHandler(async (req: Request, res: Response) => {
+  // SEC-008 FIX: Validate ObjectId format
+  if (!isValidObjectId(req.params.id)) {
+    throw BadRequestError('Invalid user ID', 'INVALID_ID');
   }
-});
+
+  const user = await User.findById(req.params.id);
+  if (!user) {
+    throw NotFoundError('User not found', 'USER_NOT_FOUND');
+  }
+
+  // Don't allow deleting the last admin
+  if (user.isAdmin) {
+    const adminCount = await User.countDocuments({ isAdmin: true });
+    if (adminCount <= 1) {
+      throw BadRequestError('Cannot delete the last admin user', 'CANNOT_DELETE_LAST_ADMIN');
+    }
+  }
+
+  // Delete user's projects
+  await Project.deleteMany({ userId: req.params.id });
+
+  // Delete user
+  await User.findByIdAndDelete(req.params.id);
+
+  res.json({ message: 'User deleted successfully' });
+}));
 
 // Get dashboard stats
-router.get('/stats', async (req, res) => {
-  try {
-    // OPTIMIZED: Calculate date filters once
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const twentyFourHoursAgo = new Date();
-    twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
+router.get('/stats', asyncHandler(async (req: Request, res: Response) => {
+  // OPTIMIZED: Calculate date filters once
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const twentyFourHoursAgo = new Date();
+  twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
 
-    // OPTIMIZED: Run all queries in parallel (10 queries → 5 queries)
-    const [userStats, totalProjects, recentSignups, sessionStats, recentActivity] = await Promise.all([
+  // OPTIMIZED: Run all queries in parallel (10 queries → 5 queries)
+  const [userStats, totalProjects, recentSignups, sessionStats, recentActivity] = await Promise.all([
       // Single aggregate for all user counts (replaces 5 queries with 1)
       User.aggregate([
         {
@@ -656,56 +622,46 @@ router.get('/stats', async (req, res) => {
         recentActivity
       }
     });
-  } catch (error) {
-    
-    res.status(500).json({ error: 'Failed to fetch statistics' });
-  }
-});
+}));
 
 // Get all projects with user info
-router.get('/projects', async (req, res) => {
-  try {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
-    const skip = (page - 1) * limit;
+router.get('/projects', asyncHandler(async (req: Request, res: Response) => {
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 10;
+  const skip = (page - 1) * limit;
 
-    const projects = await Project.find()
-      .populate('userId', 'firstName lastName email planTier')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
+  const projects = await Project.find()
+    .populate('userId', 'firstName lastName email planTier')
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit);
 
-    const total = await Project.countDocuments();
-    const totalPages = Math.ceil(total / limit);
+  const total = await Project.countDocuments();
+  const totalPages = Math.ceil(total / limit);
 
-    res.json({
-      projects,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages,
-        hasNext: page < totalPages,
-        hasPrev: page > 1
-      }
-    });
-  } catch (error) {
-    
-    res.status(500).json({ error: 'Failed to fetch projects' });
-  }
-});
+  res.json({
+    projects,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages,
+      hasNext: page < totalPages,
+      hasPrev: page > 1
+    }
+  });
+}));
 
 // Get all tickets with pagination and filtering
-router.get('/tickets', async (req, res) => {
-  try {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
-    const skip = (page - 1) * limit;
-    const status = req.query.status as string;
-    const priority = req.query.priority as string;
-    const excludeStatus = req.query.excludeStatus as string;
+router.get('/tickets', asyncHandler(async (req: Request, res: Response) => {
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 10;
+  const skip = (page - 1) * limit;
+  const status = req.query.status as string;
+  const priority = req.query.priority as string;
+  const excludeStatus = req.query.excludeStatus as string;
 
-    let filter: any = {};
+  let filter: any = {};
     if (status && status !== 'all') {
       filter.status = status;
     }
@@ -754,79 +710,69 @@ router.get('/tickets', async (req, res) => {
       else if (item._id === 'closed') stats.closed = item.count;
     });
 
-    res.json({
-      tickets,
-      stats,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages,
-        hasNext: page < totalPages,
-        hasPrev: page > 1
-      }
-    });
-  } catch (error) {
-    
-    res.status(500).json({ error: 'Failed to fetch tickets' });
-  }
-});
+  res.json({
+    tickets,
+    stats,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages,
+      hasNext: page < totalPages,
+      hasPrev: page > 1
+    }
+  });
+}));
 
 // Get single ticket by ID
-router.get('/tickets/:ticketId', async (req, res) => {
-  try {
-    const { ticketId } = req.params;
+router.get('/tickets/:ticketId', asyncHandler(async (req: Request, res: Response) => {
+  const { ticketId } = req.params;
 
-    const ticket = await Ticket.findOne({ ticketId })
-      .populate('userId', 'firstName lastName email planTier')
-      .populate('adminUserId', 'firstName lastName email');
+  const ticket = await Ticket.findOne({ ticketId })
+    .populate('userId', 'firstName lastName email planTier')
+    .populate('adminUserId', 'firstName lastName email');
 
-    if (!ticket) {
-      return res.status(404).json({ error: 'Ticket not found' });
-    }
-
-    res.json(ticket);
-  } catch (error) {
-    
-    res.status(500).json({ error: 'Failed to fetch ticket' });
+  if (!ticket) {
+    throw NotFoundError('Ticket not found', 'TICKET_NOT_FOUND');
   }
-});
+
+  res.json(ticket);
+}));
 
 // Update ticket status and add admin response
-router.put('/tickets/:ticketId', async (req: AuthRequest, res) => {
-  try {
-    const { ticketId } = req.params;
-    const { status, adminResponse, priority } = req.body;
-    const adminUserId = req.userId;
+router.put('/tickets/:ticketId', asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { ticketId } = req.params;
+  const { status, adminResponse, priority } = req.body;
+  const adminUserId = req.userId;
 
-    const updateData: any = {
-      adminUserId
-    };
+  const updateData: any = {
+    adminUserId
+  };
 
-    if (status) {
-      updateData.status = status;
-      if (status === 'resolved' || status === 'closed') {
-        updateData.resolvedAt = new Date();
-      }
+  if (status) {
+    updateData.status = status;
+    if (status === 'resolved' || status === 'closed') {
+      updateData.resolvedAt = new Date();
     }
+  }
 
-    if (adminResponse) {
-      updateData.adminResponse = adminResponse;
-    }
+  if (adminResponse) {
+    updateData.adminResponse = adminResponse;
+  }
 
-    if (priority) {
-      updateData.priority = priority;
-    }
+  if (priority) {
+    updateData.priority = priority;
+  }
 
-    const ticket = await Ticket.findOneAndUpdate(
-      { ticketId },
-      updateData,
-      { new: true }
-    ).populate('userId', 'firstName lastName email');
+  const ticket = await Ticket.findOneAndUpdate(
+    { ticketId },
+    updateData,
+    { new: true }
+  ).populate('userId', 'firstName lastName email');
 
-    if (!ticket) {
-      return res.status(404).json({ error: 'Ticket not found' });
-    }
+  if (!ticket) {
+    throw NotFoundError('Ticket not found', 'TICKET_NOT_FOUND');
+  }
 
     // Send email notifications for ticket updates
     if (ticket.userId) {
@@ -914,42 +860,32 @@ router.put('/tickets/:ticketId', async (req: AuthRequest, res) => {
       }
     }
 
-    res.json(ticket);
-  } catch (error) {
-    
-    res.status(500).json({ error: 'Failed to update ticket' });
-  }
-});
+  res.json(ticket);
+}));
 
 // Delete ticket
-router.delete('/tickets/:ticketId', async (req, res) => {
-  try {
-    const { ticketId } = req.params;
+router.delete('/tickets/:ticketId', asyncHandler(async (req: Request, res: Response) => {
+  const { ticketId } = req.params;
 
-    const ticket = await Ticket.findOneAndDelete({ ticketId });
-    if (!ticket) {
-      return res.status(404).json({ error: 'Ticket not found' });
-    }
-
-    res.json({ message: 'Ticket deleted successfully' });
-  } catch (error) {
-    
-    res.status(500).json({ error: 'Failed to delete ticket' });
+  const ticket = await Ticket.findOneAndDelete({ ticketId });
+  if (!ticket) {
+    throw NotFoundError('Ticket not found', 'TICKET_NOT_FOUND');
   }
-});
+
+  res.json({ message: 'Ticket deleted successfully' });
+}));
 
 // Send password reset email for user
-router.post('/users/:id/password-reset', async (req, res) => {
-  try {
-    // SEC-008 FIX: Validate ObjectId format
-    if (!isValidObjectId(req.params.id)) {
-      return res.status(400).json({ error: 'Invalid user ID' });
-    }
+router.post('/users/:id/password-reset', asyncHandler(async (req: Request, res: Response) => {
+  // SEC-008 FIX: Validate ObjectId format
+  if (!isValidObjectId(req.params.id)) {
+    throw BadRequestError('Invalid user ID', 'INVALID_ID');
+  }
 
-    const user = await User.findById(req.params.id);
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
+  const user = await User.findById(req.params.id);
+  if (!user) {
+    throw NotFoundError('User not found', 'USER_NOT_FOUND');
+  }
 
     // Generate a temporary password reset token (you might want to add this to your User model)
     const resetToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
@@ -991,221 +927,190 @@ router.post('/users/:id/password-reset', async (req, res) => {
         html: htmlContent
       });
 
-      res.json({ message: 'Password reset email sent successfully' });
-    } catch (emailError) {
-      
-      res.status(500).json({ error: 'Failed to send password reset email' });
-    }
-  } catch (error) {
+    res.json({ message: 'Password reset email sent successfully' });
+  } catch (emailError) {
     
-    res.status(500).json({ error: 'Failed to initiate password reset' });
+    throw new Error('Failed to send password reset email');
   }
-});
+}));
 
 // Refund user subscription
-router.post('/users/:id/refund', async (req: AuthRequest, res) => {
-  try {
-    // SEC-008 FIX: Validate ObjectId format
-    if (!isValidObjectId(req.params.id)) {
-      return res.status(400).json({ error: 'Invalid user ID' });
-    }
-
-    if (!stripe) {
-      return res.status(501).json({ error: 'Payment processing not configured' });
-    }
-
-    const user = await User.findById(req.params.id);
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    if (!user.stripeCustomerId) {
-      return res.status(400).json({ error: 'User has no Stripe customer ID' });
-    }
-
-    // Get the user's recent charges (last 6 months)
-    const sixMonthsAgo = Math.floor(Date.now() / 1000) - (6 * 30 * 24 * 60 * 60);
-    const charges = await stripe.charges.list({
-      customer: user.stripeCustomerId,
-      limit: 10,
-      created: { gte: sixMonthsAgo }
-    });
-
-    if (charges.data.length === 0) {
-      return res.status(404).json({ error: 'No recent charges found for this user' });
-    }
-
-    // Get the most recent successful charge
-    const latestCharge = charges.data.find(charge => charge.status === 'succeeded' && !charge.refunded);
-
-    if (!latestCharge) {
-      return res.status(404).json({ error: 'No refundable charges found' });
-    }
-
-    // Create refund
-    const refund = await stripe.refunds.create({
-      charge: latestCharge.id,
-      reason: 'requested_by_customer',
-      metadata: {
-        refunded_by: req.userId || 'admin',
-        reason: req.body.reason || 'Admin-initiated refund'
-      }
-    });
-
-    res.json({
-      message: 'Refund processed successfully',
-      refund: {
-        id: refund.id,
-        amount: refund.amount / 100,
-        currency: refund.currency,
-        status: refund.status
-      },
-      charge: {
-        id: latestCharge.id,
-        amount: latestCharge.amount / 100,
-        currency: latestCharge.currency
-      }
-    });
-  } catch (error: any) {
-    
-    res.status(500).json({
-      error: 'Failed to process refund',
-      details: error.message
-    });
+router.post('/users/:id/refund', asyncHandler(async (req: AuthRequest, res: Response) => {
+  // SEC-008 FIX: Validate ObjectId format
+  if (!isValidObjectId(req.params.id)) {
+    throw BadRequestError('Invalid user ID', 'INVALID_ID');
   }
-});
+
+  if (!stripe) {
+    throw BadRequestError('Payment processing not configured', 'STRIPE_NOT_CONFIGURED');
+  }
+
+  const user = await User.findById(req.params.id);
+  if (!user) {
+    throw NotFoundError('User not found', 'USER_NOT_FOUND');
+  }
+
+  if (!user.stripeCustomerId) {
+    throw BadRequestError('User has no Stripe customer ID', 'NO_STRIPE_CUSTOMER');
+  }
+
+  // Get the user's recent charges (last 6 months)
+  const sixMonthsAgo = Math.floor(Date.now() / 1000) - (6 * 30 * 24 * 60 * 60);
+  const charges = await stripe.charges.list({
+    customer: user.stripeCustomerId,
+    limit: 10,
+    created: { gte: sixMonthsAgo }
+  });
+
+  if (charges.data.length === 0) {
+    throw NotFoundError('No recent charges found for this user', 'NO_CHARGES');
+  }
+
+  // Get the most recent successful charge
+  const latestCharge = charges.data.find(charge => charge.status === 'succeeded' && !charge.refunded);
+
+  if (!latestCharge) {
+    throw NotFoundError('No refundable charges found', 'NO_REFUNDABLE_CHARGES');
+  }
+
+  // Create refund
+  const refund = await stripe.refunds.create({
+    charge: latestCharge.id,
+    reason: 'requested_by_customer',
+    metadata: {
+      refunded_by: req.userId || 'admin',
+      reason: req.body.reason || 'Admin-initiated refund'
+    }
+  });
+
+  res.json({
+    message: 'Refund processed successfully',
+    refund: {
+      id: refund.id,
+      amount: refund.amount / 100,
+      currency: refund.currency,
+      status: refund.status
+    },
+    charge: {
+      id: latestCharge.id,
+      amount: latestCharge.amount / 100,
+      currency: latestCharge.currency
+    }
+  });
+}));
 
 // Send custom notification to user
-router.post('/users/:id/notify', async (req: AuthRequest, res) => {
-  try {
-    // Validate ObjectId format
-    if (!isValidObjectId(req.params.id)) {
-      return res.status(400).json({ error: 'Invalid user ID' });
-    }
-
-    // Validate request body
-    const { title, message } = req.body;
-    if (!title || !message) {
-      return res.status(400).json({ error: 'Title and message are required' });
-    }
-
-    if (typeof title !== 'string' || typeof message !== 'string') {
-      return res.status(400).json({ error: 'Title and message must be strings' });
-    }
-
-    if (title.trim().length === 0 || message.trim().length === 0) {
-      return res.status(400).json({ error: 'Title and message cannot be empty' });
-    }
-
-    if (title.length > 200) {
-      return res.status(400).json({ error: 'Title must be 200 characters or less' });
-    }
-
-    if (message.length > 1000) {
-      return res.status(400).json({ error: 'Message must be 1000 characters or less' });
-    }
-
-    // Check if user exists
-    const user = await User.findById(req.params.id);
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    // Create notification
-    const notificationService = NotificationService.getInstance();
-    const notification = await notificationService.createNotification({
-      userId: user._id.toString(),
-      type: 'admin_message',
-      title: title.trim(),
-      message: message.trim()
-    });
-
-    res.json({
-      message: 'Notification sent successfully',
-      notification: {
-        id: notification?._id,
-        title: notification?.title,
-        message: notification?.message,
-        recipient: {
-          id: user._id,
-          email: user.email,
-          name: `${user.firstName} ${user.lastName}`
-        }
-      }
-    });
-  } catch (error: any) {
-    
-    res.status(500).json({
-      error: 'Failed to send notification',
-      details: error.message
-    });
+router.post('/users/:id/notify', asyncHandler(async (req: AuthRequest, res: Response) => {
+  // Validate ObjectId format
+  if (!isValidObjectId(req.params.id)) {
+    throw BadRequestError('Invalid user ID', 'INVALID_ID');
   }
-});
+
+  // Validate request body
+  const { title, message } = req.body;
+  if (!title || !message) {
+    throw BadRequestError('Title and message are required', 'MISSING_FIELDS');
+  }
+
+  if (typeof title !== 'string' || typeof message !== 'string') {
+    throw BadRequestError('Title and message must be strings', 'INVALID_TYPE');
+  }
+
+  if (title.trim().length === 0 || message.trim().length === 0) {
+    throw BadRequestError('Title and message cannot be empty', 'EMPTY_FIELDS');
+  }
+
+  if (title.length > 200) {
+    throw BadRequestError('Title must be 200 characters or less', 'TITLE_TOO_LONG');
+  }
+
+  if (message.length > 1000) {
+    throw BadRequestError('Message must be 1000 characters or less', 'MESSAGE_TOO_LONG');
+  }
+
+  // Check if user exists
+  const user = await User.findById(req.params.id);
+  if (!user) {
+    throw NotFoundError('User not found', 'USER_NOT_FOUND');
+  }
+
+  // Create notification
+  const notificationService = NotificationService.getInstance();
+  const notification = await notificationService.createNotification({
+    userId: user._id.toString(),
+    type: 'admin_message',
+    title: title.trim(),
+    message: message.trim()
+  });
+
+  res.json({
+    message: 'Notification sent successfully',
+    notification: {
+      id: notification?._id,
+      title: notification?.title,
+      message: notification?.message,
+      recipient: {
+        id: user._id,
+        email: user.email,
+        name: `${user.firstName} ${user.lastName}`
+      }
+    }
+  });
+}));
 
 // Reset all analytics data
-router.delete('/analytics/reset', async (_req, res) => {
-  try {
-    // Clear all analytics events
-    const analyticsResult = await Analytics.deleteMany({});
+router.delete('/analytics/reset', asyncHandler(async (_req: Request, res: Response) => {
+  // Clear all analytics events
+  const analyticsResult = await Analytics.deleteMany({});
 
-    // Clear all user sessions (this also clears project time data)
-    const sessionsResult = await UserSession.deleteMany({});
+  // Clear all user sessions (this also clears project time data)
+  const sessionsResult = await UserSession.deleteMany({});
 
-    // Clear all activity logs
-    const activityLogsResult = await ActivityLog.deleteMany({});
+  // Clear all activity logs
+  const activityLogsResult = await ActivityLog.deleteMany({});
 
-    res.json({
-      message: 'Analytics data reset successfully',
-      deletedAnalytics: analyticsResult.deletedCount,
-      deletedSessions: sessionsResult.deletedCount,
-      deletedActivityLogs: activityLogsResult.deletedCount,
-      projectTimeDataCleared: true
-    });
-  } catch (error) {
-    
-    res.status(500).json({ error: 'Failed to reset analytics data' });
-  }
-});
+  res.json({
+    message: 'Analytics data reset successfully',
+    deletedAnalytics: analyticsResult.deletedCount,
+    deletedSessions: sessionsResult.deletedCount,
+    deletedActivityLogs: activityLogsResult.deletedCount,
+    projectTimeDataCleared: true
+  });
+}));
 
 // Reset only project time data
-router.delete('/analytics/project-time/reset', async (_req, res) => {
-  try {
-    // Clear project time breakdown from all active sessions
-    const result = await UserSession.updateMany(
-      {},
-      { 
-        $unset: { 
-          projectTimeBreakdown: 1,
-          currentProjectStartTime: 1
-        }
+router.delete('/analytics/project-time/reset', asyncHandler(async (_req: Request, res: Response) => {
+  // Clear project time breakdown from all active sessions
+  const result = await UserSession.updateMany(
+    {},
+    { 
+      $unset: { 
+        projectTimeBreakdown: 1,
+        currentProjectStartTime: 1
       }
-    );
-    
-    res.json({ 
-      message: 'Project time data reset successfully',
-      updatedSessions: result.modifiedCount
-    });
-  } catch (error) {
-    
-    res.status(500).json({ error: 'Failed to reset project time data' });
-  }
-});
+    }
+  );
+  
+  res.json({ 
+    message: 'Project time data reset successfully',
+    updatedSessions: result.modifiedCount
+  });
+}));
 
 // Combined analytics endpoint for admin dashboard
-router.get('/analytics/combined', async (req, res) => {
-  try {
-    const { days = '30', limit = '10' } = req.query;
-    const daysInt = parseInt(days as string);
-    const limitInt = parseInt(limit as string);
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - daysInt);
+router.get('/analytics/combined', asyncHandler(async (req: Request, res: Response) => {
+  const { days = '30', limit = '10' } = req.query;
+  const daysInt = parseInt(days as string);
+  const limitInt = parseInt(limit as string);
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - daysInt);
 
-    // Get overview stats
-    const [totalUsers, totalSessions, totalEvents] = await Promise.all([
-      User.countDocuments({}),
-      UserSession.countDocuments({ startTime: { $gte: startDate } }),
-      Analytics.countDocuments({ timestamp: { $gte: startDate } })
-    ]);
+  // Get overview stats
+  const [totalUsers, totalSessions, totalEvents] = await Promise.all([
+    User.countDocuments({}),
+    UserSession.countDocuments({ startTime: { $gte: startDate } }),
+    Analytics.countDocuments({ timestamp: { $gte: startDate } })
+  ]);
 
     // Get session stats with total time
     const sessionStats = await UserSession.aggregate([
@@ -1446,52 +1351,46 @@ router.get('/analytics/combined', async (req, res) => {
       { $limit: 10 }
     ]);
 
-    res.json({
-      overview,
-      topUsers,
-      topProjects,
-      recentActivity
-    });
-
-  } catch (error) {
-    
-    res.status(500).json({ error: 'Failed to get combined analytics' });
-  }
-});
+  res.json({
+    overview,
+    topUsers,
+    topProjects,
+    recentActivity
+  });
+}));
 
 // Get user analytics leaderboard
-router.get('/analytics/leaderboard', async (req, res) => {
-  try {
-    const days = parseInt(req.query.days as string) || 30;
-    const limit = parseInt(req.query.limit as string) || 20;
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
+router.get('/analytics/leaderboard', asyncHandler(async (req: Request, res: Response) => {
+  const days = parseInt(req.query.days as string) || 30;
+  const limit = parseInt(req.query.limit as string) || 20;
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - days);
 
-    // Get all users first
-    const allUsers = await User.find({}, { firstName: 1, lastName: 1, email: 1, planTier: 1 }).lean();
-    const userMap = new Map();
-    allUsers.forEach(user => {
-      userMap.set(user._id.toString(), user);
-    });
+  // Get all users first
+  const allUsers = await User.find({}, { firstName: 1, lastName: 1, email: 1, planTier: 1 }).lean();
+  const userMap = new Map();
+  allUsers.forEach(user => {
+    userMap.set(user._id.toString(), user);
+  });
 
-    // Get activity data for each user with last activity
-    const activityData = await Analytics.aggregate([
-      {
-        $match: {
-          timestamp: { $gte: startDate }
-        }
-      },
-      {
-        $group: {
-          _id: '$userId',
-          totalEvents: { $sum: 1 },
-          projectOpens: { $sum: { $cond: [{ $eq: ['$eventType', 'project_open'] }, 1, 0] } },
-          lastEvent: { $max: '$timestamp' }
-        }
-      },
-      { $sort: { totalEvents: -1 } },
-      { $limit: limit }
-    ]);
+  // Get activity data for each user with last activity
+  const activityData = await Analytics.aggregate([
+    {
+      $match: {
+        timestamp: { $gte: startDate }
+      }
+    },
+    {
+      $group: {
+        _id: '$userId',
+        totalEvents: { $sum: 1 },
+        projectOpens: { $sum: { $cond: [{ $eq: ['$eventType', 'project_open'] }, 1, 0] } },
+        lastEvent: { $max: '$timestamp' }
+      }
+    },
+    { $sort: { totalEvents: -1 } },
+    { $limit: limit }
+  ]);
 
     // Get session data for each user with last activity
     const sessionData = await UserSession.aggregate([
@@ -1602,387 +1501,292 @@ router.get('/analytics/leaderboard', async (req, res) => {
       { $limit: 10 }
     ]);
 
-    // Fetch project names for projects that don't have names in analytics
-    const projectLeaderboard = await Promise.all(
-      projectActivityRaw.map(async (project) => {
-        let projectName = project.projectName;
-        
-        // If projectName is missing or null, try to fetch from database
-        if (!projectName || projectName === 'Unknown Project') {
-          try {
-            const dbProject = await Project.findById(project.projectId).select('name').lean();
-            projectName = dbProject?.name || 'Deleted Project';
-          } catch (error) {
-            projectName = 'Deleted Project';
-          }
+  // Fetch project names for projects that don't have names in analytics
+  const projectLeaderboard = await Promise.all(
+    projectActivityRaw.map(async (project) => {
+      let projectName = project.projectName;
+      
+      // If projectName is missing or null, try to fetch from database
+      if (!projectName || projectName === 'Unknown Project') {
+        try {
+          const dbProject = await Project.findById(project.projectId).select('name').lean();
+          projectName = dbProject?.name || 'Deleted Project';
+        } catch (error) {
+          projectName = 'Deleted Project';
         }
-        
-        return {
-          ...project,
-          projectName
-        };
-      })
-    );
+      }
+      
+      return {
+        ...project,
+        projectName
+      };
+    })
+  );
 
-    res.json({
-      timeLeaderboard,
-      activityLeaderboard,
-      projectLeaderboard,
-      period: `Last ${days} days`,
-      generatedAt: new Date().toISOString()
-    });
-  } catch (error) {
-    
-    res.status(500).json({ error: 'Failed to fetch analytics leaderboard' });
-  }
-});
+  res.json({
+    timeLeaderboard,
+    activityLeaderboard,
+    projectLeaderboard,
+    period: `Last ${days} days`,
+    generatedAt: new Date().toISOString()
+  });
+}));
 
 
 // Database cleanup endpoints
-router.get('/cleanup/stats', async (req, res) => {
-  try {
-    const stats = await CleanupService.getDatabaseStats();
-    res.json(stats);
-  } catch (error) {
-    
-    res.status(500).json({ error: 'Failed to fetch cleanup stats' });
-  }
-});
+router.get('/cleanup/stats', asyncHandler(async (_req: Request, res: Response) => {
+  const stats = await CleanupService.getDatabaseStats();
+  res.json(stats);
+}));
 
-router.get('/cleanup/recommendations', async (req, res) => {
-  try {
-    const recommendations = await CleanupService.getCleanupRecommendations();
-    res.json(recommendations);
-  } catch (error) {
-    
-    res.status(500).json({ error: 'Failed to fetch cleanup recommendations' });
-  }
-});
+router.get('/cleanup/recommendations', asyncHandler(async (_req: Request, res: Response) => {
+  const recommendations = await CleanupService.getCleanupRecommendations();
+  res.json(recommendations);
+}));
 
-router.post('/cleanup/run', async (req, res) => {
-  try {
-    const results = await CleanupService.runCompleteCleanup();
-    res.json({
-      message: 'Cleanup completed successfully',
-      results
-    });
-  } catch (error) {
-    
-    res.status(500).json({ error: 'Failed to run cleanup' });
-  }
-});
+router.post('/cleanup/run', asyncHandler(async (_req: Request, res: Response) => {
+  const results = await CleanupService.runCompleteCleanup();
+  res.json({
+    message: 'Cleanup completed successfully',
+    results
+  });
+}));
 
 // Advanced cleanup endpoints
-router.post('/cleanup/orphaned', async (req, res) => {
-  try {
-    const results = await CleanupService.cleanupOrphanedProjects();
-    res.json({
-      message: 'Orphaned data cleanup completed',
-      results
-    });
-  } catch (error) {
-    
-    res.status(500).json({ error: 'Failed to cleanup orphaned data' });
-  }
-});
+router.post('/cleanup/orphaned', asyncHandler(async (_req: Request, res: Response) => {
+  const results = await CleanupService.cleanupOrphanedProjects();
+  res.json({
+    message: 'Orphaned data cleanup completed',
+    results
+  });
+}));
 
-router.post('/cleanup/optimize', async (req, res) => {
-  try {
-    const results = await CleanupService.optimizeDatabase();
-    res.json({
-      message: 'Database optimization completed',
-      results
-    });
-  } catch (error) {
-    
-    res.status(500).json({ error: 'Failed to optimize database' });
-  }
-});
+router.post('/cleanup/optimize', asyncHandler(async (_req: Request, res: Response) => {
+  const results = await CleanupService.optimizeDatabase();
+  res.json({
+    message: 'Database optimization completed',
+    results
+  });
+}));
 
-router.post('/cleanup/emergency', async (req, res) => {
-  try {
-    const results = await CleanupService.emergencyCleanup();
-    res.json({
-      message: 'Emergency cleanup completed',
-      results
-    });
-  } catch (error) {
-    
-    res.status(500).json({ error: 'Failed to run emergency cleanup' });
-  }
-});
+router.post('/cleanup/emergency', asyncHandler(async (_req: Request, res: Response) => {
+  const results = await CleanupService.emergencyCleanup();
+  res.json({
+    message: 'Emergency cleanup completed',
+    results
+  });
+}));
 
-router.post('/cleanup/archive-projects', async (req, res) => {
-  try {
-    const { daysInactive = 365 } = req.body;
-    const results = await CleanupService.archiveOldProjects(daysInactive);
-    res.json({
-      message: 'Project archiving completed',
-      results
-    });
-  } catch (error) {
-    
-    res.status(500).json({ error: 'Failed to archive projects' });
-  }
-});
+router.post('/cleanup/archive-projects', asyncHandler(async (req: Request, res: Response) => {
+  const { daysInactive = 365 } = req.body;
+  const results = await CleanupService.archiveOldProjects(daysInactive);
+  res.json({
+    message: 'Project archiving completed',
+    results
+  });
+}));
 
-router.delete('/cleanup/analytics/:days', async (req, res) => {
-  try {
-    const days = parseInt(req.params.days) || 180;
-    const results = await CleanupService.cleanupOldAnalytics(days);
-    res.json({
-      message: `Analytics older than ${days} days cleaned up`,
-      results
-    });
-  } catch (error) {
-    
-    res.status(500).json({ error: 'Failed to cleanup analytics' });
-  }
-});
+router.delete('/cleanup/analytics/:days', asyncHandler(async (req: Request, res: Response) => {
+  const days = parseInt(req.params.days) || 180;
+  const results = await CleanupService.cleanupOldAnalytics(days);
+  res.json({
+    message: `Analytics older than ${days} days cleaned up`,
+    results
+  });
+}));
 
-router.delete('/cleanup/notifications/:days', async (req, res) => {
-  try {
-    const days = parseInt(req.params.days) || 90;
-    const results = await CleanupService.cleanupOldNotifications(days);
-    res.json({
-      message: `Notifications older than ${days} days cleaned up`,
-      results
-    });
-  } catch (error) {
-    
-    res.status(500).json({ error: 'Failed to cleanup notifications' });
-  }
-});
+router.delete('/cleanup/notifications/:days', asyncHandler(async (req: Request, res: Response) => {
+  const days = parseInt(req.params.days) || 90;
+  const results = await CleanupService.cleanupOldNotifications(days);
+  res.json({
+    message: `Notifications older than ${days} days cleaned up`,
+    results
+  });
+}));
 
-router.delete('/cleanup/activity-logs/:days', async (req, res) => {
-  try {
-    const days = parseInt(req.params.days) || 90;
-    const results = await CleanupService.cleanupOldActivityLogs(days);
-    res.json({
-      message: `Activity logs older than ${days} days cleaned up`,
-      results
-    });
-  } catch (error) {
-    
-    res.status(500).json({ error: 'Failed to cleanup activity logs' });
-  }
-});
+router.delete('/cleanup/activity-logs/:days', asyncHandler(async (req: Request, res: Response) => {
+  const days = parseInt(req.params.days) || 90;
+  const results = await CleanupService.cleanupOldActivityLogs(days);
+  res.json({
+    message: `Activity logs older than ${days} days cleaned up`,
+    results
+  });
+}));
 
-router.delete('/cleanup/inactive-sessions', async (req, res) => {
-  try {
-    const results = await CleanupService.cleanupInactiveSessions();
-    res.json({
-      message: 'Inactive sessions cleaned up',
-      results
-    });
-  } catch (error) {
-    
-    res.status(500).json({ error: 'Failed to cleanup inactive sessions' });
-  }
-});
+router.delete('/cleanup/inactive-sessions', asyncHandler(async (_req: Request, res: Response) => {
+  const results = await CleanupService.cleanupInactiveSessions();
+  res.json({
+    message: 'Inactive sessions cleaned up',
+    results
+  });
+}));
 
-router.delete('/cleanup/stale-locks', async (req, res) => {
-  try {
-    const results = await CleanupService.cleanupStaleNoteLocks();
-    res.json({
-      message: 'Stale note locks cleaned up',
-      results
-    });
-  } catch (error) {
-    
-    res.status(500).json({ error: 'Failed to cleanup stale locks' });
-  }
-});
+router.delete('/cleanup/stale-locks', asyncHandler(async (_req: Request, res: Response) => {
+  const results = await CleanupService.cleanupStaleNoteLocks();
+  res.json({
+    message: 'Stale note locks cleaned up',
+    results
+  });
+}));
 
-router.delete('/cleanup/rate-limits', async (req, res) => {
-  try {
-    const results = await CleanupService.cleanupOldRateLimits();
-    res.json({
-      message: 'Old rate limits cleaned up',
-      results
-    });
-  } catch (error) {
-    
-    res.status(500).json({ error: 'Failed to cleanup rate limits' });
-  }
-});
+router.delete('/cleanup/rate-limits', asyncHandler(async (_req: Request, res: Response) => {
+  const results = await CleanupService.cleanupOldRateLimits();
+  res.json({
+    message: 'Old rate limits cleaned up',
+    results
+  });
+}));
 
 // Performance monitoring endpoints
-router.get('/performance/recommendations', async (req, res) => {
-  try {
-    const recommendations = await CleanupService.getPerformanceRecommendations();
-    res.json(recommendations);
-  } catch (error) {
-    
-    res.status(500).json({ error: 'Failed to fetch performance recommendations' });
-  }
-});
+router.get('/performance/recommendations', asyncHandler(async (_req: Request, res: Response) => {
+  const recommendations = await CleanupService.getPerformanceRecommendations();
+  res.json(recommendations);
+}));
 
 // Lock/Unlock project (Admin only)
-router.post('/projects/:id/lock', requireAuth, adminMiddleware, async (req: AuthRequest, res) => {
-  try {
-    if (!isValidObjectId(req.params.id)) {
-      return res.status(400).json({ error: 'Invalid project ID' });
-    }
-
-    const { lock, reason } = req.body;
-    const project = await Project.findById(req.params.id);
-
-    if (!project) {
-      return res.status(404).json({ error: 'Project not found' });
-    }
-
-    project.isLocked = lock === true;
-    project.lockedReason = lock ? (reason || 'Locked by admin') : undefined;
-    await project.save();
-
-    res.json({
-      success: true,
-      project: {
-        _id: project._id,
-        name: project.name,
-        isLocked: project.isLocked,
-        lockedReason: project.lockedReason
-      }
-    });
-  } catch (error) {
-    
-    res.status(500).json({ error: 'Failed to update project lock status' });
+router.post('/projects/:id/lock', requireAuth, adminMiddleware, asyncHandler(async (req: AuthRequest, res: Response) => {
+  if (!isValidObjectId(req.params.id)) {
+    throw BadRequestError('Invalid project ID', 'INVALID_ID');
   }
-});
+
+  const { lock, reason } = req.body;
+  const project = await Project.findById(req.params.id);
+
+  if (!project) {
+    throw NotFoundError('Project not found', 'PROJECT_NOT_FOUND');
+  }
+
+  project.isLocked = lock === true;
+  project.lockedReason = lock ? (reason || 'Locked by admin') : undefined;
+  await project.save();
+
+  res.json({
+    success: true,
+    project: {
+      _id: project._id,
+      name: project.name,
+      isLocked: project.isLocked,
+      lockedReason: project.lockedReason
+    }
+  });
+}));
 
 // Get user's projects (Admin only)
-router.get('/users/:id/projects', requireAuth, adminMiddleware, async (req: AuthRequest, res) => {
-  try {
-    if (!isValidObjectId(req.params.id)) {
-      return res.status(400).json({ error: 'Invalid user ID' });
-    }
-
-    const projects = await Project.find({
-      $or: [{ userId: req.params.id }, { ownerId: req.params.id }]
-    })
-    .select('_id name description isLocked lockedReason isArchived createdAt updatedAt')
-    .sort({ updatedAt: -1 });
-
-    res.json({ projects });
-  } catch (error) {
-    
-    res.status(500).json({ error: 'Failed to fetch projects' });
+router.get('/users/:id/projects', requireAuth, adminMiddleware, asyncHandler(async (req: AuthRequest, res: Response) => {
+  if (!isValidObjectId(req.params.id)) {
+    throw BadRequestError('Invalid user ID', 'INVALID_ID');
   }
-});
+
+  const projects = await Project.find({
+    $or: [{ userId: req.params.id }, { ownerId: req.params.id }]
+  })
+  .select('_id name description isLocked lockedReason isArchived createdAt updatedAt')
+  .sort({ updatedAt: -1 });
+
+  res.json({ projects });
+}));
 
 // =====================
 // Admin Analytics Endpoints
 // =====================
 
 // Get analytics overview - key metrics for dashboard
-router.get('/analytics/overview', async (req: AuthRequest, res) => {
-  try {
-    const { days = '30' } = req.query;
-    const daysInt = parseInt(days as string);
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - daysInt);
+router.get('/analytics/overview', asyncHandler(async (req: Request, res: Response) => {
+  const { days = '30' } = req.query;
+  const daysInt = parseInt(days as string);
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - daysInt);
 
-    // Calculate previous period for comparison
-    const previousStartDate = new Date(startDate);
-    previousStartDate.setDate(previousStartDate.getDate() - daysInt);
+  // Calculate previous period for comparison
+  const previousStartDate = new Date(startDate);
+  previousStartDate.setDate(previousStartDate.getDate() - daysInt);
 
-    // Get total users
-    const totalUsers = await User.countDocuments();
-    const previousUsers = await User.countDocuments({
-      createdAt: { $lt: startDate }
-    });
-    const newUsers = totalUsers - previousUsers;
-    const userGrowth = previousUsers > 0 ? ((newUsers / previousUsers) * 100).toFixed(2) : 0;
+  // Get total users
+  const totalUsers = await User.countDocuments();
+  const previousUsers = await User.countDocuments({
+    createdAt: { $lt: startDate }
+  });
+  const newUsers = totalUsers - previousUsers;
+  const userGrowth = previousUsers > 0 ? ((newUsers / previousUsers) * 100).toFixed(2) : 0;
 
-    // Get MRR (Monthly Recurring Revenue)
-    const paidUsers = await User.find({
-      planTier: { $in: ['pro', 'premium'] },
-      subscriptionStatus: 'active'
-    }).select('planTier');
+  // Get MRR (Monthly Recurring Revenue)
+  const paidUsers = await User.find({
+    planTier: { $in: ['pro', 'premium'] },
+    subscriptionStatus: 'active'
+  }).select('planTier');
 
-    const mrr = paidUsers.reduce((sum, user) => {
-      if (user.planTier === 'pro') return sum + 10; // $10/month
-      if (user.planTier === 'premium') return sum + 25; // $25/month
-      return sum;
-    }, 0);
+  const mrr = paidUsers.reduce((sum, user) => {
+    if (user.planTier === 'pro') return sum + 10; // $10/month
+    if (user.planTier === 'premium') return sum + 25; // $25/month
+    return sum;
+  }, 0);
 
-    // Get active projects
-    const activeProjects = await Project.countDocuments({ isArchived: false });
-    const previousProjects = await Project.countDocuments({
-      isArchived: false,
-      createdAt: { $lt: startDate }
-    });
-    const newProjects = activeProjects - previousProjects;
-    const projectGrowth = previousProjects > 0 ? ((newProjects / previousProjects) * 100).toFixed(2) : 0;
+  // Get active projects
+  const activeProjects = await Project.countDocuments({ isArchived: false });
+  const previousProjects = await Project.countDocuments({
+    isArchived: false,
+    createdAt: { $lt: startDate }
+  });
+  const newProjects = activeProjects - previousProjects;
+  const projectGrowth = previousProjects > 0 ? ((newProjects / previousProjects) * 100).toFixed(2) : 0;
 
-    // Get error rate
-    const totalEvents = await Analytics.countDocuments({
-      timestamp: { $gte: startDate }
-    });
-    const errorEvents = await Analytics.countDocuments({
-      timestamp: { $gte: startDate },
-      eventType: 'error_occurred'
-    });
-    const errorRate = totalEvents > 0 ? ((errorEvents / totalEvents) * 100).toFixed(2) : '0';
+  // Get error rate
+  const totalEvents = await Analytics.countDocuments({
+    timestamp: { $gte: startDate }
+  });
+  const errorEvents = await Analytics.countDocuments({
+    timestamp: { $gte: startDate },
+    eventType: 'error_occurred'
+  });
+  const errorRate = totalEvents > 0 ? ((errorEvents / totalEvents) * 100).toFixed(2) : '0';
 
-    res.json({
-      users: {
-        total: totalUsers,
-        new: newUsers,
-        growth: parseFloat(userGrowth as string)
-      },
-      mrr: {
-        current: mrr,
-        growth: 0
-      },
-      projects: {
-        total: activeProjects,
-        new: newProjects,
-        growth: parseFloat(projectGrowth as string)
-      },
-      errorRate: {
-        percentage: parseFloat(errorRate),
-        total: errorEvents
-      }
-    });
-  } catch (error) {
-    
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.json({
+    users: {
+      total: totalUsers,
+      new: newUsers,
+      growth: parseFloat(userGrowth as string)
+    },
+    mrr: {
+      current: mrr,
+      growth: 0
+    },
+    projects: {
+      total: activeProjects,
+      new: newProjects,
+      growth: parseFloat(projectGrowth as string)
+    },
+    errorRate: {
+      percentage: parseFloat(errorRate),
+      total: errorEvents
+    }
+  });
+}));
 
 // Get conversion rate metrics
-router.get('/analytics/conversion-rate', async (_req: AuthRequest, res) => {
-  try {
-    const totalUsers = await User.countDocuments();
-    const usersWithProjects = await Project.distinct('userId');
-    const paidUsers = await User.countDocuments({
-      planTier: { $in: ['pro', 'premium'] }
-    });
+router.get('/analytics/conversion-rate', asyncHandler(async (_req: Request, res: Response) => {
+  const totalUsers = await User.countDocuments();
+  const usersWithProjects = await Project.distinct('userId');
+  const paidUsers = await User.countDocuments({
+    planTier: { $in: ['pro', 'premium'] }
+  });
 
-    const conversionRate = totalUsers > 0 ? ((paidUsers / totalUsers) * 100).toFixed(2) : '0';
-    const projectCreationRate = totalUsers > 0 ? ((usersWithProjects.length / totalUsers) * 100).toFixed(2) : '0';
+  const conversionRate = totalUsers > 0 ? ((paidUsers / totalUsers) * 100).toFixed(2) : '0';
+  const projectCreationRate = totalUsers > 0 ? ((usersWithProjects.length / totalUsers) * 100).toFixed(2) : '0';
 
-    res.json({
-      totalUsers,
-      usersWithProjects: usersWithProjects.length,
-      paidUsers,
-      conversionRate: parseFloat(conversionRate),
-      projectCreationRate: parseFloat(projectCreationRate)
-    });
-  } catch (error) {
-    
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.json({
+    totalUsers,
+    usersWithProjects: usersWithProjects.length,
+    paidUsers,
+    conversionRate: parseFloat(conversionRate),
+    projectCreationRate: parseFloat(projectCreationRate)
+  });
+}));
 
 // Get feature adoption metrics
-router.get('/analytics/features/adoption', async (req: AuthRequest, res) => {
-  try {
-    const { days = '30' } = req.query;
-    const daysInt = parseInt(days as string);
-    const startDate = new Date();
+router.get('/analytics/features/adoption', asyncHandler(async (req: Request, res: Response) => {
+  const { days = '30' } = req.query;
+  const daysInt = parseInt(days as string);
+  const startDate = new Date();
     startDate.setDate(startDate.getDate() - daysInt);
 
     // Get feature usage events
@@ -2080,171 +1884,152 @@ router.get('/analytics/features/adoption', async (req: AuthRequest, res) => {
     );
 
     res.json({ features });
-  } catch (error) {
-    
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+}));
 
 
 // Get user growth data (for charts)
-router.get('/analytics/users/growth', async (req: AuthRequest, res) => {
-  try {
-    const { days = '30' } = req.query;
-    const daysInt = parseInt(days as string);
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - daysInt);
+router.get('/analytics/users/growth', asyncHandler(async (req: Request, res: Response) => {
+  const { days = '30' } = req.query;
+  const daysInt = parseInt(days as string);
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - daysInt);
 
-    const userGrowth = await User.aggregate([
-      {
-        $match: {
-          createdAt: { $gte: startDate }
-        }
-      },
-      {
-        $group: {
-          _id: {
-            $dateToString: {
-              format: '%Y-%m-%d',
-              date: '$createdAt'
-            }
-          },
-          count: { $sum: 1 }
-        }
-      },
-      {
-        $sort: { _id: 1 }
+  const userGrowth = await User.aggregate([
+    {
+      $match: {
+        createdAt: { $gte: startDate }
       }
-    ]);
+    },
+    {
+      $group: {
+        _id: {
+          $dateToString: {
+            format: '%Y-%m-%d',
+            date: '$createdAt'
+          }
+        },
+        count: { $sum: 1 }
+      }
+    },
+    {
+      $sort: { _id: 1 }
+    }
+  ]);
 
-    res.json({ growth: userGrowth });
-  } catch (error) {
-    
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.json({ growth: userGrowth });
+}));
 
 // Get combined activity feed (analytics + activity logs)
-router.get('/activity/feed', async (req: AuthRequest, res) => {
-  try {
-    const { limit = '50', hours = '24' } = req.query;
-    const limitInt = parseInt(limit as string);
-    const hoursInt = parseInt(hours as string);
-    const startDate = new Date();
-    startDate.setHours(startDate.getHours() - hoursInt);
+router.get('/activity/feed', asyncHandler(async (req: Request, res: Response) => {
+  const { limit = '50', hours = '24' } = req.query;
+  const limitInt = parseInt(limit as string);
+  const hoursInt = parseInt(hours as string);
+  const startDate = new Date();
+  startDate.setHours(startDate.getHours() - hoursInt);
 
-    // Get recent analytics events
-    const analyticsEvents = await Analytics.find({
-      timestamp: { $gte: startDate },
-      eventType: { $in: ['user_signup', 'user_upgraded', 'user_downgraded', 'project_created', 'error_occurred'] }
-    })
-      .populate('userId', 'firstName lastName email')
-      .sort({ timestamp: -1 })
-      .limit(limitInt / 2)
-      .lean();
+  // Get recent analytics events
+  const analyticsEvents = await Analytics.find({
+    timestamp: { $gte: startDate },
+    eventType: { $in: ['user_signup', 'user_upgraded', 'user_downgraded', 'project_created', 'error_occurred'] }
+  })
+    .populate('userId', 'firstName lastName email')
+    .sort({ timestamp: -1 })
+    .limit(limitInt / 2)
+    .lean();
 
-    // Get recent activity logs
-    const activityLogs = await ActivityLog.find({
-      timestamp: { $gte: startDate }
-    })
-      .populate('userId', 'firstName lastName email')
-      .populate('projectId', 'name')
-      .sort({ timestamp: -1 })
-      .limit(limitInt / 2)
-      .lean();
+  // Get recent activity logs
+  const activityLogs = await ActivityLog.find({
+    timestamp: { $gte: startDate }
+  })
+    .populate('userId', 'firstName lastName email')
+    .populate('projectId', 'name')
+    .sort({ timestamp: -1 })
+    .limit(limitInt / 2)
+    .lean();
 
-    // Combine and sort
-    const combined = [
-      ...analyticsEvents.map((e: any) => ({
-        type: 'analytics',
-        eventType: e.eventType,
-        timestamp: e.timestamp,
-        user: e.userId,
-        data: e.eventData,
-        category: e.category
-      })),
-      ...activityLogs.map((l: any) => ({
-        type: 'activity',
-        action: l.action,
-        resourceType: l.resourceType,
-        timestamp: l.timestamp,
-        user: l.userId,
-        project: l.projectId,
-        details: l.details
-      }))
-    ]
-      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
-      .slice(0, limitInt);
+  // Combine and sort
+  const combined = [
+    ...analyticsEvents.map((e: any) => ({
+      type: 'analytics',
+      eventType: e.eventType,
+      timestamp: e.timestamp,
+      user: e.userId,
+      data: e.eventData,
+      category: e.category
+    })),
+    ...activityLogs.map((l: any) => ({
+      type: 'activity',
+      action: l.action,
+      resourceType: l.resourceType,
+      timestamp: l.timestamp,
+      user: l.userId,
+      project: l.projectId,
+      details: l.details
+    }))
+  ]
+    .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+    .slice(0, limitInt);
 
-    res.json({ feed: combined, period: `Last ${hours} hours` });
-  } catch (error) {
-    
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.json({ feed: combined, period: `Last ${hours} hours` });
+}));
 
 
 // Export analytics data as CSV
-router.get('/analytics/export', async (req: AuthRequest, res) => {
-  try {
-    const { days = '30' } = req.query;
-    const daysInt = parseInt(days as string);
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - daysInt);
+router.get('/analytics/export', asyncHandler(async (req: Request, res: Response) => {
+  const { days = '30' } = req.query;
+  const daysInt = parseInt(days as string);
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - daysInt);
 
-    // Fetch overview data
-    const totalUsers = await User.countDocuments();
-    const newUsers = await User.countDocuments({
-      createdAt: { $gte: startDate }
-    });
+  // Fetch overview data
+  const totalUsers = await User.countDocuments();
+  const newUsers = await User.countDocuments({
+    createdAt: { $gte: startDate }
+  });
 
-    const totalProjects = await Project.countDocuments();
-    const newProjects = await Project.countDocuments({
-      createdAt: { $gte: startDate }
-    });
+  const totalProjects = await Project.countDocuments();
+  const newProjects = await Project.countDocuments({
+    createdAt: { $gte: startDate }
+  });
 
-    const paidUsers = await User.countDocuments({
-      planTier: { $in: ['pro', 'premium'] }
-    });
+  const paidUsers = await User.countDocuments({
+    planTier: { $in: ['pro', 'premium'] }
+  });
 
-    const usersWithProjects = await User.countDocuments({
-      'projects.0': { $exists: true }
-    });
+  const usersWithProjects = await User.countDocuments({
+    'projects.0': { $exists: true }
+  });
 
-    const conversionRate = totalUsers > 0 ? ((paidUsers / totalUsers) * 100).toFixed(2) : '0';
-    const projectCreationRate = totalUsers > 0 ? ((usersWithProjects / totalUsers) * 100).toFixed(2) : '0';
+  const conversionRate = totalUsers > 0 ? ((paidUsers / totalUsers) * 100).toFixed(2) : '0';
+  const projectCreationRate = totalUsers > 0 ? ((usersWithProjects / totalUsers) * 100).toFixed(2) : '0';
 
-    // Create CSV content
-    const csvLines = [
-      'Analytics Export',
-      `Generated: ${new Date().toISOString()}`,
-      `Period: Last ${days} days`,
-      '',
-      'Key Metrics',
-      'Metric,Value',
-      `Total Users,${totalUsers}`,
-      `New Users (Period),${newUsers}`,
-      `Total Projects,${totalProjects}`,
-      `New Projects (Period),${newProjects}`,
-      `Paid Users,${paidUsers}`,
-      `Users With Projects,${usersWithProjects}`,
-      '',
-      'Conversion Metrics',
-      'Metric,Value',
-      `Conversion Rate,${conversionRate}%`,
-      `Project Creation Rate,${projectCreationRate}%`,
-    ];
+  // Create CSV content
+  const csvLines = [
+    'Analytics Export',
+    `Generated: ${new Date().toISOString()}`,
+    `Period: Last ${days} days`,
+    '',
+    'Key Metrics',
+    'Metric,Value',
+    `Total Users,${totalUsers}`,
+    `New Users (Period),${newUsers}`,
+    `Total Projects,${totalProjects}`,
+    `New Projects (Period),${newProjects}`,
+    `Paid Users,${paidUsers}`,
+    `Users With Projects,${usersWithProjects}`,
+    '',
+    'Conversion Metrics',
+    'Metric,Value',
+    `Conversion Rate,${conversionRate}%`,
+    `Project Creation Rate,${projectCreationRate}%`,
+  ];
 
-    const csv = csvLines.join('\n');
+  const csv = csvLines.join('\n');
 
-    // Set headers for CSV download
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', `attachment; filename="analytics-export-${new Date().toISOString().split('T')[0]}.csv"`);
-    res.send(csv);
-  } catch (error) {
-    
-    res.status(500).json({ error: 'Failed to export analytics data' });
-  }
-});
+  // Set headers for CSV download
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', `attachment; filename="analytics-export-${new Date().toISOString().split('T')[0]}.csv"`);
+  res.send(csv);
+}));
 
 export default router;

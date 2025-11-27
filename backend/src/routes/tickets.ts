@@ -2,6 +2,7 @@ import express from 'express';
 import { Ticket } from '../models/Ticket';
 import { User } from '../models/User';
 import { requireAuth, AuthRequest } from '../middleware/auth';
+import { asyncHandler, BadRequestError, NotFoundError } from '../utils/errorHandler';
 import { ticketRateLimit } from '../middleware/rateLimit';
 import { v4 as uuidv4 } from 'uuid';
 import { sendEmail } from '../services/emailService';
@@ -9,31 +10,30 @@ import { sendEmail } from '../services/emailService';
 const router = express.Router();
 
 // Create a new ticket - rate limited to prevent spam
-router.post('/', requireAuth, ticketRateLimit, async (req: AuthRequest, res) => {
-  try {
-    const { subject, message, category, priority = 'medium' } = req.body;
-    const userId = req.userId;
+router.post('/', requireAuth, ticketRateLimit, asyncHandler(async (req: AuthRequest, res: express.Response) => {
+  const { subject, message, category, priority = 'medium' } = req.body;
+  const userId = req.userId;
 
-    if (!subject || !message || !category) {
-      return res.status(400).json({ error: 'Subject, message, and category are required' });
-    }
+  if (!subject || !message || !category) {
+    throw BadRequestError('Subject, message, and category are required', 'MISSING_FIELDS');
+  }
 
-    // Validate category
-    const validCategories = ['technical', 'billing', 'feature-request', 'other'];
-    if (!validCategories.includes(category)) {
-      return res.status(400).json({ error: 'Invalid category' });
-    }
+  // Validate category
+  const validCategories = ['technical', 'billing', 'feature-request', 'other'];
+  if (!validCategories.includes(category)) {
+    throw BadRequestError('Invalid category', 'INVALID_CATEGORY');
+  }
 
-    // Validate priority
-    const validPriorities = ['low', 'medium', 'high', 'critical'];
-    if (!validPriorities.includes(priority)) {
-      return res.status(400).json({ error: 'Invalid priority' });
-    }
+  // Validate priority
+  const validPriorities = ['low', 'medium', 'high', 'critical'];
+  if (!validPriorities.includes(priority)) {
+    throw BadRequestError('Invalid priority', 'INVALID_PRIORITY');
+  }
 
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
+  const user = await User.findById(userId);
+  if (!user) {
+    throw NotFoundError('User not found', 'USER_NOT_FOUND');
+  }
 
     const ticketId = `TICK-${Date.now()}-${uuidv4().substring(0, 8).toUpperCase()}`;
 
@@ -121,89 +121,72 @@ router.post('/', requireAuth, ticketRateLimit, async (req: AuthRequest, res) => 
       
     }
 
-    res.status(201).json({
-      message: 'Ticket created successfully',
-      ticket: {
-        ticketId: ticket.ticketId,
-        subject: ticket.subject,
-        status: ticket.status,
-        priority: ticket.priority,
-        category: ticket.category,
-        createdAt: ticket.createdAt
-      }
-    });
-
-  } catch (error) {
-    
-    res.status(500).json({ error: 'Failed to create ticket' });
-  }
-});
+  res.status(201).json({
+    message: 'Ticket created successfully',
+    ticket: {
+      ticketId: ticket.ticketId,
+      subject: ticket.subject,
+      status: ticket.status,
+      priority: ticket.priority,
+      category: ticket.category,
+      createdAt: ticket.createdAt
+    }
+  });
+}));
 
 // Get user's tickets
-router.get('/', requireAuth, async (req: AuthRequest, res) => {
-  try {
-    const userId = req.userId;
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
-    const skip = (page - 1) * limit;
-    const status = req.query.status as string;
+router.get('/', requireAuth, asyncHandler(async (req: AuthRequest, res: express.Response) => {
+  const userId = req.userId;
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 10;
+  const skip = (page - 1) * limit;
+  const status = req.query.status as string;
 
-    // Build query filter
-    const filter: any = { userId };
-    if (status) {
-      filter.status = status;
-    }
-
-    const tickets = await Ticket.find(filter)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .select('-__v');
-
-    const totalTickets = await Ticket.countDocuments(filter);
-    const totalPages = Math.ceil(totalTickets / limit);
-
-    res.json({
-      tickets,
-      pagination: {
-        currentPage: page,
-        totalPages,
-        totalTickets,
-        hasNext: page < totalPages,
-        hasPrev: page > 1
-      }
-    });
-
-  } catch (error) {
-    
-    res.status(500).json({ error: 'Failed to fetch tickets' });
+  // Build query filter
+  const filter: any = { userId };
+  if (status) {
+    filter.status = status;
   }
-});
+
+  const tickets = await Ticket.find(filter)
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit)
+    .select('-__v');
+
+  const totalTickets = await Ticket.countDocuments(filter);
+  const totalPages = Math.ceil(totalTickets / limit);
+
+  res.json({
+    tickets,
+    pagination: {
+      currentPage: page,
+      totalPages,
+      totalTickets,
+      hasNext: page < totalPages,
+      hasPrev: page > 1
+    }
+  });
+}));
 
 // Get single ticket (user's own ticket only)
-router.get('/:ticketId', requireAuth, async (req: AuthRequest, res) => {
-  try {
-    const { ticketId } = req.params;
-    const userId = req.userId;
+router.get('/:ticketId', requireAuth, asyncHandler(async (req: AuthRequest, res: express.Response) => {
+  const { ticketId } = req.params;
+  const userId = req.userId;
 
-    const ticket = await Ticket.findOne({ 
-      ticketId, 
-      userId 
-    }).populate('adminUserId', 'firstName lastName email');
+  const ticket = await Ticket.findOne({ 
+    ticketId, 
+    userId 
+  }).populate('adminUserId', 'firstName lastName email');
 
-    if (!ticket) {
-      return res.status(404).json({ error: 'Ticket not found' });
-    }
-
-    res.json({
-      success: true,
-      ticket: ticket
-    });
-
-  } catch (error) {
-    
-    res.status(500).json({ error: 'Failed to fetch ticket' });
+  if (!ticket) {
+    throw NotFoundError('Ticket not found', 'TICKET_NOT_FOUND');
   }
-});
+
+  res.json({
+    success: true,
+    ticket: ticket
+  });
+}));
 
 export default router;

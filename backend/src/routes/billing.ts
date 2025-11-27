@@ -13,6 +13,7 @@ import {
   sendSubscriptionExpiredEmail,
   sendPlanDowngradeEmail
 } from '../services/emailService';
+import { asyncHandler, BadRequestError, NotFoundError } from '../utils/errorHandler';
 
 const router = express.Router();
 
@@ -42,106 +43,97 @@ const PLAN_LIMITS = {
 };
 
 // Create checkout session
-router.post('/create-checkout-session', billingRateLimit, requireAuth, blockDemoWrites, async (req: AuthRequest, res) => {
-  try {
-    // Check if self-hosted mode is enabled
-    if (process.env.SELF_HOSTED === 'true') {
-      return res.status(501).json({ error: 'Billing is disabled in self-hosted mode' });
-    }
-
-    if (!stripe) {
-      return res.status(501).json({ error: 'Payment processing not configured' });
-    }
-
-    const { planTier } = req.body;
-    const userId = req.userId!;
-
-    logInfo('Creating checkout session', { userId, planTier });
-
-    if (!['pro', 'premium'].includes(planTier)) {
-      return res.status(400).json({ error: 'Invalid plan tier' });
-    }
-
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    logInfo('User checkout details', { email: user.email, currentPlan: user.planTier, subscriptionStatus: user.subscriptionStatus });
-
-    // Check if user is trying to subscribe to the same plan they already have
-    if (user.planTier === planTier && user.subscriptionStatus === 'active') {
-      logInfo('User already has this plan', { planTier });
-      return res.status(400).json({ 
-        error: `You already have an active ${planTier} subscription.`,
-        currentPlan: user.planTier,
-        subscriptionStatus: user.subscriptionStatus
-      });
-    }
-
-    // If user has an active subscription but wants to upgrade, we'll need to handle the upgrade
-    // Stripe will manage the proration automatically
-    if (user.subscriptionStatus === 'active' && user.subscriptionId && stripe) {
-      logInfo('User has active subscription, checking if this is an upgrade/downgrade');
-      try {
-        const existingSubscription = await stripe.subscriptions.retrieve(user.subscriptionId);
-        if (existingSubscription.status === 'active') {
-          logInfo('Found active Stripe subscription, will create new checkout for plan change');
-        }
-      } catch (error) {
-        logError('Error checking existing subscription', error as Error);
-        // Continue with checkout creation if we can't verify the existing subscription
-      }
-    }
-
-    // Create or retrieve Stripe customer
-    let customerId = user.stripeCustomerId;
-    if (!customerId) {
-      const customer = await stripe.customers.create({
-        email: user.email,
-        name: `${user.firstName} ${user.lastName}`,
-        metadata: { userId: userId }
-      });
-      customerId = customer.id;
-      user.stripeCustomerId = customerId;
-      await user.save();
-      logInfo('Created new Stripe customer', { customerId });
-    } else {
-      logInfo('Using existing Stripe customer', { customerId });
-    }
-
-    const priceId = PLAN_PRICES[planTier as keyof typeof PLAN_PRICES];
-    if (!priceId) {
-      logError('Price ID not found for plan', new Error(`Plan tier: ${planTier}`));
-      return res.status(400).json({ error: 'Plan pricing not configured' });
-    }
-
-    logInfo('Using price ID', { priceId, planTier });
-
-    const session = await stripe.checkout.sessions.create({
-      customer: customerId,
-      payment_method_types: ['card'],
-      line_items: [{
-        price: priceId,
-        quantity: 1,
-      }],
-      mode: 'subscription',
-      success_url: `${process.env.FRONTEND_URL}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.FRONTEND_URL}/billing/cancel`,
-      metadata: {
-        userId: userId,
-        planTier: planTier
-      }
-    });
-
-    logInfo('Checkout session created', { sessionId: session.id, url: session.url });
-
-    res.json({ url: session.url });
-  } catch (error) {
-    logError('Error creating checkout session', error as Error);
-    res.status(500).json({ error: 'Failed to create checkout session' });
+router.post('/create-checkout-session', billingRateLimit, requireAuth, blockDemoWrites, asyncHandler(async (req: AuthRequest, res: express.Response) => {
+  // Check if self-hosted mode is enabled
+  if (process.env.SELF_HOSTED === 'true') {
+    return res.status(501).json({ error: 'Billing is disabled in self-hosted mode' });
   }
-});
+
+  if (!stripe) {
+    return res.status(501).json({ error: 'Payment processing not configured' });
+  }
+
+  const { planTier } = req.body;
+  const userId = req.userId!;
+
+  logInfo('Creating checkout session', { userId, planTier });
+
+  if (!['pro', 'premium'].includes(planTier)) {
+    throw BadRequestError('Invalid plan tier', 'INVALID_PLAN');
+  }
+
+  const user = await User.findById(userId);
+  if (!user) {
+    throw NotFoundError('User not found', 'USER_NOT_FOUND');
+  }
+
+  logInfo('User checkout details', { email: user.email, currentPlan: user.planTier, subscriptionStatus: user.subscriptionStatus });
+
+  // Check if user is trying to subscribe to the same plan they already have
+  if (user.planTier === planTier && user.subscriptionStatus === 'active') {
+    logInfo('User already has this plan', { planTier });
+    throw BadRequestError(`You already have an active ${planTier} subscription.`, 'ALREADY_SUBSCRIBED');
+  }
+
+  // If user has an active subscription but wants to upgrade, we'll need to handle the upgrade
+  // Stripe will manage the proration automatically
+  if (user.subscriptionStatus === 'active' && user.subscriptionId && stripe) {
+    logInfo('User has active subscription, checking if this is an upgrade/downgrade');
+    try {
+      const existingSubscription = await stripe.subscriptions.retrieve(user.subscriptionId);
+      if (existingSubscription.status === 'active') {
+        logInfo('Found active Stripe subscription, will create new checkout for plan change');
+      }
+    } catch (error) {
+      logError('Error checking existing subscription', error as Error);
+      // Continue with checkout creation if we can't verify the existing subscription
+    }
+  }
+
+  // Create or retrieve Stripe customer
+  let customerId = user.stripeCustomerId;
+  if (!customerId) {
+    const customer = await stripe.customers.create({
+      email: user.email,
+      name: `${user.firstName} ${user.lastName}`,
+      metadata: { userId: userId }
+    });
+    customerId = customer.id;
+    user.stripeCustomerId = customerId;
+    await user.save();
+    logInfo('Created new Stripe customer', { customerId });
+  } else {
+    logInfo('Using existing Stripe customer', { customerId });
+  }
+
+  const priceId = PLAN_PRICES[planTier as keyof typeof PLAN_PRICES];
+  if (!priceId) {
+    logError('Price ID not found for plan', new Error(`Plan tier: ${planTier}`));
+    throw BadRequestError('Plan pricing not configured', 'PRICE_NOT_CONFIGURED');
+  }
+
+  logInfo('Using price ID', { priceId, planTier });
+
+  const session = await stripe.checkout.sessions.create({
+    customer: customerId,
+    payment_method_types: ['card'],
+    line_items: [{
+      price: priceId,
+      quantity: 1,
+    }],
+    mode: 'subscription',
+    success_url: `${process.env.FRONTEND_URL}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${process.env.FRONTEND_URL}/billing/cancel`,
+    metadata: {
+      userId: userId,
+      planTier: planTier
+    }
+  });
+
+  logInfo('Checkout session created', { sessionId: session.id, url: session.url });
+
+  res.json({ url: session.url });
+}));
 
 // Handle Stripe webhooks
 router.post('/webhook', async (req, res) => {
@@ -460,115 +452,110 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
 }
 
 // Get user's billing info
-router.get('/info', requireAuth, async (req: AuthRequest, res) => {
-  try {
-    logInfo('Billing info request', { userId: req.userId });
+router.get('/info', requireAuth, asyncHandler(async (req: AuthRequest, res: express.Response) => {
+  logInfo('Billing info request', { userId: req.userId });
 
-    const user = await User.findById(req.userId!).select('-password');
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
+  const user = await User.findById(req.userId!).select('-password');
+  if (!user) {
+    throw NotFoundError('User not found', 'USER_NOT_FOUND');
+  }
 
-    // If self-hosted, return basic info without billing details
-    if (process.env.SELF_HOSTED === 'true') {
-      return res.json({
-        planTier: user.planTier || 'free',
-        projectLimit: -1, // Unlimited for self-hosted
-        subscriptionStatus: 'self_hosted',
-        hasActiveSubscription: false,
-        nextBillingDate: null,
-        cancelAtPeriodEnd: false,
-        selfHosted: true
-      });
-    }
-
-    logInfo('User billing details', {
-      planTier: user.planTier,
-      hasSubscription: !!user.subscriptionId,
-      subscriptionStatus: user.subscriptionStatus
-    });
-
-    // Get user's current project count
-    const { Project } = await import('../models/Project');
-    const projectCount = await Project.countDocuments({
-      $or: [{ userId: user._id }, { ownerId: user._id }],
-      isArchived: false
-    });
-
-    let billingInfo: any = {
-      planTier: user.planTier,
-      projectLimit: user.projectLimit,
-      projectCount: projectCount,
-      subscriptionStatus: user.subscriptionStatus,
-      hasActiveSubscription: user.subscriptionStatus === 'active',
+  // If self-hosted, return basic info without billing details
+  if (process.env.SELF_HOSTED === 'true') {
+    return res.json({
+      planTier: user.planTier || 'free',
+      projectLimit: -1, // Unlimited for self-hosted
+      subscriptionStatus: 'self_hosted',
+      hasActiveSubscription: false,
       nextBillingDate: null,
       cancelAtPeriodEnd: false,
-      subscriptionId: user.subscriptionId
-    };
-
-    // If user has a subscription, get additional details from Stripe
-    if (user.subscriptionId && stripe) {
-      logInfo('Fetching subscription details from Stripe');
-      try {
-        const subscription = await stripe.subscriptions.retrieve(user.subscriptionId, {
-          expand: ['default_payment_method', 'items.data.price']
-        });
-
-        logInfo('Stripe subscription retrieved', {
-          id: subscription.id,
-          status: (subscription as any).status,
-          currentPeriodEnd: (subscription as any).current_period_end,
-          cancelAt: (subscription as any).cancel_at,
-          cancelAtPeriodEnd: (subscription as any).cancel_at_period_end
-        });
-
-        // Get the renewal date from the subscription items if not available at top level
-        let renewalDate = (subscription as any).current_period_end;
-        if (!renewalDate && (subscription as any).items?.data?.[0]?.current_period_end) {
-          renewalDate = (subscription as any).items.data[0].current_period_end;
-          logInfo('Using current_period_end from subscription item', { renewalDate });
-        }
-        // If subscription is cancelled, use cancel_at date
-        if (!renewalDate && (subscription as any).cancel_at) {
-          renewalDate = (subscription as any).cancel_at;
-          logInfo('Using cancel_at date', { renewalDate });
-        }
-
-        billingInfo.nextBillingDate = renewalDate
-          ? new Date(renewalDate * 1000).toISOString()
-          : null;
-        billingInfo.cancelAtPeriodEnd = (subscription as any).cancel_at_period_end || false;
-
-        logInfo('Calculated billing dates', {
-          nextBillingDate: billingInfo.nextBillingDate,
-          cancelAtPeriodEnd: billingInfo.cancelAtPeriodEnd
-        });
-
-        // If cancelled, the subscription will end at the current period end
-        if ((subscription as any).cancel_at_period_end) {
-          billingInfo.subscriptionEndsAt = billingInfo.nextBillingDate;
-        }
-
-        // Update hasActiveSubscription based on actual subscription status
-        billingInfo.hasActiveSubscription = ['active', 'trialing', 'past_due'].includes((subscription as any).status);
-
-      } catch (stripeError) {
-        logError('Error fetching subscription details from Stripe', stripeError as Error);
-        // Continue without Stripe details rather than failing the request
-      }
-    } else {
-      logInfo('No subscription ID or Stripe not configured', {
-        hasSubscriptionId: !!user.subscriptionId,
-        stripeConfigured: !!stripe
-      });
-    }
-
-    res.json(billingInfo);
-  } catch (error) {
-    logError('Error fetching billing info', error as Error);
-    res.status(500).json({ error: 'Failed to fetch billing info' });
+      selfHosted: true
+    });
   }
-});
+
+  logInfo('User billing details', {
+    planTier: user.planTier,
+    hasSubscription: !!user.subscriptionId,
+    subscriptionStatus: user.subscriptionStatus
+  });
+
+  // Get user's current project count
+  const { Project } = await import('../models/Project');
+  const projectCount = await Project.countDocuments({
+    $or: [{ userId: user._id }, { ownerId: user._id }],
+    isArchived: false
+  });
+
+  let billingInfo: any = {
+    planTier: user.planTier,
+    projectLimit: user.projectLimit,
+    projectCount: projectCount,
+    subscriptionStatus: user.subscriptionStatus,
+    hasActiveSubscription: user.subscriptionStatus === 'active',
+    nextBillingDate: null,
+    cancelAtPeriodEnd: false,
+    subscriptionId: user.subscriptionId
+  };
+
+  // If user has a subscription, get additional details from Stripe
+  if (user.subscriptionId && stripe) {
+    logInfo('Fetching subscription details from Stripe');
+    try {
+      const subscription = await stripe.subscriptions.retrieve(user.subscriptionId, {
+        expand: ['default_payment_method', 'items.data.price']
+      });
+
+      logInfo('Stripe subscription retrieved', {
+        id: subscription.id,
+        status: (subscription as any).status,
+        currentPeriodEnd: (subscription as any).current_period_end,
+        cancelAt: (subscription as any).cancel_at,
+        cancelAtPeriodEnd: (subscription as any).cancel_at_period_end
+      });
+
+      // Get the renewal date from the subscription items if not available at top level
+      let renewalDate = (subscription as any).current_period_end;
+      if (!renewalDate && (subscription as any).items?.data?.[0]?.current_period_end) {
+        renewalDate = (subscription as any).items.data[0].current_period_end;
+        logInfo('Using current_period_end from subscription item', { renewalDate });
+      }
+      // If subscription is cancelled, use cancel_at date
+      if (!renewalDate && (subscription as any).cancel_at) {
+        renewalDate = (subscription as any).cancel_at;
+        logInfo('Using cancel_at date', { renewalDate });
+      }
+
+      billingInfo.nextBillingDate = renewalDate
+        ? new Date(renewalDate * 1000).toISOString()
+        : null;
+      billingInfo.cancelAtPeriodEnd = (subscription as any).cancel_at_period_end || false;
+
+      logInfo('Calculated billing dates', {
+        nextBillingDate: billingInfo.nextBillingDate,
+        cancelAtPeriodEnd: billingInfo.cancelAtPeriodEnd
+      });
+
+      // If cancelled, the subscription will end at the current period end
+      if ((subscription as any).cancel_at_period_end) {
+        billingInfo.subscriptionEndsAt = billingInfo.nextBillingDate;
+      }
+
+      // Update hasActiveSubscription based on actual subscription status
+      billingInfo.hasActiveSubscription = ['active', 'trialing', 'past_due'].includes((subscription as any).status);
+
+    } catch (stripeError) {
+      logError('Error fetching subscription details from Stripe', stripeError as Error);
+      // Continue without Stripe details rather than failing the request
+    }
+  } else {
+    logInfo('No subscription ID or Stripe not configured', {
+      hasSubscriptionId: !!user.subscriptionId,
+      stripeConfigured: !!stripe
+    });
+  }
+
+  res.json(billingInfo);
+}));
 
 // Send email notification for locked projects
 async function sendProjectsLockedEmail(user: any, lockedProjects: any[], planTier: string) {
@@ -815,96 +802,86 @@ async function handleUpgradeUnlock(userId: string, newPlan: 'free' | 'pro' | 'pr
 }
 
 // Cancel subscription
-router.post('/cancel-subscription', billingRateLimit, requireAuth, async (req: AuthRequest, res) => {
-  try {
-    // Check if self-hosted mode is enabled
-    if (process.env.SELF_HOSTED === 'true') {
-      return res.status(501).json({ error: 'Billing is disabled in self-hosted mode' });
-    }
-
-    logInfo('Cancel subscription request', { userId: req.userId });
-
-    const user = await User.findById(req.userId!);
-    if (user) {
-      logInfo('User cancellation details', {
-        email: user.email,
-        planTier: user.planTier,
-        hasSubscriptionId: !!user.subscriptionId,
-        subscriptionStatus: user.subscriptionStatus
-      });
-    }
-
-    if (!user || !user.subscriptionId) {
-      logWarn('No user or subscription ID found for cancellation', { userId: req.userId });
-      return res.status(404).json({ error: 'No active subscription found' });
-    }
-
-    // Check if this is a fake subscription ID (for testing)
-    if (user.subscriptionId.startsWith('sub_fake_')) {
-      logInfo('Detected fake subscription ID - simulating cancellation');
-      // For fake subscriptions, just update the user directly
-      user.planTier = 'free';
-      user.projectLimit = 3;
-      user.subscriptionStatus = 'canceled'; // Fixed to match Stripe's spelling
-      user.subscriptionId = undefined;
-      await user.save();
-
-      return res.json({
-        success: true,
-        message: 'Subscription canceled successfully (test mode)'
-      });
-    }
-
-    if (!stripe) {
-      logError('Stripe not configured for cancellation');
-      return res.status(501).json({ error: 'Payment processing not configured' });
-    }
-
-    logInfo('Attempting to cancel subscription');
-    await stripe.subscriptions.update(user.subscriptionId, {
-      cancel_at_period_end: true
-    });
-    logInfo('Subscription marked for cancellation at period end', { userId: user._id });
-
-    res.json({ success: true, message: 'Subscription will be canceled at the end of the billing period' });
-  } catch (error) {
-    logError('Error canceling subscription', error as Error);
-    res.status(500).json({ error: 'Failed to cancel subscription' });
+router.post('/cancel-subscription', billingRateLimit, requireAuth, asyncHandler(async (req: AuthRequest, res: express.Response) => {
+  // Check if self-hosted mode is enabled
+  if (process.env.SELF_HOSTED === 'true') {
+    return res.status(501).json({ error: 'Billing is disabled in self-hosted mode' });
   }
-});
+
+  logInfo('Cancel subscription request', { userId: req.userId });
+
+  const user = await User.findById(req.userId!);
+  if (user) {
+    logInfo('User cancellation details', {
+      email: user.email,
+      planTier: user.planTier,
+      hasSubscriptionId: !!user.subscriptionId,
+      subscriptionStatus: user.subscriptionStatus
+    });
+  }
+
+  if (!user || !user.subscriptionId) {
+    logWarn('No user or subscription ID found for cancellation', { userId: req.userId });
+    throw NotFoundError('No active subscription found', 'NO_SUBSCRIPTION');
+  }
+
+  // Check if this is a fake subscription ID (for testing)
+  if (user.subscriptionId.startsWith('sub_fake_')) {
+    logInfo('Detected fake subscription ID - simulating cancellation');
+    // For fake subscriptions, just update the user directly
+    user.planTier = 'free';
+    user.projectLimit = 3;
+    user.subscriptionStatus = 'canceled'; // Fixed to match Stripe's spelling
+    user.subscriptionId = undefined;
+    await user.save();
+
+    return res.json({
+      success: true,
+      message: 'Subscription canceled successfully (test mode)'
+    });
+  }
+
+  if (!stripe) {
+    logError('Stripe not configured for cancellation');
+    return res.status(501).json({ error: 'Payment processing not configured' });
+  }
+
+  logInfo('Attempting to cancel subscription');
+  await stripe.subscriptions.update(user.subscriptionId, {
+    cancel_at_period_end: true
+  });
+  logInfo('Subscription marked for cancellation at period end', { userId: user._id });
+
+  res.json({ success: true, message: 'Subscription will be canceled at the end of the billing period' });
+}));
 
 // Resume cancelled subscription
-router.post('/resume-subscription', billingRateLimit, requireAuth, async (req: AuthRequest, res) => {
-  try {
-    // Check if self-hosted mode is enabled
-    if (process.env.SELF_HOSTED === 'true') {
-      return res.status(501).json({ error: 'Billing is disabled in self-hosted mode' });
-    }
-
-    logInfo('Resume subscription request', { userId: req.userId });
-
-    const user = await User.findById(req.userId!);
-    if (!user || !user.subscriptionId) {
-      logWarn('No subscription found to resume', { userId: req.userId });
-      return res.status(404).json({ error: 'No subscription found to resume' });
-    }
-
-    if (!stripe) {
-      logError('Stripe not configured for resume');
-      return res.status(501).json({ error: 'Payment processing not configured' });
-    }
-
-    logInfo('Attempting to resume subscription');
-    await stripe.subscriptions.update(user.subscriptionId, {
-      cancel_at_period_end: false
-    });
-
-    logInfo('Subscription resumed successfully', { userId: user._id });
-    res.json({ success: true, message: 'Subscription resumed successfully' });
-  } catch (error) {
-    logError('Error resuming subscription', error as Error);
-    res.status(500).json({ error: 'Failed to resume subscription' });
+router.post('/resume-subscription', billingRateLimit, requireAuth, asyncHandler(async (req: AuthRequest, res: express.Response) => {
+  // Check if self-hosted mode is enabled
+  if (process.env.SELF_HOSTED === 'true') {
+    return res.status(501).json({ error: 'Billing is disabled in self-hosted mode' });
   }
-});
+
+  logInfo('Resume subscription request', { userId: req.userId });
+
+  const user = await User.findById(req.userId!);
+  if (!user || !user.subscriptionId) {
+    logWarn('No subscription found to resume', { userId: req.userId });
+    throw NotFoundError('No subscription found to resume', 'NO_SUBSCRIPTION');
+  }
+
+  if (!stripe) {
+    logError('Stripe not configured for resume');
+    return res.status(501).json({ error: 'Payment processing not configured' });
+  }
+
+  logInfo('Attempting to resume subscription');
+  await stripe.subscriptions.update(user.subscriptionId, {
+    cancel_at_period_end: false
+  });
+
+  logInfo('Subscription resumed successfully', { userId: user._id });
+  res.json({ success: true, message: 'Subscription resumed successfully' });
+}));
 
 export default router;

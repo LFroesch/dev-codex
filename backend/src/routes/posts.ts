@@ -10,16 +10,16 @@ import NotificationService from '../services/notificationService';
 import activityLogger from '../services/activityLogger';
 import mongoose from 'mongoose';
 import { SOCIAL_CONSTANTS } from '../config/socialConstants';
+import { asyncHandler, BadRequestError, NotFoundError, ForbiddenError } from '../utils/errorHandler';
 
 const router = Router();
 
 // Get personalized feed (posts from followed users and favorited projects)
-router.get('/feed', requireAuth, async (req: AuthRequest, res: Response) => {
-  try {
-    const userId = req.userId!;
-    const { limit = SOCIAL_CONSTANTS.FEED_PAGE_LIMIT, page = 1 } = req.query;
-    const limitNum = parseInt(limit as string);
-    const skip = (parseInt(page as string) - 1) * limitNum;
+router.get('/feed', requireAuth, asyncHandler(async (req: AuthRequest, res: Response) => {
+  const userId = req.userId!;
+  const { limit = SOCIAL_CONSTANTS.FEED_PAGE_LIMIT, page = 1 } = req.query;
+  const limitNum = parseInt(limit as string);
+  const skip = (parseInt(page as string) - 1) * limitNum;
 
     // Get users the current user follows
     const follows = await Follow.find({
@@ -77,20 +77,15 @@ router.get('/feed', requireAuth, async (req: AuthRequest, res: Response) => {
         totalPages: Math.ceil(total / limitNum)
       }
     });
-  } catch (error) {
-    
-    res.status(500).json({ success: false, message: 'Database error while fetching feed' });
-  }
-});
+}));
 
 // Get user's posts
-router.get('/user/:userId', async (req: AuthRequest, res: Response) => {
-  try {
-    const { userId } = req.params;
-    const currentUserId = req.userId;
-    const { limit = SOCIAL_CONSTANTS.DEFAULT_PAGE_LIMIT, page = 1 } = req.query;
-    const limitNum = parseInt(limit as string);
-    const skip = (parseInt(page as string) - 1) * limitNum;
+router.get('/user/:userId', asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { userId } = req.params;
+  const currentUserId = req.userId;
+  const { limit = SOCIAL_CONSTANTS.DEFAULT_PAGE_LIMIT, page = 1 } = req.query;
+  const limitNum = parseInt(limit as string);
+  const skip = (parseInt(page as string) - 1) * limitNum;
 
     // Check if viewing own posts or if following the user
     const isOwnProfile = currentUserId === userId;
@@ -136,100 +131,90 @@ router.get('/user/:userId', async (req: AuthRequest, res: Response) => {
         totalPages: Math.ceil(total / limitNum)
       }
     });
-  } catch (error) {
-    
-    res.status(500).json({ success: false, message: 'Failed to fetch posts' });
-  }
-});
+}));
 
 // Get project posts
-router.get('/project/:projectId', async (req: AuthRequest, res: Response) => {
-  try {
-    const { projectId } = req.params;
-    const { limit = SOCIAL_CONSTANTS.DEFAULT_PAGE_LIMIT, page = 1 } = req.query;
-    const limitNum = parseInt(limit as string);
-    const skip = (parseInt(page as string) - 1) * limitNum;
+router.get('/project/:projectId', asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { projectId } = req.params;
+  const { limit = SOCIAL_CONSTANTS.DEFAULT_PAGE_LIMIT, page = 1 } = req.query;
+  const limitNum = parseInt(limit as string);
+  const skip = (parseInt(page as string) - 1) * limitNum;
 
-    const [posts, total] = await Promise.all([
-      Post.find({
-        postType: 'project',
-        projectId: new mongoose.Types.ObjectId(projectId),
-        isDeleted: false,
-        visibility: 'public'
-      })
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limitNum)
-        .populate('userId', 'firstName lastName username email displayPreference isPublic publicSlug')
-        .populate('projectId', 'name description color category publicSlug')
-        .populate('linkedProjectId', 'name description color category publicSlug isPublic')
-        .lean(),
-      Post.countDocuments({
-        postType: 'project',
-        projectId: new mongoose.Types.ObjectId(projectId),
-        isDeleted: false,
-        visibility: 'public'
-      })
-    ]);
+  const [posts, total] = await Promise.all([
+    Post.find({
+      postType: 'project',
+      projectId: new mongoose.Types.ObjectId(projectId),
+      isDeleted: false,
+      visibility: 'public'
+    })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limitNum)
+      .populate('userId', 'firstName lastName username email displayPreference isPublic publicSlug')
+      .populate('projectId', 'name description color category publicSlug')
+      .populate('linkedProjectId', 'name description color category publicSlug isPublic')
+      .lean(),
+    Post.countDocuments({
+      postType: 'project',
+      projectId: new mongoose.Types.ObjectId(projectId),
+      isDeleted: false,
+      visibility: 'public'
+    })
+  ]);
 
-    res.json({
-      success: true,
-      posts,
-      pagination: {
-        total,
-        page: parseInt(page as string),
-        limit: limitNum,
-        totalPages: Math.ceil(total / limitNum)
-      }
-    });
-  } catch (error) {
-    
-    res.status(500).json({ success: false, message: 'Failed to fetch posts' });
-  }
-});
+  res.json({
+    success: true,
+    posts,
+    pagination: {
+      total,
+      page: parseInt(page as string),
+      limit: limitNum,
+      totalPages: Math.ceil(total / limitNum)
+    }
+  });
+}));
 
 // Create a post
-router.post('/', requireAuth, blockDemoWrites, async (req: AuthRequest, res: Response) => {
-  try {
-    const userId = req.userId!;
-    const { content, postType = 'profile', projectId, linkedProjectId, visibility = 'public' } = req.body;
+router.post('/', requireAuth, blockDemoWrites, asyncHandler(async (req: AuthRequest, res: Response) => {
+  const userId = req.userId!;
+  const { content, postType = 'profile', projectId, linkedProjectId, visibility = 'public' } = req.body;
 
-    if (!content || content.trim().length === 0) {
-      return res.status(400).json({ success: false, message: 'Content is required' });
+  if (!content || content.trim().length === 0) {
+    throw BadRequestError('Content is required', 'MISSING_CONTENT');
+  }
+
+  if (content.length > SOCIAL_CONSTANTS.POST_MAX_LENGTH) {
+    throw BadRequestError(`Content too long (max ${SOCIAL_CONSTANTS.POST_MAX_LENGTH} characters)`, 'CONTENT_TOO_LONG');
+  }
+
+  // Validate project if postType is 'project'
+  if (postType === 'project') {
+    if (!projectId) {
+      throw BadRequestError('Project ID required for project posts', 'MISSING_PROJECT_ID');
     }
 
-    if (content.length > SOCIAL_CONSTANTS.POST_MAX_LENGTH) {
-      return res.status(400).json({ success: false, message: `Content too long (max ${SOCIAL_CONSTANTS.POST_MAX_LENGTH} characters)` });
+    const project = await Project.findById(projectId);
+    if (!project) {
+      throw NotFoundError('Project not found', 'PROJECT_NOT_FOUND');
     }
 
-    // Validate project if postType is 'project'
-    if (postType === 'project') {
-      if (!projectId) {
-        return res.status(400).json({ success: false, message: 'Project ID required for project posts' });
-      }
-
-      const project = await Project.findById(projectId);
-      if (!project) {
-        return res.status(404).json({ success: false, message: 'Project not found' });
-      }
-
-      // Check if user owns the project
-      if (project.userId.toString() !== userId) {
-        return res.status(403).json({ success: false, message: 'Can only post updates to your own projects' });
-      }
+    // Check if user owns the project
+    if (project.userId.toString() !== userId) {
+      throw ForbiddenError('Can only post updates to your own projects', 'NOT_PROJECT_OWNER');
     }
+  }
 
-    // Validate linked project if provided
-    if (linkedProjectId) {
-      const linkedProject = await Project.findById(linkedProjectId);
-      if (!linkedProject) {
-        return res.status(404).json({ success: false, message: 'Linked project not found' });
-      }
-      // Check if linked project is public or owned by user
-      if (!linkedProject.isPublic && linkedProject.userId.toString() !== userId) {
-        return res.status(403).json({ success: false, message: 'Cannot link to private projects you don\'t own' });
-      }
+  // Validate linked project if provided
+  if (linkedProjectId) {
+    const linkedProject = await Project.findById(linkedProjectId);
+    if (!linkedProject) {
+      throw NotFoundError('Linked project not found', 'LINKED_PROJECT_NOT_FOUND');
     }
+    // Check if linked project is public or owned by user
+    if (!linkedProject.isPublic && linkedProject.userId.toString() !== userId) {
+      throw ForbiddenError('Cannot link to private projects you don\'t own', 'CANNOT_LINK_PRIVATE');
+    }
+  }
 
     const post = new Post({
       userId: new mongoose.Types.ObjectId(userId),
@@ -323,84 +308,70 @@ router.post('/', requireAuth, blockDemoWrites, async (req: AuthRequest, res: Res
       success: true,
       post: populatedPost
     });
-  } catch (error) {
-    
-    res.status(500).json({ success: false, message: 'Database error while creating post' });
-  }
-});
+}));
 
 // Edit a post
-router.put('/:postId', requireAuth, blockDemoWrites, async (req: AuthRequest, res: Response) => {
-  try {
-    const { postId } = req.params;
-    const { content } = req.body;
-    const userId = req.userId!;
+router.put('/:postId', requireAuth, blockDemoWrites, asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { postId } = req.params;
+  const { content } = req.body;
+  const userId = req.userId!;
 
-    if (!content || content.trim().length === 0) {
-      return res.status(400).json({ success: false, message: 'Content is required' });
-    }
-
-    if (content.length > SOCIAL_CONSTANTS.POST_MAX_LENGTH) {
-      return res.status(400).json({ success: false, message: `Content too long (max ${SOCIAL_CONSTANTS.POST_MAX_LENGTH} characters)` });
-    }
-
-    const post = await Post.findById(postId);
-    if (!post || post.isDeleted) {
-      return res.status(404).json({ success: false, message: 'Post not found' });
-    }
-
-    // Only post author can edit
-    if (post.userId.toString() !== userId) {
-      return res.status(403).json({ success: false, message: 'Can only edit your own posts' });
-    }
-
-    post.content = content.trim();
-    post.isEdited = true;
-    await post.save();
-
-    const populatedPost = await Post.findById(post._id)
-      .populate('userId', 'firstName lastName username email displayPreference isPublic publicSlug')
-      .populate('projectId', 'name description color category publicSlug')
-      .lean();
-
-    res.json({
-      success: true,
-      post: populatedPost
-    });
-  } catch (error) {
-    
-    res.status(500).json({ success: false, message: 'Failed to edit post' });
+  if (!content || content.trim().length === 0) {
+    throw BadRequestError('Content is required', 'MISSING_CONTENT');
   }
-});
+
+  if (content.length > SOCIAL_CONSTANTS.POST_MAX_LENGTH) {
+    throw BadRequestError(`Content too long (max ${SOCIAL_CONSTANTS.POST_MAX_LENGTH} characters)`, 'CONTENT_TOO_LONG');
+  }
+
+  const post = await Post.findById(postId);
+  if (!post || post.isDeleted) {
+    throw NotFoundError('Post not found', 'POST_NOT_FOUND');
+  }
+
+  // Only post author can edit
+  if (post.userId.toString() !== userId) {
+    throw ForbiddenError('Can only edit your own posts', 'NOT_POST_AUTHOR');
+  }
+
+  post.content = content.trim();
+  post.isEdited = true;
+  await post.save();
+
+  const populatedPost = await Post.findById(post._id)
+    .populate('userId', 'firstName lastName username email displayPreference isPublic publicSlug')
+    .populate('projectId', 'name description color category publicSlug')
+    .lean();
+
+  res.json({
+    success: true,
+    post: populatedPost
+  });
+}));
 
 // Delete a post
-router.delete('/:postId', requireAuth, blockDemoWrites, async (req: AuthRequest, res: Response) => {
-  try {
-    const { postId } = req.params;
-    const userId = req.userId!;
+router.delete('/:postId', requireAuth, blockDemoWrites, asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { postId } = req.params;
+  const userId = req.userId!;
 
-    const post = await Post.findById(postId);
-    if (!post || post.isDeleted) {
-      return res.status(404).json({ success: false, message: 'Post not found' });
-    }
-
-    // Only post author can delete
-    if (post.userId.toString() !== userId) {
-      return res.status(403).json({ success: false, message: 'Can only delete your own posts' });
-    }
-
-    post.isDeleted = true;
-    post.deletedAt = new Date();
-    await post.save();
-
-    res.json({
-      success: true,
-      message: 'Post deleted successfully'
-    });
-  } catch (error) {
-    
-    res.status(500).json({ success: false, message: 'Failed to delete post' });
+  const post = await Post.findById(postId);
+  if (!post || post.isDeleted) {
+    throw NotFoundError('Post not found', 'POST_NOT_FOUND');
   }
-});
+
+  // Only post author can delete
+  if (post.userId.toString() !== userId) {
+    throw ForbiddenError('Can only delete your own posts', 'NOT_POST_AUTHOR');
+  }
+
+  post.isDeleted = true;
+  post.deletedAt = new Date();
+  await post.save();
+
+  res.json({
+    success: true,
+    message: 'Post deleted successfully'
+  });
+}));
 
 export default router;

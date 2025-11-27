@@ -60,12 +60,18 @@ Create 12 todos for the full implementation..."
 ```
 
 **3. Paste commands back**
+Example commands:
 ```bash
-/add todo --title="Setup authentication" --priority=high
-/add todo --title="Create recipe model"
-/add note --title="Architecture" --content="Next.js 14 with Prisma"
-/add component --feature="Auth" --category=backend
-...paste 10 more commands, hit enter, done
+/add todo --title="Setup authentication" --priority=high --status=in_progress
+/add todo --title="Build recipe CRUD" --priority=high
+/add todo --title="Database schema" --priority=high
+/add note --title="Architecture" --content="React + Node + PostgreSQL"
+/add note --title="Auth Strategy" --content="JWT with refresh tokens"
+/add component --feature="Auth" --category=backend --type=service --title="Auth Service" --content="JWT authentication"
+/add component --feature="Recipes" --category=backend --type=service --title="Recipe Service" --content="CRUD logic"
+/add stack --name="React" --category=framework --version="18"
+/add stack --name="PostgreSQL" --category=database --version="15"
+/add devlog --title="Day 1" --content="Project initialized"
 ```
 
 **What just happened?** You went from idea to structured project in 30 seconds. Traditional tools take 20+ minutes of clicking.

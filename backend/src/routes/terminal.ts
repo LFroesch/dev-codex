@@ -8,6 +8,7 @@ import TeamMember from '../models/TeamMember';
 import { logInfo, logError } from '../config/logger';
 import activityLogger from '../services/activityLogger';
 import { AnalyticsService } from '../middleware/analytics';
+import { asyncHandler, BadRequestError } from '../utils/errorHandler';
 
 const router = express.Router();
 
@@ -18,240 +19,184 @@ router.use(requireAuth);
  * POST /api/terminal/execute
  * Execute a terminal command - rate limited to prevent abuse
  */
-router.post('/execute', terminalRateLimit, async (req: AuthRequest, res) => {
-  try {
-    const { command, currentProjectId } = req.body;
+router.post('/execute', terminalRateLimit, asyncHandler(async (req: AuthRequest, res: express.Response) => {
+  const { command, currentProjectId } = req.body;
 
-    if (!command || typeof command !== 'string') {
-      return res.status(400).json({
-        type: 'error',
-        message: 'Command is required and must be a string'
-      });
-    }
+  if (!command || typeof command !== 'string') {
+    throw BadRequestError('Command is required and must be a string', 'INVALID_COMMAND');
+  }
 
-    const userId = req.userId!;
+  const userId = req.userId!;
 
-    // Check if user is demo user and command is a write operation
-    const { User } = await import('../models/User');
-    const user = await User.findById(userId);
+  // Check if user is demo user and command is a write operation
+  const { User } = await import('../models/User');
+  const user = await User.findById(userId);
 
-    if (user?.isDemo) {
-      const commandLower = command.toLowerCase().trim();
+  if (user?.isDemo) {
+    const commandLower = command.toLowerCase().trim();
 
-      // Allow theme changes for demo users to try different themes
-      const isThemeCommand = commandLower.includes('theme') || commandLower.startsWith('/theme') || commandLower.startsWith('theme');
+    // Allow theme changes for demo users to try different themes
+    const isThemeCommand = commandLower.includes('theme') || commandLower.startsWith('/theme') || commandLower.startsWith('theme');
 
-      if (!isThemeCommand) {
-        // Define write commands that demo users cannot execute
-        const writeCommands = [
-          'add', 'new', 'create', 'edit', 'update', 'delete', 'remove',
-          'complete', 'assign', 'push', 'invite', 'set', 'clear', 'export'
-        ];
+    if (!isThemeCommand) {
+      // Define write commands that demo users cannot execute
+      const writeCommands = [
+        'add', 'new', 'create', 'edit', 'update', 'delete', 'remove',
+        'complete', 'assign', 'push', 'invite', 'set', 'clear', 'export'
+      ];
 
-        const isWriteCommand = writeCommands.some(cmd =>
-          commandLower.startsWith(`/${cmd}`) || commandLower.startsWith(cmd)
-        );
+      const isWriteCommand = writeCommands.some(cmd =>
+        commandLower.startsWith(`/${cmd}`) || commandLower.startsWith(cmd)
+      );
 
-        if (isWriteCommand) {
-          return res.json({
-            type: 'error',
-            message: '🎭 Demo Mode - Account Required',
-            data: {
-              demo: true,
-              action: 'signup_required',
-              title: 'This action requires a full account',
-              description: 'You\'re in demo mode with read-only access. Sign up to create, edit, and manage your own projects!',
-              signupUrl: '/register',
-              ctaText: 'Create Free Account'
-            }
-          });
-        }
+      if (isWriteCommand) {
+        return res.json({
+          type: 'error',
+          message: '🎭 Demo Mode - Account Required',
+          data: {
+            demo: true,
+            action: 'signup_required',
+            title: 'This action requires a full account',
+            description: 'You\'re in demo mode with read-only access. Sign up to create, edit, and manage your own projects!',
+            signupUrl: '/register',
+            ctaText: 'Create Free Account'
+          }
+        });
       }
     }
-
-    logInfo('Terminal command execution', {
-      userId,
-      command: command.slice(0, 100), // Log only first 100 chars for security
-      currentProjectId,
-      isDemo: user?.isDemo || false
-    });
-
-    // Execute command
-    const executor = new CommandExecutor(userId);
-    const response = await executor.execute(command, currentProjectId);
-
-    // Track terminal usage analytics
-    try {
-      const commandType = command.split(' ')[0].replace('/', '');
-      
-
-      const result = await AnalyticsService.trackEvent(userId, 'feature_used', {
-        feature: 'terminal_command',
-        category: 'engagement',
-        projectId: currentProjectId,
-        metadata: {
-          commandType,
-          hasProjectContext: !!currentProjectId,
-          responseType: response.type
-        }
-      });
-
-      
-    } catch (error) {
-      // Don't fail the request if analytics fails
-      
-    }
-
-    res.json(response);
-  } catch (error) {
-    logError('Terminal execute error', error as Error, {
-      userId: req.userId,
-      component: 'terminal',
-      action: 'execute'
-    });
-
-    res.status(500).json({
-      type: 'error',
-      message: 'An error occurred while executing the command',
-      data: { error: (error as Error).message }
-    });
   }
-});
+
+  logInfo('Terminal command execution', {
+    userId,
+    command: command.slice(0, 100), // Log only first 100 chars for security
+    currentProjectId,
+    isDemo: user?.isDemo || false
+  });
+
+  // Execute command
+  const executor = new CommandExecutor(userId);
+  const response = await executor.execute(command, currentProjectId);
+
+  // Track terminal usage analytics
+  try {
+    const commandType = command.split(' ')[0].replace('/', '');
+    
+
+    const result = await AnalyticsService.trackEvent(userId, 'feature_used', {
+      feature: 'terminal_command',
+      category: 'engagement',
+      projectId: currentProjectId,
+      metadata: {
+        commandType,
+        hasProjectContext: !!currentProjectId,
+        responseType: response.type
+      }
+    });
+
+    
+  } catch (error) {
+    // Don't fail the request if analytics fails
+    
+  }
+
+  res.json(response);
+}));
 
 /**
  * GET /api/terminal/commands
  * Get all available commands for autocomplete
  */
-router.get('/commands', async (req: AuthRequest, res) => {
-  try {
-    const commands = CommandParser.getAllCommands();
-    const aliases = CommandParser.getAllAliases();
+router.get('/commands', asyncHandler(async (req: AuthRequest, res: express.Response) => {
+  const commands = CommandParser.getAllCommands();
+  const aliases = CommandParser.getAllAliases();
 
-    // Format for autocomplete - include both canonical commands and aliases
-    const formatted = commands.map(cmd => {
-      const cmdAliases = CommandParser.getAliasesForType(cmd.type);
-      return {
-        value: cmd.syntax.split('[')[0].trim(), // e.g., "/add todo"
-        label: cmd.syntax,
-        description: cmd.description,
-        examples: cmd.examples,
-        category: categorizeCommand(cmd.type.toString()),
-        aliases: cmdAliases // Include aliases for matching
-      };
-    });
+  // Format for autocomplete - include both canonical commands and aliases
+  const formatted = commands.map(cmd => {
+    const cmdAliases = CommandParser.getAliasesForType(cmd.type);
+    return {
+      value: cmd.syntax.split('[')[0].trim(), // e.g., "/add todo"
+      label: cmd.syntax,
+      description: cmd.description,
+      examples: cmd.examples,
+      category: categorizeCommand(cmd.type.toString()),
+      aliases: cmdAliases // Include aliases for matching
+    };
+  });
 
-    res.json({ commands: formatted, aliases });
-  } catch (error) {
-    logError('Get commands error', error as Error, {
-      userId: req.userId,
-      component: 'terminal',
-      action: 'get_commands'
-    });
-
-    res.status(500).json({
-      type: 'error',
-      message: 'Failed to retrieve commands'
-    });
-  }
-});
+  res.json({ commands: formatted, aliases });
+}));
 
 /**
  * GET /api/terminal/projects
  * Get user's projects for @ autocomplete
  */
-router.get('/projects', async (req: AuthRequest, res) => {
-  try {
-    const userId = req.userId!;
+router.get('/projects', asyncHandler(async (req: AuthRequest, res: express.Response) => {
+  const userId = req.userId!;
 
-    // Get owned projects
-    const ownedProjects = await Project.find({
-      $or: [
-        { userId: userId },
-        { ownerId: userId }
-      ]
-    })
-      .select('name description category color')
-      .lean();
+  // Get owned projects
+  const ownedProjects = await Project.find({
+    $or: [
+      { userId: userId },
+      { ownerId: userId }
+    ]
+  })
+    .select('name description category color')
+    .lean();
 
-    // Get team projects
-    const teamProjectIds = await TeamMember.find({ userId })
-      .select('projectId')
-      .lean()
-      .then(memberships => memberships.map(tm => tm.projectId));
+  // Get team projects
+  const teamProjectIds = await TeamMember.find({ userId })
+    .select('projectId')
+    .lean()
+    .then(memberships => memberships.map(tm => tm.projectId));
 
-    const teamProjects = teamProjectIds.length > 0
-      ? await Project.find({
-          _id: { $in: teamProjectIds },
-          $nor: [
-            { userId: userId },
-            { ownerId: userId }
-          ]
-        })
-          .select('name description category color')
-          .lean()
-      : [];
+  const teamProjects = teamProjectIds.length > 0
+    ? await Project.find({
+        _id: { $in: teamProjectIds },
+        $nor: [
+          { userId: userId },
+          { ownerId: userId }
+        ]
+      })
+        .select('name description category color')
+        .lean()
+    : [];
 
-    // Combine and format
-    const allProjects = [
-      ...ownedProjects.map(p => ({ ...p, isOwner: true })),
-      ...teamProjects.map(p => ({ ...p, isOwner: false }))
-    ];
+  // Combine and format
+  const allProjects = [
+    ...ownedProjects.map(p => ({ ...p, isOwner: true })),
+    ...teamProjects.map(p => ({ ...p, isOwner: false }))
+  ];
 
-    // Format for autocomplete
-    const formatted = allProjects.map(p => ({
-      value: `@${p.name}`,
-      label: p.name,
-      description: p.description,
-      category: p.category,
-      color: p.color,
-      isOwner: p.isOwner
-    }));
+  // Format for autocomplete
+  const formatted = allProjects.map(p => ({
+    value: `@${p.name}`,
+    label: p.name,
+    description: p.description,
+    category: p.category,
+    color: p.color,
+    isOwner: p.isOwner
+  }));
 
-    res.json({ projects: formatted });
-  } catch (error) {
-    logError('Get projects error', error as Error, {
-      userId: req.userId,
-      component: 'terminal',
-      action: 'get_projects'
-    });
-
-    res.status(500).json({
-      type: 'error',
-      message: 'Failed to retrieve projects'
-    });
-  }
-});
+  res.json({ projects: formatted });
+}));
 
 /**
  * POST /api/terminal/validate
  * Validate command syntax without executing
  */
-router.post('/validate', async (req: AuthRequest, res) => {
-  try {
-    const { command } = req.body;
+router.post('/validate', asyncHandler(async (req: AuthRequest, res: express.Response) => {
+  const { command } = req.body;
 
-    if (!command || typeof command !== 'string') {
-      return res.status(400).json({
-        isValid: false,
-        errors: ['Command is required and must be a string']
-      });
-    }
-
-    const validation = CommandParser.validate(command);
-    res.json(validation);
-  } catch (error) {
-    logError('Validate command error', error as Error, {
-      userId: req.userId,
-      component: 'terminal',
-      action: 'validate'
-    });
-
-    res.status(500).json({
+  if (!command || typeof command !== 'string') {
+    return res.json({
       isValid: false,
-      errors: ['Failed to validate command']
+      errors: ['Command is required and must be a string']
     });
   }
-});
+
+  const validation = CommandParser.validate(command);
+  res.json(validation);
+}));
 
 /**
  * GET /api/terminal/suggestions

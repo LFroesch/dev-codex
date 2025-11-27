@@ -1,33 +1,33 @@
-import express from 'express';
+import express, { Response, Request } from 'express';
 import { User } from '../models/User';
 import { Project } from '../models/Project';
 import mongoose from 'mongoose';
+import { asyncHandler, NotFoundError, ForbiddenError } from '../utils/errorHandler';
 
 const router = express.Router();
 
 // Get public project by ID or slug
-router.get('/project/:identifier', async (req, res) => {
-  try {
-    const { identifier } = req.params;
-    
-    // Try to find by publicSlug first, then by ID
-    let project;
-    if (mongoose.Types.ObjectId.isValid(identifier)) {
-      project = await Project.findById(identifier)
-        .populate('ownerId', 'firstName lastName username displayPreference email isPublic publicSlug');
-    } else {
-      project = await Project.findOne({ publicSlug: identifier })
-        .populate('ownerId', 'firstName lastName username displayPreference email isPublic publicSlug');
-    }
+router.get('/project/:identifier', asyncHandler(async (req: Request, res: Response) => {
+  const { identifier } = req.params;
+  
+  // Try to find by publicSlug first, then by ID
+  let project;
+  if (mongoose.Types.ObjectId.isValid(identifier)) {
+    project = await Project.findById(identifier)
+      .populate('ownerId', 'firstName lastName username displayPreference email isPublic publicSlug');
+  } else {
+    project = await Project.findOne({ publicSlug: identifier })
+      .populate('ownerId', 'firstName lastName username displayPreference email isPublic publicSlug');
+  }
 
-    if (!project) {
-      return res.status(404).json({ message: 'Project not found' });
-    }
+  if (!project) {
+    throw NotFoundError('Project not found', 'PROJECT_NOT_FOUND');
+  }
 
-    // Check if project is public
-    if (!project.isPublic) {
-      return res.status(403).json({ message: 'Project is not public' });
-    }
+  // Check if project is public
+  if (!project.isPublic) {
+    throw ForbiddenError('Project is not public', 'PROJECT_NOT_PUBLIC');
+  }
 
     // Get visibility settings with defaults
     const visibility = project.publicVisibility || {
@@ -97,43 +97,38 @@ router.get('/project/:identifier', async (req, res) => {
       publicProject.deploymentData = project.deploymentData;
     }
 
-    res.json({
-      success: true,
-      project: publicProject
-    });
-  } catch (error) {
-    
-    res.status(500).json({ message: 'Server error' });
-  }
-});
+  res.json({
+    success: true,
+    project: publicProject
+  });
+}));
 
 // Get public user profile by ID, slug, or username
-router.get('/user/:identifier', async (req, res) => {
-  try {
-    const { identifier } = req.params;
+router.get('/user/:identifier', asyncHandler(async (req: Request, res: Response) => {
+  const { identifier } = req.params;
 
-    // Try to find by publicSlug, username, or ID
-    let user;
-    if (mongoose.Types.ObjectId.isValid(identifier)) {
-      user = await User.findById(identifier);
-    } else {
-      // Try publicSlug first, then username
-      user = await User.findOne({
-        $or: [
-          { publicSlug: identifier },
-          { username: identifier.toLowerCase() }
-        ]
-      });
-    }
+  // Try to find by publicSlug, username, or ID
+  let user;
+  if (mongoose.Types.ObjectId.isValid(identifier)) {
+    user = await User.findById(identifier);
+  } else {
+    // Try publicSlug first, then username
+    user = await User.findOne({
+      $or: [
+        { publicSlug: identifier },
+        { username: identifier.toLowerCase() }
+      ]
+    });
+  }
 
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
+  if (!user) {
+    throw NotFoundError('User not found', 'USER_NOT_FOUND');
+  }
 
-    // Check if user profile is public
-    if (!user.isPublic) {
-      return res.status(403).json({ message: 'User profile is not public' });
-    }
+  // Check if user profile is public
+  if (!user.isPublic) {
+    throw ForbiddenError('User profile is not public', 'USER_NOT_PUBLIC');
+  }
 
     // Get user's public projects
     const publicProjects = await Project.find({
@@ -172,26 +167,21 @@ router.get('/user/:identifier', async (req, res) => {
       }))
     };
 
-    res.json({
-      success: true,
-      user: publicUser
-    });
-  } catch (error) {
-    
-    res.status(500).json({ message: 'Server error' });
-  }
-});
+  res.json({
+    success: true,
+    user: publicUser
+  });
+}));
 
 // Get public projects for discovery
-router.get('/projects', async (req, res) => {
-  try {
-    const {
-      page = 1,
-      limit = 12,
-      category,
-      tag,
-      search
-    } = req.query;
+router.get('/projects', asyncHandler(async (req: Request, res: Response) => {
+  const {
+    page = 1,
+    limit = 12,
+    category,
+    tag,
+    search
+  } = req.query;
 
     const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
 
@@ -383,91 +373,77 @@ router.get('/projects', async (req, res) => {
       };
     });
 
-    res.json({
-      success: true,
-      projects: publicProjects,
-      pagination: {
-        current: parseInt(page as string),
-        pages: Math.ceil(total / parseInt(limit as string)),
-        total,
-        hasNext: skip + projects.length < total,
-        hasPrev: parseInt(page as string) > 1
-      }
-    });
-  } catch (error) {
-    
-    res.status(500).json({ message: 'Server error' });
-  }
-});
+  res.json({
+    success: true,
+    projects: publicProjects,
+    pagination: {
+      current: parseInt(page as string),
+      pages: Math.ceil(total / parseInt(limit as string)),
+      total,
+      hasNext: skip + projects.length < total,
+      hasPrev: parseInt(page as string) > 1
+    }
+  });
+}));
 
 // Get categories and tags for filtering
-router.get('/filters', async (req, res) => {
-  try {
-    const [categories, tags] = await Promise.all([
-      Project.distinct('category', { isPublic: true, isArchived: false }),
-      Project.distinct('tags', { isPublic: true, isArchived: false })
-    ]);
+router.get('/filters', asyncHandler(async (req: Request, res: Response) => {
+  const [categories, tags] = await Promise.all([
+    Project.distinct('category', { isPublic: true, isArchived: false }),
+    Project.distinct('tags', { isPublic: true, isArchived: false })
+  ]);
 
-    res.json({
-      success: true,
-      categories: categories.filter(Boolean),
-      tags: tags.filter(Boolean).flat()
-    });
-  } catch (error) {
-    
-    res.status(500).json({ message: 'Server error' });
-  }
-});
+  res.json({
+    success: true,
+    categories: categories.filter(Boolean),
+    tags: tags.filter(Boolean).flat()
+  });
+}));
 
 // Search for public users
-router.get('/users/search', async (req, res) => {
-  try {
-    const { search, page = 1, limit = 20 } = req.query;
-    const pageNum = parseInt(page as string);
-    const limitNum = Math.min(parseInt(limit as string), 50); // Max 50 per page
-    const skip = (pageNum - 1) * limitNum;
+router.get('/users/search', asyncHandler(async (req: Request, res: Response) => {
+  const { search, page = 1, limit = 20 } = req.query;
+  const pageNum = parseInt(page as string);
+  const limitNum = Math.min(parseInt(limit as string), 50); // Max 50 per page
+  const skip = (pageNum - 1) * limitNum;
 
-    // Build query for public users only (exclude demo user)
-    const query: any = {
-      isPublic: true,
-      isDemo: { $ne: true }
-    };
+  // Build query for public users only (exclude demo user)
+  const query: any = {
+    isPublic: true,
+    isDemo: { $ne: true }
+  };
 
-    // Add search filter if provided
-    if (search && typeof search === 'string' && search.trim()) {
-      const searchRegex = new RegExp(search.trim(), 'i');
-      query.$or = [
-        { username: searchRegex },
-        { firstName: searchRegex },
-        { lastName: searchRegex },
-        { bio: searchRegex }
-      ];
-    }
-
-    const [users, total] = await Promise.all([
-      User.find(query)
-        .select('firstName lastName username email displayPreference isPublic publicSlug bio createdAt')
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limitNum)
-        .lean(),
-      User.countDocuments(query)
-    ]);
-
-    res.json({
-      success: true,
-      users,
-      pagination: {
-        total,
-        page: pageNum,
-        limit: limitNum,
-        totalPages: Math.ceil(total / limitNum)
-      }
-    });
-  } catch (error) {
-    
-    res.status(500).json({ message: 'Server error' });
+  // Add search filter if provided
+  if (search && typeof search === 'string' && search.trim()) {
+    const searchRegex = new RegExp(search.trim(), 'i');
+    query.$or = [
+      { username: searchRegex },
+      { firstName: searchRegex },
+      { lastName: searchRegex },
+      { bio: searchRegex }
+    ];
   }
-});
+
+  const [users, total] = await Promise.all([
+    User.find(query)
+      .select('firstName lastName username email displayPreference isPublic publicSlug bio createdAt')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limitNum)
+      .lean(),
+    User.countDocuments(query)
+  ]);
+
+  res.json({
+    success: true,
+    users,
+    pagination: {
+      total,
+      page: pageNum,
+      limit: limitNum,
+      totalPages: Math.ceil(total / limitNum)
+    }
+  });
+}));
 
 export default router;

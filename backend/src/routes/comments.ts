@@ -9,30 +9,30 @@ import NotificationService from '../services/notificationService';
 import activityLogger from '../services/activityLogger';
 import mongoose from 'mongoose';
 import { SOCIAL_CONSTANTS } from '../config/socialConstants';
+import { asyncHandler, BadRequestError, NotFoundError, ForbiddenError } from '../utils/errorHandler';
 
 const router = Router();
 
 // Get all comments for a project
-router.get('/project/:projectId', requireAuth, async (req: AuthRequest, res: Response) => {
-  try {
-    const { projectId } = req.params;
-    const userId = req.userId!;
+router.get('/project/:projectId', requireAuth, asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { projectId } = req.params;
+  const userId = req.userId!;
 
-    // Verify user has access to this project
-    const project = await Project.findById(projectId);
-    if (!project) {
-      return res.status(404).json({ success: false, message: 'Project not found' });
-    }
+  // Verify user has access to this project
+  const project = await Project.findById(projectId);
+  if (!project) {
+    throw NotFoundError('Project not found', 'PROJECT_NOT_FOUND');
+  }
 
-    // Check if user is project owner, team member, or project is public
-    const isOwner = project.userId.toString() === userId;
-    const isMember = await TeamMember.exists({ projectId: new mongoose.Types.ObjectId(projectId), userId: new mongoose.Types.ObjectId(userId) });
-    const isPublic = project.isPublic === true;
-    const hasAccess = isOwner || isMember || isPublic;
+  // Check if user is project owner, team member, or project is public
+  const isOwner = project.userId.toString() === userId;
+  const isMember = await TeamMember.exists({ projectId: new mongoose.Types.ObjectId(projectId), userId: new mongoose.Types.ObjectId(userId) });
+  const isPublic = project.isPublic === true;
+  const hasAccess = isOwner || isMember || isPublic;
 
-    if (!hasAccess) {
-      return res.status(403).json({ success: false, message: 'Access denied' });
-    }
+  if (!hasAccess) {
+    throw ForbiddenError('Access denied', 'ACCESS_DENIED');
+  }
 
     // Get all comments for this project
     const comments = await Comment.find({
@@ -93,41 +93,36 @@ router.get('/project/:projectId', requireAuth, async (req: AuthRequest, res: Res
       comments: commentsWithReplies,
       total: comments.length
     });
-  } catch (error) {
-    
-    res.status(500).json({ success: false, message: 'Database error while fetching comments' });
-  }
-});
+}));
 
 // Create a new comment on a project
-router.post('/project/:projectId', requireAuth, blockDemoWrites, async (req: AuthRequest, res: Response) => {
-  try {
-    const { projectId } = req.params;
-    const { content } = req.body;
-    const userId = req.userId!;
+router.post('/project/:projectId', requireAuth, blockDemoWrites, asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { projectId } = req.params;
+  const { content } = req.body;
+  const userId = req.userId!;
 
-    if (!content || content.trim().length === 0) {
-      return res.status(400).json({ success: false, message: 'Comment content is required' });
-    }
+  if (!content || content.trim().length === 0) {
+    throw BadRequestError('Comment content is required', 'MISSING_CONTENT');
+  }
 
-    if (content.length > SOCIAL_CONSTANTS.COMMENT_MAX_LENGTH) {
-      return res.status(400).json({ success: false, message: `Comment too long (max ${SOCIAL_CONSTANTS.COMMENT_MAX_LENGTH} characters)` });
-    }
+  if (content.length > SOCIAL_CONSTANTS.COMMENT_MAX_LENGTH) {
+    throw BadRequestError(`Comment too long (max ${SOCIAL_CONSTANTS.COMMENT_MAX_LENGTH} characters)`, 'CONTENT_TOO_LONG');
+  }
 
-    // Verify user has access to this project
-    const project = await Project.findById(projectId);
-    if (!project) {
-      return res.status(404).json({ success: false, message: 'Project not found' });
-    }
+  // Verify user has access to this project
+  const project = await Project.findById(projectId);
+  if (!project) {
+    throw NotFoundError('Project not found', 'PROJECT_NOT_FOUND');
+  }
 
-    const isOwner = project.userId.toString() === userId;
-    const isMember = await TeamMember.exists({ projectId: new mongoose.Types.ObjectId(projectId), userId: new mongoose.Types.ObjectId(userId) });
-    const isPublic = project.isPublic === true;
-    const hasAccess = isOwner || isMember || isPublic;
+  const isOwner = project.userId.toString() === userId;
+  const isMember = await TeamMember.exists({ projectId: new mongoose.Types.ObjectId(projectId), userId: new mongoose.Types.ObjectId(userId) });
+  const isPublic = project.isPublic === true;
+  const hasAccess = isOwner || isMember || isPublic;
 
-    if (!hasAccess) {
-      return res.status(403).json({ success: false, message: 'Access denied' });
-    }
+  if (!hasAccess) {
+    throw ForbiddenError('Access denied', 'ACCESS_DENIED');
+  }
 
     // Create comment
     const comment = new Comment({
@@ -172,47 +167,42 @@ router.post('/project/:projectId', requireAuth, blockDemoWrites, async (req: Aut
         user
       }
     });
-  } catch (error) {
-    
-    res.status(500).json({ success: false, message: 'Database error while creating comment' });
-  }
-});
+}));
 
 // Reply to a comment
-router.post('/project/:projectId/reply/:commentId', requireAuth, blockDemoWrites, async (req: AuthRequest, res: Response) => {
-  try {
-    const { projectId, commentId } = req.params;
-    const { content } = req.body;
-    const userId = req.userId!;
+router.post('/project/:projectId/reply/:commentId', requireAuth, blockDemoWrites, asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { projectId, commentId } = req.params;
+  const { content } = req.body;
+  const userId = req.userId!;
 
-    if (!content || content.trim().length === 0) {
-      return res.status(400).json({ success: false, message: 'Reply content is required' });
-    }
+  if (!content || content.trim().length === 0) {
+    throw BadRequestError('Reply content is required', 'MISSING_CONTENT');
+  }
 
-    if (content.length > 5000) {
-      return res.status(400).json({ success: false, message: 'Reply too long (max 5000 characters)' });
-    }
+  if (content.length > 5000) {
+    throw BadRequestError('Reply too long (max 5000 characters)', 'CONTENT_TOO_LONG');
+  }
 
-    // Verify parent comment exists
-    const parentComment = await Comment.findById(commentId);
-    if (!parentComment || parentComment.isDeleted) {
-      return res.status(404).json({ success: false, message: 'Parent comment not found' });
-    }
+  // Verify parent comment exists
+  const parentComment = await Comment.findById(commentId);
+  if (!parentComment || parentComment.isDeleted) {
+    throw NotFoundError('Parent comment not found', 'COMMENT_NOT_FOUND');
+  }
 
-    // Verify user has access to this project
-    const project = await Project.findById(projectId);
-    if (!project) {
-      return res.status(404).json({ success: false, message: 'Project not found' });
-    }
+  // Verify user has access to this project
+  const project = await Project.findById(projectId);
+  if (!project) {
+    throw NotFoundError('Project not found', 'PROJECT_NOT_FOUND');
+  }
 
-    const isOwner = project.userId.toString() === userId;
-    const isMember = await TeamMember.exists({ projectId: new mongoose.Types.ObjectId(projectId), userId: new mongoose.Types.ObjectId(userId) });
-    const isPublic = project.isPublic === true;
-    const hasAccess = isOwner || isMember || isPublic;
+  const isOwner = project.userId.toString() === userId;
+  const isMember = await TeamMember.exists({ projectId: new mongoose.Types.ObjectId(projectId), userId: new mongoose.Types.ObjectId(userId) });
+  const isPublic = project.isPublic === true;
+  const hasAccess = isOwner || isMember || isPublic;
 
-    if (!hasAccess) {
-      return res.status(403).json({ success: false, message: 'Access denied' });
-    }
+  if (!hasAccess) {
+    throw ForbiddenError('Access denied', 'ACCESS_DENIED');
+  }
 
     // Create reply
     const reply = new Comment({
@@ -258,36 +248,31 @@ router.post('/project/:projectId/reply/:commentId', requireAuth, blockDemoWrites
         user
       }
     });
-  } catch (error) {
-    
-    res.status(500).json({ success: false, message: 'Database error while creating reply' });
-  }
-});
+}));
 
 // Edit a comment
-router.put('/:commentId', requireAuth, blockDemoWrites, async (req: AuthRequest, res: Response) => {
-  try {
-    const { commentId } = req.params;
-    const { content } = req.body;
-    const userId = req.userId!;
+router.put('/:commentId', requireAuth, blockDemoWrites, asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { commentId } = req.params;
+  const { content } = req.body;
+  const userId = req.userId!;
 
-    if (!content || content.trim().length === 0) {
-      return res.status(400).json({ success: false, message: 'Comment content is required' });
-    }
+  if (!content || content.trim().length === 0) {
+    throw BadRequestError('Comment content is required', 'MISSING_CONTENT');
+  }
 
-    if (content.length > SOCIAL_CONSTANTS.COMMENT_MAX_LENGTH) {
-      return res.status(400).json({ success: false, message: `Comment too long (max ${SOCIAL_CONSTANTS.COMMENT_MAX_LENGTH} characters)` });
-    }
+  if (content.length > SOCIAL_CONSTANTS.COMMENT_MAX_LENGTH) {
+    throw BadRequestError(`Comment too long (max ${SOCIAL_CONSTANTS.COMMENT_MAX_LENGTH} characters)`, 'CONTENT_TOO_LONG');
+  }
 
-    const comment = await Comment.findById(commentId);
-    if (!comment || comment.isDeleted) {
-      return res.status(404).json({ success: false, message: 'Comment not found' });
-    }
+  const comment = await Comment.findById(commentId);
+  if (!comment || comment.isDeleted) {
+    throw NotFoundError('Comment not found', 'COMMENT_NOT_FOUND');
+  }
 
-    // Only comment author can edit
-    if (comment.userId.toString() !== userId) {
-      return res.status(403).json({ success: false, message: 'You can only edit your own comments' });
-    }
+  // Only comment author can edit
+  if (comment.userId.toString() !== userId) {
+    throw ForbiddenError('You can only edit your own comments', 'NOT_AUTHOR');
+  }
 
     comment.content = content.trim();
     comment.isEdited = true;
@@ -303,83 +288,69 @@ router.put('/:commentId', requireAuth, blockDemoWrites, async (req: AuthRequest,
         user
       }
     });
-  } catch (error) {
-    
-    res.status(500).json({ success: false, message: 'Failed to edit comment' });
-  }
-});
+}));
 
 // Delete a comment
-router.delete('/:commentId', requireAuth, blockDemoWrites, async (req: AuthRequest, res: Response) => {
-  try {
-    const { commentId } = req.params;
-    const userId = req.userId!;
+router.delete('/:commentId', requireAuth, blockDemoWrites, asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { commentId } = req.params;
+  const userId = req.userId!;
 
-    const comment = await Comment.findById(commentId);
-    if (!comment || comment.isDeleted) {
-      return res.status(404).json({ success: false, message: 'Comment not found' });
-    }
-
-    // Verify user has permission (comment author or project owner)
-    const project = await Project.findById(comment.projectId);
-    if (!project) {
-      return res.status(404).json({ success: false, message: 'Project not found' });
-    }
-
-    const isAuthor = comment.userId.toString() === userId;
-    const isProjectOwner = project.userId.toString() === userId;
-
-    if (!isAuthor && !isProjectOwner) {
-      return res.status(403).json({ success: false, message: 'Access denied' });
-    }
-
-    // Soft delete
-    comment.isDeleted = true;
-    comment.deletedAt = new Date();
-    comment.content = '[deleted]';
-    await comment.save();
-
-    res.json({
-      success: true,
-      message: 'Comment deleted successfully'
-    });
-  } catch (error) {
-    
-    res.status(500).json({ success: false, message: 'Failed to delete comment' });
+  const comment = await Comment.findById(commentId);
+  if (!comment || comment.isDeleted) {
+    throw NotFoundError('Comment not found', 'COMMENT_NOT_FOUND');
   }
-});
+
+  // Verify user has permission (comment author or project owner)
+  const project = await Project.findById(comment.projectId);
+  if (!project) {
+    throw NotFoundError('Project not found', 'PROJECT_NOT_FOUND');
+  }
+
+  const isAuthor = comment.userId.toString() === userId;
+  const isProjectOwner = project.userId.toString() === userId;
+
+  if (!isAuthor && !isProjectOwner) {
+    throw ForbiddenError('Access denied', 'ACCESS_DENIED');
+  }
+
+  // Soft delete
+  comment.isDeleted = true;
+  comment.deletedAt = new Date();
+  comment.content = '[deleted]';
+  await comment.save();
+
+  res.json({
+    success: true,
+    message: 'Comment deleted successfully'
+  });
+}));
 
 // Get comments on my projects (for activity feed)
-router.get('/my-projects', requireAuth, async (req: AuthRequest, res: Response) => {
-  try {
-    const userId = req.userId!;
-    const { limit = SOCIAL_CONSTANTS.DEFAULT_PAGE_LIMIT } = req.query;
-    const limitNum = parseInt(limit as string);
+router.get('/my-projects', requireAuth, asyncHandler(async (req: AuthRequest, res: Response) => {
+  const userId = req.userId!;
+  const { limit = SOCIAL_CONSTANTS.DEFAULT_PAGE_LIMIT } = req.query;
+  const limitNum = parseInt(limit as string);
 
-    // Find all projects owned by user
-    const projects = await Project.find({ userId: new mongoose.Types.ObjectId(userId) }).select('_id');
-    const projectIds = projects.map(p => p._id);
+  // Find all projects owned by user
+  const projects = await Project.find({ userId: new mongoose.Types.ObjectId(userId) }).select('_id');
+  const projectIds = projects.map(p => p._id);
 
-    // Find recent comments on these projects (excluding user's own comments)
-    const comments = await Comment.find({
-      projectId: { $in: projectIds },
-      userId: { $ne: new mongoose.Types.ObjectId(userId) },
-      isDeleted: false
-    })
-      .sort({ createdAt: -1 })
-      .limit(limitNum)
-      .populate('userId', 'firstName lastName username email displayPreference isPublic publicSlug')
-      .populate('projectId', 'name color publicSlug')
-      .lean();
+  // Find recent comments on these projects (excluding user's own comments)
+  const comments = await Comment.find({
+    projectId: { $in: projectIds },
+    userId: { $ne: new mongoose.Types.ObjectId(userId) },
+    isDeleted: false
+  })
+    .sort({ createdAt: -1 })
+    .limit(limitNum)
+    .populate('userId', 'firstName lastName username email displayPreference isPublic publicSlug')
+    .populate('projectId', 'name color publicSlug')
+    .lean();
 
-    res.json({
-      success: true,
-      comments
-    });
-  } catch (error) {
-    
-    res.status(500).json({ success: false, message: 'Failed to fetch comments' });
-  }
-});
+  res.json({
+    success: true,
+    comments
+  });
+}));
 
 export default router;

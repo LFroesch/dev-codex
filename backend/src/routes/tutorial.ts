@@ -1,6 +1,7 @@
-import express from 'express';
+import express, { Response } from 'express';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { User } from '../models/User';
+import { asyncHandler, NotFoundError, BadRequestError } from '../utils/errorHandler';
 
 const router = express.Router();
 
@@ -230,193 +231,163 @@ const TUTORIAL_STEPS = [
 ];
 
 // Get all tutorial steps
-router.get('/steps', async (_req, res) => {
-  try {
-    res.json({ steps: TUTORIAL_STEPS });
-  } catch (error) {
-    
-    res.status(500).json({ error: 'Failed to fetch tutorial steps' });
-  }
-});
+router.get('/steps', asyncHandler(async (_req: Request, res: Response) => {
+  res.json({ steps: TUTORIAL_STEPS });
+}));
 
 // Get user's tutorial progress
-router.get('/progress', requireAuth, async (req: AuthRequest, res) => {
-  try {
-    const user = await User.findById(req.userId);
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
+router.get('/progress', requireAuth, asyncHandler(async (req: AuthRequest, res: Response) => {
+  const user = await User.findById(req.userId);
+  if (!user) {
+    throw NotFoundError('User not found', 'USER_NOT_FOUND');
+  }
 
-    // Ensure defaults for existing users who don't have tutorial fields
-    const tutorialCompleted = user.tutorialCompleted ?? false;
-    const tutorialProgress = user.tutorialProgress ?? {
+  // Ensure defaults for existing users who don't have tutorial fields
+  const tutorialCompleted = user.tutorialCompleted ?? false;
+  const tutorialProgress = user.tutorialProgress ?? {
+    currentStep: 0,
+    completedSteps: [],
+    skipped: false,
+    lastActiveDate: new Date()
+  };
+
+  res.json({
+    tutorialCompleted,
+    tutorialProgress
+  });
+}));
+
+// Update tutorial progress
+router.patch('/progress', requireAuth, asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { currentStep, completedSteps } = req.body;
+
+  if (currentStep === undefined || !Array.isArray(completedSteps)) {
+    throw BadRequestError('currentStep and completedSteps are required', 'INVALID_PROGRESS_DATA');
+  }
+
+  const user = await User.findById(req.userId);
+  if (!user) {
+    throw NotFoundError('User not found', 'USER_NOT_FOUND');
+  }
+
+  // Initialize tutorialProgress if it doesn't exist (for existing users)
+  if (!user.tutorialProgress) {
+    user.tutorialProgress = {
       currentStep: 0,
       completedSteps: [],
       skipped: false,
       lastActiveDate: new Date()
     };
-
-    res.json({
-      tutorialCompleted,
-      tutorialProgress
-    });
-  } catch (error) {
-    
-    res.status(500).json({ error: 'Failed to fetch tutorial progress' });
-  }
-});
-
-// Update tutorial progress
-router.patch('/progress', requireAuth, async (req: AuthRequest, res) => {
-  try {
-    const { currentStep, completedSteps } = req.body;
-
-    if (currentStep === undefined || !Array.isArray(completedSteps)) {
-      return res.status(400).json({ error: 'currentStep and completedSteps are required' });
-    }
-
-    const user = await User.findById(req.userId);
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    // Initialize tutorialProgress if it doesn't exist (for existing users)
-    if (!user.tutorialProgress) {
-      user.tutorialProgress = {
-        currentStep: 0,
-        completedSteps: [],
-        skipped: false,
-        lastActiveDate: new Date()
-      };
-      user.markModified('tutorialProgress');
-    }
-
-    // Update progress
-    user.tutorialProgress.currentStep = currentStep;
-    user.tutorialProgress.completedSteps = completedSteps;
-    user.tutorialProgress.lastActiveDate = new Date();
     user.markModified('tutorialProgress');
-
-    await user.save();
-
-    res.json({
-      tutorialCompleted: user.tutorialCompleted,
-      tutorialProgress: user.tutorialProgress
-    });
-  } catch (error) {
-    
-    res.status(500).json({ error: 'Failed to update tutorial progress' });
   }
-});
+
+  // Update progress
+  user.tutorialProgress.currentStep = currentStep;
+  user.tutorialProgress.completedSteps = completedSteps;
+  user.tutorialProgress.lastActiveDate = new Date();
+  user.markModified('tutorialProgress');
+
+  await user.save();
+
+  res.json({
+    tutorialCompleted: user.tutorialCompleted,
+    tutorialProgress: user.tutorialProgress
+  });
+}));
 
 // Complete tutorial
-router.post('/complete', requireAuth, async (req: AuthRequest, res) => {
-  try {
-    const user = await User.findById(req.userId);
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    // Initialize tutorialProgress if it doesn't exist
-    if (!user.tutorialProgress) {
-      user.tutorialProgress = {
-        currentStep: 0,
-        completedSteps: [],
-        skipped: false,
-        lastActiveDate: new Date()
-      };
-      user.markModified('tutorialProgress');
-    }
-
-    user.tutorialCompleted = true;
-    user.tutorialProgress.currentStep = TUTORIAL_STEPS.length;
-    user.tutorialProgress.completedSteps = TUTORIAL_STEPS.map(s => s.stepNumber);
-    user.tutorialProgress.lastActiveDate = new Date();
-    user.markModified('tutorialProgress');
-
-    await user.save();
-
-    res.json({
-      tutorialCompleted: true,
-      message: 'Tutorial completed successfully!'
-    });
-  } catch (error) {
-    
-    res.status(500).json({ error: 'Failed to complete tutorial' });
+router.post('/complete', requireAuth, asyncHandler(async (req: AuthRequest, res: Response) => {
+  const user = await User.findById(req.userId);
+  if (!user) {
+    throw NotFoundError('User not found', 'USER_NOT_FOUND');
   }
-});
+
+  // Initialize tutorialProgress if it doesn't exist
+  if (!user.tutorialProgress) {
+    user.tutorialProgress = {
+      currentStep: 0,
+      completedSteps: [],
+      skipped: false,
+      lastActiveDate: new Date()
+    };
+    user.markModified('tutorialProgress');
+  }
+
+  user.tutorialCompleted = true;
+  user.tutorialProgress.currentStep = TUTORIAL_STEPS.length;
+  user.tutorialProgress.completedSteps = TUTORIAL_STEPS.map(s => s.stepNumber);
+  user.tutorialProgress.lastActiveDate = new Date();
+  user.markModified('tutorialProgress');
+
+  await user.save();
+
+  res.json({
+    tutorialCompleted: true,
+    message: 'Tutorial completed successfully!'
+  });
+}));
 
 // Skip tutorial
-router.patch('/skip', requireAuth, async (req: AuthRequest, res) => {
-  try {
-    const user = await User.findById(req.userId);
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    // Initialize tutorialProgress if it doesn't exist
-    if (!user.tutorialProgress) {
-      user.tutorialProgress = {
-        currentStep: 0,
-        completedSteps: [],
-        skipped: false,
-        lastActiveDate: new Date()
-      };
-      user.markModified('tutorialProgress');
-    }
-
-    user.tutorialProgress.skipped = true;
-    user.tutorialProgress.lastActiveDate = new Date();
-    user.markModified('tutorialProgress');
-
-    await user.save();
-
-    res.json({
-      message: 'Tutorial skipped',
-      tutorialProgress: user.tutorialProgress
-    });
-  } catch (error) {
-    
-    res.status(500).json({ error: 'Failed to skip tutorial' });
+router.patch('/skip', requireAuth, asyncHandler(async (req: AuthRequest, res: Response) => {
+  const user = await User.findById(req.userId);
+  if (!user) {
+    throw NotFoundError('User not found', 'USER_NOT_FOUND');
   }
-});
+
+  // Initialize tutorialProgress if it doesn't exist
+  if (!user.tutorialProgress) {
+    user.tutorialProgress = {
+      currentStep: 0,
+      completedSteps: [],
+      skipped: false,
+      lastActiveDate: new Date()
+    };
+    user.markModified('tutorialProgress');
+  }
+
+  user.tutorialProgress.skipped = true;
+  user.tutorialProgress.lastActiveDate = new Date();
+  user.markModified('tutorialProgress');
+
+  await user.save();
+
+  res.json({
+    message: 'Tutorial skipped',
+    tutorialProgress: user.tutorialProgress
+  });
+}));
 
 // Reset tutorial
-router.post('/reset', requireAuth, async (req: AuthRequest, res) => {
-  try {
-    const user = await User.findById(req.userId);
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    // Initialize tutorialProgress if it doesn't exist
-    if (!user.tutorialProgress) {
-      user.tutorialProgress = {
-        currentStep: 0,
-        completedSteps: [],
-        skipped: false,
-        lastActiveDate: new Date()
-      };
-      user.markModified('tutorialProgress');
-    }
-
-    user.tutorialCompleted = false;
-    user.tutorialProgress.currentStep = 0;
-    user.tutorialProgress.completedSteps = [];
-    user.tutorialProgress.skipped = false;
-    user.tutorialProgress.lastActiveDate = new Date();
-    user.markModified('tutorialProgress');
-
-    await user.save();
-
-    res.json({
-      message: 'Tutorial reset successfully',
-      tutorialProgress: user.tutorialProgress
-    });
-  } catch (error) {
-    
-    res.status(500).json({ error: 'Failed to reset tutorial' });
+router.post('/reset', requireAuth, asyncHandler(async (req: AuthRequest, res: Response) => {
+  const user = await User.findById(req.userId);
+  if (!user) {
+    throw NotFoundError('User not found', 'USER_NOT_FOUND');
   }
-});
+
+  // Initialize tutorialProgress if it doesn't exist
+  if (!user.tutorialProgress) {
+    user.tutorialProgress = {
+      currentStep: 0,
+      completedSteps: [],
+      skipped: false,
+      lastActiveDate: new Date()
+    };
+    user.markModified('tutorialProgress');
+  }
+
+  user.tutorialCompleted = false;
+  user.tutorialProgress.currentStep = 0;
+  user.tutorialProgress.completedSteps = [];
+  user.tutorialProgress.skipped = false;
+  user.tutorialProgress.lastActiveDate = new Date();
+  user.markModified('tutorialProgress');
+
+  await user.save();
+
+  res.json({
+    message: 'Tutorial reset successfully',
+    tutorialProgress: user.tutorialProgress
+  });
+}));
 
 export default router;

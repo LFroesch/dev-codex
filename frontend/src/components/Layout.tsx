@@ -1348,7 +1348,7 @@ const Layout: React.FC = () => {
                   <div className="relative flex items-center justify-center">
                     {/* View Mode Toggle - Desktop (Left side) */}
                     {(activeProjectTab === 'active' || activeProjectTab === 'archived' || activeProjectTab === 'shared') && (
-                      <div className="absolute left-1/3 -translate-x-full mr-4">
+                      <div className="absolute left-1/3 -translate-x-1/2">
                         <div className="join border-2 border-base-content/20 rounded-lg shadow-sm">
                           <button
                             className={`join-item btn btn-sm ${projectViewMode === 'grid' ? 'btn-primary' : 'btn-ghost'}`}
@@ -1374,7 +1374,7 @@ const Layout: React.FC = () => {
 
                     {/* Sort Toggle - Desktop (Right side) */}
                     {(activeProjectTab === 'active' || activeProjectTab === 'archived' || activeProjectTab === 'shared') && (
-                      <div className="absolute right-1/3 translate-x-full ml-4">
+                      <div className="absolute right-1/3 translate-x-1/2">
                         <div className="join border-2 border-base-content/20 rounded-lg shadow-sm">
                           <button
                             className="join-item btn btn-sm btn-ghost gap-1.5"

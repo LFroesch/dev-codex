@@ -1,7 +1,7 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { Outlet, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { authAPI, projectAPI, newsAPI } from '../api';
-import type { Project } from '../api/types';
+import type { Project, Todo } from '../api/types';
 import SessionTracker from './SessionTracker';
 import NotificationBell from './NotificationBell';
 import UserMenu from './UserMenu';
@@ -237,7 +237,8 @@ const Layout: React.FC = () => {
       try {
         const response = await newsAPI.getImportant();
         setImportantAnnouncements(response.posts);
-      } catch (err) {
+      } catch {
+        // Silently fail - announcements are optional
       }
     };
 
@@ -550,7 +551,8 @@ const Layout: React.FC = () => {
                   await new Promise(resolve => setTimeout(resolve, 100));
                   // Reload the page to get fresh user data, then start tutorial
                   window.location.href = '/projects?startTutorial=true';
-                } catch (error) {
+                } catch {
+                  // Error will be shown by tutorialAPI
                 }
               }}
               className="btn btn-sm btn-info ml-2"
@@ -1823,10 +1825,10 @@ const Layout: React.FC = () => {
                                 ).flat()
                             ).map((project) => {
                               const isExpanded = expandedProjectTodos.has(project.id);
-                              const activeTodos = project.todos?.filter(t => !t.completed) || [];
+                              const activeTodos = project.todos?.filter((t: { completed: boolean }) => !t.completed) || [];
 
                               // Sort todos: overdue first, then by due date, then by priority
-                              const sortedActiveTodos = [...activeTodos].sort((a, b) => {
+                              const sortedActiveTodos = [...activeTodos].sort((a: Todo, b: Todo) => {
                                 const now = new Date();
                                 const aDue = a.dueDate ? new Date(a.dueDate) : null;
                                 const bDue = b.dueDate ? new Date(b.dueDate) : null;
@@ -1845,9 +1847,9 @@ const Layout: React.FC = () => {
                                 if (!aDue && bDue) return 1;
 
                                 // Then by priority
-                                const priorityWeight = { high: 3, medium: 2, low: 1 };
-                                const aPriority = priorityWeight[a.priority || 'medium'];
-                                const bPriority = priorityWeight[b.priority || 'medium'];
+                                const priorityWeight: Record<'low' | 'medium' | 'high', number> = { high: 3, medium: 2, low: 1 };
+                                const aPriority = priorityWeight[a.priority];
+                                const bPriority = priorityWeight[b.priority];
                                 if (aPriority !== bPriority) return bPriority - aPriority;
 
                                 // Finally by creation date
@@ -2123,10 +2125,10 @@ const Layout: React.FC = () => {
                                 ).map((project) => {
                                   const stats = calculateTodoStats(project);
                                   const isExpanded = expandedProjectTodos.has(project.id);
-                                  const activeTodos = project.todos?.filter(t => !t.completed) || [];
+                                  const activeTodos = project.todos?.filter((t: { completed: boolean }) => !t.completed) || [];
 
                                   // Sort todos: overdue first, then by due date, then by priority
-                                  const sortedActiveTodos = [...activeTodos].sort((a, b) => {
+                                  const sortedActiveTodos = [...activeTodos].sort((a: Todo, b: Todo) => {
                                     const now = new Date();
                                     const aDue = a.dueDate ? new Date(a.dueDate) : null;
                                     const bDue = b.dueDate ? new Date(b.dueDate) : null;
@@ -2145,9 +2147,9 @@ const Layout: React.FC = () => {
                                     if (!aDue && bDue) return 1;
 
                                     // Then by priority
-                                    const priorityWeight = { high: 3, medium: 2, low: 1 };
-                                    const aPriority = priorityWeight[a.priority || 'medium'];
-                                    const bPriority = priorityWeight[b.priority || 'medium'];
+                                    const priorityWeight: Record<'low' | 'medium' | 'high', number> = { high: 3, medium: 2, low: 1 };
+                                    const aPriority = priorityWeight[a.priority];
+                                    const bPriority = priorityWeight[b.priority];
                                     if (aPriority !== bPriority) return bPriority - aPriority;
 
                                     // Finally by creation date

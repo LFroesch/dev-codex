@@ -10,30 +10,33 @@
 ### 1. LLM Workflow (25s) - The Killer Feature
 **Show**: Export → LLM → Batch Import Loop
 
-1. Type `/summary prompt all` in terminal (exports project context)
-2. Copy output, switch to ChatGPT/Claude
-3. (Optional) Type `/llm` to get command syntax guide, copy
-4. Paste context + syntax guide + "Build recipe app with auth, CRUD, meal planning"
-5. LLM generates commands, copy output
-6. Switch back, paste into terminal, execute
-7. Show rapid execution: "1/10... 2/10... 10/10 Complete!"
-8. Pan to UI showing populated project
-
-**What `/llm` provides** (command syntax reference for the LLM):
-- General terminal guide with all command syntax
-- Entity-specific guides: `/llm todos`, `/llm components`, `/llm stack`, etc.
-- Shows project data when entity specified
-- Downloadable text file format
-
-**Commands LLM generates**:
+0. Build some small demo context for this via the terminal:
 ```bash
-/add todo --title="Implement JWT auth" --priority=high --status=in_progress
-/add todo --title="Build recipe CRUD" --priority=high
-/add component --feature="Auth" --category=backend --type=service --title="Auth Service" --content="JWT authentication"
-/add component --feature="Recipes" --category=api --type=endpoint --title="GET /recipes" --content="Fetch recipes"
-/add note --title="Architecture" --content="Next.js + PostgreSQL + Prisma"
-# ... 5 more commands
+/add project --name="Recipe App" --description="Full-stack recipe sharing platform" --category="Web Application" --color="#10B981"
+/add stack --name="React" --category=framework --version="18"
+/add stack --name="TypeScript" --category=runtime --version="5.0"
+/add todo --title="Project setup" --priority=high --status=completed
+/add note --title="Project Goals" --content="Build a recipe sharing platform with auth, CRUD operations, and meal planning"
 ```
+1. `/summary prompt all` in terminal (exports project context)
+2. Copy output + /llm copy, switch to ChatGPT/Claude
+3. Paste context + syntax guide + "Build recipe app with auth, CRUD, meal planning":
+```bash
+/add todo --title="Implement JWT authentication" --priority=high --status=in_progress --due="12-01-2025"
+/add todo --title="Build recipe CRUD endpoints" --priority=high --status=not_started --due="12-03-2025"
+/add todo --title="Design PostgreSQL schema" --priority=high --status=not_started --due="12-05-2025"
+/add note --title="Auth Architecture" --content="JWT with 7-day expiry, refresh tokens in httpOnly cookies, Google OAuth"
+/add note --title="Database Design" --content="PostgreSQL + Prisma. Users->Recipes (1:many), Users->MealPlans (1:many)"
+/add component --feature="Auth" --category=backend --type=service --title="Auth Service" --content="JWT authentication logic"
+/add component --feature="Recipes" --category=backend --type=service --title="Recipe Service" --content="CRUD operations for recipes"
+/add stack --name="PostgreSQL" --category=database --version="15"
+/add stack --name="Prisma" --category=data --version="5.0"
+/add devlog --title="Day 1: Initial Setup" --content="Created project structure, set up React + Vite frontend and Express backend"
+```
+4. LLM generates commands, copy output
+5. Switch back, paste into terminal, execute
+6. Show rapid execution: "1/10... 2/10... 10/10 Complete!"
+7. Pan throgh UI showing populated project
 
 ---
 

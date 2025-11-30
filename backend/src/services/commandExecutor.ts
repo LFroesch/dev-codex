@@ -297,6 +297,9 @@ export class CommandExecutor {
     const successCount = results.filter(r => r.type === ResponseType.SUCCESS).length;
     const errorCount = results.filter(r => r.type === ResponseType.ERROR).length;
 
+    // Collect unexecuted commands (those after the error)
+    const unexecutedCommands = hasError ? commands.slice(results.length) : [];
+
     return {
       type: hasError ? ResponseType.WARNING : ResponseType.SUCCESS,
       message: `Batch execution: ${successCount} succeeded, ${errorCount} failed`,
@@ -304,6 +307,7 @@ export class CommandExecutor {
         batch: true,
         total: commands.length,
         executed: results.length,
+        unexecuted: unexecutedCommands,
         results: results.map((r, i) => ({
           command: commands[i],
           type: r.type,

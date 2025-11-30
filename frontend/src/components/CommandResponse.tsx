@@ -448,6 +448,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
             results={response.data.results}
             executed={response.data.executed || 0}
             total={response.data.total || 0}
+            unexecuted={response.data.unexecuted || []}
             onProjectSelect={onProjectSelect}
           />
         </Suspense>

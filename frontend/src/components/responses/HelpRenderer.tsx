@@ -61,11 +61,11 @@ const HelpRenderer: React.FC<HelpRendererProps> = ({ grouped, onCommandClick, ge
                       <button
                         type="button"
                         onClick={() => !isSyntaxTip && toggleCommand(commandKey)}
-                        className={`w-full text-left p-2 flex items-center justify-between ${
+                        className={`w-full text-left p-2 flex items-start justify-between ${
                           isSyntaxTip ? 'cursor-default' : 'hover:bg-base-300/30 cursor-pointer'
                         } transition-colors`}
                       >
-                        <div className="flex-1 min-w-0 flex items-center gap-2">
+                        <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
                           {isSyntaxTip ? (
                             <div className="text-xs font-semibold text-base-content/70 font-mono">
                               {cmd.syntax} -
@@ -76,7 +76,7 @@ const HelpRenderer: React.FC<HelpRendererProps> = ({ grouped, onCommandClick, ge
                                 e.stopPropagation();
                                 onCommandClick?.(generateTemplate(cmd.syntax));
                               }}
-                              className="text-xs text-base-content/70 font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
+                              className="text-xs text-base-content/70 font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer w-fit"
                               title="Click to use this command"
                               role="button"
                               tabIndex={0}
@@ -91,7 +91,7 @@ const HelpRenderer: React.FC<HelpRendererProps> = ({ grouped, onCommandClick, ge
                               {cmd.simpleSyntax || cmd.syntax}
                             </span>
                           )}
-                          <div className="text-xs text-base-content/70 break-words line-clamp-1 flex-1">
+                          <div className="text-xs text-base-content/70 break-words flex-1">
                             {cmd.description}
                           </div>
                         </div>

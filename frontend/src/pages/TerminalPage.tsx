@@ -127,42 +127,57 @@ const TerminalPage: React.FC = () => {
           await onProjectSwitch(response.data.project.id);
         }, 500);
       }
+
+      // Dispatch event to refresh project list (for @ autocomplete and other components)
+      // This ensures newly created projects appear in autocomplete without page refresh
+      if (response.type === 'success' && response.data?.project) {
+        window.dispatchEvent(new CustomEvent('refreshProject'));
+      }
     } catch (error: any) {
+      let errorMessage = 'Failed to execute command';
+      let suggestions = ['/help'];
 
       // Check if it's an authentication error
       if (error.response?.status === 401) {
-        const errorEntry: TerminalEntry = {
-          id: Date.now().toString(),
-          command,
-          response: {
-            type: 'error',
-            message: '🔒 Authentication required. Please refresh the page and log in again.',
-            suggestions: []
-          },
-          timestamp: new Date()
-        };
-        setEntries(prev => {
-          const updated = [...prev, errorEntry];
-          saveEntriesToStorage(updated);
-          return updated;
-        });
-      } else {
-        const errorEntry: TerminalEntry = {
-          id: Date.now().toString(),
-          command,
-          response: {
-            type: 'error',
-            message: error.response?.data?.message || `Failed to execute command: ${error.message}`,
-            suggestions: ['/help']
-          },
-          timestamp: new Date()
-        };
-        setEntries(prev => {
-          const updated = [...prev, errorEntry];
-          saveEntriesToStorage(updated);
-          return updated;
-        });
+        errorMessage = '🔒 Authentication required. Please refresh the page and log in again.';
+        suggestions = [];
       }
+      // Check if it's a rate limit error
+      else if (error.response?.status === 429) {
+        const retryAfter = error.response.headers['retry-after'] || error.response.data?.retryAfter || 'a moment';
+        errorMessage = `⏱️ Rate limit exceeded. You're sending commands too quickly. Please wait ${retryAfter} seconds before trying again.`;
+        suggestions = [];
+      }
+      // Check if it's a timeout (no response from server)
+      else if (!error.response && error.code === 'ECONNABORTED') {
+        errorMessage = '⏱️ Request timed out after 30 seconds. This usually means:\n• The command is taking too long to execute\n• You may have hit a rate limit\n• Network connectivity issues\n\nTry breaking up batch commands or waiting a moment before retrying.';
+        suggestions = [];
+      }
+      // Use backend error message if available
+      else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+      // Generic error fallback
+      else {
+        errorMessage = `Failed to execute command: ${error.message}`;
+      }
+
+      const errorEntry: TerminalEntry = {
+        id: Date.now().toString(),
+        command,
+        response: {
+          type: 'error',
+          message: errorMessage,
+          suggestions
+        },
+        timestamp: new Date()
+      };
+
+      setEntries(prev => {
+        const updated = [...prev, errorEntry];
+        saveEntriesToStorage(updated);
+        return updated;
+      });
     } finally {
       setIsExecuting(false);
     }

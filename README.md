@@ -39,9 +39,17 @@ Export your project to any LLM. Get back executable commands. Paste and run. You
 
 Traditional project managers force you to manually create every task, note, and component through a UI. Dev Codex flips this: describe what you want to an LLM, get executable commands back, paste them in. Done.
 
+### Terminal in Action
+
+![Terminal Intro](media/gifs/intro-terminal.gif)
+
+**Fast, guided autocomplete.** Type `/help` to see all 50+ commands. Tab-complete builds commands error-free.
+
+---
+
 ### The LLM Loop (3 Steps)
 
-![Dev Codex Terminal](media/DevCodex.png)
+![LLM Workflow](media/gifs/llm-workflow.gif)
 
 **1. Export project context**
 ```bash
@@ -52,26 +60,24 @@ Traditional project managers force you to manually create every task, note, and 
 ```
 Paste into ChatGPT/Claude:
 
-"Build a recipe app with auth, CRUD, and meal planning.
-Stack: Next.js, PostgreSQL, Prisma, NextAuth
-Create 12 todos for the full implementation..."
+"I want to add these features/relationships and some todos, this note,
+this dev log - keep it SIMPLE. Add auth feature, recipes feature,
+3 todos, 2 notes, 1 devlog, tech stack, and relationships"
 
-[AI returns 15 executable commands in 3 seconds]
+[AI returns ~10 executable commands in 3 seconds]
 ```
 
 **3. Paste commands back**
 Example commands:
 ```bash
-/add todo --title="Setup authentication" --priority=high --status=in_progress
-/add todo --title="Build recipe CRUD" --priority=high
-/add todo --title="Database schema" --priority=high
-/add note --title="Architecture" --content="React + Node + PostgreSQL"
-/add note --title="Auth Strategy" --content="JWT with refresh tokens"
-/add component --feature="Auth" --category=backend --type=service --title="Auth Service" --content="JWT authentication"
-/add component --feature="Recipes" --category=backend --type=service --title="Recipe Service" --content="CRUD logic"
+/add todo --title="JWT authentication" --priority=high --status=in_progress
+/add todo --title="Recipe CRUD endpoints" --priority=high
+/add note --title="Auth Architecture" --content="JWT with refresh tokens, Google OAuth"
+/add component --feature="Auth" --category=backend --type=service --title="Auth Service" --content="JWT authentication logic"
+/add component --feature="Recipes" --category=backend --type=service --title="Recipe Service" --content="CRUD operations"
+/add relationship --source="Login Page" --target="Auth Service" --type=uses
 /add stack --name="React" --category=framework --version="18"
-/add stack --name="PostgreSQL" --category=database --version="15"
-/add devlog --title="Day 1" --content="Project initialized"
+/add devlog --title="Day 1" --content="React + Vite frontend, Express backend, TypeScript setup"
 ```
 
 **What just happened?** You went from idea to structured project in 30 seconds. Traditional tools take 20+ minutes of clicking.
@@ -80,21 +86,11 @@ Example commands:
 
 ---
 
-### Terminal Autocomplete
+### FeatureGraph
 
-[GIF #2: Autocomplete in action - 10 seconds]
-*Coming soon: Watch guided autocomplete for fast, error-free commands*
+![Component Graph](media/gifs/featuregraph.gif)
 
-Full autocomplete with validation and syntax hints as you type. Feels like a modern CLI, not a chatbot.
-
----
-
-### Speed Demo
-
-[GIF #3: 10 commands in 2 seconds - 8 seconds]
-*Coming soon: Paste 10 commands, hit enter, watch instant execution*
-
-**Paste. Execute. Done.** No clicking. No forms. No waiting.
+**Visualize architecture.** See features, components, and relationships. Drag, zoom, and understand your project structure.
 
 ---
 
@@ -109,9 +105,6 @@ Full autocomplete with validation and syntax hints as you type. Feels like a mod
 ---
 
 ## Core Features
-
-[GIF #4: Component Graph - 15 seconds]
-*Coming soon: Watch relationship visualization, drag components, zoom & navigate*
 
 ### **Browser-Native Terminal (50+ Commands)**
 - **Lightning Fast:** Chain 10 commands in one paste—execute in <1s

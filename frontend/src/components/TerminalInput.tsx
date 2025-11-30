@@ -81,6 +81,19 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
     loadProjects();
   }, []);
 
+  // Listen for project refresh events (e.g., when a new project is created via terminal)
+  useEffect(() => {
+    const handleRefreshProjects = () => {
+      loadProjects();
+    };
+
+    window.addEventListener('refreshProject', handleRefreshProjects);
+
+    return () => {
+      window.removeEventListener('refreshProject', handleRefreshProjects);
+    };
+  }, []);
+
   // Scroll selected item into view
   useEffect(() => {
     if (showAutocomplete && selectedItemRef.current) {

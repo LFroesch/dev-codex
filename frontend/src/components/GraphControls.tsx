@@ -36,6 +36,8 @@ const GraphControls: React.FC<GraphControlsProps> = ({
 }) => {
   const [showCreate, setShowCreate] = React.useState(false);
   const [showResetConfirm, setShowResetConfirm] = React.useState(false);
+  const [showCategories, setShowCategories] = React.useState(true);
+  const [showFeatures, setShowFeatures] = React.useState(true);
   const [newComponent, setNewComponent] = React.useState({
     category: 'backend' as ComponentCategory,
     type: 'service',
@@ -221,93 +223,129 @@ const GraphControls: React.FC<GraphControlsProps> = ({
       />
 
       {/* Category Filters */}
-      <div>
-        <div className="text-sm font-semibold text-base-content/60 mb-2 flex items-center justify-between">
-          <span>Categories</span>
-          <button
-            onClick={() => {
-              if (selectedCategories.size === categories.length) {
-                categories.forEach(c => onCategoryToggle(c.value));
-              } else {
-                categories.forEach(c => {
-                  if (!selectedCategories.has(c.value)) {
-                    onCategoryToggle(c.value);
-                  }
-                });
-              }
-            }}
-            className="btn btn-sm btn-primary bg-primary/20 border-thick border-primary p-1"
-            style={{color:getContrastTextColor("primary/20")}}
-          >
-            {selectedCategories.size === categories.length ? 'None' : 'All'}
-          </button>
-        </div>
-        <div className="flex flex-wrap gap-1">
-          {categories.map(cat => {
-            const isSelected = selectedCategories.has(cat.value);
-            return (
-              <button
-                key={cat.value}
-                onClick={() => onCategoryToggle(cat.value)}
-                className={`border-thick badge badge-sm p-2 h-6 text-sm font-semibold cursor-pointer transition-all`}
-                style={isSelected ? {
-                  backgroundColor: cat.color,
-                  color: getContrastTextColor("primary"),
-                  borderColor: cat.color
-                } : {
-                  opacity: 0.4
-                }}
-                title={cat.description}
-              >
-                {cat.emoji} {cat.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Feature Filters */}
-      {features.length > 0 && (
-        <div>
-          <div className="text-sm font-semibold text-base-content/60 mb-2 flex items-center justify-between">
-            <span>Features</span>
+      <div className="border-thick rounded-lg p-3">
+        <button
+          onClick={() => setShowCategories(!showCategories)}
+          className="flex items-center justify-between w-full text-sm font-semibold text-base-content/60 hover:text-base-content transition-colors"
+        >
+          <span>Categories ({selectedCategories.size}/{categories.length})</span>
+          <div className="flex items-center gap-2">
             <button
-              onClick={() => {
-                if (selectedFeatures.size === features.length) {
-                  features.forEach(f => onFeatureToggle(f));
+              onClick={(e) => {
+                e.stopPropagation();
+                if (selectedCategories.size === categories.length) {
+                  categories.forEach(c => onCategoryToggle(c.value));
                 } else {
-                  features.forEach(f => {
-                    if (!selectedFeatures.has(f)) {
-                      onFeatureToggle(f);
+                  categories.forEach(c => {
+                    if (!selectedCategories.has(c.value)) {
+                      onCategoryToggle(c.value);
                     }
                   });
                 }
               }}
-              className="btn btn-sm btn-primary bg-primary/20 border-thick border-primary p-1"
+              className="btn btn-xs btn-primary bg-primary/20 border-thick border-primary px-2"
               style={{color:getContrastTextColor("primary/20")}}
             >
-              {selectedFeatures.size === features.length ? 'None' : 'All'}
+              {selectedCategories.size === categories.length ? 'None' : 'All'}
             </button>
+            <svg
+              className={`w-4 h-4 transition-transform ${showCategories ? 'rotate-90' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
           </div>
-          <div className="flex flex-wrap gap-1">
-            {features.map(feature => {
-              const isSelected = selectedFeatures.has(feature);
+        </button>
+
+        {showCategories && (
+          <div className="flex flex-wrap gap-1 mt-2">
+            {categories.map(cat => {
+              const isSelected = selectedCategories.has(cat.value);
               return (
                 <button
-                  key={feature}
-                  onClick={() => onFeatureToggle(feature)}
-                  className={`border-thick badge badge-sm p-2 h-6 text-sm font-semibold cursor-pointer transition-all ${
-                  isSelected
-                    ? 'badge-primary'
-                    : 'badge-ghost opacity-40 hover:opacity-70'
-                  }`}
-                  style={isSelected ? { color: getContrastTextColor("primary")} : undefined}
+                  key={cat.value}
+                  onClick={() => onCategoryToggle(cat.value)}
+                  className={`border-thick badge badge-sm p-2 h-6 text-sm font-semibold cursor-pointer transition-all`}
+                  style={isSelected ? {
+                    backgroundColor: cat.color,
+                    color: getContrastTextColor("primary"),
+                    borderColor: cat.color
+                  } : {
+                    opacity: 0.4
+                  }}
+                  title={cat.description}
                 >
-                  {feature}
+                  {cat.emoji} {cat.label}
                 </button>
               );
             })}
           </div>
+        )}
+      </div>
+
+      {/* Feature Filters */}
+      {features.length > 0 && (
+        <div className="border-thick rounded-lg p-3">
+          <button
+            onClick={() => setShowFeatures(!showFeatures)}
+            className="flex items-center justify-between w-full text-sm font-semibold text-base-content/60 hover:text-base-content transition-colors"
+          >
+            <span>Features ({selectedFeatures.size}/{features.length})</span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (selectedFeatures.size === features.length) {
+                    features.forEach(f => onFeatureToggle(f));
+                  } else {
+                    features.forEach(f => {
+                      if (!selectedFeatures.has(f)) {
+                        onFeatureToggle(f);
+                      }
+                    });
+                  }
+                }}
+                className="btn btn-xs btn-primary bg-primary/20 border-thick border-primary px-2"
+                style={{color:getContrastTextColor("primary/20")}}
+              >
+                {selectedFeatures.size === features.length ? 'None' : 'All'}
+              </button>
+              <svg
+                className={`w-4 h-4 transition-transform ${showFeatures ? 'rotate-90' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </button>
+
+          {showFeatures && (
+            <div className="max-h-40 overflow-y-auto mt-2 pr-1">
+              <div className="flex flex-wrap gap-1">
+                {features.map(feature => {
+                  const isSelected = selectedFeatures.has(feature);
+                  return (
+                    <button
+                      key={feature}
+                      onClick={() => onFeatureToggle(feature)}
+                      className={`border-thick badge badge-sm p-2 h-6 text-sm font-semibold cursor-pointer transition-all ${
+                      isSelected
+                        ? 'badge-primary'
+                        : 'badge-ghost opacity-40 hover:opacity-70'
+                      }`}
+                      style={isSelected ? { color: getContrastTextColor("primary")} : undefined}
+                    >
+                      {feature}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

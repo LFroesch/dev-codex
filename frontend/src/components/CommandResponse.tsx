@@ -1788,7 +1788,11 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
     if (response.data.projects && Array.isArray(response.data.projects)) {
       return (
         <Suspense fallback={<LoadingFallback />}>
-          <ProjectsRenderer projects={response.data.projects} onProjectSelect={onProjectSelect} />
+          <ProjectsRenderer
+            projects={response.data.projects}
+            onProjectSelect={onProjectSelect}
+            currentProjectId={currentProjectId}
+          />
         </Suspense>
       );
     }

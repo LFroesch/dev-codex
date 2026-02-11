@@ -20,6 +20,7 @@ interface AutocompleteItem {
   type: 'command' | 'project';
   template?: string; // Full template with flags/params
   syntax?: string; // Original syntax
+  aliases?: string[]; // Available aliases for this command
 }
 
 // Storage key for command history
@@ -58,6 +59,7 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
+  const [textareaRows, setTextareaRows] = useState(1); // Start with 1 row
 
   // Cache for commands and projects
   const [commands, setCommands] = useState<CommandMetadata[]>([]);
@@ -406,21 +408,15 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
       if (matchingCommands.length > 0 && commandText.length > 0) {
         setAutocompleteItems(
           matchingCommands.map(cmd => {
-            // Find matching alias to show in the UI
-            const matchingAlias = cmd.aliases?.find(alias =>
-              alias.toLowerCase().startsWith(commandText.toLowerCase())
-            );
-
             return {
               value: cmd.value,
               label: cmd.label,
-              description: matchingAlias
-                ? `${cmd.description}`
-                : cmd.description,
+              description: cmd.description,
               category: cmd.category,
               type: 'command' as const,
               template: generateTemplate(cmd.label),
-              syntax: cmd.label
+              syntax: cmd.label,
+              aliases: cmd.aliases || [] // Include aliases for display
             };
           })
         );
@@ -468,15 +464,32 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
   }, [input, cursorPosition, commands, projects]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setInput(e.target.value);
+    const newValue = e.target.value;
+    setInput(newValue);
     setCursorPosition(e.target.selectionStart);
     setHistoryIndex(-1); // Reset history navigation
+
+    // Auto-resize: count newlines, min 1 row, max 5 rows
+    const lineCount = newValue.split('\n').length;
+    setTextareaRows(Math.min(Math.max(lineCount, 1), 5));
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Handle autocomplete navigation
-    if (showAutocomplete) {
+    // PRIORITY 1: Command history (Ctrl+↑↓) - works everywhere
+    if (e.key === 'ArrowUp' && e.ctrlKey) {
+      e.preventDefault();
+      navigateHistory('up');
+      return;
+    }
+    if (e.key === 'ArrowDown' && e.ctrlKey) {
+      e.preventDefault();
+      navigateHistory('down');
+      return;
+    }
 
+    // PRIORITY 2: Autocomplete navigation (only when autocomplete is shown)
+    if (showAutocomplete) {
+      // Tab: Accept current autocomplete selection
       if (e.key === 'Tab') {
         if (autocompleteItems.length > 0) {
           e.preventDefault();
@@ -492,47 +505,46 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
         }
       }
 
+      // Escape: Close autocomplete
       if (e.key === 'Escape') {
         e.preventDefault();
         setShowAutocomplete(false);
         return;
       }
-      if (e.key === 'ArrowDown') {
+
+      // Arrow Down: Navigate autocomplete list (prevent cursor movement)
+      if (e.key === 'ArrowDown' && !e.ctrlKey) {
         e.preventDefault();
         setSelectedIndex(prev => (prev < autocompleteItems.length - 1 ? prev + 1 : 0));
+        return;
       }
-      if (e.key === 'ArrowUp') {
+
+      // Arrow Up: Navigate autocomplete list (prevent cursor movement)
+      if (e.key === 'ArrowUp' && !e.ctrlKey) {
         e.preventDefault();
         setSelectedIndex(prev => prev > 0 ? prev - 1 : autocompleteItems.length - 1);
+        return;
       }
     }
 
-    // Handle command submission
+    // PRIORITY 3: Command submission (Enter without Shift, when no autocomplete)
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit();
       return;
     }
 
-    // Handle command history with Ctrl+Arrow (works even when autocomplete is shown)
-    if (e.key === 'ArrowUp' && e.ctrlKey) {
-      e.preventDefault();
-      navigateHistory('up');
-      return;
-    }
-
-    if (e.key === 'ArrowDown' && e.ctrlKey) {
-      e.preventDefault();
-      navigateHistory('down');
-      return;
-    }
-
-    // Clear input with Escape
-    if (e.key === 'Escape') {
+    // PRIORITY 4: Clear input (Escape, when no autocomplete)
+    if (e.key === 'Escape' && !showAutocomplete) {
       e.preventDefault();
       setInput('');
+      setTextareaRows(1);
       setHistoryIndex(-1);
+      return;
     }
+
+    // PRIORITY 5: Normal textarea behavior (arrow keys move cursor, typing, etc.)
+    // No preventDefault() - let browser handle it
   };
 
   const selectAutocompleteItem = (item: AutocompleteItem) => {
@@ -743,8 +755,9 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
     // Submit command
     onSubmit(trimmed);
 
-    // Clear input
+    // Clear input and reset to 1 row
     setInput('');
+    setTextareaRows(1);
     setShowAutocomplete(false);
 
     // Refocus input for next command
@@ -767,52 +780,77 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
       {showAutocomplete && autocompleteItems.length > 0 && (
         <div
           ref={autocompleteRef}
-          className="absolute bottom-full w-full bg-base-100 border-2 border-base-content/20 rounded-lg shadow-xl max-h-64 overflow-y-auto z-50"
+          className="absolute bottom-full mb-1 w-full bg-base-100 border-2 border-base-content/20 rounded-lg shadow-xl max-h-80 overflow-y-auto z-50"
         >
-          <div className="p-0.5">
-            <div className="text-xs font-semibold text-base-content/80 px-2 py-1 bg-base-200 rounded-lg sticky top-0.5 border-thick">
-              {autocompleteItems[0].type === 'command' ? '🔧 Commands' : '📁 Projects'}
-              <span className="ml-2 opacity-70">({autocompleteItems.length})</span>
-              <span className="ml-2 text-primary font-bold">ESC</span>
-              <span className="ml-1 opacity-70">closes •</span>
-              <span className="ml-1 font-bold">↑↓</span>
-              <span className="ml-1 opacity-70">navigate •</span>
-              <span className="ml-1 font-bold">TAB</span>
-              <span className="ml-1 opacity-70">accepts •</span>
-              <span className="ml-1 font-bold">Shift+TAB</span>
-              <span className="ml-1 opacity-70">all flags</span>
+          <div className="p-1">
+            {/* Header - hide keybind hints on mobile */}
+            <div className="text-xs font-semibold text-base-content/80 px-3 py-2 bg-base-200 rounded-lg sticky top-0 border-thick flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span>{autocompleteItems[0].type === 'command' ? '🔧 Commands' : '📁 Projects'}</span>
+                <span className="opacity-60">({autocompleteItems.length})</span>
+              </div>
+              {/* Desktop-only keybind hints */}
+              <div className="hidden md:flex items-center gap-2 text-[10px] opacity-70">
+                <span><kbd className="kbd kbd-xs">ESC</kbd> close</span>
+                <span>•</span>
+                <span><kbd className="kbd kbd-xs">↑↓</kbd> navigate</span>
+                <span>•</span>
+                <span><kbd className="kbd kbd-xs">TAB</kbd> select</span>
+              </div>
             </div>
-            <div className="mt-1 space-y-1">
+
+            {/* Autocomplete items */}
+            <div className="mt-1 space-y-0.5">
               {autocompleteItems.map((item, index) => (
                 <button
                   key={index}
                   ref={index === selectedIndex ? selectedItemRef : null}
                   type="button"
                   onClick={() => selectAutocompleteItem(item)}
-                  className={`w-full text-left px-3 py-2 rounded-lg transition-colors border-2 ${
+                  className={`w-full text-left px-3 py-2.5 rounded-lg transition-all border-2 ${
                     index === selectedIndex
-                      ? 'bg-primary/20 border-primary/40'
-                      : 'border-transparent hover:bg-base-200'
+                      ? 'bg-primary/20 border-primary/40 shadow-sm'
+                      : 'border-transparent hover:bg-base-200/50'
                   }`}
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-start gap-3">
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm text-base-content/80 font-mono truncate">
+                      {/* Command syntax */}
+                      <div className="font-medium text-sm text-base-content/90 font-mono mb-1">
                         {item.syntax || item.label}
                       </div>
+
+                      {/* Aliases badges - show top 3 */}
+                      {item.aliases && item.aliases.length > 0 && (
+                        <div className="flex items-center gap-1 mb-1.5 flex-wrap">
+                          <span className="text-[10px] text-base-content/50 mr-1">Also:</span>
+                          {item.aliases.slice(0, 3).map((alias, aliasIdx) => (
+                            <span
+                              key={aliasIdx}
+                              className="text-[10px] px-1.5 py-0.5 bg-accent/20 text-accent-content border border-accent/30 rounded font-mono"
+                            >
+                              /{alias}
+                            </span>
+                          ))}
+                          {item.aliases.length > 3 && (
+                            <span className="text-[10px] text-base-content/50">
+                              +{item.aliases.length - 3} more
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Description */}
                       {item.description && (
-                        <div className="text-xs text-base-content/70 truncate mt-0.5">
+                        <div className="text-xs text-base-content/70 line-clamp-2">
                           {item.description}
                         </div>
                       )}
-                      {item.template && (
-                        <div className="text-xs text-primary/80 font-mono mt-1 truncate">
-                          → {item.template}
-                        </div>
-                      )}
                     </div>
+
+                    {/* Category badge */}
                     {item.category && (
-                      <span className="text-xs px-2 py-0.5 bg-base-200 rounded-full text-base-content/80 border border-base-content/20 flex-shrink-0">
+                      <span className="text-[10px] px-2 py-1 bg-base-200 rounded text-base-content/70 border border-base-content/20 flex-shrink-0 self-start">
                         {item.category}
                       </span>
                     )}
@@ -836,7 +874,9 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
             onSelect={(e) => setCursorPosition(e.currentTarget.selectionStart)}
             disabled={disabled}
             placeholder="Type / for commands or @ for projects..."
-            className="textarea textarea-bordered w-full min-h-10 h-24 resize-none text-sm font-mono placeholder:overflow-ellipsis placeholder:whitespace-nowrap bg-base-100"
+            rows={textareaRows}
+            className="textarea textarea-bordered w-full resize-none text-sm font-mono placeholder:overflow-ellipsis placeholder:whitespace-nowrap bg-base-100"
+            style={{ minHeight: '2.5rem', maxHeight: '10rem' }}
           />
           <button
             type="button"
@@ -856,7 +896,6 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
         {/* Help text */}
         <div className="flex min-h-10 items-center justify-between text-xs text-base-content/70 bg-base-100 rounded-lg p-2 border-2 border-base-content/20 gap-2">
           <div className="flex items-center gap-2 flex-wrap">
-
             <div className="flex items-center gap-1 hidden sm:flex">
               <kbd className="kbd kbd-xs">@</kbd>
               <span className="hidden sm:inline">projects</span>

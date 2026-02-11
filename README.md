@@ -24,7 +24,7 @@ Export your project to any LLM. Get back executable commands. Paste and run. You
 - You control the data, infrastructure, and costs
 
 **2. Use the Hosted Version**
-- Production instance at [TBA]
+- Production instance at [dev-codex.com](https://dev-codex.com)
 - Optional paid plans for convenience
 - Same features, but I handle deployment & monitoring
 - Free tier: 3 projects to try it out
@@ -177,7 +177,7 @@ Example commands:
 - Socket.io (real-time updates)
 - Resend (transactional emails)
 - Sentry (error tracking)
-- Jest (1000+ tests, ~50% coverage)
+- Jest (1100+ tests, ~50% coverage)
 
 **Security:**
 - bcrypt (password hashing)
@@ -234,7 +234,7 @@ railway login && railway init && railway up
 - ✅ Stripe becomes optional (billing disabled)
 - ✅ Email becomes optional (but recommended for invitations/password resets)
 
-[Full deployment guide →](/md_files/READMEs/DEPLOYMENT.md#self-hosted-deployment)
+[Full deployment guide →](md_files/READMEs/DEPLOYMENT.md#self-hosted-deployment)
 
 ---
 

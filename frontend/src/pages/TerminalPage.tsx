@@ -51,6 +51,7 @@ const saveEntriesToStorage = (entries: TerminalEntry[]) => {
 
     localStorage.setItem(TERMINAL_ENTRIES_KEY, JSON.stringify(serialized));
   } catch (error) {
+    // Ignore localStorage errors
   }
 };
 
@@ -79,6 +80,9 @@ const TerminalPage: React.FC = () => {
   const [showWelcome, setShowWelcome] = useState(true);
   const [showCommands, setShowCommands] = useState(false);
   const [pendingCommand, setPendingCommand] = useState<string | null>(null);
+  const [isUserScrolled, setIsUserScrolled] = useState(false);
+  const [showScrollButton, setShowScrollButton] = useState(false);
+  const [failedCommand, setFailedCommand] = useState<string | null>(null); // Store command that failed due to no project
   const terminalEndRef = useRef<HTMLDivElement>(null);
   const terminalOutputRef = useRef<HTMLDivElement>(null);
 
@@ -95,10 +99,32 @@ const TerminalPage: React.FC = () => {
     }
   }, []);
 
-  // Auto-scroll to bottom when new entries are added
+  // Detect user scroll - if user scrolls up, disable auto-scroll
   useEffect(() => {
-    terminalEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [entries]);
+    const container = terminalOutputRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+
+      // If user is more than 100px from bottom, they've scrolled up
+      const userHasScrolledUp = distanceFromBottom > 100;
+      setIsUserScrolled(userHasScrolledUp);
+      setShowScrollButton(userHasScrolledUp);
+    };
+
+    container.addEventListener('scroll', handleScroll);
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Smart auto-scroll: only scroll if user hasn't manually scrolled up
+  useEffect(() => {
+    if (!isUserScrolled && terminalEndRef.current) {
+      // Use instant scroll for immediate feedback, smooth scroll feels laggy
+      terminalEndRef.current.scrollIntoView({ behavior: 'instant', block: 'end' });
+    }
+  }, [entries, isUserScrolled]);
 
   const handleCommandSubmit = async (command: string) => {
     setShowWelcome(false);
@@ -136,6 +162,7 @@ const TerminalPage: React.FC = () => {
     } catch (error: any) {
       let errorMessage = 'Failed to execute command';
       let suggestions = ['/help'];
+      let isNoProjectError = false;
 
       // Check if it's an authentication error
       if (error.response?.status === 401) {
@@ -156,6 +183,20 @@ const TerminalPage: React.FC = () => {
       // Use backend error message if available
       else if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
+
+        // Check if it's a "no project selected" error
+        if (errorMessage.toLowerCase().includes('project') &&
+            (errorMessage.toLowerCase().includes('select') ||
+             errorMessage.toLowerCase().includes('required') ||
+             errorMessage.toLowerCase().includes('context'))) {
+          isNoProjectError = true;
+          setFailedCommand(command); // Store the failed command for retry
+
+          // Automatically run /swap to show project selector
+          setTimeout(() => {
+            handleCommandSubmit('/swap');
+          }, 500);
+        }
       }
       // Generic error fallback
       else {
@@ -168,7 +209,7 @@ const TerminalPage: React.FC = () => {
         response: {
           type: 'error',
           message: errorMessage,
-          suggestions
+          suggestions: isNoProjectError ? [] : suggestions
         },
         timestamp: new Date()
       };
@@ -186,6 +227,17 @@ const TerminalPage: React.FC = () => {
   const handleProjectSelect = async (projectId: string) => {
     if (onProjectSwitch) {
       await onProjectSwitch(projectId);
+
+      // If there was a failed command due to no project, retry it now
+      if (failedCommand) {
+        const commandToRetry = failedCommand;
+        setFailedCommand(null); // Clear it
+
+        // Wait a bit for the project switch to complete
+        setTimeout(() => {
+          handleCommandSubmit(commandToRetry);
+        }, 300);
+      }
     }
   };
 
@@ -195,12 +247,20 @@ const TerminalPage: React.FC = () => {
     try {
       localStorage.removeItem(TERMINAL_ENTRIES_KEY);
     } catch (error) {
+      // Ignore localStorage errors
     }
   };
 
   const handleScrollToTop = () => {
     if (terminalOutputRef.current) {
       terminalOutputRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handleScrollToBottom = () => {
+    setIsUserScrolled(false); // Re-enable auto-scroll
+    if (terminalEndRef.current) {
+      terminalEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
     }
   };
 
@@ -251,6 +311,7 @@ const TerminalPage: React.FC = () => {
         return updated;
       });
     } catch (error) {
+      // Ignore errors for selector transitions
     }
   };
 
@@ -313,6 +374,8 @@ const TerminalPage: React.FC = () => {
         localStorage.setItem('theme', theme);
       }
     } catch (error) {
+      // Ignore errors for theme changes
+
     }
   };
 
@@ -378,7 +441,7 @@ const TerminalPage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full relative">
       {/* Terminal Output - Scrollable */}
       <div ref={terminalOutputRef} className="flex-1 min-h-0 overflow-y-auto p-2 space-y-3 font-mono text-sm">
         {/* Welcome Message */}
@@ -421,7 +484,7 @@ const TerminalPage: React.FC = () => {
                         </div>
                       </div>
                       <div>
-                        <span className="font-semibold text-base-content/70">&& </span>
+                        <span className="font-semibold text-base-content/70">&& or Newlines </span>
                         <span>Chain multiple commands together (executes sequentially)</span>
                         <div className="text-xs text-base-content/60 mt-1 ml-3">
                           Example: <code className="bg-base-200 px-1 rounded text-base-content/70">/add todo task && /view todos</code>
@@ -431,212 +494,57 @@ const TerminalPage: React.FC = () => {
                   </div>
 
                   {/* Quick Actions */}
-                  <div className="mt-3 mb-3 ">
+                  <div className="mt-3 mb-3">
                     <div className="flex flex-wrap gap-2">
                       <button
-                        onClick={() => setPendingCommand('/wizard new')}
-                        className="btn btn-xs btn-outline btn-primary border-2 hover:border-primary"
+                        onClick={() => {
+                          handleCommandSubmit('/help');
+                          setShowWelcome(false);
+                        }}
+                        className="btn btn-sm btn-primary border-2 hover:border-primary"
                       >
-                        <span className='font-bold text-base-content/70'>🧙 New Project</span>
+                        📚 Help
+                      </button>
+                      <button
+                        onClick={() => {
+                          handleCommandSubmit('/swap');
+                          setShowWelcome(false);
+                        }}
+                        className="btn btn-sm btn-primary border-2 hover:border-primary"
+                      >
+                        🔄 Switch
+                      </button>
+                      <button
+                        onClick={() => setPendingCommand('/wizard new')}
+                        className="btn btn-sm btn-primary border-2 hover:border-primary"
+                      >
+                        🧙 New Project
                       </button>
                       <button
                         onClick={() => setPendingCommand('/info')}
-                        className="btn btn-xs btn-outline btn-primary border-2 hover:border-primary"
+                        className="btn btn-sm btn-primary border-2 hover:border-primary"
                       >
-                        <span className='font-bold text-base-content/70'>ℹ️ Project Info</span>
+                        ℹ️ Info
                       </button>
                       <button
                         onClick={() => setPendingCommand('/today')}
-                        className="btn btn-xs btn-outline btn-primary border-2 hover:border-primary"
+                        className="btn btn-sm btn-primary border-2 hover:border-primary"
                       >
-                        <span className='font-bold text-base-content/70'>📅 Today</span>
+                        📅 Today
                       </button>
                       <button
                         onClick={() => setPendingCommand('/view todos')}
-                        className="btn btn-xs btn-outline btn-primary border-2 hover:border-primary"
+                        className="btn btn-sm btn-primary border-2 hover:border-primary"
                       >
-                        <span className='font-bold text-base-content/70'>✅ Todos</span>
+                        ✅ Todos
                       </button>
                       <button
                         onClick={() => setPendingCommand('/view notes')}
-                        className="btn btn-xs btn-outline btn-primary border-2 hover:border-primary"
+                        className="btn btn-sm btn-primary border-2 hover:border-primary"
                       >
-                        <span className='font-bold text-base-content/70'>📝 Notes</span>
-                      </button>
-                      <button
-                        onClick={() => setPendingCommand('/swap')}
-                        className="btn btn-xs btn-outline btn-primary border-2 hover:border-primary"
-                      >
-                        <span className='font-bold text-base-content/70'>🔄 Switch</span>
-                      </button>
-                      <button
-                        onClick={() => setPendingCommand('/help')}
-                        className="btn btn-xs btn-outline btn-primary border-2 hover:border-primary"
-                      >
-                        <span className='font-bold text-base-content/70'>📚 Help</span>
+                        📝 Notes
                       </button>
                     </div>
-                  </div>
-
-                  {/* Common Commands - Collapsible */}
-                  <div className="mt-3 border-thick rounded-lg overflow-hidden">
-                    <button
-                      type="button"
-                      onClick={() => setShowCommands(!showCommands)}
-                      className="w-full text-left p-3 flex items-center justify-between bg-base-200 hover:bg-base-300/50 transition-colors"
-                    >
-                      <div className="text-sm font-semibold text-base-content">
-                        Common Commands (10)
-                      </div>
-                      <svg
-                        className={`w-4 h-4 transition-transform ${showCommands ? 'rotate-180' : ''}`}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </button>
-                    {showCommands && (
-                      <div className="px-3 pb-3 bg-base-100">
-                        <div className="overflow-x-auto">
-                          <table className="table table-xs table-zebra">
-                            <thead>
-                              <tr>
-                                <th className="text-xs">Command</th>
-                                <th className="text-xs">Description</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              <tr className="hover">
-                                <td>
-                                  <button
-                                    type="button"
-                                    onClick={() => setPendingCommand('/wizard new')}
-                                    className="text-xs text-base-content/70 font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
-                                  >
-                                    /wizard new
-                                  </button>
-                                </td>
-                                <td className="text-xs text-base-content/70">Create a new project (interactive)</td>
-                              </tr>
-                              <tr className="hover">
-                                <td>
-                                  <button
-                                    type="button"
-                                    onClick={() => setPendingCommand('/info')}
-                                    className="text-xs text-base-content/70 font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
-                                  >
-                                    /info
-                                  </button>
-                                </td>
-                                <td className="text-xs text-base-content/70">Quick project overview & stats</td>
-                              </tr>
-                              <tr className="hover">
-                                <td>
-                                  <button
-                                    type="button"
-                                    onClick={() => setPendingCommand('/today')}
-                                    className="text-xs text-base-content/70 font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
-                                  >
-                                    /today
-                                  </button>
-                                </td>
-                                <td className="text-xs text-base-content/70">Show today's tasks & activity</td>
-                              </tr>
-                              <tr className="hover">
-                                <td>
-                                  <button
-                                    type="button"
-                                    onClick={() => setPendingCommand('/week')}
-                                    className="text-xs text-base-content/70 font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
-                                  >
-                                    /week
-                                  </button>
-                                </td>
-                                <td className="text-xs text-base-content/70">Weekly summary & planning</td>
-                              </tr>
-                              <tr className="hover">
-                                <td>
-                                  <button
-                                    type="button"
-                                    onClick={() => setPendingCommand('/standup')}
-                                    className="text-xs text-base-content/70 font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
-                                  >
-                                    /standup
-                                  </button>
-                                </td>
-                                <td className="text-xs text-base-content/70">Generate standup report</td>
-                              </tr>
-                              <tr className="hover">
-                                <td>
-                                  <button
-                                    type="button"
-                                    onClick={() => setPendingCommand('/add todo')}
-                                    className="text-xs text-base-content/70 font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
-                                  >
-                                    /add todo
-                                  </button>
-                                </td>
-                                <td className="text-xs text-base-content/70">Create a new todo (wizard or use --title= --content= flags)</td>
-                              </tr>
-                              <tr className="hover">
-                                <td>
-                                  <button
-                                    type="button"
-                                    onClick={() => setPendingCommand('/add note')}
-                                    className="text-xs text-base-content/70 font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
-                                  >
-                                    /add note
-                                  </button>
-                                </td>
-                                <td className="text-xs text-base-content/70">Create a new note (wizard or use --title= --content= flags)</td>
-                              </tr>
-                              <tr className="hover">
-                                <td>
-                                  <button
-                                    type="button"
-                                    onClick={() => setPendingCommand('/view stack')}
-                                    className="text-xs text-base-content/70 font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
-                                  >
-                                    /view stack
-                                  </button>
-                                </td>
-                                <td className="text-xs text-base-content/70">View tech stack & packages</td>
-                              </tr>
-                              <tr className="hover">
-                                <td>
-                                  <button
-                                    type="button"
-                                    onClick={() => setPendingCommand('/search ')}
-                                    className="text-xs text-base-content/70 font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
-                                  >
-                                    /search [query]
-                                  </button>
-                                </td>
-                                <td className="text-xs text-base-content/70">Search across all content</td>
-                              </tr>
-                              <tr className="hover">
-                                <td>
-                                  <button
-                                    type="button"
-                                    onClick={() => setPendingCommand('/swap @')}
-                                    className="text-xs text-base-content/70 font-mono bg-base-100 px-1.5 py-0.5 rounded hover:border-primary border-thick transition-colors cursor-pointer"
-                                  >
-                                    /swap @[project]
-                                  </button>
-                                </td>
-                                <td className="text-xs text-base-content/70">Switch to a different project</td>
-                              </tr>
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="mt-3 text-xs text-base-content/60 ml-1">
-                    💡 Tip: Use <code className="bg-base-200 px-1 rounded">@projectname</code> to specify a project, or omit it to use the current project
                   </div>
                 </div>
               </div>
@@ -672,6 +580,20 @@ const TerminalPage: React.FC = () => {
 
         <div ref={terminalEndRef} />
       </div>
+
+      {/* Floating "New Output" button - appears when user has scrolled up */}
+      {showScrollButton && (
+        <button
+          onClick={handleScrollToBottom}
+          className="fixed bottom-24 right-6 btn btn-sm bg-primary text-primary-content border-2 border-primary-content/20 shadow-lg z-50 animate-bounce"
+          title="Scroll to latest output"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+          </svg>
+          <span className="hidden sm:inline">New Output</span>
+        </button>
+      )}
 
       {/* Input Area - Compact */}
       <div className="flex-shrink-0 p-2 border-t-2 border-base-content/20 bg-base-200">

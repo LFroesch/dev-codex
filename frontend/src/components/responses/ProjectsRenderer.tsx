@@ -11,18 +11,26 @@ interface Project {
 interface ProjectsRendererProps {
   projects: Project[];
   onProjectSelect?: (projectId: string) => void;
+  currentProjectId?: string;
 }
 
-const ProjectsRenderer: React.FC<ProjectsRendererProps> = ({ projects, onProjectSelect }) => {
+const ProjectsRenderer: React.FC<ProjectsRendererProps> = ({ projects, onProjectSelect, currentProjectId }) => {
   return (
     <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-      {projects.map((project, index) => (
-        <button
-          key={index}
-          type="button"
-          onClick={() => onProjectSelect?.(project.id)}
-          className="h-30 w-full p-3 bg-base-200 rounded-lg hover:bg-primary/20 hover:border-primary/50 border-thick transition-all text-left"
-        >
+      {projects.map((project, index) => {
+        const isSelected = project.id === currentProjectId;
+        return (
+          <button
+            key={index}
+            type="button"
+            onClick={() => onProjectSelect?.(project.id)}
+            className={`h-30 w-full p-3 rounded-lg transition-all text-left ${
+              isSelected
+                ? 'bg-primary/20 border-primary border-2 ring-2 ring-primary/30'
+                : 'bg-base-200 hover:bg-primary/10 hover:border-primary/50 border-thick'
+            }`}
+          >
+
           <div className="flex items-start gap-3">
             {project.color && (
               <div
@@ -31,7 +39,10 @@ const ProjectsRenderer: React.FC<ProjectsRendererProps> = ({ projects, onProject
               />
             )}
             <div className="flex-1 min-w-0 space-y-1">
-              <div className="font-semibold text-sm text-base-content truncate capitalize">{project.name}</div>
+              <div className="font-semibold text-sm text-base-content truncate capitalize">
+                {project.name}
+                {isSelected && <span className="ml-2 text-primary">✓</span>}
+              </div>
               {project.category && (
                 <div className="badge h-5 badge-xs border-thick capitalize">{project.category}</div>
               )}
@@ -43,7 +54,8 @@ const ProjectsRenderer: React.FC<ProjectsRendererProps> = ({ projects, onProject
             </div>
           </div>
         </button>
-      ))}
+        );
+      })}
     </div>
   );
 };

@@ -43,6 +43,25 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
 
+  // Scroll wizard into view when step changes (so taller content is visible)
+  const wizardRef = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    // Small delay to let content render first
+    const timer = setTimeout(() => {
+      if (wizardRef.current) {
+        // Get the wizard's position
+        const rect = wizardRef.current.getBoundingClientRect();
+        const isFullyVisible = rect.bottom <= window.innerHeight;
+
+        // If wizard extends below viewport, scroll it into view
+        if (!isFullyVisible) {
+          wizardRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }
+      }
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [currentStep]);
+
   // Relationship editing state (for inline edit)
   const [editingRelIndex, setEditingRelIndex] = useState<number | null>(null);
   const [editRelData, setEditRelData] = useState<{ relationType: RelationshipType; description: string }>({
@@ -534,7 +553,7 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
   }
 
   return (
-    <div className="mt-3 space-y-4">
+    <div ref={wizardRef} className="mt-3 space-y-4">
       {/* Progress indicator */}
       <div className="flex items-center justify-between">
         <div className="text-xs text-base-content/60">

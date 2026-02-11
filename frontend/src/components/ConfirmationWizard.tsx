@@ -76,60 +76,48 @@ const ConfirmationWizard: React.FC<ConfirmationWizardProps> = ({
   }
 
   return (
-    <div className="mt-3 p-4 bg-warning/10 rounded-lg border-2 border-warning/30">
-      <div className="space-y-4">
-        <div className="flex items-start gap-3">
-          <div className="text-3xl flex-shrink-0">⚠️</div>
-          <div className="flex-1">
-            <div className="font-bold text-lg mb-2">{message}</div>
-            <div className="text-sm text-base-content/70">
-              {confirmationData.relationType ? (
-                // Relationship deletion
-                <>
-                  Are you sure you want to delete the{' '}
-                  <span className="font-semibold">{confirmationData.relationType}</span> relationship from{' '}
-                  <span className="font-semibold">"{confirmationData.componentTitle}"</span> to{' '}
-                  <span className="font-semibold">"{confirmationData.targetTitle}"</span>?
-                </>
-              ) : (
-                // Generic item deletion
-                <>
-                  Are you sure you want to delete the {confirmationData.itemType}{' '}
-                  <span className="font-semibold">"{confirmationData.itemTitle}"</span>?
-                </>
-              )}
-            </div>
-            <div className="text-xs text-base-content/50 mt-2">
-              This action cannot be undone.
-            </div>
-          </div>
-        </div>
+    <div className="mt-3 space-y-2">
+      <div className="text-sm text-base-content/80">
+        {confirmationData.relationType ? (
+          // Relationship deletion
+          <>
+            Delete the <span className="font-semibold">{confirmationData.relationType}</span> relationship from{' '}
+            <span className="font-semibold">"{confirmationData.componentTitle}"</span> to{' '}
+            <span className="font-semibold">"{confirmationData.targetTitle}"</span>?
+          </>
+        ) : (
+          // Generic item deletion
+          <>
+            Delete {confirmationData.itemType}{' '}
+            <span className="font-semibold">"{confirmationData.itemTitle}"</span>?
+          </>
+        )}
+      </div>
 
-        <div className="flex gap-2 justify-end">
-          <button
-            type="button"
-            className="btn btn-ghost btn-sm"
-            onClick={handleCancel}
-            disabled={isSubmitting}
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            className="btn btn-error btn-sm"
-            onClick={handleConfirm}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <>
-                <span className="loading loading-spinner loading-xs"></span>
-                Deleting...
-              </>
-            ) : (
-              'Delete'
-            )}
-          </button>
-        </div>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          className="btn btn-sm btn-error"
+          onClick={handleConfirm}
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? (
+            <>
+              <span className="loading loading-spinner loading-xs"></span>
+              Deleting...
+            </>
+          ) : (
+            'Yes'
+          )}
+        </button>
+        <button
+          type="button"
+          className="btn btn-sm btn-ghost"
+          onClick={handleCancel}
+          disabled={isSubmitting}
+        >
+          No
+        </button>
       </div>
     </div>
   );

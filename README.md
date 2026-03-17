@@ -8,7 +8,7 @@ Export your project to any LLM. Get back executable commands. Paste and run. You
 [![React](https://img.shields.io/badge/React-20232A?style=flat&logo=react&logoColor=61DAFB)](https://reactjs.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-43853D?style=flat&logo=node.js&logoColor=white)](https://nodejs.org/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-4EA94B?style=flat&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
-[![Tests](https://img.shields.io/badge/tests-1100%20passing-success)](https://github.com/LFroesch/project-management)
+[![Tests](https://img.shields.io/badge/tests-1000%2B%20passing-success)](https://github.com/LFroesch/project-management)
 
 ---
 
@@ -37,13 +37,32 @@ Export your project to any LLM. Get back executable commands. Paste and run. You
 
 **Stop clicking through forms. Start thinking in commands.**
 
-Traditional project managers force you to manually create every task, note, and component through a UI. Dev Codex flips this: describe what you want to an LLM, get executable commands back, paste them in. Done.
+Traditional project managers force you to manually create every task, note, and feature through a UI. Dev Codex flips this: describe what you want to an LLM, get executable commands back, paste them in. Done.
 
 ### Terminal in Action
 
 ![Terminal Intro](media/gifs/intro-terminal.gif)
 
-**Fast, guided autocomplete.** Type `/help` to see all 50+ commands. Tab-complete builds commands error-free.
+**Fast, guided autocomplete.** Type `/help` to see all 70+ commands. Tab-complete builds commands error-free.
+
+---
+
+### Built-in AI Assistant
+
+Type naturally — no slash prefix needed. The AI reads your project context and proposes actions.
+
+```
+You: finished the auth page, used JWT tokens
+
+AI: Got it! Here's what I'll update:
+  [✓] 📝 Devlog: "Completed auth page with JWT"
+  [✓] ✅ Mark todo "Build auth" as done
+  [Confirm Selected]  [Cancel]
+```
+
+- **Multi-turn conversations** — follow-up questions continue the session
+- **Powered by Gemini 2.5 Flash** (prod) / Ollama (dev, $0 cost) via OpenAI-compatible API
+- **Works with external AI** — `/bridge` exports a command reference for CLAUDE.md/.cursorrules, `/context` exports project state
 
 ---
 
@@ -73,8 +92,8 @@ Example commands:
 /add todo --title="JWT authentication" --priority=high --status=in_progress
 /add todo --title="Recipe CRUD endpoints" --priority=high
 /add note --title="Auth Architecture" --content="JWT with refresh tokens, Google OAuth"
-/add component --feature="Auth" --category=backend --type=service --title="Auth Service" --content="JWT authentication logic"
-/add component --feature="Recipes" --category=backend --type=service --title="Recipe Service" --content="CRUD operations"
+/add feature --group="Auth" --category=backend --type=service --title="Auth Service" --content="JWT authentication logic"
+/add feature --group="Recipes" --category=backend --type=service --title="Recipe Service" --content="CRUD operations"
 /add relationship --source="Login Page" --target="Auth Service" --type=uses
 /add stack --name="React" --category=framework --version="18"
 /add devlog --title="Day 1" --content="React + Vite frontend, Express backend, TypeScript setup"
@@ -88,9 +107,7 @@ Example commands:
 
 ### FeatureGraph
 
-![Component Graph](media/gifs/featuregraph.gif)
-
-**Visualize architecture.** See features, components, and relationships. Drag, zoom, and understand your project structure.
+**Visualize architecture.** See features and relationships. Drag, zoom, and understand your project structure.
 
 ---
 
@@ -106,20 +123,21 @@ Example commands:
 
 ## Core Features
 
-### **Browser-Native Terminal (50+ Commands)**
-- **Lightning Fast:** Chain 10 commands in one paste—execute in <1s
-- **Smart Autocomplete:** Tab completion learns your patterns
-- **Batch Operations:** `/add todo "task 1" && /add note "doc" && /add devlog "progress"`
-- **Interactive Wizards:** Prefer forms? Use `/wizard new` for guided setup
+### **AI-First Terminal (70+ Commands)**
+- **Built-in AI:** Type naturally — AI proposes actions, you confirm with one click
+- **70+ Slash Commands:** Power-user shortcuts for everything
+- **Batch Operations:** Chain 10 commands with `&&` or newlines
+- **Interactive Wizards:** `/wizard new` for guided setup
+- **External AI Integration:** `/bridge` (command reference for CLAUDE.md/.cursorrules), `/context` (project state export), `/usage` (token stats)
 - **Workflow Helpers:** `/today`, `/week`, `/standup`, `/stale`, `/info`
-- **Export Formats:** Markdown README, JSON, AI prompt, plain text
+- **Export Formats:** Markdown, JSON, AI prompt, plain text
 - **Full History:** Navigate with ↑/↓ arrows
 
 ### **Project Management**
 - **Todos:** Subtasks, priorities, due dates, assignments, dependencies
 - **Notes:** Real-time locking (10-min heartbeat prevents edit conflicts)
 - **Dev Logs:** Daily progress journal with timestamps
-- **Components:** Visual relationship graph (ReactFlow) with drag & zoom
+- **Features:** Visual relationship graph (ReactFlow) with drag & zoom
 - **Tech Stack:** Track technologies, packages, deployment config
 - **Ideas:** Personal parking lot (separate from projects)
 - **Import/Export:** JSON (100MB limit, XSS sanitized)
@@ -166,7 +184,7 @@ Example commands:
 - Tailwind CSS + DaisyUI (themes)
 - TanStack Query (data fetching)
 - Socket.io Client (real-time)
-- ReactFlow (component graph visualization)
+- ReactFlow (feature graph visualization)
 - @dnd-kit (drag & drop)
 
 **Backend:**
@@ -177,7 +195,12 @@ Example commands:
 - Socket.io (real-time updates)
 - Resend (transactional emails)
 - Sentry (error tracking)
-- Jest (1100+ tests, ~50% coverage)
+- Jest (1000+ tests)
+
+**AI:**
+- Gemini 2.5 Flash (prod) / Ollama (dev, $0 cost) via OpenAI-compatible API
+- Swappable to any OpenAI-compatible provider
+- Structured JSON output, multi-turn sessions, context-aware
 
 **Security:**
 - bcrypt (password hashing)
@@ -187,7 +210,7 @@ Example commands:
 - Helmet (security headers)
 - Input validation & sanitization
 
-**API:** 130+ RESTful endpoints—[view full API docs](md_files/READMEs/API.md)
+**API:** 200+ RESTful endpoints—[view full API docs](md_files/READMEs/API.md)
 
 **Onboarding:** Interactive 14-step tutorial system for new users
 
@@ -204,6 +227,78 @@ npm run dev
 ```
 
 **Dev URLs:** <http://localhost:5002> (frontend) | <http://localhost:5003> (backend)
+
+---
+
+## Running with Ollama (Local AI)
+
+Dev Codex uses [Ollama](https://ollama.ai) for local, free AI features. No API keys needed.
+
+### Install & Pull a Model
+
+**Docker (recommended):**
+```bash
+docker run -d -v ollama:/root/.ollama -p 11434:11434 --name ollama ollama/ollama
+```
+
+**With NVIDIA GPU** (optional — requires [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html)):
+```bash
+docker run -d --gpus all -v ollama:/root/.ollama -p 11434:11434 --name ollama ollama/ollama
+```
+
+> **Note:** AMD GPUs are not supported by Ollama in Docker/WSL2. CPU mode works well for 7B models.
+
+**Native install:** [ollama.ai/download](https://ollama.ai/download) — then run `ollama serve`
+
+**Pull the default model:**
+```bash
+docker exec ollama ollama pull qwen2.5:7b
+# or natively: ollama pull qwen2.5:7b
+```
+
+### Avoiding Cold Starts
+
+By default Ollama unloads models from memory after 5 minutes of inactivity. The first request after that takes 10-30s to reload. You can disable this:
+
+| Behavior | Env var on Ollama | RAM usage |
+|----------|-------------------|-----------|
+| **Always loaded** (no cold starts) | `OLLAMA_KEEP_ALIVE=0` | ~4-8 GB |
+| **Unload after idle** (default) | `OLLAMA_KEEP_ALIVE=5m` | ~0 when idle |
+
+**Docker — always loaded (no cold starts):**
+```bash
+docker run -d -e OLLAMA_KEEP_ALIVE=0 \
+  -v ollama:/root/.ollama -p 11434:11434 --name ollama ollama/ollama
+```
+
+**Docker — update existing container:**
+```bash
+docker stop ollama && docker rm ollama
+docker run -d -e OLLAMA_KEEP_ALIVE=0 \
+  -v ollama:/root/.ollama -p 11434:11434 --name ollama ollama/ollama
+```
+> The `-v ollama:/root/.ollama` volume persists your downloaded models across container recreations.
+
+**Native install:** Add `OLLAMA_KEEP_ALIVE=0` to your environment (e.g. `~/.bashrc`, systemd unit, or launchd plist).
+
+### Backend Config
+
+In your `backend/.env`:
+```bash
+OLLAMA_BASE_URL=http://localhost:11434   # default
+AI_MODEL=qwen2.5:7b                      # default
+AI_ENABLED=true
+```
+
+### Troubleshooting
+
+| Issue | Fix |
+|-------|-----|
+| `ECONNREFUSED` | Ollama isn't running — `docker start ollama` or `ollama serve` |
+| Slow first response | Model loading from disk — set `OLLAMA_KEEP_ALIVE=0` on the container |
+| Out of memory | Use a smaller model: `ollama pull qwen2.5:3b` and set `AI_MODEL=qwen2.5:3b` |
+| Docker `--gpus` fails on WSL2 | AMD GPUs aren't supported; remove `--gpus all` and run on CPU |
+| Docker `--gpus` fails (NVIDIA) | Install [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) |
 
 ---
 
@@ -226,11 +321,12 @@ railway login && railway init && railway up
 - `GOOGLE_CLIENT_ID` & `GOOGLE_CLIENT_SECRET` for OAuth login
 - `STRIPE_*` for billing (only needed if not self-hosted)
 - `SENTRY_DSN` for error monitoring
+- `OLLAMA_BASE_URL` + `AI_MODEL` for AI features (default: `http://localhost:11434`, `qwen2.5:7b`)
 
 **What `SELF_HOSTED=true` does:**
 - ✅ Unlimited projects, team members, requests
+- ✅ Unlimited AI (no token caps, no rate limits)
 - ✅ No billing/subscription features
-- ✅ No rate limiting
 - ✅ Stripe becomes optional (billing disabled)
 - ✅ Email becomes optional (but recommended for invitations/password resets)
 
@@ -240,14 +336,14 @@ railway login && railway init && railway up
 
 ## Plan Tiers
 
-**Self-Hosted:** Unlimited everything when `SELF_HOSTED=true`
+**Self-Hosted:** Unlimited everything when `SELF_HOSTED=true` (including AI with your own Ollama instance)
 
 **Hosted Version:**
-| Plan | Projects | Team Members | Terminal Commands | Analytics Retention |
-|------|----------|--------------|-------------------|---------------------|
-| **Free** | 3 | 3/project | ~10/min | 30 days |
-| **Pro** | 20 | 10/project | 60/min | 90 days |
-| **Premium** | Unlimited | Unlimited | 120/min | 365 days |
+| Plan | Projects | Team | Commands/min | AI Tokens/month | AI Queries/min | Analytics |
+|------|----------|------|-------------|-----------------|----------------|-----------|
+| **Free** | 3 | 3/project | ~10 | None | — | 30 days |
+| **Pro** | 20 | 10/project | 60 | 500k | 15 | 90 days |
+| **Premium** | Unlimited | Unlimited | 120 | 2M | 30 | 365 days |
 
 ---
 
@@ -258,13 +354,15 @@ railway login && railway init && railway up
 | `npm run dev` | Start frontend + backend |
 | `npm run build` | Production build |
 | `npm test` | Run backend tests |
+| `npm run test:all` | Run backend + frontend tests |
 | `npm run create-admin` | Create admin user |
+| `npm run seed-demo` | Seed demo user with sample data |
 
 ---
 
 ## License
 
-ISC
+AGPL-3.0 — see [LICENSE](LICENSE)
 
 ---
 

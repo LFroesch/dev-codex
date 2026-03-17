@@ -2,6 +2,7 @@ import { BaseCommandHandler } from './BaseCommandHandler';
 import { CommandResponse, ResponseType } from '../types';
 import { ParsedCommand, getFlag, getFlagCount, hasFlag } from '../commandParser';
 import { sanitizeText, validateProjectName, isValidUrl, isValidDeploymentStatus } from '../../utils/validation';
+import { User as UserModel } from '../../models/User';
 
 /**
  * Handlers for project settings and configuration commands
@@ -365,5 +366,80 @@ export class SettingsHandlers extends BaseCommandHandler {
       resolution.project,
       'set_public'
     );
+  }
+
+  /**
+   * Handle /set ai command — configure AI context limits
+   */
+  async handleSetAI(parsed: ParsedCommand): Promise<CommandResponse> {
+    const user = await UserModel.findById(this.userId);
+    if (!user) {
+      return { type: ResponseType.ERROR, message: 'User not found' };
+    }
+
+    const maxTodos = getFlag(parsed.flags, 'max-todos');
+    const maxNotes = getFlag(parsed.flags, 'max-notes');
+    const maxDevLogs = getFlag(parsed.flags, 'max-devlogs');
+    const maxFeatures = getFlag(parsed.flags, 'max-features');
+
+    const hasChanges = maxTodos || maxNotes || maxDevLogs || maxFeatures;
+
+    if (!hasChanges) {
+      // Show current settings
+      const ctx = user.aiContext || { maxTodos: 25, maxNotes: 15, maxDevLogs: 10, maxFeatures: 15 };
+      return {
+        type: ResponseType.DATA,
+        message: 'AI Context Settings',
+        data: {
+          action: 'view_ai_settings',
+          settings: [
+            { label: 'Max Todos', value: ctx.maxTodos, flag: '--max-todos' },
+            { label: 'Max Notes', value: ctx.maxNotes, flag: '--max-notes' },
+            { label: 'Max Dev Logs', value: ctx.maxDevLogs, flag: '--max-devlogs' },
+            { label: 'Max Features', value: ctx.maxFeatures, flag: '--max-features' },
+          ],
+          hint: 'These control how many items of each type are included in AI context. Higher = more informed AI but more tokens.',
+        },
+        suggestions: ['/set ai --max-todos=50', '/set ai --max-notes=25 --max-devlogs=20']
+      };
+    }
+
+    // Validate and apply changes
+    const clamp = (val: string | boolean | undefined, min: number, max: number): number | null => {
+      if (!val || typeof val === 'boolean') return null;
+      const n = parseInt(val, 10);
+      if (isNaN(n)) return null;
+      return Math.max(min, Math.min(max, n));
+    };
+
+    const updates: string[] = [];
+    if (maxTodos) {
+      const v = clamp(maxTodos, 0, 100);
+      if (v !== null) { user.aiContext.maxTodos = v; updates.push(`maxTodos=${v}`); }
+    }
+    if (maxNotes) {
+      const v = clamp(maxNotes, 0, 50);
+      if (v !== null) { user.aiContext.maxNotes = v; updates.push(`maxNotes=${v}`); }
+    }
+    if (maxDevLogs) {
+      const v = clamp(maxDevLogs, 0, 50);
+      if (v !== null) { user.aiContext.maxDevLogs = v; updates.push(`maxDevLogs=${v}`); }
+    }
+    if (maxFeatures) {
+      const v = clamp(maxFeatures, 0, 50);
+      if (v !== null) { user.aiContext.maxFeatures = v; updates.push(`maxFeatures=${v}`); }
+    }
+
+    if (updates.length === 0) {
+      return { type: ResponseType.ERROR, message: 'Invalid values. Use numbers, e.g. --max-todos=50', suggestions: ['/set ai --max-todos=50'] };
+    }
+
+    await user.save();
+
+    return {
+      type: ResponseType.SUCCESS,
+      message: `AI context updated: ${updates.join(', ')}`,
+      suggestions: ['/set ai']
+    };
   }
 }

@@ -1,15 +1,17 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import TerminalInput from '../components/TerminalInput';
 import CommandResponse from '../components/CommandResponse';
-import { terminalAPI, CommandResponse as CommandResponseType } from '../api/terminal';
+import WelcomeScreen from '../components/WelcomeScreen';
+import { terminalAPI, CommandResponse as CommandResponseType, AIAction, AIResponseData } from '../api/terminal';
 import { authAPI } from '../api';
 import { hexToOklch, oklchToCssValue, generateFocusVariant, generateContrastingTextColor } from '../utils/colorUtils';
-import { analyticsService } from '../services/analytics';
+
 
 interface ContextType {
   user: { id: string; email: string; firstName: string; lastName: string } | null;
   currentProjectId?: string;
+  currentProjectName?: string;
   onProjectSwitch?: (projectId: string) => Promise<void>;
 }
 
@@ -23,6 +25,7 @@ interface TerminalEntry {
 
 // Storage configuration
 const TERMINAL_ENTRIES_KEY = 'terminal_entries';
+const AI_SESSION_KEY = 'ai_session_id';
 const MAX_ENTRIES = 50; // Make editable to change max stored entries
 
 
@@ -73,29 +76,56 @@ const loadEntriesFromStorage = (): TerminalEntry[] => {
   }
 };
 
+// Session persistence helpers
+const saveSessionId = (id: string | null) => {
+  try {
+    if (id) {
+      sessionStorage.setItem(AI_SESSION_KEY, id);
+    } else {
+      sessionStorage.removeItem(AI_SESSION_KEY);
+    }
+  } catch { /* ignore */ }
+};
+
+const loadSessionId = (): string | null => {
+  try {
+    return sessionStorage.getItem(AI_SESSION_KEY);
+  } catch {
+    return null;
+  }
+};
+
 const TerminalPage: React.FC = () => {
-  const { currentProjectId, onProjectSwitch } = useOutletContext<ContextType>();
+  const { user, currentProjectId, currentProjectName, onProjectSwitch } = useOutletContext<ContextType>();
   const [entries, setEntries] = useState<TerminalEntry[]>([]);
   const [isExecuting, setIsExecuting] = useState(false);
-  const [showWelcome, setShowWelcome] = useState(true);
-  const [showCommands, setShowCommands] = useState(false);
   const [pendingCommand, setPendingCommand] = useState<string | null>(null);
   const [isUserScrolled, setIsUserScrolled] = useState(false);
   const [showScrollButton, setShowScrollButton] = useState(false);
-  const [failedCommand, setFailedCommand] = useState<string | null>(null); // Store command that failed due to no project
+  const [failedCommand, setFailedCommand] = useState<string | null>(null);
+  const [aiSessionId, setAiSessionId] = useState<string | null>(loadSessionId);
+  const [isAISession, setIsAISession] = useState(!!loadSessionId());
+  const [streamingEntryId, setStreamingEntryId] = useState<string | null>(null);
+  const [streamingText, setStreamingText] = useState('');
+  const [aiTurnCount, setAiTurnCount] = useState(0);
+  const [lastTurnElapsed, setLastTurnElapsed] = useState<number | undefined>(undefined);
+  const [sessionTokensUsed, setSessionTokensUsed] = useState(0);
+  const [sessionModel, setSessionModel] = useState<string | undefined>(undefined);
+  const [pendingNaturalInput, setPendingNaturalInput] = useState<string | null>(null);
   const terminalEndRef = useRef<HTMLDivElement>(null);
   const terminalOutputRef = useRef<HTMLDivElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Persist session ID whenever it changes
+  useEffect(() => {
+    saveSessionId(aiSessionId);
+  }, [aiSessionId]);
 
   // Load entries from localStorage on mount
   useEffect(() => {
     const loadedEntries = loadEntriesFromStorage();
-
     if (loadedEntries.length > 0) {
       setEntries(loadedEntries);
-      setShowWelcome(false);
-    } else {
-      setEntries([]);
-      setShowWelcome(true);
     }
   }, []);
 
@@ -124,17 +154,167 @@ const TerminalPage: React.FC = () => {
       // Use instant scroll for immediate feedback, smooth scroll feels laggy
       terminalEndRef.current.scrollIntoView({ behavior: 'instant', block: 'end' });
     }
-  }, [entries, isUserScrolled]);
+  }, [entries, streamingText, isUserScrolled]);
+
+  // ── Shared AI streaming helper ──────────────────────────────────────────
+
+  const startAIStream = useCallback((
+    command: string,
+    projectId: string | undefined,
+    mode?: string
+  ) => {
+    setIsExecuting(true);
+    setStreamingText('');
+
+    const entryId = crypto.randomUUID();
+    const placeholderEntry: TerminalEntry = {
+      id: entryId,
+      command,
+      response: {
+        type: 'ai',
+        message: '',
+        data: {
+          aiResponse: { message: '', actions: [], sessionId: aiSessionId || '', streaming: true },
+        },
+      },
+      timestamp: new Date(),
+    };
+
+    setStreamingEntryId(entryId);
+    setEntries(prev => [...prev, placeholderEntry]);
+
+    const controller = terminalAPI.streamAIQuery(
+      command,
+      projectId,
+      aiSessionId || undefined,
+      // onChunk — accumulate streaming text for live display
+      (text: string) => {
+        setStreamingText(prev => prev + text);
+      },
+      // onDone
+      (aiResponse: AIResponseData) => {
+        setStreamingEntryId(null);
+        setStreamingText('');
+
+        // Only activate AI session if we got a real session back (not a tier gate/error)
+        if (aiResponse.sessionId) {
+          setAiSessionId(aiResponse.sessionId);
+          setIsAISession(true);
+        }
+
+        // Track session stats
+        setAiTurnCount(prev => prev + 1);
+        if (aiResponse.elapsed) {
+          setLastTurnElapsed(aiResponse.elapsed);
+        }
+        if (aiResponse.tokensUsed?.total) {
+          setSessionTokensUsed(prev => prev + aiResponse.tokensUsed!.total);
+        }
+        if (aiResponse.model && !sessionModel) {
+          setSessionModel(aiResponse.model);
+        }
+
+        // Replace placeholder with final response
+        setEntries(prev => {
+          const updated = prev.map(e =>
+            e.id === entryId
+              ? {
+                  ...e,
+                  response: {
+                    type: 'ai' as const,
+                    message: aiResponse.message,
+                    data: { aiResponse },
+                  },
+                }
+              : e
+          );
+          saveEntriesToStorage(updated);
+          return updated;
+        });
+
+        setIsExecuting(false);
+        abortControllerRef.current = null;
+      },
+      // onError
+      (error: string) => {
+        setStreamingEntryId(null);
+        setStreamingText('');
+
+        setEntries(prev => {
+          const updated = prev.map(e =>
+            e.id === entryId
+              ? {
+                  ...e,
+                  response: {
+                    type: 'error' as const,
+                    message: `AI streaming failed: ${error}`,
+                  },
+                }
+              : e
+          );
+          saveEntriesToStorage(updated);
+          return updated;
+        });
+
+        setIsExecuting(false);
+        abortControllerRef.current = null;
+      },
+      mode
+    );
+    abortControllerRef.current = controller;
+  }, [aiSessionId, sessionModel]);
+
+  // ── Handlers ────────────────────────────────────────────────────────────
 
   const handleCommandSubmit = async (command: string) => {
-    setShowWelcome(false);
+    // Guard: don't start a new request while one is in flight
+    if (isExecuting) return;
+
+    const isSlash = command.trim().startsWith('/');
+    const aiEnabled = !isSlash; // non-slash commands go to AI
+
+    // Intercept: non-slash input with no project selected and no active AI session
+    if (aiEnabled && !currentProjectId && !aiSessionId) {
+      setPendingNaturalInput(command);
+
+      // Add synthetic "pick a project" entry
+      const pickEntry: TerminalEntry = {
+        id: crypto.randomUUID(),
+        command,
+        response: {
+          type: 'prompt' as const,
+          message: 'Are we working on a new project, or an existing one?',
+          data: { projectPicker: true },
+        },
+        timestamp: new Date(),
+      };
+      setEntries(prev => {
+        const updated = [...prev, pickEntry];
+        saveEntriesToStorage(updated);
+        return updated;
+      });
+      return;
+    }
+
+    // For AI queries, use streaming
+    if (aiEnabled) {
+      startAIStream(command, currentProjectId);
+      return;
+    }
+
+    // Slash commands — use existing non-streaming path
     setIsExecuting(true);
 
     try {
       const response = await terminalAPI.executeCommand(command, currentProjectId);
 
+      // Handle /reset chat
+      if (response.data?.resetChat) {
+        resetAISessionState();
+      }
+
       const newEntry: TerminalEntry = {
-        id: Date.now().toString(),
+        id: crypto.randomUUID(),
         command,
         response,
         timestamp: new Date()
@@ -148,14 +328,11 @@ const TerminalPage: React.FC = () => {
 
       // Handle project swap
       if (response.type === 'success' && response.data?.project && onProjectSwitch) {
-        // Switch the selected project in Layout without navigating away
         setTimeout(async () => {
           await onProjectSwitch(response.data.project.id);
         }, 500);
       }
 
-      // Dispatch event to refresh project list (for @ autocomplete and other components)
-      // This ensures newly created projects appear in autocomplete without page refresh
       if (response.type === 'success' && response.data?.project) {
         window.dispatchEvent(new CustomEvent('refreshProject'));
       }
@@ -164,47 +341,33 @@ const TerminalPage: React.FC = () => {
       let suggestions = ['/help'];
       let isNoProjectError = false;
 
-      // Check if it's an authentication error
       if (error.response?.status === 401) {
         errorMessage = '🔒 Authentication required. Please refresh the page and log in again.';
         suggestions = [];
-      }
-      // Check if it's a rate limit error
-      else if (error.response?.status === 429) {
+      } else if (error.response?.status === 429) {
         const retryAfter = error.response.headers['retry-after'] || error.response.data?.retryAfter || 'a moment';
-        errorMessage = `⏱️ Rate limit exceeded. You're sending commands too quickly. Please wait ${retryAfter} seconds before trying again.`;
+        errorMessage = `⏱️ Rate limit exceeded. Please wait ${retryAfter} seconds.`;
         suggestions = [];
-      }
-      // Check if it's a timeout (no response from server)
-      else if (!error.response && error.code === 'ECONNABORTED') {
-        errorMessage = '⏱️ Request timed out after 30 seconds. This usually means:\n• The command is taking too long to execute\n• You may have hit a rate limit\n• Network connectivity issues\n\nTry breaking up batch commands or waiting a moment before retrying.';
+      } else if (!error.response && error.code === 'ECONNABORTED') {
+        errorMessage = '⏱️ Request timed out. Try again in a moment.';
         suggestions = [];
-      }
-      // Use backend error message if available
-      else if (error.response?.data?.message) {
+      } else if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
 
-        // Check if it's a "no project selected" error
         if (errorMessage.toLowerCase().includes('project') &&
             (errorMessage.toLowerCase().includes('select') ||
              errorMessage.toLowerCase().includes('required') ||
              errorMessage.toLowerCase().includes('context'))) {
           isNoProjectError = true;
-          setFailedCommand(command); // Store the failed command for retry
-
-          // Automatically run /swap to show project selector
-          setTimeout(() => {
-            handleCommandSubmit('/swap');
-          }, 500);
+          setFailedCommand(command);
+          setTimeout(() => handleCommandSubmit('/swap'), 500);
         }
-      }
-      // Generic error fallback
-      else {
+      } else {
         errorMessage = `Failed to execute command: ${error.message}`;
       }
 
       const errorEntry: TerminalEntry = {
-        id: Date.now().toString(),
+        id: crypto.randomUUID(),
         command,
         response: {
           type: 'error',
@@ -228,27 +391,74 @@ const TerminalPage: React.FC = () => {
     if (onProjectSwitch) {
       await onProjectSwitch(projectId);
 
+      // If there was a pending natural input (from project picker flow), fire it now
+      if (pendingNaturalInput) {
+        const msg = pendingNaturalInput;
+        setPendingNaturalInput(null);
+        setTimeout(() => handleCommandSubmit(msg), 300);
+        return;
+      }
+
       // If there was a failed command due to no project, retry it now
       if (failedCommand) {
         const commandToRetry = failedCommand;
-        setFailedCommand(null); // Clear it
-
-        // Wait a bit for the project switch to complete
-        setTimeout(() => {
-          handleCommandSubmit(commandToRetry);
-        }, 300);
+        setFailedCommand(null);
+        setTimeout(() => handleCommandSubmit(commandToRetry), 300);
       }
     }
   };
 
+  const resetAISessionState = () => {
+    setAiSessionId(null);
+    setIsAISession(false);
+    setAiTurnCount(0);
+    setLastTurnElapsed(undefined);
+    setSessionTokensUsed(0);
+    setSessionModel(undefined);
+  };
+
   const handleClearTerminal = () => {
     setEntries([]);
-    setShowWelcome(true);
+    resetAISessionState();
+    setPendingNaturalInput(null);
     try {
       localStorage.removeItem(TERMINAL_ENTRIES_KEY);
     } catch (error) {
       // Ignore localStorage errors
     }
+  };
+
+  const handleNewChat = () => {
+    resetAISessionState();
+    // Add a visual separator in the terminal
+    const separator: TerminalEntry = {
+      id: crypto.randomUUID(),
+      command: '',
+      response: { type: 'info', message: '— New conversation started —' },
+      timestamp: new Date(),
+    };
+    setEntries(prev => {
+      const updated = [...prev, separator];
+      saveEntriesToStorage(updated);
+      return updated;
+    });
+  };
+
+  const handleEndChat = () => {
+    // End chat clears session + tells backend via /reset
+    resetAISessionState();
+    terminalAPI.executeCommand('/reset', currentProjectId).catch(() => {});
+    const separator: TerminalEntry = {
+      id: crypto.randomUUID(),
+      command: '',
+      response: { type: 'info', message: '— Conversation ended —' },
+      timestamp: new Date(),
+    };
+    setEntries(prev => {
+      const updated = [...prev, separator];
+      saveEntriesToStorage(updated);
+      return updated;
+    });
   };
 
   const handleScrollToTop = () => {
@@ -266,6 +476,100 @@ const TerminalPage: React.FC = () => {
 
   const handleCommandClick = (command: string) => {
     setPendingCommand(command);
+  };
+
+  // Project picker handlers for no-project AI flow
+  const handleProjectPickForAI = async (projectId: string) => {
+    if (onProjectSwitch) {
+      await onProjectSwitch(projectId);
+    }
+    // Fire the stored natural input to AI with the selected project context
+    if (pendingNaturalInput) {
+      const msg = pendingNaturalInput;
+      setPendingNaturalInput(null);
+      // Small delay for project switch to settle
+      setTimeout(() => handleCommandSubmit(msg), 300);
+    }
+  };
+
+  const handleNewProjectAI = () => {
+    if (pendingNaturalInput) {
+      const msg = pendingNaturalInput;
+      setPendingNaturalInput(null);
+      startAIStream(msg, undefined, 'NEW_PROJECT');
+    }
+  };
+
+  const handleAIConfirm = async (actions: AIAction[]) => {
+    try {
+      const response = await terminalAPI.confirmAIActions(actions, currentProjectId);
+      const confirmEntry: TerminalEntry = {
+        id: crypto.randomUUID(),
+        command: `AI: Confirmed ${actions.length} action${actions.length !== 1 ? 's' : ''}`,
+        response,
+        timestamp: new Date()
+      };
+      setEntries(prev => {
+        const updated = [...prev, confirmEntry];
+        saveEntriesToStorage(updated);
+        return updated;
+      });
+
+      // Refresh project data if actions modified it
+      if (response.data?.refreshProject) {
+        window.dispatchEvent(new CustomEvent('refreshProject'));
+      }
+    } catch (error: any) {
+      const errorEntry: TerminalEntry = {
+        id: crypto.randomUUID(),
+        command: 'AI: Confirm actions',
+        response: {
+          type: 'error',
+          message: error.response?.data?.message || 'Failed to execute AI actions',
+        },
+        timestamp: new Date()
+      };
+      setEntries(prev => {
+        const updated = [...prev, errorEntry];
+        saveEntriesToStorage(updated);
+        return updated;
+      });
+    }
+  };
+
+  const handleAICancel = () => {
+    // Cancel is handled visually inside AIResponseRenderer (dismissed state)
+  };
+
+  const handleAIRetry = (command: string) => {
+    startAIStream(command, currentProjectId);
+  };
+
+  const handleStopAI = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    if (streamingEntryId) {
+      setEntries(prev => {
+        const updated = prev.map(e =>
+          e.id === streamingEntryId
+            ? {
+                ...e,
+                response: {
+                  type: 'info' as const,
+                  message: 'AI request stopped.',
+                },
+              }
+            : e
+        );
+        saveEntriesToStorage(updated);
+        return updated;
+      });
+      setStreamingEntryId(null);
+      setStreamingText('');
+      setIsExecuting(false);
+    }
   };
 
   const handleWizardComplete = (entryId: string, wizardData: Record<string, any>) => {
@@ -444,134 +748,76 @@ const TerminalPage: React.FC = () => {
     <div className="flex flex-col h-full relative">
       {/* Terminal Output - Scrollable */}
       <div ref={terminalOutputRef} className="flex-1 min-h-0 overflow-y-auto p-2 space-y-3 font-mono text-sm">
-        {/* Welcome Message */}
-        {showWelcome && (
-          <div className="animate-fade-in">
-            <div className="bg-base-100 p-4 rounded-lg border-thick">
-              <div className="flex items-start gap-2">
-                <span className="text-xl flex-shrink-0 bg-base-200 p-2 rounded-lg border-thick">💻</span>
-                <div className="flex-1 min-w-0">
-                  <div className="ml-1 text-lg font-semibold bg-base-200 p-2 rounded-lg border-thick break-words mb-3">
-                    Welcome to the Terminal!
-                  </div>
-
-                  <p className="text-sm text-base-content/70 mb-3 ml-1">
-                    Execute commands to manage your projects. Type <code className="px-1.5 py-0.5 bg-base-200 rounded text-xs text-base-content/70">/help</code> for all available commands.
-                  </p>
-
-                  {/* Command Syntax Guide */}
-                  <div className="mt-3 mb-3 p-3 bg-base-200/50 rounded-lg border-thick">
-                    <div className="space-y-2 text-xs text-base-content/70">
-                      <div>
-                        <span className="font-semibold text-base-content/70">/ </span>
-                        <span>All commands start with a forward slash</span>
-                        <div className="text-xs text-base-content/60 mt-1 ml-3">
-                          Example: <code className="bg-base-200 px-1 rounded text-base-content/70">/add todo</code>, <code className="bg-base-200 px-1 rounded text-base-content/70">/view notes</code>
-                        </div>
-                      </div>
-                      <div>
-                        <span className="font-semibold text-base-content/70">@project </span>
-                        <span>Reference projects using @ (supports spaces in names)</span>
-                        <div className="text-xs text-base-content/60 mt-1 ml-3">
-                          Example: <code className="bg-base-200 px-1 rounded text-base-content/70">@MyProject</code>, <code className="bg-base-200 px-1 rounded text-base-content/70">@My Cool Project</code>
-                        </div>
-                      </div>
-                      <div>
-                        <span className="font-semibold text-base-content/70">--flag </span>
-                        <span>Use flags to add options to commands</span>
-                        <div className="text-xs text-base-content/60 mt-1 ml-3">
-                          Example: <code className="bg-base-200 px-1 rounded text-base-content/70">--category=web</code>, <code className="bg-base-200 px-1 rounded text-base-content/70">--role=editor</code>
-                        </div>
-                      </div>
-                      <div>
-                        <span className="font-semibold text-base-content/70">&& or Newlines </span>
-                        <span>Chain multiple commands together (executes sequentially)</span>
-                        <div className="text-xs text-base-content/60 mt-1 ml-3">
-                          Example: <code className="bg-base-200 px-1 rounded text-base-content/70">/add todo task && /view todos</code>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Quick Actions */}
-                  <div className="mt-3 mb-3">
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        onClick={() => {
-                          handleCommandSubmit('/help');
-                          setShowWelcome(false);
-                        }}
-                        className="btn btn-sm btn-primary border-2 hover:border-primary"
-                      >
-                        📚 Help
-                      </button>
-                      <button
-                        onClick={() => {
-                          handleCommandSubmit('/swap');
-                          setShowWelcome(false);
-                        }}
-                        className="btn btn-sm btn-primary border-2 hover:border-primary"
-                      >
-                        🔄 Switch
-                      </button>
-                      <button
-                        onClick={() => setPendingCommand('/wizard new')}
-                        className="btn btn-sm btn-primary border-2 hover:border-primary"
-                      >
-                        🧙 New Project
-                      </button>
-                      <button
-                        onClick={() => setPendingCommand('/info')}
-                        className="btn btn-sm btn-primary border-2 hover:border-primary"
-                      >
-                        ℹ️ Info
-                      </button>
-                      <button
-                        onClick={() => setPendingCommand('/today')}
-                        className="btn btn-sm btn-primary border-2 hover:border-primary"
-                      >
-                        📅 Today
-                      </button>
-                      <button
-                        onClick={() => setPendingCommand('/view todos')}
-                        className="btn btn-sm btn-primary border-2 hover:border-primary"
-                      >
-                        ✅ Todos
-                      </button>
-                      <button
-                        onClick={() => setPendingCommand('/view notes')}
-                        className="btn btn-sm btn-primary border-2 hover:border-primary"
-                      >
-                        📝 Notes
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+        {/* Welcome screen when no entries */}
+        {entries.length === 0 && !isExecuting && (
+          <WelcomeScreen
+            firstName={user?.firstName}
+            projectName={currentProjectName}
+            onSubmit={handleCommandSubmit}
+          />
         )}
 
         {/* Command History */}
-        {entries.map(entry => (
-          <CommandResponse
-            key={entry.id}
-            entryId={entry.id}
-            response={entry.response}
-            command={entry.command}
-            timestamp={entry.timestamp}
-            onProjectSelect={handleProjectSelect}
-            currentProjectId={currentProjectId}
-            onCommandClick={handleCommandClick}
-            onDirectThemeChange={handleDirectThemeChange}
-            onWizardComplete={handleWizardComplete}
-            onSelectorTransition={handleSelectorTransition}
-            fromStorage={entry.fromStorage}
-          />
-        ))}
+        {entries.map(entry => {
+          // Render inline project picker for no-project AI flow
+          if (entry.response.data?.projectPicker) {
+            return (
+              <div key={entry.id} className="animate-fade-in">
+                {/* Show the user's original message */}
+                <div className="flex items-start gap-2 mb-2">
+                  <span className="text-xs text-base-content/50 font-mono">{'>'}</span>
+                  <span className="text-sm text-base-content/80">{entry.command}</span>
+                </div>
+                {/* Prompt */}
+                <div className="bg-base-100 p-4 rounded-lg border-thick">
+                  <p className="text-sm font-medium mb-3">{entry.response.message}</p>
+                  <div className="flex gap-2 mb-3">
+                    <button
+                      onClick={() => handleCommandSubmit('/swap')}
+                      className="btn btn-sm btn-primary border-2"
+                    >
+                      Existing Project
+                    </button>
+                    <button
+                      onClick={handleNewProjectAI}
+                      className="btn btn-sm btn-outline border-2"
+                    >
+                      New Project
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          }
 
-        {/* Loading indicator */}
-        {isExecuting && (
+          return (
+            <CommandResponse
+              key={entry.id}
+              entryId={entry.id}
+              response={entry.response}
+              command={entry.command}
+              timestamp={entry.timestamp}
+              onProjectSelect={handleProjectSelect}
+              currentProjectId={currentProjectId}
+              onCommandClick={handleCommandClick}
+              onCommandExecute={handleCommandSubmit}
+              onDirectThemeChange={handleDirectThemeChange}
+              onWizardComplete={handleWizardComplete}
+              onSelectorTransition={handleSelectorTransition}
+              onAIConfirm={handleAIConfirm}
+              onAICancel={handleAICancel}
+              onAIRetry={handleAIRetry}
+              fromStorage={entry.fromStorage}
+              isStreaming={entry.id === streamingEntryId}
+              streamingText={entry.id === streamingEntryId ? streamingText : undefined}
+              userName={user?.firstName}
+              onStopAI={entry.id === streamingEntryId ? handleStopAI : undefined}
+            />
+          );
+        })}
+
+        {/* Loading indicator — only for non-streaming slash commands */}
+        {isExecuting && !streamingEntryId && (
           <div className="flex items-center gap-2 text-base-content/70 animate-pulse">
             <div className="loading loading-spinner loading-sm text-primary"></div>
             <span className="text-xs">Executing...</span>
@@ -602,9 +848,18 @@ const TerminalPage: React.FC = () => {
           disabled={isExecuting}
           currentProjectId={currentProjectId}
           onScrollToTop={handleScrollToTop}
+          onScrollToBottom={handleScrollToBottom}
           onClear={handleClearTerminal}
+          onNewChat={handleNewChat}
+          onEndChat={handleEndChat}
           pendingCommand={pendingCommand}
           onCommandSet={() => setPendingCommand(null)}
+          isAISession={isAISession}
+          aiTurnCount={aiTurnCount}
+          lastTurnElapsed={lastTurnElapsed}
+          sessionTokensUsed={sessionTokensUsed}
+          sessionModel={sessionModel}
+          projectName={currentProjectName}
         />
       </div>
     </div>

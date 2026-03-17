@@ -58,7 +58,7 @@ const relationshipSchema = new Schema({
   description: { type: String, default: '' }
 });
 
-const componentSchema = new Schema({
+const featureSchema = new Schema({
   id: { type: String, required: true },
   category: {
     type: String,
@@ -68,7 +68,7 @@ const componentSchema = new Schema({
   type: { type: String, required: true, maxlength: 100 }, // Flexible type based on category
   title: { type: String, required: true, maxlength: 200 },
   content: { type: String, required: true, maxlength: 50000 },
-  feature: { type: String, required: true, maxlength: 100 }, // Feature is required - components belong to features
+  group: { type: String, required: true, maxlength: 100 }, // Group is required - features belong to groups
   filePath: { type: String, default: '', maxlength: 500 },
   tags: [{ type: String, maxlength: 50 }],
   relationships: [relationshipSchema],
@@ -139,7 +139,7 @@ export interface IProject extends Document {
   publicVisibility?: {
     description: boolean;
     tags: boolean;
-    components: boolean;
+    features: boolean;
     techStack: boolean;
     timestamps: boolean;
     devLog: boolean;
@@ -178,14 +178,14 @@ export interface IProject extends Document {
     date: Date;
   }>;
   
-  // Documentation Templates
-  components: Array<{
+  // Features
+  features: Array<{
     id: string;
     category: 'frontend' | 'backend' | 'database' | 'infrastructure' | 'security' | 'api' | 'documentation' | 'asset';
     type: string; // Flexible type based on category
     title: string;
     content: string;
-    feature: string; // Feature is required
+    group: string; // Group is required
     filePath?: string;
     tags?: string[];
     relationships?: Array<{
@@ -250,8 +250,8 @@ const projectSchema = new Schema<IProject>({
   todos: [todoSchema],
   devLog: [devLogSchema],
 
-  // Feature Components
-  components: [componentSchema],
+  // Features
+  features: [featureSchema],
 
   // Unified Tech Stack
   stack: [stackItemSchema],
@@ -329,7 +329,7 @@ const projectSchema = new Schema<IProject>({
   publicVisibility: {
     description: { type: Boolean, default: true },
     tags: { type: Boolean, default: true },
-    components: { type: Boolean, default: true },
+    features: { type: Boolean, default: true },
     techStack: { type: Boolean, default: true },
     timestamps: { type: Boolean, default: true },
     devLog: { type: Boolean, default: true }
@@ -372,11 +372,11 @@ projectSchema.index({ stagingEnvironment: 1 });
 
 // Nested document indexes for efficient queries
 projectSchema.index({ 'notes.id': 1 });
-projectSchema.index({ 'components.id': 1 });
-projectSchema.index({ 'components.category': 1 }); // Index for category filtering
-projectSchema.index({ 'components.type': 1 }); // Index for type filtering
-projectSchema.index({ 'components.feature': 1 }); // Index for feature grouping
-projectSchema.index({ 'components.tags': 1 }); // Index for tag filtering
+projectSchema.index({ 'features.id': 1 });
+projectSchema.index({ 'features.category': 1 }); // Index for category filtering
+projectSchema.index({ 'features.type': 1 }); // Index for type filtering
+projectSchema.index({ 'features.group': 1 }); // Index for feature grouping
+projectSchema.index({ 'features.tags': 1 }); // Index for tag filtering
 
 // Compound indexes for common filter patterns
 projectSchema.index({ userId: 1, category: 1, isArchived: 1 });
@@ -389,10 +389,10 @@ projectSchema.index({
   description: 'text',
   'notes.title': 'text',
   'notes.content': 'text',
-  'components.title': 'text',
-  'components.content': 'text',
-  'components.feature': 'text',
-  'components.tags': 'text',
+  'features.title': 'text',
+  'features.content': 'text',
+  'features.group': 'text',
+  'features.tags': 'text',
   'todos.title': 'text',
   'todos.description': 'text',
   'devLog.title': 'text',
@@ -403,10 +403,10 @@ projectSchema.index({
     description: 5,
     'notes.title': 3,
     'notes.content': 1,
-    'components.title': 3,
-    'components.content': 1,
-    'components.feature': 4, // Feature names are important for search
-    'components.tags': 2, // Tags are moderately important
+    'features.title': 3,
+    'features.content': 1,
+    'features.group': 4, // Feature names are important for search
+    'features.tags': 2, // Tags are moderately important
     'todos.title': 2,
     'todos.description': 1,
     'devLog.title': 2,

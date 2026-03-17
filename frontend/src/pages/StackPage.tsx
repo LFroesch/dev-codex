@@ -20,8 +20,8 @@ interface ContextType {
   selectedProject: Project | null;
   user: any;
   onProjectRefresh: () => Promise<void>;
-  activeStackTab: 'current' | 'add';
-  setActiveStackTab: (tab: 'current' | 'add') => void;
+  activeStackTab: 'current' | 'add' | 'custom';
+  setActiveStackTab: (tab: 'current' | 'add' | 'custom') => void;
 }
 
 const StackPage: React.FC = () => {
@@ -34,6 +34,8 @@ const StackPage: React.FC = () => {
   const [selectedGroup, setSelectedGroup] = useState<string>('Frontend');
   const [activeCategory, setActiveCategory] = useState<string>('');
   const [editingVersion, setEditingVersion] = useState<{category: string, name: string, version: string} | null>(null);
+  const [customTech, setCustomTech] = useState({ name: '', category: 'tooling', version: '', description: '' });
+  const [addingCustom, setAddingCustom] = useState(false);
 
   // Local state for instant UI updates - unified stack
   const [localStack, setLocalStack] = useState<any[]>([]);
@@ -234,6 +236,40 @@ const StackPage: React.FC = () => {
       setLoadingStates(prev => ({ ...prev, [loadingKey]: false }));
     }
   }, [selectedProject, onProjectRefresh, localStack]);
+
+  const handleAddCustomTech = useCallback(async () => {
+    if (!selectedProject || !customTech.name.trim()) return;
+
+    setAddingCustom(true);
+    setError('');
+
+    try {
+      const newItem = {
+        category: customTech.category,
+        name: customTech.name.trim(),
+        version: customTech.version.trim(),
+        description: customTech.description.trim()
+      };
+      setLocalStack(prev => [...prev, newItem]);
+
+      await projectAPI.addTechnology(selectedProject.id, newItem as any);
+
+      analyticsService.trackFeatureUsage('stack_custom_technology_add', {
+        projectId: selectedProject.id,
+        projectName: selectedProject.name,
+        technology: newItem.name,
+        category: newItem.category
+      });
+
+      setCustomTech({ name: '', category: 'tooling', version: '', description: '' });
+      await onProjectRefresh();
+    } catch (err: any) {
+      setLocalStack(prev => prev.filter(item => item.name !== customTech.name.trim()));
+      setError(err.response?.data?.message || 'Failed to add custom technology');
+    } finally {
+      setAddingCustom(false);
+    }
+  }, [selectedProject, customTech, onProjectRefresh]);
 
   // Memoize filtered categories for selected stack display
   const selectedStackByCategory = useMemo(() => {
@@ -481,7 +517,7 @@ const StackPage: React.FC = () => {
                           rel="noopener noreferrer"
                           className="btn btn-ghost w-8 btn-sm text-primary hover:bg-primary/10 border-2 border-base-content/20 group-hover:opacity-100 transition-opacity"
                           onClick={(e) => e.stopPropagation()}
-                          title="View documentation"
+                          title="Docs"
                         >
                           🔗
                         </a>
@@ -563,8 +599,8 @@ const StackPage: React.FC = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                 </svg>
               </div>
-              <h3 className="text-lg font-medium mb-2 text-base-content/80">No technologies selected</h3>
-              <p className="text-sm text-base-content/60">Add technologies to your stack to get started</p>
+              <h3 className="text-lg font-medium mb-2 text-base-content/80">No stack items yet</h3>
+              <p className="text-sm text-base-content/60">Use Browse or Custom to add items to your stack</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -619,7 +655,7 @@ const StackPage: React.FC = () => {
                               target="_blank"
                               rel="noopener noreferrer"
                               className="btn btn-ghost w-8 btn-sm text-primary hover:bg-primary/10 border-2 border-base-content/20 group-hover:opacity-100 transition-opacity"
-                              title="View documentation"
+                              title="Docs"
                             >
                               🔗
                             </a>
@@ -627,7 +663,7 @@ const StackPage: React.FC = () => {
                           <button
                             onClick={() => handleRemoveTechnology(tech.category, tech.name)}
                             className={`btn w-8 btn-ghost btn-sm text-error hover:bg-error/10 border-2 border-base-content/20 group-hover:opacity-100 transition-opacity ${isLoading ? 'loading' : ''}`}
-                            title='Remove technology'
+                            title='Remove from stack'
                             disabled={isLoading}
                           >
                             {isLoading ? '' : '×'}
@@ -648,7 +684,90 @@ const StackPage: React.FC = () => {
         </div>
       )}
 
-      {/* Add Technologies Section */}
+      {/* Custom Stack Item */}
+      {activeStackTab === 'custom' && (
+        <div className="space-y-6">
+          <div className="section-container mb-4">
+            <div className="section-header">
+              <div className="flex items-center gap-3">
+                <div className="section-icon">✏️</div>
+                <span>Add Custom Stack Item</span>
+              </div>
+            </div>
+            <div className="section-content">
+              <p className="text-sm text-base-content/60 mb-4">Add something not in the browse list — any library, tool, or service.</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="form-control">
+                  <label className="label py-1">
+                    <span className="label-text font-medium">Name *</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Redis, Zod, Puppeteer"
+                    className="input input-bordered input-sm w-full"
+                    value={customTech.name}
+                    onChange={(e) => setCustomTech(prev => ({ ...prev, name: e.target.value }))}
+                  />
+                </div>
+                <div className="form-control">
+                  <label className="label py-1">
+                    <span className="label-text font-medium">Category</span>
+                  </label>
+                  <select
+                    className="select select-bordered select-sm w-full"
+                    value={customTech.category}
+                    onChange={(e) => setCustomTech(prev => ({ ...prev, category: e.target.value }))}
+                  >
+                    <option value="framework">Framework</option>
+                    <option value="runtime">Runtime</option>
+                    <option value="database">Database</option>
+                    <option value="styling">Styling</option>
+                    <option value="testing">Testing</option>
+                    <option value="deployment">Deployment</option>
+                    <option value="tooling">Tooling</option>
+                  </select>
+                </div>
+                <div className="form-control">
+                  <label className="label py-1">
+                    <span className="label-text font-medium">Version</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 7.2"
+                    className="input input-bordered input-sm w-full"
+                    value={customTech.version}
+                    onChange={(e) => setCustomTech(prev => ({ ...prev, version: e.target.value }))}
+                  />
+                </div>
+                <div className="form-control">
+                  <label className="label py-1">
+                    <span className="label-text font-medium">Description</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Brief description (optional)"
+                    className="input input-bordered input-sm w-full"
+                    value={customTech.description}
+                    onChange={(e) => setCustomTech(prev => ({ ...prev, description: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <div className="mt-4">
+                <button
+                  onClick={handleAddCustomTech}
+                  disabled={addingCustom || !customTech.name.trim()}
+                  className="btn btn-primary btn-sm"
+                  style={{ color: getContrastTextColor() }}
+                >
+                  {addingCustom ? 'Adding...' : 'Add to Stack'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Browse Stack Items */}
       {activeStackTab === 'add' && (
         <div className="space-y-6">
           {/* Combined Selection Panel */}

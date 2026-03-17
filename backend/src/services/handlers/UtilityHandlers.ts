@@ -9,6 +9,7 @@ import NotificationService from '../notificationService';
 import { NewsPost } from '../../models/NewsPost';
 import { calculateTextMetrics } from '../../utils/textMetrics';
 import staleItemService from '../staleItemService';
+import { AIContextBuilder } from '../AIContextBuilder';
 
 /**
  * Handlers for utility commands (help, themes, swap, export, news, wizards)
@@ -49,7 +50,7 @@ export class UtilityHandlers extends BaseCommandHandler {
       '1. ⚡ Getting Started': [],
       '2. 📋 Tasks & Todos': [],
       '3. 📝 Notes & Dev Log': [],
-      '4. 🧩 Features & Components': [],
+      '4. 🧩 Features': [],
       '5. 📦 Tech Stack': [],
       '6. 📊 Project Insights': [],
       '7. 👥 Team & Deployment': [],
@@ -61,19 +62,30 @@ export class UtilityHandlers extends BaseCommandHandler {
     grouped['1. ⚡ Getting Started'] = [
       {
         type: 'syntax_tip',
-        syntax: '📖 Basic Syntax',
-        description: 'All commands start with / (e.g., /help, /add todo, /view notes)',
+        syntax: '🧠 Built-in AI',
+        description: 'Just type naturally — no slash needed. The AI reads your project context and proposes actions you can confirm with one click.',
+        examples: [
+          '"finished the auth page, used JWT tokens" → AI proposes devlog + todo updates',
+          '"what should I work on next?" → AI analyzes your todos and suggests priorities',
+          '"break down the payment feature into tasks" → AI creates todo list',
+          'Follow-up: type again to continue the conversation (session persists until /clear)'
+        ]
+      },
+      {
+        type: 'syntax_tip',
+        syntax: '📖 Slash Commands',
+        description: 'Type / to use 50+ direct commands with autocomplete (e.g., /help, /add todo, /view notes). Power-user shortcuts.',
         examples: []
       },
       {
         type: 'syntax_tip',
-        syntax: '🤖 Working with AI Assistants',
-        description: 'Get project context + command guide for Claude, ChatGPT, or other LLMs. Use /summary to export data, then copy with "Summary + LLM Guide" button for complete context.',
+        syntax: '🤖 Use With External AI (Claude, ChatGPT, Cursor)',
+        description: 'Export your project to use with your own AI tools. /bridge gives the command spec, /context gives your project data.',
         examples: [
-          '/summary prompt all - Get project summary optimized for LLMs',
-          '/summary text projects - Quick list of all your projects',
-          '/llm - General terminal command guide for AI assistants',
-          'Workflow: /summary prompt all → Click "🤖 Summary + LLM Guide" → Paste to AI → AI generates commands'
+          '/bridge - Command reference for AI tools (paste into CLAUDE.md / .cursorrules)',
+          '/context - Current project state (todos, features, stack, devlog)',
+          '/context full - Full project dump (no truncation)',
+          '/bridge + /context → paste both into AI → get commands back → paste here'
         ]
       },
       {
@@ -81,7 +93,7 @@ export class UtilityHandlers extends BaseCommandHandler {
         syntax: '🔗 Batch Commands',
         description: 'Chain commands with && or newlines (max 10 per batch). Execution stops on first error. Newlines are easier to read/edit.',
         examples: [
-          '/add todo task 1\n/add todo task 2\n/add note architecture',
+          '/add todo task 1 && /add todo task 2 && /add note architecture',
           '/add todo implement feature && /add note architecture decisions',
           '/add stack React && /view stack'
         ]
@@ -151,11 +163,11 @@ export class UtilityHandlers extends BaseCommandHandler {
       'edit_devlog': 7,
       'delete_devlog': 8,
 
-      // Features & Components - CRUD for components, then CRUD for relationships
-      'add_component': 1,
-      'view_components': 2,
-      'edit_component': 3,
-      'delete_component': 4,
+      // Features - CRUD for features, then CRUD for relationships
+      'add_feature': 1,
+      'view_features': 2,
+      'edit_feature': 3,
+      'delete_feature': 4,
       'add_relationship': 5,
       'view_relationships': 6,
       'edit_relationship': 7,
@@ -241,18 +253,18 @@ export class UtilityHandlers extends BaseCommandHandler {
         grouped['3. 📝 Notes & Dev Log'].push(cmd);
       }
 
-      // 4. Features & Components
+      // 4. Features
       else if ([
-        'add_component',
-        'view_components',
-        'edit_component',
-        'delete_component',
+        'add_feature',
+        'view_features',
+        'edit_feature',
+        'delete_feature',
         'add_relationship',
         'view_relationships',
         'edit_relationship',
         'delete_relationship'
       ].includes(cmdType)) {
-        grouped['4. 🧩 Features & Components'].push(cmd);
+        grouped['4. 🧩 Features'].push(cmd);
       }
 
       // 5. Tech Stack
@@ -399,839 +411,16 @@ export class UtilityHandlers extends BaseCommandHandler {
   }
 
   /**
-   * Handle /export command
-   */
-  async handleExport(parsed: ParsedCommand, currentProjectId?: string): Promise<CommandResponse> {
-    const resolution = await this.resolveProject(parsed.projectMention, currentProjectId);
-    if (!resolution.project) {
-      return this.buildProjectErrorResponse(resolution);
-    }
-
-    return {
-      type: ResponseType.SUCCESS,
-      message: `📦 Preparing export for ${resolution.project.name}`,
-      data: {
-        exportUrl: `/api/projects/${resolution.project._id}/export`,
-        projectName: resolution.project.name
-      },
-      metadata: {
-        projectId: resolution.project._id.toString(),
-        projectName: resolution.project.name,
-        action: 'export'
-      }
-    };
-  }
-
-  /**
-   * Handle /summary command - Generate downloadable project summary
+   * Legacy handleSummary - now delegates to handleContext. Kept for test compatibility.
    */
   async handleSummary(parsed: ParsedCommand, currentProjectId?: string): Promise<CommandResponse> {
-    const format = parsed.args[0]?.toLowerCase() || 'markdown';
-    let entity = parsed.args[1]?.toLowerCase() || 'all';
-
-    // Validate format
-    const validFormats = ['markdown', 'json', 'prompt', 'text'];
-    if (!validFormats.includes(format)) {
-      return {
-        type: ResponseType.ERROR,
-        message: `Invalid format "${format}". Available formats: markdown, json, prompt, text`,
-        suggestions: ['/help summary']
-      };
-    }
-
-    // Normalize entity aliases (handle plurals)
-    const entityAliases: Record<string, string> = {
-      'todo': 'todos',
-      'todos': 'todos',
-      'note': 'notes',
-      'notes': 'notes',
-      'devlog': 'devlog',
-      'devlogs': 'devlog',
-      'component': 'components',
-      'components': 'components',
-      'stack': 'stack',
-      'team': 'team',
-      'deployment': 'deployment',
-      'deploy': 'deployment',
-      'setting': 'settings',
-      'settings': 'settings',
-      'project': 'projects',
-      'projects': 'projects',
-      'all': 'all'
-    };
-
-    if (entity && !entityAliases[entity]) {
-      return {
-        type: ResponseType.ERROR,
-        message: `Invalid entity "${entity}". Available: all, todos, notes, devlog, components, stack, team, deployment, settings, projects`,
-        suggestions: ['/help summary']
-      };
-    }
-
-    // Normalize to canonical form
-    entity = entityAliases[entity] || 'all';
-
-    // Handle special case: projects entity (show all user projects + ideas)
-    if (entity === 'projects') {
-      const summary = await this.generateProjectsAndIdeasSummary(format);
-      const metrics = calculateTextMetrics(summary);
-
-      const extensions: Record<string, string> = {
-        markdown: 'md',
-        json: 'json',
-        prompt: 'txt',
-        text: 'txt'
-      };
-
-      const fileExtension = extensions[format];
-      const fileName = `all-projects-and-ideas.${fileExtension}`;
-
-      return {
-        type: ResponseType.DATA,
-        message: `📄 Generated ${format} summary of all projects and ideas`,
-        data: {
-          summary,
-          format,
-          fileName,
-          projectName: 'All Projects',
-          entityType: 'projects',
-          downloadable: true,
-          textMetrics: metrics
-        },
-        metadata: {
-          action: 'summary'
-        }
-      };
-    }
-
-    // For other entities, resolve the project
-    const resolution = await this.resolveProject(parsed.projectMention, currentProjectId);
-    if (!resolution.project) {
-      return this.buildProjectErrorResponse(resolution);
-    }
-
-    const project = resolution.project;
-
-    // Generate filtered summary
-    const summary = this.generateFilteredSummary(project, format, entity);
-
-    // Calculate text metrics (character count and token estimation)
-    const metrics = calculateTextMetrics(summary);
-
-    // Determine file extension
-    const extensions: Record<string, string> = {
-      markdown: 'md',
-      json: 'json',
-      prompt: 'txt',
-      text: 'txt'
-    };
-
-    const fileExtension = extensions[format];
-    const entitySuffix = entity === 'all' ? 'summary' : entity;
-    const fileName = `${project.name.replace(/\s+/g, '-')}-${entitySuffix}.${fileExtension}`;
-
-    return {
-      type: ResponseType.DATA,
-      message: `📄 Generated ${format} ${entity === 'all' ? 'summary' : entity + ' export'} for ${project.name}`,
-      data: {
-        summary,
-        format,
-        fileName,
-        projectName: project.name,
-        entityType: entity,
-        downloadable: true,
-        textMetrics: metrics
-      },
-      metadata: {
-        projectId: project._id.toString(),
-        projectName: project.name,
-        action: 'summary'
-      }
-    };
+    return this.handleContext(parsed, currentProjectId);
   }
 
-  /**
-   * Generate concise summary of all user projects and ideas
-   */
-  private async generateProjectsAndIdeasSummary(format: string): Promise<string> {
-    // Fetch all user projects
-    const projects = await Project.find({ userId: this.userId })
-      .select('name description category stagingEnvironment createdAt updatedAt')
-      .sort({ createdAt: -1 })
-      .lean();
-
-    // Fetch user ideas
-    const user = await User.findById(this.userId).select('ideas').lean();
-    const ideas = user?.ideas || [];
-
-    switch (format) {
-      case 'json':
-        return JSON.stringify({
-          projects: projects.map(p => ({
-            name: p.name,
-            description: p.description,
-            category: p.category,
-            environment: p.stagingEnvironment
-          })),
-          ideas: ideas.map((i: any) => ({
-            title: i.title,
-            description: i.description
-          }))
-        }, null, 2);
-
-      case 'prompt':
-        let prompt = `# All Projects and Ideas\n\n`;
-        prompt += `## 📁 PROJECTS (${projects.length})\n\n`;
-        projects.forEach((project: any) => {
-          prompt += `**${project.name}**${project.category ? ` [${project.category}]` : ''}\n`;
-          if (project.description) prompt += `${project.description}\n`;
-          prompt += `\n`;
-        });
-
-        if (ideas.length > 0) {
-          prompt += `\n## 💡 IDEAS (${ideas.length})\n\n`;
-          ideas.forEach((idea: any) => {
-            prompt += `**${idea.title}**\n`;
-            if (idea.description) prompt += `${idea.description}\n`;
-            prompt += `\n`;
-          });
-        }
-
-        return prompt;
-
-      case 'markdown':
-        let md = `# All Projects and Ideas\n\n`;
-        md += `## Projects (${projects.length})\n\n`;
-        projects.forEach((project: any) => {
-          md += `### ${project.name}`;
-          if (project.category) md += ` - ${project.category}`;
-          md += `\n\n`;
-          if (project.description) md += `${project.description}\n\n`;
-        });
-
-        if (ideas.length > 0) {
-          md += `## Ideas (${ideas.length})\n\n`;
-          ideas.forEach((idea: any) => {
-            md += `### ${idea.title}\n\n`;
-            if (idea.description) md += `${idea.description}\n\n`;
-          });
-        }
-
-        return md;
-
-      case 'text':
-      default:
-        let text = `ALL PROJECTS AND IDEAS\n${'='.repeat(22)}\n\n`;
-        text += `PROJECTS (${projects.length})\n${'-'.repeat(20)}\n`;
-        projects.forEach((project: any) => {
-          text += `${project.name}${project.category ? ` [${project.category}]` : ''}\n`;
-          if (project.description) text += `  ${project.description}\n`;
-          text += `\n`;
-        });
-
-        if (ideas.length > 0) {
-          text += `\nIDEAS (${ideas.length})\n${'-'.repeat(20)}\n`;
-          ideas.forEach((idea: any) => {
-            text += `${idea.title}\n`;
-            if (idea.description) text += `  ${idea.description}\n`;
-            text += `\n`;
-          });
-        }
-
-        return text;
-    }
-  }
-
-  /**
-   * Generate filtered summary based on entity type
-   */
-  private generateFilteredSummary(project: any, format: string, entity: string): string {
-    // Create a filtered project object based on entity
-    const filteredProject: any = {
-      name: project.name,
-      description: project.description,
-      category: project.category,
-      stagingEnvironment: project.stagingEnvironment,
-      color: project.color,
-      tags: project.tags,
-      createdAt: project.createdAt,
-      updatedAt: project.updatedAt,
-      _id: project._id
-    };
-
-    // Add only requested entity data
-    switch (entity) {
-      case 'todos':
-        filteredProject.todos = project.todos || [];
-        filteredProject.notes = [];
-        filteredProject.devLog = [];
-        filteredProject.components = [];
-        filteredProject.stack = [];
-        break;
-      case 'notes':
-        filteredProject.todos = [];
-        filteredProject.notes = project.notes || [];
-        filteredProject.devLog = [];
-        filteredProject.components = [];
-        filteredProject.stack = [];
-        break;
-      case 'devlog':
-        filteredProject.todos = [];
-        filteredProject.notes = [];
-        filteredProject.devLog = project.devLog || [];
-        filteredProject.components = [];
-        filteredProject.stack = [];
-        break;
-      case 'components':
-        filteredProject.todos = [];
-        filteredProject.notes = [];
-        filteredProject.devLog = [];
-        filteredProject.components = project.components || [];
-        filteredProject.stack = [];
-        break;
-      case 'stack':
-        filteredProject.todos = [];
-        filteredProject.notes = [];
-        filteredProject.devLog = [];
-        filteredProject.components = [];
-        filteredProject.stack = project.stack || [];
-        break;
-      case 'team':
-        filteredProject.todos = [];
-        filteredProject.notes = [];
-        filteredProject.devLog = [];
-        filteredProject.components = [];
-        filteredProject.stack = [];
-        filteredProject.team = project.team || [];
-        break;
-      case 'deployment':
-        filteredProject.todos = [];
-        filteredProject.notes = [];
-        filteredProject.devLog = [];
-        filteredProject.components = [];
-        filteredProject.stack = [];
-        filteredProject.deploymentData = project.deploymentData || null;
-        break;
-      case 'settings':
-        filteredProject.todos = [];
-        filteredProject.notes = [];
-        filteredProject.devLog = [];
-        filteredProject.components = [];
-        filteredProject.stack = [];
-        // Settings includes basic project metadata
-        filteredProject.tags = project.tags || [];
-        filteredProject.category = project.category;
-        filteredProject.stagingEnvironment = project.stagingEnvironment;
-        break;
-      case 'all':
-      default:
-        filteredProject.todos = project.todos || [];
-        filteredProject.notes = project.notes || [];
-        filteredProject.devLog = project.devLog || [];
-        filteredProject.components = project.components || [];
-        filteredProject.stack = project.stack || [];
-        filteredProject.team = project.team || [];
-        filteredProject.deploymentData = project.deploymentData;
-        filteredProject.publicPageData = project.publicPageData;
-        break;
-    }
-
-    // Use existing summary generator with filtered data
-    return this.generateProjectSummary(filteredProject, format);
-  }
-
-  /**
-   * Generate project summary in different formats (with all data included)
-   */
-  private generateProjectSummary(project: any, format: string): string {
-    const todos = project.todos || [];
-    const notes = project.notes || [];
-    const devLog = project.devLog || [];
-    const components = project.components || [];
-    const stack = project.stack || [];
-    const team = project.team || [];
-    const relationships = project.relationships || [];
-
-    // Count stats
-    const completedTodos = todos.filter((t: any) => t.completed).length;
-    const activeTodos = todos.filter((t: any) => !t.completed);
-
-    switch (format) {
-      case 'json':
-        return JSON.stringify({
-          basicInfo: {
-            name: project.name,
-            category: project.category,
-            stagingEnvironment: project.stagingEnvironment,
-          },
-          description: project.description,
-          notes: notes,
-          todos: todos,
-          devLog: devLog,
-          components: components,
-          techStack: {
-            stack: stack,
-          },
-          team: team,
-          deploymentData: project.deploymentData || null,
-          publicPageData: project.publicPageData || null,
-          timestamps: {
-            createdAt: project.createdAt,
-            updatedAt: project.updatedAt
-          }
-        }, null, 2);
-
-      case 'prompt':
-        let prompt = `# Project Context for AI Assistant for "${project.name}"\n\n`;
-        if (project.description) prompt += `**Description:** ${project.description}\n\n`;
-        prompt += `## 🤖 MY REQUEST:\n[Please replace this text with what you need help with regarding this project]\n\n`;
-        prompt += `## 📋 PROJECT OVERVIEW\n\n`;
-        prompt += `**Project Name:** ${project.name}\n`;
-        if (project.category) prompt += `**Category:** ${project.category}\n`;
-        if (project.stagingEnvironment) prompt += `**Current Environment:** ${project.stagingEnvironment}\n`;
-
-        // Tech Stack (full details)
-        if (stack.length > 0) {
-          prompt += `\n## ⚡ TECH STACK\n\n`;
-          stack.forEach((t: any) => {
-            prompt += `• **${t.name}** (${t.category})`;
-            if (t.version) prompt += ` - v${t.version}`;
-            if (t.description) prompt += `\n  ${t.description}`;
-            prompt += `\n`;
-          });
-        }
-
-        // Tasks (Hierarchical with subtasks)
-        if (todos.length > 0) {
-          const parentTodos = todos.filter((t: any) => !t.parentTodoId);
-          const activeParents = parentTodos.filter((t: any) => !t.completed);
-          const completedParents = parentTodos.filter((t: any) => t.completed);
-
-          prompt += `\n## ✅ CURRENT TASKS (${completedTodos} completed, ${activeTodos.length} pending)\n\n`;
-
-          if (activeParents.length > 0) {
-            prompt += `**🚧 Pending Tasks:**\n`;
-            activeParents.forEach((todo: any) => {
-              if (todo?.title) {
-                prompt += `• ${todo.title}`;
-                if (todo.content) prompt += ` - ${todo.content}`;
-                if (todo.priority) prompt += ` [${todo.priority.toUpperCase()} PRIORITY]`;
-                if (todo.dueDate) prompt += ` (Due: ${new Date(todo.dueDate).toLocaleDateString()})`;
-                prompt += `\n`;
-
-                // Show subtasks indented
-                const subtasks = todos.filter((t: any) => t.parentTodoId === todo.id);
-                if (subtasks.length > 0) {
-                  subtasks.forEach((sub: any) => {
-                    prompt += `  - ${sub.completed ? '✓' : '○'} ${sub.title}`;
-                    if (sub.priority) prompt += ` [${sub.priority.toUpperCase()}]`;
-                    if (sub.dueDate) prompt += ` (Due: ${new Date(sub.dueDate).toLocaleDateString()})`;
-                    prompt += `\n`;
-                  });
-                }
-              }
-            });
-          }
-
-          if (completedParents.length > 0) {
-            prompt += `\n**✅ Completed Tasks:**\n`;
-            completedParents.forEach((todo: any) => {
-              if (todo?.title) {
-                prompt += `• ${todo.title}`;
-                if (todo.content) prompt += ` - ${todo.content}`;
-                prompt += `\n`;
-
-                // Show completed subtasks indented
-                const subtasks = todos.filter((t: any) => t.parentTodoId === todo.id && t.completed);
-                if (subtasks.length > 0) {
-                  subtasks.forEach((sub: any) => {
-                    prompt += `  - ✓ ${sub.title}\n`;
-                  });
-                }
-              }
-            });
-          }
-        }
-
-        // Development Log (ALL entries)
-        if (devLog.length > 0) {
-          prompt += `\n## 📝 DEVELOPMENT LOG\n`;
-          devLog.forEach((entry: any) => {
-            prompt += `\n**${entry.date}${entry.title ? ' - ' + entry.title : ''}**\n`;
-            prompt += `${entry.content || ''}\n`;
-          });
-        }
-
-        // Notes (full content)
-        if (notes.length > 0) {
-          prompt += `\n## 📋 PROJECT NOTES\n`;
-          notes.forEach((note: any) => {
-            prompt += `\n**${note.title || 'Untitled Note'}**\n`;
-            prompt += `${note.content || ''}\n`;
-          });
-        }
-
-        // Components - Grouped by features (full content)
-        if (components.length > 0) {
-          prompt += `\n## 🧩 COMPONENTS (Grouped by Features)\n`;
-
-          // Group components by feature
-          const componentsByFeature: Record<string, any[]> = {};
-          components.forEach((component: any) => {
-            const featureKey = component.feature || 'Ungrouped';
-            if (!componentsByFeature[featureKey]) componentsByFeature[featureKey] = [];
-            componentsByFeature[featureKey].push(component);
-          });
-
-          // Show all features with their components
-          Object.entries(componentsByFeature).sort().forEach(([feature, componentList]: [string, any]) => {
-            prompt += `\n**FEATURE: ${feature}**\n`;
-            componentList.forEach((component: any) => {
-              prompt += `• [${component.type}] **${component.title || 'Untitled'}:** ${component.content || ''}\n`;
-            });
-          });
-        }
-
-        // Relationships between components
-        if (relationships.length > 0) {
-          prompt += `\n## 🔗 COMPONENT RELATIONSHIPS\n`;
-          relationships.forEach((rel: any) => {
-            const sourceComp = components.find((c: any) => c.id === rel.sourceId);
-            const targetComp = components.find((c: any) => c.id === rel.targetId);
-            if (sourceComp && targetComp) {
-              prompt += `• **${sourceComp.title}** → ${rel.type} → **${targetComp.title}**\n`;
-            }
-          });
-        }
-
-        // Team
-        if (team.length > 0) {
-          prompt += `\n## 👥 TEAM MEMBERS\n`;
-          prompt += `**Total Members:** ${team.length}\n\n`;
-          team.forEach((member: any) => {
-            const name = member.userId ?
-              `${member.userId.firstName || ''} ${member.userId.lastName || ''}`.trim() ||
-              member.userId.email :
-              'Unknown';
-            const role = member.role || 'member';
-            prompt += `• **${name}** - ${role}\n`;
-          });
-        }
-
-        // Deployment
-        if (project.deploymentData) {
-          prompt += `\n## 🚀 DEPLOYMENT INFO\n`;
-          if (project.deploymentData.liveUrl) prompt += `**Live URL:** ${project.deploymentData.liveUrl}\n`;
-          if (project.deploymentData.githubUrl) prompt += `**GitHub Repository:** ${project.deploymentData.githubUrl}\n`;
-          if (project.deploymentData.deploymentPlatform) prompt += `**Hosting Platform:** ${project.deploymentData.deploymentPlatform}\n`;
-          if (project.deploymentData.deploymentStatus) prompt += `**Status:** ${project.deploymentData.deploymentStatus}\n`;
-          if (project.deploymentData.deploymentBranch) prompt += `**Branch:** ${project.deploymentData.deploymentBranch}\n`;
-        }
-
-        // Public Page Data
-        if (project.publicPageData?.isPublic) {
-          prompt += `\n## 🌐 PUBLIC PAGE INFO\n`;
-          if (project.publicPageData.publicTitle) prompt += `**Public Title:** ${project.publicPageData.publicTitle}\n`;
-          if (project.publicPageData.publicDescription) prompt += `**Public Description:** ${project.publicPageData.publicDescription}\n`;
-          if (project.publicPageData.publicTags?.length) prompt += `**Public Tags:** ${project.publicPageData.publicTags.join(' • ')}\n`;
-        }
-
-        // Timestamps
-        if (project.createdAt || project.updatedAt) {
-          const created = new Date(project.createdAt);
-          const updated = new Date(project.updatedAt);
-          const daysSinceCreated = Math.floor((Date.now() - created.getTime()) / (1000 * 60 * 60 * 24));
-          const daysSinceUpdated = Math.floor((Date.now() - updated.getTime()) / (1000 * 60 * 60 * 24));
-
-          prompt += `\n## ⏱️ PROJECT TIMELINE\n`;
-          prompt += `**Created:** ${created.toLocaleDateString()} (${daysSinceCreated} days ago)\n`;
-          prompt += `**Last Updated:** ${updated.toLocaleDateString()} (${daysSinceUpdated} days ago)\n`;
-        }
-
-        prompt += `\n---\n`;
-        return prompt;
-
-      case 'markdown':
-        let md = `# ${project.name}\n\n`;
-
-        // Basic Info
-        md += `## Basic Information\n\n`;
-        md += `- **Name:** ${project.name}\n`;
-        if (project.category) md += `- **Category:** ${project.category}\n`;
-        if (project.stagingEnvironment) md += `- **Environment:** ${project.stagingEnvironment}\n`;
-        md += `\n`;
-
-        // Description
-        if (project.description) {
-          md += `## Description\n\n${project.description}\n\n`;
-        }
-
-
-        // Notes (full content)
-        if (notes.length > 0) {
-          md += `## Notes\n\n`;
-          notes.forEach((note: any) => {
-            md += `### ${note.title || 'Untitled Note'}\n${note.content || ''}\n\n`;
-          });
-        }
-
-        // Todo Items (Hierarchical with subtasks - full content)
-        if (todos.length > 0) {
-          const parentTodos = todos.filter((t: any) => !t.parentTodoId);
-          md += `## Todo Items\n\n`;
-
-          parentTodos.forEach((todo: any) => {
-            md += `- [${todo.completed ? 'x' : ' '}] **${todo.title || 'Untitled Task'}**${todo.content ? `: ${todo.content}` : ''}`;
-            if (todo.priority) md += ` [${todo.priority.toUpperCase()}]`;
-            if (todo.dueDate) md += ` (Due: ${new Date(todo.dueDate).toLocaleDateString()})`;
-            md += `\n`;
-
-            // Show subtasks indented
-            const subtasks = todos.filter((t: any) => t.parentTodoId === todo.id);
-            if (subtasks.length > 0) {
-              subtasks.forEach((sub: any) => {
-                md += `  - [${sub.completed ? 'x' : ' '}] ${sub.title}${sub.content ? `: ${sub.content}` : ''}`;
-                if (sub.priority) md += ` [${sub.priority.toUpperCase()}]`;
-                if (sub.dueDate) md += ` (Due: ${new Date(sub.dueDate).toLocaleDateString()})`;
-                md += `\n`;
-              });
-            }
-          });
-          md += `\n`;
-        }
-
-        // Development Log (full content)
-        if (devLog.length > 0) {
-          md += `## Development Log\n\n`;
-          devLog.forEach((entry: any) => {
-            md += `### ${entry.date} - ${entry.title || 'Development Entry'}\n${entry.content || ''}\n\n`;
-          });
-        }
-
-        // Components (full content)
-        if (components.length > 0) {
-          md += `## Components\n\n`;
-          components.forEach((component: any) => {
-            md += `### ${component.title || 'Untitled'} (${component.type}) - Feature: ${component.feature}\n${component.content || ''}\n\n`;
-          });
-        }
-
-        // Relationships between components
-        if (relationships.length > 0) {
-          md += `## Component Relationships\n\n`;
-          relationships.forEach((rel: any) => {
-            const sourceComp = components.find((c: any) => c.id === rel.sourceId);
-            const targetComp = components.find((c: any) => c.id === rel.targetId);
-            if (sourceComp && targetComp) {
-              md += `- **${sourceComp.title}** → ${rel.type} → **${targetComp.title}**\n`;
-            }
-          });
-          md += `\n`;
-        }
-
-        // Tech Stack (with descriptions)
-        if (stack.length > 0) {
-          md += `## Tech Stack\n\n`;
-          stack.forEach((t: any) => {
-            md += `- **${t.name}** (${t.category})${t.version ? ` - v${t.version}` : ''}`;
-            if (t.description) md += `\n  ${t.description}`;
-            md += `\n`;
-          });
-          md += `\n`;
-        }
-
-        // Team
-        if (team.length > 0) {
-          md += `## Team Members\n\n`;
-          team.forEach((member: any) => {
-            const name = member.userId ?
-              `${member.userId.firstName || ''} ${member.userId.lastName || ''}`.trim() ||
-              member.userId.email :
-              'Unknown';
-            const role = member.role || 'member';
-            md += `- **${name}** - ${role}\n`;
-          });
-          md += `\n`;
-        }
-
-        // Deployment
-        if (project.deploymentData) {
-          md += `## Deployment\n\n`;
-          if (project.deploymentData.liveUrl) md += `- **Live URL:** ${project.deploymentData.liveUrl}\n`;
-          if (project.deploymentData.githubUrl) md += `- **GitHub:** ${project.deploymentData.githubUrl}\n`;
-          if (project.deploymentData.deploymentPlatform) md += `- **Platform:** ${project.deploymentData.deploymentPlatform}\n`;
-          if (project.deploymentData.deploymentStatus) md += `- **Status:** ${project.deploymentData.deploymentStatus}\n`;
-          md += `\n`;
-        }
-
-        // Public Page Data
-        if (project.publicPageData?.isPublic) {
-          md += `## Public Page Info\n\n`;
-          if (project.publicPageData.publicTitle) md += `- **Title:** ${project.publicPageData.publicTitle}\n`;
-          if (project.publicPageData.publicDescription) md += `- **Description:** ${project.publicPageData.publicDescription}\n`;
-          if (project.publicPageData.publicTags?.length) md += `- **Tags:** ${project.publicPageData.publicTags.join(', ')}\n`;
-          md += `\n`;
-        }
-
-        // Timestamps
-        if (project.createdAt || project.updatedAt) {
-          md += `## Timestamps\n\n`;
-          md += `- **Created:** ${new Date(project.createdAt).toLocaleDateString()}\n`;
-          md += `- **Updated:** ${new Date(project.updatedAt).toLocaleDateString()}\n`;
-        }
-
-        return md;
-
-      case 'text':
-      default:
-        let text = `${project.name}\n${'='.repeat(project.name.length)}\n\n`;
-
-        // Basic Info
-        text += `BASIC INFORMATION\n`;
-        text += `-----------------\n`;
-        text += `Name: ${project.name}\n`;
-        if (project.category) text += `Category: ${project.category}\n`;
-        if (project.stagingEnvironment) text += `Environment: ${project.stagingEnvironment}\n`;
-        text += `\n`;
-
-        // Description
-        if (project.description) {
-          text += `DESCRIPTION\n`;
-          text += `-----------\n`;
-          text += `${project.description}\n\n`;
-        }
-
-        // Notes (full content)
-        if (notes.length > 0) {
-          text += `NOTES\n`;
-          text += `-----\n`;
-          notes.forEach((note: any) => {
-            text += `\n${note.title || 'Untitled'}:\n`;
-            text += `${note.content || ''}\n`;
-          });
-          text += `\n`;
-        }
-
-        // Todos (Hierarchical with subtasks - full content)
-        if (todos.length > 0) {
-          const parentTodos = todos.filter((t: any) => !t.parentTodoId);
-          text += `TODO ITEMS\n`;
-          text += `----------\n`;
-
-          parentTodos.forEach((todo: any) => {
-            text += `[${todo.completed ? 'X' : ' '}] [${todo.priority?.toUpperCase() || 'MED'}] ${todo.title}`;
-            if (todo.content) text += ` - ${todo.content}`;
-            if (todo.dueDate) text += ` (Due: ${new Date(todo.dueDate).toLocaleDateString()})`;
-            text += `\n`;
-
-            // Show subtasks indented
-            const subtasks = todos.filter((t: any) => t.parentTodoId === todo.id);
-            if (subtasks.length > 0) {
-              subtasks.forEach((sub: any) => {
-                text += `  [${sub.completed ? 'X' : ' '}] [${sub.priority?.toUpperCase() || 'MED'}] ${sub.title}`;
-                if (sub.content) text += ` - ${sub.content}`;
-                if (sub.dueDate) text += ` (Due: ${new Date(sub.dueDate).toLocaleDateString()})`;
-                text += `\n`;
-              });
-            }
-          });
-          text += `\n`;
-        }
-
-        // Dev Log (full content)
-        if (devLog.length > 0) {
-          text += `DEVELOPMENT LOG\n`;
-          text += `---------------\n`;
-          devLog.forEach((entry: any) => {
-            text += `\n${entry.date} - ${entry.title || 'Entry'}:\n`;
-            text += `${entry.content || ''}\n`;
-          });
-          text += `\n`;
-        }
-
-        // Components (full content)
-        if (components.length > 0) {
-          text += `COMPONENTS\n`;
-          text += `----------\n`;
-          components.forEach((component: any) => {
-            text += `\n${component.title || 'Untitled'} (${component.type}) [${component.feature}]:\n`;
-            text += `${component.content || ''}\n`;
-          });
-          text += `\n`;
-        }
-
-        // Relationships between components
-        if (relationships.length > 0) {
-          text += `COMPONENT RELATIONSHIPS\n`;
-          text += `-----------------------\n`;
-          relationships.forEach((rel: any) => {
-            const sourceComp = components.find((c: any) => c.id === rel.sourceId);
-            const targetComp = components.find((c: any) => c.id === rel.targetId);
-            if (sourceComp && targetComp) {
-              text += `${sourceComp.title} -> ${rel.type} -> ${targetComp.title}\n`;
-            }
-          });
-          text += `\n`;
-        }
-
-        // Tech Stack (with descriptions)
-        if (stack.length > 0) {
-          text += `TECH STACK\n`;
-          text += `----------\n`;
-          stack.forEach((t: any) => {
-            text += `- ${t.name} (${t.category})${t.version ? ` v${t.version}` : ''}`;
-            if (t.description) text += `\n  ${t.description}`;
-            text += `\n`;
-          });
-          text += `\n`;
-        }
-
-        // Team
-        if (team.length > 0) {
-          text += `TEAM MEMBERS\n`;
-          text += `------------\n`;
-          team.forEach((member: any) => {
-            const name = member.userId ?
-              `${member.userId.firstName || ''} ${member.userId.lastName || ''}`.trim() ||
-              member.userId.email :
-              'Unknown';
-            const role = member.role || 'member';
-            text += `- ${name} (${role})\n`;
-          });
-          text += `\n`;
-        }
-
-        // Deployment
-        if (project.deploymentData) {
-          text += `DEPLOYMENT\n`;
-          text += `----------\n`;
-          if (project.deploymentData.liveUrl) text += `Live URL: ${project.deploymentData.liveUrl}\n`;
-          if (project.deploymentData.githubUrl) text += `GitHub: ${project.deploymentData.githubUrl}\n`;
-          if (project.deploymentData.deploymentPlatform) text += `Platform: ${project.deploymentData.deploymentPlatform}\n`;
-          if (project.deploymentData.deploymentStatus) text += `Status: ${project.deploymentData.deploymentStatus}\n`;
-          text += `\n`;
-        }
-
-        // Public Page Data
-        if (project.publicPageData?.isPublic) {
-          text += `PUBLIC PAGE INFO\n`;
-          text += `----------------\n`;
-          if (project.publicPageData.publicTitle) text += `Title: ${project.publicPageData.publicTitle}\n`;
-          if (project.publicPageData.publicDescription) text += `Description: ${project.publicPageData.publicDescription}\n`;
-          text += `\n`;
-        }
-
-        // Timestamps
-        if (project.createdAt || project.updatedAt) {
-          text += `TIMESTAMPS\n`;
-          text += `----------\n`;
-          text += `Created: ${new Date(project.createdAt).toLocaleDateString()}\n`;
-          text += `Updated: ${new Date(project.updatedAt).toLocaleDateString()}\n`;
-        }
-
-        return text;
-    }
-  }
+  // NOTE: Old handleExport (JSON URL), handleSummary (multi-format), generateProjectSummary,
+  // generateFilteredSummary, generateProjectsAndIdeasSummary were removed.
+  // /export and /summary are now aliases for /context (always .md output).
+  // JSON export/import remains on SettingsPage via /api/projects/:id/export route.
 
   /**
    * Handle /view news command
@@ -1767,41 +956,18 @@ export class UtilityHandlers extends BaseCommandHandler {
     }
   }
 
-  /**
-   * Handle /llm command - Generate LLM context guide
-   */
-  async handleLLMContext(): Promise<CommandResponse> {
-    // /llm just returns the general terminal guide (no entity support - use /summary for that)
-    const guide = this.generateGeneralLLMGuide();
-    const metrics = calculateTextMetrics(guide);
-
-    return {
-      type: ResponseType.DATA,
-      message: '🤖 LLM Terminal Interaction Guide',
-      data: {
-        summary: guide,
-        format: 'text',
-        fileName: 'llm-terminal-guide.txt',
-        projectName: 'Terminal Guide',
-        downloadable: true,
-        textMetrics: metrics
-      },
-      metadata: {
-        action: 'llm-guide'
-      }
-    };
-  }
-
   private generateGeneralLLMGuide(): string {
-    return `# AI Guide: Project Management Terminal
+    return `## Your Role
 
-## Your Role
-Help users interact with their project management terminal. Generate commands to manage projects, tasks, notes, components, tech stack, and teams.
+Generate valid Dev Codex terminal commands. The user will paste project context — use it to reference existing items by name or # index.
 
-**Workflow:** User gets context (\`/summary text projects\` or \`/summary prompt\`) → pastes to you with this guide → you generate commands → user executes → repeat.
+## Syntax Rules
 
-## Syntax
-\`/command "args" @project --flag="value"\` | Batch: \`&&\` or newlines (max 10, stops on error) | Quotes: required for multi-word args | Newlines: use \`\\n\` | Item match: UUID > Index (1-based) > Partial text
+- Format: \`/command "args" @project --flag="value"\`
+- Batch: chain with \`&&\` or newlines (max 10, stops on first error)
+- Quotes: required for multi-word args
+- Newlines in content: use \`\\n\`
+- Item matching: UUID > Index (1-based) > Partial text match
 
 ## Command Reference
 
@@ -1815,9 +981,9 @@ Help users interact with their project management terminal. Generate commands to
 \`/edit idea "idx|text" [...flags]\`
 \`/delete idea "idx|text"\`
 \`/swap @project\` - Switch to different project context
-\`/goto /path\` - Navigate to a specific page (e.g., /goto /notes, /goto /components)
+\`/goto /path\` - Navigate to a specific page (e.g., /goto /notes, /goto /features)
 \`/wizard new\` - Interactive project creation wizard
-\`/summary text projects\` - Get concise list of all projects/ideas for AI context
+\`/context projects\` - List all projects and ideas as .md
 
 ### Tasks & Todos
 \`/add todo --title="..." [--content="..." --priority=low|medium|high --status=not_started|in_progress|blocked|completed --due="MM-DD-YYYY HH:MM"]\`
@@ -1843,17 +1009,17 @@ Help users interact with their project management terminal. Generate commands to
 \`/edit devlog "idx|text"\`
 \`/delete devlog "idx|text"\`
 
-### Components & Architecture
-\`/add component --feature="..." --category="..." --type="..." --title="..." --content="..."\`
-\`/view components\` - List all components
-\`/edit component "idx|text"\`
-\`/delete component "idx|text"\`
+### Features & Architecture
+\`/add feature --group="..." --category="..." --type="..." --title="..." --content="..."\`
+\`/view features\` - List all features
+\`/edit feature "idx|text"\`
+\`/delete feature "idx|text"\`
 \`/add relationship --source="..." --target="..." --type=uses|depends_on\`
-\`/view relationships\` - View component relationships
+\`/view relationships\` - View feature relationships
 \`/edit relationship "idx"\`
 \`/delete relationship "idx"\`
 
-**Component types by category:**
+**Feature types by category:**
 frontend: page|component|hook|context|layout|util|custom
 backend: service|route|model|controller|middleware|util|custom
 database: schema|migration|seed|query|index|custom
@@ -1876,7 +1042,7 @@ asset: image|font|video|audio|document|dependency|custom
 \`/search "query"\` - Search across project
 \`/stale\` - View stale items (todos, notes that haven't been updated)
 \`/activity\` - View activity log for current project
-\`/summary [format] [entity]\` - Export data (formats: markdown|json|prompt|text; entities: all|todos|notes|devlog|components|stack|team|deployment|settings|projects)
+\`/context [entity]\` - Export project as .md (aliases: /export, /summary). Entities: all|full|todos|notes|devlog|features|stack|team|deployment|settings|projects
 
 ### Team & Deployment
 \`/invite "email" --role=editor|viewer\`
@@ -1893,7 +1059,7 @@ asset: image|font|video|audio|document|dependency|custom
 \`/add tag "..."\` - Add a tag to the project
 \`/remove tag "..."\` - Remove a tag from the project
 \`/view settings\` - View all project settings
-\`/export\` - Export project data
+\`/export\` - Alias for /context (export project as .md)
 
 ### Notifications & Themes
 \`/view notifications\` - View recent notifications
@@ -1903,10 +1069,243 @@ asset: image|font|video|audio|document|dependency|custom
 \`/set theme "theme_name"\` - Change theme
 
 ## Key Rules
-**MUST:** Components need \`--feature\` flag | Dates: "MM-DD-YYYY HH:MM" | Priorities: low/medium/high | Max 10 batch commands
-**ALWAYS:** Use \`/summary\` commands before edit/delete | Validate item existence | Use quotes for multi-word args | Prefer newlines over \`&&\`
-**DATA SIZE:** \`/summary\` includes FULL content (no truncation). For large projects, use entity filtering: \`/summary prompt todos\` or \`/summary prompt notes\` instead of \`/summary prompt all\`
-**TIPS:** Start with \`/summary text projects\` to see all projects → get details with \`/summary prompt all\` (or specific entity) → generate commands → ask clarifying questions if uncertain`;
+**MUST:** Features need \`--group\` flag | Dates: "MM-DD-YYYY HH:MM" | Priorities: low/medium/high | Max 10 batch commands
+**ALWAYS:** Use \`/context\` commands before edit/delete | Validate item existence | Use quotes for multi-word args | Prefer newlines over \`&&\`
+**DATA SIZE:** \`/context\` includes FULL content (no truncation). For large projects, use entity filtering: \`/context todos\` or \`/context notes\` instead of \`/context\`
+**TIPS:** Start with \`/context projects\` to see all projects → get details with \`/context\` (or specific entity) → generate commands → ask clarifying questions if uncertain`;
+  }
+
+  /**
+   * Handle /bridge command — generates protocol spec for external AI tools
+   */
+  async handleBridge(parsed: ParsedCommand, currentProjectId?: string): Promise<CommandResponse> {
+    const guide = this.generateGeneralLLMGuide();
+    const output = `# Dev Codex — Command Reference
+
+> Paste this file into your AI tool's project config (CLAUDE.md, .cursorrules, etc.)
+> so it can generate valid Dev Codex terminal commands.
+
+## How To Use
+
+1. Paste this file into your AI config (e.g. \`CLAUDE.md\`)
+2. Run \`/context\` in Dev Codex → paste the output into your AI conversation
+3. Ask the AI to generate commands → paste them back into the Dev Codex terminal
+
+## Getting Project Context
+
+Run these in the Dev Codex terminal, then paste the output to your AI:
+
+| Command | What it exports |
+|---------|----------------|
+| \`/context\` | Current project state as .md (todos, features, stack, devlog) |
+| \`/context full\` | Full project dump, no truncation |
+| \`/context projects\` | List all projects and ideas |
+
+---
+
+${guide}`;
+
+    const metrics = calculateTextMetrics(output);
+
+    return {
+      type: ResponseType.DATA,
+      message: '🔗 Dev Codex Bridge Protocol — Command reference for external AI tools',
+      data: {
+        summary: output,
+        format: 'text',
+        fileName: 'dev-codex-bridge.md',
+        projectName: 'Bridge Protocol',
+        downloadable: true,
+        textMetrics: metrics
+      },
+      metadata: {
+        action: 'bridge'
+      }
+    };
+  }
+
+  /**
+   * Handle /context command — outputs dynamic project state
+   */
+  async handleContext(parsed: ParsedCommand, currentProjectId?: string): Promise<CommandResponse> {
+    // "projects" entity doesn't need a selected project
+    const entity = (parsed.args[0] || parsed.subcommand || '').toLowerCase();
+
+    if (entity === 'projects') {
+      return this.handleContextProjects();
+    }
+
+    if (!currentProjectId) {
+      const projects = await this.getUserProjects();
+      return {
+        type: ResponseType.PROMPT,
+        message: 'Select a project first:',
+        data: {
+          projects: projects.map(p => ({
+            id: p._id.toString(),
+            name: p.name,
+            description: p.description,
+            category: p.category
+          }))
+        }
+      };
+    }
+
+    const validEntities = ['', 'all', 'full', 'todos', 'notes', 'devlog', 'features', 'components', 'stack', 'team', 'deployment', 'settings'];
+    const entityAliases: Record<string, string> = {
+      'todo': 'todos', 'note': 'notes', 'devlogs': 'devlog',
+      'feature': 'features', 'deploy': 'deployment', 'setting': 'settings',
+    };
+    const normalized = entityAliases[entity] || entity;
+
+    if (normalized && !validEntities.includes(normalized)) {
+      return {
+        type: ResponseType.ERROR,
+        message: `Invalid entity "${entity}". Available: all, full, todos, notes, devlog, features, stack, team, deployment, settings, projects`,
+        suggestions: ['/context todos', '/context full']
+      };
+    }
+
+    try {
+      // Always use buildFull for /context — it's user-facing markdown.
+      // build() is for AI system prompts (compact, no markdown formatting).
+      const rawContext = await AIContextBuilder.buildFull(this.userId, currentProjectId, normalized || undefined);
+
+      const entityLabel = normalized && normalized !== 'all' && normalized !== 'full' ? normalized : 'Full';
+      const contextText = `# Dev Codex — Project Context\n\n> Exported ${new Date().toLocaleDateString()}. Paste this into your AI conversation alongside the bridge protocol (\`/bridge\`).\n\n${rawContext}`;
+
+      const metrics = calculateTextMetrics(contextText);
+
+      return {
+        type: ResponseType.DATA,
+        message: `📋 Project Context (${entityLabel})`,
+        data: {
+          summary: contextText,
+          format: 'text',
+          fileName: `project-context-${entityLabel.toLowerCase()}.md`,
+          projectName: 'Project Context',
+          downloadable: true,
+          textMetrics: metrics
+        },
+        metadata: {
+          action: 'context',
+          projectId: currentProjectId
+        }
+      };
+    } catch (error) {
+      logError('Context generation failed', error as Error, {
+        userId: this.userId,
+        projectId: currentProjectId
+      });
+      return {
+        type: ResponseType.ERROR,
+        message: 'Failed to generate project context',
+        data: { error: (error as Error).message }
+      };
+    }
+  }
+
+  /**
+   * Handle /context projects — list all user projects (no project selection needed)
+   */
+  private async handleContextProjects(): Promise<CommandResponse> {
+    try {
+      const projects = await Project.find(
+        { $or: [{ userId: this.userId }, { ownerId: this.userId }] },
+        'name description category tags'
+      ).lean().limit(50);
+
+      const sections: string[] = ['## All Projects'];
+      if (projects.length === 0) {
+        sections.push('No projects found.');
+      } else {
+        projects.forEach((p: any, i: number) => {
+          sections.push(`#${i + 1} "${p.name}"${p.category ? ` (${p.category})` : ''}${p.description ? ` — ${p.description}` : ''}`);
+        });
+      }
+
+      const contextText = `# Dev Codex — Project Context\n\n> Exported ${new Date().toLocaleDateString()}.\n\n${sections.join('\n')}`;
+      const metrics = calculateTextMetrics(contextText);
+
+      return {
+        type: ResponseType.DATA,
+        message: `📋 All Projects (${projects.length})`,
+        data: {
+          summary: contextText,
+          format: 'text',
+          fileName: 'project-context-projects.md',
+          projectName: 'All Projects',
+          downloadable: true,
+          textMetrics: metrics
+        },
+        metadata: { action: 'context' }
+      };
+    } catch (error) {
+      logError('Context projects failed', error as Error, { userId: this.userId });
+      return {
+        type: ResponseType.ERROR,
+        message: 'Failed to list projects',
+        data: { error: (error as Error).message }
+      };
+    }
+  }
+
+  /**
+   * Handle /usage command — show AI token usage stats
+   */
+  async handleAIUsage(): Promise<CommandResponse> {
+    try {
+      const user = await User.findById(this.userId).select('planTier aiUsage').lean();
+      if (!user) {
+        return { type: ResponseType.ERROR, message: 'User not found' };
+      }
+
+      const tier = user.planTier || 'free';
+      const usage = user.aiUsage || { tokensUsedThisMonth: 0, queryCount: 0, lastResetDate: new Date() };
+      const isSelfHosted = process.env.SELF_HOSTED === 'true';
+
+      const tierLimits: Record<string, { tokens: number; queriesPerMin: number; inputChars: number }> = {
+        free: { tokens: 0, queriesPerMin: 0, inputChars: 0 },
+        pro: { tokens: 500_000, queriesPerMin: 15, inputChars: 5_000 },
+        premium: { tokens: 2_000_000, queriesPerMin: 30, inputChars: 10_000 }
+      };
+
+      const limits = tierLimits[tier] || tierLimits.free;
+      const tokensUsed = usage.tokensUsedThisMonth || 0;
+      const queryCount = usage.queryCount || 0;
+      const lastReset = usage.lastResetDate ? new Date(usage.lastResetDate).toLocaleDateString() : 'N/A';
+      const lastQuery = usage.lastQueryAt ? new Date(usage.lastQueryAt).toLocaleString() : 'Never';
+
+      const pct = limits.tokens > 0 ? Math.round((tokensUsed / limits.tokens) * 100) : 0;
+
+      return {
+        type: ResponseType.DATA,
+        message: `AI Usage — ${tier.charAt(0).toUpperCase() + tier.slice(1)} Plan`,
+        data: {
+          usageData: {
+            planTier: tier,
+            tokensUsed,
+            tokensLimit: isSelfHosted ? 'unlimited' : limits.tokens,
+            queryCount,
+            queriesPerMin: limits.queriesPerMin,
+            inputCharsLimit: limits.inputChars,
+            lastQuery,
+            lastReset,
+            isSelfHosted,
+            usagePercent: isSelfHosted ? 0 : pct
+          }
+        },
+        metadata: {
+          action: 'ai-usage'
+        }
+      };
+    } catch (error) {
+      logError('AI usage check failed', error as Error, { userId: this.userId });
+      return {
+        type: ResponseType.ERROR,
+        message: 'Failed to retrieve AI usage stats'
+      };
+    }
   }
 
   /**
@@ -2373,7 +1772,7 @@ asset: image|font|video|audio|document|dependency|custom
     const todos = project.todos || [];
     const notes = project.notes || [];
     const devLog = project.devLog || [];
-    const components = project.components || [];
+    const features = project.features || [];
     const tech = project.selectedTechnologies || [];
     const packages = project.selectedPackages || [];
 
@@ -2414,8 +1813,8 @@ asset: image|font|video|audio|document|dependency|custom
           devLog: {
             total: devLog.length
           },
-          components: {
-            total: components.length
+          features: {
+            total: features.length
           },
           techStack: {
             total: tech.length + packages.length,
@@ -2719,7 +2118,7 @@ asset: image|font|video|audio|document|dependency|custom
         todos: [],
         notes: [],
         devLog: [],
-        components: [],
+        features: [],
         stack: []
       });
 

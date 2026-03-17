@@ -1,4 +1,4 @@
-import React, { useState, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { Outlet, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { authAPI, projectAPI, newsAPI } from '../api';
 import type { Project, Todo } from '../api/types';
@@ -121,6 +121,15 @@ const getRelativeTime = (dateString: string): string => {
   return `${Math.floor(diffDays / 365)}y ago`;
 };
 
+// Initialize tab state from URL on first mount (supports bookmarked/shared URLs)
+function initTab<T extends string>(path: string, valid: readonly T[], fallback: T): () => T {
+  return () => {
+    if (window.location.pathname !== path) return fallback;
+    const t = new URLSearchParams(window.location.search).get('tab');
+    return t && (valid as readonly string[]).includes(t) ? t as T : fallback;
+  };
+}
+
 const Layout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -130,22 +139,63 @@ const Layout: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeProjectTab, setActiveProjectTab] = useState('active');
-  const [activeAdminTab, setActiveAdminTab] = useState<'users' | 'tickets' | 'analytics' | 'news' | 'activity'>('users');
+  const [activeAdminTab, _setActiveAdminTab] = useState(initTab('/admin', ['users', 'tickets', 'analytics', 'news', 'activity'] as const, 'users'));
   const [isHandlingTimeout, setIsHandlingTimeout] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [analyticsReady, setAnalyticsReady] = useState(false);
   const [importantAnnouncements, setImportantAnnouncements] = useState<any[]>([]);
   const [showImportantPopup, setShowImportantPopup] = useState(false);
 
-  // Page-level tab states
-  const [activeStackTab, setActiveStackTab] = useState<'current' | 'add'>('add');
-  const [activeDeploymentTab, setActiveDeploymentTab] = useState<'overview' | 'deployment' | 'env' | 'notes'>('overview');
-  const [activeFeaturesTab, setActiveFeaturesTab] = useState<'graph' | 'structure' | 'all' | 'create'>('graph');
-  const [activeNewsTab, setActiveNewsTab] = useState<'all' | 'news' | 'update' | 'dev_log' | 'announcement' | 'important'>('all');
-  const [activeNotesTab, setActiveNotesTab] = useState<'notes' | 'todos' | 'devlog'>('notes');
-  const [activePublicTab, setActivePublicTab] = useState<'overview' | 'url' | 'visibility'>('overview');
-  const [activeSharingTab, setActiveSharingTab] = useState<'overview' | 'team' | 'activity'>('overview');
-  const [activeSettingsTab, setActiveSettingsTab] = useState<'info' | 'export' | 'danger'>('info');
+  // Page-level tab states (synced to URL for back/forward navigation)
+  const [activeStackTab, _setActiveStackTab] = useState(initTab('/stack', ['current', 'add', 'custom'] as const, 'add'));
+  const [activeDeploymentTab, _setActiveDeploymentTab] = useState(initTab('/deployment', ['overview', 'deployment', 'env', 'notes'] as const, 'overview'));
+  const [activeFeaturesTab, _setActiveFeaturesTab] = useState(initTab('/features', ['graph', 'structure', 'all', 'create'] as const, 'graph'));
+  const [activeNewsTab, _setActiveNewsTab] = useState(initTab('/news', ['all', 'news', 'update', 'dev_log', 'announcement', 'important'] as const, 'all'));
+  const [activeNotesTab, _setActiveNotesTab] = useState(initTab('/notes', ['notes', 'todos', 'devlog'] as const, 'notes'));
+  const [activePublicTab, _setActivePublicTab] = useState(initTab('/public', ['overview', 'url', 'visibility'] as const, 'overview'));
+  const [activeSharingTab, _setActiveSharingTab] = useState(initTab('/sharing', ['overview', 'team', 'activity'] as const, 'overview'));
+  const [activeSettingsTab, _setActiveSettingsTab] = useState(initTab('/settings', ['info', 'export', 'danger'] as const, 'info'));
+
+  // Push tab changes to browser history (enables back/forward for tab switches)
+  const pushTabToUrl = useCallback((tab: string) => {
+    const params = new URLSearchParams(window.location.search);
+    params.set('tab', tab);
+    navigate({ search: params.toString() }, { replace: false });
+  }, [navigate]);
+
+  // Wrapped tab setters — update state + push URL history entry
+  const setActiveAdminTab = useCallback((tab: 'users' | 'tickets' | 'analytics' | 'news' | 'activity') => { _setActiveAdminTab(tab); pushTabToUrl(tab); }, [pushTabToUrl]);
+  const setActiveStackTab = useCallback((tab: 'current' | 'add' | 'custom') => { _setActiveStackTab(tab); pushTabToUrl(tab); }, [pushTabToUrl]);
+  const setActiveDeploymentTab = useCallback((tab: 'overview' | 'deployment' | 'env' | 'notes') => { _setActiveDeploymentTab(tab); pushTabToUrl(tab); }, [pushTabToUrl]);
+  const setActiveFeaturesTab = useCallback((tab: 'graph' | 'structure' | 'all' | 'create') => { _setActiveFeaturesTab(tab); pushTabToUrl(tab); }, [pushTabToUrl]);
+  const setActiveNewsTab = useCallback((tab: 'all' | 'news' | 'update' | 'dev_log' | 'announcement' | 'important') => { _setActiveNewsTab(tab); pushTabToUrl(tab); }, [pushTabToUrl]);
+  const setActiveNotesTab = useCallback((tab: 'notes' | 'todos' | 'devlog') => { _setActiveNotesTab(tab); pushTabToUrl(tab); }, [pushTabToUrl]);
+  const setActivePublicTab = useCallback((tab: 'overview' | 'url' | 'visibility') => { _setActivePublicTab(tab); pushTabToUrl(tab); }, [pushTabToUrl]);
+  const setActiveSharingTab = useCallback((tab: 'overview' | 'team' | 'activity') => { _setActiveSharingTab(tab); pushTabToUrl(tab); }, [pushTabToUrl]);
+  const setActiveSettingsTab = useCallback((tab: 'info' | 'export' | 'danger') => { _setActiveSettingsTab(tab); pushTabToUrl(tab); }, [pushTabToUrl]);
+
+  // Restore tab state on back/forward navigation
+  useEffect(() => {
+    const onPopState = () => {
+      const tab = new URLSearchParams(window.location.search).get('tab');
+      const path = window.location.pathname;
+      const handlers: Record<string, [React.Dispatch<React.SetStateAction<any>>, string]> = {
+        '/admin': [_setActiveAdminTab, 'users'],
+        '/stack': [_setActiveStackTab, 'add'],
+        '/deployment': [_setActiveDeploymentTab, 'overview'],
+        '/features': [_setActiveFeaturesTab, 'graph'],
+        '/news': [_setActiveNewsTab, 'all'],
+        '/notes': [_setActiveNotesTab, 'notes'],
+        '/public': [_setActivePublicTab, 'overview'],
+        '/sharing': [_setActiveSharingTab, 'overview'],
+        '/settings': [_setActiveSettingsTab, 'info'],
+      };
+      const handler = handlers[path];
+      if (handler) handler[0](tab || handler[1]);
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
   const [projectViewMode, setProjectViewMode] = useState<'grid' | 'table'>(() => {
     const saved = localStorage.getItem('projectViewMode');
     return (saved === 'table' || saved === 'grid') ? saved : 'grid';
@@ -208,25 +258,12 @@ const Layout: React.FC = () => {
     setSelectedCategory(null);
   }, [activeProjectTab]);
 
-  // Handle section query parameter for /notes page
+  // Handle section query parameter for /notes page (from notification links)
   useEffect(() => {
     if (location.pathname === '/notes') {
       const section = searchParams.get('section');
       if (section === 'todos' || section === 'devlog') {
-        setActiveNotesTab(section);
-      }
-    }
-  }, [location.pathname, searchParams]);
-
-  // Handle tab query parameter for /admin page
-  useEffect(() => {
-    if (location.pathname === '/admin') {
-      const tab = searchParams.get('tab');
-      if (tab) {
-        const validTabs = ['users', 'tickets', 'analytics', 'news'];
-        if (validTabs.includes(tab)) {
-          setActiveAdminTab(tab as 'users' | 'tickets' | 'analytics' | 'news');
-        }
+        _setActiveNotesTab(section);
       }
     }
   }, [location.pathname, searchParams]);
@@ -259,6 +296,7 @@ const Layout: React.FC = () => {
   const {
     projects,
     setProjects,
+    ideasCount,
     setIdeasCount,
     groupProjectsByCategory,
     loadProjectTimeData,
@@ -859,7 +897,8 @@ const Layout: React.FC = () => {
                       counts={{
                         active: currentProjects.length,
                         archived: archivedProjects.length,
-                        shared: sharedProjects.length
+                        shared: sharedProjects.length,
+                        ideas: ideasCount
                       }}
                     />
 
@@ -884,17 +923,33 @@ const Layout: React.FC = () => {
                   <div className="flex justify-center">
                     <div className="tabs-container p-1">
                       <button
-                        className={`tab-button ${activeStackTab === 'add' ? 'tab-active' : ''}`}
+                        className={`tab-button gap-2 ${activeStackTab === 'add' ? 'tab-active' : ''}`}
                         style={activeStackTab === 'add' ? {color: getContrastTextColor()} : {}}
                         onClick={() => setActiveStackTab('add')}
                       >
-                        Add Technologies
+                        <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        Browse
                       </button>
                       <button
-                        className={`tab-button ${activeStackTab === 'current' ? 'tab-active' : ''}`}
+                        className={`tab-button gap-2 ${activeStackTab === 'custom' ? 'tab-active' : ''}`}
+                        style={activeStackTab === 'custom' ? {color: getContrastTextColor()} : {}}
+                        onClick={() => setActiveStackTab('custom')}
+                      >
+                        <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        Custom
+                      </button>
+                      <button
+                        className={`tab-button gap-2 ${activeStackTab === 'current' ? 'tab-active' : ''}`}
                         style={activeStackTab === 'current' ? {color: getContrastTextColor()} : {}}
                         onClick={() => setActiveStackTab('current')}
                       >
+                        <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                        </svg>
                         Current Stack
                       </button>
                     </div>
@@ -906,31 +961,44 @@ const Layout: React.FC = () => {
                   <div className="flex justify-center">
                     <div className="tabs-container p-1">
                       <button
-                        className={`tab-button ${activeDeploymentTab === 'overview' ? 'tab-active' : ''}`}
+                        className={`tab-button gap-2 ${activeDeploymentTab === 'overview' ? 'tab-active' : ''}`}
                         style={activeDeploymentTab === 'overview' ? {color: getContrastTextColor()} : {}}
                         onClick={() => setActiveDeploymentTab('overview')}
                       >
+                        <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                        </svg>
                         Overview
                       </button>
                       <button
-                        className={`tab-button ${activeDeploymentTab === 'deployment' ? 'tab-active' : ''}`}
+                        className={`tab-button gap-2 ${activeDeploymentTab === 'deployment' ? 'tab-active' : ''}`}
                         style={activeDeploymentTab === 'deployment' ? {color: getContrastTextColor()} : {}}
                         onClick={() => setActiveDeploymentTab('deployment')}
                       >
+                        <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
                         Deployment
                       </button>
                       <button
-                        className={`tab-button ${activeDeploymentTab === 'env' ? 'tab-active' : ''}`}
+                        className={`tab-button gap-2 ${activeDeploymentTab === 'env' ? 'tab-active' : ''}`}
                         style={activeDeploymentTab === 'env' ? {color: getContrastTextColor()} : {}}
                         onClick={() => setActiveDeploymentTab('env')}
                       >
+                        <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
                         Environment
                       </button>
                       <button
-                        className={`tab-button ${activeDeploymentTab === 'notes' ? 'tab-active' : ''}`}
+                        className={`tab-button gap-2 ${activeDeploymentTab === 'notes' ? 'tab-active' : ''}`}
                         style={activeDeploymentTab === 'notes' ? {color: getContrastTextColor()} : {}}
                         onClick={() => setActiveDeploymentTab('notes')}
                       >
+                        <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
                         Notes
                       </button>
                     </div>
@@ -942,31 +1010,43 @@ const Layout: React.FC = () => {
                   <div className="flex justify-center">
                     <div className="tabs-container p-1">
                       <button
-                        className={`tab-button ${activeFeaturesTab === 'graph' ? 'tab-active' : ''}`}
+                        className={`tab-button gap-2 ${activeFeaturesTab === 'graph' ? 'tab-active' : ''}`}
                         style={activeFeaturesTab === 'graph' ? {color: getContrastTextColor()} : {}}
                         onClick={() => setActiveFeaturesTab('graph')}
                       >
+                        <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
                         Graph
                       </button>
                       <button
-                        className={`tab-button ${activeFeaturesTab === 'structure' ? 'tab-active' : ''}`}
+                        className={`tab-button gap-2 ${activeFeaturesTab === 'structure' ? 'tab-active' : ''}`}
                         style={activeFeaturesTab === 'structure' ? {color: getContrastTextColor()} : {}}
                         onClick={() => setActiveFeaturesTab('structure')}
                       >
+                        <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                        </svg>
                         Structure
                       </button>
                       <button
-                        className={`tab-button ${activeFeaturesTab === 'all' ? 'tab-active' : ''}`}
+                        className={`tab-button gap-2 ${activeFeaturesTab === 'all' ? 'tab-active' : ''}`}
                         style={activeFeaturesTab === 'all' ? {color: getContrastTextColor()} : {}}
                         onClick={() => setActiveFeaturesTab('all')}
                       >
+                        <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        </svg>
                         All
                       </button>
                       <button
-                        className={`tab-button ${activeFeaturesTab === 'create' ? 'tab-active' : ''}`}
+                        className={`tab-button gap-2 ${activeFeaturesTab === 'create' ? 'tab-active' : ''}`}
                         style={activeFeaturesTab === 'create' ? {color: getContrastTextColor()} : {}}
                         onClick={() => setActiveFeaturesTab('create')}
                       >
+                        <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
                         Create
                       </button>
                     </div>
@@ -978,24 +1058,33 @@ const Layout: React.FC = () => {
                   <div className="flex justify-center">
                     <div className="tabs-container p-1">
                       <button
-                        className={`tab-button ${activeNotesTab === 'notes' ? 'tab-active' : ''}`}
+                        className={`tab-button gap-2 ${activeNotesTab === 'notes' ? 'tab-active' : ''}`}
                         style={activeNotesTab === 'notes' ? {color: getContrastTextColor()} : {}}
                         onClick={() => setActiveNotesTab('notes')}
                       >
+                        <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
                         Notes
                       </button>
                       <button
-                        className={`tab-button ${activeNotesTab === 'todos' ? 'tab-active' : ''}`}
+                        className={`tab-button gap-2 ${activeNotesTab === 'todos' ? 'tab-active' : ''}`}
                         style={activeNotesTab === 'todos' ? {color: getContrastTextColor()} : {}}
                         onClick={() => setActiveNotesTab('todos')}
                       >
+                        <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                        </svg>
                         Todos
                       </button>
                       <button
-                        className={`tab-button ${activeNotesTab === 'devlog' ? 'tab-active' : ''}`}
+                        className={`tab-button gap-2 ${activeNotesTab === 'devlog' ? 'tab-active' : ''}`}
                         style={activeNotesTab === 'devlog' ? {color: getContrastTextColor()} : {}}
                         onClick={() => setActiveNotesTab('devlog')}
                       >
+                        <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
                         Dev Log
                       </button>
                     </div>
@@ -1007,26 +1096,36 @@ const Layout: React.FC = () => {
                   <div className="flex justify-center">
                     <div className="tabs-container p-1">
                       <button
-                        className={`tab-button ${activePublicTab === 'overview' ? 'tab-active' : ''}`}
+                        className={`tab-button gap-2 ${activePublicTab === 'overview' ? 'tab-active' : ''}`}
                         style={activePublicTab === 'overview' ? {color: getContrastTextColor()} : {}}
                         onClick={() => setActivePublicTab('overview')}
                       >
+                        <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
                         Overview
                       </button>
                       {selectedProject?.isPublic && (
                         <>
                           <button
-                            className={`tab-button ${activePublicTab === 'url' ? 'tab-active' : ''}`}
+                            className={`tab-button gap-2 ${activePublicTab === 'url' ? 'tab-active' : ''}`}
                             style={activePublicTab === 'url' ? {color: getContrastTextColor()} : {}}
                             onClick={() => setActivePublicTab('url')}
                           >
+                            <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                            </svg>
                             URL
                           </button>
                           <button
-                            className={`tab-button ${activePublicTab === 'visibility' ? 'tab-active' : ''}`}
+                            className={`tab-button gap-2 ${activePublicTab === 'visibility' ? 'tab-active' : ''}`}
                             style={activePublicTab === 'visibility' ? {color: getContrastTextColor()} : {}}
                             onClick={() => setActivePublicTab('visibility')}
                           >
+                            <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
                             Privacy
                           </button>
                         </>
@@ -1040,27 +1139,37 @@ const Layout: React.FC = () => {
                   <div className="flex justify-center">
                     <div className="tabs-container p-1">
                       <button
-                        className={`tab-button ${activeSharingTab === 'overview' ? 'tab-active' : ''}`}
+                        className={`tab-button gap-2 ${activeSharingTab === 'overview' ? 'tab-active' : ''}`}
                         style={activeSharingTab === 'overview' ? {color: getContrastTextColor()} : {}}
                         onClick={() => setActiveSharingTab('overview')}
                       >
+                        <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
                         Overview
                       </button>
                       {selectedProject?.isShared && (
                         <button
-                          className={`tab-button ${activeSharingTab === 'team' ? 'tab-active' : ''}`}
+                          className={`tab-button gap-2 ${activeSharingTab === 'team' ? 'tab-active' : ''}`}
                           style={activeSharingTab === 'team' ? {color: getContrastTextColor()} : {}}
                           onClick={() => setActiveSharingTab('team')}
                         >
+                          <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                          </svg>
                           Team
                         </button>
                       )}
                       {!selectedProject?.isShared && (
                         <button
-                          className={`tab-button ${activeSharingTab === 'activity' ? 'tab-active' : ''}`}
+                          className={`tab-button gap-2 ${activeSharingTab === 'activity' ? 'tab-active' : ''}`}
                           style={activeSharingTab === 'activity' ? {color: getContrastTextColor()} : {}}
                           onClick={() => setActiveSharingTab('activity')}
                         >
+                          <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                          </svg>
                           Activity
                         </button>
                       )}
@@ -1073,24 +1182,33 @@ const Layout: React.FC = () => {
                   <div className="flex justify-center">
                     <div className="tabs-container p-1">
                       <button
-                        className={`tab-button ${activeSettingsTab === 'info' ? 'tab-active' : ''}`}
+                        className={`tab-button gap-2 ${activeSettingsTab === 'info' ? 'tab-active' : ''}`}
                         style={activeSettingsTab === 'info' ? {color: getContrastTextColor()} : {}}
                         onClick={() => setActiveSettingsTab('info')}
                       >
+                        <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
                         Info
                       </button>
                       <button
-                        className={`tab-button ${activeSettingsTab === 'export' ? 'tab-active' : ''}`}
+                        className={`tab-button gap-2 ${activeSettingsTab === 'export' ? 'tab-active' : ''}`}
                         style={activeSettingsTab === 'export' ? {color: getContrastTextColor()} : {}}
                         onClick={() => setActiveSettingsTab('export')}
                       >
+                        <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
                         Export
                       </button>
                       <button
-                        className={`tab-button ${activeSettingsTab === 'danger' ? 'tab-active' : ''}`}
+                        className={`tab-button gap-2 ${activeSettingsTab === 'danger' ? 'tab-active' : ''}`}
                         style={activeSettingsTab === 'danger' ? {color: getContrastTextColor()} : {}}
                         onClick={() => setActiveSettingsTab('danger')}
                       >
+                        <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
                         Danger
                       </button>
                     </div>
@@ -1104,38 +1222,53 @@ const Layout: React.FC = () => {
               <div className="flex justify-center">
                 <div className="tabs-container p-1">
                   <button
-                    className={`tab-button ${activeNewsTab === 'all' ? 'tab-active' : ''}`}
+                    className={`tab-button gap-2 ${activeNewsTab === 'all' ? 'tab-active' : ''}`}
                     style={activeNewsTab === 'all' ? {color: getContrastTextColor()} : {}}
                     onClick={() => setActiveNewsTab('all')}
                   >
+                    <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                    </svg>
                     All
                   </button>
                   <button
-                    className={`tab-button ${activeNewsTab === 'news' ? 'tab-active' : ''}`}
+                    className={`tab-button gap-2 ${activeNewsTab === 'news' ? 'tab-active' : ''}`}
                     style={activeNewsTab === 'news' ? {color: getContrastTextColor()} : {}}
                     onClick={() => setActiveNewsTab('news')}
                   >
+                    <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                    </svg>
                     News
                   </button>
                   <button
-                    className={`tab-button ${activeNewsTab === 'update' ? 'tab-active' : ''}`}
+                    className={`tab-button gap-2 ${activeNewsTab === 'update' ? 'tab-active' : ''}`}
                     style={activeNewsTab === 'update' ? {color: getContrastTextColor()} : {}}
                     onClick={() => setActiveNewsTab('update')}
                   >
+                    <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
                     Updates
                   </button>
                   <button
-                    className={`tab-button ${activeNewsTab === 'dev_log' ? 'tab-active' : ''}`}
+                    className={`tab-button gap-2 ${activeNewsTab === 'dev_log' ? 'tab-active' : ''}`}
                     style={activeNewsTab === 'dev_log' ? {color: getContrastTextColor()} : {}}
                     onClick={() => setActiveNewsTab('dev_log')}
                   >
+                    <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
                     Dev Log
                   </button>
                   <button
-                    className={`tab-button ${activeNewsTab === 'announcement' ? 'tab-active' : ''}`}
+                    className={`tab-button gap-2 ${activeNewsTab === 'announcement' ? 'tab-active' : ''}`}
                     style={activeNewsTab === 'announcement' ? {color: getContrastTextColor()} : {}}
                     onClick={() => setActiveNewsTab('announcement')}
                   >
+                    <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+                    </svg>
                     Announcements
                   </button>
                 </div>
@@ -1408,7 +1541,8 @@ const Layout: React.FC = () => {
                       counts={{
                         active: currentProjects.length,
                         archived: archivedProjects.length,
-                        shared: sharedProjects.length
+                        shared: sharedProjects.length,
+                        ideas: ideasCount
                       }}
                     />
                   </div>
@@ -1436,17 +1570,33 @@ const Layout: React.FC = () => {
                   <div className="flex justify-center">
                     <div className="tabs-container p-1">
                       <button
-                        className={`tab-button ${activeStackTab === 'add' ? 'tab-active' : ''}`}
+                        className={`tab-button gap-2 ${activeStackTab === 'add' ? 'tab-active' : ''}`}
                         style={activeStackTab === 'add' ? {color: getContrastTextColor()} : {}}
                         onClick={() => setActiveStackTab('add')}
                       >
-                        Add Technologies
+                        <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        Browse
                       </button>
                       <button
-                        className={`tab-button ${activeStackTab === 'current' ? 'tab-active' : ''}`}
+                        className={`tab-button gap-2 ${activeStackTab === 'custom' ? 'tab-active' : ''}`}
+                        style={activeStackTab === 'custom' ? {color: getContrastTextColor()} : {}}
+                        onClick={() => setActiveStackTab('custom')}
+                      >
+                        <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        Custom
+                      </button>
+                      <button
+                        className={`tab-button gap-2 ${activeStackTab === 'current' ? 'tab-active' : ''}`}
                         style={activeStackTab === 'current' ? {color: getContrastTextColor()} : {}}
                         onClick={() => setActiveStackTab('current')}
                       >
+                        <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                        </svg>
                         Current Stack
                       </button>
                     </div>
@@ -1458,31 +1608,44 @@ const Layout: React.FC = () => {
                   <div className="flex justify-center">
                     <div className="tabs-container p-1">
                       <button
-                        className={`tab-button ${activeDeploymentTab === 'overview' ? 'tab-active' : ''}`}
+                        className={`tab-button gap-2 ${activeDeploymentTab === 'overview' ? 'tab-active' : ''}`}
                         style={activeDeploymentTab === 'overview' ? {color: getContrastTextColor()} : {}}
                         onClick={() => setActiveDeploymentTab('overview')}
                       >
+                        <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                        </svg>
                         Overview
                       </button>
                       <button
-                        className={`tab-button ${activeDeploymentTab === 'deployment' ? 'tab-active' : ''}`}
+                        className={`tab-button gap-2 ${activeDeploymentTab === 'deployment' ? 'tab-active' : ''}`}
                         style={activeDeploymentTab === 'deployment' ? {color: getContrastTextColor()} : {}}
                         onClick={() => setActiveDeploymentTab('deployment')}
                       >
+                        <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
                         Deployment
                       </button>
                       <button
-                        className={`tab-button ${activeDeploymentTab === 'env' ? 'tab-active' : ''}`}
+                        className={`tab-button gap-2 ${activeDeploymentTab === 'env' ? 'tab-active' : ''}`}
                         style={activeDeploymentTab === 'env' ? {color: getContrastTextColor()} : {}}
                         onClick={() => setActiveDeploymentTab('env')}
                       >
+                        <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
                         Environment
                       </button>
                       <button
-                        className={`tab-button ${activeDeploymentTab === 'notes' ? 'tab-active' : ''}`}
+                        className={`tab-button gap-2 ${activeDeploymentTab === 'notes' ? 'tab-active' : ''}`}
                         style={activeDeploymentTab === 'notes' ? {color: getContrastTextColor()} : {}}
                         onClick={() => setActiveDeploymentTab('notes')}
                       >
+                        <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
                         Notes
                       </button>
                     </div>
@@ -1494,31 +1657,43 @@ const Layout: React.FC = () => {
                   <div className="flex justify-center">
                     <div className="tabs-container p-1">
                       <button
-                        className={`tab-button ${activeFeaturesTab === 'graph' ? 'tab-active' : ''}`}
+                        className={`tab-button gap-2 ${activeFeaturesTab === 'graph' ? 'tab-active' : ''}`}
                         style={activeFeaturesTab === 'graph' ? {color: getContrastTextColor()} : {}}
                         onClick={() => setActiveFeaturesTab('graph')}
                       >
+                        <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
                         Graph
                       </button>
                       <button
-                        className={`tab-button ${activeFeaturesTab === 'structure' ? 'tab-active' : ''}`}
+                        className={`tab-button gap-2 ${activeFeaturesTab === 'structure' ? 'tab-active' : ''}`}
                         style={activeFeaturesTab === 'structure' ? {color: getContrastTextColor()} : {}}
                         onClick={() => setActiveFeaturesTab('structure')}
                       >
+                        <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                        </svg>
                         Structure
                       </button>
                       <button
-                        className={`tab-button ${activeFeaturesTab === 'all' ? 'tab-active' : ''}`}
+                        className={`tab-button gap-2 ${activeFeaturesTab === 'all' ? 'tab-active' : ''}`}
                         style={activeFeaturesTab === 'all' ? {color: getContrastTextColor()} : {}}
                         onClick={() => setActiveFeaturesTab('all')}
                       >
+                        <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        </svg>
                         All
                       </button>
                       <button
-                        className={`tab-button ${activeFeaturesTab === 'create' ? 'tab-active' : ''}`}
+                        className={`tab-button gap-2 ${activeFeaturesTab === 'create' ? 'tab-active' : ''}`}
                         style={activeFeaturesTab === 'create' ? {color: getContrastTextColor()} : {}}
                         onClick={() => setActiveFeaturesTab('create')}
                       >
+                        <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
                         Create
                       </button>
                     </div>
@@ -1530,24 +1705,33 @@ const Layout: React.FC = () => {
                   <div className="flex justify-center">
                     <div className="tabs-container p-1">
                       <button
-                        className={`tab-button ${activeNotesTab === 'notes' ? 'tab-active' : ''}`}
+                        className={`tab-button gap-2 ${activeNotesTab === 'notes' ? 'tab-active' : ''}`}
                         style={activeNotesTab === 'notes' ? {color: getContrastTextColor()} : {}}
                         onClick={() => setActiveNotesTab('notes')}
                       >
+                        <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
                         Notes
                       </button>
                       <button
-                        className={`tab-button ${activeNotesTab === 'todos' ? 'tab-active' : ''}`}
+                        className={`tab-button gap-2 ${activeNotesTab === 'todos' ? 'tab-active' : ''}`}
                         style={activeNotesTab === 'todos' ? {color: getContrastTextColor()} : {}}
                         onClick={() => setActiveNotesTab('todos')}
                       >
+                        <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                        </svg>
                         Todos
                       </button>
                       <button
-                        className={`tab-button ${activeNotesTab === 'devlog' ? 'tab-active' : ''}`}
+                        className={`tab-button gap-2 ${activeNotesTab === 'devlog' ? 'tab-active' : ''}`}
                         style={activeNotesTab === 'devlog' ? {color: getContrastTextColor()} : {}}
                         onClick={() => setActiveNotesTab('devlog')}
                       >
+                        <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
                         Dev Log
                       </button>
                     </div>
@@ -1559,26 +1743,36 @@ const Layout: React.FC = () => {
                   <div className="flex justify-center">
                     <div className="tabs-container p-1">
                       <button
-                        className={`tab-button ${activePublicTab === 'overview' ? 'tab-active' : ''}`}
+                        className={`tab-button gap-2 ${activePublicTab === 'overview' ? 'tab-active' : ''}`}
                         style={activePublicTab === 'overview' ? {color: getContrastTextColor()} : {}}
                         onClick={() => setActivePublicTab('overview')}
                       >
+                        <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
                         Overview
                       </button>
                       {selectedProject.isPublic && (
                         <>
                           <button
-                            className={`tab-button ${activePublicTab === 'url' ? 'tab-active' : ''}`}
+                            className={`tab-button gap-2 ${activePublicTab === 'url' ? 'tab-active' : ''}`}
                             style={activePublicTab === 'url' ? {color: getContrastTextColor()} : {}}
                             onClick={() => setActivePublicTab('url')}
                           >
+                            <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                            </svg>
                             URL
                           </button>
                           <button
-                            className={`tab-button ${activePublicTab === 'visibility' ? 'tab-active' : ''}`}
+                            className={`tab-button gap-2 ${activePublicTab === 'visibility' ? 'tab-active' : ''}`}
                             style={activePublicTab === 'visibility' ? {color: getContrastTextColor()} : {}}
                             onClick={() => setActivePublicTab('visibility')}
                           >
+                            <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
                             Privacy
                           </button>
                         </>
@@ -1592,27 +1786,37 @@ const Layout: React.FC = () => {
                   <div className="flex justify-center">
                     <div className="tabs-container p-1">
                       <button
-                        className={`tab-button ${activeSharingTab === 'overview' ? 'tab-active' : ''}`}
+                        className={`tab-button gap-2 ${activeSharingTab === 'overview' ? 'tab-active' : ''}`}
                         style={activeSharingTab === 'overview' ? {color: getContrastTextColor()} : {}}
                         onClick={() => setActiveSharingTab('overview')}
                       >
+                        <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
                         Overview
                       </button>
                       {selectedProject.isShared && (
                         <button
-                          className={`tab-button ${activeSharingTab === 'team' ? 'tab-active' : ''}`}
+                          className={`tab-button gap-2 ${activeSharingTab === 'team' ? 'tab-active' : ''}`}
                           style={activeSharingTab === 'team' ? {color: getContrastTextColor()} : {}}
                           onClick={() => setActiveSharingTab('team')}
                         >
+                          <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                          </svg>
                           Team
                         </button>
                       )}
                       {!selectedProject.isShared && (
                         <button
-                          className={`tab-button ${activeSharingTab === 'activity' ? 'tab-active' : ''}`}
+                          className={`tab-button gap-2 ${activeSharingTab === 'activity' ? 'tab-active' : ''}`}
                           style={activeSharingTab === 'activity' ? {color: getContrastTextColor()} : {}}
                           onClick={() => setActiveSharingTab('activity')}
                         >
+                          <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                          </svg>
                           Activity
                         </button>
                       )}
@@ -1625,24 +1829,33 @@ const Layout: React.FC = () => {
                   <div className="flex justify-center">
                     <div className="tabs-container p-1">
                       <button
-                        className={`tab-button ${activeSettingsTab === 'info' ? 'tab-active' : ''}`}
+                        className={`tab-button gap-2 ${activeSettingsTab === 'info' ? 'tab-active' : ''}`}
                         style={activeSettingsTab === 'info' ? {color: getContrastTextColor()} : {}}
                         onClick={() => setActiveSettingsTab('info')}
                       >
+                        <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
                         Project Info
                       </button>
                       <button
-                        className={`tab-button ${activeSettingsTab === 'export' ? 'tab-active' : ''}`}
+                        className={`tab-button gap-2 ${activeSettingsTab === 'export' ? 'tab-active' : ''}`}
                         style={activeSettingsTab === 'export' ? {color: getContrastTextColor()} : {}}
                         onClick={() => setActiveSettingsTab('export')}
                       >
+                        <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
                         Export
                       </button>
                       <button
-                        className={`tab-button ${activeSettingsTab === 'danger' ? 'tab-active' : ''}`}
+                        className={`tab-button gap-2 ${activeSettingsTab === 'danger' ? 'tab-active' : ''}`}
                         style={activeSettingsTab === 'danger' ? {color: getContrastTextColor()} : {}}
                         onClick={() => setActiveSettingsTab('danger')}
                       >
+                        <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
                         Danger
                       </button>
                     </div>
@@ -1657,38 +1870,53 @@ const Layout: React.FC = () => {
               <div className="flex justify-center">
                 <div className="tabs-container p-1">
                   <button
-                    className={`tab-button ${activeNewsTab === 'all' ? 'tab-active' : ''}`}
+                    className={`tab-button gap-2 ${activeNewsTab === 'all' ? 'tab-active' : ''}`}
                     style={activeNewsTab === 'all' ? {color: getContrastTextColor()} : {}}
                     onClick={() => setActiveNewsTab('all')}
                   >
+                    <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                    </svg>
                     All
                   </button>
                   <button
-                    className={`tab-button ${activeNewsTab === 'news' ? 'tab-active' : ''}`}
+                    className={`tab-button gap-2 ${activeNewsTab === 'news' ? 'tab-active' : ''}`}
                     style={activeNewsTab === 'news' ? {color: getContrastTextColor()} : {}}
                     onClick={() => setActiveNewsTab('news')}
                   >
+                    <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                    </svg>
                     News
                   </button>
                   <button
-                    className={`tab-button ${activeNewsTab === 'update' ? 'tab-active' : ''}`}
+                    className={`tab-button gap-2 ${activeNewsTab === 'update' ? 'tab-active' : ''}`}
                     style={activeNewsTab === 'update' ? {color: getContrastTextColor()} : {}}
                     onClick={() => setActiveNewsTab('update')}
                   >
+                    <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
                     Updates
                   </button>
                   <button
-                    className={`tab-button ${activeNewsTab === 'dev_log' ? 'tab-active' : ''}`}
+                    className={`tab-button gap-2 ${activeNewsTab === 'dev_log' ? 'tab-active' : ''}`}
                     style={activeNewsTab === 'dev_log' ? {color: getContrastTextColor()} : {}}
                     onClick={() => setActiveNewsTab('dev_log')}
                   >
+                    <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
                     Dev Log
                   </button>
                   <button
-                    className={`tab-button ${activeNewsTab === 'announcement' ? 'tab-active' : ''}`}
+                    className={`tab-button gap-2 ${activeNewsTab === 'announcement' ? 'tab-active' : ''}`}
                     style={activeNewsTab === 'announcement' ? {color: getContrastTextColor()} : {}}
                     onClick={() => setActiveNewsTab('announcement')}
                   >
+                    <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+                    </svg>
                     Announcements
                   </button>
                 </div>
@@ -1698,7 +1926,7 @@ const Layout: React.FC = () => {
         </div>
       </header>
 
-      <div className="flex-1 w-full max-w-7xl mx-auto p-2 bg-base-100 flex flex-col min-h-[400px]">
+      <div className="flex-1 w-full max-w-7xl mx-auto p-2 bg-base-100 flex flex-col min-h-[100px]">
         {/* Render content based on current route */}
         {location.pathname === '/projects' ? (
           /* My Projects Tab - Modern Style */
@@ -1872,6 +2100,7 @@ const Layout: React.FC = () => {
                               <button
                                 onClick={() => {
                                   handleProjectSelect(project);
+                                  navigate('/notes');
                                 }}
                                 disabled={!analyticsReady}
                                 className={`w-full p-4 text-left group h-[225px] flex flex-col relative transition-colors ${
@@ -2101,7 +2330,7 @@ const Layout: React.FC = () => {
                         ) : (
                           /* Projects Table */
                           <div className="overflow-x-auto rounded-lg border-2 border-base-content/20">
-                            <table className="table table-zebra w-full border-separate border-spacing-0">
+                            <table className="table w-full border-separate border-spacing-0">
                               <thead>
                                 <tr>
                                   <th className="bg-base-200 text-base-content first:rounded-tl-lg">Project</th>
@@ -2159,12 +2388,15 @@ const Layout: React.FC = () => {
                                   return (
                                     <React.Fragment key={project.id}>
                                     <tr
-                                      className={`cursor-pointer hover:bg-base-200 ${
-                                        selectedProject?.id === project.id ? 'bg-secondary/20' : ''
+                                      onClick={() => { handleProjectSelect(project); navigate('/notes'); }}
+                                      className={`cursor-pointer transition-colors ${
+                                        selectedProject?.id === project.id
+                                          ? 'bg-secondary/20 hover:bg-secondary/30'
+                                          : 'even:bg-base-200/30 hover:bg-base-200/70'
                                       } ${project.isLocked ? 'opacity-60' : ''}`}
                                       title={project.isLocked ? (project.lockedReason || 'This project is locked') : ''}
                                     >
-                                      <td onClick={() => handleProjectSelect(project)}>
+                                      <td>
                                         <div className="flex items-center gap-2">
                                           <div
                                             className="w-3 h-3 rounded-full border-thick flex-shrink-0"
@@ -2467,6 +2699,7 @@ const Layout: React.FC = () => {
               <Outlet context={{
                 user,
                 currentProjectId: selectedProject?.id,
+                currentProjectName: selectedProject?.name,
                 onProjectSwitch: async (projectId: string) => {
                   const project = projects.find(p => p.id === projectId);
                   if (project) {

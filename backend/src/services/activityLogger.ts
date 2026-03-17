@@ -8,7 +8,7 @@ export interface ActivityLogData {
   userId: string;
   sessionId: string;
   action: string;
-  resourceType: 'project' | 'note' | 'todo' | 'component' | 'devlog' | 'link' | 'tech' | 'team' | 'settings';
+  resourceType: 'project' | 'note' | 'todo' | 'feature' | 'devlog' | 'link' | 'tech' | 'team' | 'settings';
   resourceId?: string;
   details?: {
     field?: string;

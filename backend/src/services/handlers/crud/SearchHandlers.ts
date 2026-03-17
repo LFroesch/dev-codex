@@ -85,18 +85,18 @@ export class SearchHandlers extends BaseCommandHandler {
       }
     });
 
-    // Search components
-    (project.components || []).forEach((component: any) => {
-      if (component.title.toLowerCase().includes(query) ||
-          component.content.toLowerCase().includes(query) ||
-          (component.feature && component.feature.toLowerCase().includes(query))) {
+    // Search features
+    (project.features || []).forEach((feat: any) => {
+      if (feat.title.toLowerCase().includes(query) ||
+          feat.content.toLowerCase().includes(query) ||
+          (feat.group && feat.group.toLowerCase().includes(query))) {
         results.push({
-          type: 'component',
-          id: component.id,
-          componentType: component.type,
-          title: component.title,
-          feature: component.feature,
-          preview: component.content.substring(0, 100),
+          type: 'feature',
+          id: feat.id,
+          featureType: feat.type,
+          title: feat.title,
+          group: feat.group,
+          preview: feat.content.substring(0, 100),
           projectName: project.name,
           projectId: project._id.toString()
         });
@@ -135,7 +135,7 @@ export class SearchHandlers extends BaseCommandHandler {
     }, {
       score: { $meta: 'textScore' }
     })
-    .select('_id name todos notes devLog components')
+    .select('_id name todos notes devLog features')
     .sort({ score: { $meta: 'textScore' } })
     .limit(10) // Limit to top 10 matching projects for performance
     .lean();
@@ -153,7 +153,7 @@ export class SearchHandlers extends BaseCommandHandler {
       }, {
         score: { $meta: 'textScore' }
       })
-      .select('_id name todos notes devLog components')
+      .select('_id name todos notes devLog features')
       .sort({ score: { $meta: 'textScore' } })
       .limit(10)
       .lean();
@@ -212,18 +212,18 @@ export class SearchHandlers extends BaseCommandHandler {
         }
       });
 
-      // Search components
-      (project.components || []).forEach((component: any) => {
-        if (component.title.toLowerCase().includes(queryLower) ||
-            component.content.toLowerCase().includes(queryLower) ||
-            (component.feature && component.feature.toLowerCase().includes(queryLower))) {
+      // Search features
+      (project.features || []).forEach((feat: any) => {
+        if (feat.title.toLowerCase().includes(queryLower) ||
+            feat.content.toLowerCase().includes(queryLower) ||
+            (feat.group && feat.group.toLowerCase().includes(queryLower))) {
           results.push({
-            type: 'component',
-            id: component.id,
-            componentType: component.type,
-            title: component.title,
-            feature: component.feature,
-            preview: component.content.substring(0, 100),
+            type: 'feature',
+            id: feat.id,
+            featureType: feat.type,
+            title: feat.title,
+            group: feat.group,
+            preview: feat.content.substring(0, 100),
             projectName: project.name,
             projectId: project._id.toString()
           });

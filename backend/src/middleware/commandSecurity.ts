@@ -1,7 +1,7 @@
 import rateLimit from 'express-rate-limit';
 import { Request, Response, NextFunction } from 'express';
 import { AuthRequest } from './auth';
-import { logWarn, logError } from '../config/logger';
+import { logDebug, logWarn, logError } from '../config/logger';
 import DOMPurify from 'isomorphic-dompurify';
 
 /**
@@ -13,6 +13,7 @@ export const terminalCommandRateLimit = rateLimit({
   max: 20, // 20 commands per minute per user
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { ip: false }, // We key on userId, not IP
   message: {
     type: 'error',
     message: 'Too many commands. Please wait before trying again.',
@@ -21,8 +22,8 @@ export const terminalCommandRateLimit = rateLimit({
     }
   },
   keyGenerator: (req: Request) => {
-    // Rate limit per user
-    return (req as AuthRequest).userId || req.ip || 'unknown';
+    // Rate limit per user (behind auth middleware, userId always present)
+    return (req as AuthRequest).userId || 'unknown';
   },
   handler: (req: Request, res: Response) => {
     logWarn('Terminal command rate limit exceeded', {
@@ -49,8 +50,9 @@ export const terminalSuggestionsRateLimit = rateLimit({
   max: 60, // 60 requests per minute
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { ip: false }, // We key on userId, not IP
   keyGenerator: (req: Request) => {
-    return (req as AuthRequest).userId || req.ip || 'unknown';
+    return (req as AuthRequest).userId || 'unknown';
   }
 });
 
@@ -66,38 +68,41 @@ export const sanitizeCommand = (req: AuthRequest, res: Response, next: NextFunct
         ALLOWED_ATTR: []
       });
 
-      // Check for suspicious patterns
-      const suspiciousPatterns = [
-        /<script/i,
-        /javascript:/i,
-        /on\w+\s*=/i, // Event handlers
-        /eval\(/i,
-        /exec\(/i,
-        /require\(/i,
-        /process\./i,
-        /__proto__/i,
-        /constructor\[/i
-      ];
+      // Check for suspicious patterns (slash commands only — AI natural language
+      // input legitimately contains terms like "process.env" or "require()")
+      if (req.body.command.trimStart().startsWith('/')) {
+        const suspiciousPatterns = [
+          /<script/i,
+          /javascript:/i,
+          /on\w+\s*=/i,
+          /eval\(/i,
+          /exec\(/i,
+          /require\(/i,
+          /process\./i,
+          /__proto__/i,
+          /constructor\[/i
+        ];
 
-      for (const pattern of suspiciousPatterns) {
-        if (pattern.test(req.body.command)) {
-          logWarn('Suspicious command detected', {
-            userId: req.userId,
-            command: req.body.command.slice(0, 100),
-            component: 'commandSecurity',
-            action: 'suspicious_pattern'
-          });
+        for (const pattern of suspiciousPatterns) {
+          if (pattern.test(req.body.command)) {
+            logWarn('Suspicious command detected', {
+              userId: req.userId,
+              command: req.body.command.slice(0, 100),
+              component: 'commandSecurity',
+              action: 'suspicious_pattern'
+            });
 
-          return res.status(400).json({
-            type: 'error',
-            message: 'Invalid command format detected'
-          });
+            return res.status(400).json({
+              type: 'error',
+              message: 'Invalid command format detected'
+            });
+          }
         }
       }
 
-      // Limit command length
+      // Limit command length (slash commands only — AI input has its own limits in terminal.ts)
       const MAX_COMMAND_LENGTH = 500;
-      if (req.body.command.length > MAX_COMMAND_LENGTH) {
+      if (req.body.command.trimStart().startsWith('/') && req.body.command.length > MAX_COMMAND_LENGTH) {
         return res.status(400).json({
           type: 'error',
           message: `Command too long (max ${MAX_COMMAND_LENGTH} characters)`
@@ -143,13 +148,8 @@ export const validateCommandFormat = (req: AuthRequest, res: Response, next: Nex
       });
     }
 
-    if (!command.trim().startsWith('/')) {
-      return res.status(400).json({
-        type: 'error',
-        message: 'Commands must start with /',
-        suggestions: ['/help']
-      });
-    }
+    // Don't enforce slash prefix — natural language input routes to AI
+    // Slash validation is implicit: non-slash input goes to AI in terminal.ts
 
     next();
   } catch (error) {
@@ -174,7 +174,7 @@ export const logCommandExecution = (req: AuthRequest, res: Response, next: NextF
   const userId = req.userId;
 
   // Log the command (truncate for security)
-  logWarn('Terminal command execution', {
+  logDebug('Terminal command execution', {
     userId,
     command: command?.slice(0, 100),
     timestamp: new Date().toISOString(),
@@ -187,13 +187,14 @@ export const logCommandExecution = (req: AuthRequest, res: Response, next: NextF
 };
 
 /**
- * Combined security middleware for terminal execute endpoint
+ * Security middleware for terminal command execution
+ * Applies sanitization + format validation + rate limiting + audit logging
  */
-export const terminalExecuteSecurity = [
-  validateCommandFormat,
-  sanitizeCommand,
+export const terminalCommandSecurity = [
   terminalCommandRateLimit,
-  logCommandExecution
+  sanitizeCommand,
+  validateCommandFormat,
+  logCommandExecution,
 ];
 
 /**

@@ -40,6 +40,18 @@ export interface IUser extends Document {
   theme: UserTheme;
   planTier: 'free' | 'pro' | 'premium';
   projectLimit: number;
+  aiUsage: {
+    tokensUsedThisMonth: number;
+    queryCount: number;
+    lastResetDate: Date;
+    lastQueryAt?: Date;
+  };
+  aiContext: {
+    maxTodos: number;
+    maxNotes: number;
+    maxDevLogs: number;
+    maxFeatures: number;
+  };
   stripeCustomerId?: string;
   subscriptionId?: string;
   subscriptionStatus?: 'active' | 'inactive' | 'canceled' | 'past_due' | 'incomplete_expired';
@@ -136,6 +148,18 @@ const userSchema = new Schema<IUser>({
   projectLimit: {
     type: Number,
     default: 3
+  },
+  aiUsage: {
+    tokensUsedThisMonth: { type: Number, default: 0 },
+    queryCount: { type: Number, default: 0 },
+    lastResetDate: { type: Date, default: Date.now },
+    lastQueryAt: { type: Date },
+  },
+  aiContext: {
+    maxTodos: { type: Number, default: 25 },
+    maxNotes: { type: Number, default: 15 },
+    maxDevLogs: { type: Number, default: 10 },
+    maxFeatures: { type: Number, default: 15 },
   },
   stripeCustomerId: {
     type: String,

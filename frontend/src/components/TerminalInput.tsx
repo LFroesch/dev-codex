@@ -1,15 +1,24 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { terminalAPI, CommandMetadata, ProjectAutocomplete } from '../api/terminal';
-import { getContrastTextColor } from '../utils/contrastTextColor';
+import AISessionBar from './AISessionBar';
 
 interface TerminalInputProps {
   onSubmit: (command: string) => void;
   disabled?: boolean;
   currentProjectId?: string;
   onScrollToTop?: () => void;
+  onScrollToBottom?: () => void;
   onClear?: () => void;
+  onNewChat?: () => void;
+  onEndChat?: () => void;
   pendingCommand?: string | null;
   onCommandSet?: () => void;
+  isAISession?: boolean;
+  aiTurnCount?: number;
+  lastTurnElapsed?: number;
+  sessionTokensUsed?: number;
+  sessionModel?: string;
+  projectName?: string;
 }
 
 interface AutocompleteItem {
@@ -48,9 +57,18 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
   disabled = false,
   currentProjectId,
   onScrollToTop,
+  onScrollToBottom,
   onClear,
+  onNewChat,
+  onEndChat,
   pendingCommand,
-  onCommandSet
+  onCommandSet,
+  isAISession,
+  aiTurnCount = 0,
+  lastTurnElapsed,
+  sessionTokensUsed = 0,
+  sessionModel,
+  projectName
 }) => {
   const [input, setInput] = useState('');
   const [cursorPosition, setCursorPosition] = useState(0);
@@ -190,9 +208,9 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
     // Remove @project from syntax if present
     const cleanedSyntax = syntax.replace(/@project\s*$/, '').trim();
 
-    // SPECIAL: /summary should just complete to "/summary " to trigger smart autocomplete
-    if (cleanedSyntax.startsWith('/summary')) {
-      return '/summary ';
+    // SPECIAL: /context, /export, /summary should just complete to base + space to trigger entity autocomplete
+    if (cleanedSyntax.startsWith('/context') || cleanedSyntax.startsWith('/summary') || cleanedSyntax.startsWith('/export')) {
+      return cleanedSyntax.split(' ')[0] + ' ';
     }
 
     // Remove content inside [...] brackets (placeholder text)
@@ -274,47 +292,20 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
       }
     }
 
-    // SPECIAL: /summary positional arg autocomplete
-    // Match /summary or /summary with args (no space required initially)
-    const summaryMatch = workingText.match(/^\/summary(\s+(.*))?$/);
-    if (summaryMatch) {
-      const afterSummary = summaryMatch[2] || ''; // Everything after "/summary " (or empty if just /summary)
-      const parts = afterSummary.split(' ');
+    // SPECIAL: /context (and aliases like /export, /summary, /download, /summarize, /prompt, /readme) positional arg autocomplete
+    const contextAliases = ['context', 'export', 'summary', 'download', 'summarize', 'prompt', 'readme'];
+    const contextMatch = workingText.match(/^\/(\w+)(\s+(.*))?$/);
+    if (contextMatch && contextAliases.includes(contextMatch[1].toLowerCase())) {
+      const afterCmd = contextMatch[3] || '';
+      const parts = afterCmd.split(' ');
 
-      // If just "/summary" with no space, or "/summary " with optional partial text, show formats
       if (parts.length === 1) {
-        const formats = [
-          { value: 'prompt', description: 'AI-friendly format (recommended for LLMs)' },
-          { value: 'markdown', description: 'Markdown format' },
-          { value: 'json', description: 'JSON format' },
-          { value: 'text', description: 'Plain text format' }
-        ];
-
-        const matching = formats.filter(f =>
-          f.value.toLowerCase().startsWith(parts[0].toLowerCase())
-        );
-
-        if (matching.length > 0) {
-          setAutocompleteItems(matching.map(f => ({
-            value: f.value,
-            label: f.value,
-            description: f.description,
-            type: 'command' as const
-          })));
-          setShowAutocomplete(true);
-          setSelectedIndex(0);
-          return;
-        }
-      }
-
-      // Second arg: entity (only show after format is selected and space is typed)
-      if (parts.length === 2) {
         const entities = [
-          { value: 'all', description: 'Everything (todos, notes, devlog, components, stack, team, deployment)' },
+          { value: 'full', description: 'Full project dump (all entities, no truncation)' },
           { value: 'todos', description: 'Just todos and subtasks' },
           { value: 'notes', description: 'Just notes' },
           { value: 'devlog', description: 'Just development log entries' },
-          { value: 'components', description: 'Just components and relationships' },
+          { value: 'features', description: 'Just features and relationships' },
           { value: 'stack', description: 'Just tech stack' },
           { value: 'team', description: 'Just team members' },
           { value: 'deployment', description: 'Just deployment settings' },
@@ -323,7 +314,7 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
         ];
 
         const matching = entities.filter(e =>
-          e.value.toLowerCase().startsWith(parts[1].toLowerCase())
+          e.value.toLowerCase().startsWith(parts[0].toLowerCase())
         );
 
         if (matching.length > 0) {
@@ -582,30 +573,24 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
       const textBeforeCursor = input.slice(0, cursorPosition);
       const lastAndAndIndex = textBeforeCursor.lastIndexOf('&& ');
 
-      // SPECIAL: Handle /summary positional args - insert value only, not replace command
+      // SPECIAL: Handle /context (and aliases) positional args - insert value only, not replace command
       const workingText = lastAndAndIndex !== -1
         ? textBeforeCursor.slice(lastAndAndIndex + 3)
         : textBeforeCursor;
 
-      const summaryMatch = workingText.match(/^\/summary(\s+(.*))?$/);
-      if (summaryMatch) {
-        const afterSummary = summaryMatch[2] || '';
-        const parts = afterSummary.split(' ');
-
-        // Determine what we're replacing
-        let replaceStart: number;
-        let replaceEnd: number;
+      const ctxAliases = ['context', 'summary', 'summarize', 'prompt', 'readme'];
+      const ctxMatch = workingText.match(/^\/(\w+)(\s+(.*))?$/);
+      if (ctxMatch && ctxAliases.includes(ctxMatch[1].toLowerCase())) {
+        const afterCmd = ctxMatch[3] || '';
+        const parts = afterCmd.split(' ');
 
         if (parts.length === 1) {
-          // Replacing first arg (format) or just /summary
-          if (afterSummary === '') {
-            // Just "/summary" or "/summary " - add value
-            replaceStart = cursorPosition;
-            replaceEnd = cursorPosition;
+          if (afterCmd === '') {
+            // Just "/context" or "/context " - add value
+            const replaceStart = cursorPosition;
             const before = input.slice(0, replaceStart);
             const after = input.slice(cursorPosition);
 
-            // Check if there's already a trailing space
             const needsSpace = !before.endsWith(' ');
             const newInput = `${before}${needsSpace ? ' ' : ''}${item.value} ${after}`;
             const newCursorPos = before.length + (needsSpace ? 1 : 0) + item.value.length + 1;
@@ -623,33 +608,27 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
             setShowAutocomplete(false);
             return;
           } else {
-            // Replacing partial format text
-            replaceStart = textBeforeCursor.lastIndexOf(parts[0]);
-            replaceEnd = cursorPosition;
+            // Replacing partial entity text
+            const replaceStart = textBeforeCursor.lastIndexOf(parts[0]);
+            const before = input.slice(0, replaceStart);
+            const after = input.slice(cursorPosition);
+            const newInput = `${before}${item.value} ${after}`;
+            const newCursorPos = before.length + item.value.length + 1;
+
+            setInput(newInput);
+            setCursorPosition(newCursorPos);
+
+            setTimeout(() => {
+              if (inputRef.current) {
+                inputRef.current.focus();
+                inputRef.current.setSelectionRange(newCursorPos, newCursorPos);
+              }
+            }, 0);
+
+            setShowAutocomplete(false);
+            return;
           }
-        } else {
-          // Replacing second arg (entity)
-          replaceStart = textBeforeCursor.lastIndexOf(parts[parts.length - 1]);
-          replaceEnd = cursorPosition;
         }
-
-        const before = input.slice(0, replaceStart);
-        const after = input.slice(cursorPosition);
-        const newInput = `${before}${item.value} ${after}`;
-        const newCursorPos = before.length + item.value.length + 1;
-
-        setInput(newInput);
-        setCursorPosition(newCursorPos);
-
-        setTimeout(() => {
-          if (inputRef.current) {
-            inputRef.current.focus();
-            inputRef.current.setSelectionRange(newCursorPos, newCursorPos);
-          }
-        }, 0);
-
-        setShowAutocomplete(false);
-        return;
       }
 
       // Use template if available, otherwise use value with space
@@ -782,15 +761,15 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
           ref={autocompleteRef}
           className="absolute bottom-full mb-1 w-full bg-base-100 border-2 border-base-content/20 rounded-lg shadow-xl max-h-80 overflow-y-auto z-50"
         >
-          <div className="p-1">
+          <div className="p-0.5">
             {/* Header - hide keybind hints on mobile */}
-            <div className="text-xs font-semibold text-base-content/80 px-3 py-2 bg-base-200 rounded-lg sticky top-0 border-thick flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
+            <div className="text-xs font-semibold text-base-content/80 px-2.5 py-1.5 bg-base-200 rounded sticky top-0 border-thick flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5">
                 <span>{autocompleteItems[0].type === 'command' ? '🔧 Commands' : '📁 Projects'}</span>
                 <span className="opacity-60">({autocompleteItems.length})</span>
               </div>
               {/* Desktop-only keybind hints */}
-              <div className="hidden md:flex items-center gap-2 text-[10px] opacity-70">
+              <div className="hidden md:flex items-center gap-1.5 text-[10px] opacity-70">
                 <span><kbd className="kbd kbd-xs">ESC</kbd> close</span>
                 <span>•</span>
                 <span><kbd className="kbd kbd-xs">↑↓</kbd> navigate</span>
@@ -800,34 +779,34 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
             </div>
 
             {/* Autocomplete items */}
-            <div className="mt-1 space-y-0.5">
+            <div className="mt-0.5">
               {autocompleteItems.map((item, index) => (
                 <button
                   key={index}
                   ref={index === selectedIndex ? selectedItemRef : null}
                   type="button"
                   onClick={() => selectAutocompleteItem(item)}
-                  className={`w-full text-left px-3 py-2.5 rounded-lg transition-all border-2 ${
+                  className={`w-full text-left px-2.5 py-1.5 rounded transition-all border ${
                     index === selectedIndex
-                      ? 'bg-primary/20 border-primary/40 shadow-sm'
+                      ? 'bg-primary/20 border-primary/40'
                       : 'border-transparent hover:bg-base-200/50'
                   }`}
                 >
-                  <div className="flex items-start gap-3">
+                  <div className="flex items-start gap-2">
                     <div className="flex-1 min-w-0">
                       {/* Command syntax */}
-                      <div className="font-medium text-sm text-base-content/90 font-mono mb-1">
+                      <div className="font-medium text-sm text-base-content/90 font-mono">
                         {item.syntax || item.label}
                       </div>
 
                       {/* Aliases badges - show top 3 */}
                       {item.aliases && item.aliases.length > 0 && (
-                        <div className="flex items-center gap-1 mb-1.5 flex-wrap">
-                          <span className="text-[10px] text-base-content/50 mr-1">Also:</span>
+                        <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+                          <span className="text-[10px] text-base-content/50 mr-0.5">Also:</span>
                           {item.aliases.slice(0, 3).map((alias, aliasIdx) => (
                             <span
                               key={aliasIdx}
-                              className="text-[10px] px-1.5 py-0.5 bg-accent/20 text-accent-content border border-accent/30 rounded font-mono"
+                              className="text-[10px] px-1 py-px bg-accent/20 text-accent-content border border-accent/30 rounded font-mono"
                             >
                               /{alias}
                             </span>
@@ -842,7 +821,7 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
 
                       {/* Description */}
                       {item.description && (
-                        <div className="text-xs text-base-content/70 line-clamp-2">
+                        <div className="text-xs text-base-content/60 mt-0.5 line-clamp-1">
                           {item.description}
                         </div>
                       )}
@@ -850,7 +829,7 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
 
                     {/* Category badge */}
                     {item.category && (
-                      <span className="text-[10px] px-2 py-1 bg-base-200 rounded text-base-content/70 border border-base-content/20 flex-shrink-0 self-start">
+                      <span className="text-[10px] px-1.5 py-0.5 bg-base-200 rounded text-base-content/70 border border-base-content/20 flex-shrink-0 self-start">
                         {item.category}
                       </span>
                     )}
@@ -873,7 +852,7 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
             onClick={handleClick}
             onSelect={(e) => setCursorPosition(e.currentTarget.selectionStart)}
             disabled={disabled}
-            placeholder="Type / for commands or @ for projects..."
+            placeholder={isAISession ? "Continue the conversation..." : "Ask anything or type / for commands..."}
             rows={textareaRows}
             className="textarea textarea-bordered w-full resize-none text-sm font-mono placeholder:overflow-ellipsis placeholder:whitespace-nowrap bg-base-100"
             style={{ minHeight: '2.5rem', maxHeight: '10rem' }}
@@ -893,79 +872,109 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
           </button>
         </div>
 
-        {/* Help text */}
+        {/* AI Session Bar */}
+        <AISessionBar
+          isActive={!!isAISession}
+          projectName={projectName}
+          turnCount={aiTurnCount}
+          tokensUsed={sessionTokensUsed}
+          model={sessionModel}
+          lastTurnElapsed={lastTurnElapsed}
+          onEndChat={() => onEndChat?.()}
+          onNewChat={() => onNewChat?.()}
+        />
+
+        {/* Shortcut bar */}
         <div className="flex min-h-10 items-center justify-between text-xs text-base-content/70 bg-base-100 rounded-lg p-2 border-2 border-base-content/20 gap-2">
           <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-1 hidden sm:flex">
-              <kbd className="kbd kbd-xs">@</kbd>
-              <span className="hidden sm:inline">projects</span>
+            {/* Keyboard hints — hidden on mobile */}
+            <div className="hidden sm:flex items-center gap-2 text-xs">
+              <div className="flex items-center gap-1">
+                <kbd className="kbd kbd-xs">@</kbd>
+                <span>projects</span>
+              </div>
+              <span className="text-base-content/30">·</span>
+              <div className="flex items-center gap-1">
+                <kbd className="kbd kbd-xs">Ctrl</kbd><span>+</span><kbd className="kbd kbd-xs">↑↓</kbd>
+                <span>history</span>
+              </div>
+              <span className="text-base-content/30 hidden md:inline">·</span>
+              <div className="hidden md:flex items-center gap-1">
+                <kbd className="kbd kbd-xs">&&</kbd>
+                <span>batch</span>
+              </div>
             </div>
-            <span className="text-base-content/50 hidden sm:inline">•</span>
-            <div className="flex items-center gap-1 hidden sm:flex">
-              <kbd className="kbd kbd-xs">Ctrl</kbd>
-              <span>+</span>
-              <kbd className="kbd kbd-xs">↑</kbd>
-              <kbd className="kbd kbd-xs">↓</kbd>
-              <span>history</span>
-            </div>
-            <span className="text-base-content/50 hidden sm:inline">•</span>
-            <div className="flex items-center gap-1 hidden md:flex">
-              <kbd className="kbd kbd-xs">Enter</kbd>
-              <span>send</span>
-            </div>
-            <span className="text-base-content/50 hidden md:inline">•</span>
-            <div className="flex items-center gap-1 hidden md:flex">
-              <kbd className="kbd kbd-xs">&&</kbd>
-              <span>batch commands</span>
-            </div>
-            <span className="text-base-content/50 hidden md:inline">•</span>
-            {/* runs /help in terminal on click */}
-            <div className="flex items-center gap-1">
-              <button
-                className='border-thick rounded-xl px-2 bg-primary'
-                onClick={() => {
-                  setCommandHistory(prev => {
-                    const updated = [...prev, '/help'];
-                    saveCommandHistory(updated);
-                    return updated;
-                  });
-                  onSubmit('/help');
-                }}>
-                <span className='font-mono'
-                style={{ color: getContrastTextColor('primary') }}
-                >
-                  Help
-                </span>
-              </button>
-            </div>
-            <span className="text-base-content/50 hidden sm:inline">•</span>
+
+            {/* Action buttons — always visible */}
+            <span className="text-base-content/30 hidden sm:inline">·</span>
+            <button
+              onClick={() => {
+                setCommandHistory(prev => {
+                  const updated = [...prev, '/help'];
+                  saveCommandHistory(updated);
+                  return updated;
+                });
+                onSubmit('/help');
+              }}
+              className="btn btn-xs btn-primary border-thick font-mono"
+            >
+              Help
+            </button>
             <button
               onClick={onScrollToTop}
-              title="Scroll to top of terminal"
-              className='border-thick rounded-xl px-2 bg-secondary'
+              title="Scroll to top"
+              className="btn btn-xs btn-secondary border-thick font-mono"
             >
-              <span className='font-mono'
-                style={{ color: getContrastTextColor('secondary') }}
-                >
-                  <span className="hidden sm:inline">↑ Back To Top</span>
-                  <span className="sm:hidden">↑ Top</span>
-                </span>
+              <span className="hidden sm:inline">↑ Top</span>
+              <span className="sm:hidden">↑</span>
             </button>
-            <span className="text-base-content/50 hidden sm:inline">•</span>
+            <button
+              onClick={onScrollToBottom}
+              title="Scroll to bottom"
+              className="btn btn-xs btn-warning border-thick font-mono"
+            >
+              <span className="hidden sm:inline">↓ Bot</span>
+              <span className="sm:hidden">↓</span>
+            </button>
             <button
               onClick={onClear}
               title="Clear terminal"
-              className='border-thick rounded-xl px-2 bg-warning'
+              className="btn btn-xs btn-error border-thick font-mono"
             >
-              <span className='font-mono'
-                style={{ color: getContrastTextColor('warning') }}
-                >
-                  <span className="hidden sm:inline">Clear</span>
-                  <span className="sm:hidden">✕</span>
-                </span>
+              <span className="hidden sm:inline">Clear</span>
+              <span className="sm:hidden">✕</span>
+            </button>
+            {/* Extra shortcuts — hidden on narrow screens */}
+            <button
+              onClick={() => onSubmit('/swap')}
+              title="Switch project"
+              className="hidden lg:inline-flex btn btn-xs btn-accent border-thick font-mono"
+            >
+              Swap
+            </button>
+            <button
+              onClick={() => onSubmit('/view todos')}
+              title="View todos"
+              className="hidden lg:inline-flex btn btn-xs btn-info border-thick font-mono"
+            >
+              Todos
+            </button>
+            <button
+              onClick={() => onSubmit('/usage')}
+              title="AI usage stats"
+              className="hidden xl:inline-flex btn btn-xs btn-neutral border-thick font-mono"
+            >
+              Usage
+            </button>
+            <button
+              onClick={() => onSubmit('/context')}
+              title="Export project context"
+              className="hidden xl:inline-flex btn btn-xs btn-success border-thick font-mono"
+            >
+              Context
             </button>
           </div>
-          <div className="text-base-content/60 text-[10px] sm:text-xs flex-shrink-0">
+          <div className="text-base-content/50 text-xs font-mono flex-shrink-0">
             {input.length}
           </div>
         </div>

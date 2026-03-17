@@ -69,7 +69,7 @@ export function sanitizeString(input: any): string {
   }
   
   // Basic HTML sanitization
-  const sanitized = DOMPurify.sanitize(input, {
+  let sanitized = DOMPurify.sanitize(input, {
     ALLOWED_TAGS: [], // No HTML tags allowed
     ALLOWED_ATTR: [],
     KEEP_CONTENT: true
@@ -89,11 +89,9 @@ export function sanitizeString(input: any): string {
   ];
   
   for (const pattern of dangerousPatterns) {
-    if (pattern.test(sanitized)) {
-      return sanitized.replace(pattern, '');
-    }
+    sanitized = sanitized.replace(pattern, '');
   }
-  
+
   return sanitized;
 }
 
@@ -120,7 +118,7 @@ export function validateImportData(data: any): void {
   }
   
   // Validate optional arrays
-  const arrayFields = ['notes', 'todos', 'devLog', 'components', 'selectedTechnologies', 'selectedPackages', 'tags'];
+  const arrayFields = ['notes', 'todos', 'devLog', 'features', 'selectedTechnologies', 'selectedPackages', 'tags'];
   
   for (const field of arrayFields) {
     if (project[field] !== undefined && !Array.isArray(project[field])) {
@@ -208,11 +206,11 @@ export function validateAndSanitizeImport(req: Request, res: Response, next: Nex
         }));
       }
       
-      if (Array.isArray(project.components)) {
-        project.components = project.components.map((component: any) => ({
-          ...component,
-          title: component.title ? sanitizeString(component.title) : '',
-          content: component.content ? sanitizeString(component.content) : ''
+      if (Array.isArray(project.features)) {
+        project.features = project.features.map((feat: any) => ({
+          ...feat,
+          title: feat.title ? sanitizeString(feat.title) : '',
+          content: feat.content ? sanitizeString(feat.content) : ''
         }));
       }
       

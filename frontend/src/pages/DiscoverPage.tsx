@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { publicAPI } from '../api';
 import { getContrastTextColor } from '../utils/contrastTextColor';
 import { analyticsService } from '../services/analytics';
@@ -21,7 +21,29 @@ const DiscoverPage: React.FC = () => {
   const [pagination, setPagination] = useState<any>(null);
   const [categories, setCategories] = useState<string[]>([]);
   const [tags, setTags] = useState<string[]>([]);
-  const [viewMode, setViewMode] = useState<'projects' | 'activity' | 'users'>('projects');
+  const [discoverParams, setDiscoverParams] = useSearchParams();
+  const [viewMode, _setViewMode] = useState<'projects' | 'activity' | 'users'>(() => {
+    const t = discoverParams.get('tab');
+    return t && ['projects', 'activity', 'users'].includes(t) ? t as any : 'projects';
+  });
+  const setViewMode = useCallback((mode: 'projects' | 'activity' | 'users') => {
+    _setViewMode(mode);
+    const params = new URLSearchParams(window.location.search);
+    params.set('tab', mode);
+    navigate({ search: params.toString() }, { replace: false });
+  }, [navigate]);
+
+  // Restore view mode on back/forward
+  useEffect(() => {
+    const onPopState = () => {
+      if (window.location.pathname === '/discover') {
+        const t = new URLSearchParams(window.location.search).get('tab');
+        _setViewMode(t && ['projects', 'activity', 'users'].includes(t) ? t as any : 'projects');
+      }
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
   const [users, setUsers] = useState<any[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
   const [usersPagination, setUsersPagination] = useState<any>(null);

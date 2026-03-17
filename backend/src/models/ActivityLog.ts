@@ -5,7 +5,7 @@ export interface IActivityLog extends Document {
   userId: mongoose.Types.ObjectId;
   sessionId: string;
   action: string;
-  resourceType: 'project' | 'note' | 'todo' | 'component' | 'devlog' | 'link' | 'tech' | 'team' | 'settings';
+  resourceType: 'project' | 'note' | 'todo' | 'feature' | 'devlog' | 'link' | 'tech' | 'team' | 'settings';
   resourceId?: string;
   details: {
     field?: string;
@@ -66,7 +66,7 @@ const activityLogSchema: Schema = new Schema({
   resourceType: {
     type: String,
     required: true,
-    enum: ['project', 'note', 'todo', 'component', 'devlog', 'link', 'tech', 'team', 'settings']
+    enum: ['project', 'note', 'todo', 'feature', 'devlog', 'link', 'tech', 'team', 'settings']
   },
   resourceId: {
     type: String,

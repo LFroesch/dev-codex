@@ -1,11 +1,11 @@
 import { useState, useCallback } from 'react';
 import { Doc, projectAPI } from '../api';
-import { RelationshipType, ComponentRelationship } from '../../../shared/types/project';
+import { RelationshipType, FeatureRelationship } from '../../../shared/types/project';
 import { analyticsService } from '../services/analytics';
 
 interface UseRelationshipManagementOptions {
   projectId: string;
-  selectedComponent: Doc | null;
+  selectedFeature: Doc | null;
   docs: Doc[];
   onRefresh?: () => Promise<void>;
   setToast: (toast: { message: string; type: 'success' | 'error' | 'info' } | null) => void;
@@ -13,7 +13,7 @@ interface UseRelationshipManagementOptions {
 
 export const useRelationshipManagement = ({
   projectId,
-  selectedComponent,
+  selectedFeature,
   docs,
   onRefresh,
   setToast,
@@ -29,19 +29,19 @@ export const useRelationshipManagement = ({
     description: string;
   }>({ relationType: 'uses', description: '' });
 
-  const handleAddRelationship = useCallback(async (targetComponentTitle: string) => {
-    if (!selectedComponent) return;
+  const handleAddRelationship = useCallback(async (targetFeatureTitle: string) => {
+    if (!selectedFeature) return;
 
-    const targetComponent = docs.find(d => d.title === targetComponentTitle);
-    if (!targetComponent) {
-      setToast({ message: 'Component not found', type: 'error' });
+    const targetFeature = docs.find(d => d.title === targetFeatureTitle);
+    if (!targetFeature) {
+      setToast({ message: 'Feature not found', type: 'error' });
       return;
     }
 
     setIsAddingRelationship(true);
     try {
-      await projectAPI.createRelationship(projectId, selectedComponent.id, {
-        targetId: targetComponent.id,
+      await projectAPI.createRelationship(projectId, selectedFeature.id, {
+        targetId: targetFeature.id,
         relationType: selectedRelationType,
         description: relationshipDescription || undefined,
       });
@@ -57,7 +57,7 @@ export const useRelationshipManagement = ({
       setRelationshipDescription('');
       setSelectedRelationType('uses');
 
-      setToast({ message: `Relationship added: ${selectedRelationType} → ${targetComponent.title}`, type: 'success' });
+      setToast({ message: `Relationship added: ${selectedRelationType} → ${targetFeature.title}`, type: 'success' });
 
       // Refresh data from parent to get updated relationships
       if (onRefresh) {
@@ -68,13 +68,13 @@ export const useRelationshipManagement = ({
     } finally {
       setIsAddingRelationship(false);
     }
-  }, [selectedComponent, docs, projectId, selectedRelationType, relationshipDescription, onRefresh, setToast]);
+  }, [selectedFeature, docs, projectId, selectedRelationType, relationshipDescription, onRefresh, setToast]);
 
   const handleDeleteRelationship = useCallback(async (relationshipId: string) => {
-    if (!selectedComponent) return;
+    if (!selectedFeature) return;
 
     try {
-      await projectAPI.deleteRelationship(projectId, selectedComponent.id, relationshipId);
+      await projectAPI.deleteRelationship(projectId, selectedFeature.id, relationshipId);
 
       analyticsService.trackFeatureUsage('relationship_delete', {
         projectId
@@ -89,7 +89,7 @@ export const useRelationshipManagement = ({
     } catch (error) {
       setToast({ message: 'Failed to delete relationship', type: 'error' });
     }
-  }, [selectedComponent, projectId, onRefresh, setToast]);
+  }, [selectedFeature, projectId, onRefresh, setToast]);
 
   const handleEditRelationship = useCallback((relationshipId: string, relationType: RelationshipType, description: string) => {
     setEditingRelationshipId(relationshipId);
@@ -97,19 +97,19 @@ export const useRelationshipManagement = ({
   }, []);
 
   const handleSaveRelationship = useCallback(async () => {
-    if (!selectedComponent || !editingRelationshipId) return;
+    if (!selectedFeature || !editingRelationshipId) return;
 
     // For now, we need to delete and recreate the relationship since there's no update endpoint
     // Find the relationship to get the target
-    const relationship = selectedComponent.relationships?.find((r: ComponentRelationship) => r.id === editingRelationshipId);
+    const relationship = selectedFeature.relationships?.find((r: FeatureRelationship) => r.id === editingRelationshipId);
     if (!relationship) return;
 
     try {
       // Delete old relationship
-      await projectAPI.deleteRelationship(projectId, selectedComponent.id, editingRelationshipId);
+      await projectAPI.deleteRelationship(projectId, selectedFeature.id, editingRelationshipId);
 
       // Create new relationship with updated data
-      await projectAPI.createRelationship(projectId, selectedComponent.id, {
+      await projectAPI.createRelationship(projectId, selectedFeature.id, {
         targetId: relationship.targetId,
         relationType: editRelationshipData.relationType,
         description: editRelationshipData.description || undefined,
@@ -130,7 +130,7 @@ export const useRelationshipManagement = ({
     } catch (error) {
       setToast({ message: 'Failed to update relationship', type: 'error' });
     }
-  }, [selectedComponent, editingRelationshipId, editRelationshipData, projectId, onRefresh, setToast]);
+  }, [selectedFeature, editingRelationshipId, editRelationshipData, projectId, onRefresh, setToast]);
 
   const handleCancelEditRelationship = useCallback(() => {
     setEditingRelationshipId(null);

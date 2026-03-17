@@ -1,10 +1,10 @@
 import React, { memo } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { Doc } from '../api';
-import { getCategoryByValue } from '../config/componentCategories';
+import { getCategoryByValue } from '../config/featureCategories';
 
-interface ComponentNodeData {
-  component: Doc;
+interface FeatureNodeData {
+  feature: Doc;
   isRecent: boolean;
   isStale?: boolean;
   isIncomplete?: boolean;
@@ -12,12 +12,12 @@ interface ComponentNodeData {
   hasDuplicates?: boolean;
 }
 
-const ComponentNode: React.FC<NodeProps<ComponentNodeData>> = ({ data, selected }) => {
-  const { component, isRecent, isStale, isIncomplete, isOrphaned, hasDuplicates } = data;
+const FeatureNode: React.FC<NodeProps<FeatureNodeData>> = ({ data, selected }) => {
+  const { feature, isRecent, isStale, isIncomplete, isOrphaned, hasDuplicates } = data;
 
   // Get category configuration
-  const category = getCategoryByValue(component.category);
-  const typeInfo = category.types.find(t => t.value === component.type);
+  const category = getCategoryByValue(feature.category);
+  const typeInfo = category.types.find(t => t.value === feature.type);
 
   // Fixed width for consistent layout
   const width = 400;
@@ -114,34 +114,34 @@ const ComponentNode: React.FC<NodeProps<ComponentNodeData>> = ({ data, selected 
           </div>
           <div className="flex-1 min-w-0">
             <div className="font-bold text-sm text-base-content truncate">
-              {component.title}
+              {feature.title}
             </div>
             <div className="text-xs text-base-content/60 truncate">
-              {category.label} • {typeInfo?.label || component.type}
+              {category.label} • {typeInfo?.label || feature.type}
             </div>
           </div>
         </div>
 
-        {/* Feature badge */}
-        {component.feature && (
+        {/* Group badge */}
+        {feature.group && (
           <div className="mt-2">
             <span className="badge badge-sm badge-primary border-thick p-2">
-              {component.feature}
+              {feature.group}
             </span>
           </div>
         )}
 
         {/* Tags */}
-        {component.tags && component.tags.length > 0 && (
+        {feature.tags && feature.tags.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1">
-            {component.tags.slice(0, 2).map((tag: string, i: number) => (
+            {feature.tags.slice(0, 2).map((tag: string, i: number) => (
               <span key={i} className="badge badge-xs badge-ghost border-thick p-2">
                 {tag}
               </span>
             ))}
-            {component.tags.length > 2 && (
+            {feature.tags.length > 2 && (
               <span className="badge badge-xs badge-ghost border-thick p-2">
-                +{component.tags.length - 2}
+                +{feature.tags.length - 2}
               </span>
             )}
           </div>
@@ -150,7 +150,7 @@ const ComponentNode: React.FC<NodeProps<ComponentNodeData>> = ({ data, selected 
 
         {/* Content preview */}
         <div className="mt-2 text-sm text-base-content/70 line-clamp-4">
-          {component.content}
+          {feature.content}
         </div>
 
       </div>
@@ -158,4 +158,4 @@ const ComponentNode: React.FC<NodeProps<ComponentNodeData>> = ({ data, selected 
   );
 };
 
-export default memo(ComponentNode);
+export default memo(FeatureNode);

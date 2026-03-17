@@ -5,7 +5,7 @@ export type {
   BaseNote as Note,
   BaseTodo as Todo,
   BaseDevLogEntry as DevLogEntry,
-  BaseComponent as Doc, // Legacy alias for backward compatibility
+  BaseFeature as Doc, // Legacy alias for backward compatibility
   BaseTeamMember as TeamMember,
   BaseProjectInvitation as ProjectInvitation,
   BaseNotification as Notification,
@@ -15,7 +15,7 @@ export type {
   BaseNote,
   BaseTodo,
   BaseDevLogEntry,
-  BaseComponent,
+  BaseFeature,
   ProjectResponse,
   CreateProjectData,
   UpdateProjectData,
@@ -25,11 +25,11 @@ export type {
   UpdateTodoData,
   CreateDevLogData,
   UpdateDevLogData,
-  CreateComponentData,
-  UpdateComponentData,
+  CreateFeatureData,
+  UpdateFeatureData,
   CreateRelationshipData,
   RelationshipType,
-  ComponentRelationship,
+  FeatureRelationship,
   AuthResponse,
   LoginData,
   RegisterData

@@ -1,11 +1,11 @@
-import { BaseComponent, CreateComponentData, UpdateComponentData } from '@shared/types';
+import { BaseFeature, CreateFeatureData, UpdateFeatureData } from '@shared/types';
 import { BaseApiService, apiClient } from './base';
 import type {
   BaseProject, ProjectResponse, CreateProjectData, UpdateProjectData,
   CreateNoteData, UpdateNoteData, BaseNote,
   CreateTodoData, UpdateTodoData, BaseTodo,
   CreateDevLogData, UpdateDevLogData, BaseDevLogEntry,
-  CreateRelationshipData, ComponentRelationship
+  CreateRelationshipData, FeatureRelationship
 } from './types';
 
 class ProjectService extends BaseApiService {
@@ -94,28 +94,28 @@ class ProjectService extends BaseApiService {
     return this.delete(`/${projectId}/devlog/${entryId}`);
   }
 
-  // Components management
-  async createComponent(projectId: string, data: CreateComponentData): Promise<{ message: string; component: BaseComponent }> {
-    return this.post(`/${projectId}/components`, data);
+  // Features management
+  async createFeature(projectId: string, data: CreateFeatureData): Promise<{ message: string; feature: BaseFeature }> {
+    return this.post(`/${projectId}/features`, data);
   }
 
-  async updateComponent(projectId: string, componentId: string, data: UpdateComponentData): Promise<{ message: string; component: BaseComponent }> {
-    return this.put(`/${projectId}/components/${componentId}`, data);
+  async updateFeature(projectId: string, featureId: string, data: UpdateFeatureData): Promise<{ message: string; feature: BaseFeature }> {
+    return this.put(`/${projectId}/features/${featureId}`, data);
   }
 
-  async deleteComponent(projectId: string, componentId: string): Promise<{ message: string }> {
-    return this.delete(`/${projectId}/components/${componentId}`);
+  async deleteFeature(projectId: string, featureId: string): Promise<{ message: string }> {
+    return this.delete(`/${projectId}/features/${featureId}`);
   }
 
   // Relationship management
-  async createRelationship(projectId: string, componentId: string, data: CreateRelationshipData): Promise<{
-    id: any; message: string; relationship: ComponentRelationship 
+  async createRelationship(projectId: string, featureId: string, data: CreateRelationshipData): Promise<{
+    id: any; message: string; relationship: FeatureRelationship
 }> {
-    return this.post(`/${projectId}/components/${componentId}/relationships`, data);
+    return this.post(`/${projectId}/features/${featureId}/relationships`, data);
   }
 
-  async deleteRelationship(projectId: string, componentId: string, relationshipId: string): Promise<{ message: string }> {
-    return this.delete(`/${projectId}/components/${componentId}/relationships/${relationshipId}`);
+  async deleteRelationship(projectId: string, featureId: string, relationshipId: string): Promise<{ message: string }> {
+    return this.delete(`/${projectId}/features/${featureId}/relationships/${relationshipId}`);
   }
 
   // Tech stack management (legacy endpoints - maintained for backward compatibility)

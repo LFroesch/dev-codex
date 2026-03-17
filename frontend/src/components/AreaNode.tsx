@@ -3,11 +3,11 @@ import { Handle, Position, NodeProps } from 'reactflow';
 import { Doc } from '../api';
 
 interface AreaNodeData {
-  component: Doc;
+  feature: Doc;
 }
 
 const AreaNode: React.FC<NodeProps<AreaNodeData>> = ({ data, selected }) => {
-  const { component } = data;
+  const { feature } = data;
 
   const selectedClass = selected ? 'ring-4 ring-primary !ring-offset-2 shadow-2xl' : 'shadow-lg';
 
@@ -84,17 +84,17 @@ const AreaNode: React.FC<NodeProps<AreaNodeData>> = ({ data, selected }) => {
         <div className="text-center">
           <div className="text-6xl mb-2">📍</div>
           <h3 className="font-bold text-6xl text-base-content/80 mb-1">
-            {component.title}
+            {feature.title}
           </h3>
-          {component.content && (
+          {feature.content && (
             <p className="text-3xl text-base-content/60 line-clamp-2">
-              {component.content}
+              {feature.content}
             </p>
           )}
-          {component.feature && (
+          {feature.group && (
             <div className="mt-2">
               <span className="border-thick border-base-content/60 text-3xl rounded-lg p-4 badge h-12 font-semibold">
-                {component.feature}
+                {feature.group}
               </span>
             </div>
           )}

@@ -10,6 +10,7 @@ interface ProjectsTabsProps {
     active: number;
     archived: number;
     shared: number;
+    ideas?: number;
   };
 }
 
@@ -54,7 +55,7 @@ const ProjectsTabs: React.FC<ProjectsTabsProps> = ({
         onClick={() => onTabChange('ideas')}
         getContrastColor={getContrastColor}
       >
-        <span>Ideas</span>
+        <span>Ideas {counts.ideas !== undefined && counts.ideas > 0 && <span className="text-xs opacity-60">({counts.ideas})</span>}</span>
       </TabButton>
     </TabGroup>
   );

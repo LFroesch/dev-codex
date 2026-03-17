@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Note, projectAPI } from '../api';
 import EnhancedTextEditor from './EnhancedTextEditor';
 import ConfirmationModal from './ConfirmationModal';
+import { renderMarkdown } from '../utils/renderMarkdown';
 import { unsavedChangesManager } from '../utils/unsavedChanges';
 import activityTracker from '../services/activityTracker';
 import { lockSignaling } from '../services/lockSignaling';
@@ -649,79 +650,6 @@ const NoteModal: React.FC<NoteModalProps> = ({
     }
   };
 
-  // Enhanced markdown to HTML converter
-  const renderMarkdown = (text: string): string => {
-    if (!text) return '<p class="text-base-content/60 italic">No content...</p>';
-    
-    let processedText = text;
-    
-    // Helper function to ensure URL has protocol
-    const ensureProtocol = (url: string): string => {
-      if (url.startsWith('http://') || url.startsWith('https://')) {
-        return url;
-      }
-      return 'https://' + url;
-    };
-    
-    // Process in order to avoid conflicts
-    
-    // 1. Headers
-    processedText = processedText
-      .replace(/^### (.*$)/gm, '<h3 class="text-lg font-semibold mt-4 mb-2">$1</h3>')
-      .replace(/^## (.*$)/gm, '<h2 class="text-xl font-semibold mt-4 mb-2">$1</h2>')
-      .replace(/^# (.*$)/gm, '<h1 class="text-2xl font-bold mt-4 mb-2">$1</h1>');
-    
-    // 2. Code blocks (must come before inline code and links)
-    processedText = processedText
-      .replace(/```([\s\S]*?)```/gim, '<pre class="bg-base-200 rounded p-3 my-2 overflow-x-auto"><code class="text-sm font-mono">$1</code></pre>')
-      .replace(/`([^`]+)`/gim, '<code class="bg-base-200 px-2 py-1 rounded text-sm font-mono">$1</code>');
-    
-    // 3. Markdown-style links [text](url) - process before auto-linking
-    processedText = processedText.replace(/\[([^\]]+)\]\(([^)]+)\)/gim, (_, text, url) => {
-      const fullUrl = ensureProtocol(url);
-      return `<a href="${fullUrl}" class="link link-primary" target="_blank" rel="noopener noreferrer">${text}</a>`;
-    });
-    
-    // 4. Auto-detect plain URLs (avoid URLs already in markdown links or code blocks)
-    processedText = processedText.replace(
-      /(?<!<[^>]*|`[^`]*|\[[^\]]*\]\()[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}(?:\/[^\s<]*)?/gi,
-      (match) => {
-        return `<a href="${ensureProtocol(match)}" class="link link-primary" target="_blank" rel="noopener noreferrer">${match}</a>`;
-      }
-    );
-    
-    // 5. Auto-detect URLs starting with http/https
-    processedText = processedText.replace(
-      /(?<!<[^>]*|`[^`]*|\[[^\]]*\]\()https?:\/\/[^\s<]+/gi,
-      (match) => {
-        return `<a href="${match}" class="link link-primary" target="_blank" rel="noopener noreferrer">${match}</a>`;
-      }
-    );
-    
-    // 6. Bold and Italic
-    processedText = processedText
-      .replace(/\*\*([^*]+?)\*\*/g, '<strong class="font-semibold">$1</strong>')
-      .replace(/\*([^*]+?)\*/g, '<em class="italic">$1</em>');
-    
-    // 7. Blockquotes
-    processedText = processedText
-      .replace(/^> (.*$)/gim, '<blockquote class="border-l-4 border-primary pl-4 my-2 italic text-base-content/80">$1</blockquote>');
-    
-    // 8. Lists
-    processedText = processedText
-      .replace(/^- (.*$)/gm, '<li class="ml-4 list-disc list-inside">$1</li>')
-      .replace(/^\* (.*$)/gm, '<li class="ml-4 list-disc list-inside">$1</li>')
-      .replace(/^\d+\. (.*$)/gm, '<li class="ml-4 list-decimal list-inside">$1</li>');
-
-    // Remove newlines after list items and headers to prevent double spacing
-    processedText = processedText.replace(/<\/li>\n/g, '</li>');
-    processedText = processedText.replace(/<\/h[1-6]>\n/g, (match) => match.replace('\n', ''));
-    
-    // 9. Line breaks - preserve single breaks, avoid double spacing with block elements
-    processedText = processedText.replace(/\n(?!<\/)/gim, '<br>');
-    
-    return processedText;
-  };
 
   const modalContent = (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-[9999]">

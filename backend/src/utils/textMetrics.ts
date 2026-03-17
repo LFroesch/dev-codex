@@ -20,7 +20,7 @@ export function calculateTextMetrics(text: string): TextMetrics {
 
   // Token estimation using a simple heuristic:
   // Average ~4 characters per token for English text
-  // This is based on OpenAI's GPT tokenization patterns
+  // This is a rough heuristic — works across most LLM tokenizers
   const estimatedTokens = Math.ceil(characterCount / 4);
 
   return {

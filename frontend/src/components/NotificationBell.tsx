@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { notificationAPI, invitationAPI, Notification } from '../api';
+import { invitationAPI, Notification } from '../api';
+import { notificationService } from '../services/notificationService';
 import { unsavedChangesManager } from '../utils/unsavedChanges';
 
 const NotificationBell: React.FC = () => {
@@ -18,19 +19,11 @@ const NotificationBell: React.FC = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
+  // Subscribe to notificationService (socket-driven, no polling)
   useEffect(() => {
-    const fetchNotifications = async () => {
-      try {
-        const response = await notificationAPI.getNotifications({ limit: 5 });
-        setNotifications(response.notifications);
-        setUnreadCount(response.unreadCount);
-      } catch (error) {
-      }
-    };
-
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000); // Check every 30 seconds
-    return () => clearInterval(interval);
+    const unsubNotifications = notificationService.subscribeToNotifications((n) => setNotifications(n.slice(0, 5)));
+    const unsubCount = notificationService.subscribeToUnreadCount(setUnreadCount);
+    return () => { unsubNotifications(); unsubCount(); };
   }, []);
 
   // Close dropdown when clicking outside
@@ -64,9 +57,7 @@ const NotificationBell: React.FC = () => {
 
   const markAsRead = async (id: string) => {
     try {
-      await notificationAPI.markAsRead(id);
-      setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
-      setUnreadCount(prev => Math.max(0, prev - 1));
+      await notificationService.markAsRead(id);
     } catch (error) {
     }
   };
@@ -378,12 +369,8 @@ const NotificationBell: React.FC = () => {
               <button
                 className="btn btn-primary flex-1"
                 onClick={async () => {
-                  try {
-                    await notificationAPI.markAllAsRead();
-                    setShowMarkAllAsReadModal(false);
-                  } catch (error) {
-                    setShowMarkAllAsReadModal(false);
-                  }
+                  setShowMarkAllAsReadModal(false);
+                  await notificationService.markAllAsRead();
                 }}
               >
                 Mark All Read
@@ -419,12 +406,8 @@ const NotificationBell: React.FC = () => {
               <button
                 className="btn btn-warning flex-1"
                 onClick={async () => {
-                  try {
-                    await notificationAPI.clearAllNotifications();
-                    setShowClearAllModal(false);
-                  } catch (error) {
-                    setShowClearAllModal(false);
-                  }
+                  setShowClearAllModal(false);
+                  await notificationService.clearAll();
                 }}
               >
                 Clear All

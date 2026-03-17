@@ -34,7 +34,7 @@ const ActivityLogRenderer: React.FC<ActivityLogRendererProps> = ({
       case 'todo': return '☑️';
       case 'note': return '📝';
       case 'devlog': return '📋';
-      case 'component': return '🧩';
+      case 'feature': return '🧩';
       case 'project': return '📁';
       case 'team': return '👥';
       case 'settings': return '⚙️';

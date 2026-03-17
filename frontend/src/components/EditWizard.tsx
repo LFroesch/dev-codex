@@ -5,14 +5,15 @@ import { getContrastTextColor } from '../utils/contrastTextColor';
 import { toast } from '../services/toast';
 import { RelationshipType } from '../../../shared/types/project';
 import ConfirmationModal from './ConfirmationModal';
+import { WizardStepper } from './shared/WizardStepper';
 
 interface EditWizardProps {
   wizardData: {
-    wizardType: 'edit_todo' | 'edit_note' | 'edit_devlog' | 'edit_component' | 'edit_subtask';
+    wizardType: 'edit_todo' | 'edit_note' | 'edit_devlog' | 'edit_feature' | 'edit_subtask';
     todoId?: string;
     noteId?: string;
     entryId?: string;
-    componentId?: string;
+    featureId?: string;
     subtaskId?: string;
     parentTodoId?: string;
     currentValues: Record<string, any>;
@@ -26,8 +27,8 @@ interface EditWizardProps {
       value?: any;
       options?: string[];
       placeholder?: string;
-      allComponents?: any[];
-      availableComponents?: any[];
+      allFeatures?: any[];
+      availableFeatures?: any[];
       dependsOn?: string;
     }>;
   };
@@ -148,8 +149,8 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
   const handleSaveRelationship = useCallback(async () => {
     if (editingRelIndex === null || !currentProjectId) return;
 
-    const { componentId } = wizardData;
-    if (!componentId) return;
+    const { featureId } = wizardData;
+    if (!featureId) return;
 
     const currentRelationships = formData[step.id] || step.value || [];
     const relationship = currentRelationships[editingRelIndex];
@@ -169,10 +170,10 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
 
     try {
       // Delete old relationship
-      await projectAPI.deleteRelationship(currentProjectId, componentId, relationship.id);
+      await projectAPI.deleteRelationship(currentProjectId, featureId, relationship.id);
 
       // Create new relationship with updated data
-      const newRelationship = await projectAPI.createRelationship(currentProjectId, componentId, {
+      const newRelationship = await projectAPI.createRelationship(currentProjectId, featureId, {
         targetId: relationship.targetId,
         relationType: editRelData.relationType,
         description: editRelData.description || undefined,
@@ -294,8 +295,8 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
   const handleDeleteRelationship = useCallback(async () => {
     if (!currentProjectId || !deleteConfirmation.relationshipId) return;
 
-    const { componentId } = wizardData;
-    if (!componentId) return;
+    const { featureId } = wizardData;
+    if (!featureId) return;
 
     const relationshipId = deleteConfirmation.relationshipId;
     const currentRelationships = formData[step.id] || step.value || [];
@@ -308,7 +309,7 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
     setFormData({ ...formData, [step.id]: updatedRelationships });
 
     try {
-      await projectAPI.deleteRelationship(currentProjectId, componentId, relationshipId);
+      await projectAPI.deleteRelationship(currentProjectId, featureId, relationshipId);
       toast.success('Relationship deleted');
 
     } catch (error) {
@@ -342,14 +343,14 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
     }
 
     try {
-      const { wizardType, todoId, noteId, entryId, componentId } = wizardData;
-      const itemId = todoId || noteId || entryId || componentId;
+      const { wizardType, todoId, noteId, entryId, featureId } = wizardData;
+      const itemId = todoId || noteId || entryId || featureId;
 
       const commandMap: Record<string, string> = {
         'edit_todo': 'todo',
         'edit_note': 'note',
         'edit_devlog': 'devlog',
-        'edit_component': 'component'
+        'edit_feature': 'feature'
       };
 
       const itemType = commandMap[wizardType];
@@ -388,11 +389,11 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
         }
       }
 
-      // Handle relationships separately for components
+      // Handle relationships separately for features
       // Note: Modified relationships are saved immediately via handleSaveRelationship
       // Deleted relationships are removed immediately via handleDeleteRelationship
       // Here we only handle new additions (temp IDs)
-      if (wizardType === 'edit_component' && formData.relationships) {
+      if (wizardType === 'edit_feature' && formData.relationships) {
         const newRels = formData.relationships || [];
 
         // Find new relationships (temp IDs only - everything else already saved)
@@ -402,7 +403,7 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
               const desc = newRel.description
                 ? ` --description="${escapeForCommand(newRel.description)}"`
                 : '';
-              const addCmd = `/edit component ${itemId} --field=relationship --action=add --target=${newRel.targetId} --type=${newRel.relationType}${desc}`;
+              const addCmd = `/edit feature ${itemId} --field=relationship --action=add --target=${newRel.targetId} --type=${newRel.relationType}${desc}`;
 
               const response = await terminalAPI.executeCommand(addCmd, currentProjectId);
 
@@ -466,7 +467,7 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
         return '/notes';
       case 'edit_devlog':
         return '/notes?section=devlog';
-      case 'edit_component':
+      case 'edit_feature':
         return '/features';
       default:
         return '/';
@@ -483,8 +484,8 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
         return 'Note';
       case 'edit_devlog':
         return 'Dev Log Entry';
-      case 'edit_component':
-        return 'Component';
+      case 'edit_feature':
+        return 'Feature';
       default:
         return 'Item';
     }
@@ -494,15 +495,16 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
   if (isCompleted) {
     return (
       <div className="mt-3 space-y-4">
-        <div className="p-6 bg-success/10 rounded-lg border-2 border-success/30 text-center">
-          <div className="text-5xl mb-4">✅</div>
-          <h3 className="text-xl font-bold mb-2">Update Complete!</h3>
-          <p className="text-sm text-base-content/70 mb-4">
-            Your {getItemTypeName().toLowerCase()} has been updated successfully.
-          </p>
+        <div className="p-4 bg-success/10 rounded-lg border-thick border-l-4 border-l-success">
+          <div className="flex items-center gap-3 mb-3">
+            <svg className="w-6 h-6 text-success flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <h3 className="text-base font-bold">Update Complete!</h3>
+          </div>
 
           {/* Show updated data preview */}
-          <div className="p-4 bg-base-200 rounded-lg border-thick text-left mb-4">
+          <div className="p-3 bg-base-200 rounded-lg border-thick mb-3">
             <div className="text-xs font-semibold text-base-content/60 mb-2">Updated Fields:</div>
             <div className="space-y-1">
               {Object.entries(formData).filter(([key]) => !key.includes('_temp') && key !== 'relationships' && key !== 'subtasks').map(([key, value]) => {
@@ -554,24 +556,8 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
 
   return (
     <div ref={wizardRef} className="mt-3 space-y-4">
-      {/* Progress indicator */}
-      <div className="flex items-center justify-between">
-        <div className="text-xs text-base-content/60">
-          Step {currentStep + 1} of {steps.length}
-        </div>
-        <div className="flex gap-1">
-          {steps.map((_: any, idx: number) => (
-            <div
-              key={idx}
-              className={`w-2 h-2 rounded-full ${
-                idx === currentStep ? 'bg-primary' :
-                idx < currentStep ? 'bg-success' :
-                'bg-base-300'
-              }`}
-            />
-          ))}
-        </div>
-      </div>
+      {/* Progress stepper */}
+      <WizardStepper steps={steps} currentStep={currentStep} title={`Edit ${getItemTypeName()}`} />
 
       {/* Step content */}
       <div className="p-4 bg-base-200 rounded-lg border-thick">
@@ -583,7 +569,7 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
             value={formData[step.id] || step.value || ''}
             onChange={(e) => setFormData({ ...formData, [step.id]: e.target.value })}
             placeholder={step.placeholder}
-            className="input input-bordered w-full"
+            className="input input-bordered w-full border-thick focus:border-primary"
           />
         )}
 
@@ -593,7 +579,7 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
             onChange={(e) => setFormData({ ...formData, [step.id]: e.target.value })}
             placeholder={step.placeholder}
             rows={6}
-            className="textarea textarea-bordered w-full resize-none font-mono text-sm"
+            className="textarea textarea-bordered w-full resize-none font-mono text-sm border-thick focus:border-primary"
           />
         )}
 
@@ -601,7 +587,7 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
           <select
             value={formData[step.id] || step.value || ''}
             onChange={(e) => setFormData({ ...formData, [step.id]: e.target.value })}
-            className="select select-bordered w-full"
+            className="select select-bordered w-full border-thick"
           >
             {step.options?.map((option: string) => (
               <option key={option} value={option}>{option}</option>
@@ -616,7 +602,7 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
               <div className="space-y-2">
                 <div className="text-xs font-semibold text-base-content/70">Current Relationships ({(formData[step.id] || step.value || []).length})</div>
                 {(formData[step.id] || step.value || []).map((rel: any, index: number) => {
-                  const targetComp = (step.allComponents || step.availableComponents)?.find((c: any) => c.id === rel.targetId);
+                  const targetComp = (step.allFeatures || step.availableFeatures)?.find((c: any) => c.id === rel.targetId);
                   const isEditing = editingRelIndex === index;
 
                   // Relationship type colors
@@ -737,7 +723,7 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
                   onChange={(e) => {
                     if (!e.target.value) return;
                     const targetId = e.target.value;
-                    const targetComp = step.availableComponents?.find((c: any) => c.id === targetId);
+                    const targetComp = step.availableFeatures?.find((c: any) => c.id === targetId);
 
                     // Initialize temp relationship data
                     const tempData = {
@@ -749,8 +735,8 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
                     setFormData({ ...formData, [`${step.id}_temp`]: tempData });
                   }}
                 >
-                  <option value="">Select component...</option>
-                  {step.availableComponents?.map((comp: any) => (
+                  <option value="">Select feature...</option>
+                  {step.availableFeatures?.map((comp: any) => (
                     <option key={comp.id} value={comp.id}>
                       {comp.category} • {comp.title}
                     </option>

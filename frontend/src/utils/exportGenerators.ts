@@ -4,17 +4,15 @@ export interface ExportOptions {
   basicInfo: boolean;
   description: boolean;
   tags: boolean;
-  links: boolean;
   notes: boolean;
   todos: boolean;
   devLog: boolean;
-  components: boolean;
+  features: boolean;
   techStack: boolean;
   team: boolean;
   deploymentData: boolean;
   publicPageData: boolean;
   settings: boolean;
-  timestamps: boolean;
 }
 
 export type ExportFormat = 'json' | 'prompt' | 'markdown';
@@ -51,8 +49,8 @@ export function generateExportData(selectedProject: Project, exportOptions: Expo
     data.devLog = selectedProject.devLog;
   }
 
-  if (exportOptions.components && selectedProject.components?.length) {
-    data.components = selectedProject.components;
+  if (exportOptions.features && selectedProject.features?.length) {
+    data.features = selectedProject.features;
   }
 
   if (exportOptions.techStack && selectedProject.stack?.length) {
@@ -81,12 +79,11 @@ export function generateExportData(selectedProject: Project, exportOptions: Expo
     };
   }
 
-  if (exportOptions.timestamps) {
-    data.timestamps = {
-      createdAt: selectedProject.createdAt,
-      updatedAt: selectedProject.updatedAt,
-    };
-  }
+  // Always include timestamps
+  data.timestamps = {
+    createdAt: selectedProject.createdAt,
+    updatedAt: selectedProject.updatedAt,
+  };
 
   return data;
 }
@@ -248,27 +245,27 @@ ${noteContent}`;
     });
   }
 
-  if (data.components?.length) {
+  if (data.features?.length) {
     prompt += `
 
-## 🧩 FEATURE COMPONENTS`;
-    const componentsByFeature = data.components.reduce((acc: any, component: any) => {
-      const feature = component.feature || 'Ungrouped';
-      if (!acc[feature]) acc[feature] = [];
-      acc[feature].push(component);
+## 🧩 FEATURES`;
+    const featuresByGroup = data.features.reduce((acc: any, feat: any) => {
+      const group = feat.group || 'Ungrouped';
+      if (!acc[group]) acc[group] = [];
+      acc[group].push(feat);
       return acc;
     }, {});
 
-    Object.entries(componentsByFeature).forEach(([feature, components]: [string, any]) => {
+    Object.entries(featuresByGroup).forEach(([group, features]: [string, any]) => {
       prompt += `
 
-**${feature}:**`;
-      components.forEach((component: any) => {
-        const componentContent = component.content?.length > 800 ?
-          component.content.substring(0, 800) + '...' :
-          component.content || '';
+**${group}:**`;
+      features.forEach((feat: any) => {
+        const featureContent = feat.content?.length > 800 ?
+          feat.content.substring(0, 800) + '...' :
+          feat.content || '';
         prompt += `
-• **[${component.type}] ${component.title || 'Untitled'}:** ${componentContent}`;
+• **[${feat.type}] ${feat.title || 'Untitled'}:** ${featureContent}`;
       });
     });
   }
@@ -369,22 +366,22 @@ export function generateMarkdownFormat(data: any, selectedProject: Project): str
     });
   }
 
-  if (data.components?.length) {
-    markdown += `## Components\n\n`;
-    const componentsByFeature = data.components.reduce((acc: any, component: any) => {
-      const feature = component.feature || 'Ungrouped';
-      if (!acc[feature]) acc[feature] = [];
-      acc[feature].push(component);
+  if (data.features?.length) {
+    markdown += `## Features\n\n`;
+    const featuresByGroup = data.features.reduce((acc: any, feat: any) => {
+      const group = feat.group || 'Ungrouped';
+      if (!acc[group]) acc[group] = [];
+      acc[group].push(feat);
       return acc;
     }, {});
 
-    Object.entries(componentsByFeature).forEach(([feature, components]: [string, any]) => {
-      markdown += `### ${feature}\n\n`;
-      (components as any[]).forEach((component: any) => {
-        const componentContent = component.content?.length > 2000 ?
-          component.content.substring(0, 2000) + '...' :
-          component.content || '';
-        markdown += `#### [${component.type}] ${component.title || 'Untitled'}\n${componentContent}\n\n`;
+    Object.entries(featuresByGroup).forEach(([group, features]: [string, any]) => {
+      markdown += `### ${group}\n\n`;
+      (features as any[]).forEach((feat: any) => {
+        const featureContent = feat.content?.length > 2000 ?
+          feat.content.substring(0, 2000) + '...' :
+          feat.content || '';
+        markdown += `#### [${feat.type}] ${feat.title || 'Untitled'}\n${featureContent}\n\n`;
       });
     });
   }

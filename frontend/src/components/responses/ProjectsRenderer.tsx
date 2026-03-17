@@ -26,7 +26,7 @@ const ProjectsRenderer: React.FC<ProjectsRendererProps> = ({ projects, onProject
             onClick={() => onProjectSelect?.(project.id)}
             className={`h-30 w-full p-3 rounded-lg transition-all text-left ${
               isSelected
-                ? 'bg-primary/20 border-primary border-2 ring-2 ring-primary/30'
+                ? 'bg-primary/20 border-primary border-thick ring-2 ring-primary/30'
                 : 'bg-base-200 hover:bg-primary/10 hover:border-primary/50 border-thick'
             }`}
           >

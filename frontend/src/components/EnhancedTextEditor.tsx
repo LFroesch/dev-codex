@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { renderMarkdown } from '../utils/renderMarkdown';
 
 interface EnhancedTextEditorProps {
   value: string;
@@ -14,77 +15,7 @@ const EnhancedTextEditor: React.FC<EnhancedTextEditorProps> = ({
   const [isPreview, setIsPreview] = useState(false);
   const [lastSelection, setLastSelection] = useState({ start: 0, end: 0 });
 
-  // Enhanced markdown to HTML converter with proper link handling
-  const renderMarkdown = (text: string): string => {
-    if (!text) return '<p class="text-base-content/60 italic">Nothing to preview yet...</p>';
-    
-    let processedText = text;
-    
-    // Helper function to ensure URL has protocol
-    const ensureProtocol = (url: string): string => {
-      if (url.startsWith('http://') || url.startsWith('https://')) {
-        return url;
-      }
-      return 'https://' + url;
-    };
-    
-    // Process in order to avoid conflicts
-    
-    // 1. Headers
-    processedText = processedText
-      .replace(/^### (.*$)/gim, '<h3 class="text-lg font-semibold mt-4 mb-2">$1</h3>')
-      .replace(/^## (.*$)/gim, '<h2 class="text-xl font-semibold mt-4 mb-2">$1</h2>')
-      .replace(/^# (.*$)/gim, '<h1 class="text-2xl font-bold mt-4 mb-2">$1</h1>');
-    
-    // 2. Code blocks (must come before inline code and links)
-    processedText = processedText
-      .replace(/```([\s\S]*?)```/gim, '<pre class="bg-base-200 rounded p-3 my-2 overflow-x-auto"><code class="text-sm font-mono">$1</code></pre>')
-      .replace(/`([^`]+)`/gim, '<code class="bg-base-200 px-2 py-1 rounded text-sm font-mono">$1</code>');
-    
-    // 3. Markdown-style links [text](url) - process before auto-linking
-    processedText = processedText.replace(/\[([^\]]+)\]\(([^)]+)\)/gim, (_, text, url) => {
-      const fullUrl = ensureProtocol(url);
-      return `<a href="${fullUrl}" class="link link-primary" target="_blank" rel="noopener noreferrer">${text}</a>`;
-    });
-    
-    // 4. Auto-detect plain URLs (avoid URLs already in markdown links or code blocks)
-    processedText = processedText.replace(
-      /(?<!<[^>]*|`[^`]*|\[[^\]]*\]\()[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}(?:\/[^\s<]*)?/gi,
-      (match) => {
-        return `<a href="${ensureProtocol(match)}" class="link link-primary" target="_blank" rel="noopener noreferrer">${match}</a>`;
-      }
-    );
-    
-    // 5. Auto-detect URLs starting with http/https
-    processedText = processedText.replace(
-      /(?<!<[^>]*|`[^`]*|\[[^\]]*\]\()https?:\/\/[^\s<]+/gi,
-      (match) => {
-        return `<a href="${match}" class="link link-primary" target="_blank" rel="noopener noreferrer">${match}</a>`;
-      }
-    );
-    
-    // 6. Bold and Italic
-    processedText = processedText
-      .replace(/\*\*([^*]+)\*\*/gim, '<strong class="font-semibold">$1</strong>')
-      .replace(/\*([^*]+)\*/gim, '<em class="italic">$1</em>');
-    
-    // 7. Blockquotes
-    processedText = processedText
-      .replace(/^> (.*$)/gim, '<blockquote class="border-l-4 border-primary pl-4 my-2 italic text-base-content/80">$1</blockquote>');
-    
-    // 8. Lists and Checkboxes
-    processedText = processedText
-      .replace(/^- \[ \] (.*$)/gim, '<li class="ml-4 flex items-center gap-2"><input type="checkbox" class="checkbox checkbox-sm" disabled> <span>$1</span></li>')
-      .replace(/^- \[x\] (.*$)/gim, '<li class="ml-4 flex items-center gap-2"><input type="checkbox" class="checkbox checkbox-sm" checked disabled> <span class="line-through text-base-content/60">$1</span></li>')
-      .replace(/^- (.*$)/gim, '<li class="ml-4 list-disc list-inside">$1</li>')
-      .replace(/^\* (.*$)/gim, '<li class="ml-4 list-disc list-inside">$1</li>')
-      .replace(/^\d+\. (.*$)/gim, '<li class="ml-4 list-decimal list-inside">$1</li>');
-    
-    // 9. Line breaks - preserve single breaks, avoid double spacing with block elements
-    processedText = processedText.replace(/\n(?![</])/gim, '<br>');
-    
-    return processedText;
-  };
+
 
   const insertMarkdown = (before: string, after: string = '') => {
     const textarea = document.querySelector('.enhanced-textarea') as HTMLTextAreaElement;

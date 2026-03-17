@@ -1,4 +1,4 @@
-import { ComponentHandlers } from '../../services/handlers/crud/ComponentHandlers';
+import { FeatureHandlers } from '../../services/handlers/crud/FeatureHandlers';
 import { ParsedCommand, CommandType } from '../../services/commandParser';
 import { ResponseType } from '../../services/types';
 import { Project } from '../../models/Project';
@@ -10,8 +10,8 @@ jest.mock('../../services/ProjectCache');
 jest.mock('../../config/logger');
 jest.mock('../../services/activityLogger');
 
-describe('ComponentHandlers', () => {
-  let handler: ComponentHandlers;
+describe('FeatureHandlers', () => {
+  let handler: FeatureHandlers;
   const userId = new mongoose.Types.ObjectId().toString();
   const projectId = new mongoose.Types.ObjectId().toString();
 
@@ -19,49 +19,49 @@ describe('ComponentHandlers', () => {
     _id: new mongoose.Types.ObjectId(projectId),
     name: 'Test Project',
     userId: new mongoose.Types.ObjectId(userId),
-    components: [],
+    features: [],
     save: jest.fn().mockResolvedValue(true)
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
-    handler = new ComponentHandlers(userId);
-    mockProject.components = [];
+    handler = new FeatureHandlers(userId);
+    mockProject.features = [];
   });
 
-  describe('handleAddComponent', () => {
+  describe('handleAddFeature', () => {
     it('should trigger wizard when no args or flags', async () => {
       (Project.findById as jest.Mock).mockResolvedValue(mockProject);
       jest.spyOn(handler as any, 'resolveProjectWithEditCheck').mockResolvedValue({ project: mockProject });
 
       const parsed: ParsedCommand = {
-        type: CommandType.ADD_COMPONENT,
+        type: CommandType.ADD_FEATURE,
         command: 'add',
-        raw: '/add component',
+        raw: '/add feature',
         args: [],
         flags: {},
         isValid: true,
         errors: []
       };
 
-      const result = await handler.handleAddComponent(parsed, projectId);
+      const result = await handler.handleAddFeature(parsed, projectId);
 
       expect(result.type).toBe(ResponseType.PROMPT);
-      expect(result.data.wizardType).toBe('add_component');
+      expect(result.data.wizardType).toBe('add_feature');
       expect(result.data.typesByCategory).toBeDefined();
     });
 
-    it('should add a component with all fields', async () => {
+    it('should add a feature with all fields', async () => {
       (Project.findById as jest.Mock).mockResolvedValue(mockProject);
       jest.spyOn(handler as any, 'resolveProjectWithEditCheck').mockResolvedValue({ project: mockProject });
 
       const parsed: ParsedCommand = {
-        type: CommandType.ADD_COMPONENT,
+        type: CommandType.ADD_FEATURE,
         command: 'add',
-        raw: '/add component',
+        raw: '/add feature',
         args: [],
         flags: {
-          feature: 'Auth',
+          group: 'Auth',
           category: 'backend',
           type: 'service',
           title: 'LoginService',
@@ -71,14 +71,14 @@ describe('ComponentHandlers', () => {
         errors: []
       };
 
-      const result = await handler.handleAddComponent(parsed, projectId);
+      const result = await handler.handleAddFeature(parsed, projectId);
 
       expect(result.type).toBe(ResponseType.SUCCESS);
-      expect(mockProject.components).toHaveLength(1);
-      expect(mockProject.components[0].feature).toBe('Auth');
-      expect(mockProject.components[0].category).toBe('backend');
-      expect(mockProject.components[0].type).toBe('service');
-      expect(mockProject.components[0].title).toBe('LoginService');
+      expect(mockProject.features).toHaveLength(1);
+      expect(mockProject.features[0].group).toBe('Auth');
+      expect(mockProject.features[0].category).toBe('backend');
+      expect(mockProject.features[0].type).toBe('service');
+      expect(mockProject.features[0].title).toBe('LoginService');
       expect(mockProject.save).toHaveBeenCalled();
     });
 
@@ -87,16 +87,16 @@ describe('ComponentHandlers', () => {
       jest.spyOn(handler as any, 'resolveProjectWithEditCheck').mockResolvedValue({ project: mockProject });
 
       const parsed: ParsedCommand = {
-        type: CommandType.ADD_COMPONENT,
+        type: CommandType.ADD_FEATURE,
         command: 'add',
-        raw: '/add component',
+        raw: '/add feature',
         args: ['Auth', '-', 'backend', 'service'],
         flags: {},
         isValid: true,
         errors: []
       };
 
-      const result = await handler.handleAddComponent(parsed, projectId);
+      const result = await handler.handleAddFeature(parsed, projectId);
 
       expect(result.type).toBe(ResponseType.ERROR);
       expect(result.message).toContain('flag-based syntax');
@@ -107,35 +107,35 @@ describe('ComponentHandlers', () => {
       jest.spyOn(handler as any, 'resolveProjectWithEditCheck').mockResolvedValue({ project: mockProject });
 
       const parsed: ParsedCommand = {
-        type: CommandType.ADD_COMPONENT,
+        type: CommandType.ADD_FEATURE,
         command: 'add',
-        raw: '/add component',
+        raw: '/add feature',
         args: [],
         flags: {
-          feature: 'Auth',
+          group: 'Auth',
           // Missing category, type, title, content
         },
         isValid: true,
         errors: []
       };
 
-      const result = await handler.handleAddComponent(parsed, projectId);
+      const result = await handler.handleAddFeature(parsed, projectId);
 
       expect(result.type).toBe(ResponseType.ERROR);
       expect(result.message).toContain('required');
     });
 
-    it('should add frontend component', async () => {
+    it('should add frontend feature', async () => {
       (Project.findById as jest.Mock).mockResolvedValue(mockProject);
       jest.spyOn(handler as any, 'resolveProjectWithEditCheck').mockResolvedValue({ project: mockProject });
 
       const parsed: ParsedCommand = {
-        type: CommandType.ADD_COMPONENT,
+        type: CommandType.ADD_FEATURE,
         command: 'add',
-        raw: '/add component',
+        raw: '/add feature',
         args: [],
         flags: {
-          feature: 'Dashboard',
+          group: 'Dashboard',
           category: 'frontend',
           type: 'component',
           title: 'UserCard',
@@ -145,20 +145,20 @@ describe('ComponentHandlers', () => {
         errors: []
       };
 
-      const result = await handler.handleAddComponent(parsed, projectId);
+      const result = await handler.handleAddFeature(parsed, projectId);
 
       expect(result.type).toBe(ResponseType.SUCCESS);
-      expect(mockProject.components[0].category).toBe('frontend');
-      expect(mockProject.components[0].type).toBe('component');
+      expect(mockProject.features[0].category).toBe('frontend');
+      expect(mockProject.features[0].type).toBe('component');
     });
   });
 
-  describe('handleViewComponents', () => {
+  describe('handleViewFeatures', () => {
     beforeEach(() => {
-      mockProject.components = [
+      mockProject.features = [
         {
           id: '1',
-          feature: 'Auth',
+          group: 'Auth',
           category: 'backend',
           type: 'service',
           title: 'LoginService',
@@ -167,7 +167,7 @@ describe('ComponentHandlers', () => {
         },
         {
           id: '2',
-          feature: 'Dashboard',
+          group: 'Dashboard',
           category: 'frontend',
           type: 'component',
           title: 'UserCard',
@@ -176,7 +176,7 @@ describe('ComponentHandlers', () => {
         },
         {
           id: '3',
-          feature: 'Auth',
+          group: 'Auth',
           category: 'backend',
           type: 'route',
           title: 'AuthRoutes',
@@ -186,63 +186,62 @@ describe('ComponentHandlers', () => {
       ];
     });
 
-    it('should view all components', async () => {
+    it('should view all features', async () => {
       (Project.findById as jest.Mock).mockResolvedValue(mockProject);
       jest.spyOn(handler as any, 'resolveProject').mockResolvedValue({ project: mockProject });
 
       const parsed: ParsedCommand = {
-        type: CommandType.VIEW_COMPONENTS,
+        type: CommandType.VIEW_FEATURES,
         command: 'view',
-        raw: '/view components',
+        raw: '/view features',
         args: [],
         flags: {},
         isValid: true,
         errors: []
       };
 
-      const result = await handler.handleViewComponents(parsed, projectId);
+      const result = await handler.handleViewFeatures(parsed, projectId);
 
       expect(result.type).toBe(ResponseType.DATA);
-      expect(result.data.components.length).toBe(3);
+      expect(result.data.features.length).toBe(3);
     });
 
-    it('should return all components grouped by feature', async () => {
-      mockProject.components = [
-        { id: '1', title: 'LoginService', type: 'service', feature: 'Auth', createdAt: new Date() },
-        { id: '2', title: 'UserCard', type: 'component', feature: 'Dashboard', createdAt: new Date() },
-        { id: '3', title: 'AuthRoutes', type: 'route', feature: 'Auth', createdAt: new Date() }
+    it('should return all features grouped by group', async () => {
+      mockProject.features = [
+        { id: '1', title: 'LoginService', type: 'service', group: 'Auth', createdAt: new Date() },
+        { id: '2', title: 'UserCard', type: 'component', group: 'Dashboard', createdAt: new Date() },
+        { id: '3', title: 'AuthRoutes', type: 'route', group: 'Auth', createdAt: new Date() }
       ];
 
       (Project.findById as jest.Mock).mockResolvedValue(mockProject);
       jest.spyOn(handler as any, 'resolveProject').mockResolvedValue({ project: mockProject });
 
       const parsed: ParsedCommand = {
-        type: CommandType.VIEW_COMPONENTS,
+        type: CommandType.VIEW_FEATURES,
         command: 'view',
-        raw: '/view components',
+        raw: '/view features',
         args: [],
         flags: {},
         isValid: true,
         errors: []
       };
 
-      const result = await handler.handleViewComponents(parsed, projectId);
+      const result = await handler.handleViewFeatures(parsed, projectId);
 
       expect(result.type).toBe(ResponseType.DATA);
-      // Handler returns all components grouped by feature
-      expect(result.data.components).toHaveLength(3);
+      expect(result.data.features).toHaveLength(3);
       expect(result.data.structure).toBeDefined();
       expect(result.data.structure['Auth']).toHaveLength(2);
       expect(result.data.structure['Dashboard']).toHaveLength(1);
     });
   });
 
-  describe('handleEditComponent', () => {
+  describe('handleEditFeature', () => {
     beforeEach(() => {
-      mockProject.components = [
+      mockProject.features = [
         {
           id: '1',
-          feature: 'Auth',
+          group: 'Auth',
           category: 'backend',
           type: 'service',
           title: 'LoginService',
@@ -251,45 +250,45 @@ describe('ComponentHandlers', () => {
       ];
     });
 
-    it('should edit component title', async () => {
+    it('should edit feature title', async () => {
       (Project.findById as jest.Mock).mockResolvedValue(mockProject);
       jest.spyOn(handler as any, 'resolveProjectWithEditCheck').mockResolvedValue({ project: mockProject });
 
       const parsed: ParsedCommand = {
-        type: CommandType.EDIT_COMPONENT,
+        type: CommandType.EDIT_FEATURE,
         command: 'edit',
-        raw: '/edit component',
+        raw: '/edit feature',
         args: ['1'],
         flags: { title: 'AuthService' },
         isValid: true,
         errors: []
       };
 
-      const result = await handler.handleEditComponent(parsed, projectId);
+      const result = await handler.handleEditFeature(parsed, projectId);
 
       expect(result.type).toBe(ResponseType.SUCCESS);
-      expect(mockProject.components[0].title).toBe('AuthService');
+      expect(mockProject.features[0].title).toBe('AuthService');
       expect(mockProject.save).toHaveBeenCalled();
     });
 
-    it('should edit component content', async () => {
+    it('should edit feature content', async () => {
       (Project.findById as jest.Mock).mockResolvedValue(mockProject);
       jest.spyOn(handler as any, 'resolveProjectWithEditCheck').mockResolvedValue({ project: mockProject });
 
       const parsed: ParsedCommand = {
-        type: CommandType.EDIT_COMPONENT,
+        type: CommandType.EDIT_FEATURE,
         command: 'edit',
-        raw: '/edit component',
+        raw: '/edit feature',
         args: ['1'],
         flags: { content: 'Updated content' },
         isValid: true,
         errors: []
       };
 
-      const result = await handler.handleEditComponent(parsed, projectId);
+      const result = await handler.handleEditFeature(parsed, projectId);
 
       expect(result.type).toBe(ResponseType.SUCCESS);
-      expect(mockProject.components[0].content).toBe('Updated content');
+      expect(mockProject.features[0].content).toBe('Updated content');
     });
 
     it('should edit multiple fields at once', async () => {
@@ -297,9 +296,9 @@ describe('ComponentHandlers', () => {
       jest.spyOn(handler as any, 'resolveProjectWithEditCheck').mockResolvedValue({ project: mockProject });
 
       const parsed: ParsedCommand = {
-        type: CommandType.EDIT_COMPONENT,
+        type: CommandType.EDIT_FEATURE,
         command: 'edit',
-        raw: '/edit component',
+        raw: '/edit feature',
         args: ['1'],
         flags: {
           title: 'NewTitle',
@@ -310,80 +309,80 @@ describe('ComponentHandlers', () => {
         errors: []
       };
 
-      const result = await handler.handleEditComponent(parsed, projectId);
+      const result = await handler.handleEditFeature(parsed, projectId);
 
       expect(result.type).toBe(ResponseType.SUCCESS);
-      expect(mockProject.components[0].title).toBe('NewTitle');
-      expect(mockProject.components[0].content).toBe('New content');
-      expect(mockProject.components[0].type).toBe('controller');
+      expect(mockProject.features[0].title).toBe('NewTitle');
+      expect(mockProject.features[0].content).toBe('New content');
+      expect(mockProject.features[0].type).toBe('controller');
     });
 
-    it('should return error when component not found', async () => {
+    it('should return error when feature not found', async () => {
       (Project.findById as jest.Mock).mockResolvedValue(mockProject);
       jest.spyOn(handler as any, 'resolveProjectWithEditCheck').mockResolvedValue({ project: mockProject });
 
       const parsed: ParsedCommand = {
-        type: CommandType.EDIT_COMPONENT,
+        type: CommandType.EDIT_FEATURE,
         command: 'edit',
-        raw: '/edit component',
+        raw: '/edit feature',
         args: ['999'],
         flags: { title: 'NewTitle' },
         isValid: true,
         errors: []
       };
 
-      const result = await handler.handleEditComponent(parsed, projectId);
+      const result = await handler.handleEditFeature(parsed, projectId);
 
       expect(result.type).toBe(ResponseType.ERROR);
       expect(result.message).toContain('not found');
     });
   });
 
-  describe('handleDeleteComponent', () => {
+  describe('handleDeleteFeature', () => {
     beforeEach(() => {
-      mockProject.components = [
-        { id: '1', feature: 'Auth', title: 'Component 1' },
-        { id: '2', feature: 'Dashboard', title: 'Component 2' }
+      mockProject.features = [
+        { id: '1', group: 'Auth', title: 'Feature 1' },
+        { id: '2', group: 'Dashboard', title: 'Feature 2' }
       ];
     });
 
-    it('should delete a component with confirmation', async () => {
+    it('should delete a feature with confirmation', async () => {
       (Project.findById as jest.Mock).mockResolvedValue(mockProject);
       jest.spyOn(handler as any, 'resolveProjectWithEditCheck').mockResolvedValue({ project: mockProject });
 
       const parsed: ParsedCommand = {
-        type: CommandType.DELETE_COMPONENT,
+        type: CommandType.DELETE_FEATURE,
         command: 'delete',
-        raw: '/delete component',
+        raw: '/delete feature',
         args: ['1'],
         flags: { confirm: true },
         isValid: true,
         errors: []
       };
 
-      const result = await handler.handleDeleteComponent(parsed, projectId);
+      const result = await handler.handleDeleteFeature(parsed, projectId);
 
       expect(result.type).toBe(ResponseType.SUCCESS);
-      expect(mockProject.components).toHaveLength(1);
-      expect(mockProject.components[0].id).toBe('2');
+      expect(mockProject.features).toHaveLength(1);
+      expect(mockProject.features[0].id).toBe('2');
       expect(mockProject.save).toHaveBeenCalled();
     });
 
-    it('should return error when deleting non-existent component', async () => {
+    it('should return error when deleting non-existent feature', async () => {
       (Project.findById as jest.Mock).mockResolvedValue(mockProject);
       jest.spyOn(handler as any, 'resolveProjectWithEditCheck').mockResolvedValue({ project: mockProject });
 
       const parsed: ParsedCommand = {
-        type: CommandType.DELETE_COMPONENT,
+        type: CommandType.DELETE_FEATURE,
         command: 'delete',
-        raw: '/delete component',
+        raw: '/delete feature',
         args: ['999'],
         flags: {},
         isValid: true,
         errors: []
       };
 
-      const result = await handler.handleDeleteComponent(parsed, projectId);
+      const result = await handler.handleDeleteFeature(parsed, projectId);
 
       expect(result.type).toBe(ResponseType.ERROR);
       expect(result.message).toContain('not found');

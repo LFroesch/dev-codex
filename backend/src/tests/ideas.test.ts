@@ -253,7 +253,7 @@ describe('Ideas Routes', () => {
         })
         .expect(404);
 
-      expect(response.body.error).toContain('not found');
+      expect(response.body.message).toContain('not found');
     });
 
     it('should validate required fields on update', async () => {
@@ -266,7 +266,7 @@ describe('Ideas Routes', () => {
         })
         .expect(400);
 
-      expect(response.body.error).toContain('required');
+      expect(response.body.message).toContain('required');
     });
 
     it('should require authentication', async () => {
@@ -338,7 +338,7 @@ describe('Ideas Routes', () => {
         .set('Authorization', `Bearer ${userToken}`)
         .expect(404);
 
-      expect(response.body.error).toContain('not found');
+      expect(response.body.message).toContain('not found');
     });
 
     it('should require authentication', async () => {

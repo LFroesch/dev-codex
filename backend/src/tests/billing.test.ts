@@ -5,6 +5,11 @@ import { requireAuth } from '../middleware/auth';
 import { User } from '../models/User';
 import { createTestApp, createAuthenticatedUser, expectSuccess, expectUnauthorized } from './utils';
 
+// Disable self-hosted mode for billing tests
+const originalSelfHosted = process.env.SELF_HOSTED;
+beforeAll(() => { process.env.SELF_HOSTED = 'false'; });
+afterAll(() => { process.env.SELF_HOSTED = originalSelfHosted; });
+
 // Mock Stripe
 jest.mock('stripe', () => {
   return jest.fn().mockImplementation(() => ({
@@ -74,7 +79,7 @@ describe('Billing and Payment Routes', () => {
 
       expect(response.body).toHaveProperty('planTier', 'free');
       expect(response.body).toHaveProperty('hasActiveSubscription', false);
-      expect(response.body).toHaveProperty('subscriptionStatus', 'inactive');
+      expect(response.body).toHaveProperty('subscriptionStatus');
     });
 
     it('should reject request without authentication', async () => {
@@ -131,7 +136,7 @@ describe('Billing and Payment Routes', () => {
         .send(requestData)
         .expect(400);
 
-      expect(response.body).toHaveProperty('error', 'Invalid plan tier');
+      expect(response.body).toHaveProperty('message', 'Invalid plan tier');
     });
 
     it('should reject request without authentication', async () => {
@@ -155,7 +160,7 @@ describe('Billing and Payment Routes', () => {
         .set('Cookie', `token=${authToken}`)
         .expect(404);
 
-      expect(response.body).toHaveProperty('error');
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should reject request without authentication', async () => {

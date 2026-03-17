@@ -83,9 +83,9 @@ describe('CommandParser', () => {
       expect(result.args[0]).toContain('Hello');
     });
 
-    it('should parse add component', () => {
+    it('should parse add component (backward compat → ADD_FEATURE)', () => {
       const result = CommandParser.parse('/add component');
-      expect(result.type).toBe(CommandType.ADD_COMPONENT);
+      expect(result.type).toBe(CommandType.ADD_FEATURE);
     });
 
     it('should parse add devlog', () => {
@@ -138,14 +138,14 @@ describe('CommandParser', () => {
       expect(result.type).toBe(CommandType.ADD_RELATIONSHIP);
     });
 
-    it('should parse export command', () => {
+    it('should parse export command (→ CONTEXT)', () => {
       const result = CommandParser.parse('/export');
-      expect(result.type).toBe(CommandType.EXPORT);
+      expect(result.type).toBe(CommandType.CONTEXT);
     });
 
-    it('should parse summary command', () => {
+    it('should parse summary command (→ CONTEXT)', () => {
       const result = CommandParser.parse('/summary');
-      expect(result.type).toBe(CommandType.SUMMARY);
+      expect(result.type).toBe(CommandType.CONTEXT);
     });
   });
 

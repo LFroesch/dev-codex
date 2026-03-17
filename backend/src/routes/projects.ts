@@ -20,7 +20,7 @@ import { checkProjectLimit, checkTeamMemberLimit } from '../middleware/planLimit
 import { trackProjectAccess } from '../middleware/analytics';
 import { AnalyticsService } from '../middleware/analytics';
 import activityLogger from '../services/activityLogger';
-import { logInfo, logError, logWarn } from '../config/logger';
+import { logDebug, logError, logWarn } from '../config/logger';
 import { v4 as uuidv4 } from 'uuid';
 import {
   importExportRateLimit,
@@ -59,7 +59,7 @@ router.post('/', requireAuth, blockDemoWrites, validateProjectData, checkProject
     notes: [], // Initialize as empty array
     todos: [],
     devLog: [],
-    components: [],
+    features: [],
     stack: [], // Unified tech stack
     stagingEnvironment: stagingEnvironment || 'development',
     color: color || '#3B82F6',
@@ -160,7 +160,7 @@ router.get('/:id', requireAuthOrDemo, requireProjectAccess('view'), asyncHandler
 router.put('/:id', requireAuth, blockDemoWrites, validateProjectData, requireProjectAccess('edit'), checkProjectLock, asyncHandler(async (req: AuthRequest, res: express.Response) => {
   // SEC-005 FIX: Whitelist allowed fields to prevent mass assignment vulnerability
   const allowedFields = [
-    'name', 'description', 'notes', 'todos', 'devLog', 'components',
+    'name', 'description', 'notes', 'todos', 'devLog', 'features',
     'stack', 'stagingEnvironment', 'color', 'category', 'tags',
     'deploymentData', 'isArchived', 'isShared', 'isPublic',
     'publicSlug', 'publicShortDescription', 'publicDescription', 'publicVisibility'
@@ -173,7 +173,7 @@ router.put('/:id', requireAuth, blockDemoWrites, validateProjectData, requirePro
     }
   });
 
-  logInfo('Project update request', { projectId: req.params.id, updateData });
+  logDebug('Project update request', { projectId: req.params.id, updateData });
 
   if (updateData.name && !updateData.name.trim()) {
     throw BadRequestError('Name cannot be empty', 'EMPTY_NAME');
@@ -199,7 +199,7 @@ router.put('/:id', requireAuth, blockDemoWrites, validateProjectData, requirePro
     { new: true, runValidators: true }
   );
   
-  logInfo('Project after update', { deploymentData: project?.deploymentData });
+  logDebug('Project after update', { deploymentData: project?.deploymentData });
 
   if (!project) {
     throw NotFoundError('Project not found');
@@ -275,7 +275,7 @@ router.delete('/:id', requireAuth, blockDemoWrites, requireProjectAccess('manage
     // Note: ProjectInvitations are kept for audit purposes (intentional)
   ]);
 
-  logInfo('Project deleted with cascade cleanup', {
+  logDebug('Project deleted with cascade cleanup', {
     projectId: req.params.id,
     projectName: project.name,
     userId: req.userId
@@ -681,7 +681,7 @@ router.post('/:id/todos', requireAuth, blockDemoWrites, requireProjectAccess('ed
 
   // Create assignment notification if assigning to someone else
   if (assignedTo && assignedTo !== req.userId?.toString()) {
-    logInfo(`Creating assignment notification for user ${assignedTo}, todo: ${text.trim()}`);
+    logDebug(`Creating assignment notification for user ${assignedTo}, todo: ${text.trim()}`);
     try {
       await Notification.create({
         userId: assignedTo,
@@ -692,7 +692,7 @@ router.post('/:id/todos', requireAuth, blockDemoWrites, requireProjectAccess('ed
         relatedTodoId: newTodo.id,
         actionUrl: `/projects/${project._id}`
       });
-      logInfo(`Assignment notification created successfully`);
+      logDebug(`Assignment notification created successfully`);
     } catch (notifError) {
       logWarn('Failed to create assignment notification', { error: notifError });
     }
@@ -978,31 +978,31 @@ function calculateSimilarity(str1: string, str2: string): number {
   return intersection.size / union.size;
 }
 
-// Helper function to detect relationships between components (auto-detection on creation)
-function detectRelationships(newComponent: any, existingComponents: any[]): any[] {
+// Helper function to detect relationships between features (auto-detection on creation)
+function detectRelationships(newFeature: any, existingFeatures: any[]): any[] {
   const detectedRelationships: any[] = [];
-  const newContent = newComponent.content.toLowerCase();
-  const newTitle = newComponent.title.toLowerCase();
+  const newContent = newFeature.content.toLowerCase();
+  const newTitle = newFeature.title.toLowerCase();
 
-  existingComponents.forEach((targetComponent) => {
-    const targetTitle = targetComponent.title.toLowerCase();
+  existingFeatures.forEach((targetFeature) => {
+    const targetTitle = targetFeature.title.toLowerCase();
 
-    // Check if new component mentions target by title
+    // Check if new feature mentions target by title
     if (newContent.includes(targetTitle) || newTitle.includes(targetTitle)) {
       detectedRelationships.push({
         id: uuidv4(),
-        targetId: targetComponent.id,
+        targetId: targetFeature.id,
         relationType: 'mentions',
-        description: 'Auto-detected: Component mentions this in content or title'
+        description: 'Auto-detected: Feature mentions this in content or title'
       });
     }
 
     // Check for similar titles (potential duplicates)
-    const similarity = calculateSimilarity(newComponent.title, targetComponent.title);
+    const similarity = calculateSimilarity(newFeature.title, targetFeature.title);
     if (similarity > 0.6) {
       detectedRelationships.push({
         id: uuidv4(),
-        targetId: targetComponent.id,
+        targetId: targetFeature.id,
         relationType: 'similar',
         description: `Auto-detected: ${Math.round(similarity * 100)}% title similarity`
       });
@@ -1012,17 +1012,17 @@ function detectRelationships(newComponent: any, existingComponents: any[]): any[
   return detectedRelationships;
 }
 
-// COMPONENT MANAGEMENT (Feature Components)
-router.post('/:id/components', requireAuth, blockDemoWrites, requireProjectAccess('edit'), asyncHandler(async (req: AuthRequest, res: express.Response) => {
-  const { category, type, title, content, feature, filePath, tags, relationships, metadata } = req.body;
+// FEATURE MANAGEMENT
+router.post('/:id/features', requireAuth, blockDemoWrites, requireProjectAccess('edit'), asyncHandler(async (req: AuthRequest, res: express.Response) => {
+  const { category, type, title, content, group, filePath, tags, relationships, metadata } = req.body;
 
-  if (!category || !type || !title || !content || !feature) {
-    throw BadRequestError('Category, type, title, content, and feature are required', 'REQUIRED_FIELDS');
+  if (!category || !type || !title || !content || !group) {
+    throw BadRequestError('Category, type, title, content, and group are required', 'REQUIRED_FIELDS');
   }
 
   const validCategories = ['frontend', 'backend', 'database', 'infrastructure', 'security', 'api', 'documentation', 'asset'];
   if (!validCategories.includes(category)) {
-    throw BadRequestError('Invalid component category', 'INVALID_CATEGORY');
+    throw BadRequestError('Invalid feature category', 'INVALID_CATEGORY');
   }
 
   const project = await Project.findById(req.params.id);
@@ -1031,13 +1031,13 @@ router.post('/:id/components', requireAuth, blockDemoWrites, requireProjectAcces
     throw NotFoundError('Project not found', 'PROJECT_NOT_FOUND');
   }
 
-  const newComponent = {
+  const newFeature = {
     id: uuidv4(),
     category: category,
     type: type.trim(),
     title: title.trim(),
     content: content.trim(),
-    feature: feature.trim(),
+    group: group.trim(),
     filePath: filePath?.trim() || '',
     tags: tags || [],
     relationships: [] as any[],
@@ -1046,8 +1046,8 @@ router.post('/:id/components', requireAuth, blockDemoWrites, requireProjectAcces
     updatedAt: new Date()
   };
 
-  // Auto-detect relationships with existing components (runs only on creation)
-  const autoDetectedRelationships = detectRelationships(newComponent, project.components);
+  // Auto-detect relationships with existing features (runs only on creation)
+  const autoDetectedRelationships = detectRelationships(newFeature, project.features);
 
   // Combine manually provided relationships with auto-detected ones
   const manualRelationships = (relationships || []).map((rel: any) => ({
@@ -1057,19 +1057,19 @@ router.post('/:id/components', requireAuth, blockDemoWrites, requireProjectAcces
     description: rel.description || ''
   }));
 
-  newComponent.relationships = [...manualRelationships, ...autoDetectedRelationships];
+  newFeature.relationships = [...manualRelationships, ...autoDetectedRelationships];
 
-  project.components.push(newComponent);
+  project.features.push(newFeature);
   await project.save();
 
   res.json({
-    message: 'Component added successfully',
-    component: newComponent
+    message: 'Feature added successfully',
+    feature: newFeature
   });
 }));
 
-router.put('/:id/components/:componentId', requireAuth, blockDemoWrites, requireProjectAccess('edit'), asyncHandler(async (req: AuthRequest, res: express.Response) => {
-  const { category, type, title, content, feature, filePath, tags, relationships, metadata } = req.body;
+router.put('/:id/features/:featureId', requireAuth, blockDemoWrites, requireProjectAccess('edit'), asyncHandler(async (req: AuthRequest, res: express.Response) => {
+  const { category, type, title, content, group, filePath, tags, relationships, metadata } = req.body;
 
   const project = await Project.findById(req.params.id);
 
@@ -1077,58 +1077,58 @@ router.put('/:id/components/:componentId', requireAuth, blockDemoWrites, require
     throw NotFoundError('Project not found', 'PROJECT_NOT_FOUND');
   }
 
-  const component = project.components.find(c => c.id === req.params.componentId);
-  if (!component) {
-    throw NotFoundError('Component not found', 'COMPONENT_NOT_FOUND');
+  const feature = project.features.find(c => c.id === req.params.featureId);
+  if (!feature) {
+    throw NotFoundError('Feature not found', 'FEATURE_NOT_FOUND');
   }
 
   if (category !== undefined) {
     const validCategories = ['frontend', 'backend', 'database', 'infrastructure', 'security', 'api', 'documentation', 'asset'];
     if (!validCategories.includes(category)) {
-      throw BadRequestError('Invalid component category', 'INVALID_CATEGORY');
+      throw BadRequestError('Invalid feature category', 'INVALID_CATEGORY');
     }
-    component.category = category;
+    feature.category = category;
   }
-  if (type !== undefined) component.type = type.trim();
-  if (title !== undefined) component.title = title.trim();
-  if (content !== undefined) component.content = content.trim();
-  if (feature !== undefined) component.feature = feature.trim();
-  if (filePath !== undefined) component.filePath = filePath.trim();
-  if (tags !== undefined) component.tags = tags;
+  if (type !== undefined) feature.type = type.trim();
+  if (title !== undefined) feature.title = title.trim();
+  if (content !== undefined) feature.content = content.trim();
+  if (group !== undefined) feature.group = group.trim();
+  if (filePath !== undefined) feature.filePath = filePath.trim();
+  if (tags !== undefined) feature.tags = tags;
   if (relationships !== undefined) {
-    component.relationships = relationships.map((rel: any) => ({
+    feature.relationships = relationships.map((rel: any) => ({
       id: rel.id || uuidv4(),
       targetId: rel.targetId,
       relationType: rel.relationType,
       description: rel.description || ''
     }));
   }
-  if (metadata !== undefined) component.metadata = metadata;
-  component.updatedAt = new Date();
+  if (metadata !== undefined) feature.metadata = metadata;
+  feature.updatedAt = new Date();
 
   await project.save();
 
   res.json({
-    message: 'Component updated successfully',
-    component: component
+    message: 'Feature updated successfully',
+    feature: feature
   });
 }));
 
-router.delete('/:id/components/:componentId', requireAuth, blockDemoWrites, requireProjectAccess('edit'), asyncHandler(async (req: AuthRequest, res: express.Response) => {
+router.delete('/:id/features/:featureId', requireAuth, blockDemoWrites, requireProjectAccess('edit'), asyncHandler(async (req: AuthRequest, res: express.Response) => {
   const project = await Project.findById(req.params.id);
 
   if (!project) {
     throw NotFoundError('Project not found', 'PROJECT_NOT_FOUND');
   }
 
-  project.components = project.components.filter(c => c.id !== req.params.componentId);
+  project.features = project.features.filter(c => c.id !== req.params.featureId);
   await project.save();
 
-  res.json({ message: 'Component deleted successfully' });
+  res.json({ message: 'Feature deleted successfully' });
 }));
 
 // RELATIONSHIP MANAGEMENT
-router.post('/:id/components/:componentId/relationships', requireAuth, blockDemoWrites, requireProjectAccess('edit'), asyncHandler(async (req: AuthRequest, res: express.Response) => {
+router.post('/:id/features/:featureId/relationships', requireAuth, blockDemoWrites, requireProjectAccess('edit'), asyncHandler(async (req: AuthRequest, res: express.Response) => {
   const { targetId, relationType, description } = req.body;
 
   if (!targetId || !relationType) {
@@ -1146,19 +1146,19 @@ router.post('/:id/components/:componentId/relationships', requireAuth, blockDemo
     throw NotFoundError('Project not found', 'PROJECT_NOT_FOUND');
   }
 
-  const component = project.components.find(c => c.id === req.params.componentId);
-  if (!component) {
-    throw NotFoundError('Component not found', 'COMPONENT_NOT_FOUND');
+  const feature = project.features.find(c => c.id === req.params.featureId);
+  if (!feature) {
+    throw NotFoundError('Feature not found', 'FEATURE_NOT_FOUND');
   }
 
-  // Verify target component exists
-  const targetComponent = project.components.find(c => c.id === targetId);
-  if (!targetComponent) {
-    throw NotFoundError('Target component not found', 'TARGET_NOT_FOUND');
+  // Verify target feature exists
+  const targetFeature = project.features.find(c => c.id === targetId);
+  if (!targetFeature) {
+    throw NotFoundError('Target feature not found', 'TARGET_NOT_FOUND');
   }
 
   // Check for duplicate relationship
-  const existingRelationship = component.relationships?.find(
+  const existingRelationship = feature.relationships?.find(
     r => r.targetId === targetId && r.relationType === relationType
   );
   if (existingRelationship) {
@@ -1179,23 +1179,23 @@ router.post('/:id/components/:componentId/relationships', requireAuth, blockDemo
   // Create inverse relationship (B -> A)
   const inverseRelationship = {
     id: sharedRelationshipId, // Same ID for linking
-    targetId: req.params.componentId,
+    targetId: req.params.featureId,
     relationType,
     description: description || ''
   };
 
-  if (!component.relationships) {
-    component.relationships = [];
+  if (!feature.relationships) {
+    feature.relationships = [];
   }
-  if (!targetComponent.relationships) {
-    targetComponent.relationships = [];
+  if (!targetFeature.relationships) {
+    targetFeature.relationships = [];
   }
 
-  component.relationships.push(forwardRelationship);
-  targetComponent.relationships.push(inverseRelationship);
+  feature.relationships.push(forwardRelationship);
+  targetFeature.relationships.push(inverseRelationship);
 
-  component.updatedAt = new Date();
-  targetComponent.updatedAt = new Date();
+  feature.updatedAt = new Date();
+  targetFeature.updatedAt = new Date();
 
   await project.save();
 
@@ -1205,38 +1205,38 @@ router.post('/:id/components/:componentId/relationships', requireAuth, blockDemo
   });
 }));
 
-router.delete('/:id/components/:componentId/relationships/:relationshipId', requireAuth, blockDemoWrites, requireProjectAccess('edit'), asyncHandler(async (req: AuthRequest, res: express.Response) => {
+router.delete('/:id/features/:featureId/relationships/:relationshipId', requireAuth, blockDemoWrites, requireProjectAccess('edit'), asyncHandler(async (req: AuthRequest, res: express.Response) => {
   const project = await Project.findById(req.params.id);
 
   if (!project) {
     throw NotFoundError('Project not found', 'PROJECT_NOT_FOUND');
   }
 
-  const component = project.components.find(c => c.id === req.params.componentId);
-  if (!component) {
-    throw NotFoundError('Component not found', 'COMPONENT_NOT_FOUND');
+  const feature = project.features.find(c => c.id === req.params.featureId);
+  if (!feature) {
+    throw NotFoundError('Feature not found', 'FEATURE_NOT_FOUND');
   }
 
-  if (!component.relationships) {
+  if (!feature.relationships) {
     throw NotFoundError('Relationship not found', 'RELATIONSHIP_NOT_FOUND');
   }
 
-  const relationshipIndex = component.relationships.findIndex(r => r.id === req.params.relationshipId);
+  const relationshipIndex = feature.relationships.findIndex(r => r.id === req.params.relationshipId);
   if (relationshipIndex === -1) {
     throw NotFoundError('Relationship not found', 'RELATIONSHIP_NOT_FOUND');
   }
 
-  // Remove relationship from source component
-  component.relationships.splice(relationshipIndex, 1);
-  component.updatedAt = new Date();
+  // Remove relationship from source feature
+  feature.relationships.splice(relationshipIndex, 1);
+  feature.updatedAt = new Date();
 
-  // Remove the inverse relationship from all other components (since they share the same ID)
-  project.components.forEach(otherComponent => {
-    if (otherComponent.id !== req.params.componentId && otherComponent.relationships) {
-      const inverseIndex = otherComponent.relationships.findIndex(r => r.id === req.params.relationshipId);
+  // Remove the inverse relationship from all other features (since they share the same ID)
+  project.features.forEach(otherFeature => {
+    if (otherFeature.id !== req.params.featureId && otherFeature.relationships) {
+      const inverseIndex = otherFeature.relationships.findIndex(r => r.id === req.params.relationshipId);
       if (inverseIndex !== -1) {
-        otherComponent.relationships.splice(inverseIndex, 1);
-        otherComponent.updatedAt = new Date();
+        otherFeature.relationships.splice(inverseIndex, 1);
+        otherFeature.updatedAt = new Date();
       }
     }
   });
@@ -1256,7 +1256,7 @@ function formatProjectResponse(project: any) {
     notes: project.notes,
     todos: project.todos,
     devLog: project.devLog,
-    components: project.components,
+    features: project.features,
     stack: project.stack || [], // Unified tech stack
     stagingEnvironment: project.stagingEnvironment,
     color: project.color,
@@ -1609,7 +1609,7 @@ router.get('/:id/export',
           createdAt: todo.createdAt
         })) || [],
         devLog: project.devLog || [],
-        components: project.components || [],
+        features: project.features || [],
 
         // Tech stack (unified)
         stack: project.stack || [],
@@ -1672,7 +1672,7 @@ router.get('/:id/export',
     res.setHeader('Content-Length', exportSize.toString());
     
   // Log export activity for security monitoring
-  logInfo(`Project export: ${projectId} by user ${req.userId}, size: ${exportSize} bytes`);
+  logDebug(`Project export: ${projectId} by user ${req.userId}, size: ${exportSize} bytes`);
   
   res.json(exportData);
 }));
@@ -1736,15 +1736,15 @@ router.post('/import',
         date: log.date ? new Date(log.date) : new Date()
       })).slice(0, 200) : [],
       
-      components: Array.isArray(projectData.components) ? projectData.components.map((component: any) => ({
-        id: component.id || uuidv4(),
-        type: ['Core', 'API', 'Data', 'UI', 'Config', 'Security', 'Docs', 'Dependencies'].includes(component.type)
-          ? component.type : 'Core',
-        title: (component.title || '').substring(0, 200),
-        content: (component.content || '').substring(0, 50000),
-        feature: (component.feature || 'Ungrouped').substring(0, 100),
-        createdAt: component.createdAt ? new Date(component.createdAt) : new Date(),
-        updatedAt: component.updatedAt ? new Date(component.updatedAt) : new Date()
+      features: Array.isArray(projectData.features) ? projectData.features.map((feat: any) => ({
+        id: feat.id || uuidv4(),
+        type: ['Core', 'API', 'Data', 'UI', 'Config', 'Security', 'Docs', 'Dependencies'].includes(feat.type)
+          ? feat.type : 'Core',
+        title: (feat.title || '').substring(0, 200),
+        content: (feat.content || '').substring(0, 50000),
+        group: (feat.group || feat.feature || 'Ungrouped').substring(0, 100),
+        createdAt: feat.createdAt ? new Date(feat.createdAt) : new Date(),
+        updatedAt: feat.updatedAt ? new Date(feat.updatedAt) : new Date()
       })).slice(0, 100) : [],
 
       // Unified stack (supports both old format and new)
@@ -1818,7 +1818,7 @@ router.post('/import',
 
     // Enhanced logging for security monitoring
     const importSize = JSON.stringify(req.body).length;
-    logInfo(`Project import: ${newProject._id} by user ${req.userId}, size: ${importSize} bytes, name: "${newProject.name}"`);
+    logDebug(`Project import: ${newProject._id} by user ${req.userId}, size: ${importSize} bytes, name: "${newProject.name}"`);
     
     // Log the activity
     try {
@@ -1838,7 +1838,7 @@ router.post('/import',
               notes: sanitizedProject.notes.length,
               todos: sanitizedProject.todos.length,
               devLog: sanitizedProject.devLog.length,
-              components: sanitizedProject.components.length,
+              features: sanitizedProject.features.length,
               stack: sanitizedProject.stack.length
             }
           }

@@ -31,9 +31,9 @@ describe('SearchHandlers', () => {
       { id: 'log1', title: 'Day 1: Setup', description: 'Initial project setup with authentication', date: new Date() },
       { id: 'log2', title: 'Day 2: Database', description: 'MongoDB configuration', date: new Date() }
     ],
-    components: [
-      { id: 'comp1', title: 'AuthService', feature: 'Authentication', type: 'service', content: 'Handles user authentication', category: 'backend' },
-      { id: 'comp2', title: 'LoginForm', feature: 'UI', type: 'component', content: 'Login form component', category: 'frontend' }
+    features: [
+      { id: 'comp1', title: 'AuthService', group: 'Authentication', type: 'service', content: 'Handles user authentication', category: 'backend' },
+      { id: 'comp2', title: 'LoginForm', group: 'UI', type: 'component', content: 'Login form feature', category: 'frontend' }
     ],
     save: jest.fn().mockResolvedValue(true)
   };
@@ -131,7 +131,7 @@ describe('SearchHandlers', () => {
       expect(devlogResults[0].title).toContain('Setup');
     });
 
-    it('should search components in project', async () => {
+    it('should search features in project', async () => {
       (Project.findById as jest.Mock).mockResolvedValue(mockProject);
       jest.spyOn(handler as any, 'resolveProject').mockResolvedValue({ project: mockProject });
 
@@ -149,9 +149,9 @@ describe('SearchHandlers', () => {
 
       expect(result.type).toBe(ResponseType.DATA);
 
-      const componentResults = result.data.results.filter((r: any) => r.type === 'component');
-      expect(componentResults.length).toBe(1);
-      expect(componentResults[0].title).toBe('AuthService');
+      const featureResults = result.data.results.filter((r: any) => r.type === 'feature');
+      expect(featureResults.length).toBe(1);
+      expect(featureResults[0].title).toBe('AuthService');
     });
 
     it('should search across multiple types', async () => {
@@ -171,13 +171,13 @@ describe('SearchHandlers', () => {
       const result = await handler.handleSearch(parsed, projectId);
 
       expect(result.type).toBe(ResponseType.DATA);
-      expect(result.data.results.length).toBeGreaterThan(1); // Should find in todos, notes, devlog, and components
+      expect(result.data.results.length).toBeGreaterThan(1); // Should find in todos, notes, devlog, and features
 
       const types = result.data.results.map((r: any) => r.type);
       expect(types).toContain('todo');
       expect(types).toContain('note');
       expect(types).toContain('devlog');
-      expect(types).toContain('component');
+      expect(types).toContain('feature');
     });
 
     it('should return empty results when no matches found', async () => {

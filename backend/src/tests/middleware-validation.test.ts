@@ -425,12 +425,12 @@ describe('Validation Middleware', () => {
         const response = await request(app)
           .post('/test')
           .send({
-            name: 'a'.repeat(101),
+            name: 'a'.repeat(31),
             description: 'Test'
           });
 
         expect(response.status).toBe(400);
-        expect(response.body.message).toContain('Project name must be 1-100 characters');
+        expect(response.body.message).toContain('Project name must be 1-30 characters');
       });
 
       it('should reject description that is too long', async () => {

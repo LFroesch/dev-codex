@@ -19,7 +19,7 @@ describe('RelationshipHandlers', () => {
     _id: new mongoose.Types.ObjectId(projectId),
     name: 'Test Project',
     userId: new mongoose.Types.ObjectId(userId),
-    components: [
+    features: [
       { id: 'comp1', title: 'Login', category: 'frontend' },
       { id: 'comp2', title: 'AuthService', category: 'backend' }
     ],
@@ -55,8 +55,8 @@ describe('RelationshipHandlers', () => {
     });
 
     it('should add a relationship with all fields', async () => {
-      // Add components that the relationship will reference
-      mockProject.components = [
+      // Add features that the relationship will reference
+      mockProject.features = [
         { id: 'comp1', title: 'Login', type: 'component', category: 'frontend' },
         { id: 'comp2', title: 'AuthService', type: 'service', category: 'backend' }
       ];
@@ -82,10 +82,10 @@ describe('RelationshipHandlers', () => {
       const result = await handler.handleAddRelationship(parsed, projectId);
 
       expect(result.type).toBe(ResponseType.SUCCESS);
-      // Handler adds relationships to components, not project.relationships
-      expect(mockProject.components[0].relationships).toHaveLength(1);
-      expect(mockProject.components[0].relationships[0].targetId).toBe('comp2');
-      expect(mockProject.components[0].relationships[0].relationType).toBe('uses');
+      // Handler adds relationships to features, not project.relationships
+      expect(mockProject.features[0].relationships).toHaveLength(1);
+      expect(mockProject.features[0].relationships[0].targetId).toBe('comp2');
+      expect(mockProject.features[0].relationships[0].relationType).toBe('uses');
       expect(mockProject.save).toHaveBeenCalled();
     });
 
@@ -140,9 +140,9 @@ describe('RelationshipHandlers', () => {
       const types = ['uses', 'depends_on'];
 
       for (const type of types) {
-        // Reset component relationships
-        mockProject.components[0].relationships = [];
-        mockProject.components[1].relationships = [];
+        // Reset feature relationships
+        mockProject.features[0].relationships = [];
+        mockProject.features[1].relationships = [];
 
         const parsed: ParsedCommand = {
           type: CommandType.ADD_RELATIONSHIP,
@@ -161,15 +161,15 @@ describe('RelationshipHandlers', () => {
         const result = await handler.handleAddRelationship(parsed, projectId);
 
         expect(result.type).toBe(ResponseType.SUCCESS);
-        expect(mockProject.components[0].relationships[0].relationType).toBe(type);
+        expect(mockProject.features[0].relationships[0].relationType).toBe(type);
       }
     });
   });
 
   describe('handleViewRelationships', () => {
     beforeEach(() => {
-      // Setup relationships in components, not at project level
-      mockProject.components[0].relationships = [
+      // Setup relationships in features, not at project level
+      mockProject.features[0].relationships = [
         {
           id: '1',
           targetId: 'comp2',
@@ -177,7 +177,7 @@ describe('RelationshipHandlers', () => {
           description: 'Uses for auth'
         }
       ];
-      mockProject.components[1].relationships = [
+      mockProject.features[1].relationships = [
         {
           id: '2',
           targetId: 'comp1',
@@ -187,7 +187,7 @@ describe('RelationshipHandlers', () => {
       ];
     });
 
-    it('should show wizard when no component specified', async () => {
+    it('should show wizard when no feature specified', async () => {
       (Project.findById as jest.Mock).mockResolvedValue(mockProject);
       jest.spyOn(handler as any, 'resolveProject').mockResolvedValue({ project: mockProject });
 
@@ -207,7 +207,7 @@ describe('RelationshipHandlers', () => {
       expect(result.data.wizardType).toBe('view_relationships_selector');
     });
 
-    it('should view relationships for specific component', async () => {
+    it('should view relationships for specific feature', async () => {
       (Project.findById as jest.Mock).mockResolvedValue(mockProject);
       jest.spyOn(handler as any, 'resolveProject').mockResolvedValue({ project: mockProject });
 
@@ -231,8 +231,8 @@ describe('RelationshipHandlers', () => {
 
   describe('handleEditRelationship', () => {
     beforeEach(() => {
-      // Setup relationships in components
-      mockProject.components[0].relationships = [
+      // Setup relationships in features
+      mockProject.features[0].relationships = [
         {
           id: '1',
           targetId: 'comp2',
@@ -262,7 +262,7 @@ describe('RelationshipHandlers', () => {
       expect(result.data.wizardType).toBe('edit_relationship_selector');
     });
 
-    it('should return error when component not found', async () => {
+    it('should return error when feature not found', async () => {
       (Project.findById as jest.Mock).mockResolvedValue(mockProject);
       jest.spyOn(handler as any, 'resolveProjectWithEditCheck').mockResolvedValue({ project: mockProject });
 
@@ -285,11 +285,11 @@ describe('RelationshipHandlers', () => {
 
   describe('handleDeleteRelationship', () => {
     beforeEach(() => {
-      // Setup relationships in components
-      mockProject.components[0].relationships = [
+      // Setup relationships in features
+      mockProject.features[0].relationships = [
         { id: '1', targetId: 'comp2', relationType: 'uses' }
       ];
-      mockProject.components[1].relationships = [
+      mockProject.features[1].relationships = [
         { id: '2', targetId: 'comp1', relationType: 'depends_on' }
       ];
     });
@@ -314,7 +314,7 @@ describe('RelationshipHandlers', () => {
       expect(result.data.wizardType).toBe('delete_relationship_selector');
     });
 
-    it('should return error when component not found', async () => {
+    it('should return error when feature not found', async () => {
       (Project.findById as jest.Mock).mockResolvedValue(mockProject);
       jest.spyOn(handler as any, 'resolveProjectWithEditCheck').mockResolvedValue({ project: mockProject });
 

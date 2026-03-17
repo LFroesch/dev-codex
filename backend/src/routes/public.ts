@@ -33,7 +33,7 @@ router.get('/project/:identifier', asyncHandler(async (req: Request, res: Respon
     const visibility = project.publicVisibility || {
       description: true,
       tags: true,
-      components: true,
+      features: true,
       techStack: true,
       timestamps: true,
       devLog: true,
@@ -73,8 +73,8 @@ router.get('/project/:identifier', asyncHandler(async (req: Request, res: Respon
       publicProject.tags = project.tags;
     }
     
-    if (visibility.components && project.components?.length) {
-      publicProject.components = project.components;
+    if (visibility.features && project.features?.length) {
+      publicProject.features = project.features;
     }
     
     if (visibility.techStack) {

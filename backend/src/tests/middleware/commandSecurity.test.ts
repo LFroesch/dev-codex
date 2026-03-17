@@ -30,13 +30,13 @@ describe('commandSecurity middleware', () => {
       expect(mockRes.status).not.toHaveBeenCalled();
     });
 
-    it('should reject commands not starting with /', () => {
-      mockReq.body = { command: 'invalid command' };
+    it('should allow natural language input (routes to AI)', () => {
+      mockReq.body = { command: 'natural language input' };
 
       validateCommandFormat(mockReq as AuthRequest, mockRes as Response, mockNext);
 
-      expect(mockNext).not.toHaveBeenCalled();
-      expect(mockRes.status).toHaveBeenCalledWith(400);
+      expect(mockNext).toHaveBeenCalled();
+      expect(mockRes.status).not.toHaveBeenCalled();
     });
 
     it('should reject missing command', () => {

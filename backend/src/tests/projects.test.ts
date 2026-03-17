@@ -931,12 +931,12 @@ describe('Project CRUD Operations', () => {
     });
   });
 
-  describe('Project Components Operations', () => {
+  describe('Project Features Operations', () => {
     let projectId: string;
 
     beforeEach(async () => {
       const project = await Project.create({
-        name: 'Test Project with Components',
+        name: 'Test Project with Features',
         description: 'Test project',
         userId: userId,
         ownerId: userId
@@ -944,106 +944,106 @@ describe('Project CRUD Operations', () => {
       projectId = project._id.toString();
     });
 
-    it('should add component to project', async () => {
-      const componentData = {
+    it('should add feature to project', async () => {
+      const featureData = {
         category: 'frontend',
         type: 'page',
         title: 'Login Page',
         content: 'User authentication page',
-        feature: 'Authentication'
+        group: 'Authentication'
       };
 
       const response = await request(app)
-        .post(`/api/projects/${projectId}/components`)
+        .post(`/api/projects/${projectId}/features`)
         .set('Cookie', `token=${authToken}`)
-        .send(componentData);
+        .send(featureData);
 
       expectSuccess(response, 200);
-      expect(response.body.component).toMatchObject({
+      expect(response.body.feature).toMatchObject({
         category: 'frontend',
         type: 'page',
         title: 'Login Page'
       });
 
       const project = await Project.findById(projectId);
-      expect(project?.components).toHaveLength(1);
+      expect(project?.features).toHaveLength(1);
     });
 
-    it('should update component', async () => {
+    it('should update feature', async () => {
       const project = await Project.findById(projectId);
-      project?.components.push({
-        id: 'test-component-id',
+      project?.features.push({
+        id: 'test-feature-id',
         category: 'frontend',
         type: 'page',
-        title: 'Original Component',
+        title: 'Original Feature',
         content: 'Original content',
-        feature: 'Feature A',
+        group: 'Group A',
         createdAt: new Date(),
         updatedAt: new Date()
       } as any);
       await project?.save();
 
-      const componentId = project?.components[0].id;
+      const featureId = project?.features[0].id;
 
       const response = await request(app)
-        .put(`/api/projects/${projectId}/components/${componentId}`)
+        .put(`/api/projects/${projectId}/features/${featureId}`)
         .set('Cookie', `token=${authToken}`)
         .send({
-          title: 'Updated Component',
+          title: 'Updated Feature',
           content: 'Updated content'
         });
 
       expectSuccess(response, 200);
-      expect(response.body.component.title).toBe('Updated Component');
+      expect(response.body.feature.title).toBe('Updated Feature');
     });
 
-    it('should delete component', async () => {
+    it('should delete feature', async () => {
       const project = await Project.findById(projectId);
-      project?.components.push({
-        id: 'test-component-delete-id',
+      project?.features.push({
+        id: 'test-feature-delete-id',
         category: 'backend',
         type: 'api',
-        title: 'Component to Delete',
+        title: 'Feature to Delete',
         content: 'This will be deleted',
-        feature: 'Feature B',
+        group: 'Group B',
         createdAt: new Date(),
         updatedAt: new Date()
       } as any);
       await project?.save();
 
-      const componentId = project?.components[0].id;
+      const featureId = project?.features[0].id;
 
       const response = await request(app)
-        .delete(`/api/projects/${projectId}/components/${componentId}`)
+        .delete(`/api/projects/${projectId}/features/${featureId}`)
         .set('Cookie', `token=${authToken}`);
 
       expectSuccess(response, 200);
       expect(response.body.message).toContain('deleted');
 
       const updatedProject = await Project.findById(projectId);
-      expect(updatedProject?.components).toHaveLength(0);
+      expect(updatedProject?.features).toHaveLength(0);
     });
 
-    it('should add relationship to component', async () => {
+    it('should add relationship to feature', async () => {
       const project = await Project.findById(projectId);
-      project?.components.push({
-        id: 'component-1',
+      project?.features.push({
+        id: 'feature-1',
         category: 'frontend',
-        type: 'component',
-        title: 'Component 1',
-        content: 'First component',
-        feature: 'Feature A',
+        type: 'page',
+        title: 'Feature 1',
+        content: 'First feature',
+        group: 'Group A',
         relationships: [],
         createdAt: new Date(),
         updatedAt: new Date()
       } as any);
-      project?.components.push({
-        id: 'component-2',
+      project?.features.push({
+        id: 'feature-2',
         category: 'backend',
         type: 'api',
-        title: 'Component 2',
-        content: 'Second component',
-        feature: 'Feature A',
+        title: 'Feature 2',
+        content: 'Second feature',
+        group: 'Group A',
         relationships: [],
         createdAt: new Date(),
         updatedAt: new Date()
@@ -1051,10 +1051,10 @@ describe('Project CRUD Operations', () => {
       await project?.save();
 
       const response = await request(app)
-        .post(`/api/projects/${projectId}/components/component-1/relationships`)
+        .post(`/api/projects/${projectId}/features/feature-1/relationships`)
         .set('Cookie', `token=${authToken}`)
         .send({
-          targetId: 'component-2',
+          targetId: 'feature-2',
           relationType: 'uses',
           description: 'Frontend uses backend API'
         });
@@ -1063,18 +1063,18 @@ describe('Project CRUD Operations', () => {
       expect(response.body.message).toContain('added');
     });
 
-    it('should delete relationship from component', async () => {
+    it('should delete relationship from feature', async () => {
       const project = await Project.findById(projectId);
-      project?.components.push({
-        id: 'component-1',
+      project?.features.push({
+        id: 'feature-1',
         category: 'frontend',
-        type: 'component',
-        title: 'Component 1',
-        content: 'First component',
-        feature: 'Feature A',
+        type: 'page',
+        title: 'Feature 1',
+        content: 'First feature',
+        group: 'Group A',
         relationships: [{
           id: 'relationship-1',
-          targetId: 'component-2',
+          targetId: 'feature-2',
           relationType: 'uses',
           description: 'Test relationship'
         }],
@@ -1084,7 +1084,7 @@ describe('Project CRUD Operations', () => {
       await project?.save();
 
       const response = await request(app)
-        .delete(`/api/projects/${projectId}/components/component-1/relationships/relationship-1`)
+        .delete(`/api/projects/${projectId}/features/feature-1/relationships/relationship-1`)
         .set('Cookie', `token=${authToken}`);
 
       expectSuccess(response, 200);

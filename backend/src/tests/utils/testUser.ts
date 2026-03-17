@@ -77,7 +77,7 @@ export async function createUserWithHashedPassword(
  */
 export function generateAuthToken(userId: string, email?: string, role?: string): string {
   return jwt.sign(
-    { userId, email, role },
+    { userId, email, role, isAdmin: role === 'admin' },
     process.env.JWT_SECRET || 'test_secret'
   );
 }

@@ -94,7 +94,7 @@ describe('Ticket Routes', () => {
         .send(incompleteData);
 
       expect(response.status).toBe(400);
-      expect(response.body.error).toContain('required');
+      expect(response.body.message).toContain('required');
     });
 
     it('should validate category values', async () => {
@@ -110,7 +110,7 @@ describe('Ticket Routes', () => {
         .send(invalidData);
 
       expect(response.status).toBe(400);
-      expect(response.body.error).toContain('Invalid category');
+      expect(response.body.message).toContain('Invalid category');
     });
 
     it('should validate priority values', async () => {
@@ -127,7 +127,7 @@ describe('Ticket Routes', () => {
         .send(invalidData);
 
       expect(response.status).toBe(400);
-      expect(response.body.error).toContain('Invalid priority');
+      expect(response.body.message).toContain('Invalid priority');
     });
 
     it('should require authentication', async () => {

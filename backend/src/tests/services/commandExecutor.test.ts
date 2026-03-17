@@ -83,8 +83,8 @@ describe('CommandExecutor', () => {
       expect(result).toBeDefined();
     });
 
-    it('should execute component commands', async () => {
-      const result = await executor.execute('/view components', projectId);
+    it('should execute feature commands', async () => {
+      const result = await executor.execute('/view features', projectId);
       expect(result).toBeDefined();
     });
 

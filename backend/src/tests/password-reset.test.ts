@@ -91,7 +91,7 @@ describe('Password Reset Flow', () => {
       .post('/api/auth/login')
       .send({ email: user.email, password: user.password });
 
-    expect(oldLoginRes.status).toBe(400);
+    expect(oldLoginRes.status).toBe(401);
     expect(oldLoginRes.body.message).toBe('Invalid credentials');
 
     // 9. Verify new password works

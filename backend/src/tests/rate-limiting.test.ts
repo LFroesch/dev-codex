@@ -1,3 +1,8 @@
+// Disable self-hosted mode for rate limiting tests
+const originalSelfHosted = process.env.SELF_HOSTED;
+beforeAll(() => { process.env.SELF_HOSTED = 'false'; });
+afterAll(() => { process.env.SELF_HOSTED = originalSelfHosted; });
+
 // Mock email service
 jest.mock('../services/emailService', () => ({
   sendEmail: jest.fn().mockResolvedValue(undefined)

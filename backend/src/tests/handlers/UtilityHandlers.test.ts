@@ -147,82 +147,30 @@ describe('UtilityHandlers', () => {
     });
   });
 
-  describe('handleExport', () => {
-    it('should prepare export for specified project', async () => {
-      const parsed = CommandParser.parse(`/export @${mockProject.name}`);
-      const result = await handler.handleExport(parsed, mockProject._id.toString());
-
-      expect(result.type).toBe(ResponseType.SUCCESS);
-      expect(result.message).toContain('Preparing export');
-      expect(result.data.exportUrl).toBeDefined();
-      expect(result.data.exportUrl).toContain(`/api/projects/${mockProject._id}/export`);
-      expect(result.data.projectName).toBe(mockProject.name);
-    });
-
-    it('should export current project when no project mentioned', async () => {
-      const parsed = CommandParser.parse('/export');
-      const result = await handler.handleExport(parsed, mockProject._id.toString());
-
-      expect(result.type).toBe(ResponseType.SUCCESS);
-      expect(result.data.exportUrl).toContain(mockProject._id.toString());
-    });
-
-    it('should handle no project context and no mention', async () => {
-      const parsed = CommandParser.parse('/export');
-      const result = await handler.handleExport(parsed);
-
-      expect(result.type).toBeDefined();
-    });
-  });
-
-  describe('handleSummary', () => {
-    it('should generate markdown summary by default', async () => {
+  describe('handleSummary (delegates to handleContext)', () => {
+    it('should generate project context as markdown', async () => {
       const parsed = CommandParser.parse('/summary');
       const result = await handler.handleSummary(parsed, mockProject._id.toString());
 
-      expect(result.type).toBeDefined();
-      expect(result.data).toBeDefined();
+      expect(result.type).toBe(ResponseType.DATA);
+      expect(result.data.summary).toBeDefined();
+      expect(result.data.downloadable).toBe(true);
     });
 
-    it('should generate JSON summary when specified', async () => {
-      const parsed = CommandParser.parse('/summary json');
+    it('should filter by entity type', async () => {
+      const parsed = CommandParser.parse('/summary todos');
       const result = await handler.handleSummary(parsed, mockProject._id.toString());
 
-      expect(result.type).toBeDefined();
-      expect(result.data).toBeDefined();
+      expect(result.type).toBe(ResponseType.DATA);
+      expect(result.data.summary).toBeDefined();
     });
 
-    it('should generate text summary when specified', async () => {
-      const parsed = CommandParser.parse('/summary text');
-      const result = await handler.handleSummary(parsed, mockProject._id.toString());
-
-      expect(result.type).toBeDefined();
-      expect(result.data).toBeDefined();
-    });
-
-    it('should generate prompt format summary', async () => {
-      const parsed = CommandParser.parse('/summary prompt');
-      const result = await handler.handleSummary(parsed, mockProject._id.toString());
-
-      expect(result.type).toBeDefined();
-      expect(result.data).toBeDefined();
-    });
-
-    it('should return error for invalid format', async () => {
+    it('should return error for invalid entity', async () => {
       const parsed = CommandParser.parse('/summary invalid');
       const result = await handler.handleSummary(parsed, mockProject._id.toString());
 
       expect(result.type).toBe(ResponseType.ERROR);
-      expect(result.message).toContain('Invalid format');
-      expect(result.suggestions).toContain('/help summary');
-    });
-
-    it('should filter summary by entity type', async () => {
-      const parsed = CommandParser.parse('/summary markdown todos');
-      const result = await handler.handleSummary(parsed, mockProject._id.toString());
-
-      expect(result.type).toBeDefined();
-      expect(result.data).toBeDefined();
+      expect(result.message).toContain('Invalid entity');
     });
   });
 
@@ -504,10 +452,10 @@ describe('UtilityHandlers', () => {
     });
   });
 
-  describe('handleLLMContext', () => {
+  describe('handleContext', () => {
     it('should return project context for LLM', async () => {
       const parsed = CommandParser.parse('/llm');
-      const result = await handler.handleLLMContext(parsed, mockProject._id.toString());
+      const result = await handler.handleContext(parsed, mockProject._id.toString());
 
       expect(result.type).toBe(ResponseType.DATA);
       expect(result.data).toBeDefined();
@@ -528,7 +476,7 @@ describe('UtilityHandlers', () => {
       await mockProject.save();
 
       const parsed = CommandParser.parse('/llm');
-      const result = await handler.handleLLMContext(parsed, mockProject._id.toString());
+      const result = await handler.handleContext(parsed, mockProject._id.toString());
 
       expect(result.type).toBe(ResponseType.DATA);
       expect(result.data).toBeDefined();
@@ -536,7 +484,7 @@ describe('UtilityHandlers', () => {
 
     it('should handle no project context', async () => {
       const parsed = CommandParser.parse('/llm');
-      const result = await handler.handleLLMContext(parsed);
+      const result = await handler.handleContext(parsed);
 
       expect(result.type).toBeDefined();
     });

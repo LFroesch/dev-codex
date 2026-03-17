@@ -329,14 +329,14 @@ describe('ActivityLogger Service', () => {
         project._id.toString(),
         user._id.toString(),
         'session123',
-        'component',
+        'feature',
         'comp1',
-        { name: 'Old Component' }
+        { name: 'Old Feature' }
       );
 
       expect(log).toBeDefined();
       expect(log.action).toBe('deleted');
-      expect(log.resourceType).toBe('component');
+      expect(log.resourceType).toBe('feature');
     });
   });
 

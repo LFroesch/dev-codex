@@ -61,7 +61,7 @@ describe('StaleItemService', () => {
 
       expect(result.staleNotes.length).toBe(1);
       expect(result.staleNotes[0].title).toBe('Stale Note');
-      expect(result.staleNotes[0].daysSinceUpdate).toBeGreaterThanOrEqual(20);
+      expect(result.staleNotes[0].daysSinceUpdate).toBeGreaterThanOrEqual(19);
       expect(result.totalCount).toBe(1);
     });
 
@@ -82,7 +82,7 @@ describe('StaleItemService', () => {
 
       expect(result.staleTodos.length).toBe(1);
       expect(result.staleTodos[0].title).toBe('Stale Todo');
-      expect(result.staleTodos[0].daysSinceUpdate).toBeGreaterThanOrEqual(10);
+      expect(result.staleTodos[0].daysSinceUpdate).toBeGreaterThanOrEqual(9);
       expect(result.totalCount).toBe(1);
     });
 

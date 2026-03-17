@@ -7,12 +7,12 @@ import { Ticket } from '../models/Ticket';
 import Analytics from '../models/Analytics';
 import UserSession from '../models/UserSession';
 import ActivityLog from '../models/ActivityLog';
-import { requireAuth, AuthRequest } from '../middleware/auth';
+import { requireAuth, requireAdmin, AuthRequest } from '../middleware/auth';
 import { PLAN_LIMITS } from '../config/planLimits';
 import { CleanupService } from '../services/cleanupService';
 import NotificationService from '../services/notificationService';
 import { sendEmail } from '../services/emailService';
-import { asyncHandler, ForbiddenError, NotFoundError, BadRequestError, ConflictError } from '../utils/errorHandler';
+import { asyncHandler, NotFoundError, BadRequestError, ConflictError } from '../utils/errorHandler';
 
 const router = express.Router();
 
@@ -24,17 +24,8 @@ if (process.env.STRIPE_SECRET_KEY) {
   });
 }
 
-// Admin middleware
-const adminMiddleware = asyncHandler(async (req: AuthRequest, res: any, next: any) => {
-  const user = await User.findById(req.userId!);
-  if (!user || !user.isAdmin) {
-    throw ForbiddenError('Admin access required', 'ADMIN_REQUIRED');
-  }
-  next();
-});
-
 // Use auth and admin middleware for all admin routes
-router.use(requireAuth, adminMiddleware);
+router.use(requireAuth, requireAdmin);
 
 // Get all users with pagination
 router.get('/users', asyncHandler(async (req: Request, res: Response) => {
@@ -1644,7 +1635,7 @@ router.get('/performance/recommendations', asyncHandler(async (_req: Request, re
 }));
 
 // Lock/Unlock project (Admin only)
-router.post('/projects/:id/lock', requireAuth, adminMiddleware, asyncHandler(async (req: AuthRequest, res: Response) => {
+router.post('/projects/:id/lock', requireAuth, requireAdmin, asyncHandler(async (req: AuthRequest, res: Response) => {
   if (!isValidObjectId(req.params.id)) {
     throw BadRequestError('Invalid project ID', 'INVALID_ID');
   }
@@ -1672,7 +1663,7 @@ router.post('/projects/:id/lock', requireAuth, adminMiddleware, asyncHandler(asy
 }));
 
 // Get user's projects (Admin only)
-router.get('/users/:id/projects', requireAuth, adminMiddleware, asyncHandler(async (req: AuthRequest, res: Response) => {
+router.get('/users/:id/projects', requireAuth, requireAdmin, asyncHandler(async (req: AuthRequest, res: Response) => {
   if (!isValidObjectId(req.params.id)) {
     throw BadRequestError('Invalid user ID', 'INVALID_ID');
   }

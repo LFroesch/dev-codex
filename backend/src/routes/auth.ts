@@ -21,6 +21,29 @@ dotenv.config();
 // Temporary store for linking user IDs (in production, use Redis or database)
 const linkingStore = new Map<string, string>();
 
+// Short-lived opaque code store for OAuth callback (code -> {userId, expiry})
+const oauthCodes = new Map<string, { userId: string; expiresAt: number }>();
+
+// CSRF state tokens for regular OAuth login (state -> expiresAt)
+const oauthStates = new Map<string, number>();
+
+// Cleanup expired OAuth states/codes every 10 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, expiresAt] of oauthStates) {
+    if (now > expiresAt) oauthStates.delete(key);
+  }
+  for (const [key, entry] of oauthCodes) {
+    if (now > entry.expiresAt) oauthCodes.delete(key);
+  }
+}, 10 * 60 * 1000);
+
+function generateOAuthCode(userId: string): string {
+  const code = crypto.randomBytes(32).toString('hex');
+  oauthCodes.set(code, { userId, expiresAt: Date.now() + 5 * 60 * 1000 }); // 5 min TTL
+  return code;
+}
+
 // Helper function to create login notifications for due today tasks
 const createLoginNotifications = async (userId: string) => {
   try {
@@ -371,7 +394,7 @@ router.post('/demo-login', authRateLimit, asyncHandler(async (req: express.Reque
   const token = jwt.sign(
     { userId: demoUser._id, email: demoUser.email, isDemo: true },
     process.env.JWT_SECRET,
-    { expiresIn: '7d' }
+    { expiresIn: '1h' }
   );
 
   // Set HTTP-only cookie
@@ -379,7 +402,7 @@ router.post('/demo-login', authRateLimit, asyncHandler(async (req: express.Reque
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
-    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    maxAge: 60 * 60 * 1000 // 1 hour
   });
 
   res.json({
@@ -419,27 +442,39 @@ router.post('/logout', asyncHandler(async (req: express.Request, res: express.Re
   res.json({ message: 'Logged out successfully' });
 }));
 
-// Exchange OAuth token for cookie (mobile-friendly approach)
+// Exchange OAuth opaque code for cookie (mobile-friendly approach)
 router.post('/exchange-token', asyncHandler(async (req: express.Request, res: express.Response) => {
-  const { token } = req.body;
+  const { token: code } = req.body;
 
-  if (!token) {
-    throw BadRequestError('Token is required', 'TOKEN_REQUIRED');
+  if (!code) {
+    throw BadRequestError('Code is required', 'CODE_REQUIRED');
   }
 
   if (!process.env.JWT_SECRET) {
     throw new Error('JWT_SECRET not configured');
   }
 
-  // Verify the token
-  const decoded = jwt.verify(token, process.env.JWT_SECRET) as any;
-  const user = await User.findById(decoded.userId).select('-password');
+  // Look up and consume the one-time opaque code
+  const entry = oauthCodes.get(code);
+  if (!entry || Date.now() > entry.expiresAt) {
+    oauthCodes.delete(code);
+    throw UnauthorizedError('Invalid or expired code', 'INVALID_CODE');
+  }
+  oauthCodes.delete(code);
+
+  const user = await User.findById(entry.userId).select('-password');
 
   if (!user) {
     throw UnauthorizedError('User not found', 'USER_NOT_FOUND');
   }
 
-  // Set HTTP-only cookie (this is a same-site request, works on mobile)
+  // Issue a fresh JWT and set as HttpOnly cookie
+  const token = jwt.sign(
+    { userId: user._id, email: user.email },
+    process.env.JWT_SECRET,
+    { expiresIn: '7d' }
+  );
+
   res.cookie('token', token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -448,7 +483,7 @@ router.post('/exchange-token', asyncHandler(async (req: express.Request, res: ex
   });
 
   res.json({
-    message: 'Token exchanged successfully',
+    message: 'Authentication successful',
     user: {
       id: user._id,
       email: user.email,
@@ -711,7 +746,11 @@ router.patch('/profile', requireAuth, asyncHandler(async (req: AuthRequest, res:
 
 // Google OAuth routes (only if Google OAuth is configured)
 if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
-  router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+  router.get('/google', (req, res, next) => {
+    const state = crypto.randomBytes(32).toString('hex');
+    oauthStates.set(state, Date.now() + 5 * 60 * 1000); // 5 min TTL
+    passport.authenticate('google', { scope: ['profile', 'email'], state })(req, res, next);
+  });
 
   // Link Google account route (for authenticated users)
   router.get('/google/link', requireAuth, (req: AuthRequest, res, next) => {
@@ -753,41 +792,43 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
       try {
         const user = req.user;
         const isLinking = !!(user as any).isLinking;
+        const stateParam = req.query.state as string;
 
         if (isLinking) {
           // Account linking flow - redirect to account settings with success
+          // (state is validated via linkingStore in the strategy callback)
           res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5002'}/account-settings?google_linked=success`);
         } else {
+          // Validate CSRF state token for regular login
+          const stateExpiry = oauthStates.get(stateParam);
+          oauthStates.delete(stateParam); // one-time use
+          if (!stateExpiry || Date.now() > stateExpiry) {
+            return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5002'}/login?error=${encodeURIComponent('Invalid OAuth state. Please try again.')}`);
+          }
+
           // Regular OAuth login flow
           // Update last login timestamp
           await User.findByIdAndUpdate(user._id, { lastLogin: new Date() });
 
           if (!process.env.JWT_SECRET) {
-            
             return res.status(500).json({ message: 'Server configuration error' });
           }
-
-          const token = jwt.sign(
-            { userId: user._id, email: user.email },
-            process.env.JWT_SECRET,
-            { expiresIn: '7d' }
-          );
 
           // Create login notifications for due today tasks
           await createLoginNotifications(user._id.toString());
 
-          // NEW: Redirect with token in URL instead of setting cookie directly
-          // This works reliably on mobile browsers (Safari, Chrome mobile, etc.)
-          res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5002'}/auth/callback?token=${token}`);
+          // Redirect with short-lived opaque code (not the JWT) to avoid token leaks in history/logs
+          const oauthCode = generateOAuthCode(user._id.toString());
+          res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5002'}/auth/callback?code=${oauthCode}`);
         }
       } catch (error) {
         
         const errorMsg = error instanceof Error ? error.message : 'auth_failed';
-        const stateParam = req.query.state as string;
+        const errorState = req.query.state as string;
 
         // Check if this was a linking attempt
-        if (stateParam && linkingStore.has(stateParam)) {
-          linkingStore.delete(stateParam); // Clean up
+        if (errorState && linkingStore.has(errorState)) {
+          linkingStore.delete(errorState); // Clean up
           // Account linking error
           res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5002'}/account-settings?google_linked=error&message=${encodeURIComponent(errorMsg)}`);
         } else {

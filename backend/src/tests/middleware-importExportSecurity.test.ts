@@ -191,7 +191,7 @@ describe('Import/Export Security Middleware', () => {
           notes: [{ title: 'Note 1' }],
           todos: [{ title: 'Todo 1' }],
           devLog: [],
-          components: [],
+          features: [],
           tags: ['tag1', 'tag2']
         }
       };
@@ -494,9 +494,9 @@ describe('Import/Export Security Middleware', () => {
           project: {
             name: 'Test',
             description: 'Test',
-            components: [
+            features: [
               {
-                title: '<script>alert("xss")</script>Component',
+                title: '<script>alert("xss")</script>Feature',
                 content: 'javascript:void(0)'
               }
             ]
@@ -504,7 +504,7 @@ describe('Import/Export Security Middleware', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.project.components[0].title).not.toContain('<script>');
+      expect(response.body.project.features[0].title).not.toContain('<script>');
     });
   });
 });

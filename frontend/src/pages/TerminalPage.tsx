@@ -12,6 +12,7 @@ interface ContextType {
   user: { id: string; email: string; firstName: string; lastName: string } | null;
   currentProjectId?: string;
   currentProjectName?: string;
+  selectedProject?: any;
   onProjectSwitch?: (projectId: string) => Promise<void>;
 }
 
@@ -96,7 +97,7 @@ const loadSessionId = (): string | null => {
 };
 
 const TerminalPage: React.FC = () => {
-  const { user, currentProjectId, currentProjectName, onProjectSwitch } = useOutletContext<ContextType>();
+  const { user, currentProjectId, currentProjectName, selectedProject, onProjectSwitch } = useOutletContext<ContextType>();
   const [entries, setEntries] = useState<TerminalEntry[]>([]);
   const [isExecuting, setIsExecuting] = useState(false);
   const [pendingCommand, setPendingCommand] = useState<string | null>(null);
@@ -392,10 +393,11 @@ const TerminalPage: React.FC = () => {
       await onProjectSwitch(projectId);
 
       // If there was a pending natural input (from project picker flow), fire it now
+      // Pass projectId directly to avoid stale closure over currentProjectId
       if (pendingNaturalInput) {
         const msg = pendingNaturalInput;
         setPendingNaturalInput(null);
-        setTimeout(() => handleCommandSubmit(msg), 300);
+        setTimeout(() => startAIStream(msg, projectId), 300);
         return;
       }
 
@@ -812,6 +814,7 @@ const TerminalPage: React.FC = () => {
               streamingText={entry.id === streamingEntryId ? streamingText : undefined}
               userName={user?.firstName}
               onStopAI={entry.id === streamingEntryId ? handleStopAI : undefined}
+              selectedProject={selectedProject}
             />
           );
         })}

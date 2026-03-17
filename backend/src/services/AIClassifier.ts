@@ -1,10 +1,10 @@
 // ── Types ───────────────────────────────────────────────────────────────
 
 /** Entities that have data sections in AIContextBuilder */
-export type ContextEntity = 'todos' | 'notes' | 'devlog' | 'features' | 'stack' | 'tags';
+export type ContextEntity = 'todos' | 'notes' | 'devlog' | 'features' | 'stack' | 'tags' | 'deployment' | 'relationships' | 'ideas';
 
 /** Entities that only exist as command targets (no context section) */
-export type CommandEntity = 'subtasks' | 'relationships' | 'deployment' | 'team' | 'settings' | 'ideas' | 'projects' | 'public';
+export type CommandEntity = 'subtasks' | 'team' | 'settings' | 'projects' | 'public';
 
 export type EntityType = ContextEntity | CommandEntity;
 
@@ -17,23 +17,23 @@ export interface InputClassification {
 // ── Entity Patterns ─────────────────────────────────────────────────────
 
 const CONTEXT_ENTITIES: Array<{ entity: ContextEntity; pattern: RegExp }> = [
-  { entity: 'todos',    pattern: /\b(todo|todos|task|tasks|item|items)\b/i },
-  { entity: 'notes',    pattern: /\b(note|notes)\b/i },
-  { entity: 'devlog',   pattern: /\b(devlog|dev log|dev-log|log|logs|journal|progress)\b/i },
-  { entity: 'features', pattern: /\b(feature|features|component|components)\b/i },
-  { entity: 'stack',    pattern: /\b(stack|tech|package|packages|library|libraries|framework|tool|tools|dependency|dependencies)\b/i },
-  { entity: 'tags',     pattern: /\b(tag|tags|label|labels)\b/i },
+  { entity: 'todos',         pattern: /\b(todo|todos|task|tasks|item|items)\b/i },
+  { entity: 'notes',         pattern: /\b(note|notes)\b/i },
+  { entity: 'devlog',        pattern: /\b(devlog|dev log|dev-log|log|logs|journal|progress)\b/i },
+  { entity: 'features',      pattern: /\b(feature|features|component|components)\b/i },
+  { entity: 'stack',         pattern: /\b(stack|tech|package|packages|library|libraries|framework|tool|tools|dependency|dependencies)\b/i },
+  { entity: 'tags',          pattern: /\b(tag|tags|label|labels)\b/i },
+  { entity: 'deployment',    pattern: /\b(deploy|deployment|hosting|url|domain|build|production|staging)\b/i },
+  { entity: 'relationships', pattern: /\b(relationship|relationships|depends|uses|connect)\b/i },
+  { entity: 'ideas',         pattern: /\b(idea|ideas)\b/i },
 ];
 
 const COMMAND_ENTITIES: Array<{ entity: CommandEntity; pattern: RegExp }> = [
-  { entity: 'subtasks',      pattern: /\b(subtask|subtasks|sub-task|sub task)\b/i },
-  { entity: 'relationships', pattern: /\b(relationship|relationships|depends|uses|connect)\b/i },
-  { entity: 'deployment',    pattern: /\b(deploy|deployment|hosting|url|domain|build|production|staging)\b/i },
-  { entity: 'team',          pattern: /\b(team|member|members|invite|collaborat\w*)\b/i },
-  { entity: 'settings',      pattern: /\b(setting|settings|config)\b/i },
-  { entity: 'ideas',         pattern: /\b(idea|ideas)\b/i },
-  { entity: 'projects',      pattern: /\b(project|projects|swap|switch)\b/i },
-  { entity: 'public',        pattern: /\b(public|share|sharing|slug|discover)\b/i },
+  { entity: 'subtasks', pattern: /\b(subtask|subtasks|sub-task|sub task)\b/i },
+  { entity: 'team',     pattern: /\b(team|member|members|invite|collaborat\w*)\b/i },
+  { entity: 'settings', pattern: /\b(setting|settings|config)\b/i },
+  { entity: 'projects', pattern: /\b(project|projects|swap|switch)\b/i },
+  { entity: 'public',   pattern: /\b(public|share|sharing|slug|discover)\b/i },
 ];
 
 // ── Category Patterns ───────────────────────────────────────────────────
@@ -102,7 +102,7 @@ function detectEntities(input: string): Set<EntityType> {
 
 /** Check if the entity set contains at least one context entity */
 function hasContextEntities(entities: Set<EntityType>): boolean {
-  const contextTypes: Set<string> = new Set(['todos', 'notes', 'devlog', 'features', 'stack', 'tags']);
+  const contextTypes: Set<string> = new Set(['todos', 'notes', 'devlog', 'features', 'stack', 'tags', 'deployment', 'relationships', 'ideas']);
   for (const e of entities) {
     if (contextTypes.has(e)) return true;
   }
@@ -111,7 +111,7 @@ function hasContextEntities(entities: Set<EntityType>): boolean {
 
 /** Extract only context entities from a mixed set */
 export function getContextEntities(entities: Set<EntityType>): Set<ContextEntity> {
-  const contextTypes = new Set<ContextEntity>(['todos', 'notes', 'devlog', 'features', 'stack', 'tags']);
+  const contextTypes = new Set<ContextEntity>(['todos', 'notes', 'devlog', 'features', 'stack', 'tags', 'deployment', 'relationships', 'ideas']);
   const result = new Set<ContextEntity>();
   for (const e of entities) {
     if (contextTypes.has(e as ContextEntity)) result.add(e as ContextEntity);

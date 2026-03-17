@@ -32,8 +32,8 @@ export class AIContextBuilder {
   private static async _buildInternal(userId: string, projectId: string | undefined, filter: Set<ContextEntity> | null): Promise<string> {
     const sections: string[] = [];
 
-    // Load user's AI context preferences (falls back to defaults via Mongoose)
-    const userDoc = await UserModel.findById(userId).select('aiContext').lean();
+    // Load user's AI context preferences + ideas (falls back to defaults via Mongoose)
+    const userDoc = await UserModel.findById(userId).select('aiContext ideas').lean();
     const limits = { ...DEFAULT_LIMITS, ...userDoc?.aiContext };
 
     const include = (entity: ContextEntity) => !filter || filter.has(entity);
@@ -44,7 +44,7 @@ export class AIContextBuilder {
           _id: projectId,
           $or: [{ userId }, { ownerId: userId }],
         })
-          .select('name description tags todos notes devLog features techStack')
+          .select('name description tags todos notes devLog features techStack deploymentData')
           .lean();
 
         if (project) {
@@ -99,7 +99,7 @@ export class AIContextBuilder {
             if (notes.length > 0) {
               sections.push(`\n### Notes (${notes.length})`);
               notes.slice(0, limits.maxNotes).forEach((n: any, i: number) => {
-                sections.push(`#${i + 1} "${sanitize(n.title)}"${n.content ? ' — ' + sanitize(n.content).slice(0, 80) : ''}`);
+                sections.push(`#${i + 1} "${sanitize(n.title)}"${n.content ? ' — ' + sanitize(n.content).slice(0, 500) : ''}`);
               });
             }
           }
@@ -112,7 +112,7 @@ export class AIContextBuilder {
               sections.push(`\n### Dev Log (${devlog.length}, showing recent)`);
               devlog.slice(0, limits.maxDevLogs).forEach((d: any, i: number) => {
                 const date = new Date(d.date).toLocaleDateString();
-                sections.push(`#${i + 1} ${date}: "${sanitize((d as any).title || '')}"${(d as any).description ? ' — ' + sanitize((d as any).description).slice(0, 80) : ''}`);
+                sections.push(`#${i + 1} ${date}: "${sanitize((d as any).title || '')}"${(d as any).description ? ' — ' + sanitize((d as any).description).slice(0, 500) : ''}`);
               });
             }
           }
@@ -123,7 +123,7 @@ export class AIContextBuilder {
             if (features.length > 0) {
               sections.push(`\n### Features (${features.length})`);
               features.slice(0, limits.maxFeatures).forEach((c: any, i: number) => {
-                sections.push(`#${i + 1} ${c.category}/${c.type}: "${sanitize(c.title)}"${c.group ? ` [${c.group}]` : ''}`);
+                sections.push(`#${i + 1} ${c.category}/${c.type}: "${sanitize(c.title)}"${c.group ? ` [${c.group}]` : ''}${c.content ? ' — ' + sanitize(c.content).slice(0, 500) : ''}`);
               });
             }
           }
@@ -138,6 +138,50 @@ export class AIContextBuilder {
               });
             }
           }
+
+          // Deployment
+          if (include('deployment')) {
+            const d = (project as any).deploymentData;
+            if (d && (d.liveUrl || d.githubRepo || d.deploymentPlatform)) {
+              sections.push(`\n### Deployment`);
+              if (d.liveUrl) sections.push(`URL: ${d.liveUrl}`);
+              if (d.githubRepo) sections.push(`Repo: ${d.githubRepo}`);
+              if (d.deploymentPlatform) sections.push(`Platform: ${d.deploymentPlatform}`);
+              sections.push(`Status: ${d.deploymentStatus || 'inactive'}`);
+              if (d.deploymentBranch && d.deploymentBranch !== 'main') sections.push(`Branch: ${d.deploymentBranch}`);
+              if (d.buildCommand) sections.push(`Build: ${d.buildCommand}`);
+              if (d.startCommand) sections.push(`Start: ${d.startCommand}`);
+            }
+          }
+
+          // Relationships (extracted from features)
+          if (include('relationships')) {
+            const features = (project.features || []) as any[];
+            const rels: string[] = [];
+            features.forEach((f: any) => {
+              (f.relationships || []).forEach((r: any) => {
+                const target = features.find((t: any) => t.id === r.targetId);
+                if (target) {
+                  rels.push(`- "${sanitize(f.title)}" ${r.relationType} "${sanitize(target.title)}"`);
+                }
+              });
+            });
+            if (rels.length > 0) {
+              sections.push(`\n### Relationships`);
+              sections.push(...rels);
+            }
+          }
+        }
+      }
+
+      // Ideas (user-level, not project-level)
+      if (include('ideas')) {
+        const ideas = (userDoc as any)?.ideas || [];
+        if (ideas.length > 0) {
+          sections.push(`\n### Ideas (${ideas.length})`);
+          ideas.slice(0, 10).forEach((idea: any, i: number) => {
+            sections.push(`#${i + 1} "${sanitize(idea.title)}"${idea.content ? ' — ' + sanitize(idea.content).slice(0, 80) : ''}`);
+          });
         }
       }
 
@@ -180,7 +224,7 @@ export class AIContextBuilder {
           _id: projectId,
           $or: [{ userId }, { ownerId: userId }],
         })
-          .select('name description tags todos notes devLog features techStack')
+          .select('name description tags todos notes devLog features techStack deploymentData')
           .lean();
 
         if (project) {
@@ -274,6 +318,39 @@ export class AIContextBuilder {
                 lines.push(`- **${s.name}**${ver}${cat}`);
               });
               sections.push(lines.join('\n'));
+            }
+          }
+
+          // Deployment
+          if (!filter || filter === 'deployment') {
+            const d = (project as any).deploymentData;
+            if (d && (d.liveUrl || d.githubRepo || d.deploymentPlatform)) {
+              const lines = ['### Deployment', ''];
+              if (d.liveUrl) lines.push(`- **URL:** ${d.liveUrl}`);
+              if (d.githubRepo) lines.push(`- **Repo:** ${d.githubRepo}`);
+              if (d.deploymentPlatform) lines.push(`- **Platform:** ${d.deploymentPlatform}`);
+              lines.push(`- **Status:** ${d.deploymentStatus || 'inactive'}`);
+              if (d.deploymentBranch) lines.push(`- **Branch:** ${d.deploymentBranch}`);
+              if (d.buildCommand) lines.push(`- **Build:** \`${d.buildCommand}\``);
+              if (d.startCommand) lines.push(`- **Start:** \`${d.startCommand}\``);
+              sections.push(lines.join('\n'));
+            }
+          }
+
+          // Relationships
+          if (!filter || filter === 'relationships') {
+            const features = (project.features || []) as any[];
+            const lines: string[] = [];
+            features.forEach((f: any) => {
+              (f.relationships || []).forEach((r: any) => {
+                const target = features.find((t: any) => t.id === r.targetId);
+                if (target) {
+                  lines.push(`- **${f.title}** ${r.relationType} **${target.title}**`);
+                }
+              });
+            });
+            if (lines.length > 0) {
+              sections.push(['### Relationships', '', ...lines].join('\n'));
             }
           }
         }

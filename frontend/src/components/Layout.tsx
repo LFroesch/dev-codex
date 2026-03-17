@@ -2700,6 +2700,7 @@ const Layout: React.FC = () => {
                 user,
                 currentProjectId: selectedProject?.id,
                 currentProjectName: selectedProject?.name,
+                selectedProject,
                 onProjectSwitch: async (projectId: string) => {
                   const project = projects.find(p => p.id === projectId);
                   if (project) {

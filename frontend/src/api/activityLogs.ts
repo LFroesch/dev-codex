@@ -11,7 +11,7 @@ export interface ActivityLogEntry {
   };
   sessionId: string;
   action: string;
-  resourceType: 'project' | 'note' | 'todo' | 'component' | 'devlog' | 'link' | 'tech' | 'team' | 'settings';
+  resourceType: 'project' | 'note' | 'todo' | 'feature' | 'devlog' | 'link' | 'tech' | 'team' | 'settings';
   resourceId?: string;
   details: {
     field?: string;
@@ -168,8 +168,8 @@ export const formatActivityMessage = (activity: ActivityLogEntry): string => {
           return `${userName} added ${getResourceDisplay()} to stack`;
         } else if (resourceType === 'todo') {
           return `${userName} added todo ${getResourceDisplay()}`;
-        } else if (resourceType === 'component') {
-          return `${userName} added component ${getResourceDisplay()}`;
+        } else if (resourceType === 'feature') {
+          return `${userName} added feature ${getResourceDisplay()}`;
         } else if (resourceType === 'note') {
           return `${userName} added note ${getResourceDisplay()}`;
         } else if (resourceType === 'devlog') {
@@ -182,8 +182,8 @@ export const formatActivityMessage = (activity: ActivityLogEntry): string => {
         return `${userName} added item to stack`;
       } else if (resourceType === 'todo') {
         return `${userName} added a todo`;
-      } else if (resourceType === 'component') {
-        return `${userName} added a component`;
+      } else if (resourceType === 'feature') {
+        return `${userName} added a feature`;
       } else if (resourceType === 'note') {
         return `${userName} added a note`;
       } else if (resourceType === 'devlog') {
@@ -207,8 +207,8 @@ export const formatActivityMessage = (activity: ActivityLogEntry): string => {
           return `${userName} removed ${getResourceDisplay()} from stack`;
         } else if (resourceType === 'todo') {
           return `${userName} removed todo ${getResourceDisplay()}`;
-        } else if (resourceType === 'component') {
-          return `${userName} removed component ${getResourceDisplay()}`;
+        } else if (resourceType === 'feature') {
+          return `${userName} removed feature ${getResourceDisplay()}`;
         } else if (resourceType === 'note') {
           return `${userName} removed note ${getResourceDisplay()}`;
         } else if (resourceType === 'devlog') {
@@ -221,8 +221,8 @@ export const formatActivityMessage = (activity: ActivityLogEntry): string => {
         return `${userName} removed item from stack`;
       } else if (resourceType === 'todo') {
         return `${userName} removed a todo`;
-      } else if (resourceType === 'component') {
-        return `${userName} removed a component`;
+      } else if (resourceType === 'feature') {
+        return `${userName} removed a feature`;
       } else if (resourceType === 'note') {
         return `${userName} removed a note`;
       } else if (resourceType === 'devlog') {

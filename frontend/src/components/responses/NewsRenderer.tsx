@@ -21,7 +21,7 @@ const NewsRenderer: React.FC<NewsRendererProps> = ({ news }) => {
             className="p-3 bg-base-200 rounded-lg hover:bg-base-300/50 transition-colors border-thick"
           >
             <div className="flex items-start gap-2 mb-1">
-              <span className="text-xs px-2 py-0.5 bg-primary/30 rounded border-2 border-primary/40 capitalize flex-shrink-0">
+              <span className="text-xs px-2 py-0.5 bg-primary/30 rounded border-thick border-primary/40 capitalize flex-shrink-0">
                 {newsItem.type || 'update'}
               </span>
               <div className="flex-1 min-w-0">

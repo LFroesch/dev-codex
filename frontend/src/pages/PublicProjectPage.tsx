@@ -134,15 +134,15 @@ const PublicProjectPage: React.FC = () => {
 
   if (!project) return null;
 
-  // Group components by feature for better organization
-  const componentsByFeature = project.components?.reduce((acc: any, component: any) => {
-    const feature = component.feature || 'Uncategorized';
-    if (!acc[feature]) acc[feature] = [];
-    acc[feature].push(component);
+  // Group features by group for better organization
+  const featuresByGroup = project.features?.reduce((acc: any, feat: any) => {
+    const group = feat.group || 'Uncategorized';
+    if (!acc[group]) acc[group] = [];
+    acc[group].push(feat);
     return acc;
   }, {}) || {};
 
-  const componentTypes = [
+  const featureTypes = [
     { value: 'Model', label: 'Models', emoji: '🗃️', description: 'Database schemas' },
     { value: 'Route', label: 'Routes', emoji: '🛣️', description: 'API endpoints' },
     { value: 'API', label: 'APIs', emoji: '🔌', description: 'API documentation' },
@@ -155,24 +155,24 @@ const PublicProjectPage: React.FC = () => {
 
   // Helper function to get type info
   const getTypeInfo = (type: string) => {
-    return componentTypes.find(t => t.value === type) || { emoji: '📄', description: type };
+    return featureTypes.find(t => t.value === type) || { emoji: '📄', description: type };
   };
 
   // Get visibility settings with defaults
   const visibility = project.publicVisibility || {
     description: true,
     tags: true,
-    components: true,
+    features: true,
     techStack: true,
     timestamps: true,
     devLog: true,
   };
 
-  const hasAnyComponents = project.components && project.components.length > 0 && visibility.components;
+  const hasAnyFeatures = project.features && project.features.length > 0 && visibility.features;
   const hasTechStack = project.technologies && project.technologies.length > 0 && visibility.techStack;
   const hasDeploymentLinks = project.deploymentData && (project.deploymentData.liveUrl || project.deploymentData.githubRepo);
   const hasDevLog = project.devLog && project.devLog.length > 0 && visibility.devLog;
-  const hasContent = hasAnyComponents || hasTechStack || hasDeploymentLinks || hasDevLog;
+  const hasContent = hasAnyFeatures || hasTechStack || hasDeploymentLinks || hasDevLog;
 
   return (
     <div className="flex-1 w-full max-w-7xl mx-auto p-2 sm:p-4 bg-base-100 flex flex-col mb-4 min-h-0 overflow-hidden">
@@ -359,7 +359,7 @@ const PublicProjectPage: React.FC = () => {
                   Tech Stack
                 </button>
               )}
-              {hasAnyComponents && (
+              {hasAnyFeatures && (
                 <button
                   className={`tab-button ${activeTab === 'architecture' ? 'tab-active' : ''} gap-2`}
                   style={activeTab === 'architecture' ? { color: getContrastTextColor('primary') } : {}}
@@ -518,30 +518,30 @@ const PublicProjectPage: React.FC = () => {
               )}
 
               {/* Architecture Tab */}
-              {activeTab === 'architecture' && hasAnyComponents && (
+              {activeTab === 'architecture' && hasAnyFeatures && (
                 <div>
-                  <h3 className="text-xl font-bold mb-4">Features & Components</h3>
+                  <h3 className="text-xl font-bold mb-4">Features</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {Object.keys(componentsByFeature).sort().map((featureName) => {
-                  const components = componentsByFeature[featureName];
-                  if (!components || components.length === 0) return null;
+                {Object.keys(featuresByGroup).sort().map((groupName) => {
+                  const features = featuresByGroup[groupName];
+                  if (!features || features.length === 0) return null;
 
                   return (
-                    <div key={featureName} className="bg-base-200 rounded-lg border-2 border-base-content/20 shadow-sm p-3 hover:border-primary/50 transition-all">
+                    <div key={groupName} className="bg-base-200 rounded-lg border-2 border-base-content/20 shadow-sm p-3 hover:border-primary/50 transition-all">
                       <div className="flex items-start gap-2 mb-2">
                         <svg className="icon-sm text-primary flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
                         </svg>
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-bold text-sm text-base-content mb-1 truncate">{featureName}</h4>
+                          <h4 className="font-bold text-sm text-base-content mb-1 truncate">{groupName}</h4>
                           <span className="text-xs text-base-content/60">
-                            {components.length} component{components.length !== 1 ? 's' : ''}
+                            {features.length} feature{features.length !== 1 ? 's' : ''}
                           </span>
                         </div>
                       </div>
 
                       <div className="space-y-1.5 mt-2">
-                        {components.map((comp: any, idx: number) => {
+                        {features.map((comp: any, idx: number) => {
                           const typeInfo = getTypeInfo(comp.type);
                           return (
                             <div

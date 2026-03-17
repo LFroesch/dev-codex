@@ -55,24 +55,24 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ user }) => {
 
           {/* Title */}
           <h2 className="card-title text-2xl justify-center mb-2">
-            Welcome to Project Manager!
+            Welcome to Dev Codex!
           </h2>
 
           {/* Description */}
           <p className="text-center text-base-content/70 mb-6">
-            This is a quick interactive tutorial to help you jump in and explore all of the features.
-            It will only take a few minutes!
+            A quick interactive tutorial to help you explore the terminal, AI assistant, and all features.
+            It only takes a few minutes!
           </p>
 
           {/* Features list */}
           <div className="bg-base-200 rounded-lg p-4 mb-6">
             <div className="text-sm font-semibold mb-2">You'll learn how to:</div>
             <ul className="text-sm space-y-1.5 list-disc list-inside text-base-content/80">
+              <li>Talk to the AI — just type naturally in the terminal</li>
               <li>Create and manage projects</li>
-              <li>Use the terminal interface</li>
+              <li>Use 50+ slash commands for power-user control</li>
               <li>Organize notes, todos, and devlogs</li>
               <li>Collaborate with your team</li>
-              <li>And much more...</li>
             </ul>
           </div>
 

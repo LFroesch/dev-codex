@@ -184,7 +184,7 @@ const AdminActivityFeed: React.FC = () => {
         return '📝';
       case 'todo':
         return '✓';
-      case 'component':
+      case 'feature':
         return '📚';
       case 'devlog':
         return '🐛';
@@ -480,7 +480,7 @@ const AdminActivityFeed: React.FC = () => {
                   <option value="project">Project</option>
                   <option value="note">Note</option>
                   <option value="todo">Todo</option>
-                  <option value="component">Component</option>
+                  <option value="feature">Feature</option>
                   <option value="devlog">DevLog</option>
                   <option value="link">Link</option>
                   <option value="tech">Tech</option>

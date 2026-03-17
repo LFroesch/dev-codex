@@ -3,6 +3,7 @@ import AnalyticsOverview from './AnalyticsOverview';
 import ConversionFunnel from './ConversionFunnel';
 import FeatureAdoption from './FeatureAdoption';
 import ErrorsSummary from './ErrorsSummary';
+import AIUsageSection from './AIUsageSection';
 import CollapsibleSection from './CollapsibleSection';
 import { analyticsAPI } from '../../../api/analytics';
 
@@ -88,6 +89,11 @@ const AnalyticsTab: React.FC = () => {
       {/* Conversion Funnel - Collapsed by Default */}
       <CollapsibleSection title="Conversion Funnel" defaultOpen={false}>
         <ConversionFunnel />
+      </CollapsibleSection>
+
+      {/* AI Usage */}
+      <CollapsibleSection title="AI Usage" defaultOpen={false}>
+        <AIUsageSection />
       </CollapsibleSection>
 
       {/* Feature Adoption - Collapsed by Default */}

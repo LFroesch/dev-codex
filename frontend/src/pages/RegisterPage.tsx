@@ -266,6 +266,9 @@ const RegisterPage: React.FC = () => {
                 required
                 minLength={6}
               />
+              <label className="label">
+                <span className="label-text-alt text-base-content/50">At least 6 characters</span>
+              </label>
             </div>
             
             <div className="form-control">

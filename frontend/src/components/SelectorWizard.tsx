@@ -49,7 +49,7 @@ const SelectorWizard: React.FC<SelectorWizardProps> = ({ wizardType, step, proje
     : (step.options || []);
 
   const getItemTypeName = () => {
-    if (wizardType === 'delete_component_selector' || wizardType === 'edit_component_selector') return 'component';
+    if (wizardType === 'delete_feature_selector' || wizardType === 'edit_feature_selector') return 'feature';
     if (wizardType === 'delete_devlog_selector' || wizardType === 'edit_devlog_selector') return 'devlog';
     if (wizardType === 'delete_todo_selector' || wizardType === 'edit_todo_selector') return 'todo';
     if (wizardType === 'delete_note_selector' || wizardType === 'edit_note_selector') return 'note';
@@ -63,12 +63,12 @@ const SelectorWizard: React.FC<SelectorWizardProps> = ({ wizardType, step, proje
 
     const itemType = getItemTypeName();
 
-    // For relationships selector, the value is a component ID, so view relationships for that component
+    // For relationships selector, the value is a feature ID, so view relationships for that feature
     if (wizardType === 'view_relationships_selector') {
-      // Get the component title from the label
+      // Get the feature title from the label
       const selectedOption = availableOptions.find(opt => opt.value === selectedValue);
-      const componentTitle = selectedOption?.label.split(' (')[0] || selectedValue;
-      const command = `/view relationships "${componentTitle}"`;
+      const featureTitle = selectedOption?.label.split(' (')[0] || selectedValue;
+      const command = `/view relationships "${featureTitle}"`;
       onCommandClick(command);
     } else {
       const command = `/view ${itemType.replace(' entry', '')} "${selectedValue}"`;
@@ -79,30 +79,30 @@ const SelectorWizard: React.FC<SelectorWizardProps> = ({ wizardType, step, proje
   const handleEdit = async () => {
     if (!selectedValue) return;
 
-    // For view_relationships_selector, edit the component (not individual relationship)
+    // For view_relationships_selector, edit the feature (not individual relationship)
     if (wizardType === 'view_relationships_selector') {
-      // Get the component title from the label
+      // Get the feature title from the label
       const selectedOption = availableOptions.find(opt => opt.value === selectedValue);
-      const componentTitle = selectedOption?.label.split(' (')[0] || selectedValue;
+      const featureTitle = selectedOption?.label.split(' (')[0] || selectedValue;
       if (onCommandClick) {
-        onCommandClick(`/edit component "${componentTitle}"`);
+        onCommandClick(`/edit feature "${featureTitle}"`);
       }
       return;
     }
 
-    // Special handling for edit_relationship_selector (format: componentId|relationshipIndex)
+    // Special handling for edit_relationship_selector (format: featureId|relationshipIndex)
     if (wizardType === 'edit_relationship_selector') {
-      const [componentId, relationshipIndex] = selectedValue.split('|');
+      const [featureId, relationshipIndex] = selectedValue.split('|');
       if (onCommandClick) {
-        // Get the full label to extract both component and target titles
+        // Get the full label to extract both feature and target titles
         const selectedOption = availableOptions.find(opt => opt.value === selectedValue);
         const label = selectedOption?.label || '';
-        // Label format: "ComponentTitle relationType TargetTitle"
+        // Label format: "FeatureTitle relationType TargetTitle"
         const parts = label.split(' ');
-        const componentTitle = parts[0];
+        const featureTitle = parts[0];
         const targetTitle = parts.slice(2).join(' '); // Everything after relationType
         // Execute command to open the wizard (no trailing space)
-        onCommandClick(`/edit relationship "${componentTitle}" "${targetTitle}"`);
+        onCommandClick(`/edit relationship "${featureTitle}" "${targetTitle}"`);
       }
       return;
     }
@@ -127,14 +127,14 @@ const SelectorWizard: React.FC<SelectorWizardProps> = ({ wizardType, step, proje
 
     let command: string;
 
-    // Special handling for delete_relationship_selector (format: componentId|relationshipIndex)
+    // Special handling for delete_relationship_selector (format: featureId|relationshipIndex)
     if (wizardType === 'delete_relationship_selector') {
-      const [componentId, relationshipIndex] = selectedValue.split('|');
-      // Get the component title from the label
+      const [featureId, relationshipIndex] = selectedValue.split('|');
+      // Get the feature title from the label
       const selectedOption = availableOptions.find(opt => opt.value === selectedValue);
       const label = selectedOption?.label || '';
-      const componentTitle = label.split(' ')[0];
-      command = `/delete relationship "${componentTitle}" ${relationshipIndex} --confirm`;
+      const featureTitle = label.split(' ')[0];
+      command = `/delete relationship "${featureTitle}" ${relationshipIndex} --confirm`;
     } else {
       command = `/delete ${getItemTypeName().replace(' entry', '')} "${selectedValue}" --confirm`;
     }
@@ -162,15 +162,17 @@ const SelectorWizard: React.FC<SelectorWizardProps> = ({ wizardType, step, proje
   // Show completion screen
   if (isFinished) {
     return (
-      <div className="mt-3 p-4 bg-success/10 rounded-lg border-2 border-success/30">
-        <div className="text-center space-y-3">
-          <div className="text-4xl">✅</div>
-          <div className="font-bold text-lg">All Done!</div>
-          <div className="text-sm text-base-content/70">
-            {deletedIds.length > 0
-              ? `Successfully deleted ${deletedIds.length} ${getItemTypeName()}${deletedIds.length !== 1 ? 's' : ''}.`
-              : 'No items were deleted.'}
-          </div>
+      <div className="mt-3 p-4 bg-success/10 rounded-lg border-thick border-l-4 border-l-success">
+        <div className="flex items-center gap-3 mb-2">
+          <svg className="w-5 h-5 text-success flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span className="font-bold text-base">All Done!</span>
+        </div>
+        <div className="text-sm text-base-content/70 ml-8">
+          {deletedIds.length > 0
+            ? `Successfully deleted ${deletedIds.length} ${getItemTypeName()}${deletedIds.length !== 1 ? 's' : ''}.`
+            : 'No items were deleted.'}
         </div>
       </div>
     );
@@ -179,13 +181,15 @@ const SelectorWizard: React.FC<SelectorWizardProps> = ({ wizardType, step, proje
   // Show "no items left" message if all deleted
   if (availableOptions.length === 0) {
     return (
-      <div className="mt-3 p-4 bg-info/10 rounded-lg border-2 border-info/30">
-        <div className="text-center space-y-3">
-          <div className="text-4xl">🎉</div>
-          <div className="font-bold text-lg">All Items Deleted!</div>
-          <div className="text-sm text-base-content/70">
-            You've deleted all {deletedIds.length} {getItemTypeName()}{deletedIds.length !== 1 ? 's' : ''}.
-          </div>
+      <div className="mt-3 p-4 bg-success/10 rounded-lg border-thick border-l-4 border-l-success">
+        <div className="flex items-center gap-3 mb-2">
+          <svg className="w-5 h-5 text-success flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span className="font-bold text-base">All Items Deleted!</span>
+        </div>
+        <div className="text-sm text-base-content/70 ml-8">
+          You've deleted all {deletedIds.length} {getItemTypeName()}{deletedIds.length !== 1 ? 's' : ''}.
         </div>
       </div>
     );

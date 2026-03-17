@@ -1,7 +1,11 @@
-import React, { lazy, Suspense } from 'react';
+import React, { lazy, Suspense, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CommandResponse as CommandResponseType } from '../api/terminal';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { WizardStepper } from './shared/WizardStepper';
+import { CommandResponse as CommandResponseType, AIAction } from '../api/terminal';
 import { getContrastTextColor } from '../utils/contrastTextColor';
+import { FEATURE_CATEGORIES } from '../config/featureCategories';
 import { authAPI, terminalAPI } from '../api';
 import { hexToOklch, oklchToCssValue, generateFocusVariant, generateContrastingTextColor } from '../utils/colorUtils';
 import { toast } from '../services/toast';
@@ -13,7 +17,7 @@ const TodosRenderer = lazy(() => import('./responses').then(m => ({ default: m.T
 const NotesRenderer = lazy(() => import('./responses').then(m => ({ default: m.NotesRenderer })));
 const StackRenderer = lazy(() => import('./responses').then(m => ({ default: m.StackRenderer })));
 const DevLogRenderer = lazy(() => import('./responses').then(m => ({ default: m.DevLogRenderer })));
-const ComponentRenderer = lazy(() => import('./responses').then(m => ({ default: m.ComponentRenderer })));
+const FeatureRenderer = lazy(() => import('./responses').then(m => ({ default: m.FeatureRenderer })));
 const SubtasksRenderer = lazy(() => import('./responses').then(m => ({ default: m.SubtasksRenderer })));
 const BatchCommandsRenderer = lazy(() => import('./responses').then(m => ({ default: m.BatchCommandsRenderer })));
 const NotificationsRenderer = lazy(() => import('./responses').then(m => ({ default: m.NotificationsRenderer })));
@@ -23,6 +27,8 @@ const HelpRenderer = lazy(() => import('./responses').then(m => ({ default: m.He
 const ThemesRenderer = lazy(() => import('./responses').then(m => ({ default: m.ThemesRenderer })));
 const NewsRenderer = lazy(() => import('./responses').then(m => ({ default: m.NewsRenderer })));
 const ProjectsRenderer = lazy(() => import('./responses').then(m => ({ default: m.ProjectsRenderer })));
+const AIResponseRenderer = lazy(() => import('./responses').then(m => ({ default: m.AIResponseRenderer })));
+const UsageRenderer = lazy(() => import('./responses').then(m => ({ default: m.UsageRenderer })));
 
 // Lazy load wizards
 const EditWizard = lazy(() => import('./EditWizard'));
@@ -37,6 +43,75 @@ const LoadingFallback: React.FC = () => (
   </div>
 );
 
+// AI Thinking/Streaming skeleton with elapsed time and live text
+const AIThinkingSkeleton: React.FC<{ timestamp: Date; onStop?: () => void; streamingText?: string }> = ({ timestamp, onStop, streamingText }) => {
+  const [elapsed, setElapsed] = useState(0);
+  const [dots, setDots] = useState('.');
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const elapsedMs = now - timestamp.getTime();
+      setElapsed(elapsedMs);
+
+      // Cycle through dots: . -> .. -> ...
+      setDots(prev => {
+        if (prev === '.') return '..';
+        if (prev === '..') return '...';
+        return '.';
+      });
+    }, 500); // Update every 500ms
+
+    return () => clearInterval(interval);
+  }, [timestamp]);
+
+  const formatElapsed = (ms: number) => {
+    if (ms < 1000) return `${Math.round(ms)}ms`;
+    return `${Math.round(ms / 1000)}s`;
+  };
+
+  const hasText = streamingText && streamingText.length > 0;
+
+  return (
+    <div className={`mt-3 rounded-lg border-2 border-accent/30 bg-accent/5 overflow-hidden ${!hasText ? 'animate-pulse' : ''}`}>
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-2 bg-accent/10 border-b border-accent/20">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-bold">AI</span>
+          <span className="text-xs text-base-content/40 font-mono">
+            {hasText ? `Streaming... (${formatElapsed(elapsed)})` : `Thinking${dots.padEnd(3, '\u00A0')} (${formatElapsed(elapsed)})`}
+          </span>
+          {hasText && (
+            <span className="inline-block w-1.5 h-4 bg-primary/70 animate-pulse rounded-sm" />
+          )}
+        </div>
+        {onStop && (
+          <button
+            onClick={onStop}
+            className="btn btn-xs btn-ghost text-error hover:bg-error/20 border border-error/30"
+          >
+            Stop
+          </button>
+        )}
+      </div>
+
+      {/* Content: live streaming text or skeleton bars */}
+      <div className="px-4 py-3">
+        {hasText ? (
+          <div className="text-base text-base-content/90 leading-relaxed whitespace-pre-wrap font-sans">
+            {streamingText}
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <div className="h-3 bg-base-300/50 rounded w-3/4"></div>
+            <div className="h-3 bg-base-300/50 rounded w-1/2"></div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 interface CommandResponseProps {
   entryId: string;
   response: CommandResponseType;
@@ -48,7 +123,15 @@ interface CommandResponseProps {
   onDirectThemeChange?: (themeName: string) => Promise<void>;
   onWizardComplete?: (entryId: string, wizardData: Record<string, any>) => void;
   onSelectorTransition?: (entryId: string, itemType: string, itemId: string) => Promise<void>;
+  onAIConfirm?: (actions: AIAction[]) => void;
+  onAICancel?: () => void;
+  onAIRetry?: (command: string) => void;
+  onCommandExecute?: (command: string) => void;
   fromStorage?: boolean;
+  isStreaming?: boolean;
+  streamingText?: string;
+  userName?: string;
+  onStopAI?: () => void;
 }
 
 const CommandResponse: React.FC<CommandResponseProps> = ({
@@ -59,10 +142,18 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
   onProjectSelect,
   currentProjectId,
   onCommandClick,
+  onCommandExecute,
   onDirectThemeChange,
   onWizardComplete,
   onSelectorTransition,
-  fromStorage
+  onAIConfirm,
+  onAICancel,
+  onAIRetry,
+  fromStorage,
+  isStreaming,
+  streamingText,
+  userName,
+  onStopAI
 }) => {
   const navigate = useNavigate();
 
@@ -86,7 +177,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
       if (wizardType?.includes('todo')) return '/todos';
       if (wizardType?.includes('note')) return '/notes';
       if (wizardType?.includes('devlog')) return '/devlog';
-      if (wizardType?.includes('component')) return '/components';
+      if (wizardType?.includes('feature')) return '/features';
       if (wizardType === 'new_project') return '/projects';
       return '/';
     };
@@ -257,6 +348,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
         try {
           await authAPI.updateTheme(themeName);
         } catch (error) {
+          toast.error('Failed to save theme preference. It will be applied for this session but may not persist.');
         }
 
         // Apply the theme
@@ -329,6 +421,8 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
         return '📊';
       case 'prompt':
         return '❓';
+      case 'ai':
+        return '🤖';
       default:
         return '•';
     }
@@ -336,6 +430,27 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
 
   const renderData = () => {
     if (!response.data) return null;
+
+    // AI response rendering
+    if (response.data.aiResponse) {
+      // During streaming, show live text or skeleton
+      if (isStreaming) {
+        return <AIThinkingSkeleton timestamp={timestamp} onStop={onStopAI} streamingText={streamingText} />;
+      }
+
+      return (
+        <Suspense fallback={<LoadingFallback />}>
+          <AIResponseRenderer
+            aiResponse={response.data.aiResponse}
+            currentProjectId={currentProjectId}
+            onConfirm={(actions) => onAIConfirm?.(actions)}
+            onCancel={() => onAICancel?.()}
+            onRetry={onAIRetry ? () => onAIRetry(command) : undefined}
+            fromStorage={fromStorage}
+          />
+        </Suspense>
+      );
+    }
 
     // Special handling for demo mode
     if (response.data.demo && response.data.action === 'signup_required') {
@@ -423,7 +538,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
     if (response.data.todos && Array.isArray(response.data.todos)) {
       return (
         <Suspense fallback={<LoadingFallback />}>
-          <TodosRenderer todos={response.data.todos} projectId={response.metadata?.projectId} onNavigate={handleNavigateToProject} onCommandClick={onCommandClick} />
+          <TodosRenderer todos={response.data.todos} projectId={response.metadata?.projectId} onNavigate={handleNavigateToProject} onCommandClick={onCommandClick} onCommandExecute={onCommandExecute} />
         </Suspense>
       );
     }
@@ -459,7 +574,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
     if (response.data.notes && Array.isArray(response.data.notes)) {
       return (
         <Suspense fallback={<LoadingFallback />}>
-          <NotesRenderer notes={response.data.notes} projectId={response.metadata?.projectId} onNavigate={handleNavigateToProject} onCommandClick={onCommandClick} />
+          <NotesRenderer notes={response.data.notes} projectId={response.metadata?.projectId} onNavigate={handleNavigateToProject} onCommandExecute={onCommandExecute} />
         </Suspense>
       );
     }
@@ -468,16 +583,16 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
     if (response.data.entries && Array.isArray(response.data.entries)) {
       return (
         <Suspense fallback={<LoadingFallback />}>
-          <DevLogRenderer entries={response.data.entries} projectId={response.metadata?.projectId} onNavigate={handleNavigateToProject} onCommandClick={onCommandClick} />
+          <DevLogRenderer entries={response.data.entries} projectId={response.metadata?.projectId} onNavigate={handleNavigateToProject} onCommandExecute={onCommandExecute} />
         </Suspense>
       );
     }
 
-    // Render components (features)
-    if (response.data.structure || (response.data.components && Array.isArray(response.data.components))) {
+    // Render features
+    if (response.data.structure || (response.data.features && Array.isArray(response.data.features))) {
       return (
         <Suspense fallback={<LoadingFallback />}>
-          <ComponentRenderer structure={response.data.structure} components={response.data.components} projectId={response.metadata?.projectId} onNavigate={handleNavigateToProject} onCommandClick={onCommandClick} />
+          <FeatureRenderer structure={response.data.structure} features={response.data.features} projectId={response.metadata?.projectId} onNavigate={handleNavigateToProject} onCommandClick={onCommandClick} />
         </Suspense>
       );
     }
@@ -486,7 +601,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
     if (response.data.stack) {
       return (
         <Suspense fallback={<LoadingFallback />}>
-          <StackRenderer stack={response.data.stack} projectId={response.metadata?.projectId} onNavigate={handleNavigateToProject} />
+          <StackRenderer stack={response.data.stack} projectId={response.metadata?.projectId} onNavigate={handleNavigateToProject} onCommandExecute={onCommandExecute} />
         </Suspense>
       );
     }
@@ -509,6 +624,15 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
             hasMore={response.data.hasMore || false}
             remainingCount={response.data.remainingCount || 0}
           />
+        </Suspense>
+      );
+    }
+
+    // Render AI usage stats
+    if (response.data.usageData) {
+      return (
+        <Suspense fallback={<LoadingFallback />}>
+          <UsageRenderer {...response.data.usageData} />
         </Suspense>
       );
     }
@@ -699,54 +823,16 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
 
     // Render summary
     if (response.data.summary) {
-      const [isLoadingLlm, setIsLoadingLlm] = React.useState(false);
-      const [llmGuide, setLlmGuide] = React.useState<string | null>(null);
-
       const downloadSummary = () => {
-        const blob = new Blob([response.data.summary], { type: 'text/plain' });
+        const blob = new Blob([response.data.summary], { type: 'text/markdown' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = response.data.fileName || `${response.data.projectName}-summary.txt`;
+        a.download = response.data.fileName || `${response.data.projectName}-export.md`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-      };
-
-      const fetchLlmGuide = async () => {
-        if (llmGuide) return llmGuide; // Return cached version
-
-        setIsLoadingLlm(true);
-        try {
-          // Determine entity type from response data
-          const entity = response.data.entityType || 'all';
-
-          // Build /llm command based on context
-          let llmCommand = '/llm';
-          if (entity !== 'projects' && entity !== 'all') {
-            llmCommand += ` ${entity}`;
-            if (response.metadata?.projectId) {
-              llmCommand += ` @${response.data.projectName || 'project'}`;
-            }
-          }
-
-          const result = await terminalAPI.executeCommand(llmCommand, currentProjectId);
-
-          if (result.type === 'data' && result.data?.summary) {
-            setLlmGuide(result.data.summary);
-            return result.data.summary;
-          } else {
-            toast.error('Failed to fetch LLM guide');
-            return null;
-          }
-        } catch (error) {
-          console.error('Error fetching LLM guide:', error);
-          toast.error('Failed to fetch LLM guide');
-          return null;
-        } finally {
-          setIsLoadingLlm(false);
-        }
       };
 
       const copySummaryOnly = () => {
@@ -754,110 +840,81 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
         toast.success('Summary copied to clipboard');
       };
 
-      const copyLlmOnly = async () => {
-        const guide = await fetchLlmGuide();
-        if (guide) {
-          navigator.clipboard.writeText(guide);
-          toast.success('LLM guide copied to clipboard');
-        }
-      };
-
-      const copySummaryAndLlm = async () => {
-        const guide = await fetchLlmGuide();
-        if (guide) {
-          const combined = `# Project Summary\n\n${response.data.summary}\n\n${'='.repeat(80)}\n\n${guide}`;
-          navigator.clipboard.writeText(combined);
-          toast.success('Summary + LLM guide copied to clipboard');
-        }
-      };
+      const actionLabel = response.metadata?.action === 'bridge' ? 'Bridge Protocol' : 'Project Context';
 
       return (
         <div className="mt-3 space-y-2">
-          <div className="p-3 bg-base-200 rounded-lg border-thick max-h-96 overflow-y-auto">
-            <pre className="text-xs text-base-content/80 whitespace-pre-wrap break-words font-mono">
-              {response.data.summary}
-            </pre>
-          </div>
-
-          {/* Primary action buttons - the 3 copy options (only for /summary) */}
-          {response.metadata?.action === 'summary' && (
-            <div className="flex flex-col gap-2">
-              <div className="text-xs font-semibold text-base-content/70 px-1">
-                📋 Copy Options:
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={copySummaryOnly}
-                  className="btn-primary-sm gap-2 border-thick"
-                  style={{ color: getContrastTextColor('primary') }}
-                  title="Copy just the project summary"
-                >
-                  📄 Summary Only
-                </button>
-                <button
-                  onClick={copySummaryAndLlm}
-                  disabled={isLoadingLlm}
-                  className="btn-primary-sm gap-2 border-thick"
-                  style={{ color: getContrastTextColor('primary') }}
-                  title="Copy summary + LLM command guide (best for AI assistants)"
-                >
-                  {isLoadingLlm ? '⏳ Loading...' : '🤖 Summary + LLM Guide'}
-                </button>
-                <button
-                  onClick={copyLlmOnly}
-                  disabled={isLoadingLlm}
-                  className="btn-primary-sm gap-2 border-thick"
-                  style={{ color: getContrastTextColor('primary') }}
-                  title="Copy just the LLM command guide"
-                >
-                  {isLoadingLlm ? '⏳ Loading...' : '📚 LLM Guide Only'}
-                </button>
-              </div>
+          {/* Header card */}
+          <div className="flex items-center justify-between px-4 py-3 bg-base-200/60 rounded-lg border-thick border-l-4 border-l-primary">
+            <div className="flex items-center gap-2">
+              <span className="text-base font-bold text-base-content">{actionLabel}</span>
+              {response.data.projectName && (
+                <span className="text-xs font-mono text-base-content/50">{response.data.projectName}</span>
+              )}
             </div>
-          )}
-
-          {/* Copy button for /llm output */}
-          {response.metadata?.action === 'llm-guide' && (
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={copySummaryOnly}
                 className="btn-primary-sm gap-2 border-thick"
                 style={{ color: getContrastTextColor('primary') }}
-                title="Copy LLM guide to clipboard"
+                title={`Copy ${actionLabel.toLowerCase()} to clipboard`}
               >
-                📋 Copy Guide
+                📋 Copy
               </button>
-            </div>
-          )}
-
-          {/* Secondary actions */}
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={downloadSummary}
-              className="btn-sm gap-2 border-thick bg-base-300 hover:bg-base-content/10"
-            >
-              📥 Download
-            </button>
-            {response.metadata?.projectId && (
               <button
-                onClick={() => handleNavigateToProject('/notes')}
-                className="btn-sm gap-2 border-thick bg-base-300 hover:bg-base-content/10"
+                onClick={downloadSummary}
+                className="btn-sm gap-2 border-thick bg-base-300 hover:bg-base-content/10 rounded-lg"
               >
-                📁 Open Project
+                📥 Download
               </button>
-            )}
-          {response.data.textMetrics && (
-            <div className="text-xs text-base-content/70 bg-base-300/50 px-3 py-2 rounded border border-base-content/10">
-              📊 <span className="font-semibold">{response.data.textMetrics.characterCount.toLocaleString()}</span> characters • ~<span className="font-semibold">{response.data.textMetrics.estimatedTokens.toLocaleString()}</span> tokens
             </div>
-          )}
           </div>
 
-          {response.metadata?.action === 'summary' && (
-            <div className="text-xs text-base-content/60 bg-info/10 border border-info/30 rounded px-3 py-2">
-              💡 <strong>For AI Assistants:</strong> Use "Summary + LLM Guide" to get both project context and command syntax in one copy.
-            </div>
-          )}
+          {/* Markdown content */}
+          <div className="p-5 bg-base-200/60 rounded-lg border-thick max-h-[32rem] overflow-y-auto prose max-w-none
+            prose-headings:mt-5 prose-headings:mb-3
+            prose-h2:text-xl prose-h2:font-bold prose-h3:text-lg prose-h3:font-semibold
+            prose-p:my-2 prose-p:leading-relaxed
+            prose-code:before:content-none prose-code:after:content-none
+            prose-pre:bg-base-300 prose-pre:border-thick prose-pre:rounded-lg prose-pre:my-3
+            prose-ul:my-3 prose-ol:my-3 prose-li:my-1.5 prose-li:leading-relaxed
+            prose-a:no-underline hover:prose-a:underline
+            prose-hr:border-base-content/10 prose-hr:my-4
+            prose-blockquote:border-l-4 prose-blockquote:border-l-base-content/20 prose-blockquote:bg-base-300/50 prose-blockquote:rounded-r-lg prose-blockquote:py-2 prose-blockquote:px-4 prose-blockquote:not-italic
+          ">
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={{
+                code: ({ children, className }) => {
+                  if (className) return <code className={className}>{children}</code>;
+                  const text = String(children).trim().toLowerCase();
+                  // Status/priority → solid bg fills
+                  const colorMap: Record<string, string> = {
+                    high: 'error', medium: 'warning', low: 'info',
+                    completed: 'success', in_progress: 'info',
+                    blocked: 'error', not_started: 'neutral', review: 'warning',
+                  };
+                  const color = colorMap[text];
+                  if (color) return <code className={`badge badge-md px-3 py-1 font-mono bg-${color} border-${color}`} style={{ color: getContrastTextColor(color) }}>{children}</code>;
+                  // Date-like values
+                  if (/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(text)) return <code className="badge badge-md px-3 py-1 font-mono bg-secondary border-secondary" style={{ color: getContrastTextColor('secondary') }}>{children}</code>;
+                  // Category paths (frontend/component) — use actual category color
+                  if (text.includes('/')) {
+                    const cat = text.split('/')[0];
+                    const catConfig = FEATURE_CATEGORIES[cat as keyof typeof FEATURE_CATEGORIES];
+                    const catColor = catConfig?.color || undefined;
+                    return <code className="badge badge-md px-3 py-1 font-mono" style={catColor ? { backgroundColor: catColor, borderColor: catColor, color: getContrastTextColor(catColor) } : { color: getContrastTextColor('accent') }}>{children}</code>;
+                  }
+                  // Version strings
+                  if (/^v\d/.test(text)) return <code className="badge badge-md px-3 py-1 font-mono bg-primary border-primary" style={{ color: getContrastTextColor('primary') }}>{children}</code>;
+                  // Default inline code
+                  return <code className="text-sm font-mono bg-base-300 px-2.5 py-1 rounded">{children}</code>;
+                }
+              }}
+            >
+              {response.data.summary}
+            </ReactMarkdown>
+          </div>
         </div>
       );
     }
@@ -872,60 +929,72 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
         return acc;
       }, {});
 
+      const typeConfig: Record<string, { icon: string; color: string; border: string }> = {
+        todo: { icon: '✅', color: 'text-success', border: 'border-success/30' },
+        note: { icon: '📝', color: 'text-secondary', border: 'border-secondary/30' },
+        devlog: { icon: '📖', color: 'text-accent', border: 'border-accent/30' },
+        feature: { icon: '🧩', color: 'text-primary', border: 'border-primary/30' },
+      };
+
       return (
         <div className="mt-3 space-y-3">
-          {Object.entries(groupedResults).map(([type, items]: [string, any]) => (
-            <div key={type} className="space-y-1">
-              <div className="text-xs font-semibold text-base-content/70 capitalize">
-                {type}s ({items.length})
-              </div>
-              <div className="space-y-1">
-                {items.map((item: any, index: number) => (
-                  <div
-                    key={index}
-                    className="p-2 bg-base-200 rounded-lg hover:bg-base-300/50 transition-colors border-thick"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-base-content/80 break-words">
-                          {item.text || item.title}
-                        </div>
-                        {item.preview && (
-                          <div className="text-xs text-base-content/60 mt-1 break-words">
-                            {item.preview}
+          {Object.entries(groupedResults).map(([type, items]: [string, any]) => {
+            const config = typeConfig[type] || { icon: '🔍', color: 'text-base-content/70', border: 'border-base-content/20' };
+            return (
+              <div key={type} className="space-y-1">
+                <div className={`flex items-center gap-2 text-sm font-bold ${config.color} capitalize`}>
+                  <span>{config.icon}</span>
+                  {type}s ({items.length})
+                </div>
+                <div className="space-y-1">
+                  {items.map((item: any, index: number) => (
+                    <div
+                      key={index}
+                      onClick={() => onCommandClick?.(`/view ${type} "${item.text || item.title}"`)}
+                      className={`p-2 bg-base-200 rounded-lg hover:bg-base-300/50 transition-colors border-thick cursor-pointer border-l-2 ${config.border}`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium text-base-content/80 break-words">
+                            {item.text || item.title}
                           </div>
-                        )}
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-xs text-base-content/60">
-                            📁 {item.projectName}
-                          </span>
-                          {item.priority && (
-                            <span className={`badge badge-xs ${
-                              item.priority === 'high' ? 'badge-error' :
-                              item.priority === 'medium' ? 'badge-warning' :
-                              'badge-info'
-                            }`}>
-                              {item.priority}
-                            </span>
+                          {item.preview && (
+                            <div className="text-xs text-base-content/60 mt-1 break-words">
+                              {item.preview}
+                            </div>
                           )}
-                          {item.status && (
-                            <span className="badge badge-xs badge-ghost">
-                              {item.status}
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-xs text-base-content/60">
+                              📁 {item.projectName}
                             </span>
-                          )}
-                          {item.docType && (
-                            <span className="badge badge-xs badge-secondary">
-                              {item.docType}
-                            </span>
-                          )}
+                            {item.priority && (
+                              <span className={`badge badge-xs ${
+                                item.priority === 'high' ? 'badge-error' :
+                                item.priority === 'medium' ? 'badge-warning' :
+                                'badge-info'
+                              }`}>
+                                {item.priority}
+                              </span>
+                            )}
+                            {item.status && (
+                              <span className="badge badge-xs badge-ghost">
+                                {item.status}
+                              </span>
+                            )}
+                            {item.docType && (
+                              <span className="badge badge-xs badge-secondary">
+                                {item.docType}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       );
     }
@@ -1036,15 +1105,16 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
       if (isCompleted) {
         return (
           <div className="mt-3 space-y-4">
-            <div className="p-6 bg-success/10 rounded-lg border-2 border-success/30 text-center">
-              <div className="text-5xl mb-4">✅</div>
-              <h3 className="text-xl font-bold mb-2">Project Created Successfully!</h3>
-              <p className="text-sm text-base-content/70 mb-4">
-                Your new project has been created.
-              </p>
+            <div className="p-4 bg-success/10 rounded-lg border-thick border-l-4 border-l-success">
+              <div className="flex items-center gap-3 mb-3">
+                <svg className="w-6 h-6 text-success flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <h3 className="text-base font-bold">Project Created Successfully!</h3>
+              </div>
 
               {/* Show created data preview */}
-              <div className="p-4 bg-base-200 rounded-lg border-thick text-left mb-4">
+              <div className="p-3 bg-base-200 rounded-lg border-thick mb-3">
                 <div className="text-xs font-semibold text-base-content/60 mb-2">Created:</div>
                 <div className="space-y-1">
                   {Object.entries(wizardData).filter(([key]) => key !== 'tags').map(([key, value]) => {
@@ -1088,24 +1158,8 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
 
       return (
         <div className="mt-3 space-y-4">
-          {/* Progress indicator */}
-          <div className="flex items-center justify-between">
-            <div className="text-xs text-base-content/60">
-              Step {currentStep + 1} of {steps.length}
-            </div>
-            <div className="flex gap-1">
-              {steps.map((_: any, idx: number) => (
-                <div
-                  key={idx}
-                  className={`w-2 h-2 rounded-full ${
-                    idx === currentStep ? 'bg-primary' :
-                    idx < currentStep ? 'bg-success' :
-                    'bg-base-300'
-                  }`}
-                />
-              ))}
-            </div>
-          </div>
+          {/* Progress stepper */}
+          <WizardStepper steps={steps} currentStep={currentStep} title="New Project" />
 
           {/* Step content */}
           <div className="p-4 bg-base-200 rounded-lg border-thick">
@@ -1120,7 +1174,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                 value={wizardData[step.id] || step.defaultValue || ''}
                 onChange={(e) => setWizardData({ ...wizardData, [step.id]: e.target.value })}
                 placeholder={step.placeholder}
-                className="input input-bordered w-full"
+                className="input input-bordered w-full border-thick focus:border-primary"
               />
             )}
 
@@ -1218,7 +1272,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                   <div className="space-y-2">
                     <div className="text-xs font-semibold text-base-content/70">Current Relationships</div>
                     {(wizardData[step.id] || step.value || []).map((rel: any, index: number) => {
-                      const targetComp = (step as any).availableComponents?.find((c: any) => c.id === rel.targetId);
+                      const targetComp = (step as any).availableFeatures?.find((c: any) => c.id === rel.targetId);
                       return (
                         <div key={rel.id || index} className="bg-base-300 p-2 rounded flex items-center justify-between gap-2">
                           <div className="flex-1 min-w-0">
@@ -1254,7 +1308,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                       onChange={(e) => {
                         if (!e.target.value) return;
                         const targetId = e.target.value;
-                        const targetComp = (step as any).availableComponents?.find((c: any) => c.id === targetId);
+                        const targetComp = (step as any).availableFeatures?.find((c: any) => c.id === targetId);
 
                         // Initialize temp relationship data
                         const tempData = {
@@ -1266,8 +1320,8 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                         setWizardData({ ...wizardData, [`${step.id}_temp`]: tempData });
                       }}
                     >
-                      <option value="">Select component...</option>
-                      {(step as any).availableComponents?.map((comp: any) => (
+                      <option value="">Select feature...</option>
+                      {(step as any).availableFeatures?.map((comp: any) => (
                         <option key={comp.id} value={comp.id}>
                           {comp.category} • {comp.title}
                         </option>
@@ -1393,8 +1447,8 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
       );
     }
 
-    // Render wizard for adding/editing todos, notes, devlog, components, stack items, subtasks, and relationships
-    if (['add_todo', 'add_note', 'add_devlog', 'add_component', 'add_stack', 'add_subtask', 'add_relationship', 'edit_relationship_type'].includes(response.data.wizardType) && response.data.steps) {
+    // Render wizard for adding/editing todos, notes, devlog, features, stack items, subtasks, and relationships
+    if (['add_todo', 'add_note', 'add_devlog', 'add_feature', 'add_stack', 'add_subtask', 'add_relationship', 'edit_relationship_type'].includes(response.data.wizardType) && response.data.steps) {
       // If loaded from storage, show archived/readonly summary instead
       if (fromStorage) {
         return renderArchivedWizard();
@@ -1450,12 +1504,12 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
 
           // Special handling for edit_relationship_type
           if (wizardType === 'edit_relationship_type') {
-            const componentTitle = response.data.componentTitle;
+            const featureTitle = response.data.featureTitle;
             const targetTitle = response.data.targetTitle;
             const relationType = wizardData.relationType || steps[0]?.value;
             const description = wizardData.description || '';
 
-            command = `/edit relationship "${escapeForCommand(componentTitle)}" "${escapeForCommand(targetTitle)}" ${relationType}`;
+            command = `/edit relationship "${escapeForCommand(featureTitle)}" "${escapeForCommand(targetTitle)}" ${relationType}`;
             if (description) {
               command += ` --description="${escapeForCommand(description)}"`;
             }
@@ -1465,7 +1519,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
               'add_todo': 'add todo',
               'add_note': 'add note',
               'add_devlog': 'add devlog',
-              'add_component': 'add component',
+              'add_feature': 'add feature',
               'add_stack': 'add stack',
               'add_subtask': 'add subtask',
               'add_relationship': 'add relationship'
@@ -1528,7 +1582,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
             return '/notes';
           case 'add_devlog':
             return '/notes?section=devlog';
-          case 'add_component':
+          case 'add_feature':
           case 'add_relationship':
           case 'edit_relationship_type':
             return '/features';
@@ -1550,8 +1604,8 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
             return 'Note';
           case 'add_devlog':
             return 'Dev Log Entry';
-          case 'add_component':
-            return 'Component';
+          case 'add_feature':
+            return 'Feature';
           case 'add_relationship':
             return 'Relationship';
           case 'edit_relationship_type':
@@ -1567,16 +1621,17 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
       if (isCompleted) {
         return (
           <div className="mt-3 space-y-4">
-            <div className="p-6 bg-success/10 rounded-lg border-2 border-success/30 text-center">
-              <div className="text-5xl mb-4">✅</div>
-              <h3 className="text-xl font-bold mb-2">{response.data.wizardType === 'edit_relationship_type' ? 'Updated Successfully!' : 'Created Successfully!'}</h3>
-              <p className="text-sm text-base-content/70 mb-4">
-                Your {getItemTypeName().toLowerCase()} has been {response.data.wizardType === 'edit_relationship_type' ? 'updated' : 'created'}.
-              </p>
+            <div className="p-4 bg-success/10 rounded-lg border-thick border-l-4 border-l-success">
+              <div className="flex items-center gap-3 mb-3">
+                <svg className="w-6 h-6 text-success flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <h3 className="text-base font-bold">{response.data.wizardType === 'edit_relationship_type' ? 'Updated Successfully!' : 'Created Successfully!'}</h3>
+              </div>
 
               {/* Show created data preview */}
               {responseData && Object.keys(responseData).length > 0 && (
-                <div className="p-4 bg-base-200 rounded-lg border-thick text-left mb-4">
+                <div className="p-3 bg-base-200 rounded-lg border-thick mb-3">
                   <div className="text-xs font-semibold text-base-content/60 mb-2">Created:</div>
                   <div className="space-y-1">
                     {Object.entries(responseData).map(([key, value]) => {
@@ -1606,7 +1661,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                 className="btn btn-primary w-full border-thick"
                 style={{ color: getContrastTextColor('primary') }}
               >
-                {response.data.wizardType === 'edit_relationship_type' ? 'View Components' : `View ${getItemTypeName()}s Page`}
+                {response.data.wizardType === 'edit_relationship_type' ? 'View Features' : `View ${getItemTypeName()}s Page`}
               </button>
             </div>
           </div>
@@ -1615,24 +1670,8 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
 
       return (
         <div className="mt-3 space-y-4">
-          {/* Progress indicator */}
-          <div className="flex items-center justify-between">
-            <div className="text-xs text-base-content/60">
-              Step {currentStep + 1} of {steps.length}
-            </div>
-            <div className="flex gap-1">
-              {steps.map((_step: any, idx: number) => (
-                <div
-                  key={idx}
-                  className={`w-2 h-2 rounded-full ${
-                    idx === currentStep ? 'bg-primary' :
-                    idx < currentStep ? 'bg-success' :
-                    'bg-base-300'
-                  }`}
-                />
-              ))}
-            </div>
-          </div>
+          {/* Progress stepper */}
+          <WizardStepper steps={steps} currentStep={currentStep} title={`Add ${getItemTypeName()}`} />
 
           {/* Step content */}
           <div className="p-4 bg-base-200 rounded-lg border-thick">
@@ -1644,7 +1683,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                 value={wizardData[step.id] || step.value || ''}
                 onChange={(e) => setWizardData({ ...wizardData, [step.id]: e.target.value })}
                 placeholder={step.placeholder}
-                className="input input-bordered w-full"
+                className="input input-bordered w-full border-thick focus:border-primary"
               />
             )}
 
@@ -1654,7 +1693,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                 onChange={(e) => setWizardData({ ...wizardData, [step.id]: e.target.value })}
                 placeholder={step.placeholder}
                 rows={6}
-                className="textarea textarea-bordered w-full resize-none font-mono text-sm"
+                className="textarea textarea-bordered w-full resize-none font-mono text-sm border-thick focus:border-primary"
               />
             )}
 
@@ -1721,7 +1760,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
     }
 
     // Render confirmation wizard for delete operations
-    if (['delete_relationship_confirm', 'delete_todo_confirm', 'delete_note_confirm', 'delete_devlog_confirm', 'delete_component_confirm', 'delete_subtask_confirm'].includes(response.data.wizardType) && response.data.confirmationData) {
+    if (['delete_relationship_confirm', 'delete_todo_confirm', 'delete_note_confirm', 'delete_devlog_confirm', 'delete_feature_confirm', 'delete_subtask_confirm'].includes(response.data.wizardType) && response.data.confirmationData) {
       // If loaded from storage, show archived/readonly summary instead
       if (fromStorage) {
         return renderArchivedWizard();
@@ -1740,8 +1779,8 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
       );
     }
 
-    // Render wizard for editing todos, notes, devlog, components, and subtasks
-    if (['edit_todo', 'edit_note', 'edit_devlog', 'edit_component', 'edit_subtask'].includes(response.data.wizardType) && response.data.steps) {
+    // Render wizard for editing todos, notes, devlog, features, and subtasks
+    if (['edit_todo', 'edit_note', 'edit_devlog', 'edit_feature', 'edit_subtask'].includes(response.data.wizardType) && response.data.steps) {
       // If loaded from storage, show archived/readonly summary instead
       if (fromStorage) {
         return renderArchivedWizard();
@@ -1761,7 +1800,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
       );
     }
 
-    // Render wizard for delete/edit selectors (delete_component_selector, edit_note_selector, etc.)
+    // Render wizard for delete/edit selectors (delete_feature_selector, edit_note_selector, etc.)
     if (response.data.wizardType?.includes('_selector') && response.data.steps) {
       // If loaded from storage, show archived/readonly summary instead
       if (fromStorage) {
@@ -2355,19 +2394,19 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
     }
 
     // Render relationships list
-    if (response.data.component && response.data.relationships && Array.isArray(response.data.relationships)) {
-      const { component, relationships } = response.data;
+    if (response.data.feature && response.data.relationships && Array.isArray(response.data.relationships)) {
+      const { feature, relationships } = response.data;
       return (
         <div className="mt-3 space-y-2">
           <div className="text-xs text-base-content/60 mb-2">
-            Showing relationships for: <span className="font-semibold">{component.title}</span> ({component.category})
+            Showing relationships for: <span className="font-semibold">{feature.title}</span> ({feature.category})
           </div>
           {relationships.length > 0 ? (
             <div className="space-y-1">
               {relationships.map((rel: any, index: number) => (
                 <button
                   key={rel.id || index}
-                  onClick={() => onCommandClick?.(`/edit relationship "${component.title}" "${rel.target?.title || 'Unknown'}"`)}
+                  onClick={() => onCommandClick?.(`/edit relationship "${feature.title}" "${rel.target?.title || 'Unknown'}"`)}
                   className="w-full text-left p-2 bg-base-200 rounded-lg border-thick hover:bg-primary/10 hover:border-primary/50 transition-colors cursor-pointer"
                 >
                   <div className="flex items-start gap-2">
@@ -2458,18 +2497,45 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
     );
   };
 
+  // Conversation separator — render as a thin centered divider
+  if (!command && response.type === 'info' && response.message?.includes('New conversation')) {
+    return (
+      <div className="flex items-center gap-3 my-4 px-4">
+        <div className="flex-1 h-px bg-base-content/15"></div>
+        <span className="text-xs text-base-content/30 font-mono whitespace-nowrap">{response.message}</span>
+        <div className="flex-1 h-px bg-base-content/15"></div>
+      </div>
+    );
+  }
+
+  const isAI = response.type === 'ai';
+
   return (
     <div className="animate-fade-in">
       {/* Command echo */}
-      <div className="inline-flex items-start gap-2 mb-2 border-thick p-2 rounded-lg bg-base-200 ">
-        <div className="text-xs text-base-content/80 font-mono font-semibold flex-shrink-0">
-          {timestamp.toLocaleTimeString()}
+      {isAI ? (
+        <div className="inline-flex items-start gap-2 mb-2 p-2 rounded-lg bg-accent/10 border border-accent/20">
+          <div className="text-sm text-base-content/50 font-mono flex-shrink-0">
+            {timestamp.toLocaleTimeString()}
+          </div>
+          <span className="text-sm flex-shrink-0">👤 {userName || 'User'}:</span>
+          <span className="text-sm text-base-content/70 flex-1 break-all">{command}</span>
         </div>
-        <div className="text-xs text-base-content/80 font-mono font-semibold flex-shrink-0">$</div>
-        <code className="text-xs font-mono font-semibold text-base-content/80 flex-1 break-all">{command}</code>
-      </div>
+      ) : (
+        <div className="inline-flex items-start gap-2 mb-2 border-thick p-2 rounded-lg bg-base-200 ">
+          <div className="text-sm text-base-content/80 font-mono font-bold flex-shrink-0">
+            {timestamp.toLocaleTimeString()}
+          </div>
+          <div className="text-sm text-primary font-mono font-bold flex-shrink-0">$</div>
+          <code className="text-sm font-mono font-bold text-base-content/80 flex-1 break-all">{command}</code>
+        </div>
+      )}
 
-      {/* Response */}
+      {/* AI responses — render only the AI card, skip the outer message box */}
+      {isAI ? (
+        <div>{renderData()}</div>
+      ) : (
+      /* Response */
       <div className="bg-base-100 p-4 rounded-lg border-thick">
         <div className="w-full">
           <div className="flex items-start gap-2">
@@ -2558,7 +2624,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                       </svg>
                       View Stack
                     </button>
-                  ) : command.toLowerCase().includes('delete component') || command.toLowerCase().includes('add component') || command.toLowerCase().includes('edit component') ? (
+                  ) : command.toLowerCase().includes('delete feature') || command.toLowerCase().includes('add feature') || command.toLowerCase().includes('edit feature') || command.toLowerCase().includes('delete component') || command.toLowerCase().includes('add component') || command.toLowerCase().includes('edit component') ? (
                     <button
                       onClick={() => handleNavigateToProject('/features')}
                       className="btn-primary-sm gap-2 border-thick"
@@ -2622,7 +2688,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
                       <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                       </svg>
-                      View Components
+                      View Features
                     </button>
                   ) : (
                     <button
@@ -2690,6 +2756,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 };

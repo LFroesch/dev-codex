@@ -36,27 +36,27 @@ export interface BaseDevLogEntry {
   updatedBy?: string | { _id: string; firstName: string; lastName: string };
 }
 
-export type ComponentCategory = 'frontend' | 'backend' | 'database' | 'infrastructure' | 'security' | 'api' | 'documentation' | 'asset';
+export type FeatureCategory = 'frontend' | 'backend' | 'database' | 'infrastructure' | 'security' | 'api' | 'documentation' | 'asset';
 
 export type RelationshipType = 'uses' | 'depends_on';
 
-export interface ComponentRelationship {
+export interface FeatureRelationship {
   id: string;
   targetId: string;
   relationType: RelationshipType;
   description?: string;
 }
 
-export interface BaseComponent {
+export interface BaseFeature {
   id: string;
-  category: ComponentCategory;
+  category: FeatureCategory;
   type: string; // Flexible type based on category (e.g., 'service', 'route', 'page', 'component')
   title: string;
   content: string;
-  feature: string; // Feature name is required - components belong to features
+  group: string; // Group name is required - features belong to groups
   filePath?: string; // Optional: link to actual codebase files
   tags?: string[]; // Additional flexible tagging
-  relationships?: ComponentRelationship[]; // Manual relationships between components
+  relationships?: FeatureRelationship[]; // Manual relationships between features
   metadata?: Record<string, any>; // Template-populated or custom metadata
   createdAt: string;
   updatedAt: string;
@@ -82,7 +82,7 @@ export interface BaseProject {
   notes: BaseNote[];
   todos: BaseTodo[];
   devLog: BaseDevLogEntry[];
-  components: BaseComponent[]; // Renamed from docs to components
+  features: BaseFeature[];
   stack: BaseStackItem[]; // Unified tech stack
   stagingEnvironment: 'development' | 'staging' | 'production';
   color: string;
@@ -134,7 +134,7 @@ export interface ProjectTeamData {
 export interface ProjectVisibility {
   description: boolean;
   tags: boolean;
-  components: boolean; // Renamed from docs
+  features: boolean;
   techStack: boolean;
   timestamps: boolean;
 }
@@ -187,27 +187,27 @@ export interface UpdateDevLogData {
   description?: string;
 }
 
-export interface CreateComponentData {
-  category: ComponentCategory;
+export interface CreateFeatureData {
+  category: FeatureCategory;
   type: string;
   title: string;
   content: string;
-  feature: string; // Feature is required when creating components
+  group: string; // Group is required when creating features
   filePath?: string;
   tags?: string[];
-  relationships?: ComponentRelationship[];
+  relationships?: FeatureRelationship[];
   metadata?: Record<string, any>;
 }
 
-export interface UpdateComponentData {
-  category?: ComponentCategory;
+export interface UpdateFeatureData {
+  category?: FeatureCategory;
   type?: string;
   title?: string;
   content?: string;
-  feature?: string;
+  group?: string;
   filePath?: string;
   tags?: string[];
-  relationships?: ComponentRelationship[];
+  relationships?: FeatureRelationship[];
   metadata?: Record<string, any>;
 }
 

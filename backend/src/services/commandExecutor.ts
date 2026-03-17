@@ -1,9 +1,9 @@
 import { CommandParser, CommandType, ParsedCommand } from './commandParser';
-import { logInfo, logError } from '../config/logger';
+import { logDebug, logError } from '../config/logger';
 import { TodoHandlers } from './handlers/crud/TodoHandlers';
 import { NoteHandlers } from './handlers/crud/NoteHandlers';
 import { DevLogHandlers } from './handlers/crud/DevLogHandlers';
-import { ComponentHandlers } from './handlers/crud/ComponentHandlers';
+import { FeatureHandlers } from './handlers/crud/FeatureHandlers';
 import { RelationshipHandlers } from './handlers/crud/RelationshipHandlers';
 import { SearchHandlers } from './handlers/crud/SearchHandlers';
 import { StackHandlers } from './handlers/StackHandlers';
@@ -17,22 +17,6 @@ import { Project } from '../models/Project';
 export { ResponseType, CommandResponse } from './types';
 
 /**
- * Legacy interface - kept for backward compatibility
- */
-export interface CommandResponseLegacy {
-  type: ResponseType;
-  message: string;
-  data?: any;
-  metadata?: {
-    projectId?: string;
-    projectName?: string;
-    action?: string;
-    timestamp?: Date;
-  };
-  suggestions?: string[];
-}
-
-/**
  * Command Executor Service
  * Routes commands to specialized handler modules
  */
@@ -41,7 +25,7 @@ export class CommandExecutor {
   private todoHandlers: TodoHandlers;
   private noteHandlers: NoteHandlers;
   private devLogHandlers: DevLogHandlers;
-  private componentHandlers: ComponentHandlers;
+  private featureHandlers: FeatureHandlers;
   private relationshipHandlers: RelationshipHandlers;
   private searchHandlers: SearchHandlers;
   private stackHandlers: StackHandlers;
@@ -54,7 +38,7 @@ export class CommandExecutor {
     this.todoHandlers = new TodoHandlers(userId);
     this.noteHandlers = new NoteHandlers(userId);
     this.devLogHandlers = new DevLogHandlers(userId);
-    this.componentHandlers = new ComponentHandlers(userId);
+    this.featureHandlers = new FeatureHandlers(userId);
     this.relationshipHandlers = new RelationshipHandlers(userId);
     this.searchHandlers = new SearchHandlers(userId);
     this.stackHandlers = new StackHandlers(userId);
@@ -274,16 +258,26 @@ export class CommandExecutor {
       };
     }
 
+    // Sort delete commands in reverse index order so earlier deletes don't
+    // shift the indexes of later ones (e.g. delete #9 before #8 before #7)
+    const sorted = [...commands].sort((a, b) => {
+      const delPattern = /^\/delete\s+\w+\s+'(\d+)'/;
+      const aMatch = a.match(delPattern);
+      const bMatch = b.match(delPattern);
+      if (aMatch && bMatch) return Number(bMatch[1]) - Number(aMatch[1]);
+      return 0;
+    });
+
     const results: CommandResponse[] = [];
     let hasError = false;
 
-    logInfo('Executing batch commands', {
+    logDebug('Executing batch commands', {
       userId: this.userId,
-      count: commands.length
+      count: sorted.length
     });
 
-    for (let i = 0; i < commands.length; i++) {
-      const command = commands[i];
+    for (let i = 0; i < sorted.length; i++) {
+      const command = sorted[i];
       const result = await this.executeSingle(command, currentProjectId);
       results.push(result);
 
@@ -341,7 +335,7 @@ export class CommandExecutor {
       };
     }
 
-    logInfo('Executing command', {
+    logDebug('Executing command', {
       userId: this.userId,
       type: parsed.type,
       command: parsed.command
@@ -354,7 +348,7 @@ export class CommandExecutor {
       CommandType.ADD_SUBTASK, CommandType.EDIT_SUBTASK, CommandType.DELETE_SUBTASK,
       CommandType.ADD_NOTE, CommandType.EDIT_NOTE, CommandType.DELETE_NOTE,
       CommandType.ADD_DEVLOG, CommandType.EDIT_DEVLOG, CommandType.DELETE_DEVLOG,
-      CommandType.ADD_COMPONENT, CommandType.EDIT_COMPONENT, CommandType.DELETE_COMPONENT,
+      CommandType.ADD_FEATURE, CommandType.EDIT_FEATURE, CommandType.DELETE_FEATURE,
       CommandType.ADD_RELATIONSHIP, CommandType.EDIT_RELATIONSHIP, CommandType.DELETE_RELATIONSHIP,
       CommandType.ADD_STACK, CommandType.REMOVE_STACK,
       CommandType.INVITE_MEMBER, CommandType.REMOVE_MEMBER,
@@ -432,15 +426,15 @@ export class CommandExecutor {
         case CommandType.DELETE_DEVLOG:
           return await this.devLogHandlers.handleDeleteDevLog(parsed, currentProjectId);
 
-        // Component operations
-        case CommandType.ADD_COMPONENT:
-          return await this.componentHandlers.handleAddComponent(parsed, currentProjectId);
-        case CommandType.VIEW_COMPONENTS:
-          return await this.componentHandlers.handleViewComponents(parsed, currentProjectId);
-        case CommandType.EDIT_COMPONENT:
-          return await this.componentHandlers.handleEditComponent(parsed, currentProjectId);
-        case CommandType.DELETE_COMPONENT:
-          return await this.componentHandlers.handleDeleteComponent(parsed, currentProjectId);
+        // Feature operations
+        case CommandType.ADD_FEATURE:
+          return await this.featureHandlers.handleAddFeature(parsed, currentProjectId);
+        case CommandType.VIEW_FEATURES:
+          return await this.featureHandlers.handleViewFeatures(parsed, currentProjectId);
+        case CommandType.EDIT_FEATURE:
+          return await this.featureHandlers.handleEditFeature(parsed, currentProjectId);
+        case CommandType.DELETE_FEATURE:
+          return await this.featureHandlers.handleDeleteFeature(parsed, currentProjectId);
 
         // Relationship operations
         case CommandType.ADD_RELATIONSHIP:
@@ -497,12 +491,10 @@ export class CommandExecutor {
           return this.utilityHandlers.handleHelp(parsed);
         case CommandType.SWAP_PROJECT:
           return await this.utilityHandlers.handleSwapProject(parsed);
-        case CommandType.EXPORT:
-          return await this.utilityHandlers.handleExport(parsed, currentProjectId);
-        case CommandType.SUMMARY:
-          return await this.utilityHandlers.handleSummary(parsed, currentProjectId);
         case CommandType.VIEW_NEWS:
           return await this.utilityHandlers.handleViewNews();
+        case CommandType.SET_AI:
+          return await this.settingsHandlers.handleSetAI(parsed);
         case CommandType.SET_THEME:
           return await this.utilityHandlers.handleSetTheme(parsed);
         case CommandType.VIEW_THEMES:
@@ -516,7 +508,12 @@ export class CommandExecutor {
         case CommandType.ACTIVITY_LOG:
           return await this.utilityHandlers.handleActivityLog(parsed, currentProjectId);
         case CommandType.LLM_CONTEXT:
-          return await this.utilityHandlers.handleLLMContext();
+        case CommandType.BRIDGE:
+          return await this.utilityHandlers.handleBridge(parsed, currentProjectId);
+        case CommandType.CONTEXT:
+          return await this.utilityHandlers.handleContext(parsed, currentProjectId);
+        case CommandType.AI_USAGE:
+          return await this.utilityHandlers.handleAIUsage();
         case CommandType.GOTO:
           return await this.utilityHandlers.handleGoto(parsed, currentProjectId);
         case CommandType.TODAY:

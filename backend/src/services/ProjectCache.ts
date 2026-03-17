@@ -1,4 +1,4 @@
-import { logInfo, logWarn } from '../config/logger';
+import { logDebug } from '../config/logger';
 
 interface CacheEntry<T> {
   data: T;
@@ -70,7 +70,7 @@ export class ProjectCache {
       const firstKey = this.cache.keys().next().value;
       if (firstKey) {
         this.cache.delete(firstKey);
-        logWarn('Project cache evicted oldest entry (max size reached)');
+        logDebug('Project cache evicted oldest entry (max size reached)');
       }
     }
 
@@ -87,7 +87,7 @@ export class ProjectCache {
    */
   invalidate(userId: string): void {
     this.cache.delete(userId);
-    logInfo('Project cache invalidated', { userId });
+    logDebug('Project cache invalidated', { userId });
   }
 
   /**
@@ -105,7 +105,7 @@ export class ProjectCache {
     }
 
     if (invalidatedCount > 0) {
-      logInfo('Project cache invalidated for project', { projectId, usersAffected: invalidatedCount });
+      logDebug('Project cache invalidated for project', { projectId, usersAffected: invalidatedCount });
     }
   }
 
@@ -117,7 +117,7 @@ export class ProjectCache {
     this.cache.clear();
     this.hits = 0;
     this.misses = 0;
-    logInfo('Project cache cleared', { entriesCleared: size });
+    logDebug('Project cache cleared', { entriesCleared: size });
   }
 
   /**
@@ -135,7 +135,7 @@ export class ProjectCache {
     }
 
     if (cleanedCount > 0) {
-      logInfo('Project cache cleanup', { entriesRemoved: cleanedCount });
+      logDebug('Project cache cleanup', { entriesRemoved: cleanedCount });
     }
   }
 
@@ -167,7 +167,7 @@ export class ProjectCache {
       this.cleanupInterval = null;
     }
     this.clear();
-    logInfo('Project cache destroyed and resources cleaned up');
+    logDebug('Project cache destroyed and resources cleaned up');
   }
 }
 

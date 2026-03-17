@@ -1,4 +1,4 @@
-import { logInfo, logError } from '../config/logger';
+import { logDebug, logError } from '../config/logger';
 
 /**
  * Supported command types
@@ -7,11 +7,11 @@ export enum CommandType {
   ADD_TODO = 'add_todo',
   ADD_NOTE = 'add_note',
   ADD_DEVLOG = 'add_devlog',
-  ADD_COMPONENT = 'add_component',
+  ADD_FEATURE = 'add_feature',
   VIEW_NOTES = 'view_notes',
   VIEW_TODOS = 'view_todos',
   VIEW_DEVLOG = 'view_devlog',
-  VIEW_COMPONENTS = 'view_components',
+  VIEW_FEATURES = 'view_features',
   ADD_STACK = 'add_stack',
   REMOVE_STACK = 'remove_stack',
   VIEW_STACK = 'view_stack',
@@ -43,6 +43,9 @@ export enum CommandType {
   STALE_ITEMS = 'stale_items',
   LLM_CONTEXT = 'llm_context',
   ACTIVITY_LOG = 'activity_log',
+  BRIDGE = 'bridge',
+  CONTEXT = 'context',
+  AI_USAGE = 'ai_usage',
 
   // Subtask commands
   ADD_SUBTASK = 'add_subtask',
@@ -52,14 +55,14 @@ export enum CommandType {
   EDIT_TODO = 'edit_todo',
   EDIT_NOTE = 'edit_note',
   EDIT_DEVLOG = 'edit_devlog',
-  EDIT_COMPONENT = 'edit_component',
+  EDIT_FEATURE = 'edit_feature',
   EDIT_SUBTASK = 'edit_subtask',
 
   // Delete commands
   DELETE_TODO = 'delete_todo',
   DELETE_NOTE = 'delete_note',
   DELETE_DEVLOG = 'delete_devlog',
-  DELETE_COMPONENT = 'delete_component',
+  DELETE_FEATURE = 'delete_feature',
   DELETE_SUBTASK = 'delete_subtask',
 
   // Relationship commands
@@ -84,6 +87,9 @@ export enum CommandType {
   // Project management
   ADD_PROJECT = 'add_project',
   VIEW_PROJECTS = 'view_projects',
+
+  RESET_CHAT = 'reset_chat',
+  SET_AI = 'set_ai',
 
   HELP = 'help',
   UNKNOWN = 'unknown'
@@ -149,15 +155,18 @@ const COMMAND_ALIASES: Record<string, CommandType> = {
   'add devlogs': CommandType.ADD_DEVLOG,
   'add-devlog': CommandType.ADD_DEVLOG,
   'devlog': CommandType.ADD_DEVLOG,
-  'add component': CommandType.ADD_COMPONENT,
-  'add components': CommandType.ADD_COMPONENT,
-  'add-component': CommandType.ADD_COMPONENT,
+  'add feature': CommandType.ADD_FEATURE,
+  'add features': CommandType.ADD_FEATURE,
+  'add-feature': CommandType.ADD_FEATURE,
+  'add component': CommandType.ADD_FEATURE,
+  'add-component': CommandType.ADD_FEATURE,
 
   // Natural action verbs for adding
   'create todo': CommandType.ADD_TODO,
   'create note': CommandType.ADD_NOTE,
   'create devlog': CommandType.ADD_DEVLOG,
-  'create component': CommandType.ADD_COMPONENT,
+  'create feature': CommandType.ADD_FEATURE,
+  'create component': CommandType.ADD_FEATURE,
 
   // View commands - with plural/singular support
   'view notes': CommandType.VIEW_NOTES,
@@ -179,15 +188,19 @@ const COMMAND_ALIASES: Record<string, CommandType> = {
   'view-devlog': CommandType.VIEW_DEVLOG,
   'list devlog': CommandType.VIEW_DEVLOG,
   'list devlogs': CommandType.VIEW_DEVLOG,
-  'view components': CommandType.VIEW_COMPONENTS,
-  'view component': CommandType.VIEW_COMPONENTS,
-  'view-components': CommandType.VIEW_COMPONENTS,
-  'component': CommandType.VIEW_COMPONENTS,
-  'components': CommandType.VIEW_COMPONENTS,
-  'list components': CommandType.VIEW_COMPONENTS,
-  'list component': CommandType.VIEW_COMPONENTS,
-  'features': CommandType.VIEW_COMPONENTS,
-  'feature': CommandType.VIEW_COMPONENTS,
+  'view features': CommandType.VIEW_FEATURES,
+  'view feature': CommandType.VIEW_FEATURES,
+  'view-features': CommandType.VIEW_FEATURES,
+  'features': CommandType.VIEW_FEATURES,
+  'feature': CommandType.VIEW_FEATURES,
+  'list features': CommandType.VIEW_FEATURES,
+  'list feature': CommandType.VIEW_FEATURES,
+  'view components': CommandType.VIEW_FEATURES,
+  'view component': CommandType.VIEW_FEATURES,
+  'view-components': CommandType.VIEW_FEATURES,
+  'component': CommandType.VIEW_FEATURES,
+  'components': CommandType.VIEW_FEATURES,
+  'list components': CommandType.VIEW_FEATURES,
 
   // Natural viewing aliases
   'show notes': CommandType.VIEW_NOTES,
@@ -196,41 +209,47 @@ const COMMAND_ALIASES: Record<string, CommandType> = {
   'show todo': CommandType.VIEW_TODOS,
   'show devlog': CommandType.VIEW_DEVLOG,
   'show devlogs': CommandType.VIEW_DEVLOG,
-  'show components': CommandType.VIEW_COMPONENTS,
-  'show component': CommandType.VIEW_COMPONENTS,
+  'show features': CommandType.VIEW_FEATURES,
+  'show feature': CommandType.VIEW_FEATURES,
+  'show components': CommandType.VIEW_FEATURES,
   'display notes': CommandType.VIEW_NOTES,
   'display note': CommandType.VIEW_NOTES,
   'display todos': CommandType.VIEW_TODOS,
   'display todo': CommandType.VIEW_TODOS,
   'display devlog': CommandType.VIEW_DEVLOG,
   'display devlogs': CommandType.VIEW_DEVLOG,
-  'display components': CommandType.VIEW_COMPONENTS,
-  'display component': CommandType.VIEW_COMPONENTS,
+  'display features': CommandType.VIEW_FEATURES,
+  'display components': CommandType.VIEW_FEATURES,
   'ls notes': CommandType.VIEW_NOTES,
   'ls todos': CommandType.VIEW_TODOS,
   'ls devlog': CommandType.VIEW_DEVLOG,
-  'ls components': CommandType.VIEW_COMPONENTS,
+  'ls features': CommandType.VIEW_FEATURES,
+  'ls components': CommandType.VIEW_FEATURES,
 
   // Short form aliases
   't': CommandType.VIEW_TODOS,
   'n': CommandType.VIEW_NOTES,
   'dl': CommandType.VIEW_DEVLOG,
-  'c': CommandType.VIEW_COMPONENTS,
+  'f': CommandType.VIEW_FEATURES,
+  'c': CommandType.VIEW_FEATURES,
   's': CommandType.VIEW_STACK,
 
   // Natural phrases
   'show me notes': CommandType.VIEW_NOTES,
   'show me todos': CommandType.VIEW_TODOS,
   'show me devlog': CommandType.VIEW_DEVLOG,
-  'show me components': CommandType.VIEW_COMPONENTS,
+  'show me features': CommandType.VIEW_FEATURES,
+  'show me components': CommandType.VIEW_FEATURES,
   'give me notes': CommandType.VIEW_NOTES,
   'give me todos': CommandType.VIEW_TODOS,
   'give me devlog': CommandType.VIEW_DEVLOG,
-  'give me components': CommandType.VIEW_COMPONENTS,
+  'give me features': CommandType.VIEW_FEATURES,
+  'give me components': CommandType.VIEW_FEATURES,
   'get notes': CommandType.VIEW_NOTES,
   'get todos': CommandType.VIEW_TODOS,
   'get devlog': CommandType.VIEW_DEVLOG,
-  'get components': CommandType.VIEW_COMPONENTS,
+  'get features': CommandType.VIEW_FEATURES,
+  'get components': CommandType.VIEW_FEATURES,
 
   // Project commands
   'swap-project': CommandType.SWAP_PROJECT,
@@ -239,10 +258,10 @@ const COMMAND_ALIASES: Record<string, CommandType> = {
   'switch-project': CommandType.SWAP_PROJECT,
   'project': CommandType.SWAP_PROJECT,
 
-  'summary': CommandType.SUMMARY,
-  'summarize': CommandType.SUMMARY,
-  'readme': CommandType.SUMMARY,
-  'prompt': CommandType.SUMMARY,
+  'summary': CommandType.CONTEXT,
+  'summarize': CommandType.CONTEXT,
+  'readme': CommandType.CONTEXT,
+  'prompt': CommandType.CONTEXT,
 
   // Wizard commands
   'wizard new': CommandType.WIZARD_NEW,
@@ -251,9 +270,9 @@ const COMMAND_ALIASES: Record<string, CommandType> = {
   'wizard-project': CommandType.WIZARD_NEW,
   'new': CommandType.WIZARD_NEW,
 
-  // Export commands
-  'export': CommandType.EXPORT,
-  'download': CommandType.EXPORT,
+  // Export commands (aliases for /context)
+  'export': CommandType.CONTEXT,
+  'download': CommandType.CONTEXT,
 
   // Stack commands - unified
   'add stack': CommandType.ADD_STACK,
@@ -319,6 +338,9 @@ const COMMAND_ALIASES: Record<string, CommandType> = {
   'set theme': CommandType.SET_THEME,
   'set-theme': CommandType.SET_THEME,
   'theme': CommandType.SET_THEME,
+  'set ai': CommandType.SET_AI,
+  'set-ai': CommandType.SET_AI,
+  'ai settings': CommandType.SET_AI,
   'view themes': CommandType.VIEW_THEMES,
   'view-themes': CommandType.VIEW_THEMES,
   'themes': CommandType.VIEW_THEMES,
@@ -369,6 +391,35 @@ const COMMAND_ALIASES: Record<string, CommandType> = {
   'ai': CommandType.LLM_CONTEXT,
   'ai context': CommandType.LLM_CONTEXT,
 
+  // Bridge
+  'bridge': CommandType.BRIDGE,
+
+  // Reset AI chat
+  'reset': CommandType.RESET_CHAT,
+  'reset chat': CommandType.RESET_CHAT,
+  'reset-chat': CommandType.RESET_CHAT,
+  'new chat': CommandType.RESET_CHAT,
+
+  // Context (merged with summary)
+  'context': CommandType.CONTEXT,
+  'context full': CommandType.CONTEXT,
+  'context todos': CommandType.CONTEXT,
+  'context notes': CommandType.CONTEXT,
+  'context devlog': CommandType.CONTEXT,
+  'context features': CommandType.CONTEXT,
+  'context components': CommandType.CONTEXT,
+  'context stack': CommandType.CONTEXT,
+  'context team': CommandType.CONTEXT,
+  'context deployment': CommandType.CONTEXT,
+  'context settings': CommandType.CONTEXT,
+  'context projects': CommandType.CONTEXT,
+
+  // AI Usage
+  'usage': CommandType.AI_USAGE,
+  'ai usage': CommandType.AI_USAGE,
+  'ai-usage': CommandType.AI_USAGE,
+  'tokens': CommandType.AI_USAGE,
+
   // Subtask commands - with plural/singular support
   'add subtask': CommandType.ADD_SUBTASK,
   'add subtasks': CommandType.ADD_SUBTASK,
@@ -391,9 +442,11 @@ const COMMAND_ALIASES: Record<string, CommandType> = {
   'edit devlog': CommandType.EDIT_DEVLOG,
   'edit devlogs': CommandType.EDIT_DEVLOG,
   'edit-devlog': CommandType.EDIT_DEVLOG,
-  'edit component': CommandType.EDIT_COMPONENT,
-  'edit components': CommandType.EDIT_COMPONENT,
-  'edit-component': CommandType.EDIT_COMPONENT,
+  'edit feature': CommandType.EDIT_FEATURE,
+  'edit features': CommandType.EDIT_FEATURE,
+  'edit-feature': CommandType.EDIT_FEATURE,
+  'edit component': CommandType.EDIT_FEATURE,
+  'edit-component': CommandType.EDIT_FEATURE,
   'edit subtask': CommandType.EDIT_SUBTASK,
   'edit subtasks': CommandType.EDIT_SUBTASK,
   'edit-subtask': CommandType.EDIT_SUBTASK,
@@ -402,12 +455,14 @@ const COMMAND_ALIASES: Record<string, CommandType> = {
   'update todo': CommandType.EDIT_TODO,
   'update note': CommandType.EDIT_NOTE,
   'update devlog': CommandType.EDIT_DEVLOG,
-  'update component': CommandType.EDIT_COMPONENT,
+  'update feature': CommandType.EDIT_FEATURE,
+  'update component': CommandType.EDIT_FEATURE,
   'update subtask': CommandType.EDIT_SUBTASK,
   'modify todo': CommandType.EDIT_TODO,
   'modify note': CommandType.EDIT_NOTE,
   'modify devlog': CommandType.EDIT_DEVLOG,
-  'modify component': CommandType.EDIT_COMPONENT,
+  'modify feature': CommandType.EDIT_FEATURE,
+  'modify component': CommandType.EDIT_FEATURE,
   'modify subtask': CommandType.EDIT_SUBTASK,
 
   // Delete commands - with plural/singular and rm support
@@ -432,13 +487,17 @@ const COMMAND_ALIASES: Record<string, CommandType> = {
   'remove devlogs': CommandType.DELETE_DEVLOG,
   'rm devlog': CommandType.DELETE_DEVLOG,
   'rm devlogs': CommandType.DELETE_DEVLOG,
-  'delete component': CommandType.DELETE_COMPONENT,
-  'delete components': CommandType.DELETE_COMPONENT,
-  'delete-component': CommandType.DELETE_COMPONENT,
-  'remove component': CommandType.DELETE_COMPONENT,
-  'remove components': CommandType.DELETE_COMPONENT,
-  'rm component': CommandType.DELETE_COMPONENT,
-  'rm components': CommandType.DELETE_COMPONENT,
+  'delete feature': CommandType.DELETE_FEATURE,
+  'delete features': CommandType.DELETE_FEATURE,
+  'delete-feature': CommandType.DELETE_FEATURE,
+  'remove feature': CommandType.DELETE_FEATURE,
+  'remove features': CommandType.DELETE_FEATURE,
+  'rm feature': CommandType.DELETE_FEATURE,
+  'rm features': CommandType.DELETE_FEATURE,
+  'delete component': CommandType.DELETE_FEATURE,
+  'delete-component': CommandType.DELETE_FEATURE,
+  'remove component': CommandType.DELETE_FEATURE,
+  'rm component': CommandType.DELETE_FEATURE,
   'delete subtask': CommandType.DELETE_SUBTASK,
   'delete subtasks': CommandType.DELETE_SUBTASK,
   'delete-subtask': CommandType.DELETE_SUBTASK,
@@ -451,7 +510,8 @@ const COMMAND_ALIASES: Record<string, CommandType> = {
   'del todo': CommandType.DELETE_TODO,
   'del note': CommandType.DELETE_NOTE,
   'del devlog': CommandType.DELETE_DEVLOG,
-  'del component': CommandType.DELETE_COMPONENT,
+  'del feature': CommandType.DELETE_FEATURE,
+  'del component': CommandType.DELETE_FEATURE,
   'del subtask': CommandType.DELETE_SUBTASK,
 
   // Relationship commands - with plural/singular and rm support
@@ -574,15 +634,15 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
     requiresProject: true,
     requiresArgs: false
   },
-  [CommandType.ADD_COMPONENT]: {
-    type: CommandType.ADD_COMPONENT,
-    syntax: '/add component --feature="name" --category="category" --type="type" --title="title" --content="content" @project',
-    simpleSyntax: '/add component',
-    description: 'Add a component to a feature (categories: frontend, backend, database, infrastructure, security, api, documentation, asset)',
+  [CommandType.ADD_FEATURE]: {
+    type: CommandType.ADD_FEATURE,
+    syntax: '/add feature --group="name" --category="category" --type="type" --title="title" --content="content" @project',
+    simpleSyntax: '/add feature',
+    description: 'Add a feature to a group (categories: frontend, backend, database, infrastructure, security, api, documentation, asset)',
     examples: [
-      '/add component --feature="Auth" --category=backend --type=service --title="Login Service" --content="Handles user authentication" @project',
-      '/add component --feature="Users" --category=api --type=endpoint --title="GET /users" --content="Retrieve all users endpoint"',
-      '/add component --feature="Dashboard" --category=frontend --type=component --title="Header" --content="Top navigation bar with user menu"'
+      '/add feature --group="Auth" --category=backend --type=service --title="Login Service" --content="Handles user authentication" @project',
+      '/add feature --group="Users" --category=api --type=endpoint --title="GET /users" --content="Retrieve all users endpoint"',
+      '/add feature --group="Dashboard" --category=frontend --type=component --title="Header" --content="Top navigation bar with user menu"'
     ],
     requiresProject: true,
     requiresArgs: false
@@ -626,14 +686,14 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
     requiresProject: true,
     requiresArgs: false
   },
-  [CommandType.VIEW_COMPONENTS]: {
-    type: CommandType.VIEW_COMPONENTS,
-    syntax: '/view components @project',
-    simpleSyntax: '/view components',
-    description: 'List components grouped by features',
+  [CommandType.VIEW_FEATURES]: {
+    type: CommandType.VIEW_FEATURES,
+    syntax: '/view features @project',
+    simpleSyntax: '/view features',
+    description: 'List features grouped by groups',
     examples: [
-      '/view components',
-      '/components @project',
+      '/view features',
+      '/features @project',
       '/features'
     ],
     requiresProject: true,
@@ -668,32 +728,26 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
   },
   [CommandType.EXPORT]: {
     type: CommandType.EXPORT,
-    syntax: '/export @project',
+    syntax: '/export [entity]',
     simpleSyntax: '/export',
-    description: 'Export project data',
+    description: 'Alias for /context — export project state as .md',
     examples: [
-      '/export @project',
-      '/export',
-      '/download @project'
+      '/export - Full project export as .md',
+      '/export todos - Just todos',
+      '/export devlog - Just development log'
     ],
     requiresProject: true,
     requiresArgs: false
   },
   [CommandType.SUMMARY]: {
     type: CommandType.SUMMARY,
-    syntax: '/summary "[format]" "[entity]" @project',
+    syntax: '/summary [entity]',
     simpleSyntax: '/summary',
-    description: 'Generate downloadable project summary in various formats (markdown/json/prompt/text), optionally filtered by entity (todos/notes/devlog/components/stack/team/deployment/settings/projects/all)',
+    description: 'Alias for /context — export project state as .md',
     examples: [
-      '/summary - Full project summary in markdown',
-      '/summary "prompt" - Full summary in AI-friendly format',
-      '/summary "json" "todos" - Export only todos in JSON',
-      '/summary "markdown" "components" - Export components as markdown',
-      '/summary "prompt" "projects" - List all projects and ideas for LLM',
-      '/summary "json" "projects" - Export all projects as JSON',
-      '/summary "json" "team" - Export team members as JSON',
-      '/summary "prompt" "deployment" - Export deployment config for AI',
-      '/summary "markdown" "settings" - Export project settings as markdown'
+      '/summary - Full project summary as .md',
+      '/summary todos - Just todos',
+      '/summary features - Just features'
     ],
     requiresProject: true,
     requiresArgs: false
@@ -918,7 +972,7 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
     type: CommandType.SEARCH,
     syntax: '/search "[query]" @project',
     simpleSyntax: '/search',
-    description: 'Search across all project content (todos, notes, devlog, components)',
+    description: 'Search across all project content (todos, notes, devlog, features)',
     examples: [
       '/search "[query]"'
     ],
@@ -987,6 +1041,32 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
     requiresProject: false,
     requiresArgs: false
   },
+  [CommandType.RESET_CHAT]: {
+    type: CommandType.RESET_CHAT,
+    syntax: '/reset',
+    simpleSyntax: '/reset',
+    description: 'Start a new AI conversation (clears chat session)',
+    examples: [
+      '/reset',
+      '/reset chat',
+      '/new chat'
+    ],
+    requiresProject: false,
+    requiresArgs: false
+  },
+  [CommandType.SET_AI]: {
+    type: CommandType.SET_AI,
+    syntax: '/set ai --max-todos=25 --max-notes=15 --max-devlogs=10 --max-features=15',
+    simpleSyntax: '/set ai',
+    description: 'Configure AI context limits (controls how much project data the AI sees)',
+    examples: [
+      '/set ai --max-todos=50',
+      '/set ai --max-notes=25 --max-devlogs=20',
+      '/set ai'
+    ],
+    requiresProject: false,
+    requiresArgs: false
+  },
   [CommandType.STALE_ITEMS]: {
     type: CommandType.STALE_ITEMS,
     syntax: '/stale @project',
@@ -1017,13 +1097,52 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
     type: CommandType.LLM_CONTEXT,
     syntax: '/llm',
     simpleSyntax: '/llm',
-    description: 'Generate general LLM terminal command guide for AI assistants (use /summary for project data)',
+    description: 'Alias for /bridge — command reference for external AI tools',
     examples: [
-      '/llm - General terminal command guide for AI assistants',
-      '/summary prompt all - Get project summary for LLMs',
-      'Workflow: /summary prompt all → Click "Summary + LLM Guide" → Paste to AI'
+      '/llm - Same as /bridge',
     ],
     requiresProject: false,
+    requiresArgs: false
+  },
+
+  [CommandType.AI_USAGE]: {
+    type: CommandType.AI_USAGE,
+    syntax: '/usage',
+    simpleSyntax: '/usage',
+    description: 'View your AI usage stats (tokens used, queries, limits)',
+    examples: [
+      '/usage - View current month AI usage',
+      '/tokens - Same as /usage'
+    ],
+    requiresProject: false,
+    requiresArgs: false
+  },
+  [CommandType.BRIDGE]: {
+    type: CommandType.BRIDGE,
+    syntax: '/bridge',
+    simpleSyntax: '/bridge',
+    description: 'Command reference + protocol spec for external AI tools (CLAUDE.md, .cursorrules)',
+    examples: [
+      '/bridge - Full command reference for external AI',
+      '/context - Export current project state to paste alongside',
+      'Workflow: /bridge + /context → paste both into Claude/ChatGPT → get commands back'
+    ],
+    requiresProject: false,
+    requiresArgs: false
+  },
+  [CommandType.CONTEXT]: {
+    type: CommandType.CONTEXT,
+    syntax: '/context [entity]',
+    simpleSyntax: '/context',
+    description: 'Export project state as .md (aliases: /export, /summary, /download). Entities: all, full, todos, notes, devlog, features, stack, team, deployment, settings, projects',
+    examples: [
+      '/context - Current project state (summary with truncation)',
+      '/context full - Full project dump (all entities, no truncation)',
+      '/context todos - Just todos and subtasks',
+      '/export - Same as /context (alias)',
+      '/summary devlog - Just development log entries'
+    ],
+    requiresProject: true,
     requiresArgs: false
   },
 
@@ -1102,14 +1221,14 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
     requiresProject: true,
     requiresArgs: false
   },
-  [CommandType.EDIT_COMPONENT]: {
-    type: CommandType.EDIT_COMPONENT,
-    syntax: '/edit component "[component id]" @project',
-    simpleSyntax: '/edit component',
-    description: 'Open interactive wizard to edit an existing component, or use --field and --content for direct updates',
+  [CommandType.EDIT_FEATURE]: {
+    type: CommandType.EDIT_FEATURE,
+    syntax: '/edit feature "[feature id]" @project',
+    simpleSyntax: '/edit feature',
+    description: 'Open interactive wizard to edit an existing feature, or use --field and --content for direct updates',
     examples: [
-      '/edit component "[component id]"',
-      '/edit component [#]'
+      '/edit feature "[feature id]"',
+      '/edit feature [#]'
     ],
     requiresProject: true,
     requiresArgs: false
@@ -1152,14 +1271,14 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
     requiresProject: true,
     requiresArgs: false
   },
-  [CommandType.DELETE_COMPONENT]: {
-    type: CommandType.DELETE_COMPONENT,
-    syntax: '/delete component "[component id/title]" @project',
-    simpleSyntax: '/delete component',
-    description: 'Delete a component (with confirmation)',
+  [CommandType.DELETE_FEATURE]: {
+    type: CommandType.DELETE_FEATURE,
+    syntax: '/delete feature "[feature id/title]" @project',
+    simpleSyntax: '/delete feature',
+    description: 'Delete a feature (with confirmation)',
     examples: [
-      '/delete component "[component id/title]"',
-      '/delete component [#]'
+      '/delete feature "[feature id/title]"',
+      '/delete feature [#]'
     ],
     requiresProject: true,
     requiresArgs: false
@@ -1180,9 +1299,9 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
   // Relationship commands
   [CommandType.ADD_RELATIONSHIP]: {
     type: CommandType.ADD_RELATIONSHIP,
-    syntax: '/add relationship --source="component" --target="target" --type=uses --description="optional" @project',
+    syntax: '/add relationship --source="feature" --target="target" --type=uses --description="optional" @project',
     simpleSyntax: '/add relationship',
-    description: 'Add a relationship between two components',
+    description: 'Add a relationship between two features',
     examples: [
       '/add relationship --source="Login" --target="Auth Service" --type=uses',
       '/add relationship --source="Dashboard" --target="API" --type=depends_on --description="Fetches user data"'
@@ -1192,11 +1311,11 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
   },
   [CommandType.VIEW_RELATIONSHIPS]: {
     type: CommandType.VIEW_RELATIONSHIPS,
-    syntax: '/view relationships "[component id/title]" @project',
+    syntax: '/view relationships "[feature id/title]" @project',
     simpleSyntax: '/view relationships',
-    description: 'View all relationships for a component',
+    description: 'View all relationships for a feature',
     examples: [
-      '/view relationships "[component id/title]"',
+      '/view relationships "[feature id/title]"',
       '/view relationships [#]'
     ],
     requiresProject: true,
@@ -1204,7 +1323,7 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
   },
   [CommandType.EDIT_RELATIONSHIP]: {
     type: CommandType.EDIT_RELATIONSHIP,
-    syntax: '/edit relationship "[component id/title]" "[relationship id]" "[new type]" --description="optional" @project',
+    syntax: '/edit relationship "[feature id/title]" "[relationship id]" "[new type]" --description="optional" @project',
     simpleSyntax: '/edit relationship',
     description: 'Edit an existing relationship',
     examples: [
@@ -1216,11 +1335,11 @@ export const COMMAND_METADATA: Record<CommandType, CommandMetadata> = {
   },
   [CommandType.DELETE_RELATIONSHIP]: {
     type: CommandType.DELETE_RELATIONSHIP,
-    syntax: '/delete relationship "[component id/title]" "[relationship id]" @project',
+    syntax: '/delete relationship "[feature id/title]" "[relationship id]" @project',
     simpleSyntax: '/delete relationship',
     description: 'Delete a relationship (with confirmation)',
     examples: [
-      '/delete relationship "[component id/title]" "[relationship id]"',
+      '/delete relationship "[feature id/title]" "[relationship id]"',
       '/delete relationship [#] "[relationship id]"'
     ],
     requiresProject: true,
@@ -1664,7 +1783,7 @@ export class CommandParser {
     // Command is valid if no errors
     result.isValid = result.errors.length === 0;
 
-    logInfo('Command parsed', {
+    logDebug('Command parsed', {
       type: result.type,
       command: result.command,
       args: result.args,

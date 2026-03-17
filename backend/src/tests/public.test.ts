@@ -111,7 +111,7 @@ describe('Public Routes', () => {
         publicVisibility: {
           description: false,
           tags: true,
-          components: true,
+          features: true,
           techStack: true,
           timestamps: true
         }

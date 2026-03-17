@@ -99,7 +99,7 @@ describe('Notification Routes', () => {
         .set('Cookie', `token=${authToken}`);
 
       expect(response.status).toBe(500);
-      expect(response.body.message).toBe('Server error fetching notifications');
+      expect(response.body.message).toBe('Internal server error');
     });
   });
 

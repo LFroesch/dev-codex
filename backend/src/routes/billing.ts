@@ -4,7 +4,7 @@ import { User } from '../models/User';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { blockDemoWrites } from '../middleware/blockDemoWrites';
 import { createRateLimit } from '../middleware/rateLimit';
-import { logInfo, logError, logWarn } from '../config/logger';
+import { logDebug, logError, logWarn } from '../config/logger';
 import NotificationService from '../services/notificationService';
 import {
   sendEmail,
@@ -56,7 +56,7 @@ router.post('/create-checkout-session', billingRateLimit, requireAuth, blockDemo
   const { planTier } = req.body;
   const userId = req.userId!;
 
-  logInfo('Creating checkout session', { userId, planTier });
+  logDebug('Creating checkout session', { userId, planTier });
 
   if (!['pro', 'premium'].includes(planTier)) {
     throw BadRequestError('Invalid plan tier', 'INVALID_PLAN');
@@ -67,22 +67,22 @@ router.post('/create-checkout-session', billingRateLimit, requireAuth, blockDemo
     throw NotFoundError('User not found', 'USER_NOT_FOUND');
   }
 
-  logInfo('User checkout details', { email: user.email, currentPlan: user.planTier, subscriptionStatus: user.subscriptionStatus });
+  logDebug('User checkout details', { email: user.email, currentPlan: user.planTier, subscriptionStatus: user.subscriptionStatus });
 
   // Check if user is trying to subscribe to the same plan they already have
   if (user.planTier === planTier && user.subscriptionStatus === 'active') {
-    logInfo('User already has this plan', { planTier });
+    logDebug('User already has this plan', { planTier });
     throw BadRequestError(`You already have an active ${planTier} subscription.`, 'ALREADY_SUBSCRIBED');
   }
 
   // If user has an active subscription but wants to upgrade, we'll need to handle the upgrade
   // Stripe will manage the proration automatically
   if (user.subscriptionStatus === 'active' && user.subscriptionId && stripe) {
-    logInfo('User has active subscription, checking if this is an upgrade/downgrade');
+    logDebug('User has active subscription, checking if this is an upgrade/downgrade');
     try {
       const existingSubscription = await stripe.subscriptions.retrieve(user.subscriptionId);
       if (existingSubscription.status === 'active') {
-        logInfo('Found active Stripe subscription, will create new checkout for plan change');
+        logDebug('Found active Stripe subscription, will create new checkout for plan change');
       }
     } catch (error) {
       logError('Error checking existing subscription', error as Error);
@@ -101,9 +101,9 @@ router.post('/create-checkout-session', billingRateLimit, requireAuth, blockDemo
     customerId = customer.id;
     user.stripeCustomerId = customerId;
     await user.save();
-    logInfo('Created new Stripe customer', { customerId });
+    logDebug('Created new Stripe customer', { customerId });
   } else {
-    logInfo('Using existing Stripe customer', { customerId });
+    logDebug('Using existing Stripe customer', { customerId });
   }
 
   const priceId = PLAN_PRICES[planTier as keyof typeof PLAN_PRICES];
@@ -112,7 +112,7 @@ router.post('/create-checkout-session', billingRateLimit, requireAuth, blockDemo
     throw BadRequestError('Plan pricing not configured', 'PRICE_NOT_CONFIGURED');
   }
 
-  logInfo('Using price ID', { priceId, planTier });
+  logDebug('Using price ID', { priceId, planTier });
 
   const session = await stripe.checkout.sessions.create({
     customer: customerId,
@@ -130,7 +130,7 @@ router.post('/create-checkout-session', billingRateLimit, requireAuth, blockDemo
     }
   });
 
-  logInfo('Checkout session created', { sessionId: session.id, url: session.url });
+  logDebug('Checkout session created', { sessionId: session.id, url: session.url });
 
   res.json({ url: session.url });
 }));
@@ -159,18 +159,18 @@ router.post('/webhook', async (req, res) => {
   }
 
   try {
-    logInfo('Webhook event received', { eventType: event.type, eventId: event.id });
+    logDebug('Webhook event received', { eventType: event.type, eventId: event.id });
 
     switch (event.type) {
       case 'checkout.session.completed':
         const session = event.data.object as Stripe.Checkout.Session;
-        logInfo('Processing checkout.session.completed');
+        logDebug('Processing checkout.session.completed');
         await handleSuccessfulPayment(session);
         break;
 
       case 'invoice.payment_succeeded':
         const invoice = event.data.object as Stripe.Invoice;
-        logInfo('Processing invoice.payment_succeeded');
+        logDebug('Processing invoice.payment_succeeded');
         await handleSuccessfulSubscriptionPayment(invoice);
         break;
 
@@ -178,7 +178,7 @@ router.post('/webhook', async (req, res) => {
       case 'customer.subscription.updated':
       case 'customer.subscription.deleted':
         const subscription = event.data.object as Stripe.Subscription;
-        logInfo('Processing subscription event', { eventType: event.type });
+        logDebug('Processing subscription event', { eventType: event.type });
         await handleSubscriptionChange(subscription);
         break;
 
@@ -188,7 +188,7 @@ router.post('/webhook', async (req, res) => {
         break;
 
       default:
-        logInfo('Unhandled event type', { eventType: event.type });
+        logDebug('Unhandled event type', { eventType: event.type });
     }
 
     res.json({ received: true });
@@ -199,7 +199,7 @@ router.post('/webhook', async (req, res) => {
 });
 
 async function handleSuccessfulPayment(session: Stripe.Checkout.Session) {
-  logInfo('Processing successful payment', { sessionId: session.id, metadata: session.metadata, subscription: session.subscription });
+  logDebug('Processing successful payment', { sessionId: session.id, metadata: session.metadata, subscription: session.subscription });
 
   const userId = session.metadata?.userId;
   let planTier = session.metadata?.planTier as 'pro' | 'premium';
@@ -214,7 +214,7 @@ async function handleSuccessfulPayment(session: Stripe.Checkout.Session) {
     try {
       const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
       const priceId = subscription.items.data[0]?.price.id;
-      logInfo('Retrieved subscription price ID', { priceId });
+      logDebug('Retrieved subscription price ID', { priceId });
 
       // Determine plan tier from price ID
       if (priceId === PLAN_PRICES.pro) {
@@ -222,7 +222,7 @@ async function handleSuccessfulPayment(session: Stripe.Checkout.Session) {
       } else if (priceId === PLAN_PRICES.premium) {
         planTier = 'premium';
       }
-      logInfo('Determined plan tier from price ID', { planTier });
+      logDebug('Determined plan tier from price ID', { planTier });
     } catch (error) {
       logError('Error retrieving subscription for plan detection', error as Error);
     }
@@ -241,7 +241,7 @@ async function handleSuccessfulPayment(session: Stripe.Checkout.Session) {
 
   const previousPlan = user.planTier;
 
-  logInfo('Updating user plan', { userId, planTier });
+  logDebug('Updating user plan', { userId, planTier });
   user.planTier = planTier;
   user.projectLimit = PLAN_LIMITS[planTier];
   user.subscriptionStatus = 'active';
@@ -250,7 +250,7 @@ async function handleSuccessfulPayment(session: Stripe.Checkout.Session) {
   user.lastBillingUpdate = new Date();
 
   await user.save();
-  logInfo('Successfully updated user to new plan', {
+  logDebug('Successfully updated user to new plan', {
     userId,
     planTier: user.planTier,
     projectLimit: user.projectLimit,
@@ -264,7 +264,7 @@ async function handleSuccessfulPayment(session: Stripe.Checkout.Session) {
       user.firstName || 'there',
       planTier
     );
-    logInfo('Subscription confirmation email sent', { userId, planTier });
+    logDebug('Subscription confirmation email sent', { userId, planTier });
   } catch (error) {
     logError('Failed to send subscription confirmation email', error as Error);
     // Don't fail the whole process if email fails
@@ -305,7 +305,7 @@ async function handleSuccessfulPayment(session: Stripe.Checkout.Session) {
       }
     );
 
-    logInfo('Tracked conversion analytics', { userId, fromPlan: previousPlan, toPlan: planTier });
+    logDebug('Tracked conversion analytics', { userId, fromPlan: previousPlan, toPlan: planTier });
   } catch (error) {
     logError('Failed to track conversion analytics', error as Error);
   }
@@ -323,7 +323,7 @@ async function handleSuccessfulSubscriptionPayment(invoice: Stripe.Invoice) {
 }
 
 async function handleSubscriptionChange(subscription: Stripe.Subscription) {
-  logInfo('Processing subscription change', {
+  logDebug('Processing subscription change', {
     subscriptionId: subscription.id,
     status: subscription.status,
     customerId: subscription.customer
@@ -337,7 +337,7 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
     return;
   }
 
-  logInfo('Handling subscription change for user', { userId: user._id, status: subscription.status });
+  logDebug('Handling subscription change for user', { userId: user._id, status: subscription.status });
 
   // Update subscription status
   user.subscriptionStatus = subscription.status as any;
@@ -349,7 +349,7 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
     const oldPlanTier = user.planTier;
     user.planTier = 'free';
     user.projectLimit = PLAN_LIMITS.free;
-    logInfo('Downgraded user to free plan', { userId: user._id, reason: subscription.status });
+    logDebug('Downgraded user to free plan', { userId: user._id, reason: subscription.status });
 
     // Handle excess projects by locking them
     await handleDowngradeExcess(user._id.toString(), 'free');
@@ -358,7 +358,7 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
     if (oldPlanTier !== 'free') {
       const { updateExpirationOnPlanChange } = await import('../utils/retentionUtils');
       await updateExpirationOnPlanChange(user._id.toString(), oldPlanTier, 'free');
-      logInfo('Updated data retention after downgrade', { userId: user._id, from: oldPlanTier, to: 'free' });
+      logDebug('Updated data retention after downgrade', { userId: user._id, from: oldPlanTier, to: 'free' });
     }
 
     // Send appropriate email based on status
@@ -370,14 +370,14 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
           oldPlanTier,
           new Date((subscription as any).current_period_end * 1000)
         );
-        logInfo('Subscription cancelled email sent', { userId: user._id });
+        logDebug('Subscription cancelled email sent', { userId: user._id });
       } else if (subscription.status === 'incomplete_expired') {
         await sendSubscriptionExpiredEmail(
           user.email,
           user.firstName || 'there',
           oldPlanTier
         );
-        logInfo('Subscription expired email sent', { userId: user._id });
+        logDebug('Subscription expired email sent', { userId: user._id });
       }
     } catch (error) {
       logError('Failed to send subscription status email', error as Error);
@@ -388,7 +388,7 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
     const priceId = subscription.items.data[0]?.price.id;
     let newPlanTier: 'pro' | 'premium' | null = null;
 
-    logInfo('Active subscription price details', { priceId, availablePrices: PLAN_PRICES });
+    logDebug('Active subscription price details', { priceId, availablePrices: PLAN_PRICES });
 
     if (priceId === PLAN_PRICES.pro) {
       newPlanTier = 'pro';
@@ -400,13 +400,13 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
       const oldPlanTier = user.planTier;
       user.planTier = newPlanTier;
       user.projectLimit = PLAN_LIMITS[newPlanTier];
-      logInfo('Updated user plan via subscription change', { userId: user._id, planTier: newPlanTier });
+      logDebug('Updated user plan via subscription change', { userId: user._id, planTier: newPlanTier });
 
       // Update retention for existing data when plan changes
       if (oldPlanTier !== newPlanTier) {
         const { updateExpirationOnPlanChange } = await import('../utils/retentionUtils');
         await updateExpirationOnPlanChange(user._id.toString(), oldPlanTier, newPlanTier);
-        logInfo('Updated data retention after plan change', { userId: user._id, from: oldPlanTier, to: newPlanTier });
+        logDebug('Updated data retention after plan change', { userId: user._id, from: oldPlanTier, to: newPlanTier });
 
         // Determine if this is an upgrade or downgrade
         const planHierarchy = { free: 0, pro: 1, premium: 2 };
@@ -427,7 +427,7 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
               oldPlanTier,
               newPlanTier
             );
-            logInfo('Plan downgrade email sent', { userId: user._id, from: oldPlanTier, to: newPlanTier });
+            logDebug('Plan downgrade email sent', { userId: user._id, from: oldPlanTier, to: newPlanTier });
           } catch (error) {
             logError('Failed to send plan downgrade email', error as Error);
             // Don't fail the whole process if email fails
@@ -443,7 +443,7 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
   }
 
   await user.save();
-  logInfo('Updated user state after subscription change', {
+  logDebug('Updated user state after subscription change', {
     userId: user._id,
     planTier: user.planTier,
     projectLimit: user.projectLimit,
@@ -453,7 +453,7 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
 
 // Get user's billing info
 router.get('/info', requireAuth, asyncHandler(async (req: AuthRequest, res: express.Response) => {
-  logInfo('Billing info request', { userId: req.userId });
+  logDebug('Billing info request', { userId: req.userId });
 
   const user = await User.findById(req.userId!).select('-password');
   if (!user) {
@@ -473,7 +473,7 @@ router.get('/info', requireAuth, asyncHandler(async (req: AuthRequest, res: expr
     });
   }
 
-  logInfo('User billing details', {
+  logDebug('User billing details', {
     planTier: user.planTier,
     hasSubscription: !!user.subscriptionId,
     subscriptionStatus: user.subscriptionStatus
@@ -499,13 +499,13 @@ router.get('/info', requireAuth, asyncHandler(async (req: AuthRequest, res: expr
 
   // If user has a subscription, get additional details from Stripe
   if (user.subscriptionId && stripe) {
-    logInfo('Fetching subscription details from Stripe');
+    logDebug('Fetching subscription details from Stripe');
     try {
       const subscription = await stripe.subscriptions.retrieve(user.subscriptionId, {
         expand: ['default_payment_method', 'items.data.price']
       });
 
-      logInfo('Stripe subscription retrieved', {
+      logDebug('Stripe subscription retrieved', {
         id: subscription.id,
         status: (subscription as any).status,
         currentPeriodEnd: (subscription as any).current_period_end,
@@ -517,12 +517,12 @@ router.get('/info', requireAuth, asyncHandler(async (req: AuthRequest, res: expr
       let renewalDate = (subscription as any).current_period_end;
       if (!renewalDate && (subscription as any).items?.data?.[0]?.current_period_end) {
         renewalDate = (subscription as any).items.data[0].current_period_end;
-        logInfo('Using current_period_end from subscription item', { renewalDate });
+        logDebug('Using current_period_end from subscription item', { renewalDate });
       }
       // If subscription is cancelled, use cancel_at date
       if (!renewalDate && (subscription as any).cancel_at) {
         renewalDate = (subscription as any).cancel_at;
-        logInfo('Using cancel_at date', { renewalDate });
+        logDebug('Using cancel_at date', { renewalDate });
       }
 
       billingInfo.nextBillingDate = renewalDate
@@ -530,7 +530,7 @@ router.get('/info', requireAuth, asyncHandler(async (req: AuthRequest, res: expr
         : null;
       billingInfo.cancelAtPeriodEnd = (subscription as any).cancel_at_period_end || false;
 
-      logInfo('Calculated billing dates', {
+      logDebug('Calculated billing dates', {
         nextBillingDate: billingInfo.nextBillingDate,
         cancelAtPeriodEnd: billingInfo.cancelAtPeriodEnd
       });
@@ -548,7 +548,7 @@ router.get('/info', requireAuth, asyncHandler(async (req: AuthRequest, res: expr
       // Continue without Stripe details rather than failing the request
     }
   } else {
-    logInfo('No subscription ID or Stripe not configured', {
+    logDebug('No subscription ID or Stripe not configured', {
       hasSubscriptionId: !!user.subscriptionId,
       stripeConfigured: !!stripe
     });
@@ -594,7 +594,7 @@ async function sendProjectsLockedEmail(user: any, lockedProjects: any[], planTie
       html
     });
 
-    logInfo('Sent projects locked email', { userId: user._id, count: lockedProjects.length });
+    logDebug('Sent projects locked email', { userId: user._id, count: lockedProjects.length });
   } catch (error) {
     logError('Failed to send projects locked email', error as Error);
   }
@@ -632,7 +632,7 @@ async function sendProjectsUnlockedEmail(user: any, unlockedProjects: any[], pla
       html
     });
 
-    logInfo('Sent projects unlocked email', { userId: user._id, count: unlockedProjects.length });
+    logDebug('Sent projects unlocked email', { userId: user._id, count: unlockedProjects.length });
   } catch (error) {
     logError('Failed to send projects unlocked email', error as Error);
   }
@@ -665,7 +665,7 @@ async function handleDowngradeExcess(userId: string, targetPlan: 'free' | 'pro' 
       await project.save();
     }
 
-    logInfo('Locked excess projects on downgrade', {
+    logDebug('Locked excess projects on downgrade', {
       userId,
       targetPlan,
       lockedCount: projectsToLock.length
@@ -715,7 +715,7 @@ async function handleUpgradeUnlock(userId: string, newPlan: 'free' | 'pro' | 'pr
       await project.save();
     }
 
-    logInfo('Unlocked all projects on upgrade to unlimited', {
+    logDebug('Unlocked all projects on upgrade to unlimited', {
       userId,
       newPlan,
       unlockedCount: lockedProjects.length
@@ -772,7 +772,7 @@ async function handleUpgradeUnlock(userId: string, newPlan: 'free' | 'pro' | 'pr
       await project.save();
     }
 
-    logInfo('Unlocked projects on upgrade', {
+    logDebug('Unlocked projects on upgrade', {
       userId,
       newPlan,
       unlockedCount: projectsToUnlock.length
@@ -808,11 +808,11 @@ router.post('/cancel-subscription', billingRateLimit, requireAuth, asyncHandler(
     return res.status(501).json({ error: 'Billing is disabled in self-hosted mode' });
   }
 
-  logInfo('Cancel subscription request', { userId: req.userId });
+  logDebug('Cancel subscription request', { userId: req.userId });
 
   const user = await User.findById(req.userId!);
   if (user) {
-    logInfo('User cancellation details', {
+    logDebug('User cancellation details', {
       email: user.email,
       planTier: user.planTier,
       hasSubscriptionId: !!user.subscriptionId,
@@ -827,7 +827,7 @@ router.post('/cancel-subscription', billingRateLimit, requireAuth, asyncHandler(
 
   // Check if this is a fake subscription ID (for testing)
   if (user.subscriptionId.startsWith('sub_fake_')) {
-    logInfo('Detected fake subscription ID - simulating cancellation');
+    logDebug('Detected fake subscription ID - simulating cancellation');
     // For fake subscriptions, just update the user directly
     user.planTier = 'free';
     user.projectLimit = 3;
@@ -846,11 +846,11 @@ router.post('/cancel-subscription', billingRateLimit, requireAuth, asyncHandler(
     return res.status(501).json({ error: 'Payment processing not configured' });
   }
 
-  logInfo('Attempting to cancel subscription');
+  logDebug('Attempting to cancel subscription');
   await stripe.subscriptions.update(user.subscriptionId, {
     cancel_at_period_end: true
   });
-  logInfo('Subscription marked for cancellation at period end', { userId: user._id });
+  logDebug('Subscription marked for cancellation at period end', { userId: user._id });
 
   res.json({ success: true, message: 'Subscription will be canceled at the end of the billing period' });
 }));
@@ -862,7 +862,7 @@ router.post('/resume-subscription', billingRateLimit, requireAuth, asyncHandler(
     return res.status(501).json({ error: 'Billing is disabled in self-hosted mode' });
   }
 
-  logInfo('Resume subscription request', { userId: req.userId });
+  logDebug('Resume subscription request', { userId: req.userId });
 
   const user = await User.findById(req.userId!);
   if (!user || !user.subscriptionId) {
@@ -875,12 +875,12 @@ router.post('/resume-subscription', billingRateLimit, requireAuth, asyncHandler(
     return res.status(501).json({ error: 'Payment processing not configured' });
   }
 
-  logInfo('Attempting to resume subscription');
+  logDebug('Attempting to resume subscription');
   await stripe.subscriptions.update(user.subscriptionId, {
     cancel_at_period_end: false
   });
 
-  logInfo('Subscription resumed successfully', { userId: user._id });
+  logDebug('Subscription resumed successfully', { userId: user._id });
   res.json({ success: true, message: 'Subscription resumed successfully' });
 }));
 

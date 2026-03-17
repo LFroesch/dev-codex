@@ -246,7 +246,7 @@ describe('Integration: Complete Auth Flow', () => {
         .post('/api/auth/register')
         .send(testUser);
 
-      expect(duplicateRegister.status).toBe(400);
+      expect(duplicateRegister.status).toBe(409);
       expect(duplicateRegister.body.message).toContain('already exists');
     });
 
@@ -264,7 +264,7 @@ describe('Integration: Complete Auth Flow', () => {
           password: 'WrongPassword123!'
         });
 
-      expect(loginResponse.status).toBe(400);
+      expect(loginResponse.status).toBe(401);
       expect(loginResponse.body.message).toContain('Invalid credentials');
     });
 

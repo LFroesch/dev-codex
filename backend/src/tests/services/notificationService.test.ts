@@ -88,23 +88,21 @@ describe('NotificationService', () => {
       expect(notif.relatedUserId).toEqual(otherUser._id);
     });
 
-    it('should replace duplicate notifications', async () => {
-      // Create first notification
+    it('should replace duplicate notifications for unique types', async () => {
+      // Create first notification with a unique type (daily_todo_summary)
       const notif1 = await service.createNotification({
         userId: user._id,
-        type: 'project_invitation',
-        title: 'First',
+        type: 'daily_todo_summary',
+        title: 'First Summary',
         message: 'First message',
-        relatedProjectId: project._id
       });
 
       // Create duplicate - should replace first
       const notif2 = await service.createNotification({
         userId: user._id,
-        type: 'project_invitation',
-        title: 'Second',
+        type: 'daily_todo_summary',
+        title: 'Second Summary',
         message: 'Second message',
-        relatedProjectId: project._id
       });
 
       // First should be deleted

@@ -106,7 +106,7 @@ describe('Authentication Routes', () => {
       const response = await request(app)
         .post('/api/auth/register')
         .send(userData)
-        .expect(400);
+        .expect(409);
 
       expect(response.body).toHaveProperty('message', 'Email already exists');
     });
@@ -157,7 +157,7 @@ describe('Authentication Routes', () => {
       const response = await request(app)
         .post('/api/auth/login')
         .send(loginData)
-        .expect(400);
+        .expect(401);
 
       expect(response.body).toHaveProperty('message', 'Invalid credentials');
     });
@@ -171,7 +171,7 @@ describe('Authentication Routes', () => {
       const response = await request(app)
         .post('/api/auth/login')
         .send(loginData)
-        .expect(400);
+        .expect(401);
 
       expect(response.body).toHaveProperty('message', 'Invalid credentials');
     });
@@ -519,7 +519,7 @@ describe('Authentication Routes', () => {
         .patch('/api/auth/update-username')
         .set('Cookie', `token=${authToken}`)
         .send({ username: 'takenusername' })
-        .expect(400);
+        .expect(409);
 
       expect(response.body).toHaveProperty('message', 'Username already taken');
     });

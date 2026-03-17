@@ -28,7 +28,7 @@ describe('Admin Routes', () => {
     it('should get all users for admin', async () => {
       const response = await request(app)
         .get('/api/admin/users')
-        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Cookie', `token=${adminToken}`)
         .expect(200);
 
       expect(Array.isArray(response.body.users)).toBe(true);
@@ -50,7 +50,7 @@ describe('Admin Routes', () => {
 
       await request(app)
         .get('/api/admin/users')
-        .set('Authorization', `Bearer ${regularUser.authToken}`)
+        .set('Cookie', `token=${regularUser.authToken}`)
         .expect(403);
     });
   });
@@ -64,7 +64,7 @@ describe('Admin Routes', () => {
 
       const response = await request(app)
         .get(`/api/admin/users/${testUser.userId}`)
-        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Cookie', `token=${adminToken}`)
         .expect(200);
 
       expect(response.body.email).toBe('test@example.com');
@@ -75,7 +75,7 @@ describe('Admin Routes', () => {
       const fakeId = '507f1f77bcf86cd799439011';
       await request(app)
         .get(`/api/admin/users/${fakeId}`)
-        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Cookie', `token=${adminToken}`)
         .expect(404);
     });
   });
@@ -89,7 +89,7 @@ describe('Admin Routes', () => {
 
       const response = await request(app)
         .put(`/api/admin/users/${testUser.userId}/plan`)
-        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Cookie', `token=${adminToken}`)
         .send({ planTier: 'pro' })
         .expect(200);
 
@@ -105,7 +105,7 @@ describe('Admin Routes', () => {
 
       await request(app)
         .put(`/api/admin/users/${testUser.userId}/plan`)
-        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Cookie', `token=${adminToken}`)
         .send({ planTier: 'invalid' })
         .expect(400);
     });
@@ -120,7 +120,7 @@ describe('Admin Routes', () => {
 
       const response = await request(app)
         .post(`/api/admin/users/${testUser.userId}/ban`)
-        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Cookie', `token=${adminToken}`)
         .send({ reason: 'Violation of terms' })
         .expect(200);
 
@@ -135,7 +135,7 @@ describe('Admin Routes', () => {
 
       await request(app)
         .post(`/api/admin/users/${testUser.userId}/ban`)
-        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Cookie', `token=${adminToken}`)
         .send({})
         .expect(400);
     });
@@ -151,13 +151,13 @@ describe('Admin Routes', () => {
       // First ban the user
       await request(app)
         .post(`/api/admin/users/${testUser.userId}/ban`)
-        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Cookie', `token=${adminToken}`)
         .send({ reason: 'Test ban' });
 
       // Then unban
       const response = await request(app)
         .post(`/api/admin/users/${testUser.userId}/unban`)
-        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Cookie', `token=${adminToken}`)
         .expect(200);
 
       expect(response.body.message).toContain('unbanned');
@@ -173,7 +173,7 @@ describe('Admin Routes', () => {
 
       const response = await request(app)
         .delete(`/api/admin/users/${testUser.userId}`)
-        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Cookie', `token=${adminToken}`)
         .expect(200);
 
       expect(response.body.message).toContain('deleted');
@@ -188,7 +188,7 @@ describe('Admin Routes', () => {
     it('should get platform statistics', async () => {
       const response = await request(app)
         .get('/api/admin/stats')
-        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Cookie', `token=${adminToken}`)
         .expect(200);
 
       expect(response.body.totalUsers).toBeDefined();
@@ -201,7 +201,7 @@ describe('Admin Routes', () => {
     it('should get all projects', async () => {
       const response = await request(app)
         .get('/api/admin/projects')
-        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Cookie', `token=${adminToken}`)
         .expect(200);
 
       expect(response.body.projects).toBeDefined();
@@ -211,7 +211,7 @@ describe('Admin Routes', () => {
     it('should support pagination', async () => {
       const response = await request(app)
         .get('/api/admin/projects?page=1&limit=10')
-        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Cookie', `token=${adminToken}`)
         .expect(200);
 
       expect(response.body.projects).toBeDefined();
@@ -223,7 +223,7 @@ describe('Admin Routes', () => {
     it('should get analytics overview', async () => {
       const response = await request(app)
         .get('/api/admin/analytics/overview')
-        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Cookie', `token=${adminToken}`)
         .expect(200);
 
       expect(response.body).toBeDefined();
@@ -235,7 +235,7 @@ describe('Admin Routes', () => {
       it('should get all tickets', async () => {
         const response = await request(app)
           .get('/api/admin/tickets')
-          .set('Authorization', `Bearer ${adminToken}`)
+          .set('Cookie', `token=${adminToken}`)
           .expect(200);
 
         expect(response.body.tickets).toBeDefined();
@@ -245,7 +245,7 @@ describe('Admin Routes', () => {
       it('should support filtering by status', async () => {
         const response = await request(app)
           .get('/api/admin/tickets?status=open')
-          .set('Authorization', `Bearer ${adminToken}`)
+          .set('Cookie', `token=${adminToken}`)
           .expect(200);
 
         expect(response.body.tickets).toBeDefined();
@@ -254,7 +254,7 @@ describe('Admin Routes', () => {
       it('should support pagination', async () => {
         const response = await request(app)
           .get('/api/admin/tickets?page=1&limit=10')
-          .set('Authorization', `Bearer ${adminToken}`)
+          .set('Cookie', `token=${adminToken}`)
           .expect(200);
 
         expect(response.body.tickets).toBeDefined();
@@ -268,7 +268,7 @@ describe('Admin Routes', () => {
       it('should get cleanup statistics', async () => {
         const response = await request(app)
           .get('/api/admin/cleanup/stats')
-          .set('Authorization', `Bearer ${adminToken}`)
+          .set('Cookie', `token=${adminToken}`)
           .expect(200);
 
         expect(response.body).toBeDefined();
@@ -279,7 +279,7 @@ describe('Admin Routes', () => {
       it('should get cleanup recommendations', async () => {
         const response = await request(app)
           .get('/api/admin/cleanup/recommendations')
-          .set('Authorization', `Bearer ${adminToken}`)
+          .set('Cookie', `token=${adminToken}`)
           .expect(200);
 
         expect(response.body).toBeDefined();
@@ -290,7 +290,7 @@ describe('Admin Routes', () => {
       it('should run cleanup tasks', async () => {
         const response = await request(app)
           .post('/api/admin/cleanup/run')
-          .set('Authorization', `Bearer ${adminToken}`)
+          .set('Cookie', `token=${adminToken}`)
           .send({ tasks: ['stale-sessions'] })
           .expect(200);
 
@@ -302,7 +302,7 @@ describe('Admin Routes', () => {
       it('should cleanup stale locks', async () => {
         const response = await request(app)
           .delete('/api/admin/cleanup/stale-locks')
-          .set('Authorization', `Bearer ${adminToken}`)
+          .set('Cookie', `token=${adminToken}`)
           .expect(200);
 
         expect(response.body).toBeDefined();
@@ -315,7 +315,7 @@ describe('Admin Routes', () => {
       it('should get conversion rate analytics', async () => {
         const response = await request(app)
           .get('/api/admin/analytics/conversion-rate')
-          .set('Authorization', `Bearer ${adminToken}`)
+          .set('Cookie', `token=${adminToken}`)
           .expect(200);
 
         expect(response.body).toBeDefined();
@@ -326,7 +326,7 @@ describe('Admin Routes', () => {
       it('should get feature adoption analytics', async () => {
         const response = await request(app)
           .get('/api/admin/analytics/features/adoption')
-          .set('Authorization', `Bearer ${adminToken}`)
+          .set('Cookie', `token=${adminToken}`)
           .expect(200);
 
         expect(response.body).toBeDefined();
@@ -337,7 +337,7 @@ describe('Admin Routes', () => {
       it('should get user growth analytics', async () => {
         const response = await request(app)
           .get('/api/admin/analytics/users/growth')
-          .set('Authorization', `Bearer ${adminToken}`)
+          .set('Cookie', `token=${adminToken}`)
           .expect(200);
 
         expect(response.body).toBeDefined();
@@ -348,7 +348,7 @@ describe('Admin Routes', () => {
       it('should export analytics data', async () => {
         const response = await request(app)
           .get('/api/admin/analytics/export')
-          .set('Authorization', `Bearer ${adminToken}`)
+          .set('Cookie', `token=${adminToken}`)
           .expect(200);
 
         expect(response.body).toBeDefined();
@@ -361,7 +361,7 @@ describe('Admin Routes', () => {
       it('should get activity feed', async () => {
         const response = await request(app)
           .get('/api/admin/activity/feed')
-          .set('Authorization', `Bearer ${adminToken}`)
+          .set('Cookie', `token=${adminToken}`)
           .expect(200);
 
         expect(response.body).toBeDefined();
@@ -370,7 +370,7 @@ describe('Admin Routes', () => {
       it('should support pagination for activity feed', async () => {
         const response = await request(app)
           .get('/api/admin/activity/feed?page=1&limit=20')
-          .set('Authorization', `Bearer ${adminToken}`)
+          .set('Cookie', `token=${adminToken}`)
           .expect(200);
 
         expect(response.body).toBeDefined();
@@ -388,7 +388,7 @@ describe('Admin Routes', () => {
 
         const response = await request(app)
           .get(`/api/admin/users/${testUser.userId}/projects`)
-          .set('Authorization', `Bearer ${adminToken}`)
+          .set('Cookie', `token=${adminToken}`)
           .expect(200);
 
         expect(response.body.projects).toBeDefined();
@@ -402,7 +402,7 @@ describe('Admin Routes', () => {
       it('should get performance recommendations', async () => {
         const response = await request(app)
           .get('/api/admin/performance/recommendations')
-          .set('Authorization', `Bearer ${adminToken}`)
+          .set('Cookie', `token=${adminToken}`)
           .expect(200);
 
         expect(response.body).toBeDefined();
@@ -415,7 +415,7 @@ describe('Admin Routes', () => {
       it('should reset analytics data', async () => {
         const response = await request(app)
           .delete('/api/admin/analytics/reset')
-          .set('Authorization', `Bearer ${adminToken}`)
+          .set('Cookie', `token=${adminToken}`)
           .expect(200);
 
         expect(response.body).toBeDefined();

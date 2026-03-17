@@ -21,7 +21,7 @@ export class RelationshipHandlers extends BaseCommandHandler {
         message: '❌ Please use flag-based syntax or no arguments for wizard.',
         suggestions: [
           '/add relationship - Interactive wizard',
-          '/add relationship --source="component" --target="target" --type=uses',
+          '/add relationship --source="feature" --target="target" --type=uses',
           '/add relationship --source="Login" --target="Auth Service" --type=uses --description="Uses auth"',
           '/help add relationship'
         ]
@@ -36,11 +36,11 @@ export class RelationshipHandlers extends BaseCommandHandler {
 
     // No args and no flags - pull up wizard
     if (parsed.args.length === 0 && getFlagCount(parsed.flags) === 0) {
-      if (project.components.length < 2) {
+      if (project.features.length < 2) {
         return {
           type: ResponseType.ERROR,
-          message: 'Need at least 2 components to create a relationship.',
-          suggestions: ['/add component', '/view components']
+          message: 'Need at least 2 features to create a relationship.',
+          suggestions: ['/add feature', '/view features']
         };
       }
 
@@ -52,19 +52,19 @@ export class RelationshipHandlers extends BaseCommandHandler {
           steps: [
             {
               id: 'source',
-              label: 'Source Component',
+              label: 'Source Feature',
               type: 'select',
-              options: project.components.map((c: any) => ({ value: c.id, label: `${c.title} (${c.category})` })),
+              options: project.features.map((c: any) => ({ value: c.id, label: `${c.title} (${c.category})` })),
               required: true,
-              placeholder: 'Select source component'
+              placeholder: 'Select source feature'
             },
             {
               id: 'target',
-              label: 'Target Component',
+              label: 'Target Feature',
               type: 'select',
-              options: project.components.map((c: any) => ({ value: c.id, label: `${c.title} (${c.category})` })),
+              options: project.features.map((c: any) => ({ value: c.id, label: `${c.title} (${c.category})` })),
               required: true,
-              placeholder: 'Select target component'
+              placeholder: 'Select target feature'
             },
             {
               id: 'type',
@@ -103,23 +103,23 @@ export class RelationshipHandlers extends BaseCommandHandler {
       };
     }
 
-    // Find source component
-    const sourceComponent = this.findComponent(project.components, sourceIdentifier);
-    if (!sourceComponent) {
+    // Find source feature
+    const sourceFeature = this.findFeature(project.features, sourceIdentifier);
+    if (!sourceFeature) {
       return {
         type: ResponseType.ERROR,
-        message: `Source component not found: "${sourceIdentifier}"`,
-        suggestions: ['/view components']
+        message: `Source feature not found: "${sourceIdentifier}"`,
+        suggestions: ['/view features']
       };
     }
 
-    // Find target component
-    const targetComponent = this.findComponent(project.components, targetIdentifier);
-    if (!targetComponent) {
+    // Find target feature
+    const targetFeature = this.findFeature(project.features, targetIdentifier);
+    if (!targetFeature) {
       return {
         type: ResponseType.ERROR,
-        message: `Target component not found: "${targetIdentifier}"`,
-        suggestions: ['/view components']
+        message: `Target feature not found: "${targetIdentifier}"`,
+        suggestions: ['/view features']
       };
     }
 
@@ -134,11 +134,11 @@ export class RelationshipHandlers extends BaseCommandHandler {
     }
 
     // Check if relationship already exists
-    if (sourceComponent.relationships && sourceComponent.relationships.some((r: any) => r.targetId === targetComponent.id)) {
+    if (sourceFeature.relationships && sourceFeature.relationships.some((r: any) => r.targetId === targetFeature.id)) {
       return {
         type: ResponseType.ERROR,
-        message: `Relationship already exists between "${sourceComponent.title}" and "${targetComponent.title}"`,
-        suggestions: [`/view relationships "${sourceComponent.title}"`]
+        message: `Relationship already exists between "${sourceFeature.title}" and "${targetFeature.title}"`,
+        suggestions: [`/view relationships "${sourceFeature.title}"`]
       };
     }
 
@@ -148,7 +148,7 @@ export class RelationshipHandlers extends BaseCommandHandler {
     // Create forward relationship (A -> B)
     const forwardRelationship = {
       id: sharedRelationshipId,
-      targetId: targetComponent.id,
+      targetId: targetFeature.id,
       relationType: relationshipType as any,
       description: sanitizeText(description)
     };
@@ -156,24 +156,24 @@ export class RelationshipHandlers extends BaseCommandHandler {
     // Create inverse relationship (B -> A)
     const inverseRelationship = {
       id: sharedRelationshipId, // Same ID for linking
-      targetId: sourceComponent.id,
+      targetId: sourceFeature.id,
       relationType: relationshipType as any,
       description: sanitizeText(description)
     };
 
     // Add relationships to both components
-    if (!sourceComponent.relationships) {
-      sourceComponent.relationships = [];
+    if (!sourceFeature.relationships) {
+      sourceFeature.relationships = [];
     }
-    if (!targetComponent.relationships) {
-      targetComponent.relationships = [];
+    if (!targetFeature.relationships) {
+      targetFeature.relationships = [];
     }
 
-    sourceComponent.relationships.push(forwardRelationship);
-    targetComponent.relationships.push(inverseRelationship);
+    sourceFeature.relationships.push(forwardRelationship);
+    targetFeature.relationships.push(inverseRelationship);
 
-    sourceComponent.updatedAt = new Date();
-    targetComponent.updatedAt = new Date();
+    sourceFeature.updatedAt = new Date();
+    targetFeature.updatedAt = new Date();
     await project.save();
 
     // Track analytics
@@ -192,12 +192,12 @@ export class RelationshipHandlers extends BaseCommandHandler {
     }
 
     return this.buildSuccessResponse(
-      `✅ Added ${relationshipType} relationship: "${sourceComponent.title}" ⇄ "${targetComponent.title}"`,
+      `✅ Added ${relationshipType} relationship: "${sourceFeature.title}" ⇄ "${targetFeature.title}"`,
       project,
       'add_relationship',
       {
-        source: sourceComponent.title,
-        target: targetComponent.title,
+        source: sourceFeature.title,
+        target: targetFeature.title,
         type: relationshipType,
         description: description || ''
       }
@@ -205,7 +205,7 @@ export class RelationshipHandlers extends BaseCommandHandler {
   }
 
   /**
-   * Handle /view relationships command - View all relationships for a component
+   * Handle /view relationships command - View all relationships for a feature
    */
 
   async handleViewRelationships(parsed: ParsedCommand, currentProjectId?: string): Promise<CommandResponse> {
@@ -214,38 +214,38 @@ export class RelationshipHandlers extends BaseCommandHandler {
       return this.buildProjectErrorResponse(resolution);
     }
 
-    const componentIdentifier = parsed.args.join(' ').trim();
+    const featureIdentifier = parsed.args.join(' ').trim();
 
-    // No identifier provided - show selector wizard for components with relationships
-    if (!componentIdentifier) {
-      const componentsWithRelationships = resolution.project.components.filter(
+    // No identifier provided - show selector wizard for features with relationships
+    if (!featureIdentifier) {
+      const featuresWithRelationships = resolution.project.features.filter(
         (c: any) => c.relationships && c.relationships.length > 0
       );
 
-      if (componentsWithRelationships.length === 0) {
+      if (featuresWithRelationships.length === 0) {
         return {
           type: ResponseType.INFO,
-          message: 'No components with relationships found',
+          message: 'No features with relationships found',
           suggestions: ['/add relationship']
         };
       }
 
       return {
         type: ResponseType.PROMPT,
-        message: `🔗 Select Component to View Relationships`,
+        message: `🔗 Select Feature to View Relationships`,
         data: {
           wizardType: 'view_relationships_selector',
           steps: [
             {
-              id: 'componentId',
-              label: 'Select Component',
+              id: 'featureId',
+              label: 'Select Feature',
               type: 'select',
-              options: componentsWithRelationships.map((c: any) => ({
+              options: featuresWithRelationships.map((c: any) => ({
                 value: c.id,
                 label: `${c.title} (${c.relationships.length} relationship${c.relationships.length > 1 ? 's' : ''})`
               })),
               required: true,
-              placeholder: 'Select component'
+              placeholder: 'Select feature'
             }
           ]
         },
@@ -256,29 +256,29 @@ export class RelationshipHandlers extends BaseCommandHandler {
       };
     }
 
-    const component = this.findComponent(resolution.project.components, componentIdentifier);
+    const feature = this.findFeature(resolution.project.features, featureIdentifier);
 
-    if (!component) {
+    if (!feature) {
       return {
         type: ResponseType.ERROR,
-        message: `Component not found: "${componentIdentifier}"`,
-        suggestions: ['/view components']
+        message: `Feature not found: "${featureIdentifier}"`,
+        suggestions: ['/view features']
       };
     }
 
-    const relationships = component.relationships || [];
+    const relationships = feature.relationships || [];
 
     if (relationships.length === 0) {
       return {
         type: ResponseType.INFO,
-        message: `🔗 No relationships found for "${component.title}"`,
-        suggestions: [`/add relationship "${component.title}" "target" "type"`]
+        message: `🔗 No relationships found for "${feature.title}"`,
+        suggestions: [`/add relationship "${feature.title}" "target" "type"`]
       };
     }
 
-    // Enrich relationships with target component info
+    // Enrich relationships with target feature info
     const enrichedRelationships = relationships.map((rel: any) => {
-      const target = resolution.project!.components.find((c: any) => c.id === rel.targetId);
+      const target = resolution.project!.features.find((c: any) => c.id === rel.targetId);
       return {
         id: rel.id,
         relationType: rel.relationType,
@@ -293,15 +293,15 @@ export class RelationshipHandlers extends BaseCommandHandler {
     }).filter((rel: any) => rel.target !== null);
 
     return this.buildDataResponse(
-      `🔗 Relationships for "${component.title}" (${enrichedRelationships.length})`,
+      `🔗 Relationships for "${feature.title}" (${enrichedRelationships.length})`,
       resolution.project,
       'view_relationships',
       {
-        component: {
-          id: component.id,
-          title: component.title,
-          category: component.category,
-          type: component.type
+        feature: {
+          id: feature.id,
+          title: feature.title,
+          category: feature.category,
+          type: feature.type
         },
         relationships: enrichedRelationships
       }
@@ -318,22 +318,22 @@ export class RelationshipHandlers extends BaseCommandHandler {
 
     // No args - show selector to choose which relationship to edit
     if (parsed.args.length === 0) {
-      // Collect all relationships from all components
+      // Collect all relationships from all features
       const allRelationships: Array<{
-        componentId: string;
-        componentTitle: string;
+        featureId: string;
+        featureTitle: string;
         relationshipIndex: number;
         relationship: any;
         targetTitle: string;
       }> = [];
 
-      project.components.forEach((comp: any) => {
+      project.features.forEach((comp: any) => {
         if (comp.relationships && comp.relationships.length > 0) {
           comp.relationships.forEach((rel: any, index: number) => {
-            const target = project.components.find((c: any) => c.id === rel.targetId);
+            const target = project.features.find((c: any) => c.id === rel.targetId);
             allRelationships.push({
-              componentId: comp.id,
-              componentTitle: comp.title,
+              featureId: comp.id,
+              featureTitle: comp.title,
               relationshipIndex: index + 1,
               relationship: rel,
               targetTitle: target?.title || 'unknown'
@@ -361,8 +361,8 @@ export class RelationshipHandlers extends BaseCommandHandler {
               label: 'Select Relationship',
               type: 'select',
               options: allRelationships.map((r) => ({
-                value: `${r.componentId}|${r.relationshipIndex}`,
-                label: `${r.componentTitle} ${r.relationship.relationType} ${r.targetTitle}`
+                value: `${r.featureId}|${r.relationshipIndex}`,
+                label: `${r.featureTitle} ${r.relationship.relationType} ${r.targetTitle}`
               })),
               required: true,
               placeholder: 'Select relationship to edit'
@@ -376,31 +376,31 @@ export class RelationshipHandlers extends BaseCommandHandler {
       };
     }
 
-    const componentIdentifier = parsed.args[0];
+    const featureIdentifier = parsed.args[0];
     const relationshipIdentifier = parsed.args[1];
 
     // If only 2 args provided, show wizard to select new type
     if (parsed.args.length === 2) {
-      // Find component
-      const component = this.findComponent(project.components, componentIdentifier);
-      if (!component) {
+      // Find feature
+      const feature = this.findFeature(project.features, featureIdentifier);
+      if (!feature) {
         return {
           type: ResponseType.ERROR,
-          message: `Component not found: "${componentIdentifier}"`,
-          suggestions: ['/view components']
+          message: `Feature not found: "${featureIdentifier}"`,
+          suggestions: ['/view features']
         };
       }
 
       // Find relationship
       let relationship: any = null;
       const relIndex = parseInt(relationshipIdentifier);
-      if (!isNaN(relIndex) && relIndex > 0 && relIndex <= component.relationships.length) {
-        relationship = component.relationships[relIndex - 1];
+      if (!isNaN(relIndex) && relIndex > 0 && relIndex <= feature.relationships.length) {
+        relationship = feature.relationships[relIndex - 1];
       } else {
-        relationship = component.relationships.find((r: any) => r.id === relationshipIdentifier);
+        relationship = feature.relationships.find((r: any) => r.id === relationshipIdentifier);
         if (!relationship) {
-          relationship = component.relationships.find((r: any) => {
-            const targetComp = project.components.find((c: any) => c.id === r.targetId);
+          relationship = feature.relationships.find((r: any) => {
+            const targetComp = project.features.find((c: any) => c.id === r.targetId);
             return targetComp && targetComp.title.toLowerCase() === relationshipIdentifier.toLowerCase();
           });
         }
@@ -410,16 +410,16 @@ export class RelationshipHandlers extends BaseCommandHandler {
         return {
           type: ResponseType.ERROR,
           message: `Relationship not found: "${relationshipIdentifier}"`,
-          suggestions: [`/view relationships "${component.title}"`]
+          suggestions: [`/view relationships "${feature.title}"`]
         };
       }
 
-      const targetComponent = project.components.find((c: any) => c.id === relationship.targetId);
+      const targetFeature = project.features.find((c: any) => c.id === relationship.targetId);
 
       // Show wizard to select new relationship type
       return {
         type: ResponseType.PROMPT,
-        message: `✏️  Edit Relationship: "${component.title}" → "${targetComponent?.title || 'unknown'}"`,
+        message: `✏️  Edit Relationship: "${feature.title}" → "${targetFeature?.title || 'unknown'}"`,
         data: {
           wizardType: 'edit_relationship_type',
           steps: [
@@ -441,8 +441,8 @@ export class RelationshipHandlers extends BaseCommandHandler {
               placeholder: 'Optional description'
             }
           ],
-          componentTitle: component.title,
-          targetTitle: targetComponent?.title || 'unknown',
+          featureTitle: feature.title,
+          targetTitle: targetFeature?.title || 'unknown',
           relationshipId: relationship.id
         },
         metadata: {
@@ -455,7 +455,7 @@ export class RelationshipHandlers extends BaseCommandHandler {
     if (parsed.args.length < 3) {
       return {
         type: ResponseType.ERROR,
-        message: 'Usage: /edit relationship [source component] [target component] [new type]',
+        message: 'Usage: /edit relationship [source feature] [target feature] [new type]',
         suggestions: [
           '/edit relationship "Login" "Database" depends_on',
           '/edit relationship "Login" 1 depends_on',
@@ -469,38 +469,38 @@ export class RelationshipHandlers extends BaseCommandHandler {
     const newType = parsed.args[2].toLowerCase();
     const newDescription = getFlag(parsed.flags, 'description') as string;
 
-    // Find component
-    const component = this.findComponent(project.components, componentIdentifier);
-    if (!component) {
+    // Find feature
+    const feature = this.findFeature(project.features, featureIdentifier);
+    if (!feature) {
       return {
         type: ResponseType.ERROR,
-        message: `Component not found: "${componentIdentifier}"`,
-        suggestions: ['/view components']
+        message: `Feature not found: "${featureIdentifier}"`,
+        suggestions: ['/view features']
       };
     }
 
-    if (!component.relationships || component.relationships.length === 0) {
+    if (!feature.relationships || feature.relationships.length === 0) {
       return {
         type: ResponseType.ERROR,
-        message: `No relationships found for "${component.title}"`,
-        suggestions: [`/add relationship "${component.title}" "target" "type"`]
+        message: `No relationships found for "${feature.title}"`,
+        suggestions: [`/add relationship "${feature.title}" "target" "type"`]
       };
     }
 
-    // Find relationship by ID, index, or target component title
+    // Find relationship by ID, index, or target feature title
     let relationship: any = null;
     const relIndex = parseInt(relationshipIdentifier);
-    if (!isNaN(relIndex) && relIndex > 0 && relIndex <= component.relationships.length) {
+    if (!isNaN(relIndex) && relIndex > 0 && relIndex <= feature.relationships.length) {
       // Find by index
-      relationship = component.relationships[relIndex - 1];
+      relationship = feature.relationships[relIndex - 1];
     } else {
       // Try to find by UUID
-      relationship = component.relationships.find((r: any) => r.id === relationshipIdentifier);
+      relationship = feature.relationships.find((r: any) => r.id === relationshipIdentifier);
 
-      // If not found, try to find by target component title
+      // If not found, try to find by target feature title
       if (!relationship) {
-        relationship = component.relationships.find((r: any) => {
-          const targetComp = project.components.find((c: any) => c.id === r.targetId);
+        relationship = feature.relationships.find((r: any) => {
+          const targetComp = project.features.find((c: any) => c.id === r.targetId);
           return targetComp && targetComp.title.toLowerCase() === relationshipIdentifier.toLowerCase();
         });
       }
@@ -510,7 +510,7 @@ export class RelationshipHandlers extends BaseCommandHandler {
       return {
         type: ResponseType.ERROR,
         message: `Relationship not found: "${relationshipIdentifier}"`,
-        suggestions: [`/view relationships "${component.title}"`]
+        suggestions: [`/view relationships "${feature.title}"`]
       };
     }
 
@@ -524,8 +524,8 @@ export class RelationshipHandlers extends BaseCommandHandler {
       };
     }
 
-    // Get target component for display
-    const targetComponent = project.components.find((c: any) => c.id === relationship.targetId);
+    // Get target feature for display
+    const targetFeature = project.features.find((c: any) => c.id === relationship.targetId);
     const oldType = relationship.relationType;
 
     // Update relationship type on source side
@@ -536,23 +536,23 @@ export class RelationshipHandlers extends BaseCommandHandler {
       relationship.description = sanitizeText(newDescription);
     }
 
-    // Find and update the inverse relationship on the target component
-    if (targetComponent && targetComponent.relationships) {
-      const inverseRelationship = targetComponent.relationships.find((r: any) => r.id === relationship.id);
+    // Find and update the inverse relationship on the target feature
+    if (targetFeature && targetFeature.relationships) {
+      const inverseRelationship = targetFeature.relationships.find((r: any) => r.id === relationship.id);
       if (inverseRelationship) {
         inverseRelationship.relationType = newType;
         if (newDescription !== undefined) {
           inverseRelationship.description = sanitizeText(newDescription);
         }
-        targetComponent.updatedAt = new Date();
+        targetFeature.updatedAt = new Date();
       }
     }
 
-    component.updatedAt = new Date();
+    feature.updatedAt = new Date();
     await project.save();
 
     return this.buildSuccessResponse(
-      `✅ Updated relationship: "${component.title}" ⇄ "${targetComponent?.title || 'unknown'}" (${oldType} → ${newType})`,
+      `✅ Updated relationship: "${feature.title}" ⇄ "${targetFeature?.title || 'unknown'}" (${oldType} → ${newType})`,
       project,
       'edit_relationship'
     );
@@ -568,16 +568,16 @@ export class RelationshipHandlers extends BaseCommandHandler {
 
     // No args provided - show selector wizard with all relationships
     if (parsed.args.length === 0) {
-      // Collect all relationships from all components
-      const allRelationships: Array<{ componentId: string; componentTitle: string; relationshipId: string; relationship: any; targetTitle: string }> = [];
+      // Collect all relationships from all features
+      const allRelationships: Array<{ featureId: string; featureTitle: string; relationshipId: string; relationship: any; targetTitle: string }> = [];
 
-      project.components.forEach((comp: any) => {
+      project.features.forEach((comp: any) => {
         if (comp.relationships && comp.relationships.length > 0) {
           comp.relationships.forEach((rel: any) => {
-            const target = project.components.find((c: any) => c.id === rel.targetId);
+            const target = project.features.find((c: any) => c.id === rel.targetId);
             allRelationships.push({
-              componentId: comp.id,
-              componentTitle: comp.title,
+              featureId: comp.id,
+              featureTitle: comp.title,
               relationshipId: rel.id,
               relationship: rel,
               targetTitle: target?.title || 'unknown'
@@ -605,8 +605,8 @@ export class RelationshipHandlers extends BaseCommandHandler {
               label: 'Select Relationship',
               type: 'select',
               options: allRelationships.map((r) => ({
-                value: `${r.componentId}|${r.relationshipId}`,
-                label: `${r.componentTitle} ${r.relationship.relationType} ${r.targetTitle}`
+                value: `${r.featureId}|${r.relationshipId}`,
+                label: `${r.featureTitle} ${r.relationship.relationType} ${r.targetTitle}`
               })),
               required: true,
               placeholder: 'Select relationship to delete'
@@ -623,7 +623,7 @@ export class RelationshipHandlers extends BaseCommandHandler {
     if (parsed.args.length < 2) {
       return {
         type: ResponseType.ERROR,
-        message: 'Usage: /delete relationship [component id/title] [relationship id]',
+        message: 'Usage: /delete relationship [feature id/title] [relationship id]',
         suggestions: [
           '/delete relationship - Interactive selector',
           '/delete relationship "Login" 1 --confirm',
@@ -633,23 +633,23 @@ export class RelationshipHandlers extends BaseCommandHandler {
       };
     }
 
-    const componentIdentifier = parsed.args[0];
+    const featureIdentifier = parsed.args[0];
     const relationshipIdentifier = parsed.args[1];
 
-    // Find component
-    const component = this.findComponent(project.components, componentIdentifier);
-    if (!component) {
+    // Find feature
+    const feature = this.findFeature(project.features, featureIdentifier);
+    if (!feature) {
       return {
         type: ResponseType.ERROR,
-        message: `Component not found: "${componentIdentifier}"`,
-        suggestions: ['/view components']
+        message: `Feature not found: "${featureIdentifier}"`,
+        suggestions: ['/view features']
       };
     }
 
-    if (!component.relationships || component.relationships.length === 0) {
+    if (!feature.relationships || feature.relationships.length === 0) {
       return {
         type: ResponseType.ERROR,
-        message: `No relationships found for "${component.title}"`,
+        message: `No relationships found for "${feature.title}"`,
         suggestions: []
       };
     }
@@ -657,22 +657,22 @@ export class RelationshipHandlers extends BaseCommandHandler {
     // Find relationship by ID or index
     let relationshipIndex = -1;
     const relIndex = parseInt(relationshipIdentifier);
-    if (!isNaN(relIndex) && relIndex > 0 && relIndex <= component.relationships.length) {
+    if (!isNaN(relIndex) && relIndex > 0 && relIndex <= feature.relationships.length) {
       relationshipIndex = relIndex - 1;
     } else {
-      relationshipIndex = component.relationships.findIndex((r: any) => r.id === relationshipIdentifier);
+      relationshipIndex = feature.relationships.findIndex((r: any) => r.id === relationshipIdentifier);
     }
 
     if (relationshipIndex === -1) {
       return {
         type: ResponseType.ERROR,
         message: `Relationship not found: "${relationshipIdentifier}"`,
-        suggestions: [`/view relationships "${component.title}"`]
+        suggestions: [`/view relationships "${feature.title}"`]
       };
     }
 
-    const relationship = component.relationships[relationshipIndex];
-    const targetComponent = project.components.find((c: any) => c.id === relationship.targetId);
+    const relationship = feature.relationships[relationshipIndex];
+    const targetFeature = project.features.find((c: any) => c.id === relationship.targetId);
 
     // Check for confirmation flag
     const hasConfirmation = hasFlag(parsed.flags, 'confirm') || hasFlag(parsed.flags, 'yes') || hasFlag(parsed.flags, 'y');
@@ -684,15 +684,15 @@ export class RelationshipHandlers extends BaseCommandHandler {
         data: {
           wizardType: 'delete_relationship_confirm',
           confirmationData: {
-            componentTitle: component.title,
-            targetTitle: targetComponent?.title || 'unknown',
+            featureTitle: feature.title,
+            targetTitle: targetFeature?.title || 'unknown',
             relationType: relationship.relationType,
-            command: `/delete relationship "${component.title}" ${relationshipIdentifier} --confirm`
+            command: `/delete relationship "${feature.title}" ${relationshipIdentifier} --confirm`
           },
           steps: [
             {
               id: 'confirmation',
-              label: `Are you sure you want to delete the ${relationship.relationType} relationship from "${component.title}" to "${targetComponent?.title || 'unknown'}"?`,
+              label: `Are you sure you want to delete the ${relationship.relationType} relationship from "${feature.title}" to "${targetFeature?.title || 'unknown'}"?`,
               type: 'confirmation',
               required: true
             }
@@ -705,16 +705,16 @@ export class RelationshipHandlers extends BaseCommandHandler {
       };
     }
 
-    // Delete the relationship from source component
-    component.relationships.splice(relationshipIndex, 1);
-    component.updatedAt = new Date();
+    // Delete the relationship from source feature
+    feature.relationships.splice(relationshipIndex, 1);
+    feature.updatedAt = new Date();
 
-    // Remove the inverse relationship from the target component
-    if (targetComponent && targetComponent.relationships) {
-      const inverseRelationshipIndex = targetComponent.relationships.findIndex((r: any) => r.id === relationship.id);
+    // Remove the inverse relationship from the target feature
+    if (targetFeature && targetFeature.relationships) {
+      const inverseRelationshipIndex = targetFeature.relationships.findIndex((r: any) => r.id === relationship.id);
       if (inverseRelationshipIndex !== -1) {
-        targetComponent.relationships.splice(inverseRelationshipIndex, 1);
-        targetComponent.updatedAt = new Date();
+        targetFeature.relationships.splice(inverseRelationshipIndex, 1);
+        targetFeature.updatedAt = new Date();
       }
     }
 
@@ -733,26 +733,26 @@ export class RelationshipHandlers extends BaseCommandHandler {
     }
 
     return this.buildSuccessResponse(
-      `🗑️  Deleted ${relationship.relationType} relationship: "${component.title}" ⇄ "${targetComponent?.title || 'unknown'}"`,
+      `🗑️  Deleted ${relationship.relationType} relationship: "${feature.title}" ⇄ "${targetFeature?.title || 'unknown'}"`,
       project,
       'delete_relationship'
     );
   }
 
   /**
-   * Helper method to find a component by ID or title (case-insensitive partial match)
+   * Helper method to find a feature by ID or title (case-insensitive partial match)
    */
-  private findComponent(components: any[], identifier: string): any | undefined {
+  private findFeature(features: any[], identifier: string): any | undefined {
     // Try exact UUID match first
-    let found = components.find((c: any) => c.id === identifier);
+    let found = features.find((c: any) => c.id === identifier);
     if (found) return found;
 
     // Try exact title match (case-insensitive)
-    found = components.find((c: any) => c.title.toLowerCase() === identifier.toLowerCase());
+    found = features.find((c: any) => c.title.toLowerCase() === identifier.toLowerCase());
     if (found) return found;
 
     // Try partial title match (case-insensitive)
-    found = components.find((c: any) => c.title.toLowerCase().includes(identifier.toLowerCase()));
+    found = features.find((c: any) => c.title.toLowerCase().includes(identifier.toLowerCase()));
     return found;
   }
 }

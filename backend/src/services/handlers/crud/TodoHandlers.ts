@@ -1624,23 +1624,23 @@ export class TodoHandlers extends BaseCommandHandler {
   }
 
   /**
-   * Find a component by ID, UUID, index, or title
+   * Find a feature by ID, UUID, index, or title
    */
-  private findComponent(components: any[], identifier: string): any | null {
+  private findComponent(features: any[], identifier: string): any | null {
     // Try to find by UUID (exact match)
-    const byUuid = components.find((component: any) => component.id === identifier);
+    const byUuid = features.find((feat: any) => feat.id === identifier);
     if (byUuid) return byUuid;
 
     // Try to find by numeric index (1-based)
     const index = parseInt(identifier);
-    if (!isNaN(index) && index > 0 && index <= components.length) {
-      return components[index - 1];
+    if (!isNaN(index) && index > 0 && index <= features.length) {
+      return features[index - 1];
     }
 
     // Try to find by partial title match (case insensitive)
     const identifierLower = identifier.toLowerCase();
-    return components.find((component: any) =>
-      component.title.toLowerCase().includes(identifierLower)
+    return features.find((feat: any) =>
+      feat.title.toLowerCase().includes(identifierLower)
     ) || null;
   }
 

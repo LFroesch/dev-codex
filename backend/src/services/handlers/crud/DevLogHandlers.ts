@@ -134,9 +134,9 @@ export class DevLogHandlers extends BaseCommandHandler {
   }
 
   /**
-   * Handle /add component command
-   * Now requires flag-based syntax: /add component --feature="..." --category=... --type=... --title="..." --content="..."
-   * Or use without flags to pull up an interactive wizard: /add component
+   * Handle /add feature command
+   * Now requires flag-based syntax: /add feature --group="..." --category=... --type=... --title="..." --content="..."
+   * Or use without flags to pull up an interactive wizard: /add feature
    */
 
   async handleViewDevLog(parsed: ParsedCommand, currentProjectId?: string): Promise<CommandResponse> {
@@ -171,7 +171,7 @@ export class DevLogHandlers extends BaseCommandHandler {
   }
 
   /**
-   * Handle /view components command - Shows structure by default, grouped by features
+   * Handle /view features command - Shows structure by default, grouped by features
    */
 
   async handleEditDevLog(parsed: ParsedCommand, currentProjectId?: string): Promise<CommandResponse> {
@@ -306,7 +306,7 @@ export class DevLogHandlers extends BaseCommandHandler {
   }
 
   /**
-   * Handle /edit component command - Edit an existing component
+   * Handle /edit feature command - Edit an existing feature
    */
 
   async handleDeleteDevLog(parsed: ParsedCommand, currentProjectId?: string): Promise<CommandResponse> {

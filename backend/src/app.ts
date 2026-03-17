@@ -17,10 +17,12 @@ import path from 'path';
 import helmet from 'helmet';
 import { Server } from 'socket.io';
 import { createServer } from 'http';
+import jwt from 'jsonwebtoken';
+import TeamMember from './models/TeamMember';
+import { Project } from './models/Project';
 import { connectDatabase } from './config/database';
 import { logInfo, logError } from './config/logger';
 import { sendErrorResponse } from './utils/errorHandler';
-import { requestLogger } from './middleware/requestLogger';
 import authRoutes from './routes/auth';
 import projectRoutes from './routes/projects';
 import billingRoutes from './routes/billing';
@@ -42,8 +44,7 @@ import favoritesRoutes from './routes/favorites';
 import followsRoutes from './routes/follows';
 import postsRoutes from './routes/posts';
 import likesRoutes from './routes/likes';
-import { normalRateLimit, authRateLimit, devRateLimit, publicRateLimit, adminRateLimit } from './middleware/rateLimit';
-import { terminalExecuteSecurity, terminalSuggestionsSecurity } from './middleware/commandSecurity';
+import { normalRateLimit, devRateLimit, publicRateLimit } from './middleware/rateLimit';
 import { sessionMiddleware, AnalyticsService } from './middleware/analytics';
 import ReminderService from './services/reminderService';
 import UserSession from './models/UserSession';
@@ -198,7 +199,7 @@ if (isDevelopment) {
 app.use(cookieParser());
 
 app.use('/api/billing/webhook', express.raw({ type: 'application/json' }));
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
 app.use(passport.initialize());
 
 // Security headers middleware using Helmet
@@ -267,8 +268,6 @@ const conditionalCSRF = (req: express.Request, res: express.Response, next: expr
   return csrfProtection.doubleCsrfProtection(req, res, next);
 };
 
-// Request logging middleware
-app.use(requestLogger as any);
 
 // CSRF token endpoint for frontend
 app.get('/api/csrf-token', (req, res) => {
@@ -302,6 +301,11 @@ app.use('/api/likes', conditionalCSRF, rateLimitMiddleware, likesRoutes);
 if (isDevelopment) {
   app.use('/api/debug', debugRoutes);
 }
+
+// 404 handler for undefined API routes (returns JSON, not HTML)
+app.all('/api/*', (req, res) => {
+  res.status(404).json({ error: 'API endpoint not found' });
+});
 
 if (!isDevelopment) {
   // In production, compiled code is at /app/backend/dist/backend/src/
@@ -391,9 +395,48 @@ const startServer = async () => {
       }
     });
 
+    // Authenticate sockets via JWT cookie on handshake
+    io.use((socket, next) => {
+      try {
+        const cookieHeader = socket.handshake.headers.cookie || '';
+        const cookies = Object.fromEntries(
+          cookieHeader.split('; ').filter(Boolean).map(c => {
+            const [key, ...rest] = c.split('=');
+            return [key, rest.join('=')];
+          })
+        );
+        const token = cookies.token;
+        if (!token || !process.env.JWT_SECRET) {
+          return next(new Error('Authentication required'));
+        }
+        const decoded = jwt.verify(token, process.env.JWT_SECRET) as { userId: string };
+        socket.data.userId = decoded.userId;
+        next();
+      } catch {
+        next(new Error('Authentication required'));
+      }
+    });
+
     io.on('connection', (socket) => {
-      socket.on('join-project', (projectId: string) => {
-        socket.join(`project-${projectId}`);
+      const authenticatedUserId = socket.data.userId;
+
+      socket.on('join-project', async (projectId: string) => {
+        try {
+          const project = await Project.findById(projectId).select('userId ownerId');
+          if (!project) return;
+
+          const isOwner = project.userId?.toString() === authenticatedUserId
+            || project.ownerId?.toString() === authenticatedUserId;
+
+          if (!isOwner) {
+            const member = await TeamMember.findOne({ projectId, userId: authenticatedUserId });
+            if (!member) return;
+          }
+
+          socket.join(`project-${projectId}`);
+        } catch {
+          // Silent fail — don't leak info
+        }
       });
 
       socket.on('leave-project', (projectId: string) => {
@@ -401,6 +444,8 @@ const startServer = async () => {
       });
 
       socket.on('join-user-notifications', (userId: string) => {
+        // Only allow joining your own notification room
+        if (userId !== authenticatedUserId) return;
         socket.join(`user-${userId}`);
       });
 

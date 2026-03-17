@@ -13,10 +13,10 @@ const TUTORIAL_STEPS = [
     route: '/projects',
     content: {
       heading: 'Welcome! Let\'s start by creating a project',
-      body: 'Projects are the foundation of your workspace. Each project can contain notes, todos, devlogs, and more. You\'ll need to create and select a project to access most features.',
+      body: 'Projects are the foundation of your workspace. Each project can contain notes, todos, devlogs, features, and more. You\'ll need to create and select a project to access most features.',
       tips: [
         'Click the "+" button in the top header to create a new project',
-        'Give your project a meaningful name',
+        'Give your project a meaningful name and description',
         'You can create multiple projects to organize different work streams'
       ],
       actionRequired: 'Create and select a project to continue'
@@ -25,49 +25,51 @@ const TUTORIAL_STEPS = [
   },
   {
     stepNumber: 2,
-    title: 'Header Components',
+    title: 'Header & Navigation',
     route: '/projects',
     content: {
-      heading: 'Explore the header features',
-      body: 'The header contains several useful tools: Session Tracker to monitor your work time, Notifications to stay updated, Search to quickly find content, and your User Menu for account settings.',
+      heading: 'Get oriented with the layout',
+      body: 'The header contains your Session Tracker, Notifications, Search, and User Menu. The navigation bar gives you access to all sections — project-specific tabs appear when a project is selected.',
       tips: [
         'Session Tracker automatically logs your work sessions',
-        'Click the bell icon to view notifications',
-        'Use the search bar to quickly find projects and content'
+        'Use search to quickly find projects and content',
+        'Project-specific tabs (Notes, Stack, Features, etc.) appear when a project is selected'
       ]
     },
     requiresProjectSelection: false
   },
   {
     stepNumber: 3,
-    title: 'Navigation System',
-    route: '/projects',
-    content: {
-      heading: 'Navigate through the application',
-      body: 'The main navigation bar lets you access different sections of the app. When a project is selected, you\'ll see additional tabs specific to that project.',
-      tips: [
-        'Main nav items are always accessible',
-        'Project-specific tabs appear when you select a project',
-        'The active tab is highlighted for easy navigation'
-      ]
-    },
-    requiresProjectSelection: false
-  },
-  {
-    stepNumber: 4,
     title: 'Terminal Interface',
     route: '/terminal',
     content: {
-      heading: 'Power-user terminal interface with AI',
-      body: 'Experience a unique CLI-style interface built right into your browser. Execute commands with the speed and efficiency of a terminal, featuring intelligent autocomplete, persistent command history, and AI-powered features.',
+      heading: 'Your command center',
+      body: 'The terminal is AI-first: just type naturally and the AI responds. For direct commands, prefix with /.',
       tips: [
-        'Lightning-fast command execution with real-time feedback',
-        'Smart autocomplete learns your workflow patterns',
-        'AI integration: use /llm for context/spec or /summary to summarize content',
-        'Full command history with Up/Down arrow navigation',
-        'Execute complex operations in seconds, not clicks'
+        'Type naturally — AI responds with proposed actions you can confirm or cancel',
+        'Prefix with / for slash commands: /add note, /view todos, /search',
+        'Use Up/Down arrows to navigate command history',
+        'Smart autocomplete suggests commands as you type',
+        'Commands like /today, /standup, and /week give quick project overviews'
       ],
-      actionRequired: 'Type /help to see all available commands'
+      actionRequired: 'Try typing "what can I do here?"'
+    },
+    requiresProjectSelection: true
+  },
+  {
+    stepNumber: 4,
+    title: 'AI Actions',
+    route: '/terminal',
+    content: {
+      heading: 'Confirm before anything changes',
+      body: 'When the AI suggests changes, they appear as checkboxes. Confirm or cancel — nothing happens without your approval.',
+      tips: [
+        'AI responses include action checkboxes — check the ones you want to run',
+        'Click Confirm to execute checked actions, or Cancel to dismiss',
+        'You can continue the conversation to refine suggestions before confirming',
+        'Use "New Chat" or /reset to start a fresh conversation anytime'
+      ],
+      actionRequired: 'Try: "add a todo to review the project README"'
     },
     requiresProjectSelection: true
   },
@@ -77,11 +79,12 @@ const TUTORIAL_STEPS = [
     route: '/notes',
     content: {
       heading: 'Organize your project documentation',
-      body: 'This section lets you create notes, manage todos, and track development logs. Switch between tabs to access different content types.',
+      body: 'Keep notes for documentation and ideas, todos for tracking tasks, and devlogs for recording development progress. Switch between tabs to access each type.',
       tips: [
-        'Notes are great for documentation and ideas',
-        'Todos help track tasks and action items',
-        'DevLogs document your development progress over time'
+        'Notes support markdown for rich documentation',
+        'Todos have priorities, due dates, subtasks, and status tracking',
+        'DevLogs create a chronological record of your development progress',
+        'You can also manage all of these from the terminal with /add, /view, and /edit commands'
       ],
       actionRequired: 'Try creating a note or todo to get started'
     },
@@ -89,141 +92,50 @@ const TUTORIAL_STEPS = [
   },
   {
     stepNumber: 6,
-    title: 'Stack Management',
+    title: 'Stack & Features',
     route: '/stack',
     content: {
-      heading: 'Define your technology stack',
-      body: 'Track the technologies, frameworks, and packages used in your project. Use presets for common stacks or add custom technologies.',
+      heading: 'Define your tech stack and map your architecture',
+      body: 'Track the technologies used in your project with the Stack tab. Then use Features to document components, services, and their relationships with a visual graph.',
       tips: [
-        'View current stack in the "Current" tab',
-        'Add new technologies in the "Add" tab',
-        'Use preset stacks to quickly set up common configurations'
+        'Add technologies with category, version, and description',
+        'Use preset stacks to quickly set up common configurations',
+        'Features let you document components, hooks, routes, models, and more',
+        'The graph view visualizes how features relate to each other'
       ],
-      actionRequired: 'Add a technology to your stack using the "Add" tab'
+      actionRequired: 'Add a technology to your stack, then check out the Features tab'
     },
     requiresProjectSelection: true
   },
   {
     stepNumber: 7,
-    title: 'Features & Components',
-    route: '/features',
+    title: 'Deployment & Sharing',
+    route: '/deployment',
     content: {
-      heading: 'Visualize your project structure',
-      body: 'Document features and components with a visual graph representation. See how different parts of your project relate to each other.',
+      heading: 'Deploy and share your work',
+      body: 'Configure deployment details and environment variables in the Deployment tab. Make your project discoverable by setting it to public, or invite team members to collaborate.',
       tips: [
-        'The graph view shows component relationships',
-        'Click nodes to view details',
-        'Use the structure tab for a hierarchical view'
-      ],
-      actionRequired: 'Create a component using the sidebar controls'
+        'Store deployment URLs, build commands, and environment variables',
+        'Set a public slug to create a shareable project page',
+        'Invite team members by email or username with role-based access',
+        'Public projects appear in the Discover feed for the community to find'
+      ]
     },
     requiresProjectSelection: true
   },
   {
     stepNumber: 8,
-    title: 'Deployment Configuration',
-    route: '/deployment',
-    content: {
-      heading: 'Manage deployment settings',
-      body: 'Configure deployment details, environment variables, and deployment notes. Keep track of your hosting and deployment configuration.',
-      tips: [
-        'Store environment variables securely',
-        'Document your deployment process',
-        'Track deployment history and status'
-      ]
-    },
-    requiresProjectSelection: true
-  },
-  {
-    stepNumber: 9,
-    title: 'Public Sharing',
-    route: '/public',
-    content: {
-      heading: 'Share your project publicly',
-      body: 'Make your project discoverable by setting a public slug and visibility settings. Control what information is shared publicly.',
-      tips: [
-        'Set a unique public slug for your project URL',
-        'Toggle visibility to control public access',
-        'Public projects appear in the discovery feed'
-      ]
-    },
-    requiresProjectSelection: false
-  },
-  {
-    stepNumber: 10,
-    title: 'Team Collaboration',
-    route: '/sharing',
-    content: {
-      heading: 'Collaborate with your team',
-      body: 'Invite team members, manage roles and permissions, and view team activity. Work together on projects seamlessly.',
-      tips: [
-        'Invite members by email or username',
-        'Assign roles to control access levels',
-        'View activity log to track team changes'
-      ]
-    },
-    requiresProjectSelection: false
-  },
-  {
-    stepNumber: 11,
-    title: 'Project Settings',
+    title: 'Settings & Account',
     route: '/settings',
     content: {
-      heading: 'Configure your project settings',
-      body: 'Manage project-specific settings including name, description, color, category, and more. Import/export project data, archive projects, or delete them when needed.',
+      heading: 'Make it yours',
+      body: 'Customize your project settings (name, color, category, import/export) and your account (profile, themes, preferences). Visit the Discover page to explore public projects and other users.',
       tips: [
         'Customize project color and category for better organization',
-        'Import project data from JSON files',
-        'Export your project to share or backup',
-        'Archive inactive projects to keep your workspace clean',
-        'Delete projects you no longer need (this cannot be undone)'
-      ],
-      actionRequired: 'Try changing your project color or category'
-    },
-    requiresProjectSelection: true
-  },
-  {
-    stepNumber: 12,
-    title: 'Account Settings',
-    route: '/account-settings',
-    content: {
-      heading: 'Customize your account',
-      body: 'Manage your profile, create custom themes, and configure your account settings. Make the app your own.',
-      tips: [
-        'Update your profile information',
-        'Create custom themes with your favorite colors',
-        'Set your display preferences'
-      ]
-    },
-    requiresProjectSelection: false
-  },
-  {
-    stepNumber: 13,
-    title: 'Discover Community',
-    route: '/discover',
-    content: {
-      heading: 'Explore the community',
-      body: 'Discover public projects and users. Use search and filters to find interesting projects and connect with other developers.',
-      tips: [
-        'Browse public projects for inspiration',
-        'Search by technology or project type',
-        'Follow users to stay updated on their work'
-      ]
-    },
-    requiresProjectSelection: false
-  },
-  {
-    stepNumber: 14,
-    title: 'Help & Resources',
-    route: '/help',
-    content: {
-      heading: 'Need help? We\'ve got you covered',
-      body: 'Access helpful resources and restart this tutorial anytime. Explore tips and shortcuts to boost your productivity.',
-      tips: [
-        'Restart the tutorial if you need a refresher',
-        'Learn keyboard shortcuts and markdown syntax',
-        'Browse productivity tips and best practices',
-        'Reach out via the support page if you need help'
+        'Import/export project data as JSON for backup or sharing',
+        'Create custom themes with your favorite colors in Account Settings',
+        'Browse the Discover page for inspiration from other developers',
+        'Restart this tutorial anytime from the Help page'
       ]
     },
     requiresProjectSelection: false

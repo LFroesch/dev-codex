@@ -11,7 +11,7 @@ export const CONTENT_LIMITS = {
     todos: 50,
     notes: 20,
     devlogs: 30,
-    components: 30,
+    features: 30,
     stackItems: 50,
     teamMembers: 3
   },
@@ -19,7 +19,7 @@ export const CONTENT_LIMITS = {
     todos: 500,
     notes: 200,
     devlogs: 300,
-    components: 300,
+    features: 300,
     stackItems: 200,
     teamMembers: 10
   },
@@ -27,7 +27,7 @@ export const CONTENT_LIMITS = {
     todos: -1, // unlimited
     notes: -1,
     devlogs: -1,
-    components: -1,
+    features: -1,
     stackItems: -1,
     teamMembers: -1
   }

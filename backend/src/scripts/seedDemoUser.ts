@@ -6,6 +6,8 @@ import { connectDatabase } from '../config/database';
 
 dotenv.config();
 
+const forceReseed = process.argv.includes('--force');
+
 async function seedDemoUser() {
   try {
     await connectDatabase();
@@ -56,16 +58,20 @@ async function seedDemoUser() {
     // Create demo projects with rich sample data
     const existingProjects = await Project.find({ ownerId: demoUser._id });
 
-    if (existingProjects.length > 0) {
+    if (existingProjects.length > 0 && !forceReseed) {
       console.log(`Demo user already has ${existingProjects.length} projects. Skipping project creation.`);
-      console.log('To reset demo data, delete existing demo projects first.');
+      console.log('Use --force to delete and recreate demo projects.');
     } else {
+      if (existingProjects.length > 0 && forceReseed) {
+        await Project.deleteMany({ ownerId: demoUser._id });
+        console.log(`✓ Deleted ${existingProjects.length} existing demo projects`);
+      }
       // Project 1: Full-stack web app
       const webAppProject = new Project({
         name: 'TaskFlow',
         description: 'A modern, collaborative project management tool built with React and Node.js',
         color: '#8B5CF6',
-        category: 'Demo',
+        category: 'general',
         ownerId: demoUser._id,
         userId: demoUser._id,
         status: 'in_progress',
@@ -96,8 +102,8 @@ async function seedDemoUser() {
 - Role-based access control
 - Activity tracking
 - Rich text editing`,
-            createdAt: new Date('2024-01-15'),
-            updatedAt: new Date('2024-01-15'),
+            createdAt: new Date('2026-02-15'),
+            updatedAt: new Date('2026-02-15'),
             createdBy: demoUser._id,
             updatedBy: demoUser._id
           },
@@ -122,8 +128,8 @@ async function seedDemoUser() {
 - GET /api/projects/:id/notes
 - POST /api/projects/:id/notes
 - etc.`,
-            createdAt: new Date('2024-01-18'),
-            updatedAt: new Date('2024-01-20'),
+            createdAt: new Date('2026-02-18'),
+            updatedAt: new Date('2026-02-20'),
             createdBy: demoUser._id,
             updatedBy: demoUser._id
           }
@@ -136,8 +142,8 @@ async function seedDemoUser() {
             priority: 'high',
             completed: true,
             status: 'completed',
-            createdAt: new Date('2024-01-10'),
-            updatedAt: new Date('2024-01-12'),
+            createdAt: new Date('2026-02-10'),
+            updatedAt: new Date('2026-02-12'),
             createdBy: demoUser._id,
             updatedBy: demoUser._id
           },
@@ -148,8 +154,8 @@ async function seedDemoUser() {
             priority: 'high',
             completed: true,
             status: 'completed',
-            createdAt: new Date('2024-01-12'),
-            updatedAt: new Date('2024-01-16'),
+            createdAt: new Date('2026-02-12'),
+            updatedAt: new Date('2026-02-16'),
             createdBy: demoUser._id,
             updatedBy: demoUser._id
           },
@@ -161,8 +167,8 @@ async function seedDemoUser() {
             completed: false,
             status: 'in_progress',
             dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days from now
-            createdAt: new Date('2024-01-18'),
-            updatedAt: new Date('2024-01-20'),
+            createdAt: new Date('2026-02-18'),
+            updatedAt: new Date('2026-02-20'),
             createdBy: demoUser._id,
             updatedBy: demoUser._id
           },
@@ -173,8 +179,8 @@ async function seedDemoUser() {
             priority: 'medium',
             completed: false,
             status: 'not_started',
-            createdAt: new Date('2024-01-19'),
-            updatedAt: new Date('2024-01-19'),
+            createdAt: new Date('2026-02-19'),
+            updatedAt: new Date('2026-02-19'),
             createdBy: demoUser._id,
             updatedBy: demoUser._id
           },
@@ -185,20 +191,20 @@ async function seedDemoUser() {
             priority: 'medium',
             completed: false,
             status: 'not_started',
-            createdAt: new Date('2024-01-20'),
-            updatedAt: new Date('2024-01-20'),
+            createdAt: new Date('2026-02-20'),
+            updatedAt: new Date('2026-02-20'),
             createdBy: demoUser._id,
             updatedBy: demoUser._id
           }
         ],
-        devLogs: [
+        devLog: [
           {
             id: 'devlog1',
             title: 'Initial Setup & Project Kickoff',
             description: `Set up the development environment and initialized both frontend and backend repositories. Configured ESLint, Prettier, and TypeScript.
 
 Created initial folder structure and installed core dependencies. Set up MongoDB connection and basic Express server.`,
-            date: new Date('2024-01-10'),
+            date: new Date('2026-02-10'),
             createdBy: demoUser._id,
             updatedBy: demoUser._id
           },
@@ -213,7 +219,7 @@ Created initial folder structure and installed core dependencies. Set up MongoDB
 - OAuth integration (Google)
 
 All endpoints tested and working smoothly.`,
-            date: new Date('2024-01-16'),
+            date: new Date('2026-02-16'),
             createdBy: demoUser._id,
             updatedBy: demoUser._id
           },
@@ -227,7 +233,21 @@ All endpoints tested and working smoothly.`,
 - Loading skeletons
 
 Still need to add drag-and-drop reordering and better mobile responsiveness.`,
-            date: new Date('2024-01-20'),
+            date: new Date('2026-02-20'),
+            createdBy: demoUser._id,
+            updatedBy: demoUser._id
+          },
+          {
+            id: 'devlog4',
+            title: 'AI Assistant Integration',
+            description: `Integrated the built-in AI assistant into the terminal workflow. You can now:
+- Ask questions about your project in natural language
+- Get architecture suggestions based on your stack and features
+- Use /bridge to push AI-generated content into notes, todos, or devlogs
+- Use /context to see what project info the AI has access to
+
+The AI streams responses in real-time and maintains conversation context across messages.`,
+            date: new Date('2026-03-01'),
             createdBy: demoUser._id,
             updatedBy: demoUser._id
           }
@@ -243,22 +263,22 @@ Still need to add drag-and-drop reordering and better mobile responsiveness.`,
           { category: 'testing', name: 'Jest', version: '29.x', description: 'Testing framework' },
           { category: 'auth', name: 'JWT', version: '', description: 'Token-based authentication' }
         ],
-        components: [
+        features: [
           {
             id: 'comp1',
             category: 'frontend',
             type: 'context',
             title: 'AuthContext',
             content: 'React Context provider for global authentication state. Manages user login/logout, token refresh, and auth state across the entire application.',
-            feature: 'Authentication',
+            group: 'Authentication',
             filePath: 'src/contexts/AuthContext.tsx',
             tags: ['auth', 'context', 'react'],
             relationships: [
               { id: 'rel1', targetId: 'comp3', relationType: 'uses', description: 'Uses API hooks for auth operations' },
               { id: 'rel2', targetId: 'comp4', relationType: 'depends_on', description: 'Depends on backend auth endpoints' }
             ],
-            createdAt: new Date('2024-01-12'),
-            updatedAt: new Date('2024-01-16')
+            createdAt: new Date('2026-02-12'),
+            updatedAt: new Date('2026-02-16')
           },
           {
             id: 'comp2',
@@ -266,15 +286,15 @@ Still need to add drag-and-drop reordering and better mobile responsiveness.`,
             type: 'component',
             title: 'ProjectCard',
             content: 'Reusable card component for displaying project information with quick actions. Includes project name, description, status, and action buttons.',
-            feature: 'Project Display',
+            group: 'Project Display',
             filePath: 'src/components/ProjectCard.tsx',
             tags: ['ui', 'component', 'projects'],
             relationships: [
               { id: 'rel1', targetId: 'comp3', relationType: 'uses', description: 'Fetches project data via hook' },
               { id: 'rel2', targetId: 'comp7', relationType: 'uses', description: 'Uses modal for actions' }
             ],
-            createdAt: new Date('2024-01-14'),
-            updatedAt: new Date('2024-01-18')
+            createdAt: new Date('2026-02-14'),
+            updatedAt: new Date('2026-02-18')
           },
           {
             id: 'comp3',
@@ -282,15 +302,15 @@ Still need to add drag-and-drop reordering and better mobile responsiveness.`,
             type: 'hook',
             title: 'useProjects',
             content: 'Custom React hook for fetching and managing project data. Includes caching, error handling, and automatic refetching.',
-            feature: 'Data Fetching',
+            group: 'Data Fetching',
             filePath: 'src/hooks/useProjects.ts',
             tags: ['hooks', 'data', 'react'],
             relationships: [
               { id: 'rel1', targetId: 'comp4', relationType: 'depends_on', description: 'Calls backend API endpoints' },
               { id: 'rel2', targetId: 'comp8', relationType: 'uses', description: 'Uses error handling utility' }
             ],
-            createdAt: new Date('2024-01-15'),
-            updatedAt: new Date('2024-01-15')
+            createdAt: new Date('2026-02-15'),
+            updatedAt: new Date('2026-02-15')
           },
           {
             id: 'comp4',
@@ -298,15 +318,15 @@ Still need to add drag-and-drop reordering and better mobile responsiveness.`,
             type: 'route',
             title: 'Project Routes',
             content: 'Express routes for project CRUD operations. Handles GET, POST, PUT, DELETE for projects with authentication and validation.',
-            feature: 'API Endpoints',
+            group: 'API Endpoints',
             filePath: 'backend/src/routes/projects.ts',
             tags: ['api', 'express', 'routes'],
             relationships: [
               { id: 'rel1', targetId: 'comp5', relationType: 'uses', description: 'Uses auth middleware for protection' },
               { id: 'rel2', targetId: 'comp6', relationType: 'depends_on', description: 'Interacts with database models' }
             ],
-            createdAt: new Date('2024-01-13'),
-            updatedAt: new Date('2024-01-20')
+            createdAt: new Date('2026-02-13'),
+            updatedAt: new Date('2026-02-20')
           },
           {
             id: 'comp5',
@@ -314,26 +334,26 @@ Still need to add drag-and-drop reordering and better mobile responsiveness.`,
             type: 'middleware',
             title: 'Auth Middleware',
             content: 'Express middleware for JWT token validation and user authentication. Protects routes and injects user context into requests.',
-            feature: 'Authentication',
+            group: 'Authentication',
             filePath: 'backend/src/middleware/auth.ts',
             tags: ['auth', 'middleware', 'security'],
             relationships: [
               { id: 'rel1', targetId: 'comp6', relationType: 'uses', description: 'Queries User model for validation' }
             ],
-            createdAt: new Date('2024-01-11'),
-            updatedAt: new Date('2024-01-12')
+            createdAt: new Date('2026-02-11'),
+            updatedAt: new Date('2026-02-12')
           },
           {
             id: 'comp6',
             category: 'database',
             type: 'model',
             title: 'Project Model',
-            content: 'Mongoose schema and model for projects. Defines structure for notes, todos, devlogs, components, and relationships.',
-            feature: 'Data Layer',
+            content: 'Mongoose schema and model for projects. Defines structure for notes, todos, devlogs, features, and relationships.',
+            group: 'Data Layer',
             filePath: 'backend/src/models/Project.ts',
             tags: ['database', 'mongoose', 'schema'],
-            createdAt: new Date('2024-01-10'),
-            updatedAt: new Date('2024-01-18')
+            createdAt: new Date('2026-02-10'),
+            updatedAt: new Date('2026-02-18')
           },
           {
             id: 'comp7',
@@ -341,11 +361,11 @@ Still need to add drag-and-drop reordering and better mobile responsiveness.`,
             type: 'component',
             title: 'Modal Component',
             content: 'Reusable modal dialog component with animations. Used throughout the app for confirmations, forms, and detail views.',
-            feature: 'UI Components',
+            group: 'UI Components',
             filePath: 'src/components/Modal.tsx',
             tags: ['ui', 'modal', 'animation'],
-            createdAt: new Date('2024-01-13'),
-            updatedAt: new Date('2024-01-15')
+            createdAt: new Date('2026-02-13'),
+            updatedAt: new Date('2026-02-15')
           },
           {
             id: 'comp8',
@@ -353,14 +373,14 @@ Still need to add drag-and-drop reordering and better mobile responsiveness.`,
             type: 'utility',
             title: 'Error Handler',
             content: 'Centralized error handling utility that formats API errors, logs to console, and displays user-friendly toast notifications.',
-            feature: 'Error Handling',
+            group: 'Error Handling',
             filePath: 'src/utils/errorHandler.ts',
             tags: ['utility', 'errors', 'toast'],
             relationships: [
               { id: 'rel1', targetId: 'comp9', relationType: 'uses', description: 'Uses toast service for notifications' }
             ],
-            createdAt: new Date('2024-01-14'),
-            updatedAt: new Date('2024-01-14')
+            createdAt: new Date('2026-02-14'),
+            updatedAt: new Date('2026-02-14')
           },
           {
             id: 'comp9',
@@ -368,11 +388,11 @@ Still need to add drag-and-drop reordering and better mobile responsiveness.`,
             type: 'service',
             title: 'Toast Service',
             content: 'Toast notification service for displaying success, error, warning, and info messages to users with customizable duration and position.',
-            feature: 'Notifications',
+            group: 'Notifications',
             filePath: 'src/services/toastService.ts',
             tags: ['notifications', 'ui', 'service'],
-            createdAt: new Date('2024-01-12'),
-            updatedAt: new Date('2024-01-12')
+            createdAt: new Date('2026-02-12'),
+            updatedAt: new Date('2026-02-12')
           },
           {
             id: 'comp10',
@@ -380,11 +400,11 @@ Still need to add drag-and-drop reordering and better mobile responsiveness.`,
             type: 'config',
             title: 'Environment Config',
             content: 'Centralized configuration for environment variables, API URLs, and feature flags. Validates required env vars on startup.',
-            feature: 'Configuration',
+            group: 'Configuration',
             filePath: 'backend/src/config/env.ts',
             tags: ['config', 'environment', 'setup'],
-            createdAt: new Date('2024-01-10'),
-            updatedAt: new Date('2024-01-10')
+            createdAt: new Date('2026-02-10'),
+            updatedAt: new Date('2026-02-10')
           }
         ],
         deploymentData: {
@@ -394,7 +414,7 @@ Still need to add drag-and-drop reordering and better mobile responsiveness.`,
           deploymentStatus: 'active',
           buildCommand: 'npm run build',
           startCommand: 'npm start',
-          lastDeployDate: new Date('2024-01-20'),
+          lastDeployDate: new Date('2026-02-20'),
           deploymentBranch: 'main',
           environmentVariables: [
             { key: 'NODE_ENV', value: 'production' },
@@ -413,7 +433,7 @@ Still need to add drag-and-drop reordering and better mobile responsiveness.`,
         name: 'FitTrack - Fitness Companion',
         description: 'Cross-platform mobile app for tracking workouts and nutrition',
         color: '#10B981',
-        category: 'Demo',
+        category: 'general',
         ownerId: demoUser._id,
         userId: demoUser._id,
         status: 'planning',
@@ -444,8 +464,8 @@ Still need to add drag-and-drop reordering and better mobile responsiveness.`,
 - Progress photos
 - Weight trends
 - Personal records`,
-            createdAt: new Date('2024-01-05'),
-            updatedAt: new Date('2024-01-08'),
+            createdAt: new Date('2026-02-05'),
+            updatedAt: new Date('2026-02-08'),
             createdBy: demoUser._id,
             updatedBy: demoUser._id
           }
@@ -458,8 +478,8 @@ Still need to add drag-and-drop reordering and better mobile responsiveness.`,
             priority: 'high',
             completed: true,
             status: 'completed',
-            createdAt: new Date('2024-01-02'),
-            updatedAt: new Date('2024-01-05'),
+            createdAt: new Date('2026-02-02'),
+            updatedAt: new Date('2026-02-05'),
             createdBy: demoUser._id,
             updatedBy: demoUser._id
           },
@@ -471,8 +491,8 @@ Still need to add drag-and-drop reordering and better mobile responsiveness.`,
             completed: false,
             status: 'in_progress',
             dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 5 days from now
-            createdAt: new Date('2024-01-06'),
-            updatedAt: new Date('2024-01-10'),
+            createdAt: new Date('2026-02-06'),
+            updatedAt: new Date('2026-02-10'),
             createdBy: demoUser._id,
             updatedBy: demoUser._id
           },
@@ -483,13 +503,13 @@ Still need to add drag-and-drop reordering and better mobile responsiveness.`,
             priority: 'medium',
             completed: false,
             status: 'not_started',
-            createdAt: new Date('2024-01-10'),
-            updatedAt: new Date('2024-01-10'),
+            createdAt: new Date('2026-02-10'),
+            updatedAt: new Date('2026-02-10'),
             createdBy: demoUser._id,
             updatedBy: demoUser._id
           }
         ],
-        devLogs: [
+        devLog: [
           {
             id: 'devlog1',
             title: 'Project Planning & Research',
@@ -498,7 +518,7 @@ Still need to add drag-and-drop reordering and better mobile responsiveness.`,
 Decided to focus on simplicity and ease of use, avoiding the complexity of apps like MyFitnessPal while maintaining powerful tracking features.
 
 Chose React Native with Expo for cross-platform development.`,
-            date: new Date('2024-01-05'),
+            date: new Date('2026-02-05'),
             createdBy: demoUser._id,
             updatedBy: demoUser._id
           }
@@ -510,22 +530,22 @@ Chose React Native with Expo for cross-platform development.`,
           { category: 'database', name: 'SQLite', version: '', description: 'Local storage' },
           { category: 'api', name: 'Axios', version: '1.x', description: 'HTTP client' }
         ],
-        components: [
+        features: [
           {
             id: 'comp1',
             category: 'frontend',
             type: 'screen',
             title: 'WorkoutTracker',
             content: 'Main screen for logging workouts. Allows users to record exercises, sets, reps, and weight. Includes timer and rest period tracking.',
-            feature: 'Workout Logging',
+            group: 'Workout Logging',
             filePath: 'src/screens/WorkoutTracker.tsx',
             tags: ['mobile', 'screen', 'tracking'],
             relationships: [
               { id: 'rel1', targetId: 'comp2', relationType: 'uses', description: 'Renders exercise cards' },
               { id: 'rel2', targetId: 'comp4', relationType: 'uses', description: 'Uses workout data store' }
             ],
-            createdAt: new Date('2024-01-07'),
-            updatedAt: new Date('2024-01-10')
+            createdAt: new Date('2026-02-07'),
+            updatedAt: new Date('2026-02-10')
           },
           {
             id: 'comp2',
@@ -533,11 +553,11 @@ Chose React Native with Expo for cross-platform development.`,
             type: 'component',
             title: 'ExerciseCard',
             content: 'Card component for displaying exercise details including name, muscle group, and previous performance history.',
-            feature: 'Exercise Display',
+            group: 'Exercise Display',
             filePath: 'src/components/ExerciseCard.tsx',
             tags: ['mobile', 'ui', 'component'],
-            createdAt: new Date('2024-01-08'),
-            updatedAt: new Date('2024-01-08')
+            createdAt: new Date('2026-02-08'),
+            updatedAt: new Date('2026-02-08')
           },
           {
             id: 'comp3',
@@ -545,14 +565,14 @@ Chose React Native with Expo for cross-platform development.`,
             type: 'screen',
             title: 'Nutrition Logger',
             content: 'Screen for logging meals and tracking daily calorie/macro intake. Includes barcode scanner integration and meal photo uploads.',
-            feature: 'Nutrition Tracking',
+            group: 'Nutrition Tracking',
             filePath: 'src/screens/NutritionLogger.tsx',
             tags: ['mobile', 'screen', 'nutrition'],
             relationships: [
               { id: 'rel1', targetId: 'comp5', relationType: 'uses', description: 'Uses food database API' }
             ],
-            createdAt: new Date('2024-01-09'),
-            updatedAt: new Date('2024-01-12')
+            createdAt: new Date('2026-02-09'),
+            updatedAt: new Date('2026-02-12')
           },
           {
             id: 'comp4',
@@ -560,14 +580,14 @@ Chose React Native with Expo for cross-platform development.`,
             type: 'store',
             title: 'Workout Store',
             content: 'Zustand state management store for workout data. Handles workout history, active session state, and exercise templates.',
-            feature: 'State Management',
+            group: 'State Management',
             filePath: 'src/stores/workoutStore.ts',
             tags: ['state', 'zustand', 'data'],
             relationships: [
               { id: 'rel1', targetId: 'comp6', relationType: 'depends_on', description: 'Persists to local SQLite database' }
             ],
-            createdAt: new Date('2024-01-06'),
-            updatedAt: new Date('2024-01-11')
+            createdAt: new Date('2026-02-06'),
+            updatedAt: new Date('2026-02-11')
           },
           {
             id: 'comp5',
@@ -575,11 +595,11 @@ Chose React Native with Expo for cross-platform development.`,
             type: 'service',
             title: 'Food Database API',
             content: 'Integration with nutrition database API for food search and macro information. Includes caching and offline support.',
-            feature: 'Nutrition Data',
+            group: 'Nutrition Data',
             filePath: 'src/services/foodApi.ts',
             tags: ['api', 'nutrition', 'data'],
-            createdAt: new Date('2024-01-10'),
-            updatedAt: new Date('2024-01-12')
+            createdAt: new Date('2026-02-10'),
+            updatedAt: new Date('2026-02-12')
           },
           {
             id: 'comp6',
@@ -587,11 +607,11 @@ Chose React Native with Expo for cross-platform development.`,
             type: 'schema',
             title: 'SQLite Schema',
             content: 'Local database schema for storing workout history, exercise templates, and user preferences offline.',
-            feature: 'Data Persistence',
+            group: 'Data Persistence',
             filePath: 'src/database/schema.ts',
             tags: ['database', 'sqlite', 'schema'],
-            createdAt: new Date('2024-01-05'),
-            updatedAt: new Date('2024-01-06')
+            createdAt: new Date('2026-02-05'),
+            updatedAt: new Date('2026-02-06')
           }
         ],
         deploymentData: {
@@ -617,7 +637,7 @@ Chose React Native with Expo for cross-platform development.`,
         name: 'DevTools CLI',
         description: 'Command-line utilities for developer productivity',
         color: '#F59E0B',
-        category: 'Demo',
+        category: 'general',
         ownerId: demoUser._id,
         userId: demoUser._id,
         status: 'active',
@@ -643,8 +663,8 @@ Chose React Native with Expo for cross-platform development.`,
 - \`devtools clean\` - Clean build artifacts
 - \`devtools deps\` - Analyze dependencies
 - \`devtools health\` - Check project health`,
-            createdAt: new Date('2023-12-20'),
-            updatedAt: new Date('2024-01-10'),
+            createdAt: new Date('2026-01-20'),
+            updatedAt: new Date('2026-02-10'),
             createdBy: demoUser._id,
             updatedBy: demoUser._id
           }
@@ -657,8 +677,8 @@ Chose React Native with Expo for cross-platform development.`,
             priority: 'high',
             completed: true,
             status: 'completed',
-            createdAt: new Date('2023-12-22'),
-            updatedAt: new Date('2024-01-05'),
+            createdAt: new Date('2026-01-22'),
+            updatedAt: new Date('2026-02-05'),
             createdBy: demoUser._id,
             updatedBy: demoUser._id
           },
@@ -669,8 +689,8 @@ Chose React Native with Expo for cross-platform development.`,
             priority: 'medium',
             completed: true,
             status: 'completed',
-            createdAt: new Date('2024-01-05'),
-            updatedAt: new Date('2024-01-12'),
+            createdAt: new Date('2026-02-05'),
+            updatedAt: new Date('2026-02-12'),
             createdBy: demoUser._id,
             updatedBy: demoUser._id
           },
@@ -681,20 +701,20 @@ Chose React Native with Expo for cross-platform development.`,
             priority: 'high',
             completed: false,
             status: 'blocked',
-            createdAt: new Date('2024-01-15'),
-            updatedAt: new Date('2024-01-18'),
+            createdAt: new Date('2026-02-15'),
+            updatedAt: new Date('2026-02-18'),
             createdBy: demoUser._id,
             updatedBy: demoUser._id
           }
         ],
-        devLogs: [
+        devLog: [
           {
             id: 'devlog1',
             title: 'CLI Framework Setup',
             description: `Set up the CLI using Commander.js for argument parsing. Implemented basic command structure and help text.
 
 Added chalk for colored output and ora for loading spinners. The CLI is starting to feel polished!`,
-            date: new Date('2023-12-28'),
+            date: new Date('2026-01-28'),
             createdBy: demoUser._id,
             updatedBy: demoUser._id
           },
@@ -704,7 +724,7 @@ Added chalk for colored output and ora for loading spinners. The CLI is starting
             description: `Built a flexible template system that can scaffold projects from predefined templates.
 
 Users can now run \`devtools init react-ts\` and get a fully configured TypeScript React project with ESLint, Prettier, and Vite. Super satisfying to see it work!`,
-            date: new Date('2024-01-08'),
+            date: new Date('2026-02-08'),
             createdBy: demoUser._id,
             updatedBy: demoUser._id
           }
@@ -716,22 +736,22 @@ Users can now run \`devtools init react-ts\` and get a fully configured TypeScri
           { category: 'utility', name: 'Chalk', version: '5.x', description: 'Terminal styling' },
           { category: 'testing', name: 'Vitest', version: '1.x', description: 'Testing framework' }
         ],
-        components: [
+        features: [
           {
             id: 'comp1',
             category: 'backend',
             type: 'command',
             title: 'Init Command',
             content: 'Handles project initialization command. Prompts user for project type, scaffolds directory structure, and installs dependencies.',
-            feature: 'Project Init',
+            group: 'Project Init',
             filePath: 'src/commands/init.ts',
             tags: ['cli', 'command', 'setup'],
             relationships: [
               { id: 'rel1', targetId: 'comp2', relationType: 'uses', description: 'Uses template engine for file generation' },
               { id: 'rel2', targetId: 'comp3', relationType: 'uses', description: 'Uses prompt handler for user input' }
             ],
-            createdAt: new Date('2023-12-25'),
-            updatedAt: new Date('2024-01-05')
+            createdAt: new Date('2026-01-25'),
+            updatedAt: new Date('2026-02-05')
           },
           {
             id: 'comp2',
@@ -739,14 +759,14 @@ Users can now run \`devtools init react-ts\` and get a fully configured TypeScri
             type: 'utility',
             title: 'Template Engine',
             content: 'Template rendering system for generating project files from templates. Supports variable substitution and conditional blocks.',
-            feature: 'Code Generation',
+            group: 'Code Generation',
             filePath: 'src/utils/templateEngine.ts',
             tags: ['cli', 'templates', 'utility'],
             relationships: [
               { id: 'rel1', targetId: 'comp5', relationType: 'depends_on', description: 'Reads template files from filesystem' }
             ],
-            createdAt: new Date('2024-01-02'),
-            updatedAt: new Date('2024-01-06')
+            createdAt: new Date('2026-02-02'),
+            updatedAt: new Date('2026-02-06')
           },
           {
             id: 'comp3',
@@ -754,11 +774,11 @@ Users can now run \`devtools init react-ts\` and get a fully configured TypeScri
             type: 'utility',
             title: 'Prompt Handler',
             content: 'Interactive CLI prompt system using Inquirer.js. Handles user input validation and provides autocomplete suggestions.',
-            feature: 'User Interaction',
+            group: 'User Interaction',
             filePath: 'src/utils/promptHandler.ts',
             tags: ['cli', 'prompts', 'interaction'],
-            createdAt: new Date('2024-01-03'),
-            updatedAt: new Date('2024-01-05')
+            createdAt: new Date('2026-02-03'),
+            updatedAt: new Date('2026-02-05')
           },
           {
             id: 'comp4',
@@ -766,14 +786,14 @@ Users can now run \`devtools init react-ts\` and get a fully configured TypeScri
             type: 'command',
             title: 'Generate Command',
             content: 'Code generation command for creating models, routes, and API endpoints from templates. Supports custom generators.',
-            feature: 'Code Generation',
+            group: 'Code Generation',
             filePath: 'src/commands/generate.ts',
             tags: ['cli', 'command', 'generator'],
             relationships: [
               { id: 'rel1', targetId: 'comp2', relationType: 'uses', description: 'Uses template engine' }
             ],
-            createdAt: new Date('2024-01-07'),
-            updatedAt: new Date('2024-01-09')
+            createdAt: new Date('2026-02-07'),
+            updatedAt: new Date('2026-02-09')
           },
           {
             id: 'comp5',
@@ -781,11 +801,11 @@ Users can now run \`devtools init react-ts\` and get a fully configured TypeScri
             type: 'service',
             title: 'File System Manager',
             content: 'Abstraction layer for file system operations with error handling, backup creation, and rollback capabilities.',
-            feature: 'File Operations',
+            group: 'File Operations',
             filePath: 'src/services/fileSystemManager.ts',
             tags: ['filesystem', 'utility', 'safety'],
-            createdAt: new Date('2023-12-28'),
-            updatedAt: new Date('2024-01-02')
+            createdAt: new Date('2026-01-28'),
+            updatedAt: new Date('2026-02-02')
           },
           {
             id: 'comp6',
@@ -793,11 +813,11 @@ Users can now run \`devtools init react-ts\` and get a fully configured TypeScri
             type: 'utility',
             title: 'Logger',
             content: 'Colored console logging utility with different log levels (info, warn, error, success) and formatting options.',
-            feature: 'Logging',
+            group: 'Logging',
             filePath: 'src/utils/logger.ts',
             tags: ['logging', 'console', 'utility'],
-            createdAt: new Date('2023-12-26'),
-            updatedAt: new Date('2023-12-27')
+            createdAt: new Date('2026-01-26'),
+            updatedAt: new Date('2026-01-27')
           }
         ],
         deploymentData: {
@@ -807,7 +827,7 @@ Users can now run \`devtools init react-ts\` and get a fully configured TypeScri
           deploymentStatus: 'active',
           buildCommand: 'npm run build',
           startCommand: 'node dist/index.js',
-          lastDeployDate: new Date('2024-01-15'),
+          lastDeployDate: new Date('2026-02-15'),
           deploymentBranch: 'main',
           environmentVariables: [],
           notes: 'Published to npm registry. Install with: npm install -g devtools-cli-demo'

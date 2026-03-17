@@ -1,4 +1,6 @@
 .env
+frontend/.env
+md_files/
 *node_modules
 /dist
 /build
@@ -13,7 +15,9 @@ backend/logs
 backend/coverage
 .claude/
 CLAUDE.md
-
+WORK.md
+agent_spec.md
+AI_INTEGRATION_PLAN.md
 
 # Generated JS files from TypeScript
 shared/**/*.js

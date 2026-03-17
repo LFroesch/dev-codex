@@ -43,6 +43,36 @@ const LoadingFallback: React.FC = () => (
   </div>
 );
 
+/** Extract the "message" value from partial JSON streaming output.
+ *  Gemini streams JSON like {"message":"text here","actions":[...]}
+ *  We extract just the message text so users don't see raw JSON. */
+function extractStreamingMessage(partial: string): string {
+  const msgStart = partial.indexOf('"message"');
+  if (msgStart === -1) return '';
+  // Find the opening quote of the value
+  const valStart = partial.indexOf('"', msgStart + 9);
+  if (valStart === -1) return '';
+  // Extract everything after the opening quote, handling escapes
+  let result = '';
+  let i = valStart + 1;
+  while (i < partial.length) {
+    if (partial[i] === '\\' && i + 1 < partial.length) {
+      const next = partial[i + 1];
+      if (next === 'n') result += '\n';
+      else if (next === '"') result += '"';
+      else if (next === '\\') result += '\\';
+      else result += next;
+      i += 2;
+    } else if (partial[i] === '"') {
+      break; // end of message value
+    } else {
+      result += partial[i];
+      i++;
+    }
+  }
+  return result;
+}
+
 // AI Thinking/Streaming skeleton with elapsed time and live text
 const AIThinkingSkeleton: React.FC<{ timestamp: Date; onStop?: () => void; streamingText?: string }> = ({ timestamp, onStop, streamingText }) => {
   const [elapsed, setElapsed] = useState(0);
@@ -99,7 +129,7 @@ const AIThinkingSkeleton: React.FC<{ timestamp: Date; onStop?: () => void; strea
       <div className="px-4 py-3">
         {hasText ? (
           <div className="text-base text-base-content/90 leading-relaxed whitespace-pre-wrap font-sans">
-            {streamingText}
+            {extractStreamingMessage(streamingText!)}
           </div>
         ) : (
           <div className="space-y-2">
@@ -132,6 +162,7 @@ interface CommandResponseProps {
   streamingText?: string;
   userName?: string;
   onStopAI?: () => void;
+  selectedProject?: any;
 }
 
 const CommandResponse: React.FC<CommandResponseProps> = ({
@@ -153,7 +184,8 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
   isStreaming,
   streamingText,
   userName,
-  onStopAI
+  onStopAI,
+  selectedProject
 }) => {
   const navigate = useNavigate();
 
@@ -447,6 +479,7 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
             onCancel={() => onAICancel?.()}
             onRetry={onAIRetry ? () => onAIRetry(command) : undefined}
             fromStorage={fromStorage}
+            selectedProject={selectedProject}
           />
         </Suspense>
       );

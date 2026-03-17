@@ -14,7 +14,7 @@
 
 **Stack:** `POST /:id/technologies` `PUT /:id/technologies/:category/:name` `DELETE /:id/technologies/:category/:name` `POST /:id/packages` `PUT /:id/packages/:category/:name` `DELETE /:id/packages/:category/:name`
 
-**Components:** `POST /:id/components` `PUT /:id/components/:componentId` `DELETE /:id/components/:componentId` `POST /:id/components/:componentId/relationships` `DELETE /:id/components/:componentId/relationships/:relationshipId`
+**Features:** `POST /:id/features` `PUT /:id/features/:featureId` `DELETE /:id/features/:featureId` `POST /:id/features/:featureId/relationships` `DELETE /:id/features/:featureId/relationships/:relationshipId`
 
 **Team:** `GET /:id/members` `POST /:id/invite` `DELETE /:id/members/:userId` `PATCH /:id/members/:userId`
 
@@ -83,7 +83,11 @@
 `POST /create-checkout-session` `POST /webhook` `GET /info` `POST /cancel-subscription` `POST /resume-subscription`
 
 ### Terminal (`/api/terminal`)
-`POST /execute` `GET /commands` `GET /projects` `POST /validate` `GET /suggestions`
+`POST /execute` `POST /ai/confirm` `GET /commands` `GET /projects` `POST /validate` `GET /suggestions` `GET /history`
+
+**AI routing:** `POST /execute` with non-slash input routes to AI. Returns `type: 'ai'` with `data.aiResponse` containing `{ message, actions[], followUp?, sessionId }`.
+
+**AI confirm:** `POST /ai/confirm` receives `{ actions: AIAction[], currentProjectId }` and executes each action via CommandExecutor. Returns batch results.
 
 ### Health (`/api/`)
 `GET /health` `GET /ready` `GET /live` `GET /csrf-token`

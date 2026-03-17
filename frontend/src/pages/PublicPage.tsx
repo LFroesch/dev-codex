@@ -7,7 +7,7 @@ import remarkGfm from 'remark-gfm';
 interface PublicVisibilityOptions {
   description: boolean;
   tags: boolean;
-  components: boolean;
+  features: boolean;
   techStack: boolean;
   timestamps: boolean;
 }
@@ -28,7 +28,7 @@ const PublicPage: React.FC = () => {
   const [visibilityOptions, setVisibilityOptions] = useState<PublicVisibilityOptions>({
     description: true,
     tags: true,
-    components: true,
+    features: true,
     techStack: true,
     timestamps: true,
   });
@@ -112,7 +112,7 @@ const PublicPage: React.FC = () => {
     const currentVisibility = selectedProject.publicVisibility || {
       description: true,
       tags: true,
-      components: true,
+      features: true,
       techStack: true,
       timestamps: true,
     };
@@ -567,11 +567,11 @@ const PublicPage: React.FC = () => {
                 <input
                   type="checkbox"
                   className="checkbox checkbox-primary mr-3"
-                  checked={visibilityOptions.components}
-                  onChange={() => toggleVisibilityOption('components')}
+                  checked={visibilityOptions.features}
+                  onChange={() => toggleVisibilityOption('features')}
                 />
                 <div className="flex-1">
-                  <span className="label-text font-medium block">Architecture & Components</span>
+                  <span className="label-text font-medium block">Architecture & Features</span>
                   <span className="label-text-alt text-xs opacity-70">Show models, routes, APIs, utils</span>
                 </div>
               </label>

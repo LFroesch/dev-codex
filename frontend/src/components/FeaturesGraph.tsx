@@ -12,19 +12,19 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import dagre from 'dagre';
-import { BaseComponent } from '../../../shared/types/project';
-import { ComponentCategory, CreateComponentData, RelationshipType, ComponentRelationship } from '../../../shared/types/project';
-import ComponentNode from './ComponentNode';
+import { BaseFeature } from '../../../shared/types/project';
+import { FeatureCategory, CreateFeatureData, RelationshipType, FeatureRelationship } from '../../../shared/types/project';
+import FeatureNode from './FeatureNode';
 import AreaNode from './AreaNode';
 import GraphControls from './GraphControls';
 import { getContrastTextColor } from '../utils/contrastTextColor';
-import { getAllCategories, getCategoryColor, getTypesForCategory } from '../config/componentCategories';
+import { getAllCategories, getCategoryColor, getTypesForCategory } from '../config/featureCategories';
 import { useRelationshipManagement } from '../hooks/useRelationshipManagement';
-import { useComponentEditing } from '../hooks/useComponentEditing';
+import { useFeatureEditing } from '../hooks/useFeatureEditing';
 
 // Define nodeTypes outside component to prevent recreation and React Flow warnings
 const NODE_TYPES = {
-  componentNode: ComponentNode,
+  featureNode: FeatureNode,
   areaNode: AreaNode,
 };
 
@@ -62,18 +62,18 @@ const getMinLength = (type: RelationshipType): number => {
  * Calculate connection strength based on weighted relationships
  * This gives a better importance metric than just counting relationships
  */
-const calculateConnectionStrength = (doc: BaseComponent): number => {
-  return (doc.relationships || []).reduce((sum: number, rel: ComponentRelationship) => {
+const calculateConnectionStrength = (doc: BaseFeature): number => {
+  return (doc.relationships || []).reduce((sum: number, rel: FeatureRelationship) => {
     return sum + getRelationshipWeight(rel.relationType);
   }, 0);
 };
 
 /**
- * Get sort priority for components within a feature
+ * Get sort priority for features within a group
  * Lower numbers appear first (higher priority)
  * Section headers ALWAYS at top, then other documentation, then everything else
  */
-const getComponentSortPriority = (doc: BaseComponent): number => {
+const getFeatureSortPriority = (doc: BaseFeature): number => {
   // Section headers at the very top (priority 0)
   if (doc.type === 'section' || doc.type === 'area') return 0;
   // Other documentation items (priority 1)
@@ -87,8 +87,8 @@ const getComponentSortPriority = (doc: BaseComponent): number => {
  * Lower numbers appear higher in the graph (closer to top)
  * Order: documentation/assets/infrastructure > frontend > api > backend > security > database
  */
-const getCategoryRank = (category: ComponentCategory): number => {
-  const rankMap: Record<ComponentCategory, number> = {
+const getCategoryRank = (category: FeatureCategory): number => {
+  const rankMap: Record<FeatureCategory, number> = {
     documentation: 0,
     asset: 0,
     infrastructure: 0,
@@ -162,9 +162,9 @@ const getEdgeHandlePositions = (
 };
 
 interface FeaturesGraphProps {
-  docs: BaseComponent[];
+  docs: BaseFeature[];
   projectId: string;
-  onCreateDoc?: (component: CreateComponentData) => Promise<void>;
+  onCreateDoc?: (feature: CreateFeatureData) => Promise<void>;
   creating?: boolean;
   onRefresh?: () => Promise<void>;
 }
@@ -172,26 +172,26 @@ interface FeaturesGraphProps {
 type ViewMode = 'graph' | 'cards';
 
 /**
- * Filter components based on category, feature, and search query
+ * Filter features based on category, group, and search query
  */
-const filterComponents = (
-  components: BaseComponent[],
-  selectedCategories: Set<ComponentCategory>,
+const filterFeatures = (
+  features: BaseFeature[],
+  selectedCategories: Set<FeatureCategory>,
   selectedFeatures: Set<string>,
   searchQuery: string
-): BaseComponent[] => {
-  return components.filter(component => {
-    if (!selectedCategories.has(component.category)) return false;
+): BaseFeature[] => {
+  return features.filter(feat => {
+    if (!selectedCategories.has(feat.category)) return false;
 
-    const feature = component.feature || 'Ungrouped';
-    if (component.feature && !selectedFeatures.has(feature)) return false;
+    const group = feat.group || 'Ungrouped';
+    if (feat.group && !selectedFeatures.has(group)) return false;
 
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       return (
-        component.title.toLowerCase().includes(query) ||
-        component.content.toLowerCase().includes(query) ||
-        (component.feature && component.feature.toLowerCase().includes(query))
+        feat.title.toLowerCase().includes(query) ||
+        feat.content.toLowerCase().includes(query) ||
+        (feat.group && feat.group.toLowerCase().includes(query))
       );
     }
 
@@ -200,14 +200,14 @@ const filterComponents = (
 };
 
 /**
- * Group components by their feature
+ * Group features by their group
  */
-const groupComponentsByFeature = (components: BaseComponent[]): Record<string, BaseComponent[]> => {
-  const grouped: Record<string, BaseComponent[]> = {};
-  components.forEach(component => {
-    const featureKey = component.feature || 'Ungrouped';
-    if (!grouped[featureKey]) grouped[featureKey] = [];
-    grouped[featureKey].push(component);
+const groupFeaturesByGroup = (features: BaseFeature[]): Record<string, BaseFeature[]> => {
+  const grouped: Record<string, BaseFeature[]> = {};
+  features.forEach(feat => {
+    const groupKey = feat.group || 'Ungrouped';
+    if (!grouped[groupKey]) grouped[groupKey] = [];
+    grouped[groupKey].push(feat);
   });
   return grouped;
 };
@@ -215,8 +215,8 @@ const groupComponentsByFeature = (components: BaseComponent[]): Record<string, B
 const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onCreateDoc, creating, onRefresh }) => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-  const [selectedCategories, setSelectedCategories] = useState<Set<ComponentCategory>>(
-    new Set<ComponentCategory>(['frontend', 'backend', 'database', 'infrastructure', 'security', 'api', 'documentation', 'asset'])
+  const [selectedCategories, setSelectedCategories] = useState<Set<FeatureCategory>>(
+    new Set<FeatureCategory>(['frontend', 'backend', 'database', 'infrastructure', 'security', 'api', 'documentation', 'asset'])
   );
   const [selectedFeatures, setSelectedFeatures] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
@@ -231,21 +231,21 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
   // Toast notification state
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
-  // Get selected component from node
-  const selectedComponent = selectedNode ? (selectedNode.data as { component: BaseComponent }).component : null;
+  // Get selected feature from node
+  const selectedFeature = selectedNode ? (selectedNode.data as { feature: BaseFeature }).feature : null;
 
-  // Custom hooks for relationship and component management
+  // Custom hooks for relationship and feature management
   const relationshipManagement = useRelationshipManagement({
     projectId,
-    selectedComponent,
+    selectedFeature,
     docs,
     onRefresh,
     setToast,
   });
 
-  const componentEditing = useComponentEditing({
+  const featureEditing = useFeatureEditing({
     projectId,
-    selectedComponent,
+    selectedFeature,
     onRefresh,
     onClose: () => setSelectedNode(null),
     setToast,
@@ -253,7 +253,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
 
   // Initialize selected features
   useEffect(() => {
-    const features = Array.from(new Set(docs.map(d => d.feature).filter(Boolean))) as string[];
+    const features = Array.from(new Set(docs.map(d => d.group).filter(Boolean))) as string[];
     setSelectedFeatures(new Set(features));
   }, [docs]);
 
@@ -284,21 +284,21 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
   // Update selected node when docs change (to refresh sidebar with new relationship data)
   useEffect(() => {
     if (selectedNode) {
-      const updatedComponent = docs.find(d => d.id === selectedNode.id);
-      if (updatedComponent) {
-        // Create new node object with updated component data
+      const updatedFeature = docs.find(d => d.id === selectedNode.id);
+      if (updatedFeature) {
+        // Create new node object with updated feature data
         const newNode = {
           ...selectedNode,
           data: {
             ...selectedNode.data,
-            component: updatedComponent,
+            feature: updatedFeature,
           },
         };
 
-        // Only update if the component data actually changed
-        const currentComponent = (selectedNode.data as { component: BaseComponent }).component;
-        if (JSON.stringify(currentComponent.relationships) !== JSON.stringify(updatedComponent.relationships) ||
-            currentComponent.updatedAt !== updatedComponent.updatedAt) {
+        // Only update if the feature data actually changed
+        const currentFeature = (selectedNode.data as { feature: BaseFeature }).feature;
+        if (JSON.stringify(currentFeature.relationships) !== JSON.stringify(updatedFeature.relationships) ||
+            currentFeature.updatedAt !== updatedFeature.updatedAt) {
           setSelectedNode(newNode);
         }
       }
@@ -309,7 +309,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
   /**
    * Generate layout using Dagre algorithm (hierarchical, relationship-aware)
    */
-  const generateDagreLayout = useCallback((components: BaseComponent[]) => {
+  const generateDagreLayout = useCallback((features: BaseFeature[]) => {
     const g = new dagre.graphlib.Graph();
 
     // Configure graph layout
@@ -323,17 +323,17 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
 
     g.setDefaultEdgeLabel(() => ({}));
 
-    // Find documentation/section header node for this feature
-    const headerNode = components.find(doc =>
+    // Find documentation/section header node for this group
+    const headerNode = features.find(doc =>
       doc.category === 'documentation' || doc.type === 'section' || doc.type === 'area'
     );
 
     // Calculate node sizes based on connection strength
     const nodeSizes = new Map<string, { width: number; height: number }>();
-    components.forEach(doc => {
+    features.forEach(doc => {
       const connectionStrength = calculateConnectionStrength(doc);
 
-      // Area/section nodes are wider than regular component nodes
+      // Area/section nodes are wider than regular feature nodes
       const isAreaNode = doc.type === 'area' || doc.type === 'section';
       const baseWidth = isAreaNode ? 600 : 400;
       const baseHeight = isAreaNode ? 250 : 200;
@@ -345,7 +345,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
     });
 
     // Add nodes to graph with calculated sizes and category-based ranks
-    components.forEach(doc => {
+    features.forEach(doc => {
       const size = nodeSizes.get(doc.id) || { width: 400, height: 200 };
       let rank = getCategoryRank(doc.category);
 
@@ -363,10 +363,10 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
     });
 
     // Add edges with semantic weighting
-    components.forEach(doc => {
-      (doc.relationships || []).forEach((rel: ComponentRelationship) => {
-        // Only add edge if target exists in current component set
-        if (components.find(d => d.id === rel.targetId)) {
+    features.forEach(doc => {
+      (doc.relationships || []).forEach((rel: FeatureRelationship) => {
+        // Only add edge if target exists in current feature set
+        if (features.find(d => d.id === rel.targetId)) {
           g.setEdge(doc.id, rel.targetId, {
             weight: getRelationshipWeight(rel.relationType),
             minlen: getMinLength(rel.relationType),
@@ -378,9 +378,9 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
     // Run Dagre layout algorithm
     dagre.layout(g);
 
-    // Group components by tier using getCategoryRank
-    const tierMap: Record<number, BaseComponent[]> = {};
-    components.forEach(doc => {
+    // Group features by tier using getCategoryRank
+    const tierMap: Record<number, BaseFeature[]> = {};
+    features.forEach(doc => {
       // Header node at tier 0, otherwise use category rank + 1 to offset from header
       const tier = (headerNode && doc.id === headerNode.id) ? 0 : getCategoryRank(doc.category) + 1;
       if (!tierMap[tier]) tierMap[tier] = [];
@@ -396,17 +396,17 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
       let currentX = 0;
 
       // Smart horizontal ordering: sort by relationship connectivity
-      // Components with relationships to each other should be adjacent
+      // Features with relationships to each other should be adjacent
       if (tierDocs.length > 1) {
-        const sortedDocs: BaseComponent[] = [];
+        const sortedDocs: BaseFeature[] = [];
         const remaining = new Set(tierDocs.map(d => d.id));
 
-        // Start with the most connected component in this tier
+        // Start with the most connected feature in this tier
         const firstDoc = tierDocs.reduce((best, doc) => {
-          const connections = (doc.relationships || []).filter((rel: ComponentRelationship) =>
+          const connections = (doc.relationships || []).filter((rel: FeatureRelationship) =>
             tierDocs.some(td => td.id === rel.targetId)
           ).length;
-          const bestConnections = (best.relationships || []).filter((rel: ComponentRelationship) =>
+          const bestConnections = (best.relationships || []).filter((rel: FeatureRelationship) =>
             tierDocs.some(td => td.id === rel.targetId)
           ).length;
           return connections > bestConnections ? doc : best;
@@ -415,20 +415,20 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
         sortedDocs.push(firstDoc);
         remaining.delete(firstDoc.id);
 
-        // Iteratively add the component most connected to already-sorted components
+        // Iteratively add the feature most connected to already-sorted features
         while (remaining.size > 0) {
-          let bestNext: BaseComponent | null = null;
+          let bestNext: BaseFeature | null = null;
           let bestScore = -1;
 
           for (const docId of remaining) {
             const doc = tierDocs.find(d => d.id === docId)!;
-            // Count connections to already-sorted components (in any tier)
-            const score = (doc.relationships || []).filter((rel: ComponentRelationship) =>
+            // Count connections to already-sorted features (in any tier)
+            const score = (doc.relationships || []).filter((rel: FeatureRelationship) =>
               sortedDocs.some(sd => sd.id === rel.targetId) ||
-              components.some(c => c.id === rel.targetId && sortedDocs.some(sd =>
-                (sd.relationships || []).some((r: ComponentRelationship) => r.targetId === doc.id)
+              features.some(c => c.id === rel.targetId && sortedDocs.some(sd =>
+                (sd.relationships || []).some((r: FeatureRelationship) => r.targetId === doc.id)
               ))
-            ).reduce((sum: number, rel: ComponentRelationship) => sum + getRelationshipWeight(rel.relationType), 0);
+            ).reduce((sum: number, rel: FeatureRelationship) => sum + getRelationshipWeight(rel.relationType), 0);
 
             if (score > bestScore || bestNext === null) {
               bestScore = score;
@@ -455,9 +455,9 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
         const isRecent = new Date(doc.updatedAt).getTime() > Date.now() - 24 * 60 * 60 * 1000;
         const isStale = new Date(doc.updatedAt).getTime() < Date.now() - 90 * 24 * 60 * 60 * 1000;
         const isIncomplete = doc.content.length < 100;
-        const isOrphaned = !doc.feature;
+        const isOrphaned = !doc.group;
         const hasDuplicates = false; // Removed similar relationship type check
-        const nodeType = doc.type === 'area' || doc.type === 'section' ? 'areaNode' : 'componentNode';
+        const nodeType = doc.type === 'area' || doc.type === 'section' ? 'areaNode' : 'featureNode';
 
         layoutedNodes.push({
           id: doc.id,
@@ -466,7 +466,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
           width: size.width,
           height: size.height,
           data: {
-            component: doc,
+            feature: doc,
             isRecent,
             isStale,
             isIncomplete,
@@ -482,7 +482,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
     return layoutedNodes;
   }, []);
 
-  // Generate nodes and edges from components
+  // Generate nodes and edges from features
   const generateGraph = useCallback((useStoredPositions = true) => {
     const storageKey = `graph-layout-${projectId}`;
     const storedPositions = useStoredPositions
@@ -493,8 +493,8 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
     const newEdges: Edge[] = [];
 
     // Group by feature using shared utility
-    const componentsByFeature = groupComponentsByFeature(docs);
-    const features = Object.keys(componentsByFeature);
+    const featuresByGroup = groupFeaturesByGroup(docs);
+    const features = Object.keys(featuresByGroup);
 
     // Use Dagre algorithm with feature clustering (horizontal multi-root layout)
     const featureGraphs: Record<string, Node[]> = {};
@@ -504,10 +504,10 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
     // Layout each feature cluster independently and place horizontally
     features.forEach(feature => {
       // Sort: section headers first, then other documentation, then everything else
-      const featureComponents = componentsByFeature[feature].sort((a, b) => {
-        return getComponentSortPriority(a) - getComponentSortPriority(b);
+      const groupFeatures = featuresByGroup[feature].sort((a, b) => {
+        return getFeatureSortPriority(a) - getFeatureSortPriority(b);
       });
-      const featureNodes = generateDagreLayout(featureComponents);
+      const featureNodes = generateDagreLayout(groupFeatures);
 
       // Calculate bounding box for this feature
       const minX = Math.min(...featureNodes.map(n => n.position.x));
@@ -568,17 +568,17 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
       });
     });
 
-    // Create edges from component relationships (deduplicate bidirectional relationships)
+    // Create edges from feature relationships (deduplicate bidirectional relationships)
     const processedRelationshipIds = new Set<string>();
 
-    docs.forEach(component => {
-      if (!component.relationships || component.relationships.length === 0) return;
+    docs.forEach(doc => {
+      if (!doc.relationships || doc.relationships.length === 0) return;
 
-      component.relationships.forEach((rel: ComponentRelationship) => {
+      doc.relationships.forEach((rel: FeatureRelationship) => {
         // Skip if we've already processed this relationship (bidirectional deduplication)
         if (processedRelationshipIds.has(rel.id)) return;
 
-        const sourceExists = newNodes.find(n => n.id === component.id);
+        const sourceExists = newNodes.find(n => n.id === doc.id);
         const targetExists = newNodes.find(n => n.id === rel.targetId);
 
         if (sourceExists && targetExists) {
@@ -598,7 +598,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
 
           newEdges.push({
             id: rel.id, // Use the relationship ID directly (same for both directions)
-            source: component.id,
+            source: doc.id,
             target: rel.targetId,
             sourceHandle: handlePositions.sourceHandle,
             targetHandle: handlePositions.targetHandle,
@@ -613,7 +613,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
             labelStyle: { fontSize: 16, fill: '#cbd5e1', fontWeight: 600 },
             labelBgStyle: { fill: '#1e293b', fillOpacity: 0.9 },
             labelBgPadding: [8, 4] as [number, number],
-            data: { relationshipId: rel.id, componentId: component.id }, // Store for deletion
+            data: { relationshipId: rel.id, featureId: doc.id }, // Store for deletion
           });
         }
       });
@@ -680,9 +680,9 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
 
   // Filter nodes and edges
   const filteredNodes = useMemo(() => {
-    // Extract components from nodes and filter
-    const nodeComponents = nodes.map(node => (node.data as { component: BaseComponent }).component);
-    const filtered = filterComponents(nodeComponents, selectedCategories, selectedFeatures, searchQuery);
+    // Extract features from nodes and filter
+    const nodeFeatures = nodes.map(node => (node.data as { feature: BaseFeature }).feature);
+    const filtered = filterFeatures(nodeFeatures, selectedCategories, selectedFeatures, searchQuery);
     const filteredIds = new Set(filtered.map(c => c.id));
 
     return nodes.filter(node => filteredIds.has(node.id));
@@ -715,7 +715,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
     [setCenter]
   );
 
-  const handleCategoryToggle = useCallback((category: ComponentCategory) => {
+  const handleCategoryToggle = useCallback((category: FeatureCategory) => {
     setSelectedCategories(prev => {
       const newSet = new Set(prev);
       if (newSet.has(category)) {
@@ -753,7 +753,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
     generateGraph(false);
   }, [projectId, generateGraph]);
 
-  // Relationship and component handlers are now in custom hooks
+  // Relationship and feature handlers are now in custom hooks
 
   return (
     <div className="flex flex-col lg:flex-row gap-2">
@@ -847,8 +847,8 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
               <Controls />
               <MiniMap
                 nodeColor={(node) => {
-                  const component = (node.data as { component: BaseComponent }).component;
-                  return getCategoryColor(component.category);
+                  const feat = (node.data as { feature: BaseFeature }).feature;
+                  return getCategoryColor(feat.category);
                 }}
                 maskColor="rgba(0, 0, 0, 0.6)"
                 onNodeClick={handleMinimapNodeClick}
@@ -862,18 +862,18 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
           /* Cards View */
           <div className="absolute inset-0 bg-base-200 rounded-lg border-2 border-base-content/20 overflow-y-auto p-4">
             {(() => {
-              // Filter components using shared utility
-              const filteredDocs = filterComponents(docs, selectedCategories, selectedFeatures, searchQuery);
+              // Filter features using shared utility
+              const filteredDocs = filterFeatures(docs, selectedCategories, selectedFeatures, searchQuery);
 
               // Group by feature using shared utility
-              const componentsByFeature = groupComponentsByFeature(filteredDocs);
-              const features = Object.keys(componentsByFeature).sort();
+              const featuresByGroup = groupFeaturesByGroup(filteredDocs);
+              const features = Object.keys(featuresByGroup).sort();
 
               if (features.length === 0) {
                 return (
                   <div className="text-center py-12">
                     <div className="text-6xl mb-4">🔍</div>
-                    <h3 className="text-lg font-bold mb-2">No components found</h3>
+                    <h3 className="text-lg font-bold mb-2">No features found</h3>
                     <p className="text-base-content/60">Try adjusting your filters or search query</p>
                   </div>
                 );
@@ -887,42 +887,42 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
                       <div className="collapse-title text-lg font-medium flex items-center justify-between">
                         <span>{feature}</span>
                         <span className="badge badge-primary badge-sm">
-                          {componentsByFeature[feature].length}
+                          {featuresByGroup[feature].length}
                         </span>
                       </div>
                       <div className="collapse-content">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pt-2">
-                          {componentsByFeature[feature]
-                            .sort((a, b) => getComponentSortPriority(a) - getComponentSortPriority(b))
-                            .map(component => {
-                            const categoryInfo = getAllCategories().find(c => c.value === component.category);
-                            const relationshipCount = component.relationships?.length || 0;
+                          {featuresByGroup[feature]
+                            .sort((a, b) => getFeatureSortPriority(a) - getFeatureSortPriority(b))
+                            .map(feat => {
+                            const categoryInfo = getAllCategories().find(c => c.value === feat.category);
+                            const relationshipCount = feat.relationships?.length || 0;
 
                             return (
                               <div
-                                key={component.id}
+                                key={feat.id}
                                 onClick={() => {
                                   // Create a pseudo node to work with existing sidebar logic
                                   setSelectedNode({
-                                    id: component.id,
-                                    type: 'componentNode',
+                                    id: feat.id,
+                                    type: 'featureNode',
                                     position: { x: 0, y: 0 },
                                     data: {
-                                      component,
-                                      isRecent: new Date(component.updatedAt).getTime() > Date.now() - 24 * 60 * 60 * 1000,
-                                      isStale: new Date(component.updatedAt).getTime() < Date.now() - 90 * 24 * 60 * 60 * 1000,
-                                      isIncomplete: component.content.length < 100,
-                                      isOrphaned: !component.feature,
+                                      feature: feat,
+                                      isRecent: new Date(feat.updatedAt).getTime() > Date.now() - 24 * 60 * 60 * 1000,
+                                      isStale: new Date(feat.updatedAt).getTime() < Date.now() - 90 * 24 * 60 * 60 * 1000,
+                                      isIncomplete: feat.content.length < 100,
+                                      isOrphaned: !feat.group,
                                       hasDuplicates: false, // Not checking duplicates in cards view
                                     },
                                   });
                                 }}
                                 className={`card bg-base-200 border-2 transition-all cursor-pointer hover:shadow-lg ${
-                                  selectedNode?.id === component.id
+                                  selectedNode?.id === feat.id
                                     ? 'border-primary shadow-lg scale-105'
                                     : 'border-base-content/20 hover:border-primary/50'
                                 }`}
-                                style={selectedNode?.id === component.id ? {
+                                style={selectedNode?.id === feat.id ? {
                                   borderColor: categoryInfo?.color,
                                   boxShadow: `0 0 20px ${categoryInfo?.color}40`
                                 } : {}}
@@ -937,19 +937,19 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
                                         color: 'white',
                                         borderColor: categoryInfo?.color
                                       }}
-                                      title={`${component.category} - ${component.type}`}
+                                      title={`${feat.category} - ${feat.type}`}
                                     >
-                                      {categoryInfo?.emoji} {component.category} - {component.type}
+                                      {categoryInfo?.emoji} {feat.category} - {feat.type}
                                     </span>
                                   </div>
 
                                   {/* Title */}
-                                  <h4 className="font-bold text-sm line-clamp-2">{component.title}</h4>
+                                  <h4 className="font-bold text-sm line-clamp-2">{feat.title}</h4>
 
                                   {/* Content preview */}
                                   <p className="text-xs text-base-content/70 line-clamp-2">
-                                    {component.content.substring(0, 100)}
-                                    {component.content.length > 100 && '...'}
+                                    {feat.content.substring(0, 100)}
+                                    {feat.content.length > 100 && '...'}
                                   </p>
 
                                   {/* Stats */}
@@ -964,7 +964,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
                                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                       </svg>
-                                      <span>{new Date(component.updatedAt).toLocaleDateString()}</span>
+                                      <span>{new Date(feat.updatedAt).toLocaleDateString()}</span>
                                     </div>
                                   </div>
                                 </div>
@@ -982,50 +982,50 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
         )}
       </div>
 
-      {/* Selected Component Sidebar */}
-      {selectedComponent && (
+      {/* Selected Feature Sidebar */}
+      {selectedFeature && (
         <div className="w-full lg:w-80 bg-base-100 border-2 border-base-content/20 rounded-lg p-4 space-y-3 max-h-[80vh] lg:max-h-[600px] overflow-y-auto">
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-semibold text-base-content/60 mb-1">Selected Component</div>
-              {componentEditing.isEditingComponent && componentEditing.editComponentData ? (
+              <div className="text-sm font-semibold text-base-content/60 mb-1">Selected Feature</div>
+              {featureEditing.isEditingFeature && featureEditing.editFeatureData ? (
                 <input
                   type="text"
-                  value={componentEditing.editComponentData.title}
-                  onChange={(e) => componentEditing.setEditComponentData({ ...componentEditing.editComponentData!, title: e.target.value })}
+                  value={featureEditing.editFeatureData.title}
+                  onChange={(e) => featureEditing.setEditFeatureData({ ...featureEditing.editFeatureData!, title: e.target.value })}
                   className="input input-bordered input-sm w-full font-bold"
                 />
               ) : (
-                <h3 className="font-bold text-lg">{selectedComponent.title}</h3>
+                <h3 className="font-bold text-lg">{selectedFeature.title}</h3>
               )}
-              {selectedComponent.feature && !componentEditing.isEditingComponent && (
+              {selectedFeature.group && !featureEditing.isEditingFeature && (
                 <span className="badge badge-sm text-xs font-semibold badge-primary mt-1"
-                style={{color:getContrastTextColor("primary")}}>{selectedComponent.feature}</span>
+                style={{color:getContrastTextColor("primary")}}>{selectedFeature.group}</span>
               )}
-              {selectedComponent.category && !componentEditing.isEditingComponent && (
+              {selectedFeature.category && !featureEditing.isEditingFeature && (
                 <div className="flex gap-1 mt-1">
                   <span
                     className="badge badge-sm text-xs font-semibold border-thick"
                     style={{
-                      backgroundColor: getCategoryColor(selectedComponent.category as ComponentCategory),
+                      backgroundColor: getCategoryColor(selectedFeature.category as FeatureCategory),
                       color: getContrastTextColor("primary"),
-                      borderColor: getCategoryColor(selectedComponent.category as ComponentCategory)
+                      borderColor: getCategoryColor(selectedFeature.category as FeatureCategory)
                     }}
                   >
-                    {getAllCategories().find(c => c.value === selectedComponent.category)?.emoji} {getAllCategories().find(c => c.value === selectedComponent.category)?.label}
+                    {getAllCategories().find(c => c.value === selectedFeature.category)?.emoji} {getAllCategories().find(c => c.value === selectedFeature.category)?.label}
                   </span>
-                  {selectedComponent.type && (
+                  {selectedFeature.type && (
                     <span className="badge badge-sm text-xs font-semibold badge-primary capitalize" style={{color:getContrastTextColor("primary")}}>
-                      {selectedComponent.type}
+                      {selectedFeature.type}
                     </span>
                   )}
                 </div>
               )}
-              {componentEditing.isEditingComponent && componentEditing.editComponentData && (
+              {featureEditing.isEditingFeature && featureEditing.editFeatureData && (
                 <input
                   type="text"
-                  value={componentEditing.editComponentData.feature}
-                  onChange={(e) => componentEditing.setEditComponentData({ ...componentEditing.editComponentData!, feature: e.target.value })}
+                  value={featureEditing.editFeatureData.group}
+                  onChange={(e) => featureEditing.setEditFeatureData({ ...featureEditing.editFeatureData!, group: e.target.value })}
                   className="input input-bordered input-sm w-full mt-1"
                   placeholder="Feature name"
                 />
@@ -1034,8 +1034,8 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
             <button
               onClick={() => {
                 setSelectedNode(null);
-                componentEditing.setIsEditingComponent(false);
-                componentEditing.setEditComponentData(null);
+                featureEditing.setIsEditingFeature(false);
+                featureEditing.setEditFeatureData(null);
               }}
               className="btn btn-ghost btn-sm btn-circle"
             >
@@ -1044,18 +1044,18 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
           </div>
 
           <div className="space-y-2">
-            {componentEditing.isEditingComponent && componentEditing.editComponentData ? (
+            {featureEditing.isEditingFeature && featureEditing.editFeatureData ? (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div>
                     <div className="text-xs font-semibold text-base-content/60 mb-1">Category</div>
                     <select
-                      value={componentEditing.editComponentData.category}
+                      value={featureEditing.editFeatureData.category}
                       onChange={(e) => {
-                        const newCategory = e.target.value as ComponentCategory;
+                        const newCategory = e.target.value as FeatureCategory;
                         const types = getTypesForCategory(newCategory);
-                        componentEditing.setEditComponentData({
-                          ...componentEditing.editComponentData!,
+                        featureEditing.setEditFeatureData({
+                          ...featureEditing.editFeatureData!,
                           category: newCategory,
                           type: types[0]?.value || ''
                         });
@@ -1072,11 +1072,11 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
                   <div>
                     <div className="text-xs font-semibold text-base-content/60 mb-1">Type</div>
                     <select
-                      value={componentEditing.editComponentData.type}
-                      onChange={(e) => componentEditing.setEditComponentData({ ...componentEditing.editComponentData!, type: e.target.value })}
+                      value={featureEditing.editFeatureData.type}
+                      onChange={(e) => featureEditing.setEditFeatureData({ ...featureEditing.editFeatureData!, type: e.target.value })}
                       className="select select-bordered select-sm w-full"
                     >
-                      {getTypesForCategory(componentEditing.editComponentData.category).map(type => (
+                      {getTypesForCategory(featureEditing.editFeatureData.category).map(type => (
                         <option key={type.value} value={type.value}>
                           {type.emoji} {type.label}
                         </option>
@@ -1087,8 +1087,8 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
                 <div>
                   <div className="text-xs font-semibold text-base-content/60 mb-1">Content</div>
                   <textarea
-                    value={componentEditing.editComponentData.content}
-                    onChange={(e) => componentEditing.setEditComponentData({ ...componentEditing.editComponentData!, content: e.target.value })}
+                    value={featureEditing.editFeatureData.content}
+                    onChange={(e) => featureEditing.setEditFeatureData({ ...featureEditing.editFeatureData!, content: e.target.value })}
                     className="textarea textarea-bordered textarea-sm w-full h-32"
                   />
                 </div>
@@ -1101,14 +1101,14 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
                 <div>
                   <div className="text-sm font-semibold text-base-content/60 mb-2">Content</div>
                   <div className="text-sm bg-base-200 p-2 rounded max-h-32 overflow-y-auto whitespace-pre-wrap">
-                    {selectedComponent.content}
+                    {selectedFeature.content}
                   </div>
                 </div>
               </>
             )}
 
             <div className="text-xs text-base-content/60">
-              Created: {new Date(selectedComponent.createdAt).toLocaleDateString()} • Updated: {new Date(selectedComponent.updatedAt).toLocaleDateString()}
+              Created: {new Date(selectedFeature.createdAt).toLocaleDateString()} • Updated: {new Date(selectedFeature.updatedAt).toLocaleDateString()}
             </div>
 
             {/* Relationships Management */}
@@ -1116,13 +1116,13 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
               <div className="text-sm font-semibold text-base-content/60 mb-2">Relationships</div>
 
               {/* Current relationships list */}
-              {(!selectedComponent.relationships || selectedComponent.relationships.length === 0) ? (
+              {(!selectedFeature.relationships || selectedFeature.relationships.length === 0) ? (
                 <div className="text-xs text-base-content/50 mb-3">No relationships yet</div>
               ) : (
                 <div className="space-y-2 mb-3">
-                  {selectedComponent.relationships.map((rel: ComponentRelationship) => {
-                    const targetComponent = docs.find(d => d.id === rel.targetId);
-                    if (!targetComponent) return null;
+                  {selectedFeature.relationships.map((rel: FeatureRelationship) => {
+                    const targetFeature = docs.find(d => d.id === rel.targetId);
+                    if (!targetFeature) return null;
 
                     const isEditing = relationshipManagement.editingRelationshipId === rel.id;
 
@@ -1131,7 +1131,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
                         {isEditing ? (
                           <>
                             <div className="flex items-center justify-between gap-2 mb-2">
-                              <span className="text-xs font-medium truncate">{targetComponent.title}</span>
+                              <span className="text-xs font-medium truncate">{targetFeature.title}</span>
                               <div className="flex gap-1">
                                 <button
                                   onClick={relationshipManagement.handleSaveRelationship}
@@ -1178,7 +1178,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
                                 >
                                   {rel.relationType.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
                                 </span>
-                                <span className="text-xs font-medium truncate">{targetComponent.title}</span>
+                                <span className="text-xs font-medium truncate">{targetFeature.title}</span>
                               </div>
                               <div className="flex gap-1">
                                 <button
@@ -1189,7 +1189,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
                                   ✎
                                 </button>
                                 <button
-                                  onClick={() => componentEditing.setDeleteConfirmation({ isOpen: true, type: 'relationship', id: rel.id, name: targetComponent.title })}
+                                  onClick={() => featureEditing.setDeleteConfirmation({ isOpen: true, type: 'relationship', id: rel.id, name: targetFeature.title })}
                                   className="btn btn-ghost btn-xs text-error"
                                   title="Delete relationship"
                                 >
@@ -1227,20 +1227,20 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
 
                 {relationshipManagement.showAddRelationship && (
                   <div className="space-y-2 mt-2">
-                    {/* Target component autocomplete */}
+                    {/* Target feature autocomplete */}
                     <div className="form-control">
                       <input
                         type="text"
                         value={relationshipManagement.relationshipSearch}
                         onChange={(e) => relationshipManagement.setRelationshipSearch(e.target.value)}
-                        placeholder="Search component..."
+                        placeholder="Search feature..."
                         className="input input-bordered input-sm w-full"
-                        list={`relationship-targets-${selectedComponent.id}`}
+                        list={`relationship-targets-${selectedFeature.id}`}
                       />
-                      <datalist id={`relationship-targets-${selectedComponent.id}`}>
+                      <datalist id={`relationship-targets-${selectedFeature.id}`}>
                         {docs
                           .filter(d =>
-                            d.id !== selectedComponent.id &&
+                            d.id !== selectedFeature.id &&
                             d.title.toLowerCase().includes(relationshipManagement.relationshipSearch.toLowerCase())
                           )
                           .map(d => (
@@ -1286,10 +1286,10 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
             </div>
           </div>
 
-          {!componentEditing.isEditingComponent ? (
+          {!featureEditing.isEditingFeature ? (
             <div className="flex gap-2 pt-2 border-t border-base-content/20">
               <button
-                onClick={componentEditing.handleEditComponent}
+                onClick={featureEditing.handleEditFeature}
                 className="btn btn-sm btn-primary flex-1"
                 style={{ color: getContrastTextColor('primary') }}
               >
@@ -1299,7 +1299,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
                 Edit
               </button>
               <button
-                onClick={() => componentEditing.setDeleteConfirmation({ isOpen: true, type: 'component', id: selectedComponent.id, name: selectedComponent.title })}
+                onClick={() => featureEditing.setDeleteConfirmation({ isOpen: true, type: 'feature', id: selectedFeature.id, name: selectedFeature.title })}
                 className="btn btn-sm btn-error btn-outline"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1311,8 +1311,8 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
           ) : (
             <div className="flex gap-2 pt-2 border-base-content/10">
               <button
-                onClick={componentEditing.handleSaveComponent}
-                disabled={!componentEditing.editComponentData?.title.trim() || !componentEditing.editComponentData?.content.trim() || !componentEditing.editComponentData?.feature.trim()}
+                onClick={featureEditing.handleSaveFeature}
+                disabled={!featureEditing.editFeatureData?.title.trim() || !featureEditing.editFeatureData?.content.trim() || !featureEditing.editFeatureData?.group.trim()}
                 className="btn btn-sm btn-success flex-1"
                 style={{ color: getContrastTextColor('primary') }}
               >
@@ -1322,7 +1322,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
                 Save
               </button>
               <button
-                onClick={componentEditing.handleCancelEditComponent}
+                onClick={featureEditing.handleCancelEditFeature}
                 className="btn btn-sm btn-ghost flex-1"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1348,31 +1348,31 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
       )}
 
       {/* Confirmation Modal */}
-      {componentEditing.deleteConfirmation.isOpen && (
+      {featureEditing.deleteConfirmation.isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="bg-base-100 rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
             <h3 className="text-lg font-bold mb-2">
-              {componentEditing.deleteConfirmation.type === 'component' ? 'Delete Component' : 'Delete Relationship'}
+              {featureEditing.deleteConfirmation.type === 'feature' ? 'Delete Feature' : 'Delete Relationship'}
             </h3>
             <p className="text-base-content/70 mb-4">
-              {componentEditing.deleteConfirmation.type === 'component'
-                ? `Are you sure you want to delete "${componentEditing.deleteConfirmation.name}"? This action cannot be undone.`
-                : `Are you sure you want to delete the relationship to "${componentEditing.deleteConfirmation.name}"?`}
+              {featureEditing.deleteConfirmation.type === 'feature'
+                ? `Are you sure you want to delete "${featureEditing.deleteConfirmation.name}"? This action cannot be undone.`
+                : `Are you sure you want to delete the relationship to "${featureEditing.deleteConfirmation.name}"?`}
             </p>
             <div className="flex gap-2 justify-end">
               <button
-                onClick={() => componentEditing.setDeleteConfirmation({ isOpen: false, type: 'component', id: '', name: '' })}
+                onClick={() => featureEditing.setDeleteConfirmation({ isOpen: false, type: 'feature', id: '', name: '' })}
                 className="btn btn-ghost"
               >
                 Cancel
               </button>
               <button
                 onClick={() => {
-                  if (componentEditing.deleteConfirmation.type === 'component') {
-                    componentEditing.handleDeleteComponent();
+                  if (featureEditing.deleteConfirmation.type === 'feature') {
+                    featureEditing.handleDeleteFeature();
                   } else {
-                    relationshipManagement.handleDeleteRelationship(componentEditing.deleteConfirmation.id);
-                    componentEditing.setDeleteConfirmation({ isOpen: false, type: 'relationship', id: '', name: '' });
+                    relationshipManagement.handleDeleteRelationship(featureEditing.deleteConfirmation.id);
+                    featureEditing.setDeleteConfirmation({ isOpen: false, type: 'relationship', id: '', name: '' });
                   }
                 }}
                 className="btn btn-error"

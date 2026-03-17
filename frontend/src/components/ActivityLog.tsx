@@ -216,7 +216,7 @@ const ActivityLog: React.FC<ActivityLogProps> = ({
         return '📝';
       case 'todo':
         return '✓';
-      case 'component':
+      case 'feature':
         return '📚';
       case 'devlog':
         return '🐛';
@@ -382,7 +382,7 @@ const ActivityLog: React.FC<ActivityLogProps> = ({
                     <option value="project">Project</option>
                     <option value="note">Note</option>
                     <option value="todo">Todo</option>
-                    <option value="component">Component</option>
+                    <option value="feature">Feature</option>
                     <option value="devlog">DevLog</option>
                     <option value="link">Link</option>
                     <option value="tech">Tech</option>

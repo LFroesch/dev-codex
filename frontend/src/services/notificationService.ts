@@ -324,20 +324,43 @@ class NotificationService {
     }
   }
 
-  public async clearAll(): Promise<void> {
+  public async markAllAsRead(): Promise<void> {
+    // Optimistic update
+    const previousNotifications = [...this.notifications];
+    const previousUnread = this.unreadCount;
+
+    this.notifications = this.notifications.map(n => ({ ...n, isRead: true }));
+    this.unreadCount = 0;
+    this.notifyNotificationListeners();
+    this.notifyUnreadCountListeners();
+
     try {
       const { notificationAPI } = await import('../api');
-      
-      // Delete all notifications
-      for (const notification of this.notifications) {
-        await notificationAPI.deleteNotification(notification._id);
-      }
-      
-      // Update local state
-      this.clearAllNotifications();
+      await notificationAPI.markAllAsRead();
     } catch (error) {
-      // Refetch to sync state
-      this.fetchNotifications();
+      // Rollback on failure
+      this.notifications = previousNotifications;
+      this.unreadCount = previousUnread;
+      this.notifyNotificationListeners();
+      this.notifyUnreadCountListeners();
+    }
+  }
+
+  public async clearAll(): Promise<void> {
+    // Optimistic update
+    const previousNotifications = [...this.notifications];
+    const previousUnread = this.unreadCount;
+    this.clearAllNotifications();
+
+    try {
+      const { notificationAPI } = await import('../api');
+      await notificationAPI.clearAllNotifications();
+    } catch (error) {
+      // Rollback on failure
+      this.notifications = previousNotifications;
+      this.unreadCount = previousUnread;
+      this.notifyNotificationListeners();
+      this.notifyUnreadCountListeners();
     }
   }
 

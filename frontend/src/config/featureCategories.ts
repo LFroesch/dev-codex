@@ -1,6 +1,6 @@
-import { ComponentCategory } from '../../../shared/types/project';
+import { FeatureCategory } from '../../../shared/types/project';
 
-export interface ComponentType {
+export interface FeatureType {
   value: string;
   label: string;
   emoji: string;
@@ -8,15 +8,15 @@ export interface ComponentType {
 }
 
 export interface Category {
-  value: ComponentCategory;
+  value: FeatureCategory;
   label: string;
   color: string;
   emoji: string;
   description: string;
-  types: ComponentType[];
+  types: FeatureType[];
 }
 
-export const COMPONENT_CATEGORIES: Record<ComponentCategory, Category> = {
+export const FEATURE_CATEGORIES: Record<FeatureCategory, Category> = {
   frontend: {
     value: 'frontend',
     label: 'Frontend',
@@ -118,7 +118,7 @@ export const COMPONENT_CATEGORIES: Record<ComponentCategory, Category> = {
     description: 'Guides, docs, and architecture',
     types: [
       { value: 'area', label: 'Area Label', emoji: '📍', description: 'Large label to define a region or section in the graph' },
-      { value: 'section', label: 'Section Header', emoji: '🏷️', description: 'Section header for organizing components' },
+      { value: 'section', label: 'Section Header', emoji: '🏷️', description: 'Section header for organizing features' },
       { value: 'guide', label: 'Guide', emoji: '📖', description: 'How-to guide' },
       { value: 'architecture', label: 'Architecture', emoji: '🏛️', description: 'Architecture documentation' },
       { value: 'api-doc', label: 'API Documentation', emoji: '📃', description: 'API documentation' },
@@ -146,18 +146,18 @@ export const COMPONENT_CATEGORIES: Record<ComponentCategory, Category> = {
 };
 
 // Helper functions
-export const getCategoryByValue = (value: ComponentCategory): Category => {
-  return COMPONENT_CATEGORIES[value];
+export const getCategoryByValue = (value: FeatureCategory): Category => {
+  return FEATURE_CATEGORIES[value];
 };
 
 export const getAllCategories = (): Category[] => {
-  return Object.values(COMPONENT_CATEGORIES);
+  return Object.values(FEATURE_CATEGORIES);
 };
 
-export const getTypesForCategory = (category: ComponentCategory): ComponentType[] => {
-  return COMPONENT_CATEGORIES[category].types;
+export const getTypesForCategory = (category: FeatureCategory): FeatureType[] => {
+  return FEATURE_CATEGORIES[category].types;
 };
 
-export const getCategoryColor = (category: ComponentCategory): string => {
-  return COMPONENT_CATEGORIES[category].color;
+export const getCategoryColor = (category: FeatureCategory): string => {
+  return FEATURE_CATEGORIES[category].color;
 };

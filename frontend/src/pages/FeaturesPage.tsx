@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Project, Doc, projectAPI } from '../api';
-import { ComponentCategory } from '../../../shared/types/project';
+import { FeatureCategory } from '../../../shared/types/project';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { getContrastTextColor } from '../utils/contrastTextColor';
 import FeaturesGraph from '../components/FeaturesGraph';
-import { getAllCategories, getTypesForCategory } from '../config/componentCategories';
+import { getAllCategories, getTypesForCategory } from '../config/featureCategories';
 import { analyticsService } from '../services/analytics';
 
 interface ContextType {
@@ -16,41 +16,41 @@ interface ContextType {
 const FeaturesPage: React.FC = () => {
   const { selectedProject, onProjectRefresh, activeFeaturesTab } = useOutletContext<any>();
 
-  const [newComponent, setNewComponent] = useState({
-    category: 'backend' as ComponentCategory,
+  const [newFeature, setNewFeature] = useState({
+    category: 'backend' as FeatureCategory,
     type: 'service',
     title: '',
     content: '',
-    feature: '',
+    group: '',
     tags: [] as string[]
   });
-  const [addingComponent, setAddingComponent] = useState(false);
-  const [editingComponent, setEditingComponent] = useState<string | null>(null);
+  const [addingFeature, setAddingFeature] = useState(false);
+  const [editingFeatureId, setEditingFeatureId] = useState<string | null>(null);
   const [editData, setEditData] = useState({
-    category: 'backend' as ComponentCategory,
+    category: 'backend' as FeatureCategory,
     type: 'service',
     title: '',
     content: '',
-    feature: '',
+    group: '',
     tags: [] as string[]
   });
-  const [expandedComponents, setExpandedComponents] = useState<Set<string>>(new Set());
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const [expandedFeatures, setExpandedFeatures] = useState<Set<string>>(new Set());
   const [error, setError] = useState('');
-  const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean; componentId: string; componentTitle: string }>({
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean; featureId: string; featureTitle: string }>({
     isOpen: false,
-    componentId: '',
-    componentTitle: ''
+    featureId: '',
+    featureTitle: ''
   });
 
-  const toggleComponentExpanded = (componentId: string) => {
-    const newExpanded = new Set(expandedComponents);
-    if (newExpanded.has(componentId)) {
-      newExpanded.delete(componentId);
+  const toggleItemExpanded = (featureId: string) => {
+    const newExpanded = new Set(expandedItems);
+    if (newExpanded.has(featureId)) {
+      newExpanded.delete(featureId);
     } else {
-      newExpanded.add(componentId);
+      newExpanded.add(featureId);
     }
-    setExpandedComponents(newExpanded);
+    setExpandedItems(newExpanded);
   };
 
   const toggleFeatureExpanded = (feature: string) => {
@@ -65,93 +65,93 @@ const FeaturesPage: React.FC = () => {
 
   const categories = getAllCategories();
 
-  const handleAddComponent = async () => {
-    if (!selectedProject || !newComponent.title.trim() || !newComponent.content.trim() || !newComponent.feature.trim()) return;
+  const handleAddFeature = async () => {
+    if (!selectedProject || !newFeature.title.trim() || !newFeature.content.trim() || !newFeature.group.trim()) return;
 
-    setAddingComponent(true);
+    setAddingFeature(true);
     setError('');
 
     try {
-      await projectAPI.createComponent(selectedProject.id, newComponent);
+      await projectAPI.createFeature(selectedProject.id, newFeature);
 
-      analyticsService.trackFeatureUsage('component_create', {
+      analyticsService.trackFeatureUsage('feature_create', {
         projectId: selectedProject.id,
         projectName: selectedProject.name,
-        category: newComponent.category,
-        type: newComponent.type,
-        feature: newComponent.feature
+        category: newFeature.category,
+        type: newFeature.type,
+        group: newFeature.group
       });
 
-      setNewComponent({ category: 'backend', type: 'service', title: '', content: '', feature: '', tags: [] });
+      setNewFeature({ category: 'backend', type: 'service', title: '', content: '', group: '', tags: [] });
       // Tab managed by Layout.tsx now
       await onProjectRefresh();
     } catch (err) {
-      setError('Failed to add component');
+      setError('Failed to add feature');
     } finally {
-      setAddingComponent(false);
+      setAddingFeature(false);
     }
   };
 
-  const handleEditComponent = (component: Doc) => {
-    setEditingComponent(component.id);
+  const handleEditFeature = (feat: Doc) => {
+    setEditingFeatureId(feat.id);
     setEditData({
-      category: component.category,
-      type: component.type,
-      title: component.title,
-      content: component.content,
-      feature: component.feature || '',
-      tags: component.tags || []
+      category: feat.category,
+      type: feat.type,
+      title: feat.title,
+      content: feat.content,
+      group: feat.group || '',
+      tags: feat.tags || []
     });
-    if (!expandedComponents.has(component.id)) {
-      toggleComponentExpanded(component.id);
+    if (!expandedItems.has(feat.id)) {
+      toggleItemExpanded(feat.id);
     }
   };
 
   const handleSaveEdit = async () => {
-    if (!selectedProject || !editingComponent) return;
+    if (!selectedProject || !editingFeatureId) return;
 
     try {
-      await projectAPI.updateComponent(selectedProject.id, editingComponent, editData);
+      await projectAPI.updateFeature(selectedProject.id, editingFeatureId, editData);
 
-      analyticsService.trackFeatureUsage('component_update', {
+      analyticsService.trackFeatureUsage('feature_update', {
         projectId: selectedProject.id,
         projectName: selectedProject.name,
         category: editData.category,
         type: editData.type
       });
 
-      setEditingComponent(null);
+      setEditingFeatureId(null);
       await onProjectRefresh();
     } catch (err) {
-      setError('Failed to update component');
+      setError('Failed to update feature');
     }
   };
 
-  const handleDeleteComponent = async (componentId: string) => {
+  const handleDeleteFeature = async (featureId: string) => {
     if (!selectedProject) return;
 
     try {
-      await projectAPI.deleteComponent(selectedProject.id, componentId);
+      await projectAPI.deleteFeature(selectedProject.id, featureId);
 
-      analyticsService.trackFeatureUsage('component_delete', {
+      analyticsService.trackFeatureUsage('feature_delete', {
         projectId: selectedProject.id,
         projectName: selectedProject.name
       });
 
       await onProjectRefresh();
-      setDeleteConfirmation({ isOpen: false, componentId: '', componentTitle: '' });
+      setDeleteConfirmation({ isOpen: false, featureId: '', featureTitle: '' });
     } catch (err) {
-      setError('Failed to delete component');
+      setError('Failed to delete feature');
     }
   };
 
-  const confirmDeleteComponent = (componentId: string, componentTitle: string) => {
-    setDeleteConfirmation({ isOpen: true, componentId, componentTitle });
+  const confirmDeleteFeature = (featureId: string, featureTitle: string) => {
+    setDeleteConfirmation({ isOpen: true, featureId, featureTitle });
   };
 
   const handleCancelEdit = () => {
-    setEditingComponent(null);
-    setEditData({ category: 'backend', type: 'service', title: '', content: '', feature: '', tags: [] });
+    setEditingFeatureId(null);
+    setEditData({ category: 'backend', type: 'service', title: '', content: '', group: '', tags: [] });
   };
 
   if (!selectedProject) {
@@ -166,35 +166,35 @@ const FeaturesPage: React.FC = () => {
     );
   }
 
-  // Group components by feature
-  const componentsByFeature: Record<string, Doc[]> = {};
-  selectedProject.components.forEach((component: Doc) => {
-    const featureKey = component.feature || 'Ungrouped';
-    if (!componentsByFeature[featureKey]) {
-      componentsByFeature[featureKey] = [];
+  // Group features by group name
+  const featuresByGroup: Record<string, Doc[]> = {};
+  selectedProject.features.forEach((feat: Doc) => {
+    const groupKey = feat.group || 'Ungrouped';
+    if (!featuresByGroup[groupKey]) {
+      featuresByGroup[groupKey] = [];
     }
-    componentsByFeature[featureKey].push(component);
+    featuresByGroup[groupKey].push(feat);
   });
 
-  // Separate featured and ungrouped components
-  const featuredComponents = Object.entries(componentsByFeature).filter(([key]) => key !== 'Ungrouped');
-  const ungroupedComponents = componentsByFeature['Ungrouped'] || [];
+  // Separate grouped and ungrouped features
+  const groupedFeatures = Object.entries(featuresByGroup).filter(([key]) => key !== 'Ungrouped');
+  const ungroupedFeatures = featuresByGroup['Ungrouped'] || [];
 
-  // Check if there are any components at all
-  const hasAnyComponents = selectedProject.components.length > 0;
+  // Check if there are any features at all
+  const hasAnyFeatures = selectedProject.features.length > 0;
 
-  const renderComponentCard = (component: Doc) => {
-    const isExpanded = expandedComponents.has(component.id);
-    const isEditing = editingComponent === component.id;
-    const category = categories.find(c => c.value === component.category);
-    const typeInfo = category ? category.types.find(t => t.value === component.type) : null;
+  const renderFeatureCard = (feat: Doc) => {
+    const isExpanded = expandedItems.has(feat.id);
+    const isEditing = editingFeatureId === feat.id;
+    const category = categories.find(c => c.value === feat.category);
+    const typeInfo = category ? category.types.find(t => t.value === feat.type) : null;
 
     return (
-      <div key={component.id} className="card-interactive group p-3 max-w-full min-w-0">
+      <div key={feat.id} className="card-interactive group p-3 max-w-full min-w-0">
         {/* Header with title and controls */}
         <div className="flex items-start justify-between gap-2">
           <button
-            onClick={() => toggleComponentExpanded(component.id)}
+            onClick={() => toggleItemExpanded(feat.id)}
             className="flex items-start gap-2 flex-1 text-left hover:bg-base-200 p-2 -m-2 rounded-lg transition-colors min-w-0"
             disabled={isEditing}
           >
@@ -204,7 +204,7 @@ const FeaturesPage: React.FC = () => {
               </svg>
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-base mb-1 break-words">{component.title}</h3>
+              <h3 className="font-semibold text-base mb-1 break-words">{feat.title}</h3>
               {category && (
                 <span
                   className="inline-block px-2 py-1 rounded-md text-xs font-medium mb-1"
@@ -215,13 +215,13 @@ const FeaturesPage: React.FC = () => {
                     border: '1px solid'
                   }}
                 >
-                  {category.emoji} {category.label} • {typeInfo?.emoji} {typeInfo?.label || component.type}
+                  {category.emoji} {category.label} • {typeInfo?.emoji} {typeInfo?.label || feat.type}
                 </span>
               )}
               <div className="text-xs text-base-content/50">
-                <div>Created: {new Date(component.createdAt).toLocaleDateString()}</div>
-                {component.updatedAt !== component.createdAt && (
-                  <div>Updated: {new Date(component.updatedAt).toLocaleDateString()}</div>
+                <div>Created: {new Date(feat.createdAt).toLocaleDateString()}</div>
+                {feat.updatedAt !== feat.createdAt && (
+                  <div>Updated: {new Date(feat.updatedAt).toLocaleDateString()}</div>
                 )}
               </div>
             </div>
@@ -234,7 +234,7 @@ const FeaturesPage: React.FC = () => {
                   onClick={handleSaveEdit}
                   className="btn btn-sm btn-primary px-2"
                   style={{ color: getContrastTextColor('primary') }}
-                  disabled={!editData.title.trim() || !editData.content.trim() || !editData.feature.trim()}
+                  disabled={!editData.title.trim() || !editData.content.trim() || !editData.group.trim()}
                   title="Save changes"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -256,10 +256,10 @@ const FeaturesPage: React.FC = () => {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleEditComponent(component);
+                    handleEditFeature(feat);
                   }}
                   className="btn btn-sm btn-ghost px-2"
-                  title="Edit component"
+                  title="Edit feature"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -268,10 +268,10 @@ const FeaturesPage: React.FC = () => {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    confirmDeleteComponent(component.id, component.title);
+                    confirmDeleteFeature(feat.id, feat.title);
                   }}
                   className="btn btn-sm btn-error btn-outline px-2"
-                  title="Delete component"
+                  title="Delete feature"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -295,7 +295,7 @@ const FeaturesPage: React.FC = () => {
                     <select
                       value={editData.category}
                       onChange={(e) => {
-                        const newCategory = e.target.value as ComponentCategory;
+                        const newCategory = e.target.value as FeatureCategory;
                         const types = getTypesForCategory(newCategory);
                         setEditData({...editData, category: newCategory, type: types[0]?.value || ''});
                       }}
@@ -342,8 +342,8 @@ const FeaturesPage: React.FC = () => {
                   </label>
                   <input
                     type="text"
-                    value={editData.feature}
-                    onChange={(e) => setEditData({...editData, feature: e.target.value})}
+                    value={editData.group}
+                    onChange={(e) => setEditData({...editData, group: e.target.value})}
                     className="input input-bordered input-sm"
                     placeholder="e.g., Authentication, User Management"
                   />
@@ -362,7 +362,7 @@ const FeaturesPage: React.FC = () => {
             ) : (
               <div className="bg-base-200/40 rounded-lg p-4 border-2 border-base-content/20 overflow-x-auto max-w-full">
                 <pre className="whitespace-pre-wrap text-sm font-mono leading-relaxed break-words max-w-full overflow-hidden">
-                  {component.content}
+                  {feat.content}
                 </pre>
               </div>
             )}
@@ -395,32 +395,32 @@ const FeaturesPage: React.FC = () => {
           </div>
           <div className="section-content p-2">
             <FeaturesGraph
-              docs={selectedProject.components}
+              docs={selectedProject.features}
               projectId={selectedProject.id}
-              onCreateDoc={async (componentData) => {
-                setAddingComponent(true);
+              onCreateDoc={async (featureData) => {
+                setAddingFeature(true);
                 setError('');
 
                 try {
-                  await projectAPI.createComponent(selectedProject.id, componentData);
+                  await projectAPI.createFeature(selectedProject.id, featureData);
 
-                  analyticsService.trackFeatureUsage('component_create', {
+                  analyticsService.trackFeatureUsage('feature_create', {
                     projectId: selectedProject.id,
                     projectName: selectedProject.name,
-                    category: componentData.category,
-                    type: componentData.type,
-                    feature: componentData.feature,
+                    category: featureData.category,
+                    type: featureData.type,
+                    group: featureData.group,
                     createdFrom: 'graph'
                   });
 
                   await onProjectRefresh();
                 } catch (err) {
-                  setError('Failed to add component');
+                  setError('Failed to add feature');
                 } finally {
-                  setAddingComponent(false);
+                  setAddingFeature(false);
                 }
               }}
-              creating={addingComponent}
+              creating={addingFeature}
               onRefresh={onProjectRefresh}
             />
           </div>
@@ -435,24 +435,24 @@ const FeaturesPage: React.FC = () => {
             </div>
           </div>
           <div className="section-content">
-            {!hasAnyComponents ? (
+            {!hasAnyFeatures ? (
               <div className="text-center py-12">
                 <div className="w-16 h-16 mx-auto mb-4 bg-base-200 rounded-full flex items-center justify-center">
                   <span className="text-2xl">🧩</span>
                 </div>
-                <h3 className="text-lg font-medium mb-2 text-base-content/80">No components yet</h3>
-                <p className="text-sm text-base-content/60 mb-4">Create your first component using the "Create New" tab</p>
-                <p className="text-sm text-base-content/60">Use the "Create" tab above to add your first component</p>
+                <h3 className="text-lg font-medium mb-2 text-base-content/80">No features yet</h3>
+                <p className="text-sm text-base-content/60 mb-4">Create your first feature using the "Create New" tab</p>
+                <p className="text-sm text-base-content/60">Use the "Create" tab above to add your first feature</p>
               </div>
             ) : (
               <div className="space-y-4 max-w-full">
                 {/* Featured sections */}
-                {featuredComponents.map(([feature, components]) => {
-                  const isExpanded = expandedFeatures.has(feature);
+                {groupedFeatures.map(([groupName, features]) => {
+                  const isExpanded = expandedFeatures.has(groupName);
                   return (
-                    <div key={feature} className="card-interactive p-0 overflow-hidden max-w-full">
+                    <div key={groupName} className="card-interactive p-0 overflow-hidden max-w-full">
                       <button
-                        onClick={() => toggleFeatureExpanded(feature)}
+                        onClick={() => toggleFeatureExpanded(groupName)}
                         className="w-full flex items-center justify-between p-4 hover:bg-base-200 transition-colors text-left"
                       >
                         <div className="flex items-center gap-3">
@@ -461,21 +461,21 @@ const FeaturesPage: React.FC = () => {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                             </svg>
                           </div>
-                          <h2 className="text-lg font-bold">{feature}</h2>
-                          <span className="badge badge-primary font-bold">{components.length}</span>
+                          <h2 className="text-lg font-bold">{groupName}</h2>
+                          <span className="badge badge-primary font-bold">{features.length}</span>
                         </div>
                       </button>
                       {isExpanded && (
                         <div className="px-4 pb-4 space-y-3">
-                          {components.map(component => renderComponentCard(component))}
+                          {features.map(feat => renderFeatureCard(feat))}
                         </div>
                       )}
                     </div>
                   );
                 })}
 
-                {/* Ungrouped components */}
-                {ungroupedComponents.length > 0 && (
+                {/* Ungrouped features */}
+                {ungroupedFeatures.length > 0 && (
                   <div className="card-interactive p-0 overflow-hidden max-w-full">
                     <button
                       onClick={() => toggleFeatureExpanded('Ungrouped')}
@@ -488,12 +488,12 @@ const FeaturesPage: React.FC = () => {
                           </svg>
                         </div>
                         <h2 className="text-lg font-bold">Ungrouped</h2>
-                        <span className="badge badge-ghost">{ungroupedComponents.length}</span>
+                        <span className="badge badge-ghost">{ungroupedFeatures.length}</span>
                       </div>
                     </button>
                     {expandedFeatures.has('Ungrouped') && (
                       <div className="px-4 pb-4 space-y-3">
-                        {ungroupedComponents.map(component => renderComponentCard(component))}
+                        {ungroupedFeatures.map(feat => renderFeatureCard(feat))}
                       </div>
                     )}
                   </div>
@@ -503,17 +503,17 @@ const FeaturesPage: React.FC = () => {
           </div>
         </div>
       ) : activeFeaturesTab === 'all' ? (
-        // All Components Tab
+        // All Features Tab
         <div className="section-container mb-4 max-w-full">
           <div className="section-header">
             <div className="flex items-center gap-3">
               <div className="section-icon">🧩</div>
-              <span>All Components</span>
+              <span>All Features</span>
             </div>
           </div>
           <div className="section-content">
             <div className="space-y-3">
-              {selectedProject.components.map((component: Doc) => renderComponentCard(component))}
+              {selectedProject.features.map((feat: Doc) => renderFeatureCard(feat))}
             </div>
           </div>
         </div>
@@ -523,7 +523,7 @@ const FeaturesPage: React.FC = () => {
           <div className="section-header">
             <div className="flex items-center gap-3">
               <div className="section-icon">📝</div>
-              <span>Create New Component</span>
+              <span>Create New Feature</span>
             </div>
           </div>
           <div className="section-content">
@@ -534,11 +534,11 @@ const FeaturesPage: React.FC = () => {
                     <span className="label-text font-medium">Category</span>
                   </label>
                   <select
-                    value={newComponent.category}
+                    value={newFeature.category}
                     onChange={(e) => {
-                      const newCategory = e.target.value as ComponentCategory;
+                      const newCategory = e.target.value as FeatureCategory;
                       const types = getTypesForCategory(newCategory);
-                      setNewComponent({...newComponent, category: newCategory, type: types[0]?.value || ''});
+                      setNewFeature({...newFeature, category: newCategory, type: types[0]?.value || ''});
                     }}
                     className="select select-bordered w-full"
                   >
@@ -555,18 +555,18 @@ const FeaturesPage: React.FC = () => {
                     <span className="label-text font-medium">Type</span>
                   </label>
                   <select
-                    value={newComponent.type}
-                    onChange={(e) => setNewComponent({...newComponent, type: e.target.value})}
+                    value={newFeature.type}
+                    onChange={(e) => setNewFeature({...newFeature, type: e.target.value})}
                     className="select select-bordered w-full"
                   >
-                    {getTypesForCategory(newComponent.category).map(type => (
+                    {getTypesForCategory(newFeature.category).map(type => (
                       <option key={type.value} value={type.value}>
                         {type.emoji} {type.label}
                       </option>
                     ))}
                   </select>
                   <label className="label">
-                    <span className="label-text-alt break-words">{getTypesForCategory(newComponent.category).find(t => t.value === newComponent.type)?.description || ''}</span>
+                    <span className="label-text-alt break-words">{getTypesForCategory(newFeature.category).find(t => t.value === newFeature.type)?.description || ''}</span>
                   </label>
                 </div>
 
@@ -576,10 +576,10 @@ const FeaturesPage: React.FC = () => {
                   </label>
                   <input
                     type="text"
-                    value={newComponent.title}
-                    onChange={(e) => setNewComponent({...newComponent, title: e.target.value})}
+                    value={newFeature.title}
+                    onChange={(e) => setNewFeature({...newFeature, title: e.target.value})}
                     className="input input-bordered text-sm w-full"
-                    placeholder="Enter component title..."
+                    placeholder="Enter feature title..."
                   />
                 </div>
               </div>
@@ -590,13 +590,13 @@ const FeaturesPage: React.FC = () => {
                 </label>
                 <input
                   type="text"
-                  value={newComponent.feature}
-                  onChange={(e) => setNewComponent({...newComponent, feature: e.target.value})}
+                  value={newFeature.group}
+                  onChange={(e) => setNewFeature({...newFeature, group: e.target.value})}
                   className="input input-bordered text-sm w-full"
                   placeholder="e.g., Authentication, User Management, Payment System"
                 />
                 <label className="label">
-                  <span className="label-text-alt break-words">Feature name is required - components belong to features</span>
+                  <span className="label-text-alt break-words">Group name is required - features are organized by group</span>
                 </label>
               </div>
 
@@ -606,21 +606,21 @@ const FeaturesPage: React.FC = () => {
                 </div>
 
                 <textarea
-                  value={newComponent.content}
-                  onChange={(e) => setNewComponent({...newComponent, content: e.target.value})}
+                  value={newFeature.content}
+                  onChange={(e) => setNewFeature({...newFeature, content: e.target.value})}
                   className="textarea textarea-bordered h-[300px] w-full"
-                  placeholder="Enter your component content..."
+                  placeholder="Enter your feature content..."
                 />
               </div>
 
               <div className="flex justify-end">
                 <button
-                  onClick={handleAddComponent}
-                  disabled={addingComponent || !newComponent.title.trim() || !newComponent.content.trim() || !newComponent.feature.trim()}
+                  onClick={handleAddFeature}
+                  disabled={addingFeature || !newFeature.title.trim() || !newFeature.content.trim() || !newFeature.group.trim()}
                   className="btn btn-primary"
                   style={{ color: getContrastTextColor('primary') }}
                 >
-                  {addingComponent ? 'Adding...' : 'Add Component'}
+                  {addingFeature ? 'Adding...' : 'Add Feature'}
                 </button>
               </div>
             </div>
@@ -631,10 +631,10 @@ const FeaturesPage: React.FC = () => {
       {/* Delete Confirmation Modal */}
       <ConfirmationModal
         isOpen={deleteConfirmation.isOpen}
-        onConfirm={() => handleDeleteComponent(deleteConfirmation.componentId)}
-        onCancel={() => setDeleteConfirmation({ isOpen: false, componentId: '', componentTitle: '' })}
-        title="Delete Component"
-        message={`Are you sure you want to delete "${deleteConfirmation.componentTitle}"? This action cannot be undone.`}
+        onConfirm={() => handleDeleteFeature(deleteConfirmation.featureId)}
+        onCancel={() => setDeleteConfirmation({ isOpen: false, featureId: '', featureTitle: '' })}
+        title="Delete Feature"
+        message={`Are you sure you want to delete "${deleteConfirmation.featureTitle}"? This action cannot be undone.`}
         confirmText="Delete"
         cancelText="Cancel"
         variant="error"

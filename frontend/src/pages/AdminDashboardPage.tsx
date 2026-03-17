@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { analyticsAPI, newsAPI } from '../api';
 import ConfirmationModal from '../components/ConfirmationModal';
+import { renderMarkdown } from '../utils/renderMarkdown';
 import { AnalyticsTab, UsersTab, AdminActivityFeed } from '../components/admin';
 import TicketKanban from '../components/TicketKanban';
 import { getContrastTextColor } from '../utils/contrastTextColor';
@@ -581,68 +582,6 @@ const AdminDashboardPage: React.FC = () => {
     }
   };
 
-  // Enhanced markdown to HTML converter (same as EnhancedTextEditor)
-  const renderMarkdown = (text: string, isPreview = false): string => {
-    if (!text) return '<p class="text-base-content/60 italic">Nothing to preview yet...</p>';
-    
-    let processedText = text;
-    
-    // Helper function to ensure URL has protocol
-    const ensureProtocol = (url: string): string => {
-      if (url.startsWith('http://') || url.startsWith('https://')) {
-        return url;
-      }
-      return 'https://' + url;
-    };
-    
-    // Process in order to avoid conflicts
-    
-    // 1. Headers - remove top margin for previews
-    const headerMargin = isPreview ? 'mt-1' : 'mt-4';
-    processedText = processedText
-      .replace(/^### (.*$)/gim, `<h3 class="text-lg font-semibold ${headerMargin} mb-2">$1</h3>`)
-      .replace(/^## (.*$)/gim, `<h2 class="text-xl font-semibold ${headerMargin} mb-2">$1</h2>`)
-      .replace(/^# (.*$)/gim, `<h1 class="text-2xl font-bold ${headerMargin} mb-2">$1</h1>`);
-    
-    // 2. Code blocks (must come before inline code and links)
-    processedText = processedText
-      .replace(/```([\s\S]*?)```/gim, '<pre class="bg-base-200 rounded p-3 my-2 overflow-x-auto"><code class="text-sm font-mono">$1</code></pre>')
-      .replace(/`([^`]+)`/gim, '<code class="bg-base-200 px-2 py-1 rounded text-sm font-mono">$1</code>');
-    
-    // 3. Markdown-style links [text](url) - process before auto-linking
-    processedText = processedText.replace(/\[([^\]]+)\]\(([^)]+)\)/gim, (_, text, url) => {
-      const fullUrl = ensureProtocol(url);
-      return `<a href="${fullUrl}" class="link link-primary" target="_blank" rel="noopener noreferrer">${text}</a>`;
-    });
-    
-    // 4. Auto-detect plain URLs
-    const urlRegex = /(?<!href=["'])(https?:\/\/[^\s<>"']+)/gi;
-    processedText = processedText.replace(urlRegex, '<a href="$1" class="link link-primary" target="_blank" rel="noopener noreferrer">$1</a>');
-    
-    // 5. Bold and italic (must come after links to avoid conflicts)
-    processedText = processedText
-      .replace(/\*\*\*(.*?)\*\*\*/gim, '<strong><em class="font-bold italic">$1</em></strong>')
-      .replace(/\*\*(.*?)\*\*/gim, '<strong class="font-bold">$1</strong>')
-      .replace(/(?<!\*)\*([^\*\n]+)\*(?!\*)/gim, '<em class="italic">$1</em>');
-    
-    // 6. Lists
-    processedText = processedText
-      .replace(/^\* (.*$)/gim, '<li class="ml-4">• $1</li>')
-      .replace(/^- (.*$)/gim, '<li class="ml-4">• $1</li>')
-      .replace(/^\d+\. (.*$)/gim, '<li class="ml-4 list-decimal">$1</li>');
-    
-    // 7. Line breaks and paragraphs
-    processedText = processedText
-      .replace(/\n\n/g, '</p><p class="mb-2">')
-      .replace(/\n/g, '<br/>');
-    
-    // 8. Wrap in paragraph tags if not already wrapped
-    if (!processedText.includes('<p') && !processedText.includes('<h') && !processedText.includes('<pre')) {
-      processedText = `<p class="mb-2">${processedText}</p>`;
-    }
-
-    return processedText;
-  };
 
   // Handle escape key for projects modal
   useEffect(() => {

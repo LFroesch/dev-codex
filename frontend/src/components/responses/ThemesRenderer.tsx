@@ -29,7 +29,7 @@ const ThemesRenderer: React.FC<ThemesRendererProps> = ({ themes, customThemes = 
           {themes.map((theme, index) => (
             <div
               key={index}
-              className="p-2 bg-base-200 rounded-lg hover:bg-primary/20 hover:border-primary/50 transition-all border-2 border-base-content/20 cursor-pointer flex items-center gap-2"
+              className="p-2 bg-base-200 rounded-lg hover:bg-primary/20 hover:border-primary/50 transition-all border-thick cursor-pointer flex items-center gap-2"
               onClick={() => onDirectThemeChange?.(theme.name)}
               title={`Click to apply ${theme.name} theme`}
             >
@@ -59,7 +59,7 @@ const ThemesRenderer: React.FC<ThemesRendererProps> = ({ themes, customThemes = 
             {customThemes.map((theme, index) => (
               <div
                 key={index}
-                className="p-2 bg-base-200 rounded-lg hover:bg-secondary/20 hover:border-secondary/50 transition-all border-2 border-base-content/20 cursor-pointer flex items-center gap-2"
+                className="p-2 bg-base-200 rounded-lg hover:bg-secondary/20 hover:border-secondary/50 transition-all border-thick cursor-pointer flex items-center gap-2"
                 onClick={() => onDirectThemeChange?.(theme.name)}
                 title={`Click to apply ${theme.displayName} theme`}
               >

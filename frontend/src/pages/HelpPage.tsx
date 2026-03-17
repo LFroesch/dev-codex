@@ -175,32 +175,56 @@ const HelpPage: React.FC = () => {
       case 'terminal':
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold">Terminal Commands</h2>
-            <p className="text-base-content/70">Use <kbd className="kbd kbd-sm">/help</kbd> in the terminal to see all available commands. Here are some common ones:</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="p-3 bg-base-200 rounded-lg border border-base-content/20">
-                <kbd className="kbd kbd-sm">/new</kbd>
-                <p className="text-sm mt-1 text-base-content/70">Create a new item (note/todo/devlog)</p>
+            <h2 className="text-2xl font-bold">Terminal</h2>
+
+            {/* AI Section */}
+            <div className="p-4 bg-accent/5 rounded-lg border-2 border-accent/20">
+              <h3 className="font-semibold mb-2">AI Assistant (Built-in)</h3>
+              <p className="text-sm text-base-content/70 mb-2">Just type naturally — no slash prefix needed. The AI reads your project context and proposes actions you can confirm.</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-base-content/80">
+                <div><code className="bg-accent/10 px-1 rounded text-xs">"finished the auth page"</code> → devlog + todo updates</div>
+                <div><code className="bg-accent/10 px-1 rounded text-xs">"what should I work on?"</code> → priority suggestions</div>
               </div>
-              <div className="p-3 bg-base-200 rounded-lg border border-base-content/20">
-                <kbd className="kbd kbd-sm">/view</kbd>
-                <p className="text-sm mt-1 text-base-content/70">View all items in current project/section</p>
+            </div>
+
+            {/* Slash Commands Section */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <p className="text-sm text-base-content/70">Use <kbd className="kbd kbd-sm bg-accent/10 border-accent/20">/help</kbd> in the terminal to see all 55+ slash commands</p>
               </div>
-              <div className="p-3 bg-base-200 rounded-lg border border-base-content/20">
-                <kbd className="kbd kbd-sm">/search</kbd>
-                <p className="text-sm mt-1 text-base-content/70">Search across all content</p>
-              </div>
-              <div className="p-3 bg-base-200 rounded-lg border border-base-content/20">
-                <kbd className="kbd kbd-sm">/stale</kbd>
-                <p className="text-sm mt-1 text-base-content/70">Find items not updated recently</p>
-              </div>
-              <div className="p-3 bg-base-200 rounded-lg border border-base-content/20">
-                <kbd className="kbd kbd-sm">/project</kbd>
-                <p className="text-sm mt-1 text-base-content/70">Switch to a different project</p>
-              </div>
-              <div className="p-3 bg-base-200 rounded-lg border border-base-content/20">
-                <kbd className="kbd kbd-sm">/stack</kbd>
-                <p className="text-sm mt-1 text-base-content/70">Manage technology stack</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="p-3 bg-accent/5 rounded-lg border border-accent/20 hover:border-accent/30 transition-colors">
+                  <kbd className="kbd kbd-sm bg-accent/10 border-accent/20">/new</kbd>
+                  <p className="text-sm mt-1 text-base-content/70">Create a new project, todo, note, or devlog</p>
+                </div>
+                <div className="p-3 bg-accent/5 rounded-lg border border-accent/20 hover:border-accent/30 transition-colors">
+                  <kbd className="kbd kbd-sm bg-accent/10 border-accent/20">/view</kbd>
+                  <p className="text-sm mt-1 text-base-content/70">View todos, notes, devlog, features, stack</p>
+                </div>
+                <div className="p-3 bg-accent/5 rounded-lg border border-accent/20 hover:border-accent/30 transition-colors">
+                  <kbd className="kbd kbd-sm bg-accent/10 border-accent/20">/bridge</kbd>
+                  <p className="text-sm mt-1 text-base-content/70">Command reference for external AI tools (CLAUDE.md, .cursorrules)</p>
+                </div>
+                <div className="p-3 bg-accent/5 rounded-lg border border-accent/20 hover:border-accent/30 transition-colors">
+                  <kbd className="kbd kbd-sm bg-accent/10 border-accent/20">/context</kbd>
+                  <p className="text-sm mt-1 text-base-content/70">Export current project state for AI</p>
+                </div>
+                <div className="p-3 bg-accent/5 rounded-lg border border-accent/20 hover:border-accent/30 transition-colors">
+                  <kbd className="kbd kbd-sm bg-accent/10 border-accent/20">/export</kbd>
+                  <p className="text-sm mt-1 text-base-content/70">Alias for /context — export project as .md</p>
+                </div>
+                <div className="p-3 bg-accent/5 rounded-lg border border-accent/20 hover:border-accent/30 transition-colors">
+                  <kbd className="kbd kbd-sm bg-accent/10 border-accent/20">/search</kbd>
+                  <p className="text-sm mt-1 text-base-content/70">Search across all project content</p>
+                </div>
+                <div className="p-3 bg-accent/5 rounded-lg border border-accent/20 hover:border-accent/30 transition-colors">
+                  <kbd className="kbd kbd-sm bg-accent/10 border-accent/20">/swap</kbd>
+                  <p className="text-sm mt-1 text-base-content/70">Switch to a different project</p>
+                </div>
+                <div className="p-3 bg-accent/5 rounded-lg border border-accent/20 hover:border-accent/30 transition-colors">
+                  <kbd className="kbd kbd-sm bg-accent/10 border-accent/20">/stale</kbd>
+                  <p className="text-sm mt-1 text-base-content/70">Find items not updated recently</p>
+                </div>
               </div>
             </div>
           </div>
@@ -248,7 +272,7 @@ const HelpPage: React.FC = () => {
                 <input type="radio" name="faq-accordion" />
                 <div className="collapse-title font-semibold">What terminal commands are available?</div>
                 <div className="collapse-content">
-                  <p className="text-sm">Type <kbd className="kbd kbd-sm">/help</kbd> in the Terminal to see all commands. Common ones include <kbd className="kbd kbd-sm">/new</kbd>, <kbd className="kbd kbd-sm">/list</kbd>, and <kbd className="kbd kbd-sm">/search</kbd>.</p>
+                  <p className="text-sm">You can type naturally to talk to the built-in AI, or use <kbd className="kbd kbd-sm">/help</kbd> in the Terminal to see all 50+ slash commands. Common ones include <kbd className="kbd kbd-sm">/add todo</kbd>, <kbd className="kbd kbd-sm">/view notes</kbd>, and <kbd className="kbd kbd-sm">/search</kbd>.</p>
                 </div>
               </div>
 

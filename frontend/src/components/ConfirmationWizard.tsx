@@ -6,7 +6,7 @@ import { toast } from '../services/toast';
 interface ConfirmationWizardProps {
   message: string;
   confirmationData: {
-    componentTitle?: string;
+    featureTitle?: string;
     targetTitle?: string;
     relationType?: string;
     itemTitle?: string;
@@ -66,38 +66,43 @@ const ConfirmationWizard: React.FC<ConfirmationWizardProps> = ({
 
   if (isCompleted) {
     return (
-      <div className="mt-3 p-4 bg-base-200 rounded-lg border-thick">
-        <div className="text-center space-y-3">
-          <div className="text-4xl">✅</div>
-          <div className="font-bold text-lg">Done!</div>
+      <div className="mt-3 p-4 bg-success/10 rounded-lg border-thick border-l-4 border-l-success">
+        <div className="flex items-center gap-3">
+          <svg className="w-5 h-5 text-success flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span className="font-bold text-base">Done!</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="mt-3 space-y-2">
-      <div className="text-sm text-base-content/80">
-        {confirmationData.relationType ? (
-          // Relationship deletion
-          <>
-            Delete the <span className="font-semibold">{confirmationData.relationType}</span> relationship from{' '}
-            <span className="font-semibold">"{confirmationData.componentTitle}"</span> to{' '}
-            <span className="font-semibold">"{confirmationData.targetTitle}"</span>?
-          </>
-        ) : (
-          // Generic item deletion
-          <>
-            Delete {confirmationData.itemType}{' '}
-            <span className="font-semibold">"{confirmationData.itemTitle}"</span>?
-          </>
-        )}
+    <div className="mt-3 space-y-3">
+      <div className="flex items-start gap-3 p-3 bg-error/5 rounded-lg border-thick border-l-4 border-l-error">
+        <svg className="w-5 h-5 text-error flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+        </svg>
+        <div className="text-sm text-base-content/80">
+          {confirmationData.relationType ? (
+            <>
+              Delete the <span className="font-semibold">{confirmationData.relationType}</span> relationship from{' '}
+              <span className="font-semibold">"{confirmationData.featureTitle}"</span> to{' '}
+              <span className="font-semibold">"{confirmationData.targetTitle}"</span>?
+            </>
+          ) : (
+            <>
+              Delete {confirmationData.itemType}{' '}
+              <span className="font-semibold">"{confirmationData.itemTitle}"</span>?
+            </>
+          )}
+        </div>
       </div>
 
       <div className="flex gap-2">
         <button
           type="button"
-          className="btn btn-sm btn-error"
+          className="btn btn-sm btn-error border-thick"
           onClick={handleConfirm}
           disabled={isSubmitting}
         >
@@ -107,16 +112,16 @@ const ConfirmationWizard: React.FC<ConfirmationWizardProps> = ({
               Deleting...
             </>
           ) : (
-            'Yes'
+            'Yes, Delete'
           )}
         </button>
         <button
           type="button"
-          className="btn btn-sm btn-ghost"
+          className="btn btn-sm btn-ghost border-thick"
           onClick={handleCancel}
           disabled={isSubmitting}
         >
-          No
+          Cancel
         </button>
       </div>
     </div>

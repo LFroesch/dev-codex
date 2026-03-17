@@ -1,22 +1,22 @@
 import React from 'react';
 import { Doc } from '../api';
-import { ComponentCategory, CreateComponentData } from '../../../shared/types/project';
+import { FeatureCategory, CreateFeatureData } from '../../../shared/types/project';
 import { getContrastTextColor } from '../utils/contrastTextColor';
-import { getAllCategories, getTypesForCategory } from '../config/componentCategories';
+import { getAllCategories, getTypesForCategory } from '../config/featureCategories';
 import ConfirmationModal from './ConfirmationModal';
 
 interface GraphControlsProps {
   docs: Doc[];
-  selectedCategories: Set<ComponentCategory>;
+  selectedCategories: Set<FeatureCategory>;
   selectedFeatures: Set<string>;
-  onCategoryToggle: (category: ComponentCategory) => void;
+  onCategoryToggle: (category: FeatureCategory) => void;
   onFeatureToggle: (feature: string) => void;
   onAutoLayout: () => void;
   onResetView: () => void;
   onResetLayout: () => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
-  onCreateDoc?: (doc: CreateComponentData) => Promise<void>;
+  onCreateDoc?: (doc: CreateFeatureData) => Promise<void>;
   creating?: boolean;
 }
 
@@ -38,46 +38,46 @@ const GraphControls: React.FC<GraphControlsProps> = ({
   const [showResetConfirm, setShowResetConfirm] = React.useState(false);
   const [showCategories, setShowCategories] = React.useState(true);
   const [showFeatures, setShowFeatures] = React.useState(true);
-  const [newComponent, setNewComponent] = React.useState({
-    category: 'backend' as ComponentCategory,
+  const [newFeature, setNewFeature] = React.useState({
+    category: 'backend' as FeatureCategory,
     type: 'service',
     title: '',
     content: '',
-    feature: '',
+    group: '',
     tags: [] as string[]
   });
 
   const categories = getAllCategories();
 
-  // Get unique features from components
-  const features = Array.from(new Set(docs.map(d => d.feature).filter(Boolean))) as string[];
+  // Get unique groups from features
+  const features = Array.from(new Set(docs.map(d => d.group).filter(Boolean))) as string[];
 
-  const handleCreateComponent = async () => {
-    if (!onCreateDoc || !newComponent.title.trim() || !newComponent.content.trim() || !newComponent.feature.trim()) return;
+  const handleCreateFeature = async () => {
+    if (!onCreateDoc || !newFeature.title.trim() || !newFeature.content.trim() || !newFeature.group.trim()) return;
 
     await onCreateDoc({
-      category: newComponent.category,
-      type: newComponent.type,
-      title: newComponent.title,
-      content: newComponent.content,
-      feature: newComponent.feature,
-      tags: newComponent.tags
+      category: newFeature.category,
+      type: newFeature.type,
+      title: newFeature.title,
+      content: newFeature.content,
+      group: newFeature.group,
+      tags: newFeature.tags
     });
 
-    setNewComponent({ category: 'backend', type: 'service', title: '', content: '', feature: '', tags: [] });
+    setNewFeature({ category: 'backend', type: 'service', title: '', content: '', group: '', tags: [] });
     setShowCreate(false);
   };
 
   return (
     <div className="bg-base-100 border-2 border-base-content/20 rounded-lg p-4 space-y-2">
-      {/* Create New Component */}
+      {/* Create New Feature */}
       {onCreateDoc && (
         <div className="border-thick rounded-lg p-3">
           <button
             onClick={() => setShowCreate(!showCreate)}
             className="flex items-center justify-between w-full text-sm font-semibold text-base-content/60 hover:text-base-content transition-colors"
           >
-            <span>✨ Create New Component</span>
+            <span>✨ Create New Feature</span>
             <svg
               className={`w-4 h-4 transition-transform ${showCreate ? 'rotate-90' : ''}`}
               fill="none"
@@ -91,11 +91,11 @@ const GraphControls: React.FC<GraphControlsProps> = ({
           {showCreate && (
             <div className="space-y-2">
               <select
-                value={newComponent.category}
+                value={newFeature.category}
                 onChange={(e) => {
-                  const newCategory = e.target.value as ComponentCategory;
+                  const newCategory = e.target.value as FeatureCategory;
                   const types = getTypesForCategory(newCategory);
-                  setNewComponent({...newComponent, category: newCategory, type: types[0]?.value || ''});
+                  setNewFeature({...newFeature, category: newCategory, type: types[0]?.value || ''});
                 }}
                 className="select select-bordered select-sm w-full"
               >
@@ -107,11 +107,11 @@ const GraphControls: React.FC<GraphControlsProps> = ({
               </select>
 
               <select
-                value={newComponent.type}
-                onChange={(e) => setNewComponent({...newComponent, type: e.target.value})}
+                value={newFeature.type}
+                onChange={(e) => setNewFeature({...newFeature, type: e.target.value})}
                 className="select select-bordered select-sm w-full"
               >
-                {getTypesForCategory(newComponent.category).map(type => (
+                {getTypesForCategory(newFeature.category).map(type => (
                   <option key={type.value} value={type.value}>
                     {type.emoji} {type.label}
                   </option>
@@ -120,34 +120,34 @@ const GraphControls: React.FC<GraphControlsProps> = ({
 
               <input
                 type="text"
-                value={newComponent.title}
-                onChange={(e) => setNewComponent({...newComponent, title: e.target.value})}
+                value={newFeature.title}
+                onChange={(e) => setNewFeature({...newFeature, title: e.target.value})}
                 className="input input-bordered input-sm w-full"
-                placeholder="Component title..."
+                placeholder="Feature title..."
               />
 
               <input
                 type="text"
-                value={newComponent.feature}
-                onChange={(e) => setNewComponent({...newComponent, feature: e.target.value})}
+                value={newFeature.group}
+                onChange={(e) => setNewFeature({...newFeature, group: e.target.value})}
                 className="input input-bordered input-sm w-full"
                 placeholder="Feature (required)"
               />
 
               <textarea
-                value={newComponent.content}
-                onChange={(e) => setNewComponent({...newComponent, content: e.target.value})}
+                value={newFeature.content}
+                onChange={(e) => setNewFeature({...newFeature, content: e.target.value})}
                 className="textarea textarea-bordered textarea-sm w-full h-24"
-                placeholder="Component content..."
+                placeholder="Feature content..."
               />
 
               <button
-                onClick={handleCreateComponent}
-                disabled={creating || !newComponent.title.trim() || !newComponent.content.trim() || !newComponent.feature.trim()}
+                onClick={handleCreateFeature}
+                disabled={creating || !newFeature.title.trim() || !newFeature.content.trim() || !newFeature.group.trim()}
                 className="btn btn-sm btn-primary w-full"
                 style={{ color: getContrastTextColor('primary') }}
               >
-                {creating ? 'Creating...' : 'Create Component'}
+                {creating ? 'Creating...' : 'Create Feature'}
               </button>
             </div>
           )}
@@ -159,7 +159,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
         <div className="relative">
           <input
             type="text"
-            placeholder="Search components..."
+            placeholder="Search features..."
             className="input input-bordered input-sm w-full pr-10"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
@@ -351,7 +351,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
 
       {/* Stats */}
       <div className="text-xs text-base-content/50 pt-2 border-t border-base-content/10">
-        Showing {docs.length} component{docs.length !== 1 ? 's' : ''}
+        Showing {docs.length} feature{docs.length !== 1 ? 's' : ''}
       </div>
     </div>
   );

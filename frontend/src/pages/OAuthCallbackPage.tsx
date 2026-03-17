@@ -9,17 +9,16 @@ const OAuthCallbackPage: React.FC = () => {
 
   useEffect(() => {
     const handleCallback = async () => {
-      const token = searchParams.get('token');
+      const code = searchParams.get('code');
 
-      if (!token) {
-        setError('No token received from OAuth provider');
+      if (!code) {
+        setError('No code received from OAuth provider');
         setTimeout(() => navigate('/login'), 3000);
         return;
       }
 
       try {
-        // Exchange the URL token for an HTTP-only cookie
-        const response = await authAPI.exchangeToken(token);
+        const response = await authAPI.exchangeToken(code);
 
         if (response.user) {
           // Successfully authenticated - redirect to home

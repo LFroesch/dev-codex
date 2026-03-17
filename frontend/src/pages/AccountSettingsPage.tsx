@@ -751,38 +751,53 @@ const AccountSettingsPage: React.FC = () => {
       <div className="flex justify-center">
         <div className="tabs-container p-1">
           <button
-            className={`tab-button ${activeTab === 'profile' ? 'tab-active' : ''}`}
+            className={`tab-button gap-2 ${activeTab === 'profile' ? 'tab-active' : ''}`}
             style={activeTab === 'profile' ? {color: getContrastTextColor()} : {}}
             onClick={() => setActiveTab('profile')}
           >
+            <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
             Profile
           </button>
           <button
-            className={`tab-button ${activeTab === 'theme' ? 'tab-active' : ''}`}
+            className={`tab-button gap-2 ${activeTab === 'theme' ? 'tab-active' : ''}`}
             style={activeTab === 'theme' ? {color: getContrastTextColor()} : {}}
             onClick={() => setActiveTab('theme')}
           >
+            <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+            </svg>
             Theme
           </button>
           <button
-            className={`tab-button ${activeTab === 'connections' ? 'tab-active' : ''}`}
+            className={`tab-button gap-2 ${activeTab === 'connections' ? 'tab-active' : ''}`}
             style={activeTab === 'connections' ? {color: getContrastTextColor()} : {}}
             onClick={() => setActiveTab('connections')}
           >
+            <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+            </svg>
             Connections
           </button>
           <button
-            className={`tab-button ${activeTab === 'analytics' ? 'tab-active' : ''}`}
+            className={`tab-button gap-2 ${activeTab === 'analytics' ? 'tab-active' : ''}`}
             style={activeTab === 'analytics' ? {color: getContrastTextColor()} : {}}
             onClick={() => setActiveTab('analytics')}
           >
+            <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
             Analytics
           </button>
           <button
-            className={`tab-button ${activeTab === 'billing' ? 'tab-active' : ''}`}
+            className={`tab-button gap-2 ${activeTab === 'billing' ? 'tab-active' : ''}`}
             style={activeTab === 'billing' ? {color: getContrastTextColor()} : {}}
             onClick={() => setActiveTab('billing')}
           >
+            <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+            </svg>
             Billing
           </button>
         </div>
@@ -807,17 +822,23 @@ const AccountSettingsPage: React.FC = () => {
                 <div className="flex justify-center">
                   <div className="tabs-container p-1">
                     <button
-                      className={`tab-button ${themeSubTab === 'preset' ? 'tab-active' : ''}`}
+                      className={`tab-button gap-2 ${themeSubTab === 'preset' ? 'tab-active' : ''}`}
                       style={themeSubTab === 'preset' ? {color: getContrastTextColor()} : {}}
                       onClick={() => setThemeSubTab('preset')}
                     >
+                      <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                      </svg>
                       Preset Themes
                     </button>
                     <button
-                      className={`tab-button ${themeSubTab === 'custom' ? 'tab-active' : ''}`}
+                      className={`tab-button gap-2 ${themeSubTab === 'custom' ? 'tab-active' : ''}`}
                       style={themeSubTab === 'custom' ? {color: getContrastTextColor()} : {}}
                       onClick={() => setThemeSubTab('custom')}
                     >
+                      <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                      </svg>
                       Custom Themes ({customThemes.length})
                     </button>
                   </div>
@@ -1464,24 +1485,33 @@ const AccountSettingsPage: React.FC = () => {
                 <div className="flex justify-center">
                   <div className="tabs-container p-1">
                     <button
-                      className={`tab-button ${profileSubTab === 'personal' ? 'tab-active' : ''}`}
+                      className={`tab-button gap-2 ${profileSubTab === 'personal' ? 'tab-active' : ''}`}
                       style={profileSubTab === 'personal' ? {color: getContrastTextColor()} : {}}
                       onClick={() => setProfileSubTab('personal')}
                     >
+                      <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
                       Personal Info
                     </button>
                     <button
-                      className={`tab-button ${profileSubTab === 'public' ? 'tab-active' : ''}`}
+                      className={`tab-button gap-2 ${profileSubTab === 'public' ? 'tab-active' : ''}`}
                       style={profileSubTab === 'public' ? {color: getContrastTextColor()} : {}}
                       onClick={() => setProfileSubTab('public')}
                     >
+                      <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
                       Public Profile
                     </button>
                     <button
-                      className={`tab-button ${profileSubTab === 'privacy' ? 'tab-active' : ''}`}
+                      className={`tab-button gap-2 ${profileSubTab === 'privacy' ? 'tab-active' : ''}`}
                       style={profileSubTab === 'privacy' ? {color: getContrastTextColor()} : {}}
                       onClick={() => setProfileSubTab('privacy')}
                     >
+                      <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
                       Privacy Info
                     </button>
                   </div>

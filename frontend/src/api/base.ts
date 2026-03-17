@@ -5,7 +5,7 @@ import { toast } from '../services/toast';
 export const apiClient = axios.create({
   baseURL: '/api',
   withCredentials: true,
-  timeout: 30000, // 30 second timeout
+  timeout: 310000, // 310 second timeout (must exceed backend AI timeout of 300s)
 });
 
 // CSRF Protection: Add CSRF token to all state-changing requests

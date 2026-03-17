@@ -86,7 +86,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
 
         <h3 className="text-xl font-bold text-center mb-4" style={{ color: getContrastTextColor('primary') }}>{title}</h3>
 
-        <div className="text-center mb-6" style={{ color: getContrastTextColor('primary') }} dangerouslySetInnerHTML={{ __html: message }} />
+        <div className="text-center mb-6" style={{ color: getContrastTextColor('primary') }}>{message}</div>
 
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
           <button

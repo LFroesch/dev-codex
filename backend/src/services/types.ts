@@ -8,7 +8,8 @@ export enum ResponseType {
   WARNING = 'warning',
   DATA = 'data',
   PROMPT = 'prompt',
-  WIZARD = 'wizard'
+  WIZARD = 'wizard',
+  AI = 'ai'
 }
 
 /**

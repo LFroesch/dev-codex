@@ -17,25 +17,23 @@ const ExportOptionsSelector: React.FC<ExportOptionsSelectorProps> = ({
     basicInfo: 'Basic Info',
     description: 'Description',
     tags: 'Tags',
-    links: 'Links',
     notes: 'Notes',
     todos: 'To-dos',
     devLog: 'Dev Log',
-    components: 'Components',
+    features: 'Features',
     techStack: 'Tech Stack',
     team: 'Team',
     deploymentData: 'Deployment',
     publicPageData: 'Public Page',
-    settings: 'Settings',
-    timestamps: 'Timestamps'
+    settings: 'Settings'
   };
 
   // Group options by category for better UX
   const categoryGroups = {
-    'Project Info': ['basicInfo', 'description', 'tags', 'timestamps'] as (keyof ExportOptions)[],
-    'Content': ['notes', 'todos', 'devLog', 'components'] as (keyof ExportOptions)[],
-    'Technical': ['techStack', 'deploymentData', 'links'] as (keyof ExportOptions)[],
-    'Public': ['publicPageData'] as (keyof ExportOptions)[]
+    'Project Info': ['basicInfo', 'description', 'tags', 'settings'] as (keyof ExportOptions)[],
+    'Content': ['notes', 'todos', 'devLog', 'features'] as (keyof ExportOptions)[],
+    'Technical': ['techStack', 'deploymentData'] as (keyof ExportOptions)[],
+    'Collaboration': ['team', 'publicPageData'] as (keyof ExportOptions)[]
   };
 
   return (

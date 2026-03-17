@@ -33,7 +33,7 @@ const getPageRoute = (command: string): string | null => {
     { pattern: /\/(add|edit|view|delete)\s+(note|notes)/, route: '/notes' },
     { pattern: /\/(add|edit|view|delete)\s+(devlog|devlogs)/, route: '/notes?section=devlog' },
     { pattern: /\/(add|edit|view|delete)\s+(project|projects)/, route: '/projects' },
-    { pattern: /\/(add|edit|view|delete)\s+(component|components)/, route: '/features' },
+    { pattern: /\/(add|edit|view|delete)\s+(feature|features)/, route: '/features' },
     { pattern: /\/(add|edit|view|delete)\s+(relationship|relationships)/, route: '/features' },
     { pattern: /\/(add|edit|view|delete|remove)\s+(stack)/, route: '/stack' },
     { pattern: /\/(add|edit|view|delete)\s+(idea|ideas)/, route: '/ideas' },
@@ -186,7 +186,7 @@ const BatchCommandsRenderer: React.FC<BatchCommandsRendererProps> = ({
 
       {/* Unexecuted commands section - show if there are any */}
       {unexecuted.length > 0 && (
-        <div className="rounded-lg border-2 bg-error/5 border-error/30 overflow-hidden">
+        <div className="rounded-lg border-thick bg-error/5 border-error/30 overflow-hidden">
           {/* Failed command header - prominently displayed */}
           {results.length > 0 && results[results.length - 1].type === 'error' && (
             <div className="bg-error/20 border-b-2 border-error/30 p-3">
@@ -202,7 +202,7 @@ const BatchCommandsRenderer: React.FC<BatchCommandsRendererProps> = ({
                 </div>
               </div>
 
-              <div className="bg-base-100 rounded border-2 border-error/40 p-2">
+              <div className="bg-base-100 rounded border-thick border-error/40 p-2">
                 <code className="text-xs font-mono text-base-content/90 break-all block">
                   {results[results.length - 1].command}
                 </code>
@@ -219,7 +219,7 @@ const BatchCommandsRenderer: React.FC<BatchCommandsRendererProps> = ({
               </div>
             </div>
 
-            <div className="bg-base-100 rounded border-2 border-base-content/20 p-2 max-h-48 overflow-y-auto space-y-1">
+            <div className="bg-base-100 rounded border-thick border-base-content/20 p-2 max-h-48 overflow-y-auto space-y-1">
               {unexecuted.map((cmd, idx) => (
                 <code key={idx} className="block text-xs font-mono text-base-content/70 py-0.5 break-all">
                   {cmd}
@@ -269,7 +269,7 @@ const BatchCommandsRenderer: React.FC<BatchCommandsRendererProps> = ({
           return (
             <div
               key={index}
-              className={`p-3 rounded-lg border-2 ${getBgClass(result.type)}`}
+              className={`p-3 rounded-lg border-thick ${getBgClass(result.type)}`}
             >
               <div className="flex items-start gap-2">
                 <span className="flex-shrink-0 text-sm">{getIcon(result.type)}</span>

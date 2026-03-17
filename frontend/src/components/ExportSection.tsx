@@ -7,7 +7,6 @@ import {
   generateExportData,
   formatExportData,
   type ExportOptions,
-  type ExportFormat
 } from '../utils/exportGenerators';
 import { analyticsService } from '../services/analytics';
 
@@ -22,21 +21,18 @@ const ExportSection: React.FC<ExportSectionProps> = ({ selectedProject, onProjec
     basicInfo: true,
     description: true,
     tags: true,
-    links: false,
-    notes: false,
-    todos: false,
-    devLog: false,
-    components: false,
-    techStack: false,
-    team: false,
-    deploymentData: false,
-    publicPageData: false,
-    settings: false,
-    timestamps: false,
+    notes: true,
+    todos: true,
+    devLog: true,
+    features: true,
+    techStack: true,
+    team: true,
+    deploymentData: true,
+    publicPageData: true,
+    settings: true,
   });
 
-  const [exportFormat, setExportFormat] = useState<ExportFormat>('json');
-  const [customAiRequest, setCustomAiRequest] = useState<string>('');
+  const exportFormat = 'json' as const;
   
   // Export result state
   const [exportedData, setExportedData] = useState<string>('');
@@ -69,7 +65,7 @@ const ExportSection: React.FC<ExportSectionProps> = ({ selectedProject, onProjec
       });
 
       const data = generateExportData(selectedProject, exportOptions);
-      const output = formatExportData(data, exportFormat, selectedProject, customAiRequest);
+      const output = formatExportData(data, exportFormat, selectedProject);
       setExportedData(output);
       setShowExportResult(true);
     } catch (error) {
@@ -85,7 +81,7 @@ const ExportSection: React.FC<ExportSectionProps> = ({ selectedProject, onProjec
       {/* Header */}
       <div>
         <p className="text-sm text-base-content/60">
-          Export creates a full backup of all project data. Import creates a new project from backup file (keeps your original safe).
+          Export creates a full JSON backup of all project data. Import creates a new project from backup file (keeps your original safe). For .md exports, use <code>/context</code> in the terminal.
         </p>
       </div>
 
@@ -97,48 +93,12 @@ const ExportSection: React.FC<ExportSectionProps> = ({ selectedProject, onProjec
 
       <div className="divider text-xs">Custom Export</div>
 
-      {/* Custom AI Request - Only show for prompt format */}
-      {exportFormat === 'prompt' && (
-        <div className="bg-base-200/30 rounded-lg p-4 space-y-3">
-          <h4 className="font-medium text-sm">🤖 AI Assistant Request</h4>
-          <textarea
-            value={customAiRequest}
-            onChange={(e) => setCustomAiRequest(e.target.value)}
-            placeholder="What do you need help with? (Optional - leave empty for a general template)"
-            className="textarea textarea-bordered w-full text-sm"
-            rows={3}
-          />
-          <p className="text-xs text-base-content/60">
-            💡 Tip: Be specific about what you need help with (e.g., "Review my React components for performance issues" or "Help me implement user authentication")
-          </p>
-        </div>
-      )}
-
       {/* Export Options */}
       <ExportOptionsSelector
         options={exportOptions}
         onToggleOption={toggleOption}
         onToggleAll={toggleAll}
       />
-
-      {/* Format Selection */}
-      <div className="space-y-2">
-        <div className="flex items-center gap-2">
-          <label className="text-sm font-medium">Format:</label>
-          <select
-            value={exportFormat}
-            onChange={(e) => setExportFormat(e.target.value as ExportFormat)}
-            className="select select-bordered select-sm"
-          >
-            <option value="json">JSON</option>
-            <option value="prompt">AI Prompt</option>
-            <option value="markdown">Markdown</option>
-          </select>
-        </div>
-        <p className="text-sm font-semibold text-base-content/60">
-        JSON for data backup, AI Prompt to help with assistance, Markdown for documentation
-        </p>
-      </div>
 
       {/* Selection Controls */}
       <div className="flex gap-2">

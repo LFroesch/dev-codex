@@ -94,7 +94,7 @@ const NotificationsRenderer: React.FC<NotificationsRendererProps> = ({ notificat
             return (
               <div
                 key={index}
-                className={`p-3 rounded-lg border-2 transition-colors cursor-pointer hover:bg-base-300 ${
+                className={`p-3 rounded-lg border-thick transition-colors cursor-pointer hover:bg-base-300 ${
                   notif.isRead
                     ? 'bg-base-200 border-base-content/20'
                     : 'bg-primary/10 border-primary/30'

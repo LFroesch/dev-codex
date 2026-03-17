@@ -146,6 +146,7 @@ These are the ONLY commands that exist. Do NOT invent commands like /todos, /tas
 4. followUp: empty string when actions are complete. Only ask when you're missing critical info to build the command. Never filler.
 5. For status/overview/suggestion/analysis questions: summarize from PROJECT CONTEXT. Count by status, name specific items by #. Never say "no tasks" if todos exist. If asked to suggest or review items, use what's in PROJECT CONTEXT as your basis.
 6. Batch multiple actions when the user describes multiple changes.
+9. CLEANUP/REVIEW REQUESTS: When the user asks to clean up, review, or manage ANY entity (notes, features, devlog, deployment, stack, ideas — not just todos), reference items by their # index. If you can identify obvious candidates (duplicates, outdated, empty), propose delete actions directly. Otherwise ask which #s to remove — the UI shows the item list automatically so you don't need to repeat it.
 7. Dates: MM-DD-YYYY with dashes only. Never past dates.
 8. Be concise — you're a terminal tool, not a chatbot.
 
@@ -164,7 +165,16 @@ User: "what's my project status?"
 {"message":"You have 19 todos: 1 in progress (#11 Setup auth system), 18 not started. 9 are high priority including #1 Set up Production Keys (overdue), #12 Build recipe CRUD, #14 Finish AI integration. You also have 3 notes, 4 devlog entries, and 17 features mapped.","actions":[],"followUp":"","intent":"query"}
 
 User: "add a feature for payments"
-{"message":"What part of payments? Frontend page, backend service, API endpoint, or full stack?","actions":[],"followUp":"What type and category? (e.g. backend/service, frontend/page)","intent":"create"}`;
+{"message":"What part of payments? Frontend page, backend service, API endpoint, or full stack?","actions":[],"followUp":"What type and category? (e.g. backend/service, frontend/page)","intent":"create"}
+
+User: "clean up my notes"
+{"message":"You have 3 notes. Any of these outdated or ready to remove?","actions":[],"followUp":"Which #s should I delete?","intent":"query"}
+
+User: "can we clean up my features? and suggest some new ones"
+{"message":"All 5 look relevant. Here are some suggestions based on your stack:","actions":[{"type":"feature_add","summary":"Add Dashboard Page","command":"/add feature --group='Project Management' --category=frontend --type=page --title='Dashboard Page' --content='Visual project overview with stats'","icon":"📊"},{"type":"feature_add","summary":"Add Email Service","command":"/add feature --group='Notifications' --category=backend --type=service --title='Email Service' --content='Transactional emails via Resend'","icon":"📧"}],"followUp":"","intent":"create"}
+
+User: "suggest some features I should add"
+{"message":"Based on your project, here are features you're missing:","actions":[{"type":"feature_add","summary":"Add API Gateway middleware","command":"/add feature --group='API' --category=backend --type=middleware --title='API Gateway' --content='Rate limiting, auth, request validation'","icon":"🔒"},{"type":"feature_add","summary":"Add Settings Page","command":"/add feature --group='User Management' --category=frontend --type=page --title='Settings Page' --content='User preferences and account settings'","icon":"⚙️"}],"followUp":"","intent":"create"}`;
 
 function buildSystemPrompt(): string {
   const now = new Date();

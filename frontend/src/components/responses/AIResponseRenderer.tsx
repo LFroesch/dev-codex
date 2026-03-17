@@ -3,6 +3,114 @@ import AIActionPreview from './AIActionPreview';
 import { AIAction, AIResponseData } from '../../api/terminal';
 import { renderMarkdown } from '../../utils/renderMarkdown';
 
+/** Detect which entity types are relevant from AI message + followUp text */
+function detectReferencedEntities(text: string): Set<string> {
+  const found = new Set<string>();
+  const lower = text.toLowerCase();
+  if (/\b(note|notes)\b/.test(lower)) found.add('notes');
+  if (/\b(todo|todos|task|tasks)\b/.test(lower)) found.add('todos');
+  if (/\b(devlog|dev log|dev-log|log|logs|journal)\b/.test(lower)) found.add('devlog');
+  if (/\b(feature|features|component|components)\b/.test(lower)) found.add('features');
+  if (/\b(stack|tech|package|library|framework|tool|dependency)\b/.test(lower)) found.add('stack');
+  if (/\b(idea|ideas)\b/.test(lower)) found.add('ideas');
+  return found;
+}
+
+/** Render a compact list of project entities for context */
+function EntityContextPanel({ entities, project }: { entities: Set<string>; project: any }) {
+  const sections: React.ReactNode[] = [];
+
+  if (entities.has('notes') && project.notes?.length > 0) {
+    sections.push(
+      <div key="notes">
+        <div className="text-xs font-semibold text-base-content/50 mb-1">Notes ({project.notes.length})</div>
+        {project.notes.map((n: any, i: number) => (
+          <div key={n._id || i} className="text-xs text-base-content/70 py-0.5 flex gap-1.5">
+            <span className="text-base-content/40 font-mono shrink-0">#{i + 1}</span>
+            <span className="font-medium">{n.title}</span>
+            {n.content && <span className="text-base-content/40 truncate">— {n.content.slice(0, 80)}</span>}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (entities.has('todos') && project.todos?.length > 0) {
+    sections.push(
+      <div key="todos">
+        <div className="text-xs font-semibold text-base-content/50 mb-1">Todos ({project.todos.length})</div>
+        {project.todos.map((t: any, i: number) => (
+          <div key={t._id || i} className="text-xs text-base-content/70 py-0.5 flex gap-1.5">
+            <span className="text-base-content/40 font-mono shrink-0">#{i + 1}</span>
+            <span className={`shrink-0 ${t.status === 'completed' ? 'text-success' : t.status === 'in_progress' ? 'text-info' : 'text-base-content/40'}`}>
+              [{t.status || 'not_started'}]
+            </span>
+            <span className="font-medium">{t.title}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (entities.has('devlog') && project.devLog?.length > 0) {
+    const sorted = [...project.devLog].sort((a: any, b: any) =>
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+    sections.push(
+      <div key="devlog">
+        <div className="text-xs font-semibold text-base-content/50 mb-1">Dev Log ({project.devLog.length})</div>
+        {sorted.map((d: any, i: number) => (
+          <div key={d._id || i} className="text-xs text-base-content/70 py-0.5 flex gap-1.5">
+            <span className="text-base-content/40 font-mono shrink-0">#{i + 1}</span>
+            <span className="text-base-content/40 shrink-0">{new Date(d.date).toLocaleDateString()}</span>
+            <span className="font-medium">{d.title || 'Untitled'}</span>
+            {d.description && <span className="text-base-content/40 truncate">— {d.description.slice(0, 60)}</span>}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (entities.has('features') && project.features?.length > 0) {
+    sections.push(
+      <div key="features">
+        <div className="text-xs font-semibold text-base-content/50 mb-1">Features ({project.features.length})</div>
+        {project.features.map((f: any, i: number) => (
+          <div key={f._id || f.id || i} className="text-xs text-base-content/70 py-0.5 flex gap-1.5">
+            <span className="text-base-content/40 font-mono shrink-0">#{i + 1}</span>
+            <span className="text-base-content/40 shrink-0">{f.category}/{f.type}</span>
+            <span className="font-medium">{f.title}</span>
+            {f.group && <span className="text-base-content/40">[{f.group}]</span>}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (entities.has('stack') && project.stack?.length > 0) {
+    sections.push(
+      <div key="stack">
+        <div className="text-xs font-semibold text-base-content/50 mb-1">Tech Stack ({project.stack.length})</div>
+        {project.stack.map((s: any, i: number) => (
+          <div key={i} className="text-xs text-base-content/70 py-0.5 flex gap-1.5">
+            <span className="font-medium">{s.name}</span>
+            {s.version && <span className="text-base-content/40">v{s.version}</span>}
+            {s.category && <span className="text-base-content/40">({s.category})</span>}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (sections.length === 0) return null;
+
+  return (
+    <div className="mx-4 mb-3 px-3 py-2.5 rounded-lg bg-base-200/60 border border-base-content/10 space-y-2 max-h-48 overflow-y-auto">
+      {sections}
+    </div>
+  );
+}
+
 interface AIResponseRendererProps {
   aiResponse: AIResponseData;
   currentProjectId?: string;
@@ -10,6 +118,7 @@ interface AIResponseRendererProps {
   onCancel: () => void;
   onRetry?: () => void;
   fromStorage?: boolean;
+  selectedProject?: any;
 }
 
 const AIResponseRenderer: React.FC<AIResponseRendererProps> = ({
@@ -19,6 +128,7 @@ const AIResponseRenderer: React.FC<AIResponseRendererProps> = ({
   onCancel,
   onRetry,
   fromStorage,
+  selectedProject,
 }) => {
   const { message, followUp, tokensUsed, elapsed, model } = aiResponse;
   // Filter out malformed actions (empty summary or command)
@@ -65,6 +175,12 @@ const AIResponseRenderer: React.FC<AIResponseRendererProps> = ({
     if (ms < 1000) return `${ms}ms`;
     return `${(ms / 1000).toFixed(1)}s`;
   };
+
+  // Show entity context panel whenever the AI references an entity type
+  const referencedEntities = selectedProject
+    ? detectReferencedEntities(`${message} ${followUp || ''}`)
+    : new Set<string>();
+  const showContextPanel = selectedProject && referencedEntities.size > 0;
 
   return (
     <div className="mt-3 rounded-lg border-thick border-accent/50 bg-accent/8 overflow-hidden animate-fade-in">
@@ -151,6 +267,11 @@ const AIResponseRenderer: React.FC<AIResponseRendererProps> = ({
             {actions.length} action{actions.length !== 1 ? 's' : ''} dismissed
           </div>
         </div>
+      )}
+
+      {/* Entity context panel — shows items from project data so user can reference by # */}
+      {showContextPanel && (
+        <EntityContextPanel entities={referencedEntities} project={selectedProject} />
       )}
 
       {/* Follow-up — AI needs specific info to proceed */}

@@ -104,7 +104,11 @@ async function seedDemoUser() {
     console.error('Error seeding demo user:', error);
     process.exit(1);
   } finally {
-    await mongoose.connection.close();
+    // Only close connection when run directly as a script
+    const isDirectRun = process.argv[1]?.includes('seedDemoUser');
+    if (isDirectRun) {
+      await mongoose.connection.close();
+    }
   }
 }
 

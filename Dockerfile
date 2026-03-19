@@ -6,6 +6,9 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci --ignore-scripts
 
+# Copy shared (used by both backend and frontend)
+COPY shared/ shared/
+
 # Install + build backend
 COPY backend/package*.json backend/
 RUN npm ci --prefix backend --ignore-scripts
@@ -16,7 +19,6 @@ RUN npm run build --prefix backend
 COPY frontend/package*.json frontend/
 RUN npm ci --prefix frontend --ignore-scripts
 COPY frontend/ frontend/
-COPY shared/ shared/
 RUN npm run build --prefix frontend
 
 # --- Production image ---
@@ -30,6 +32,7 @@ RUN npm ci --prefix backend --omit=dev --ignore-scripts
 
 COPY --from=build /app/backend/dist backend/dist
 COPY --from=build /app/frontend/dist frontend/dist
+COPY --from=build /app/shared shared
 
 ENV NODE_ENV=production
 EXPOSE 5003

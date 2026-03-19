@@ -8,7 +8,7 @@ Export your project to any LLM. Get back executable commands. Paste and run. You
 [![React](https://img.shields.io/badge/React-20232A?style=flat&logo=react&logoColor=61DAFB)](https://reactjs.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-43853D?style=flat&logo=node.js&logoColor=white)](https://nodejs.org/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-4EA94B?style=flat&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
-[![Tests](https://img.shields.io/badge/tests-1000%2B%20passing-success)](https://github.com/LFroesch/project-management)
+[![Tests](https://img.shields.io/badge/tests-1000%2B%20passing-success)](https://github.com/LFroesch/dev-codex)
 
 ---
 
@@ -39,101 +39,74 @@ Export your project to any LLM. Get back executable commands. Paste and run. You
 
 Traditional project managers force you to manually create every task, note, and feature through a UI. Dev Codex flips this: describe what you want to an LLM, get executable commands back, paste them in. Done.
 
-### Terminal in Action
+### Terminal + Autocomplete
 
+<!-- TODO: re-record with demo data -->
 ![Terminal Intro](media/gifs/intro-terminal.gif)
 
-**Fast, guided autocomplete.** Type `/help` to see all 70+ commands. Tab-complete builds commands error-free.
+Type `/help` to see all 70+ commands. Tab-complete builds commands with flags and quoted values — no guessing syntax.
 
 ---
 
 ### Built-in AI Assistant
 
-Type naturally — no slash prefix needed. The AI reads your project context and proposes actions.
+<!-- TODO: screenshot of AI proposing actions with checkboxes -->
+<!-- ![AI Assistant](media/screenshots/ai-assistant.png) -->
 
-```
-You: finished the auth page, used JWT tokens
+Type naturally — no slash prefix needed. The AI reads your project context and proposes actions you confirm with one click.
 
-AI: Got it! Here's what I'll update:
-  [✓] 📝 Devlog: "Completed auth page with JWT"
-  [✓] ✅ Mark todo "Build auth" as done
-  [Confirm Selected]  [Cancel]
-```
-
-- **Multi-turn conversations** — follow-up questions continue the session
-- **Powered by Gemini 2.5 Flash** (prod) / Ollama (dev, $0 cost) via OpenAI-compatible API
+- **Multi-turn conversations** — follow-ups continue the session
+- **Powered by Gemini 2.5 Flash** (prod) / Ollama (dev, $0 cost)
 - **Works with external AI** — `/bridge` exports a command reference for CLAUDE.md/.cursorrules, `/context` exports project state
 
 ---
 
-### The LLM Loop (3 Steps)
+### The LLM Loop
 
+<!-- TODO: re-record with demo data -->
 ![LLM Workflow](media/gifs/llm-workflow.gif)
 
-**1. Export project context**
-```bash
-/summary prompt all    # → Full project exported as AI-optimized prompt
-```
+**1. Export** — `/context prompt all` copies your entire project as an AI-optimized prompt
 
-**2. Get AI to generate or update your structure**
-```
-Paste into ChatGPT/Claude:
+**2. Prompt** — paste into ChatGPT, Claude, or any LLM and ask it to generate commands
 
-"I want to add these features/relationships and some todos, this note,
-this dev log - keep it SIMPLE. Add auth feature, recipes feature,
-3 todos, 2 notes, 1 devlog, tech stack, and relationships"
-
-[AI returns ~10 executable commands in 3 seconds]
-```
-
-**3. Paste commands back**
-Example commands:
-```bash
-/add todo --title="JWT authentication" --priority=high --status=in_progress
-/add todo --title="Recipe CRUD endpoints" --priority=high
-/add note --title="Auth Architecture" --content="JWT with refresh tokens, Google OAuth"
-/add feature --group="Auth" --category=backend --type=service --title="Auth Service" --content="JWT authentication logic"
-/add feature --group="Recipes" --category=backend --type=service --title="Recipe Service" --content="CRUD operations"
-/add relationship --source="Login Page" --target="Auth Service" --type=uses
-/add stack --name="React" --category=framework --version="18"
-/add devlog --title="Day 1" --content="React + Vite frontend, Express backend, TypeScript setup"
-```
-
-**What just happened?** You went from idea to structured project in 30 seconds. Traditional tools take 20+ minutes of clicking.
-
-*Supported: ChatGPT, Claude, any LLM. Self-host or use our hosted version.*
+**3. Paste & run** — drop the commands back into the terminal. Idea to structured project in 30 seconds.
 
 ---
 
-### FeatureGraph
+### Feature Graph
 
-**Visualize architecture.** See features and relationships. Drag, zoom, and understand your project structure.
+<!-- TODO: screenshot of feature graph with 8-10 nodes -->
+<!-- ![Feature Graph](media/screenshots/feature-graph.png) -->
 
----
-
-### Other Ways to Use the Terminal
-
-**Don't like terminals?** No problem:
-
-- **Interactive Wizards:** `/wizard project` → guided forms for everything
-- **Full Autocomplete:** Type `/add t` → autocomplete suggests `todo` → tab → `--title=""` → cursor jumps inside quotes
-- **Traditional UI:** Every single feature works via point-and-click too
+Visualize your architecture. Features and their relationships rendered as a draggable, zoomable graph (ReactFlow).
 
 ---
 
 ## Core Features
 
-### **AI-First Terminal (70+ Commands)**
+<details>
+<summary><strong>AI-First Terminal (70+ Commands)</strong></summary>
+
+<!-- TODO: screenshot of terminal with autocomplete dropdown -->
+<!-- ![Terminal](media/screenshots/terminal.png) -->
+
 - **Built-in AI:** Type naturally — AI proposes actions, you confirm with one click
 - **70+ Slash Commands:** Power-user shortcuts for everything
-- **Batch Operations:** Chain 10 commands with `&&` or newlines
+- **Batch Operations:** Chain commands with `&&` or newlines
 - **Interactive Wizards:** `/wizard new` for guided setup
-- **External AI Integration:** `/bridge` (command reference for CLAUDE.md/.cursorrules), `/context` (project state export), `/usage` (token stats)
+- **External AI:** `/bridge` (command reference for CLAUDE.md/.cursorrules), `/context` (project state export), `/usage` (token stats)
 - **Workflow Helpers:** `/today`, `/week`, `/standup`, `/stale`, `/info`
-- **Export Formats:** Markdown, JSON, AI prompt, plain text
-- **Full History:** Navigate with ↑/↓ arrows
+- **Full History:** Navigate with up/down arrows
 
-### **Project Management**
+</details>
+
+<details>
+<summary><strong>Project Management</strong></summary>
+
+<!-- TODO: screenshot of todos or notes page -->
+<!-- ![Project Management](media/screenshots/project-management.png) TODO -->
+
 - **Todos:** Subtasks, priorities, due dates, assignments, dependencies
 - **Notes:** Real-time locking (10-min heartbeat prevents edit conflicts)
 - **Dev Logs:** Daily progress journal with timestamps
@@ -142,16 +115,26 @@ Example commands:
 - **Ideas:** Personal parking lot (separate from projects)
 - **Import/Export:** JSON (100MB limit, XSS sanitized)
 
-### **Social & Discovery**
+</details>
+
+<details>
+<summary><strong>Social & Discovery</strong></summary>
+
+<!-- TODO: screenshot of discover feed -->
+<!-- ![Discover](media/screenshots/discover.png) -->
+
 - **Posts:** Share profile or project updates (public/followers/private)
 - **Comments:** Threaded discussions on public projects (with replies)
-- **Likes:** React to posts and comments
 - **Follow System:** Follow users for feed updates
 - **Favorites:** Bookmark projects, get notified on updates
 - **Discover Feed:** Explore public projects by technology, category
 - **Custom Slugs:** `/discover/@username/project-slug`
 
-### **Team Collaboration**
+</details>
+
+<details>
+<summary><strong>Team Collaboration</strong></summary>
+
 - **3 Roles:** Owner / Editor / Viewer permissions
 - **Email Invites** with token-based acceptance
 - **Real-time Sync:** Socket.io (live notifications, activity feed, presence)
@@ -159,21 +142,35 @@ Example commands:
 - **Team Analytics:** Time tracking, heatmaps, leaderboards
 - **Note Locking:** Automatic conflict prevention
 
-### **Analytics**
+</details>
+
+<details>
+<summary><strong>Analytics</strong></summary>
+
+<!-- TODO: screenshot of analytics heatmap -->
+<!-- ![Analytics](media/screenshots/analytics.png) -->
+
 - **Session Tracking:** 10s heartbeats, 5-min idle detection
 - **Time Breakdown:** Per-project hours, daily/weekly summaries
 - **Heatmaps:** Visualize when you work on each project
 - **Team Stats:** Leaderboards, contribution tracking
-- **Feature Adoption:** See which features drive engagement
 - **Retention Data:** 30/90/365-day windows (plan-based)
 
-### **Admin Dashboard** *(Self-Hosted: Full Access)*
+</details>
+
+<details>
+<summary><strong>Admin Dashboard</strong> (Self-Hosted: Full Access)</summary>
+
+<!-- TODO: screenshot of admin dashboard -->
+<!-- ![Admin](media/screenshots/admin.png) -->
+
 - User management (ban/unban, plan changes, password resets, refunds)
 - Support tickets with Kanban board
 - Database cleanup & optimization tools
 - Analytics: conversion rates, user growth, feature adoption
 - News/announcement system
-- Performance recommendations
+
+</details>
 
 ---
 
@@ -198,7 +195,7 @@ Example commands:
 - Jest (1000+ tests)
 
 **AI:**
-- Gemini 2.5 Flash (prod) / Ollama (dev, $0 cost) via OpenAI-compatible API
+- Gemini 2.5 Flash (prod) / Ollama (dev, $0 cost — GPU or CPU) via OpenAI-compatible API
 - Swappable to any OpenAI-compatible provider
 - Structured JSON output, multi-turn sessions, context-aware
 
@@ -219,8 +216,8 @@ Example commands:
 ## Quick Start
 
 ```bash
-git clone https://github.com/LFroesch/project-management.git
-cd project-management
+git clone https://github.com/LFroesch/dev-codex.git
+cd dev-codex
 npm install
 cp backend/.env.example backend/.env  # Add your MongoDB URI, JWT secret, etc
 npm run dev
@@ -236,24 +233,17 @@ Dev Codex uses [Ollama](https://ollama.ai) for local, free AI features. No API k
 
 ### Install & Pull a Model
 
-**Docker (recommended):**
+**Native install:** [ollama.ai/download](https://ollama.ai/download) — then `ollama serve`
+
+**Docker:**
 ```bash
 docker run -d -v ollama:/root/.ollama -p 11434:11434 --name ollama ollama/ollama
+# NVIDIA GPU: add --gpus all (requires NVIDIA Container Toolkit)
 ```
-
-**With NVIDIA GPU** (optional — requires [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html)):
-```bash
-docker run -d --gpus all -v ollama:/root/.ollama -p 11434:11434 --name ollama ollama/ollama
-```
-
-> **Note:** AMD GPUs are not supported by Ollama in Docker/WSL2. CPU mode works well for 7B models.
-
-**Native install:** [ollama.ai/download](https://ollama.ai/download) — then run `ollama serve`
 
 **Pull the default model:**
 ```bash
-docker exec ollama ollama pull qwen2.5:7b
-# or natively: ollama pull qwen2.5:7b
+ollama pull qwen2.5:3b
 ```
 
 ### Avoiding Cold Starts
@@ -286,18 +276,19 @@ docker run -d -e OLLAMA_KEEP_ALIVE=0 \
 In your `backend/.env`:
 ```bash
 OLLAMA_BASE_URL=http://localhost:11434   # default
-AI_MODEL=qwen2.5:7b                      # default
+OLLAMA_MODEL=qwen2.5:3b                  # default
 AI_ENABLED=true
 ```
+
+> **WSL2 users:** If Ollama runs on the Windows side (e.g. for GPU access), set `OLLAMA_HOST=0.0.0.0:11434` on Windows and point `OLLAMA_BASE_URL` to the gateway IP (`ip route show default | awk '{print $3}'`).
 
 ### Troubleshooting
 
 | Issue | Fix |
 |-------|-----|
-| `ECONNREFUSED` | Ollama isn't running — `docker start ollama` or `ollama serve` |
-| Slow first response | Model loading from disk — set `OLLAMA_KEEP_ALIVE=0` on the container |
-| Out of memory | Use a smaller model: `ollama pull qwen2.5:3b` and set `AI_MODEL=qwen2.5:3b` |
-| Docker `--gpus` fails on WSL2 | AMD GPUs aren't supported; remove `--gpus all` and run on CPU |
+| `ECONNREFUSED` | Ollama isn't running — `ollama serve` or `docker start ollama` |
+| Slow first response | Model loading from disk — set `OLLAMA_KEEP_ALIVE=0` |
+| Out of memory | Use a smaller model or reduce GPU layers (`num_gpu`) |
 | Docker `--gpus` fails (NVIDIA) | Install [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) |
 
 ---
@@ -341,7 +332,8 @@ railway login && railway init && railway up
 **Hosted Version:**
 | Plan | Projects | Team | Commands/min | AI Tokens/month | AI Queries/min | Analytics |
 |------|----------|------|-------------|-----------------|----------------|-----------|
-| **Free** | 3 | 3/project | ~10 | None | — | 30 days |
+| **Free** | 3 | 3/project | ~10 | — | — | 30 days |
+| **Demo** | Read-only | — | Read-only | 3/day (try it!) | — | — |
 | **Pro** | 20 | 10/project | 60 | 500k | 15 | 90 days |
 | **Premium** | Unlimited | Unlimited | 120 | 2M | 30 | 365 days |
 
@@ -368,6 +360,6 @@ AGPL-3.0 — see [LICENSE](LICENSE)
 
 ## Support
 
-**Issues:** <https://github.com/LFroesch/project-management/issues>
+**Issues:** <https://github.com/LFroesch/dev-codex/issues>
 
 **Built by a developer, for developers.**

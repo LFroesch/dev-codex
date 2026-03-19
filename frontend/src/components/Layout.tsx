@@ -576,18 +576,14 @@ const Layout: React.FC = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
             </svg>
-            <span>You're viewing demo mode - Explore features but you can't save changes.</span>
+            <span>Demo mode (Pro tier) — your changes reset on next visit. Sign up to keep your data!</span>
             <button
               onClick={async () => {
                 try {
-                  // Reset tutorial on backend
                   const { tutorialAPI } = await import('../api/tutorial');
                   await tutorialAPI.resetTutorial();
-                  // Clear session storage
                   sessionStorage.removeItem('tutorialWelcomeShown');
-                  // Add a small delay before reload to ensure state is cleared
                   await new Promise(resolve => setTimeout(resolve, 100));
-                  // Reload the page to get fresh user data, then start tutorial
                   window.location.href = '/projects?startTutorial=true';
                 } catch {
                   // Error will be shown by tutorialAPI
@@ -602,7 +598,7 @@ const Layout: React.FC = () => {
               className="btn btn-sm btn-primary ml-2"
               style={{ color: getContrastTextColor('primary') }}
             >
-              Sign Up to Save Your Work
+              Sign Up Free
             </button>
           </div>
         </div>
@@ -2800,6 +2796,15 @@ const Layout: React.FC = () => {
 
       {/* Floating Tutorial Resume Button - shows when tutorial is in progress but not active */}
       <ResumeTutorialButton />
+
+      {/* Site Footer */}
+      <footer className="flex items-center justify-center gap-3 py-1.5 text-xs text-base-content/40">
+        <span>Built by Lucas Froesch</span>
+        <span>·</span>
+        <a href="https://froesch.dev" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors underline">froesch.dev</a>
+        <span>·</span>
+        <a href="https://github.com/LFroesch" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors underline">GitHub</a>
+      </footer>
     </div>
     </TutorialProvider>
   );

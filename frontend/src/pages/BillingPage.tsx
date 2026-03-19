@@ -553,7 +553,7 @@ const BillingPage: React.FC = () => {
               or download and self-host the application on your own servers for free.
             </p>
             <a
-              href="https://github.com/LFroesch/project-management"
+              href="https://github.com/LFroesch/dev-codex"
               target="_blank"
               rel="noopener noreferrer"
               className="btn btn-outline btn-primary gap-2"

@@ -150,6 +150,7 @@ validateProductionEnv();
 
 
 const app = express();
+app.set('trust proxy', 1); // trust first proxy (DO load balancer / nginx / Docker)
 const PORT = process.env.PORT || 5003;
 
 const isDevelopment = process.env.NODE_ENV !== 'production';
@@ -302,6 +303,11 @@ if (isDevelopment) {
   app.use('/api/debug', debugRoutes);
 }
 
+// Health check endpoint
+app.get('/health', (_, res) => {
+  res.json({ status: 'OK' });
+});
+
 // 404 handler for undefined API routes (returns JSON, not HTML)
 app.all('/api/*', (req, res) => {
   res.status(404).json({ error: 'API endpoint not found' });
@@ -322,10 +328,6 @@ if (!isDevelopment) {
     }
   });
 }
-// Health check endpoint
-app.get('/health', (_, res) => {
-  res.json({ status: 'OK' });
-});
 
 // Sentry error handler - MUST be after routes but BEFORE other error handlers
 Sentry.setupExpressErrorHandler(app);

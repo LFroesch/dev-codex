@@ -85,6 +85,26 @@ function checkAIRateLimit(userId: string, maxPerMin: number): boolean {
   return true;
 }
 
+// ── Demo AI Rate Limiting (per IP, daily) ─────────────────────────────
+// All demo logins share one DB user, so we rate-limit by IP instead.
+// Free Gemini tier = 20 req/day global; 3/IP/day lets ~6 testers per day.
+const DEMO_AI_DAILY_LIMIT = parseInt(process.env.DEMO_AI_DAILY_LIMIT || '3', 10);
+const demoAIDailyUse = new Map<string, { count: number; date: string }>();
+
+function checkDemoAIRateLimit(ip: string): { allowed: boolean; remaining: number } {
+  const today = new Date().toDateString();
+  const entry = demoAIDailyUse.get(ip);
+  if (!entry || entry.date !== today) {
+    demoAIDailyUse.set(ip, { count: 1, date: today });
+    return { allowed: true, remaining: DEMO_AI_DAILY_LIMIT - 1 };
+  }
+  if (entry.count >= DEMO_AI_DAILY_LIMIT) {
+    return { allowed: false, remaining: 0 };
+  }
+  entry.count++;
+  return { allowed: true, remaining: DEMO_AI_DAILY_LIMIT - entry.count };
+}
+
 // Cleanup rate tracking every 5 min
 setInterval(() => {
   const now = Date.now();
@@ -92,6 +112,11 @@ setInterval(() => {
     const recent = timestamps.filter(t => now - t < 60_000);
     if (recent.length === 0) aiQueryTimestamps.delete(userId);
     else aiQueryTimestamps.set(userId, recent);
+  }
+  // Purge stale demo entries (previous days)
+  const today = new Date().toDateString();
+  for (const [ip, entry] of demoAIDailyUse) {
+    if (entry.date !== today) demoAIDailyUse.delete(ip);
   }
 }, 300_000);
 
@@ -133,41 +158,21 @@ router.post('/execute', terminalCommandSecurity, asyncHandler(async (req: AuthRe
 
   const userId = req.userId!;
 
-  // Check if user is demo user and command is a write operation
+  // Fetch user for tier/demo checks
   const { User } = await import('../models/User');
   const user = await User.findById(userId);
 
+  // Demo users can execute all commands — data resets on next demo login
+  // Only block dangerous account-level operations
   if (user?.isDemo) {
     const commandLower = command.toLowerCase().trim();
-
-    // Allow theme changes for demo users to try different themes
-    const isThemeCommand = commandLower.startsWith('/theme') || commandLower.startsWith('theme');
-
-    if (!isThemeCommand) {
-      // Define write commands that demo users cannot execute
-      const writeCommands = [
-        'add', 'new', 'create', 'edit', 'update', 'delete', 'remove',
-        'complete', 'assign', 'push', 'invite', 'set', 'clear', 'reset', 'export'
-      ];
-
-      const isWriteCommand = writeCommands.some(cmd =>
-        commandLower.startsWith(`/${cmd}`) || commandLower.startsWith(cmd)
-      );
-
-      if (isWriteCommand) {
-        return res.json({
-          type: 'error',
-          message: '🎭 Demo Mode - Account Required',
-          data: {
-            demo: true,
-            action: 'signup_required',
-            title: 'This action requires a full account',
-            description: 'You\'re in demo mode with read-only access. Sign up to create, edit, and manage your own projects!',
-            signupUrl: '/register',
-            ctaText: 'Create Free Account'
-          }
-        });
-      }
+    const blockedDemoCommands = ['/invite', '/team', '/billing', '/delete-account'];
+    if (blockedDemoCommands.some(cmd => commandLower.startsWith(cmd))) {
+      return res.json({
+        type: 'error',
+        message: 'This action is not available in demo mode. Sign up to unlock all features!',
+        data: { demo: true, action: 'signup_required', signupUrl: '/register', ctaText: 'Create Free Account' }
+      });
     }
   }
 
@@ -184,18 +189,61 @@ router.post('/execute', terminalCommandSecurity, asyncHandler(async (req: AuthRe
   const aiEnabled = process.env.AI_ENABLED !== 'false';
 
   if (!isSlashCommand && aiEnabled) {
-    // Demo users can't use AI
+    // Demo users get limited AI (3 queries/day per IP)
     if (user?.isDemo) {
+      const clientIp = req.ip || 'unknown';
+      const demoCheck = checkDemoAIRateLimit(clientIp);
+      if (!demoCheck.allowed) {
+        return res.json({
+          type: 'ai',
+          message: `You've used all ${DEMO_AI_DAILY_LIMIT} demo AI queries for today. Sign up for full access!`,
+          data: {
+            demo: true,
+            action: 'signup_required',
+            title: 'Demo AI limit reached',
+            description: `Demo accounts get ${DEMO_AI_DAILY_LIMIT} AI queries per day. Create a free account to unlock more.`,
+            signupUrl: '/register',
+            ctaText: 'Create Free Account',
+            demoAIRemaining: 0
+          }
+        });
+      }
+
+      // Demo users skip tier/monthly checks — just enforce daily budget + input length
+      if (trimmedCommand.length > 2000) {
+        return res.json({ type: 'ai', message: 'Input too long for demo (max 2000 chars).', data: {} });
+      }
+
+      if (!await checkDailyBudget()) {
+        return res.json({ type: 'ai', message: 'AI is temporarily unavailable. Try again tomorrow.', data: {} });
+      }
+
+      const sanitizedInput = sanitizePrompt(trimmedCommand);
+      const { sessionId, mode } = req.body;
+      const aiResponse = await handleAIQuery(userId, sanitizedInput, currentProjectId, sessionId, mode);
+
+      try {
+        const tokens = await trackAITokens(userId, sanitizedInput, aiResponse);
+        await addToDailyBudget(tokens);
+      } catch (trackingError) {
+        logError('Demo AI usage tracking failed', trackingError as Error, { userId });
+      }
+
       return res.json({
         type: 'ai',
-        message: 'AI features require a full account.',
+        message: aiResponse.message,
         data: {
-          demo: true,
-          action: 'signup_required',
-          title: 'AI requires an account',
-          description: 'Sign up to use natural language AI features!',
-          signupUrl: '/register',
-          ctaText: 'Create Free Account'
+          aiResponse: {
+            message: aiResponse.message,
+            actions: aiResponse.actions,
+            followUp: aiResponse.followUp,
+            intent: aiResponse.intent,
+            sessionId: aiResponse.sessionId,
+            tokensUsed: aiResponse.tokensUsed,
+            elapsed: aiResponse.elapsed,
+            model: aiResponse.model,
+            demoAIRemaining: demoCheck.remaining,
+          }
         }
       });
     }
@@ -356,43 +404,58 @@ router.post('/ai/stream', terminalRateLimit, asyncHandler(async (req: AuthReques
   const userId = req.userId!;
   const user = await UserModel.findById(userId);
 
-  // Demo check
+  // Demo users: IP-based daily rate limit
+  let demoAIRemaining: number | undefined;
   if (user?.isDemo) {
-    return res.status(403).json({ type: 'ai', message: 'AI features require a full account.', data: {} });
-  }
-
-  // Tier check
-  const planTier = (user?.planTier || 'free') as keyof typeof AI_TIER_LIMITS;
-  const tierLimits = AI_TIER_LIMITS[planTier] || AI_TIER_LIMITS.free;
-
-  if (!tierLimits.enabled && !isSelfHosted) {
-    return res.status(403).json({ type: 'ai', message: 'AI features are available on Pro and Premium plans.', data: {} });
-  }
-
-  // Input length
-  const maxChars = isSelfHosted ? 10000 : tierLimits.maxChars;
-  if (command.trim().length > maxChars) {
-    return res.status(400).json({ type: 'ai', message: `Input too long (max ${maxChars} chars).`, data: {} });
-  }
-
-  // Rate limit
-  if (!isSelfHosted && !checkAIRateLimit(userId, tierLimits.queriesPerMin)) {
-    return res.status(429).json({ type: 'ai', message: `Rate limit hit (${tierLimits.queriesPerMin}/min). Wait a moment.`, data: {} });
-  }
-
-  // Monthly token cap
-  if (!isSelfHosted && user) {
-    await resetMonthlyUsageIfNeeded(user);
-    if (user.aiUsage.tokensUsedThisMonth >= tierLimits.monthlyTokens) {
-      return res.status(429).json({ type: 'ai', message: 'Monthly AI token limit reached.', data: {} });
+    const clientIp = req.ip || 'unknown';
+    const demoCheck = checkDemoAIRateLimit(clientIp);
+    if (!demoCheck.allowed) {
+      return res.status(429).json({
+        type: 'ai',
+        message: `You've used all ${DEMO_AI_DAILY_LIMIT} demo AI queries for today. Sign up for full access!`,
+        data: { demo: true, action: 'signup_required', signupUrl: '/register', demoAIRemaining: 0 }
+      });
+    }
+    demoAIRemaining = demoCheck.remaining;
+    if (command.trim().length > 2000) {
+      return res.status(400).json({ type: 'ai', message: 'Input too long for demo (max 2000 chars).', data: {} });
     }
   }
 
-  // Daily budget check
+  if (!user?.isDemo) {
+    // Tier check (non-demo users only)
+    const planTier = (user?.planTier || 'free') as keyof typeof AI_TIER_LIMITS;
+    const tierLimits = AI_TIER_LIMITS[planTier] || AI_TIER_LIMITS.free;
+
+    if (!tierLimits.enabled && !isSelfHosted) {
+      return res.status(403).json({ type: 'ai', message: 'AI features are available on Pro and Premium plans.', data: {} });
+    }
+
+    // Input length
+    const maxChars = isSelfHosted ? 10000 : tierLimits.maxChars;
+    if (command.trim().length > maxChars) {
+      return res.status(400).json({ type: 'ai', message: `Input too long (max ${maxChars} chars).`, data: {} });
+    }
+
+    // Rate limit
+    if (!isSelfHosted && !checkAIRateLimit(userId, tierLimits.queriesPerMin)) {
+      return res.status(429).json({ type: 'ai', message: `Rate limit hit (${tierLimits.queriesPerMin}/min). Wait a moment.`, data: {} });
+    }
+
+    // Monthly token cap
+    if (!isSelfHosted && user) {
+      await resetMonthlyUsageIfNeeded(user);
+      if (user.aiUsage.tokensUsedThisMonth >= tierLimits.monthlyTokens) {
+        return res.status(429).json({ type: 'ai', message: 'Monthly AI token limit reached.', data: {} });
+      }
+    }
+  }
+
+  // Daily budget check (applies to all users)
   if (!await checkDailyBudget()) {
     return res.status(429).json({
       type: 'ai',
-      message: `Daily AI token budget exhausted (${AI_DAILY_TOKEN_BUDGET.toLocaleString()} tokens). Resets tomorrow.`,
+      message: 'AI is temporarily unavailable. Try again tomorrow.',
       data: {}
     });
   }
@@ -460,9 +523,15 @@ router.post('/ai/confirm', terminalRateLimit, asyncHandler(async (req: AuthReque
   // Verify user has AI access (prevent crafted requests from free tier)
   if (!isSelfHosted) {
     const user = await UserModel.findById(userId).select('planTier isDemo').lean();
-    const tier = (user?.planTier || 'free') as keyof typeof AI_TIER_LIMITS;
-    if (!AI_TIER_LIMITS[tier]?.enabled || user?.isDemo) {
-      throw BadRequestError('AI features are not available on your plan', 'AI_ACCESS_DENIED');
+
+    // Demo users can confirm AI actions (data resets on next login)
+    if (user?.isDemo) {
+      // Skip tier check — demo users have AI access via separate rate limit
+    } else {
+      const tier = (user?.planTier || 'free') as keyof typeof AI_TIER_LIMITS;
+      if (!AI_TIER_LIMITS[tier]?.enabled) {
+        throw BadRequestError('AI features are not available on your plan', 'AI_ACCESS_DENIED');
+      }
     }
   }
 

@@ -15,6 +15,7 @@ import { authRateLimit, createRateLimit } from '../middleware/rateLimit';
 import { validateUserRegistration, validateUserLogin, validatePasswordReset } from '../middleware/validation';
 import { sendEmail } from '../services/emailService';
 import { asyncHandler, BadRequestError, NotFoundError, UnauthorizedError, ConflictError } from '../utils/errorHandler';
+import { seedDemoProjects } from '../scripts/seedDemoUser';
 
 dotenv.config();
 
@@ -384,6 +385,15 @@ router.post('/demo-login', authRateLimit, asyncHandler(async (req: express.Reque
 
   if (!demoUser) {
     throw NotFoundError('Demo mode not available', 'DEMO_UNAVAILABLE');
+  }
+
+  // Reset demo data on each login — fresh experience per tester
+  try {
+    await Project.deleteMany({ ownerId: demoUser._id });
+    await seedDemoProjects(demoUser._id);
+  } catch (seedError) {
+    // Don't block login if re-seed fails — they'll just see stale/empty data
+    console.error('Demo re-seed failed:', seedError);
   }
 
   // Create JWT token for demo user

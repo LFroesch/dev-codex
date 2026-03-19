@@ -19,15 +19,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/LFroesch/project-management.git"
+    "url": "git+https://github.com/LFroesch/dev-codex.git"
   },
   "keywords": [],
   "author": "",
   "license": "AGPL-3.0-only",
   "bugs": {
-    "url": "https://github.com/LFroesch/project-management/issues"
+    "url": "https://github.com/LFroesch/dev-codex/issues"
   },
-  "homepage": "https://github.com/LFroesch/project-management#readme",
+  "homepage": "https://github.com/LFroesch/dev-codex#readme",
   "devDependencies": {
     "concurrently": "^9.1.2"
   }

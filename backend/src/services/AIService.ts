@@ -70,7 +70,7 @@ const PROVIDER_CONFIG: ProviderConfig = (() => {
   }
 
   const ollamaBase = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
-  const model = process.env.OLLAMA_MODEL || 'qwen2.5:7b';
+  const model = process.env.OLLAMA_MODEL || 'qwen2.5:3b';
   logInfo(`AI provider: ollama (${model}) at ${ollamaBase}`);
   return {
     baseUrl: `${ollamaBase}/v1`,

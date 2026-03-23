@@ -834,7 +834,7 @@ const TerminalPage: React.FC = () => {
       {showScrollButton && (
         <button
           onClick={handleScrollToBottom}
-          className="fixed bottom-32 sm:bottom-24 right-4 sm:right-6 btn btn-sm bg-primary text-primary-content border-2 border-primary-content/20 shadow-lg z-50 animate-bounce"
+          className="hidden sm:fixed sm:flex bottom-24 right-6 btn btn-sm bg-primary text-primary-content border-2 border-primary-content/20 shadow-lg z-50 animate-bounce"
           title="Scroll to latest output"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

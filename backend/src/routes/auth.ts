@@ -13,7 +13,7 @@ import { Project } from '../models/Project';
 import Notification from '../models/Notification';
 import { authRateLimit, createRateLimit } from '../middleware/rateLimit';
 import { validateUserRegistration, validateUserLogin, validatePasswordReset } from '../middleware/validation';
-import { sendEmail } from '../services/emailService';
+import { sendPasswordResetEmail } from '../services/emailService';
 import { asyncHandler, BadRequestError, NotFoundError, UnauthorizedError, ConflictError } from '../utils/errorHandler';
 import { seedDemoProjects } from '../scripts/seedDemoUser';
 
@@ -890,21 +890,7 @@ router.post('/forgot-password', passwordResetRateLimit, validatePasswordReset, a
 
   const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5002'}/reset-password?token=${rawToken}`;
 
-  // Send password reset email (tries Resend first, falls back to SMTP)
-  const htmlContent = `
-    <h2>Password Reset Request</h2>
-    <p>You requested a password reset. Click the link below to reset your password:</p>
-    <a href="${resetUrl}">Reset Password</a>
-    <p>This link will expire in 15 minutes.</p>
-    <p>If you didn't request this, please ignore this email.</p>
-  `;
-
-  await sendEmail({
-    to: user.email,
-    subject: 'Password Reset Request',
-    text: `Password Reset Request\n\nYou requested a password reset. Visit this link to reset your password:\n${resetUrl}\n\nThis link will expire in 15 minutes.\n\nIf you didn't request this, please ignore this email.`,
-    html: htmlContent
-  });
+  await sendPasswordResetEmail(user.email, resetUrl);
 
   res.json({ message: 'If that email exists, a reset link has been sent' });
 }));

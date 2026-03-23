@@ -962,16 +962,18 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
             <button
               onClick={() => onSubmit('/usage')}
               title="AI usage stats"
-              className="hidden xl:inline-flex btn btn-xs btn-neutral border-thick font-mono"
+              className="btn btn-xs btn-neutral border-thick font-mono"
             >
-              Usage
+              <span className="hidden sm:inline">Usage</span>
+              <span className="sm:hidden">$</span>
             </button>
             <button
               onClick={() => onSubmit('/context')}
               title="Export project context"
-              className="hidden xl:inline-flex btn btn-xs btn-success border-thick font-mono"
+              className="btn btn-xs btn-success border-thick font-mono"
             >
-              Context
+              <span className="hidden sm:inline">Context</span>
+              <span className="sm:hidden">Ctx</span>
             </button>
           </div>
           <div className="text-base-content/50 text-xs font-mono flex-shrink-0">

@@ -308,7 +308,7 @@ railway login && railway init && railway up
 - `SELF_HOSTED=true` (disables rate limits & billing)
 
 **Optional:**
-- Email: `SMTP_*` **OR** `RESEND_API_KEY` (pick one or both - production uses Resend, self-hosted can use either)
+- Email: `RESEND_API_KEY` (verify your domain in the Resend dashboard)
 - `GOOGLE_CLIENT_ID` & `GOOGLE_CLIENT_SECRET` for OAuth login
 - `STRIPE_*` for billing (only needed if not self-hosted)
 - `SENTRY_DSN` for error monitoring

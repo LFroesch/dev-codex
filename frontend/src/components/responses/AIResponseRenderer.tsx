@@ -185,13 +185,13 @@ const AIResponseRenderer: React.FC<AIResponseRendererProps> = ({
   return (
     <div className="mt-3 rounded-lg border-thick border-accent/50 bg-accent/8 overflow-hidden animate-fade-in">
       {/* Header */}
-      <div className="flex items-center gap-2 px-4 py-2 bg-accent/10 border-b border-accent/20">
+      <div className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-accent/10 border-b border-accent/20">
         <span className="text-base font-bold">AI</span>
-        <span className="text-sm text-base-content/60 font-mono">Dev Codex AI</span>
+        <span className="text-sm text-base-content/60 font-mono hidden sm:inline">Dev Codex AI</span>
         {(model || tokensUsed || elapsed) && (
-          <span className="ml-auto flex items-center gap-1.5 text-sm text-base-content/30">
-            {model && <span>{model}</span>}
-            {model && (tokensUsed || elapsed) && <span>·</span>}
+          <span className="ml-auto flex items-center gap-1.5 text-xs sm:text-sm text-base-content/30">
+            {model && <span className="hidden sm:inline">{model}</span>}
+            {model && (tokensUsed || elapsed) && <span className="hidden sm:inline">·</span>}
             {tokensUsed && <span>{tokensUsed.total} tok</span>}
             {tokensUsed && elapsed && <span>·</span>}
             {elapsed && <span>{formatElapsed(elapsed)}</span>}
@@ -200,7 +200,7 @@ const AIResponseRenderer: React.FC<AIResponseRendererProps> = ({
       </div>
 
       {/* Message — rendered as markdown */}
-      <div className="px-4 py-3">
+      <div className="px-3 sm:px-4 py-2 sm:py-3">
         <div
           className="text-base text-base-content/90 leading-relaxed prose prose-sm max-w-none"
           dangerouslySetInnerHTML={{ __html: renderMarkdown(message) }}
@@ -209,7 +209,7 @@ const AIResponseRenderer: React.FC<AIResponseRendererProps> = ({
 
       {/* Actions — active state */}
       {actions.length > 0 && !confirmed && !dismissed && (
-        <div className="px-4 pb-3 space-y-2">
+        <div className="px-3 sm:px-4 pb-3 space-y-2">
           <div className="text-xs font-semibold text-base-content/60 uppercase tracking-wide">
             Proposed Actions
           </div>

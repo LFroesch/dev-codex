@@ -749,7 +749,7 @@ const TerminalPage: React.FC = () => {
   return (
     <div className="flex flex-col h-full relative">
       {/* Terminal Output - Scrollable */}
-      <div ref={terminalOutputRef} className="flex-1 min-h-0 overflow-y-auto p-2 space-y-3 font-mono text-sm">
+      <div ref={terminalOutputRef} className="flex-1 min-h-0 overflow-y-auto p-1.5 sm:p-2 space-y-2 sm:space-y-3 font-mono text-sm">
         {/* Welcome screen when no entries */}
         {entries.length === 0 && !isExecuting && (
           <WelcomeScreen
@@ -834,7 +834,7 @@ const TerminalPage: React.FC = () => {
       {showScrollButton && (
         <button
           onClick={handleScrollToBottom}
-          className="fixed bottom-24 right-6 btn btn-sm bg-primary text-primary-content border-2 border-primary-content/20 shadow-lg z-50 animate-bounce"
+          className="fixed bottom-32 sm:bottom-24 right-4 sm:right-6 btn btn-sm bg-primary text-primary-content border-2 border-primary-content/20 shadow-lg z-50 animate-bounce"
           title="Scroll to latest output"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -845,7 +845,7 @@ const TerminalPage: React.FC = () => {
       )}
 
       {/* Input Area - Compact */}
-      <div className="flex-shrink-0 p-2 border-t-2 border-base-content/20 bg-base-200">
+      <div className="flex-shrink-0 p-1.5 sm:p-2 border-t-2 border-base-content/20 bg-base-200">
         <TerminalInput
           onSubmit={handleCommandSubmit}
           disabled={isExecuting}

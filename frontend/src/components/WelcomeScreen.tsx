@@ -48,7 +48,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, projectName, o
 
   return (
     <div className="flex items-center justify-center h-full animate-fade-in">
-      <div className="max-w-lg w-full space-y-6 p-6">
+      <div className="max-w-lg w-full space-y-4 sm:space-y-6 p-3 sm:p-6">
 
         {/* Greeting */}
         <div className="text-center space-y-2">

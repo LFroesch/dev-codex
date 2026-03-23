@@ -759,7 +759,7 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
       {showAutocomplete && autocompleteItems.length > 0 && (
         <div
           ref={autocompleteRef}
-          className="absolute bottom-full mb-1 w-full bg-base-100 border-2 border-base-content/20 rounded-lg shadow-xl max-h-80 overflow-y-auto z-50"
+          className="absolute bottom-full mb-1 w-full bg-base-100 border-2 border-base-content/20 rounded-lg shadow-xl max-h-48 sm:max-h-80 overflow-y-auto z-50"
         >
           <div className="p-0.5">
             {/* Header - hide keybind hints on mobile */}
@@ -842,8 +842,8 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
       )}
 
       {/* Input area */}
-      <div className="space-y-2">
-        <div className="flex gap-2">
+      <div className="space-y-1.5 sm:space-y-2">
+        <div className="flex gap-1.5 sm:gap-2">
           <textarea
             ref={inputRef}
             value={input}
@@ -861,13 +861,13 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
             type="button"
             onClick={handleSubmit}
             disabled={!input.trim() || disabled}
-            className="btn flex flex-col gap-1 min-h-10 max-h-10 px-6 text-primary group border-thick"
+            className="btn flex flex-col gap-0.5 sm:gap-1 min-h-10 max-h-10 px-3 sm:px-6 text-primary group border-thick"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
             </svg>
-            <span 
-            className="text-xs font-semibold"
+            <span
+            className="text-[10px] sm:text-xs font-semibold"
             >Send</span>
           </button>
         </div>
@@ -885,7 +885,7 @@ const TerminalInput: React.FC<TerminalInputProps> = ({
         />
 
         {/* Shortcut bar */}
-        <div className="flex min-h-10 items-center justify-between text-xs text-base-content/70 bg-base-100 rounded-lg p-2 border-2 border-base-content/20 gap-2">
+        <div className="flex min-h-8 sm:min-h-10 items-center justify-between text-xs text-base-content/70 bg-base-100 rounded-lg p-1.5 sm:p-2 border-2 border-base-content/20 gap-1 sm:gap-2">
           <div className="flex items-center gap-2 flex-wrap">
             {/* Keyboard hints — hidden on mobile */}
             <div className="hidden sm:flex items-center gap-2 text-xs">

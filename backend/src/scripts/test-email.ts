@@ -148,14 +148,9 @@ async function runAllTests() {
   // Check for email configuration
   console.log('⚙️  Email Configuration:');
   console.log(`   RESEND_API_KEY: ${process.env.RESEND_API_KEY ? '✅ Set' : '❌ Not set'}`);
-  console.log(`   SMTP_USER: ${process.env.SMTP_USER ? '✅ Set' : '❌ Not set'}`);
-  console.log(`   SMTP_PASS: ${process.env.SMTP_PASS ? '✅ Set' : '❌ Not set'}`);
-  console.log(`   SMTP_HOST: ${process.env.SMTP_HOST || 'smtp.gmail.com (default)'}`);
-  console.log(`   SMTP_PORT: ${process.env.SMTP_PORT || '587 (default)'}`);
 
-  if (!process.env.RESEND_API_KEY && !process.env.SMTP_USER) {
-    console.error('\n❌ ERROR: No email service configured!');
-    console.error('Please set either RESEND_API_KEY or SMTP credentials in your .env file.');
+  if (!process.env.RESEND_API_KEY) {
+    console.error('\n❌ ERROR: RESEND_API_KEY not set in .env');
     process.exit(1);
   }
 

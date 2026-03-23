@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { AIService, AIResponse } from './AIService';
+import { AIService, AIResponse, AITier } from './AIService';
 import { AIContextBuilder } from './AIContextBuilder';
 import { classifyInput, getContextEntities, InputClassification } from './AIClassifier';
 import { logDebug } from '../config/logger';
@@ -191,7 +191,8 @@ export async function handleAIQuery(
   query: string,
   projectId?: string,
   sessionId?: string,
-  mode?: string
+  mode?: string,
+  tier: AITier = 'paid'
 ): Promise<AIResponse> {
   const session = await loadOrCreateSession(userId, projectId, sessionId);
   session.lastActiveAt = new Date();
@@ -210,7 +211,7 @@ export async function handleAIQuery(
   const messages = await buildMessages(session, classification, mode);
 
   // Call AI
-  const response = await AIService.query(messages, session.id);
+  const response = await AIService.query(messages, session.id, tier);
 
   // Override intent with local classification (deterministic, free)
   response.intent = classification.category;
@@ -242,7 +243,8 @@ export async function* handleAIQueryStream(
   query: string,
   projectId?: string,
   sessionId?: string,
-  mode?: string
+  mode?: string,
+  tier: AITier = 'paid'
 ): AsyncGenerator<{ type: 'chunk'; text: string } | { type: 'done'; response: AIResponse }> {
   const session = await loadOrCreateSession(userId, projectId, sessionId);
   session.lastActiveAt = new Date();
@@ -262,7 +264,7 @@ export async function* handleAIQueryStream(
 
   let finalResponse: AIResponse | null = null;
 
-  for await (const event of AIService.queryStream(messages, session.id)) {
+  for await (const event of AIService.queryStream(messages, session.id, tier)) {
     if (event.type === 'done') {
       finalResponse = event.response;
     }

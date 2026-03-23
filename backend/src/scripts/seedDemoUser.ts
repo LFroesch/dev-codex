@@ -102,7 +102,7 @@ async function seedDemoUser() {
 
   } catch (error) {
     console.error('Error seeding demo user:', error);
-    process.exit(1);
+    console.error('Seed failed but continuing server startup');
   } finally {
     // Only close connection when run directly as a script
     const isDirectRun = process.argv[1]?.includes('seedDemoUser');
@@ -318,14 +318,14 @@ Chose Go for the API layer. Reasons:
       }
     ],
     stack: [
-      { category: 'language', name: 'Go', version: '1.22', description: 'API language' },
+      { category: 'runtime', name: 'Go', version: '1.22', description: 'API language' },
       { category: 'framework', name: 'Gin', version: '1.9', description: 'HTTP router + middleware' },
       { category: 'database', name: 'PostgreSQL', version: '16', description: 'Primary data store' },
-      { category: 'orm', name: 'GORM', version: '2.x', description: 'ORM + migrations' },
-      { category: 'cache', name: 'Redis', version: '7.x', description: 'Stock reservations, sessions' },
-      { category: 'payments', name: 'Stripe', version: '', description: 'Payment processing' },
-      { category: 'storage', name: 'AWS S3', version: '', description: 'Product images' },
-      { category: 'email', name: 'Resend', version: '', description: 'Transactional emails' },
+      { category: 'data', name: 'GORM', version: '2.x', description: 'ORM + migrations' },
+      { category: 'data', name: 'Redis', version: '7.x', description: 'Stock reservations, sessions' },
+      { category: 'api', name: 'Stripe', version: '', description: 'Payment processing' },
+      { category: 'utility', name: 'AWS S3', version: '', description: 'Product images' },
+      { category: 'utility', name: 'Resend', version: '', description: 'Transactional emails' },
       { category: 'testing', name: 'testify', version: '1.x', description: 'Test assertions + mocks' },
       { category: 'tooling', name: 'Docker', version: '', description: 'Local dev + deployment' }
     ],
@@ -547,12 +547,12 @@ Chose Go for the API layer. Reasons:
     ],
     stack: [
       { category: 'framework', name: 'Next.js', version: '14', description: 'React framework with SSR/SSG' },
-      { category: 'language', name: 'TypeScript', version: '5.x', description: 'Type safety' },
+      { category: 'runtime', name: 'TypeScript', version: '5.x', description: 'Type safety' },
       { category: 'styling', name: 'Tailwind CSS', version: '3.4', description: 'Utility-first CSS' },
-      { category: 'content', name: 'MDX', version: '', description: 'Markdown + JSX for blog' },
+      { category: 'utility', name: 'MDX', version: '', description: 'Markdown + JSX for blog' },
       { category: 'animation', name: 'Framer Motion', version: '11', description: 'Page transitions + hover effects' },
-      { category: 'email', name: 'Resend', version: '', description: 'Contact form emails' },
-      { category: 'hosting', name: 'Vercel', version: '', description: 'Edge deployment' }
+      { category: 'utility', name: 'Resend', version: '', description: 'Contact form emails' },
+      { category: 'deployment', name: 'Vercel', version: '', description: 'Edge deployment' }
     ],
     features: [
       {
@@ -735,8 +735,8 @@ Chose Go for the API layer. Reasons:
       { category: 'tooling', name: 'Expo', version: '51', description: 'Build toolchain + router' },
       { category: 'backend', name: 'Supabase', version: '', description: 'Postgres + Auth + Realtime' },
       { category: 'state', name: 'Zustand', version: '4.x', description: 'Client state management' },
-      { category: 'storage', name: 'MMKV', version: '2.x', description: 'Fast offline persistence' },
-      { category: 'language', name: 'TypeScript', version: '5.x', description: 'Type safety' }
+      { category: 'data', name: 'MMKV', version: '2.x', description: 'Fast offline persistence' },
+      { category: 'runtime', name: 'TypeScript', version: '5.x', description: 'Type safety' }
     ],
     features: [
       {

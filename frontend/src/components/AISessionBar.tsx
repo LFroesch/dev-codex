@@ -35,10 +35,11 @@ const AISessionBar: React.FC<AISessionBarProps> = ({
   // Idle state — always visible, subtle prompt
   if (!isActive) {
     return (
-      <div className="flex items-center justify-between px-3 py-1.5 text-xs bg-base-200/50 rounded-lg border border-base-300/30">
-        <div className="flex items-center gap-2 text-base-content/50">
-          <span className="w-2 h-2 rounded-full bg-success inline-block" />
-          <span>Ready — type anything to start a conversation</span>
+      <div className="flex items-center justify-between px-2 sm:px-3 py-1 sm:py-1.5 text-xs bg-base-200/50 rounded-lg border border-base-300/30">
+        <div className="flex items-center gap-1.5 sm:gap-2 text-base-content/50">
+          <span className="w-2 h-2 rounded-full bg-success inline-block flex-shrink-0" />
+          <span className="hidden sm:inline">Ready — type anything to start a conversation</span>
+          <span className="sm:hidden">Ready</span>
         </div>
         <button
           onClick={onNewChat}
@@ -51,8 +52,8 @@ const AISessionBar: React.FC<AISessionBarProps> = ({
   }
 
   return (
-    <div className="flex items-center justify-between px-3 py-1.5 text-xs bg-primary/10 rounded-lg border border-primary/20">
-      <div className="flex items-center gap-2 flex-wrap text-base-content/70">
+    <div className="flex items-center justify-between px-2 sm:px-3 py-1 sm:py-1.5 text-xs bg-primary/10 rounded-lg border border-primary/20">
+      <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap text-base-content/70">
         <span className="font-semibold text-primary">AI</span>
         {projectName && (
           <>

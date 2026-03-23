@@ -53,25 +53,28 @@ interface ProviderConfig {
   provider: 'gemini' | 'ollama';
 }
 
-// Compute once at startup — env vars don't change at runtime
-const PROVIDER_CONFIG: ProviderConfig = (() => {
-  const geminiKey = process.env.GEMINI_API_KEY;
+export type AITier = 'free' | 'paid';
 
-  if (geminiKey) {
-    const model = process.env.AI_MODEL || 'gemini-2.5-flash';
-    logInfo(`AI provider: gemini (${model})`);
-    return {
-      baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
-      apiKey: geminiKey,
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': geminiKey },
-      model,
-      provider: 'gemini' as const,
-    };
-  }
+// Build provider configs at startup — env vars don't change at runtime
+const GEMINI_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta';
+const GEMINI_MODEL = process.env.AI_MODEL || 'gemini-2.5-flash';
 
+const GEMINI_KEY_PAID = process.env.GEMINI_API_KEY;
+const GEMINI_KEY_FREE = process.env.GEMINI_API_KEY_FREE;
+
+function buildGeminiConfig(apiKey: string): ProviderConfig {
+  return {
+    baseUrl: GEMINI_BASE_URL,
+    apiKey,
+    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+    model: GEMINI_MODEL,
+    provider: 'gemini' as const,
+  };
+}
+
+const OLLAMA_CONFIG: ProviderConfig = (() => {
   const ollamaBase = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
   const model = process.env.OLLAMA_MODEL || 'qwen2.5:3b';
-  logInfo(`AI provider: ollama (${model}) at ${ollamaBase}`);
   return {
     baseUrl: `${ollamaBase}/v1`,
     headers: { 'Content-Type': 'application/json' } as Record<string, string>,
@@ -79,6 +82,19 @@ const PROVIDER_CONFIG: ProviderConfig = (() => {
     provider: 'ollama' as const,
   };
 })();
+
+// Log provider status at startup
+if (GEMINI_KEY_PAID) logInfo(`AI provider: gemini paid (${GEMINI_MODEL})`);
+if (GEMINI_KEY_FREE) logInfo(`AI provider: gemini free (${GEMINI_MODEL})`);
+if (!GEMINI_KEY_PAID && !GEMINI_KEY_FREE) logInfo(`AI provider: ollama (${OLLAMA_CONFIG.model}) at ${OLLAMA_CONFIG.baseUrl.replace('/v1', '')}`);
+
+/** Get provider config based on tier. Free/demo use the free key, paid tiers use the paid key. */
+function getProviderConfig(tier: AITier = 'paid'): ProviderConfig {
+  if (tier === 'free' && GEMINI_KEY_FREE) return buildGeminiConfig(GEMINI_KEY_FREE);
+  if (GEMINI_KEY_PAID) return buildGeminiConfig(GEMINI_KEY_PAID);
+  if (GEMINI_KEY_FREE) return buildGeminiConfig(GEMINI_KEY_FREE);
+  return OLLAMA_CONFIG;
+}
 
 // ── Gemini Native API Schema ────────────────────────────────────────────
 
@@ -375,9 +391,10 @@ export class AIService {
    */
   static async query(
     messages: ChatMessage[],
-    sessionId: string
+    sessionId: string,
+    tier: AITier = 'paid'
   ): Promise<AIResponse> {
-    const config = PROVIDER_CONFIG;
+    const config = getProviderConfig(tier);
     const isGemini = config.provider === 'gemini';
 
     // Build URL + body based on provider
@@ -480,9 +497,10 @@ export class AIService {
    */
   static async *queryStream(
     messages: ChatMessage[],
-    sessionId: string
+    sessionId: string,
+    tier: AITier = 'paid'
   ): AsyncGenerator<{ type: 'chunk'; text: string } | { type: 'done'; response: AIResponse }> {
-    const config = PROVIDER_CONFIG;
+    const config = getProviderConfig(tier);
     const isGemini = config.provider === 'gemini';
 
     let url: string;

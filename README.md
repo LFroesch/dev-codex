@@ -332,7 +332,7 @@ railway login && railway init && railway up
 **Hosted Version:**
 | Plan | Projects | Team | Commands/min | AI Tokens/month | AI Queries/min | Analytics |
 |------|----------|------|-------------|-----------------|----------------|-----------|
-| **Free** | 3 | 3/project | ~10 | — | — | 30 days |
+| **Free** | 3 | 3/project | ~10 | 3/day | — | 30 days |
 | **Demo** | Read-only | — | Read-only | 3/day (try it!) | — | — |
 | **Pro** | 20 | 10/project | 60 | 500k | 15 | 90 days |
 | **Premium** | Unlimited | Unlimited | 120 | 2M | 30 | 365 days |

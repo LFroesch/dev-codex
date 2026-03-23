@@ -46,7 +46,7 @@ const HelpPage: React.FC = () => {
                 </svg>
                 <div className="flex-1">
                   <h3 className="font-bold">Interactive Tutorial</h3>
-                  <div className="text-xs">Take a guided tour through all 14 steps of the app</div>
+                  <div className="text-xs">Take a guided tour through all the features of the app</div>
                 </div>
               </div>
               <div className="flex-none">

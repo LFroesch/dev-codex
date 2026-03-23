@@ -28,7 +28,7 @@ const AIActionPreview: React.FC<AIActionPreviewProps> = ({
       <button
         type="button"
         onClick={onToggle}
-        className="w-full flex items-center gap-3 px-3 py-2.5 text-left"
+        className="w-full flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-2 sm:py-2.5 text-left"
       >
         <input
           type="checkbox"

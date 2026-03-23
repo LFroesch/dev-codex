@@ -2547,20 +2547,20 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
     <div className="animate-fade-in">
       {/* Command echo */}
       {isAI ? (
-        <div className="inline-flex items-start gap-2 mb-2 p-2 rounded-lg bg-accent/10 border border-accent/20">
-          <div className="text-sm text-base-content/50 font-mono flex-shrink-0">
+        <div className="inline-flex items-start gap-1.5 sm:gap-2 mb-2 p-1.5 sm:p-2 rounded-lg bg-accent/10 border border-accent/20 max-w-full">
+          <div className="text-xs sm:text-sm text-base-content/50 font-mono flex-shrink-0 hidden sm:block">
             {timestamp.toLocaleTimeString()}
           </div>
-          <span className="text-sm flex-shrink-0">👤 {userName || 'User'}:</span>
-          <span className="text-sm text-base-content/70 flex-1 break-all">{command}</span>
+          <span className="text-xs sm:text-sm flex-shrink-0">👤 {userName || 'User'}:</span>
+          <span className="text-xs sm:text-sm text-base-content/70 flex-1 break-all min-w-0">{command}</span>
         </div>
       ) : (
-        <div className="inline-flex items-start gap-2 mb-2 border-thick p-2 rounded-lg bg-base-200 ">
-          <div className="text-sm text-base-content/80 font-mono font-bold flex-shrink-0">
+        <div className="inline-flex items-start gap-1.5 sm:gap-2 mb-2 border-thick p-1.5 sm:p-2 rounded-lg bg-base-200 max-w-full">
+          <div className="text-xs sm:text-sm text-base-content/80 font-mono font-bold flex-shrink-0 hidden sm:block">
             {timestamp.toLocaleTimeString()}
           </div>
-          <div className="text-sm text-primary font-mono font-bold flex-shrink-0">$</div>
-          <code className="text-sm font-mono font-bold text-base-content/80 flex-1 break-all">{command}</code>
+          <div className="text-xs sm:text-sm text-primary font-mono font-bold flex-shrink-0">$</div>
+          <code className="text-xs sm:text-sm font-mono font-bold text-base-content/80 flex-1 break-all min-w-0">{command}</code>
         </div>
       )}
 
@@ -2569,12 +2569,12 @@ const CommandResponse: React.FC<CommandResponseProps> = ({
         <div>{renderData()}</div>
       ) : (
       /* Response */
-      <div className="bg-base-100 p-4 rounded-lg border-thick">
+      <div className="bg-base-100 p-2.5 sm:p-4 rounded-lg border-thick">
         <div className="w-full">
           <div className="flex items-start gap-2">
-            <span className="mr-2 text-xl flex-shrink-0 bg-base-200 p-2 rounded-lg border-thick">{getIcon()}</span>
+            <span className="mr-1 sm:mr-2 text-lg sm:text-xl flex-shrink-0 bg-base-200 p-1.5 sm:p-2 rounded-lg border-thick">{getIcon()}</span>
             <div className="flex-1 min-w-0">
-              <div className="text-lg font-semibold bg-base-200 p-2 rounded-lg border-thick break-words">{response.message}</div>
+              <div className="text-sm sm:text-lg font-semibold bg-base-200 p-1.5 sm:p-2 rounded-lg border-thick break-words">{response.message}</div>
 
               {/* Render data */}
               {renderData()}

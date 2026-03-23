@@ -566,7 +566,7 @@ const Layout: React.FC = () => {
 
   return (
     <TutorialProvider>
-      <div className={`bg-base-100 flex flex-col ${location.pathname === '/terminal' || location.pathname === '/features' ? 'h-screen overflow-hidden' : ''}`}>
+      <div className={`bg-base-100 flex flex-col ${location.pathname === '/terminal' || location.pathname === '/features' ? 'h-dvh overflow-hidden' : ''}`}>
 
       {/* Demo Mode Banner - Hidden on features page to avoid layout issues */}
       {user?.isDemo && location.pathname !== '/features' && (
@@ -2690,7 +2690,7 @@ const Layout: React.FC = () => {
           </>
         ) : location.pathname === '/terminal' ? (
           /* Terminal - Command Interface */
-          <div className="flex-1 min-h-0 overflow-hidden border-2 border-base-content/20 bg-base-100 rounded-lg shadow-2xl backdrop-blur-none">
+          <div className="flex-1 min-h-0 overflow-hidden border-2 border-base-content/20 bg-base-100 rounded-lg shadow-2xl backdrop-blur-none pb-[env(safe-area-inset-bottom)]">
             <div className="h-full">
               <Outlet context={{
                 user,

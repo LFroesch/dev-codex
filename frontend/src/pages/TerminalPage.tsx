@@ -274,8 +274,8 @@ const TerminalPage: React.FC = () => {
     const isSlash = command.trim().startsWith('/');
     const aiEnabled = !isSlash; // non-slash commands go to AI
 
-    // Intercept: non-slash input with no project selected and no active AI session
-    if (aiEnabled && !currentProjectId && !aiSessionId) {
+    // Intercept: non-slash input with no project selected — force project picker first
+    if (aiEnabled && !currentProjectId) {
       setPendingNaturalInput(command);
 
       // Add synthetic "pick a project" entry

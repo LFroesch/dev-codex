@@ -66,24 +66,6 @@ export function setupEmailServiceMock() {
 }
 
 /**
- * @deprecated Use setupEmailServiceMock() instead - nodemailer is no longer used
- */
-export function setupNodemailerMock() {
-  const mockCreateTransport = jest.fn(() => ({
-    sendMail: jest.fn().mockResolvedValue({ messageId: 'test-message-id' })
-  }));
-
-  jest.mock('nodemailer', () => ({
-    default: {
-      createTransport: mockCreateTransport
-    },
-    createTransport: mockCreateTransport
-  }));
-
-  return mockCreateTransport;
-}
-
-/**
  * Mock NotificationService
  */
 export function getMockNotificationService() {
@@ -107,10 +89,6 @@ export function setupTestEnv() {
   process.env.JWT_SECRET = 'test-secret-key';
   process.env.NODE_ENV = 'test';
 
-  // CRITICAL: Remove real SMTP credentials to prevent sending actual emails during tests
-  delete process.env.SMTP_USER;
-  delete process.env.SMTP_PASS;
-  delete process.env.SMTP_HOST;
-  delete process.env.SMTP_PORT;
-  delete process.env.SMTP_FROM;
+  // Prevent sending real emails during tests
+  delete process.env.RESEND_API_KEY;
 }

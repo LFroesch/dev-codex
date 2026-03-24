@@ -5,7 +5,7 @@ import { User } from '../models/User';
 import NotificationService from './notificationService';
 import staleItemService from './staleItemService';
 import Stripe from 'stripe';
-import { sendSubscriptionExpiringEmail } from './emailService';
+import { sendSubscriptionExpiringEmail, sendWeeklySummaryEmail, isEmailEnabled } from './emailService';
 
 export interface DueTodoItem {
   projectId: string;
@@ -54,6 +54,11 @@ class ReminderService {
     // Daily subscription expiration check at 10 AM
     cron.schedule('0 10 * * *', () => {
       this.checkSubscriptionExpiration();
+    });
+
+    // Weekly summary email on Mondays at 8:30 AM
+    cron.schedule('30 8 * * 1', () => {
+      this.sendWeeklySummaryEmails();
     });
 
     this.isInitialized = true;
@@ -350,12 +355,14 @@ class ReminderService {
 
               if (!hasRecentNotification) {
                 // Send email
-                await sendSubscriptionExpiringEmail(
-                  user.email,
-                  user.firstName || 'there',
-                  user.planTier || 'pro',
-                  periodEnd
-                );
+                if (isEmailEnabled(user.emailPreferences, 'billing')) {
+                  await sendSubscriptionExpiringEmail(
+                    user.email,
+                    user.firstName || 'there',
+                    user.planTier || 'pro',
+                    periodEnd
+                  );
+                }
 
                 // Create in-app notification
                 const notificationService = NotificationService.getInstance();
@@ -380,6 +387,92 @@ class ReminderService {
       
     } catch (error) {
       
+    }
+  }
+
+  private async sendWeeklySummaryEmails(): Promise<void> {
+    try {
+      const users = await User.find({});
+      const now = new Date();
+      const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const oneWeekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+      for (const user of users) {
+        if (!isEmailEnabled(user.emailPreferences, 'weeklySummary')) continue;
+
+        const projects = await Project.find({
+          $or: [{ userId: user._id }, { ownerId: user._id }],
+          isArchived: false
+        });
+
+        if (projects.length === 0) continue;
+
+        let todosCompleted = 0;
+        let todosOverdue = 0;
+        let todosDueThisWeek = 0;
+        let devLogEntries = 0;
+        const projectActivity: { name: string; completed: number; added: number }[] = [];
+
+        for (const project of projects) {
+          let completed = 0;
+          let added = 0;
+
+          for (const todo of project.todos) {
+            if (todo.completed) {
+              todosCompleted++;
+              completed++;
+            }
+            if (!todo.completed && todo.dueDate) {
+              const due = new Date(todo.dueDate);
+              if (due < now) todosOverdue++;
+              else if (due <= oneWeekFromNow) todosDueThisWeek++;
+            }
+            if (todo.createdAt && new Date(todo.createdAt) >= oneWeekAgo) {
+              added++;
+            }
+          }
+
+          if (project.devLog) {
+            const recentLogs = project.devLog.filter(
+              (entry: any) => entry.createdAt && new Date(entry.createdAt) >= oneWeekAgo
+            ).length;
+            devLogEntries += recentLogs;
+          }
+
+          if (completed > 0 || added > 0) {
+            projectActivity.push({ name: project.name, completed, added });
+          }
+        }
+
+        // Skip email if there's nothing to report
+        if (todosCompleted === 0 && todosOverdue === 0 && todosDueThisWeek === 0 && devLogEntries === 0) continue;
+
+        // Sort by activity and take top 5
+        projectActivity.sort((a, b) => (b.completed + b.added) - (a.completed + a.added));
+        const topProjects = projectActivity.slice(0, 5).map(p => ({
+          name: p.name,
+          activity: `${p.completed} done, ${p.added} added`
+        }));
+
+        try {
+          await sendWeeklySummaryEmail(
+            user.email,
+            user.firstName || 'there',
+            {
+              projectCount: projects.length,
+              todosCompleted,
+              todosOverdue,
+              todosDueThisWeek,
+              devLogEntries,
+              topProjects
+            }
+          );
+        } catch (error) {
+          // Continue with other users
+        }
+      }
+    } catch (error) {
+      // Silent fail for cron
     }
   }
 

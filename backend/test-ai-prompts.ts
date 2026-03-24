@@ -1,15 +1,26 @@
 /**
- * Standalone AI prompt test runner — hits Ollama directly with the same
- * system prompt + fake project context used in production.
+ * Standalone AI prompt test runner — hits Ollama or Gemini directly with the
+ * same system prompt + fake project context used in production.
  *
- * Usage: npx tsx test-ai-prompts.ts [--verbose] [--filter=keyword]
+ * Usage: npx tsx test-ai-prompts.ts [--verbose] [--filter=keyword] [--provider=ollama|gemini]
  *
- * Requires: Ollama running on $OLLAMA_HOST or localhost:11434
+ * Requires:
+ *   ollama: Ollama running on $OLLAMA_HOST or localhost:11434
+ *   gemini: GEMINI_API_KEY env var set
  */
 
+const PROVIDER = (process.argv.find(a => a.startsWith('--provider='))?.split('=')[1] || 'ollama') as 'ollama' | 'gemini';
+
+// Ollama config
 const OLLAMA_HOST = process.env.OLLAMA_HOST || 'localhost:11434';
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'qwen2.5:3b';
-const BASE_URL = OLLAMA_HOST.startsWith('http') ? OLLAMA_HOST : `http://${OLLAMA_HOST}`;
+const OLLAMA_BASE_URL = OLLAMA_HOST.startsWith('http') ? OLLAMA_HOST : `http://${OLLAMA_HOST}`;
+
+// Gemini config
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_MODEL = process.env.AI_MODEL || 'gemini-2.5-flash';
+const GEMINI_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta';
+
 const VERBOSE = process.argv.includes('--verbose');
 const FILTER = process.argv.find(a => a.startsWith('--filter='))?.split('=')[1]?.toLowerCase();
 
@@ -168,6 +179,31 @@ Start: npm start
 #1 "Meal planner" — weekly drag-and-drop meal calendar
 #2 "Shopping list generator" — auto-generate grocery list from selected recipes
 #3 "old idea" — test idea from initial setup`;
+
+// ── Gemini Response Schema (mirrored from AIService.ts) ──────────────────
+
+const GEMINI_RESPONSE_SCHEMA = {
+  type: 'OBJECT',
+  properties: {
+    message:  { type: 'STRING', description: 'Brief response (1-3 sentences)' },
+    actions:  {
+      type: 'ARRAY',
+      items: {
+        type: 'OBJECT',
+        properties: {
+          type:    { type: 'STRING', description: 'Action category (e.g. todo_add, devlog_add, todo_delete)' },
+          summary: { type: 'STRING', description: 'Human-readable description of what this action does' },
+          command: { type: 'STRING', description: 'Exact slash command to execute (e.g. /add todo, /delete todo, /complete)' },
+          icon:    { type: 'STRING', description: 'Single emoji icon' },
+        },
+        required: ['type', 'summary', 'command', 'icon'],
+      },
+    },
+    followUp: { type: 'STRING', description: 'Follow-up question if critical info is missing. Empty string if complete.', nullable: true },
+    intent:   { type: 'STRING', description: 'One of: update, query, create, analyze, plan, scaffold, edit, delete', enum: ['update', 'query', 'create', 'analyze', 'plan', 'scaffold', 'edit', 'delete'] },
+  },
+  required: ['message', 'actions', 'followUp', 'intent'],
+};
 
 // ── Test Cases ───────────────────────────────────────────────────────────
 
@@ -698,16 +734,43 @@ async function runTest(test: TestCase, includeContext: boolean): Promise<TestRes
 
   const start = Date.now();
   try {
-    const res = await fetch(`${BASE_URL}/v1/chat/completions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    let url: string;
+    let fetchBody: string;
+    let headers: Record<string, string> = { 'Content-Type': 'application/json' };
+
+    if (PROVIDER === 'gemini') {
+      url = `${GEMINI_BASE_URL}/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+      // Separate system messages from user/assistant messages
+      const systemParts = messages.filter(m => m.role === 'system').map(m => m.content);
+      const chatMessages = messages.filter(m => m.role !== 'system');
+      fetchBody = JSON.stringify({
+        system_instruction: { parts: [{ text: systemParts.join('\n\n') }] },
+        contents: chatMessages.map(m => ({
+          role: m.role === 'assistant' ? 'model' : 'user',
+          parts: [{ text: m.content }],
+        })),
+        generationConfig: {
+          temperature: 0.3,
+          maxOutputTokens: 2000,
+          responseMimeType: 'application/json',
+          responseSchema: GEMINI_RESPONSE_SCHEMA,
+        },
+      });
+    } else {
+      url = `${OLLAMA_BASE_URL}/v1/chat/completions`;
+      fetchBody = JSON.stringify({
         model: OLLAMA_MODEL,
         messages,
         temperature: 0.3,
         max_tokens: 2000,
         response_format: { type: 'json_object' },
-      }),
+      });
+    }
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: fetchBody,
       signal: AbortSignal.timeout(120_000),
     });
 
@@ -719,7 +782,9 @@ async function runTest(test: TestCase, includeContext: boolean): Promise<TestRes
     }
 
     const data = await res.json();
-    const raw = data.choices?.[0]?.message?.content || '';
+    const raw = PROVIDER === 'gemini'
+      ? (data.candidates?.[0]?.content?.parts?.[0]?.text || '')
+      : (data.choices?.[0]?.message?.content || '');
     result.raw = raw;
 
     let parsed: any;
@@ -795,14 +860,32 @@ async function runTest(test: TestCase, includeContext: boolean): Promise<TestRes
 // ── Main ─────────────────────────────────────────────────────────────────
 
 async function main() {
-  try {
-    const healthRes = await fetch(`${BASE_URL}/v1/models`, { signal: AbortSignal.timeout(5000) });
-    if (!healthRes.ok) throw new Error(`HTTP ${healthRes.status}`);
-    console.log(`✓ Ollama reachable at ${BASE_URL} — model: ${OLLAMA_MODEL}\n`);
-  } catch (err: any) {
-    console.error(`✗ Cannot reach Ollama at ${BASE_URL}: ${err.message}`);
-    console.error('  Make sure Ollama is running and OLLAMA_HOST is set correctly.');
-    process.exit(1);
+  const modelName = PROVIDER === 'gemini' ? GEMINI_MODEL : OLLAMA_MODEL;
+
+  if (PROVIDER === 'gemini') {
+    if (!GEMINI_API_KEY) {
+      console.error('✗ GEMINI_API_KEY env var not set');
+      process.exit(1);
+    }
+    // Quick connectivity check
+    try {
+      const healthRes = await fetch(`${GEMINI_BASE_URL}/models/${GEMINI_MODEL}?key=${GEMINI_API_KEY}`, { signal: AbortSignal.timeout(10_000) });
+      if (!healthRes.ok) throw new Error(`HTTP ${healthRes.status}`);
+      console.log(`✓ Gemini API reachable — model: ${GEMINI_MODEL}\n`);
+    } catch (err: any) {
+      console.error(`✗ Cannot reach Gemini API: ${err.message}`);
+      process.exit(1);
+    }
+  } else {
+    try {
+      const healthRes = await fetch(`${OLLAMA_BASE_URL}/v1/models`, { signal: AbortSignal.timeout(5000) });
+      if (!healthRes.ok) throw new Error(`HTTP ${healthRes.status}`);
+      console.log(`✓ Ollama reachable at ${OLLAMA_BASE_URL} — model: ${OLLAMA_MODEL}\n`);
+    } catch (err: any) {
+      console.error(`✗ Cannot reach Ollama at ${OLLAMA_BASE_URL}: ${err.message}`);
+      console.error('  Make sure Ollama is running and OLLAMA_HOST is set correctly.');
+      process.exit(1);
+    }
   }
 
   let tests = TESTS;
@@ -813,7 +896,7 @@ async function main() {
   }
 
   const total = tests.length + noCtxTests.length;
-  console.log(`Running ${total} tests against ${OLLAMA_MODEL}...\n`);
+  console.log(`Running ${total} tests against ${modelName} (${PROVIDER})...\n`);
 
   const results: TestResult[] = [];
   let completed = 0;
@@ -881,7 +964,7 @@ async function main() {
     response: r.parsed || null,
     raw: r.pass ? undefined : r.raw,
   }));
-  const reportPath = 'logs/ai-test-results.json';
+  const reportPath = `logs/ai-test-results-${PROVIDER}.json`;
   const { mkdir, writeFile } = await import('fs/promises');
   await mkdir('logs', { recursive: true });
   await writeFile(reportPath, JSON.stringify(report, null, 2));

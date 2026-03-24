@@ -65,6 +65,10 @@ class AuthService extends BaseApiService {
   async exchangeToken(token: string): Promise<{ message: string; user: User }> {
     return this.post('/exchange-token', { token });
   }
+
+  async updateEmailPreferences(prefs: Record<string, boolean>): Promise<{ message: string; emailPreferences: Record<string, boolean> }> {
+    return this.patch('/email-preferences', prefs);
+  }
 }
 
 export const authAPI = new AuthService();

@@ -13,7 +13,7 @@ import { Project } from '../models/Project';
 import Notification from '../models/Notification';
 import { authRateLimit, createRateLimit } from '../middleware/rateLimit';
 import { validateUserRegistration, validateUserLogin, validatePasswordReset } from '../middleware/validation';
-import { sendPasswordResetEmail } from '../services/emailService';
+import { sendPasswordResetEmail, sendPasswordChangedEmail, isEmailEnabled } from '../services/emailService';
 import { asyncHandler, BadRequestError, NotFoundError, UnauthorizedError, ConflictError } from '../utils/errorHandler';
 import { seedDemoProjects } from '../scripts/seedDemoUser';
 
@@ -555,6 +555,7 @@ router.get('/me', asyncHandler(async (req: express.Request, res: express.Respons
       isPublic: user.isPublic || false,
       publicSlug: user.publicSlug,
       publicDescription: user.publicDescription,
+      emailPreferences: user.emailPreferences,
       tutorialCompleted: user.tutorialCompleted,
       tutorialProgress: user.tutorialProgress,
       createdAt: user.createdAt
@@ -749,8 +750,35 @@ router.patch('/profile', requireAuth, asyncHandler(async (req: AuthRequest, res:
       isPublic: user.isPublic || false,
       publicSlug: user.publicSlug,
       publicDescription: user.publicDescription,
+      emailPreferences: user.emailPreferences,
       createdAt: user.createdAt
     }
+  });
+}));
+
+// Update email preferences
+router.patch('/email-preferences', requireAuth, asyncHandler(async (req: AuthRequest, res: express.Response) => {
+  const { billing, payments, security, weeklySummary } = req.body;
+
+  const updateData: any = {};
+  if (billing !== undefined) updateData['emailPreferences.billing'] = !!billing;
+  if (payments !== undefined) updateData['emailPreferences.payments'] = !!payments;
+  if (security !== undefined) updateData['emailPreferences.security'] = !!security;
+  if (weeklySummary !== undefined) updateData['emailPreferences.weeklySummary'] = !!weeklySummary;
+
+  const user = await User.findByIdAndUpdate(
+    req.userId,
+    { $set: updateData },
+    { new: true, runValidators: true }
+  ).select('emailPreferences');
+
+  if (!user) {
+    throw NotFoundError('User not found', 'USER_NOT_FOUND');
+  }
+
+  res.json({
+    message: 'Email preferences updated',
+    emailPreferences: user.emailPreferences
   });
 }));
 
@@ -915,6 +943,15 @@ router.post('/reset-password', passwordResetRateLimit, validatePasswordReset, as
   user.resetPasswordToken = undefined;
   user.resetPasswordExpires = undefined;
   await user.save();
+
+  // Send password changed confirmation email
+  if (isEmailEnabled(user.emailPreferences, 'security')) {
+    try {
+      await sendPasswordChangedEmail(user.email, user.firstName || 'there');
+    } catch (error) {
+      // Don't fail the reset if email fails
+    }
+  }
 
   res.json({ message: 'Password reset successful' });
 }));

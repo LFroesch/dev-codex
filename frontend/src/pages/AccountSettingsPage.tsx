@@ -89,7 +89,7 @@ const DEFAULT_CUSTOM_COLORS = {
 const AccountSettingsPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState<'theme' | 'connections' | 'profile' | 'analytics' | 'billing'>('theme');
+  const [activeTab, setActiveTab] = useState<'theme' | 'connections' | 'profile' | 'analytics' | 'billing' | 'notifications'>('theme');
   const [profileSubTab, setProfileSubTab] = useState<'personal' | 'public' | 'privacy'>('personal');
   const [themeSubTab, setThemeSubTab] = useState<'preset' | 'custom'>('preset');
   const [currentTheme, setCurrentTheme] = useState('retro');
@@ -130,6 +130,15 @@ const AccountSettingsPage: React.FC = () => {
   const [publicSlug, setPublicSlug] = useState('');
   const [savingPublicSettings, setSavingPublicSettings] = useState(false);
   
+  // Email preferences state
+  const [emailPrefs, setEmailPrefs] = useState({
+    billing: true,
+    payments: true,
+    security: true,
+    weeklySummary: true,
+  });
+  const [savingEmailPrefs, setSavingEmailPrefs] = useState(false);
+
   // Dropdown state
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
@@ -297,6 +306,9 @@ const AccountSettingsPage: React.FC = () => {
         setFirstName(response.user.firstName || '');
         setLastName(response.user.lastName || '');
         setUsername(response.user.username || '');
+        if (response.user.emailPreferences) {
+          setEmailPrefs(prev => ({ ...prev, ...response.user.emailPreferences }));
+        }
         setDisplayPreference(response.user.displayPreference || 'username');
         setIsPublicProfile(response.user.isPublic || false);
         setPublicSlug(response.user.publicSlug || '');
@@ -353,6 +365,14 @@ const AccountSettingsPage: React.FC = () => {
 
     loadUserData();
   }, [navigate]);
+
+  // Sync tab from URL param
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && ['theme', 'connections', 'profile', 'analytics', 'billing', 'notifications'].includes(tabParam)) {
+      setActiveTab(tabParam as typeof activeTab);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     // Handle Google linking URL params
@@ -708,6 +728,22 @@ const AccountSettingsPage: React.FC = () => {
     }
   };
 
+  const handleToggleEmailPref = async (key: keyof typeof emailPrefs) => {
+    const newValue = !emailPrefs[key];
+    setEmailPrefs(prev => ({ ...prev, [key]: newValue }));
+    setSavingEmailPrefs(true);
+    try {
+      await authAPI.updateEmailPreferences({ [key]: newValue });
+      toast.success('Email preference updated');
+    } catch (err: any) {
+      // Revert on failure
+      setEmailPrefs(prev => ({ ...prev, [key]: !newValue }));
+      toast.error('Failed to update email preference');
+    } finally {
+      setSavingEmailPrefs(false);
+    }
+  };
+
   const copyPublicProfileUrl = () => {
     const url = `${window.location.origin}/user/${publicSlug || user?.username || user?.id}`;
     navigator.clipboard.writeText(url);
@@ -799,6 +835,16 @@ const AccountSettingsPage: React.FC = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
             </svg>
             Billing
+          </button>
+          <button
+            className={`tab-button gap-2 ${activeTab === 'notifications' ? 'tab-active' : ''}`}
+            style={activeTab === 'notifications' ? {color: getContrastTextColor()} : {}}
+            onClick={() => setActiveTab('notifications')}
+          >
+            <svg className="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+            Notifications
           </button>
         </div>
       </div>
@@ -2213,6 +2259,67 @@ const AccountSettingsPage: React.FC = () => {
                     </svg>
                     View Plans & Pricing
                   </button>
+                </div>
+              </div>
+            )}
+
+            {/* Notifications Tab */}
+            {activeTab === 'notifications' && (
+              <div className="space-y-6">
+                <div className='text-center space-y-2'>
+                  <h2 className="text-2xl font-bold mb-2">Email Notifications</h2>
+                  <p className="text-base-content/60">
+                    Choose which emails you'd like to receive. Changes are saved automatically.
+                  </p>
+                </div>
+
+                <div className="space-y-3 max-w-lg mx-auto">
+                  {[
+                    {
+                      key: 'billing' as const,
+                      title: 'Billing & Subscription',
+                      description: 'Subscription confirmations, cancellations, expiring soon, plan changes',
+                    },
+                    {
+                      key: 'payments' as const,
+                      title: 'Payments',
+                      description: 'Payment receipts, failed payments, refund confirmations',
+                    },
+                    {
+                      key: 'security' as const,
+                      title: 'Security',
+                      description: 'Password change confirmations',
+                    },
+                    {
+                      key: 'weeklySummary' as const,
+                      title: 'Weekly Summary',
+                      description: 'Monday digest with your todos, activity, and project stats',
+                    },
+                  ].map(({ key, title, description }) => (
+                    <div key={key} className="card bg-base-200 border border-base-content/20">
+                      <div className="card-body p-4">
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="min-w-0">
+                            <h4 className="font-semibold text-base-content">{title}</h4>
+                            <p className="text-sm text-base-content/60">{description}</p>
+                          </div>
+                          <input
+                            type="checkbox"
+                            className="toggle toggle-primary"
+                            checked={emailPrefs[key]}
+                            onChange={() => handleToggleEmailPref(key)}
+                            disabled={savingEmailPrefs}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="text-center">
+                  <p className="text-xs text-base-content/40">
+                    Password reset emails and project invitations are always sent regardless of these settings.
+                  </p>
                 </div>
               </div>
             )}

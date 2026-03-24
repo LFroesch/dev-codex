@@ -11,7 +11,11 @@ import {
   sendSubscriptionConfirmationEmail,
   sendSubscriptionCancelledEmail,
   sendSubscriptionExpiredEmail,
-  sendPlanDowngradeEmail
+  sendPlanDowngradeEmail,
+  sendPaymentReceiptEmail,
+  sendPaymentFailedEmail,
+  sendRefundEmail,
+  isEmailEnabled
 } from '../services/emailService';
 import { asyncHandler, BadRequestError, NotFoundError } from '../utils/errorHandler';
 
@@ -183,8 +187,15 @@ router.post('/webhook', async (req, res) => {
         break;
 
       case 'invoice.payment_failed':
-        logWarn('Payment failed for invoice', { invoice: event.data.object });
-        // You might want to handle failed payments here
+        const failedInvoice = event.data.object as Stripe.Invoice;
+        logWarn('Payment failed for invoice', { invoiceId: failedInvoice.id });
+        await handlePaymentFailed(failedInvoice);
+        break;
+
+      case 'charge.refunded':
+        const charge = event.data.object as Stripe.Charge;
+        logDebug('Processing charge.refunded', { chargeId: charge.id });
+        await handleRefund(charge);
         break;
 
       default:
@@ -258,16 +269,17 @@ async function handleSuccessfulPayment(session: Stripe.Checkout.Session) {
   });
 
   // Send subscription confirmation email
-  try {
-    await sendSubscriptionConfirmationEmail(
-      user.email,
-      user.firstName || 'there',
-      planTier
-    );
-    logDebug('Subscription confirmation email sent', { userId, planTier });
-  } catch (error) {
-    logError('Failed to send subscription confirmation email', error as Error);
-    // Don't fail the whole process if email fails
+  if (isEmailEnabled(user.emailPreferences, 'billing')) {
+    try {
+      await sendSubscriptionConfirmationEmail(
+        user.email,
+        user.firstName || 'there',
+        planTier
+      );
+      logDebug('Subscription confirmation email sent', { userId, planTier });
+    } catch (error) {
+      logError('Failed to send subscription confirmation email', error as Error);
+    }
   }
 
   // Track conversion/upgrade event
@@ -314,12 +326,33 @@ async function handleSuccessfulPayment(session: Stripe.Checkout.Session) {
 async function handleSuccessfulSubscriptionPayment(invoice: Stripe.Invoice) {
   const customerId = invoice.customer as string;
   const user = await User.findOne({ stripeCustomerId: customerId });
-  
+
   if (!user) return;
-  
+
   user.subscriptionStatus = 'active';
   user.lastBillingUpdate = new Date();
   await user.save();
+
+  // Send payment receipt email
+  if (isEmailEnabled(user.emailPreferences, 'payments')) {
+    try {
+      const amount = invoice.amount_paid
+        ? `$${(invoice.amount_paid / 100).toFixed(2)}`
+        : null;
+      if (amount) {
+        await sendPaymentReceiptEmail(
+          user.email,
+          user.firstName || 'there',
+          amount,
+          user.planTier || 'pro',
+          (invoice as any).hosted_invoice_url || undefined
+        );
+        logDebug('Payment receipt email sent', { userId: user._id });
+      }
+    } catch (error) {
+      logError('Failed to send payment receipt email', error as Error);
+    }
+  }
 }
 
 async function handleSubscriptionChange(subscription: Stripe.Subscription) {
@@ -362,26 +395,27 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
     }
 
     // Send appropriate email based on status
-    try {
-      if (subscription.status === 'canceled') {
-        await sendSubscriptionCancelledEmail(
-          user.email,
-          user.firstName || 'there',
-          oldPlanTier,
-          new Date((subscription as any).current_period_end * 1000)
-        );
-        logDebug('Subscription cancelled email sent', { userId: user._id });
-      } else if (subscription.status === 'incomplete_expired') {
-        await sendSubscriptionExpiredEmail(
-          user.email,
-          user.firstName || 'there',
-          oldPlanTier
-        );
-        logDebug('Subscription expired email sent', { userId: user._id });
+    if (isEmailEnabled(user.emailPreferences, 'billing')) {
+      try {
+        if (subscription.status === 'canceled') {
+          await sendSubscriptionCancelledEmail(
+            user.email,
+            user.firstName || 'there',
+            oldPlanTier,
+            new Date((subscription as any).current_period_end * 1000)
+          );
+          logDebug('Subscription cancelled email sent', { userId: user._id });
+        } else if (subscription.status === 'incomplete_expired') {
+          await sendSubscriptionExpiredEmail(
+            user.email,
+            user.firstName || 'there',
+            oldPlanTier
+          );
+          logDebug('Subscription expired email sent', { userId: user._id });
+        }
+      } catch (error) {
+        logError('Failed to send subscription status email', error as Error);
       }
-    } catch (error) {
-      logError('Failed to send subscription status email', error as Error);
-      // Don't fail the whole process if email fails
     }
   } else if (subscription.status === 'active') {
     // Determine plan tier from price ID
@@ -420,17 +454,18 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
           await handleDowngradeExcess(user._id.toString(), newPlanTier);
 
           // Send downgrade email
-          try {
-            await sendPlanDowngradeEmail(
-              user.email,
-              user.firstName || 'there',
-              oldPlanTier,
-              newPlanTier
-            );
-            logDebug('Plan downgrade email sent', { userId: user._id, from: oldPlanTier, to: newPlanTier });
-          } catch (error) {
-            logError('Failed to send plan downgrade email', error as Error);
-            // Don't fail the whole process if email fails
+          if (isEmailEnabled(user.emailPreferences, 'billing')) {
+            try {
+              await sendPlanDowngradeEmail(
+                user.email,
+                user.firstName || 'there',
+                oldPlanTier,
+                newPlanTier
+              );
+              logDebug('Plan downgrade email sent', { userId: user._id, from: oldPlanTier, to: newPlanTier });
+            } catch (error) {
+              logError('Failed to send plan downgrade email', error as Error);
+            }
           }
         }
       }
@@ -449,6 +484,79 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
     projectLimit: user.projectLimit,
     subscriptionStatus: user.subscriptionStatus
   });
+}
+
+async function handlePaymentFailed(invoice: Stripe.Invoice) {
+  const customerId = invoice.customer as string;
+  const user = await User.findOne({ stripeCustomerId: customerId });
+
+  if (!user) return;
+
+  if (isEmailEnabled(user.emailPreferences, 'payments')) {
+    try {
+      await sendPaymentFailedEmail(
+        user.email,
+        user.firstName || 'there',
+        user.planTier || 'pro'
+      );
+      logDebug('Payment failed email sent', { userId: user._id });
+    } catch (error) {
+      logError('Failed to send payment failed email', error as Error);
+    }
+  }
+
+  // Also create in-app notification
+  try {
+    const notificationService = NotificationService.getInstance();
+    await notificationService.createNotification({
+      userId: user._id,
+      type: 'payment_failed' as any,
+      title: 'Payment Failed',
+      message: 'Your latest payment failed. Please update your payment method to keep your subscription active.',
+      actionUrl: '/billing'
+    });
+  } catch (error) {
+    logError('Failed to create payment failed notification', error as Error);
+  }
+}
+
+async function handleRefund(charge: Stripe.Charge) {
+  const customerId = charge.customer as string;
+  if (!customerId) return;
+
+  const user = await User.findOne({ stripeCustomerId: customerId });
+  if (!user) return;
+
+  const refundedAmount = charge.amount_refunded
+    ? `$${(charge.amount_refunded / 100).toFixed(2)}`
+    : 'your payment';
+
+  if (isEmailEnabled(user.emailPreferences, 'payments')) {
+    try {
+      await sendRefundEmail(
+        user.email,
+        user.firstName || 'there',
+        refundedAmount
+      );
+      logDebug('Refund email sent', { userId: user._id, amount: refundedAmount });
+    } catch (error) {
+      logError('Failed to send refund email', error as Error);
+    }
+  }
+
+  // In-app notification
+  try {
+    const notificationService = NotificationService.getInstance();
+    await notificationService.createNotification({
+      userId: user._id,
+      type: 'refund_processed' as any,
+      title: 'Refund Processed',
+      message: `A refund of ${refundedAmount} has been issued to your original payment method.`,
+      actionUrl: '/billing'
+    });
+  } catch (error) {
+    logError('Failed to create refund notification', error as Error);
+  }
 }
 
 // Get user's billing info
@@ -691,7 +799,9 @@ async function handleDowngradeExcess(userId: string, targetPlan: 'free' | 'pro' 
       });
 
       // Send email notification
-      await sendProjectsLockedEmail(user, projectsToLock, targetPlan);
+      if (isEmailEnabled(user.emailPreferences, 'billing')) {
+        await sendProjectsLockedEmail(user, projectsToLock, targetPlan);
+      }
     }
   }
 }
@@ -740,7 +850,9 @@ async function handleUpgradeUnlock(userId: string, newPlan: 'free' | 'pro' | 'pr
           }
         });
 
-        await sendProjectsUnlockedEmail(user, lockedProjects, newPlan);
+        if (isEmailEnabled(user.emailPreferences, 'billing')) {
+          await sendProjectsUnlockedEmail(user, lockedProjects, newPlan);
+        }
       }
     }
 
@@ -796,7 +908,9 @@ async function handleUpgradeUnlock(userId: string, newPlan: 'free' | 'pro' | 'pr
         }
       });
 
-      await sendProjectsUnlockedEmail(user, projectsToUnlock, newPlan);
+      if (isEmailEnabled(user.emailPreferences, 'billing')) {
+        await sendProjectsUnlockedEmail(user, projectsToUnlock, newPlan);
+      }
     }
   }
 }

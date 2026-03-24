@@ -1,6 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import bcrypt from 'bcryptjs';
-import type { UserTheme } from '../types/shared';
+import type { UserTheme, EmailPreferences } from '../types/shared';
 
 export interface IIdea {
   id: string;
@@ -62,6 +62,7 @@ export interface IUser extends Document {
   bannedAt?: Date;
   banReason?: string;
   bannedBy?: string;
+  emailPreferences: EmailPreferences;
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
   googleId?: string;
@@ -202,6 +203,12 @@ const userSchema = new Schema<IUser>({
   bannedBy: {
     type: String,
     required: false
+  },
+  emailPreferences: {
+    billing: { type: Boolean, default: true },
+    payments: { type: Boolean, default: true },
+    security: { type: Boolean, default: true },
+    weeklySummary: { type: Boolean, default: true },
   },
   resetPasswordToken: {
     type: String,

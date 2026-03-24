@@ -1,3 +1,17 @@
+export interface EmailPreferences {
+  billing: boolean;       // subscription confirmed, cancelled, expired, expiring, downgraded
+  payments: boolean;      // payment receipts, payment failed, refunds
+  security: boolean;      // password changed
+  weeklySummary: boolean; // weekly project digest email
+}
+
+export const DEFAULT_EMAIL_PREFERENCES: EmailPreferences = {
+  billing: true,
+  payments: true,
+  security: true,
+  weeklySummary: true,
+};
+
 export interface BaseUser {
   id: string;
   email: string;
@@ -14,6 +28,7 @@ export interface BaseUser {
   isPublic: boolean;
   publicSlug?: string;
   publicDescription?: string;
+  emailPreferences?: EmailPreferences;
   tutorialCompleted?: boolean;
   tutorialProgress?: {
     currentStep: number;

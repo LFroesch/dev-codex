@@ -286,6 +286,7 @@ export class TodoHandlers extends BaseCommandHandler {
     }
 
     todo.completed = true;
+    todo.completedAt = new Date();
     todo.status = 'completed';
     await project.save();
 
@@ -837,6 +838,10 @@ export class TodoHandlers extends BaseCommandHandler {
           };
         }
         todo.status = status.toLowerCase() as any;
+        if (status.toLowerCase() === 'completed') {
+          todo.completed = true;
+          todo.completedAt = new Date();
+        }
         updated = true;
       }
 

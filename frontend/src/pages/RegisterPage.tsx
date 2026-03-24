@@ -152,61 +152,47 @@ const RegisterPage: React.FC = () => {
 
   return (
     <div className="min-h-screen flex">
-      {/* Left panel — branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-primary relative overflow-hidden flex-col justify-between p-12">
-        <div className="absolute top-0 left-0 w-full h-full opacity-10">
-          <div className="absolute top-[-10%] right-[-5%] w-80 h-80 rounded-full bg-primary-content" />
-          <div className="absolute bottom-[-15%] left-[-10%] w-96 h-96 rounded-full bg-primary-content" />
-          <div className="absolute top-[40%] left-[30%] w-48 h-48 rounded-full bg-primary-content" />
-        </div>
-
-        <div className="relative z-10">
-          <h1 className="text-4xl font-bold text-primary-content tracking-tight">
+      {/* Left panel — terminal branding */}
+      <div className="hidden lg:flex lg:w-1/2 bg-neutral relative overflow-hidden flex-col justify-between p-12">
+        <div>
+          <h1 className="text-4xl font-bold text-neutral-content tracking-tight">
             Dev Codex
           </h1>
-          <p className="text-primary-content/70 mt-1 text-sm">The AI-era project manager</p>
+          <p className="text-neutral-content/50 mt-1 text-sm font-mono">Project management from the terminal</p>
         </div>
 
-        <div className="relative z-10 space-y-8">
-          <div className="flex items-start gap-4">
-            <div className="w-10 h-10 rounded-lg bg-primary-content/20 flex items-center justify-center flex-shrink-0">
-              <svg className="w-5 h-5 text-primary-content" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <div>
-              <h3 className="font-semibold text-primary-content">Terminal-first interface</h3>
-              <p className="text-primary-content/60 text-sm">70+ commands with autocomplete. Type naturally or use slash commands.</p>
-            </div>
+        {/* Terminal mockup */}
+        <div className="bg-base-300/10 border border-neutral-content/10 rounded-lg p-5 font-mono text-sm space-y-3">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-3 h-3 rounded-full bg-error/60" />
+            <div className="w-3 h-3 rounded-full bg-warning/60" />
+            <div className="w-3 h-3 rounded-full bg-success/60" />
+            <span className="text-neutral-content/30 text-xs ml-2">dev-codex</span>
           </div>
-
-          <div className="flex items-start gap-4">
-            <div className="w-10 h-10 rounded-lg bg-primary-content/20 flex items-center justify-center flex-shrink-0">
-              <svg className="w-5 h-5 text-primary-content" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </div>
-            <div>
-              <h3 className="font-semibold text-primary-content">Built-in AI assistant</h3>
-              <p className="text-primary-content/60 text-sm">Describe what you want. AI proposes actions. You confirm with one click.</p>
-            </div>
+          <div>
+            <span className="text-success/80">$</span>
+            <span className="text-neutral-content/80 ml-2">/add todo "Set up CI pipeline" --priority high</span>
           </div>
-
-          <div className="flex items-start gap-4">
-            <div className="w-10 h-10 rounded-lg bg-primary-content/20 flex items-center justify-center flex-shrink-0">
-              <svg className="w-5 h-5 text-primary-content" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-            </div>
-            <div>
-              <h3 className="font-semibold text-primary-content">The LLM loop</h3>
-              <p className="text-primary-content/60 text-sm">Export context to any LLM. Get back executable commands. Paste and run.</p>
-            </div>
+          <div className="text-neutral-content/40 pl-4">Created todo #4: Set up CI pipeline</div>
+          <div>
+            <span className="text-success/80">$</span>
+            <span className="text-neutral-content/80 ml-2">add auth and rate limiting to the API</span>
           </div>
+          <div className="text-neutral-content/40 pl-4">
+            AI: I'll add those as features with related todos.<br />
+            <span className="text-info/60">{'>'} /add feature "Auth" && /add feature "Rate Limiting"</span><br />
+            <span className="text-info/60">{'>'} /add todo "Implement JWT auth" --tag auth</span><br />
+            <span className="text-neutral-content/30">Confirm 3 actions? [Y/n]</span>
+          </div>
+          <div>
+            <span className="text-success/80">$</span>
+            <span className="text-neutral-content/80 ml-2">/context prompt all</span>
+          </div>
+          <div className="text-neutral-content/40 pl-4">Copied project context to clipboard (2.4k tokens)</div>
         </div>
 
-        <div className="relative z-10">
-          <p className="text-primary-content/40 text-xs">Free & open source. Self-host or use the hosted version.</p>
+        <div>
+          <p className="text-neutral-content/30 text-xs font-mono">Free & open source — self-host or use dev-codex.com</p>
         </div>
       </div>
 
@@ -216,7 +202,7 @@ const RegisterPage: React.FC = () => {
           {/* Mobile logo */}
           <div className="lg:hidden text-center mb-8">
             <h1 className="text-2xl font-bold text-base-content">Dev Codex</h1>
-            <p className="text-base-content/50 text-sm">The AI-era project manager</p>
+            <p className="text-base-content/50 text-sm font-mono">Project management from the terminal</p>
           </div>
 
           <h2 className="text-2xl font-bold text-base-content mb-1">Create your account</h2>

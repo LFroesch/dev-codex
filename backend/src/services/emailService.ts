@@ -17,10 +17,10 @@ const FROM = 'Dev Codex <noreply@dev-codex.com>';
 const url = (path: string) => `${process.env.FRONTEND_URL || 'http://localhost:5002'}${path}`;
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
-const prefsFooter = `
+const prefsFooter = () => `
   <p style="color: #999; font-size: 11px; margin-top: 8px;">
     You can manage which emails you receive in
-    <a href="${url('/account?tab=notifications')}" style="color: #999;">Notification Settings</a>.
+    <a href="${url('/account-settings?tab=notifications')}" style="color: #999;">Notification Settings</a>.
   </p>`;
 
 const wrap = (body: string, showPrefsLink = true) => `
@@ -29,7 +29,7 @@ const wrap = (body: string, showPrefsLink = true) => `
     <p style="color: #888; font-size: 12px; margin-top: 32px; border-top: 1px solid #eee; padding-top: 16px;">
       Dev Codex &mdash; <a href="${url('/')}" style="color: #888;">dev-codex.com</a>
     </p>
-    ${showPrefsLink ? prefsFooter : ''}
+    ${showPrefsLink ? prefsFooter() : ''}
   </div>
 `;
 
@@ -114,19 +114,13 @@ export const sendSubscriptionConfirmationEmail = async (
 export const sendSubscriptionCancelledEmail = async (
   userEmail: string,
   userName: string,
-  planTier: string,
-  endDate?: Date
+  planTier: string
 ) => {
-  const endStr = endDate
-    ? new Date(endDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
-    : 'the end of your billing period';
-
-  await send(userEmail, 'Your Subscription Has Been Cancelled', wrap(`
-    <h2 style="color: #333;">Subscription Cancelled</h2>
-    <p>Hi ${userName}, your <strong>${cap(planTier)}</strong> plan has been cancelled.</p>
-    <p>You'll keep access until <strong>${endStr}</strong>, then revert to Free.</p>
-    ${btn(url('/billing'), 'Reactivate')}
-    <p style="color: #888; font-size: 14px;">If you change your mind, reactivate anytime before it expires.</p>
+  await send(userEmail, 'Your Subscription Has Ended', wrap(`
+    <h2 style="color: #333;">Subscription Ended</h2>
+    <p>Hi ${userName}, your <strong>${cap(planTier)}</strong> plan has ended. You're now on the Free plan (3 projects).</p>
+    <p style="color: #888; font-size: 14px;">Projects beyond the limit are locked in read-only mode.</p>
+    ${btn(url('/billing'), 'Resubscribe')}
   `));
 };
 

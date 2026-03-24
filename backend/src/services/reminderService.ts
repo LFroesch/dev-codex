@@ -418,7 +418,7 @@ class ReminderService {
           let added = 0;
 
           for (const todo of project.todos) {
-            if (todo.completed) {
+            if (todo.completed && (todo as any).completedAt && new Date((todo as any).completedAt) >= oneWeekAgo) {
               todosCompleted++;
               completed++;
             }

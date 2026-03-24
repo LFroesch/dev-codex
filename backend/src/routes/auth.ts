@@ -13,7 +13,7 @@ import { Project } from '../models/Project';
 import Notification from '../models/Notification';
 import { authRateLimit, createRateLimit } from '../middleware/rateLimit';
 import { validateUserRegistration, validateUserLogin, validatePasswordReset } from '../middleware/validation';
-import { sendPasswordResetEmail, sendPasswordChangedEmail, isEmailEnabled } from '../services/emailService';
+import { sendPasswordResetEmail, sendPasswordChangedEmail } from '../services/emailService';
 import { asyncHandler, BadRequestError, NotFoundError, UnauthorizedError, ConflictError } from '../utils/errorHandler';
 import { seedDemoProjects } from '../scripts/seedDemoUser';
 
@@ -944,13 +944,11 @@ router.post('/reset-password', passwordResetRateLimit, validatePasswordReset, as
   user.resetPasswordExpires = undefined;
   await user.save();
 
-  // Send password changed confirmation email
-  if (isEmailEnabled(user.emailPreferences, 'security')) {
-    try {
-      await sendPasswordChangedEmail(user.email, user.firstName || 'there');
-    } catch (error) {
-      // Don't fail the reset if email fails
-    }
+  // Security emails always sent — never gated by preferences
+  try {
+    await sendPasswordChangedEmail(user.email, user.firstName || 'there');
+  } catch (error) {
+    // Don't fail the reset if email fails
   }
 
   res.json({ message: 'Password reset successful' });

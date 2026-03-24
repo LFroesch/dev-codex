@@ -401,8 +401,7 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
           await sendSubscriptionCancelledEmail(
             user.email,
             user.firstName || 'there',
-            oldPlanTier,
-            new Date((subscription as any).current_period_end * 1000)
+            oldPlanTier
           );
           logDebug('Subscription cancelled email sent', { userId: user._id });
         } else if (subscription.status === 'incomplete_expired') {

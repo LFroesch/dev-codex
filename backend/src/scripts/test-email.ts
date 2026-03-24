@@ -73,13 +73,10 @@ async function testSubscriptionConfirmation() {
 async function testSubscriptionCancelled() {
   console.log('\n📧 Testing subscription cancelled email...');
   try {
-    const endDate = new Date();
-    endDate.setDate(endDate.getDate() + 30);
     await sendSubscriptionCancelledEmail(
       TEST_EMAIL,
       'Lucas',
-      'pro',
-      endDate
+      'pro'
     );
     console.log('✅ Subscription cancelled email sent successfully!');
     return true;

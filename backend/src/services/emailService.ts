@@ -76,8 +76,8 @@ export const sendSubscriptionConfirmationEmail = async (
   planTier: string
 ) => {
   const plans: Record<string, { name: string; limit: string; price: string }> = {
-    pro: { name: 'Pro', limit: '20 projects', price: '$10/mo' },
-    premium: { name: 'Premium', limit: '50 projects', price: '$25/mo' }
+    pro: { name: 'Pro', limit: '20 projects', price: '$5/mo' },
+    premium: { name: 'Premium', limit: 'Unlimited projects', price: '$15/mo' }
   };
   const plan = plans[planTier] || { name: planTier, limit: '', price: '' };
 
@@ -154,7 +154,7 @@ export const sendPlanDowngradeEmail = async (
   oldPlan: string,
   newPlan: string
 ) => {
-  const limits: Record<string, string> = { free: '3 projects', pro: '20 projects', premium: '50 projects' };
+  const limits: Record<string, string> = { free: '3 projects', pro: '20 projects', premium: 'Unlimited projects' };
 
   await send(userEmail, 'Your Plan Has Changed', wrap(`
     <h2 style="color: #333;">Plan Changed</h2>

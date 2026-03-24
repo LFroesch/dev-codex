@@ -330,12 +330,12 @@ railway login && railway init && railway up
 **Self-Hosted:** Unlimited everything when `SELF_HOSTED=true` (including AI with your own Ollama instance)
 
 **Hosted Version:**
-| Plan | Projects | Team | Commands/min | AI Tokens/month | AI Queries/min | Analytics |
-|------|----------|------|-------------|-----------------|----------------|-----------|
-| **Free** | 3 | 3/project | ~10 | 3/day | — | 30 days |
-| **Demo** | Read-only | — | Read-only | 3/day (try it!) | — | — |
-| **Pro** | 20 | 10/project | 60 | 500k | 15 | 90 days |
-| **Premium** | Unlimited | Unlimited | 120 | 2M | 30 | 365 days |
+| Plan | Price | Projects | AI | Team | Content/project | Analytics |
+|------|-------|----------|-----|------|-----------------|-----------|
+| **Free** | $0 | 3 | 3 queries/day | 3/project | 50 todos, 20 notes | 30 days |
+| **Demo** | — | Read-only | 3 queries/day | — | — | — |
+| **Pro** | $5/mo | 20 | 500k tokens/mo, 15/min | 10/project | 200 todos, 100 notes | 90 days |
+| **Premium** | $15/mo | Unlimited | 2M tokens/mo, 30/min | Unlimited | Unlimited | 365 days |
 
 ---
 

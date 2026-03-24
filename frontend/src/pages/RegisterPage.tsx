@@ -27,12 +27,10 @@ const RegisterPage: React.FC = () => {
   const [demoLoading, setDemoLoading] = useState(false);
 
   useEffect(() => {
-    // Apply saved theme on register page
     const savedTheme = localStorage.getItem('theme') || 'retro';
     document.documentElement.setAttribute('data-theme', savedTheme);
   }, []);
 
-  // Check username availability with debounce
   useEffect(() => {
     const checkUsername = async () => {
       const username = formData.username.trim().toLowerCase();
@@ -122,7 +120,6 @@ const RegisterPage: React.FC = () => {
           username: formData.username.trim().toLowerCase(),
           password: formData.password
         });
-        // Set up account for new user
         if (result.user?.email) {
           accountSwitchingManager.handleAccountSwitch(result.user.email);
         }
@@ -154,160 +151,87 @@ const RegisterPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-base-200 flex items-center justify-center px-4">
-      <div className="card w-full max-w-md bg-base-100 shadow-xl">
-        <div className="card-body">
-          <h2 className="card-title text-3xl font-bold text-center justify-center mb-6">
-            Create Account
-          </h2>
-          
+    <div className="min-h-screen flex">
+      {/* Left panel — branding */}
+      <div className="hidden lg:flex lg:w-1/2 bg-primary relative overflow-hidden flex-col justify-between p-12">
+        <div className="absolute top-0 left-0 w-full h-full opacity-10">
+          <div className="absolute top-[-10%] right-[-5%] w-80 h-80 rounded-full bg-primary-content" />
+          <div className="absolute bottom-[-15%] left-[-10%] w-96 h-96 rounded-full bg-primary-content" />
+          <div className="absolute top-[40%] left-[30%] w-48 h-48 rounded-full bg-primary-content" />
+        </div>
+
+        <div className="relative z-10">
+          <h1 className="text-4xl font-bold text-primary-content tracking-tight">
+            Dev Codex
+          </h1>
+          <p className="text-primary-content/70 mt-1 text-sm">The AI-era project manager</p>
+        </div>
+
+        <div className="relative z-10 space-y-8">
+          <div className="flex items-start gap-4">
+            <div className="w-10 h-10 rounded-lg bg-primary-content/20 flex items-center justify-center flex-shrink-0">
+              <svg className="w-5 h-5 text-primary-content" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="font-semibold text-primary-content">Terminal-first interface</h3>
+              <p className="text-primary-content/60 text-sm">70+ commands with autocomplete. Type naturally or use slash commands.</p>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-4">
+            <div className="w-10 h-10 rounded-lg bg-primary-content/20 flex items-center justify-center flex-shrink-0">
+              <svg className="w-5 h-5 text-primary-content" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="font-semibold text-primary-content">Built-in AI assistant</h3>
+              <p className="text-primary-content/60 text-sm">Describe what you want. AI proposes actions. You confirm with one click.</p>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-4">
+            <div className="w-10 h-10 rounded-lg bg-primary-content/20 flex items-center justify-center flex-shrink-0">
+              <svg className="w-5 h-5 text-primary-content" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="font-semibold text-primary-content">The LLM loop</h3>
+              <p className="text-primary-content/60 text-sm">Export context to any LLM. Get back executable commands. Paste and run.</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="relative z-10">
+          <p className="text-primary-content/40 text-xs">Free & open source. Self-host or use the hosted version.</p>
+        </div>
+      </div>
+
+      {/* Right panel — form */}
+      <div className="w-full lg:w-1/2 bg-base-100 flex items-center justify-center px-6 py-12 overflow-y-auto">
+        <div className="w-full max-w-sm">
+          {/* Mobile logo */}
+          <div className="lg:hidden text-center mb-8">
+            <h1 className="text-2xl font-bold text-base-content">Dev Codex</h1>
+            <p className="text-base-content/50 text-sm">The AI-era project manager</p>
+          </div>
+
+          <h2 className="text-2xl font-bold text-base-content mb-1">Create your account</h2>
+          <p className="text-base-content/50 text-sm mb-6">Get started for free</p>
+
           {error && (
-            <div className="alert alert-error mb-4">
-              <svg className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+            <div className="alert alert-error mb-4 text-sm">
+              <svg className="stroke-current shrink-0 h-5 w-5" fill="none" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <span>{error}</span>
             </div>
           )}
-          
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text">First Name</span>
-                </label>
-                <input
-                  type="text"
-                  name="firstName"
-                  value={formData.firstName}
-                  onChange={handleChange}
-                  placeholder="First name"
-                  className="input input-bordered"
-                  required
-                />
-              </div>
 
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text">Last Name</span>
-                </label>
-                <input
-                  type="text"
-                  name="lastName"
-                  value={formData.lastName}
-                  onChange={handleChange}
-                  placeholder="Last name"
-                  className="input input-bordered"
-                  required
-                />
-              </div>
-            </div>
-            
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">Email</span>
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="Enter your email"
-                className="input input-bordered"
-                required
-              />
-            </div>
-
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">Username</span>
-                {usernameStatus.message && (
-                  <span className={`label-text-alt ${
-                    usernameStatus.checking ? 'text-info' :
-                    usernameStatus.available ? 'text-success' : 'text-error'
-                  }`}>
-                    {usernameStatus.checking ? '⏳' : usernameStatus.available ? '✓' : '✗'} {usernameStatus.message}
-                  </span>
-                )}
-              </label>
-              <input
-                type="text"
-                name="username"
-                value={formData.username}
-                onChange={handleChange}
-                placeholder="Choose a unique username"
-                className={`input input-bordered ${
-                  usernameStatus.available === true ? 'input-success' :
-                  usernameStatus.available === false ? 'input-error' : ''
-                }`}
-                required
-                minLength={3}
-                maxLength={30}
-                pattern="[a-z0-9_]+"
-              />
-              <label className="label">
-                <span className="label-text-alt text-xs opacity-70">
-                  3-30 characters, lowercase letters, numbers, and underscores only
-                </span>
-              </label>
-            </div>
-
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">Password</span>
-              </label>
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="Create a password"
-                className="input input-bordered"
-                required
-                minLength={6}
-              />
-              <label className="label">
-                <span className="label-text-alt text-base-content/50">At least 6 characters</span>
-              </label>
-            </div>
-            
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">Confirm Password</span>
-              </label>
-              <input
-                type="password"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                placeholder="Confirm your password"
-                className="input input-bordered"
-                required
-                minLength={6}
-              />
-            </div>
-            
-            <div className="form-control mt-6">
-              <button
-                type="submit"
-                disabled={loading}
-                className="btn btn-primary"
-                style={{ color: getContrastTextColor('primary') }}
-              >
-                {loading ? (
-                  <>
-                    <span className="loading loading-spinner"></span>
-                    Creating Account...
-                  </>
-                ) : (
-                  'Create Account'
-                )}
-              </button>
-            </div>
-          </form>
-          
-          <div className="divider">OR</div>
-
+          {/* Social buttons first */}
           <button
             onClick={handleGoogleSignup}
             className="btn btn-outline w-full mb-3"
@@ -324,7 +248,7 @@ const RegisterPage: React.FC = () => {
           <button
             onClick={handleDemoLogin}
             disabled={demoLoading}
-            className="btn btn-ghost w-full mb-4 border border-base-300"
+            className="btn btn-ghost w-full border border-base-300 mb-6"
           >
             {demoLoading ? (
               <>
@@ -341,15 +265,141 @@ const RegisterPage: React.FC = () => {
               </>
             )}
           </button>
-          
-          <div className="text-center">
-            <p className="text-sm text-base-content/70 mb-2">
-              Already have an account?
-            </p>
-            <Link to="/login" className="link link-primary">
-              Sign in here
+
+          <div className="divider text-xs text-base-content/40 my-0 mb-6">or continue with email</div>
+
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="form-control">
+                <label className="label py-1">
+                  <span className="label-text text-sm">First Name</span>
+                </label>
+                <input
+                  type="text"
+                  name="firstName"
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  placeholder="First name"
+                  className="input input-bordered input-sm h-10"
+                  required
+                />
+              </div>
+
+              <div className="form-control">
+                <label className="label py-1">
+                  <span className="label-text text-sm">Last Name</span>
+                </label>
+                <input
+                  type="text"
+                  name="lastName"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  placeholder="Last name"
+                  className="input input-bordered input-sm h-10"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="form-control">
+              <label className="label py-1">
+                <span className="label-text text-sm">Email</span>
+              </label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="you@example.com"
+                className="input input-bordered input-sm h-10"
+                required
+              />
+            </div>
+
+            <div className="form-control">
+              <label className="label py-1">
+                <span className="label-text text-sm">Username</span>
+                {usernameStatus.message && (
+                  <span className={`label-text-alt text-xs ${
+                    usernameStatus.checking ? 'text-info' :
+                    usernameStatus.available ? 'text-success' : 'text-error'
+                  }`}>
+                    {usernameStatus.checking ? '' : usernameStatus.available ? '' : ''} {usernameStatus.message}
+                  </span>
+                )}
+              </label>
+              <input
+                type="text"
+                name="username"
+                value={formData.username}
+                onChange={handleChange}
+                placeholder="Choose a username"
+                className={`input input-bordered input-sm h-10 ${
+                  usernameStatus.available === true ? 'input-success' :
+                  usernameStatus.available === false ? 'input-error' : ''
+                }`}
+                required
+                minLength={3}
+                maxLength={30}
+                pattern="[a-z0-9_]+"
+              />
+            </div>
+
+            <div className="form-control">
+              <label className="label py-1">
+                <span className="label-text text-sm">Password</span>
+              </label>
+              <input
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="At least 6 characters"
+                className="input input-bordered input-sm h-10"
+                required
+                minLength={6}
+              />
+            </div>
+
+            <div className="form-control">
+              <label className="label py-1">
+                <span className="label-text text-sm">Confirm Password</span>
+              </label>
+              <input
+                type="password"
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                placeholder="Confirm password"
+                className="input input-bordered input-sm h-10"
+                required
+                minLength={6}
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn btn-primary w-full mt-2"
+              style={{ color: getContrastTextColor('primary') }}
+            >
+              {loading ? (
+                <>
+                  <span className="loading loading-spinner"></span>
+                  Creating Account...
+                </>
+              ) : (
+                'Create Account'
+              )}
+            </button>
+          </form>
+
+          <p className="text-center text-sm text-base-content/50 mt-6">
+            Already have an account?{' '}
+            <Link to="/login" className="link link-primary font-medium">
+              Sign in
             </Link>
-          </div>
+          </p>
         </div>
       </div>
     </div>

@@ -11,6 +11,7 @@ const todoSchema = new Schema({
     default: 'medium'
   },
   completed: { type: Boolean, default: false },
+  completedAt: { type: Date },
   status: {
     type: String,
     enum: ['not_started', 'in_progress', 'blocked', 'completed'],
@@ -162,6 +163,7 @@ export interface IProject extends Document {
     description: string;
     priority: 'low' | 'medium' | 'high';
     completed: boolean;
+    completedAt?: Date;
     status: 'not_started' | 'in_progress' | 'blocked' | 'completed';
     dueDate?: Date;
     reminderDate?: Date;

@@ -308,7 +308,7 @@ describe('Stripe Webhooks', () => {
 
       const updatedUser = await User.findById(testUser._id);
       expect(updatedUser?.planTier).toBe('premium');
-      expect(updatedUser?.projectLimit).toBe(50); // Premium limit
+      expect(updatedUser?.projectLimit).toBe(-1); // Premium = unlimited
       expect(updatedUser?.subscriptionStatus).toBe('active');
     });
   });

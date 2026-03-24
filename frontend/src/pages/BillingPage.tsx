@@ -41,9 +41,10 @@ const BillingPage: React.FC = () => {
       projects: 3,
       features: [
         '3 Projects',
-        'Basic Notes & Todos',
-        'Basic Documentation',
-        'Community Support'
+        '3 AI queries/day',
+        '50 todos, 20 notes per project',
+        '3 team members per project',
+        '30-day analytics retention'
       ],
       current: billingInfo?.planTier === 'free',
       popular: false
@@ -51,14 +52,15 @@ const BillingPage: React.FC = () => {
     {
       name: 'Pro',
       id: 'pro' as const,
-      price: 10,
+      price: 5,
       projects: 20,
       features: [
         '20 Projects',
-        'Advanced Development Tools',
-        'Enhanced Documentation',
-        'Priority Support',
-        'Export Features'
+        '500k AI tokens/month (15/min)',
+        '200 todos, 100 notes per project',
+        '10 team members per project',
+        '90-day analytics retention',
+        'Project export & bridge'
       ],
       current: billingInfo?.planTier === 'pro',
       popular: true
@@ -66,15 +68,15 @@ const BillingPage: React.FC = () => {
     {
       name: 'Premium',
       id: 'premium' as const,
-      price: 20,
-      projects: 50,
+      price: 15,
+      projects: -1,
       features: [
-        '50 Projects',
-        'Advanced Analytics',
-        'Team Collaboration',
-        'Admin Dashboard',
-        'Custom Integrations',
-        '24/7 Support'
+        'Unlimited Projects',
+        '2M AI tokens/month (30/min)',
+        'Unlimited todos, notes & content',
+        'Unlimited team members',
+        '365-day analytics retention',
+        'Priority support'
       ],
       current: billingInfo?.planTier === 'premium',
       popular: false

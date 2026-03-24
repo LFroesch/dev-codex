@@ -2,7 +2,7 @@
 export const PLAN_LIMITS = {
   free: 3,
   pro: 20,
-  premium: 50
+  premium: -1
 } as const;
 
 // Content limits per project by plan tier
@@ -17,7 +17,7 @@ export const CONTENT_LIMITS = {
   },
   pro: {
     todos: 500,
-    notes: 200,
+    notes: 100,
     devlogs: 300,
     features: 300,
     stackItems: 200,

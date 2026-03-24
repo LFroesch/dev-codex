@@ -39,7 +39,7 @@ const PLAN_PRICES = {
 const PLAN_LIMITS = {
   free: 3,
   pro: 20,
-  premium: 50
+  premium: -1
 };
 
 // Create checkout session
@@ -275,7 +275,7 @@ async function handleSuccessfulPayment(session: Stripe.Checkout.Session) {
     const { AnalyticsService } = await import('../middleware/analytics');
 
     // Calculate conversion value (price in dollars)
-    const conversionValue = planTier === 'pro' ? 10 : 25;
+    const conversionValue = planTier === 'pro' ? 5 : 15;
 
     // Track checkout completion
     await AnalyticsService.trackEvent(

@@ -20,10 +20,10 @@ async function setupStripeProducts() {
     // Check if products already exist
     const existingProducts = await stripe.products.list({ limit: 100 });
     const proProduct = existingProducts.data.find(p => p.metadata?.plan === 'pro');
-    const enterpriseProduct = existingProducts.data.find(p => p.metadata?.plan === 'enterprise');
+    const premiumProduct = existingProducts.data.find(p => p.metadata?.plan === 'premium');
 
     let proProductId: string;
-    let enterpriseProductId: string;
+    let premiumProductId: string;
 
     // Create or use existing Pro Product
     if (proProduct) {
@@ -31,8 +31,8 @@ async function setupStripeProducts() {
       proProductId = proProduct.id;
     } else {
       const newProProduct = await stripe.products.create({
-        name: 'Project Manager Pro',
-        description: '20 projects with advanced features',
+        name: 'Dev Codex Pro',
+        description: '20 projects, 500k AI tokens/mo, 10 team members/project',
         metadata: {
           plan: 'pro'
         }
@@ -41,31 +41,31 @@ async function setupStripeProducts() {
       console.log('✅ Created Pro product:', proProductId);
     }
 
-    // Create or use existing Enterprise Product
-    if (enterpriseProduct) {
-      console.log('✅ Enterprise product already exists:', enterpriseProduct.id);
-      enterpriseProductId = enterpriseProduct.id;
+    // Create or use existing Premium Product
+    if (premiumProduct) {
+      console.log('✅ Premium product already exists:', premiumProduct.id);
+      premiumProductId = premiumProduct.id;
     } else {
-      const newEnterpriseProduct = await stripe.products.create({
-        name: 'Project Manager Enterprise',
-        description: 'Unlimited projects with premium features',
+      const newPremiumProduct = await stripe.products.create({
+        name: 'Dev Codex Premium',
+        description: 'Unlimited projects, 2M AI tokens/mo, unlimited team members',
         metadata: {
-          plan: 'enterprise'
+          plan: 'premium'
         }
       });
-      enterpriseProductId = newEnterpriseProduct.id;
-      console.log('✅ Created Enterprise product:', enterpriseProductId);
+      premiumProductId = newPremiumProduct.id;
+      console.log('✅ Created Premium product:', premiumProductId);
     }
 
     // Check existing prices
     const existingPrices = await stripe.prices.list({ limit: 100 });
     const proPrices = existingPrices.data.filter(p => p.product === proProductId);
-    const enterprisePrices = existingPrices.data.filter(p => p.product === enterpriseProductId);
+    const premiumPrices = existingPrices.data.filter(p => p.product === premiumProductId);
 
     let proPriceId: string;
-    let enterprisePriceId: string;
+    let premiumPriceId: string;
 
-    // Create or use existing Pro Price
+    // Create or use existing Pro Price ($5/mo)
     const existingProPrice = proPrices.find(p => p.unit_amount === 500 && p.recurring?.interval === 'month');
     if (existingProPrice) {
       console.log('✅ Pro price already exists:', existingProPrice.id);
@@ -86,35 +86,35 @@ async function setupStripeProducts() {
       console.log('✅ Created Pro price:', proPriceId);
     }
 
-    // Create or use existing Enterprise Price
-    const existingEnterprisePrice = enterprisePrices.find(p => p.unit_amount === 2000 && p.recurring?.interval === 'month');
-    if (existingEnterprisePrice) {
-      console.log('✅ Enterprise price already exists:', existingEnterprisePrice.id);
-      enterprisePriceId = existingEnterprisePrice.id;
+    // Create or use existing Premium Price ($15/mo)
+    const existingPremiumPrice = premiumPrices.find(p => p.unit_amount === 1500 && p.recurring?.interval === 'month');
+    if (existingPremiumPrice) {
+      console.log('✅ Premium price already exists:', existingPremiumPrice.id);
+      premiumPriceId = existingPremiumPrice.id;
     } else {
-      const newEnterprisePrice = await stripe.prices.create({
-        product: enterpriseProductId,
-        unit_amount: 2000, // $20.00 in cents
+      const newPremiumPrice = await stripe.prices.create({
+        product: premiumProductId,
+        unit_amount: 1500, // $15.00 in cents
         currency: 'usd',
         recurring: {
           interval: 'month'
         },
         metadata: {
-          plan: 'enterprise'
+          plan: 'premium'
         }
       });
-      enterprisePriceId = newEnterprisePrice.id;
-      console.log('✅ Created Enterprise price:', enterprisePriceId);
+      premiumPriceId = newPremiumPrice.id;
+      console.log('✅ Created Premium price:', premiumPriceId);
     }
 
     console.log('\n🎉 Setup completed successfully!');
     console.log('\n📝 Add these to your backend .env file:');
     console.log(`STRIPE_PRO_PRICE_ID=${proPriceId}`);
-    console.log(`STRIPE_ENTERPRISE_PRICE_ID=${enterprisePriceId}`);
-    
+    console.log(`STRIPE_PREMIUM_PRICE_ID=${premiumPriceId}`);
+
     console.log('\n🔗 Product URLs:');
     console.log(`Pro Product: https://dashboard.stripe.com/products/${proProductId}`);
-    console.log(`Enterprise Product: https://dashboard.stripe.com/products/${enterpriseProductId}`);
+    console.log(`Premium Product: https://dashboard.stripe.com/products/${premiumProductId}`);
 
     console.log('\n⚠️  Next steps for LOCAL DEVELOPMENT:');
     console.log('1. Update your .env file with the price IDs above');
@@ -126,7 +126,7 @@ async function setupStripeProducts() {
     console.log('   STRIPE_WEBHOOK_SECRET=whsec_...');
     console.log('\n🚀 For PRODUCTION:');
     console.log('1. Create webhook endpoint in Stripe Dashboard');
-    console.log('2. Use your production domain: https://yourdomain.com/api/billing/webhook');
+    console.log('2. Use your production domain: https://dev-codex.com/api/billing/webhook');
     console.log('3. Add these events to your webhook:');
     console.log('   - checkout.session.completed');
     console.log('   - customer.subscription.created');

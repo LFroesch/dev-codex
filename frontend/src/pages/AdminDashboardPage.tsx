@@ -232,11 +232,12 @@ const AdminDashboardPage: React.FC = () => {
         throw new Error('Failed to update user plan');
       }
 
-      // Refresh users list
+      // Update selected user locally and refresh lists
+      setSelectedUser((prev: any) => prev ? { ...prev, planTier: newPlan } : prev);
       await fetchUsers(page);
       await fetchStats();
     } catch (err: any) {
-      alert('Failed to update user plan: ' + err.message);
+      toast.error('Failed to update user plan: ' + err.message);
     }
   };
 
@@ -1222,9 +1223,15 @@ const AdminDashboardPage: React.FC = () => {
                   
                   <div>
                     <label className="font-semibold text-base-content/70 mr-2">Plan</label>
-                    <div className={`badge ${getPlanBadgeColor(selectedUser.planTier)} h-7 px-4 py-1 font-bold text-base`}>
-                      {selectedUser.planTier}
-                    </div>
+                    <select
+                      className={`select select-bordered select-sm font-bold ${getPlanBadgeColor(selectedUser.planTier)}`}
+                      value={selectedUser.planTier}
+                      onChange={(e) => updateUserPlan(selectedUser._id, e.target.value)}
+                    >
+                      <option value="free">free</option>
+                      <option value="pro">pro</option>
+                      <option value="premium">premium</option>
+                    </select>
                   </div>
 
                   <div>

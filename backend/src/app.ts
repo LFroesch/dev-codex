@@ -155,6 +155,16 @@ const PORT = process.env.PORT || 5003;
 
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
+// Reject malformed URIs (e.g. /%c0) before Express attempts to decode them
+app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
+  try {
+    decodeURIComponent(req.path);
+    next();
+  } catch {
+    res.status(400).json({ error: 'Bad request' });
+  }
+});
+
 // Sentry request handler - MUST be first middleware
 // In Sentry v8+, this is handled automatically by init()
 // No manual requestHandler needed

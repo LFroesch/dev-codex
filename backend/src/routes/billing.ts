@@ -543,6 +543,16 @@ async function handleRefund(charge: Stripe.Charge) {
     }
   }
 
+  // Full refund → cancel subscription so the user gets demoted via subscription.deleted webhook
+  if (charge.refunded && user.subscriptionId && stripe) {
+    try {
+      await stripe.subscriptions.cancel(user.subscriptionId);
+      logDebug('Cancelled subscription after full refund', { userId: user._id, subscriptionId: user.subscriptionId });
+    } catch (error) {
+      logError('Failed to cancel subscription after refund', error as Error, { userId: user._id });
+    }
+  }
+
   // In-app notification
   try {
     const notificationService = NotificationService.getInstance();

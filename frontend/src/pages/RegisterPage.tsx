@@ -163,10 +163,10 @@ const RegisterPage: React.FC = () => {
 
         {/* Terminal mockup */}
         <div className="bg-base-300/10 border border-neutral-content/10 rounded-lg p-5 font-mono text-sm space-y-3">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-3 h-3 rounded-full bg-error/60" />
-            <div className="w-3 h-3 rounded-full bg-warning/60" />
-            <div className="w-3 h-3 rounded-full bg-success/60" />
+          <div className="flex items-center gap-1.5 mb-4">
+            <div className="w-2 h-2 rounded-full bg-neutral-content/15" />
+            <div className="w-2 h-2 rounded-full bg-neutral-content/15" />
+            <div className="w-2 h-2 rounded-full bg-neutral-content/15" />
             <span className="text-neutral-content/30 text-xs ml-2">dev-codex</span>
           </div>
           <div>
@@ -247,7 +247,7 @@ const RegisterPage: React.FC = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                 </svg>
-                Try Demo
+                <span className="text-sm">Demo with pre-loaded sample data</span>
               </>
             )}
           </button>

@@ -9,6 +9,10 @@
   box-sizing: border-box;
 }
 
+html[data-theme] {
+  background-color: transparent !important;
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
@@ -112,6 +116,7 @@ body {
 }
 
 /* ===== SPECIALIZED UTILITIES ===== */
+
 
 /* Custom scrollbar styles */
 .scrollbar-hide {

@@ -40,7 +40,7 @@ const LoginPage: React.FC = () => {
     try {
       const result = await authAPI.demoLogin();
       if (result) {
-        toast.success('Welcome to demo mode! Explore all features.');
+        toast.success('Welcome! Exploring a demo project with sample data.');
         navigate('/notes');
       }
     } catch (err) {
@@ -62,33 +62,62 @@ const LoginPage: React.FC = () => {
         </div>
 
         {/* Terminal mockup */}
-        <div className="bg-base-300/10 border border-neutral-content/10 rounded-lg p-5 font-mono text-sm space-y-3">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-3 h-3 rounded-full bg-error/60" />
-            <div className="w-3 h-3 rounded-full bg-warning/60" />
-            <div className="w-3 h-3 rounded-full bg-success/60" />
-            <span className="text-neutral-content/30 text-xs ml-2">dev-codex</span>
+        <div className="rounded-xl overflow-hidden shadow-2xl border border-neutral-content/10">
+          {/* Title bar */}
+          <div className="bg-neutral-content/5 px-4 py-2.5 flex items-center border-b border-neutral-content/10">
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-neutral-content/15" />
+              <div className="w-2 h-2 rounded-full bg-neutral-content/15" />
+              <div className="w-2 h-2 rounded-full bg-neutral-content/15" />
+            </div>
+            <span className="text-neutral-content/25 text-xs font-mono mx-auto">~/my-project — dev-codex</span>
           </div>
-          <div>
-            <span className="text-success/80">$</span>
-            <span className="text-neutral-content/80 ml-2">/add todo "Set up CI pipeline" --priority high</span>
+
+          {/* Terminal body */}
+          <div className="bg-neutral-content/[0.03] px-5 py-4 font-mono text-[13px] leading-relaxed space-y-3">
+            {/* Command 1 — slash command */}
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-success/70 text-xs select-none">❯</span>
+                <span className="text-neutral-content/70">/add todo <span className="text-warning/60">"Set up CI pipeline"</span> <span className="text-neutral-content/35">--priority high</span></span>
+              </div>
+              <div className="text-neutral-content/35 ml-5 mt-0.5">
+                <span className="text-success/50">✓</span> Created todo #4: Set up CI pipeline
+              </div>
+            </div>
+
+            {/* Command 2 — natural language → AI actions */}
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-success/70 text-xs select-none">❯</span>
+                <span className="text-neutral-content/70">add auth and rate limiting to the API</span>
+              </div>
+              <div className="ml-5 mt-1 space-y-0.5">
+                <div className="text-neutral-content/40 text-xs mb-1">AI parsed 3 actions:</div>
+                <div className="text-info/50"><span className="text-neutral-content/20 mr-1.5">1.</span>/add feature "Auth"</div>
+                <div className="text-info/50"><span className="text-neutral-content/20 mr-1.5">2.</span>/add feature "Rate Limiting"</div>
+                <div className="text-info/50"><span className="text-neutral-content/20 mr-1.5">3.</span>/add todo "Implement JWT auth" <span className="text-neutral-content/30">--tag auth</span></div>
+                <div className="text-neutral-content/25 mt-1">Confirm 3 actions? <span className="text-success/50">Y</span></div>
+              </div>
+            </div>
+
+            {/* Command 3 — context export */}
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-success/70 text-xs select-none">❯</span>
+                <span className="text-neutral-content/70">/context <span className="text-neutral-content/35">prompt all</span></span>
+              </div>
+              <div className="text-neutral-content/35 ml-5 mt-0.5">
+                <span className="text-success/50">✓</span> Copied project context to clipboard <span className="text-neutral-content/20">(2.4k tokens)</span>
+              </div>
+            </div>
+
+            {/* Cursor line */}
+            <div className="flex items-center gap-2">
+              <span className="text-success/70 text-xs select-none">❯</span>
+              <span className="w-2 h-4 bg-neutral-content/30 animate-pulse" />
+            </div>
           </div>
-          <div className="text-neutral-content/40 pl-4">Created todo #4: Set up CI pipeline</div>
-          <div>
-            <span className="text-success/80">$</span>
-            <span className="text-neutral-content/80 ml-2">add auth and rate limiting to the API</span>
-          </div>
-          <div className="text-neutral-content/40 pl-4">
-            AI: I'll add those as features with related todos.<br />
-            <span className="text-info/60">{'>'} /add feature "Auth" && /add feature "Rate Limiting"</span><br />
-            <span className="text-info/60">{'>'} /add todo "Implement JWT auth" --tag auth</span><br />
-            <span className="text-neutral-content/30">Confirm 3 actions? [Y/n]</span>
-          </div>
-          <div>
-            <span className="text-success/80">$</span>
-            <span className="text-neutral-content/80 ml-2">/context prompt all</span>
-          </div>
-          <div className="text-neutral-content/40 pl-4">Copied project context to clipboard (2.4k tokens)</div>
         </div>
 
         <div>
@@ -134,7 +163,7 @@ const LoginPage: React.FC = () => {
           <button
             onClick={handleDemoLogin}
             disabled={demoLoading}
-            className="btn btn-ghost w-full border border-base-300 mb-6"
+            className="btn btn-ghost w-full border border-base-300 mb-6 h-auto py-3"
           >
             {demoLoading ? (
               <>
@@ -142,13 +171,10 @@ const LoginPage: React.FC = () => {
                 Loading demo...
               </>
             ) : (
-              <>
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-                Try Demo
-              </>
+              <span className="flex flex-col items-center">
+                <span className="text-sm">Demo with pre-loaded sample data</span>
+                <span className="text-xs text-base-content/40 font-normal">No signup needed</span>
+              </span>
             )}
           </button>
 

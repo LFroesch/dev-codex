@@ -10,10 +10,13 @@ async function deleteDemoUser() {
   try {
     await connectDatabase();
 
-    const demoEmail = 'demo@projectmanager.example';
+    const demoEmail = 'demo@dev-codex.com';
 
-    // Find demo user
-    const demoUser = await User.findOne({ email: demoEmail });
+    // Find demo user — check current email, fall back to old email
+    let demoUser = await User.findOne({ email: demoEmail });
+    if (!demoUser) {
+      demoUser = await User.findOne({ email: 'demo@projectmanager.example' });
+    }
 
     if (!demoUser) {
       console.log('No demo user found to delete');

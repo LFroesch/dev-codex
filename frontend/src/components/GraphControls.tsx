@@ -184,8 +184,8 @@ const GraphControls: React.FC<GraphControlsProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         <button
           onClick={onResetView}
-          className="btn btn-sm h-6 btn-primary bg-primary/20 border-thick border-primary"
-          style={{color:getContrastTextColor("primary/20")}}
+          className="btn btn-sm h-6 btn-primary border-thick"
+          style={{ color: getContrastTextColor('primary') }}
           title="Reset zoom and position"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -196,8 +196,8 @@ const GraphControls: React.FC<GraphControlsProps> = ({
         </button>
         <button
           onClick={() => setShowResetConfirm(true)}
-          className="btn btn-sm h-6 btn-error bg-error/20 border-thick border-error"
-          style={{color:getContrastTextColor("error/20")}}
+          className="btn btn-sm h-6 btn-error border-thick"
+          style={{ color: getContrastTextColor('error') }}
           title="Clear saved layout"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -243,8 +243,8 @@ const GraphControls: React.FC<GraphControlsProps> = ({
                   });
                 }
               }}
-              className="btn btn-xs btn-primary bg-primary/20 border-thick border-primary px-2"
-              style={{color:getContrastTextColor("primary/20")}}
+              className="btn btn-xs btn-primary border-thick px-2"
+              style={{ color: getContrastTextColor('primary') }}
             >
               {selectedCategories.size === categories.length ? 'None' : 'All'}
             </button>
@@ -270,7 +270,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({
                   className={`border-thick badge badge-sm p-2 h-6 text-sm font-semibold cursor-pointer transition-all`}
                   style={isSelected ? {
                     backgroundColor: cat.color,
-                    color: getContrastTextColor("primary"),
+                    color: getContrastTextColor(cat.color),
                     borderColor: cat.color
                   } : {
                     opacity: 0.4
@@ -307,8 +307,8 @@ const GraphControls: React.FC<GraphControlsProps> = ({
                     });
                   }
                 }}
-                className="btn btn-xs btn-primary bg-primary/20 border-thick border-primary px-2"
-                style={{color:getContrastTextColor("primary/20")}}
+                className="btn btn-xs btn-primary border-thick px-2"
+              style={{ color: getContrastTextColor('primary') }}
               >
                 {selectedFeatures.size === features.length ? 'None' : 'All'}
               </button>

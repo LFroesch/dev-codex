@@ -667,7 +667,7 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
                                   className="badge badge-xs"
                                   style={{
                                     backgroundColor: relationshipColors[rel.relationType] || '#3b82f6',
-                                    color: 'white',
+                                    color: getContrastTextColor(relationshipColors[rel.relationType] || '#3b82f6'),
                                     borderColor: relationshipColors[rel.relationType] || '#3b82f6'
                                   }}
                                 >
@@ -915,7 +915,7 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
                                   className="badge badge-xs"
                                   style={{
                                     backgroundColor: priorityColors[subtask.priority] || '#eab308',
-                                    color: 'white',
+                                    color: getContrastTextColor(priorityColors[subtask.priority] || '#eab308'),
                                     borderColor: priorityColors[subtask.priority] || '#eab308'
                                   }}
                                 >
@@ -925,7 +925,7 @@ const EditWizard: React.FC<EditWizardProps> = ({ wizardData, currentProjectId, e
                                   className="badge badge-xs"
                                   style={{
                                     backgroundColor: statusColors[subtask.status] || '#6b7280',
-                                    color: 'white',
+                                    color: getContrastTextColor(statusColors[subtask.status] || '#6b7280'),
                                     borderColor: statusColors[subtask.status] || '#6b7280'
                                   }}
                                 >

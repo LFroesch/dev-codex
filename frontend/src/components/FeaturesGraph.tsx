@@ -934,7 +934,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
                                       className="badge badge-sm p-2 border-thick font-semibold text-xs truncate max-w-full"
                                       style={{
                                         backgroundColor: categoryInfo?.color,
-                                        color: 'white',
+                                        color: getContrastTextColor(categoryInfo?.color),
                                         borderColor: categoryInfo?.color
                                       }}
                                       title={`${feat.category} - ${feat.type}`}
@@ -1008,7 +1008,7 @@ const FeaturesGraphInner: React.FC<FeaturesGraphProps> = ({ docs, projectId, onC
                     className="badge badge-sm text-xs font-semibold border-thick"
                     style={{
                       backgroundColor: getCategoryColor(selectedFeature.category as FeatureCategory),
-                      color: getContrastTextColor("primary"),
+                      color: getContrastTextColor(getCategoryColor(selectedFeature.category as FeatureCategory)),
                       borderColor: getCategoryColor(selectedFeature.category as FeatureCategory)
                     }}
                   >

@@ -5,8 +5,8 @@ import { logError } from '../config/logger';
 // Email validation regex
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-// SEC-009 FIX: Stronger password policy (12+ chars, uppercase, lowercase, number, special char)
-const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$/;
+// Password policy: minimum 6 characters
+const strongPasswordRegex = /^.{6,}$/;
 
 // MongoDB ObjectId validation
 const objectIdRegex = /^[0-9a-fA-F]{24}$/;
@@ -71,10 +71,10 @@ export const validateUserRegistration = (req: Request, res: Response, next: Next
     // Password strength validation
     if (!isStrongPassword(password)) {
       return res.status(400).json({
-        message: 'Password must be at least 12 characters long and contain uppercase, lowercase, number, and special character (@$!%*?&)'
+        message: 'Password must be at least 6 characters'
       });
     }
-    
+
     // Length validations
     if (req.body.firstName.length < 1 || req.body.firstName.length > 50) {
       return res.status(400).json({ message: 'First name must be 1-50 characters' });
@@ -147,11 +147,11 @@ export const validatePasswordReset = (req: Request, res: Response, next: NextFun
 
       if (!isStrongPassword(password)) {
         return res.status(400).json({
-          message: 'Password must be at least 12 characters long and contain uppercase, lowercase, number, and special character (@$!%*?&)'
+          message: 'Password must be at least 6 characters'
         });
       }
     }
-    
+
     next();
   } catch (error) {
     logError('Password reset validation failed', error as Error, { component: 'validation', action: 'password_reset' });

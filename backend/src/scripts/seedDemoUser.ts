@@ -733,7 +733,7 @@ Chose Go for the API layer. Reasons:
     stack: [
       { category: 'framework', name: 'React Native', version: '0.74', description: 'Cross-platform mobile' },
       { category: 'tooling', name: 'Expo', version: '51', description: 'Build toolchain + router' },
-      { category: 'backend', name: 'Supabase', version: '', description: 'Postgres + Auth + Realtime' },
+      { category: 'database', name: 'Supabase', version: '', description: 'Postgres + Auth + Realtime' },
       { category: 'state', name: 'Zustand', version: '4.x', description: 'Client state management' },
       { category: 'data', name: 'MMKV', version: '2.x', description: 'Fast offline persistence' },
       { category: 'runtime', name: 'TypeScript', version: '5.x', description: 'Type safety' }

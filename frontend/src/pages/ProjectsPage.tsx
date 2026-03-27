@@ -65,17 +65,15 @@ const ProjectCard: React.FC<{
     onClick={onClick}
     disabled={project.isLocked}
     title={project.isLocked ? (project.lockedReason || 'This project is locked') : ''}
-    className={`w-full text-left transition-all duration-200 rounded-lg overflow-hidden ${
+    className={`w-full text-left transition-all duration-200 rounded-lg border-t-[3px] ${
       project.isLocked
-        ? 'opacity-50 cursor-not-allowed border-2 border-warning/50'
+        ? 'opacity-50 cursor-not-allowed border-2 border-warning/50 border-t-[3px]'
         : isSelected
           ? 'card-interactive-selected shadow-lg'
           : 'card-interactive'
     }`}
+    style={{ borderTopColor: project.color || 'oklch(var(--p))' }}
   >
-    {/* Color bar top */}
-    <div className="h-1.5" style={{ backgroundColor: project.color || 'oklch(var(--p))' }} />
-
     <div className="p-4 flex flex-col gap-3">
       {/* Header: name + category */}
       <div className="flex items-start justify-between gap-2">
@@ -97,8 +95,7 @@ const ProjectCard: React.FC<{
         </div>
         {project.category && (
           <span
-            className="border-thick text-xs font-semibold px-2 py-0.5 rounded-md bg-info/20 capitalize flex-shrink-0"
-            style={{ color: getContrastTextColor("info/20") }}
+            className="border-thick text-xs font-semibold px-2 py-0.5 rounded-md bg-info/20 text-info capitalize flex-shrink-0"
           >
             {project.category}
           </span>
@@ -116,8 +113,7 @@ const ProjectCard: React.FC<{
       <div className="flex items-center gap-2 flex-wrap">
         {overdue > 0 && (
           <span
-            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold bg-error/20 border-2 border-error/40"
-            style={{ color: getContrastTextColor("error/20") }}
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold bg-error/20 text-error border-2 border-error/40"
           >
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -135,8 +131,7 @@ const ProjectCard: React.FC<{
       {/* Footer: time + updated */}
       <div className="flex items-center justify-between pt-2 border-t-2 border-base-content/10 mt-auto">
         <span
-          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold font-mono bg-success/40 border-2 border-base-content/20"
-          style={{ color: getContrastTextColor("success/40") }}
+          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold font-mono text-success bg-success/40 border-2 border-base-content/20"
         >
           <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -144,8 +139,7 @@ const ProjectCard: React.FC<{
           {formatProjectTime(project.id)}
         </span>
         <span
-          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold font-mono bg-accent/20 border-2 border-accent/40"
-          style={{ color: getContrastTextColor("accent/20") }}
+          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold font-mono text-accent bg-accent/20 border-2 border-accent/40"
         >
           <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -168,11 +162,9 @@ const ContinueCard: React.FC<{
 }> = ({ project, overdue, activeTodos, formatProjectTime, onClick }) => (
   <button
     onClick={onClick}
-    className="w-full text-left section-container transition-all duration-200 hover:shadow-xl overflow-hidden group"
+    className="w-full text-left section-container transition-all duration-200 hover:shadow-xl overflow-hidden group border-t-[3px]"
+    style={{ borderTopColor: project.color || 'oklch(var(--p))' }}
   >
-    {/* Thick color bar */}
-    <div className="h-2" style={{ backgroundColor: project.color || 'oklch(var(--p))' }} />
-
     <div className="p-5">
       <div className="flex items-center gap-4">
         {/* Project color icon */}
@@ -187,8 +179,7 @@ const ContinueCard: React.FC<{
           <div className="flex items-center gap-2 mb-1">
             <span className="font-bold text-base capitalize truncate">{project.name}</span>
             {project.category && (
-              <span className="border-thick text-xs font-semibold px-2 py-0.5 rounded-md bg-info/20 capitalize hidden sm:inline"
-                style={{ color: getContrastTextColor("info/20") }}>
+              <span className="border-thick text-xs font-semibold px-2 py-0.5 rounded-md bg-info/20 text-info capitalize hidden sm:inline">
                 {project.category}
               </span>
             )}
@@ -202,8 +193,7 @@ const ContinueCard: React.FC<{
         <div className="flex items-center gap-3 flex-shrink-0">
           {overdue > 0 && (
             <span
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-error/20 border-2 border-error/40"
-              style={{ color: getContrastTextColor("error/20") }}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold text-error bg-error/20 border-2 border-error/40"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -217,8 +207,7 @@ const ContinueCard: React.FC<{
             </span>
           )}
           <span
-            className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold font-mono bg-success/40 border-2 border-base-content/20 hidden sm:inline-flex"
-            style={{ color: getContrastTextColor("success/40") }}
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold font-mono text-success bg-success/40 border-2 border-base-content/20 hidden sm:inline-flex"
           >
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -375,7 +364,7 @@ const ProjectsPage: React.FC<ProjectsPageProps> = ({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <h2 className="font-bold text-sm uppercase tracking-wider text-base-content/70">Continue</h2>
+            <h2 className="font-bold text-sm uppercase tracking-wider text-base-content/70">Most Recent Project</h2>
           </div>
           <ContinueCard
             project={lastProject}
@@ -399,8 +388,7 @@ const ProjectsPage: React.FC<ProjectsPageProps> = ({
             <h2 className="font-bold text-sm uppercase tracking-wider text-base-content/70">
               Needs Attention
             </h2>
-            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-error/20 border-2 border-error/40"
-              style={{ color: getContrastTextColor("error/20") }}>
+            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold text-error bg-error/20 border-2 border-error/40">
               {attentionProjects.length}
             </span>
           </div>

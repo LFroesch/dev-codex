@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { authAPI } from '../api/auth';
 
@@ -6,8 +6,13 @@ const OAuthCallbackPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
+  const exchanged = useRef(false);
 
   useEffect(() => {
+    // Prevent StrictMode double-mount from consuming the one-time code twice
+    if (exchanged.current) return;
+    exchanged.current = true;
+
     const handleCallback = async () => {
       const code = searchParams.get('code');
 

@@ -16,6 +16,7 @@ import { accountSwitchingManager } from '../utils/accountSwitching';
 import { getContrastTextColor } from '../utils/contrastTextColor';
 import ToastContainer from './Toast';
 import { toast } from '../services/toast';
+import BackgroundGrid from './BackgroundGrid';
 import MainNav from './navigation/MainNav';
 import SecondaryNav from './navigation/SecondaryNav';
 import ProjectsPage from '../pages/ProjectsPage';
@@ -334,32 +335,38 @@ const Layout: React.FC = () => {
         return;
       }
       
+      // Auth-critical: if these fail, user isn't logged in
+      let userResponse, projectsResponse;
       try {
-        const [userResponse, projectsResponse] = await Promise.all([
+        [userResponse, projectsResponse] = await Promise.all([
           authAPI.getMe(),
           projectAPI.getAll()
         ]);
+      } catch (err) {
+        navigate('/login');
+        setLoading(false);
+        return;
+      }
 
-        // Handle account switching - clear account-specific data if different user
-        if (userResponse.user?.email) {
-          accountSwitchingManager.handleAccountSwitch(userResponse.user.email);
-        }
+      // Handle account switching - clear account-specific data if different user
+      if (userResponse.user?.email) {
+        accountSwitchingManager.handleAccountSwitch(userResponse.user.email);
+      }
 
-        setUser(userResponse.user);
-        setProjects(projectsResponse.projects);
+      setUser(userResponse.user);
+      setProjects(projectsResponse.projects);
 
-        // Load project time data
-        await loadProjectTimeData();
+      // Non-critical loads — don't kick user to login if these fail
+      try { await loadProjectTimeData(); } catch (_) {}
+      try { await loadIdeasCount(); } catch (_) {}
 
-        // Load ideas count
-        await loadIdeasCount();
+      // Update theme from user preference (always sync on login)
+      if (userResponse.user?.theme) {
+        const userTheme = userResponse.user.theme;
+        setCurrentTheme(userTheme);
+        localStorage.setItem('theme', userTheme);
 
-        // Update theme from user preference (always sync on login)
-        if (userResponse.user?.theme) {
-          const userTheme = userResponse.user.theme;
-          setCurrentTheme(userTheme);
-          localStorage.setItem('theme', userTheme);
-          
+        try {
           // Check if it's a custom theme and apply it properly
           if (userTheme.startsWith('custom-')) {
             await applyUserCustomTheme(userTheme);
@@ -367,37 +374,34 @@ const Layout: React.FC = () => {
             // Standard theme
             document.documentElement.setAttribute('data-theme', userTheme);
           }
-        }
-        
-        // Set current user for analytics
-        analytics.setCurrentUser(userResponse.user?.id || null);
-        
-        // Initialize analytics session and wait for it to be ready
-        try {
-          await analytics.startSession();
-          setAnalyticsReady(true);
-        } catch (error) {
-          setAnalyticsReady(true); // Set to true anyway to avoid blocking UI
-        }
-        
-        // Restore project selection from localStorage if it exists
-        const savedProjectId = localStorage.getItem('selectedProjectId');
-        if (savedProjectId) {
-          const savedProject = projectsResponse.projects.find(p => p.id === savedProjectId);
-          if (savedProject) {
-            setSelectedProject(savedProject);
-            await analytics.setCurrentProject(savedProject.id);
-          } else {
-            // Project no longer exists, clear the saved data
-            localStorage.removeItem('selectedProjectId');
-          }
-        }
-        
-      } catch (err) {
-        navigate('/login');
-      } finally {
-        setLoading(false);
+        } catch (_) {}
       }
+
+      // Set current user for analytics
+      analytics.setCurrentUser(userResponse.user?.id || null);
+
+      // Initialize analytics session and wait for it to be ready
+      try {
+        await analytics.startSession();
+        setAnalyticsReady(true);
+      } catch (error) {
+        setAnalyticsReady(true); // Set to true anyway to avoid blocking UI
+      }
+
+      // Restore project selection from localStorage if it exists
+      const savedProjectId = localStorage.getItem('selectedProjectId');
+      if (savedProjectId) {
+        const savedProject = projectsResponse.projects.find(p => p.id === savedProjectId);
+        if (savedProject) {
+          setSelectedProject(savedProject);
+          try { await analytics.setCurrentProject(savedProject.id); } catch (_) {}
+        } else {
+          // Project no longer exists, clear the saved data
+          localStorage.removeItem('selectedProjectId');
+        }
+      }
+
+      setLoading(false);
     };
 
     loadData();
@@ -445,7 +449,8 @@ const Layout: React.FC = () => {
 
   return (
     <TutorialProvider>
-      <div className={`bg-base-100 flex flex-col ${location.pathname === '/terminal' || location.pathname === '/features' ? 'h-dvh overflow-hidden' : ''}`}>
+      <div className={`flex flex-col min-h-screen ${location.pathname === '/terminal' || location.pathname === '/features' ? 'h-dvh overflow-hidden' : ''}`}>
+        <BackgroundGrid />
 
       {/* Demo Mode Banner - Hidden on features page to avoid layout issues */}
       {user?.isDemo && location.pathname !== '/features' && (
@@ -1682,7 +1687,7 @@ const Layout: React.FC = () => {
         </div>
       </header>
 
-      <div className="flex-1 w-full max-w-7xl mx-auto p-2 bg-base-100 flex flex-col min-h-[100px]">
+      <div className="flex-1 w-full max-w-7xl mx-auto p-2 flex flex-col min-h-[100px] relative z-10">
         {/* Render content based on current route */}
         {location.pathname === '/projects' ? (
           <div className="flex-1 overflow-auto border-2 border-base-content/20 bg-base-100 rounded-lg shadow-2xl backdrop-blur-none container-height-fix">

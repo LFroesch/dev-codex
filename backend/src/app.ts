@@ -201,6 +201,7 @@ if (isDevelopment) {
       if (allowedOrigins.indexOf(origin) !== -1) {
         callback(null, true);
       } else {
+        logError(`CORS rejected origin: "${origin}" | allowed: ${JSON.stringify(allowedOrigins)}`, undefined, { severity: 'high', component: 'cors' });
         callback(new Error('Not allowed by CORS'));
       }
     },

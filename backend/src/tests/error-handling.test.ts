@@ -1,10 +1,12 @@
 import request from 'supertest';
 import mongoose from 'mongoose';
+import express from 'express';
 import { User } from '../models/User';
 import authRoutes from '../routes/auth';
 import projectsRoutes from '../routes/projects';
-import { requireAuth } from '../middleware/auth';
 import { createTestApp, createAuthenticatedUser } from './utils';
+import { AppError } from '../utils/errorHandler';
+import * as logger from '../config/logger';
 
 const app = createTestApp({
   '/api/auth': authRoutes,
@@ -32,6 +34,31 @@ describe('Error Handling', () => {
   });
 
   describe('Graceful error handling', () => {
+    it('should return operational AppErrors without logging them as unexpected server errors', async () => {
+      const logErrorSpy = jest.spyOn(logger, 'logError');
+      const operationalApp = createTestApp({
+        '/api/test': express.Router().get('/app-error', (_req, _res, next) => {
+          next(new AppError(403, 'Not allowed by CORS', 'CORS_REJECTED'));
+        })
+      });
+
+      const res = await request(operationalApp)
+        .get('/api/test/app-error');
+
+      expect(res.status).toBe(403);
+      expect(res.body).toEqual({
+        success: false,
+        message: 'Not allowed by CORS',
+        code: 'CORS_REJECTED',
+        statusCode: 403
+      });
+      expect(logErrorSpy).not.toHaveBeenCalledWith(
+        'Unexpected error',
+        expect.anything(),
+        expect.objectContaining({ component: 'error-handler' })
+      );
+    });
+
     it('should handle invalid MongoDB ObjectId gracefully', async () => {
       const res = await request(app)
         .get('/api/projects/invalid-id')

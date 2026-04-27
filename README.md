@@ -84,7 +84,7 @@ npm run dev
 
 Frontend: `http://localhost:5002` · Backend: `http://localhost:5003`
 
-For local AI, install [Ollama](https://ollama.ai), run `ollama pull qwen2.5:3b`, and set `AI_ENABLED=true` in your `.env`. [Full Ollama setup guide →](md_files/READMEs/DEPLOYMENT.md#running-with-ollama)
+For local AI, install [Ollama](https://ollama.ai), run `ollama pull qwen2.5:3b`, and set `AI_ENABLED=true` in your `.env`.
 
 ---
 
@@ -99,7 +99,9 @@ Set `SELF_HOSTED=true` and deploy anywhere — DO, AWS, Railway, your own server
 
 **Required env vars:** `MONGODB_URI`, `JWT_SECRET`, `CSRF_SECRET`, `FRONTEND_URL`, `CORS_ORIGINS`
 
-[Full deployment guide →](md_files/READMEs/DEPLOYMENT.md)
+Set `CORS_ORIGINS` to the canonical frontend origins you actually serve, for example `https://dev-codex.com,https://www.dev-codex.com`. Direct requests from the droplet IP are intentionally rejected in production.
+
+Production at `dev-codex.com` deploys from GitHub Actions on pushes to `main`: CI builds first, then the workflow SSHes to the droplet, rebuilds the `dev-codex` Compose service, and checks `https://dev-codex.com/health`.
 
 ---
 

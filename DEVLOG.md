@@ -1,4 +1,12 @@
 ## DevLog
+### 2026-04-19: Reduce production CORS noise for raw-IP requests
+Kept production CORS locked to the configured frontend domains, but changed rejected origins to be treated as expected operational 403s instead of surfacing as high-severity "Unexpected error" noise. Added a regression test to pin the `AppError` path used by CORS failures and documented that `CORS_ORIGINS` should contain canonical frontend origins, not the droplet IP.
+Files: `backend/src/app.ts`, `backend/src/tests/error-handling.test.ts`, `README.md`, `WORK.md`
+
+### 2026-04-19: Build-gated droplet deploy workflow
+Added a CI build gate in front of production deploys. Pushes to `main` now build in GitHub Actions first, then SSH to the droplet, fast-forward pull, rebuild the `dev-codex` Compose service, and verify `https://dev-codex.com/health`. Also removed stale README deployment links and replaced them with the actual deploy flow.
+Files: `.github/workflows/deploy.yml`, `README.md`, `WORK.md`
+
 ### 2026-03-27: Snake background, textContrastColor, project card accents
 1. **BackgroundGrid**: Added 3 more templates per zone (7 left/right, 6 top/bottom). Snakes now track which templates are in use by siblings — `makeSnake` takes an `excludeIdxs` set so no two snakes in the same zone ever use the same template simultaneously. Fixed both initial assignment and regeneration.
 2. **ProjectsPage textContrastColor cleanup**: Replaced all `getContrastTextColor("info/20")`, `"error/20"`, `"success/40"`, `"accent/20"` calls with proper `text-{color}` Tailwind classes. These were redundant — low-opacity DaisyUI backgrounds just need the semantic text class. Kept `getContrastTextColor(project.color)` for dynamic hex colors.

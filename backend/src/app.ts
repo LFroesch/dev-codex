@@ -21,8 +21,8 @@ import jwt from 'jsonwebtoken';
 import TeamMember from './models/TeamMember';
 import { Project } from './models/Project';
 import { connectDatabase } from './config/database';
-import { logInfo, logError } from './config/logger';
-import { sendErrorResponse } from './utils/errorHandler';
+import { logInfo, logError, logWarn } from './config/logger';
+import { sendErrorResponse, AppError } from './utils/errorHandler';
 import authRoutes from './routes/auth';
 import projectRoutes from './routes/projects';
 import billingRoutes from './routes/billing';
@@ -201,8 +201,12 @@ if (isDevelopment) {
       if (allowedOrigins.indexOf(origin) !== -1) {
         callback(null, true);
       } else {
-        logError(`CORS rejected origin: "${origin}" | allowed: ${JSON.stringify(allowedOrigins)}`, undefined, { severity: 'high', component: 'cors' });
-        callback(new Error('Not allowed by CORS'));
+        logWarn(`CORS rejected origin: "${origin}"`, {
+          severity: 'low',
+          component: 'cors',
+          allowedOrigins
+        });
+        callback(new AppError(403, 'Not allowed by CORS', 'CORS_REJECTED'));
       }
     },
     credentials: true

@@ -66,6 +66,7 @@ export interface IUser extends Document {
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
   googleId?: string;
+  passwordSet: boolean;
   bio?: string;
   isPublic: boolean;
   publicSlug?: string;
@@ -221,6 +222,10 @@ const userSchema = new Schema<IUser>({
   googleId: {
     type: String,
     required: false
+  },
+  passwordSet: {
+    type: Boolean,
+    default: true
   },
   bio: {
     type: String,

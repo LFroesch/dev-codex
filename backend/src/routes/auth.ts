@@ -183,6 +183,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
             lastName: profile.name?.familyName || '',
             username,
             password: crypto.randomBytes(32).toString('hex'),
+            passwordSet: false,
             googleId,
             planTier: 'free',
             projectLimit: 3
@@ -818,6 +819,13 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
       throw BadRequestError('Google account not linked', 'NOT_LINKED');
     }
 
+    if (!user.passwordSet) {
+      throw BadRequestError(
+        'Set a password before unlinking Google, or you will be locked out. Use Forgot Password to set one.',
+        'PASSWORD_NOT_SET'
+      );
+    }
+
     user.googleId = undefined;
     await user.save();
 
@@ -940,6 +948,7 @@ router.post('/reset-password', passwordResetRateLimit, validatePasswordReset, as
   }
 
   user.password = password;
+  user.passwordSet = true;
   user.resetPasswordToken = undefined;
   user.resetPasswordExpires = undefined;
   await user.save();

@@ -32,6 +32,8 @@ const PublicProjectPage = lazy(() => import('./pages/PublicProjectPage'));
 const PublicProfilePage = lazy(() => import('./pages/PublicProfilePage'));
 const TerminalPage = lazy(() => import('./pages/TerminalPage'));
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
+const PrivacyPage = lazy(() => import('./pages/PrivacyPage'));
+const TermsPage = lazy(() => import('./pages/TermsPage'));
 
 // Load debug utilities only in development mode
 if (import.meta.env.DEV) {
@@ -81,6 +83,8 @@ const App: React.FC = () => {
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/auth/callback" element={<OAuthCallbackPage />} />
+            <Route path="/privacy" element={<PrivacyPage />} />
+            <Route path="/terms" element={<TermsPage />} />
             <Route path="/billing/success" element={<BillingSuccessPage />} />
             <Route path="/billing/cancel" element={<BillingCancelPage />} />
             <Route path="/create-project" element={<CreateProject />} />

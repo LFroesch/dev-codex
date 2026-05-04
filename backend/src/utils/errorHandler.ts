@@ -24,15 +24,51 @@ export const asyncHandler = (fn: any) => {
   };
 };
 
+type OperationalErrorDetails = {
+  statusCode: number;
+  message: string;
+  code?: string;
+};
+
+const getOperationalErrorDetails = (error: any): OperationalErrorDetails | null => {
+  if (error instanceof AppError) {
+    return {
+      statusCode: error.statusCode,
+      message: error.message,
+      code: error.code
+    };
+  }
+
+  if (!error || typeof error !== 'object') {
+    return null;
+  }
+
+  const statusCode =
+    typeof error.statusCode === 'number'
+      ? error.statusCode
+      : typeof error.status === 'number'
+        ? error.status
+        : null;
+  const message = typeof error.message === 'string' ? error.message : null;
+  const code = typeof error.code === 'string' ? error.code : undefined;
+
+  if (statusCode && statusCode >= 400 && statusCode < 500 && message) {
+    return { statusCode, message, code };
+  }
+
+  return null;
+};
+
 // Standardized error response
 export const sendErrorResponse = (res: Response, error: any) => {
   // Operational errors (expected)
-  if (error instanceof AppError) {
-    return res.status(error.statusCode).json({
+  const operationalError = getOperationalErrorDetails(error);
+  if (operationalError) {
+    return res.status(operationalError.statusCode).json({
       success: false,
-      message: error.message,
-      code: error.code,
-      statusCode: error.statusCode
+      message: operationalError.message,
+      code: operationalError.code,
+      statusCode: operationalError.statusCode
     });
   }
 

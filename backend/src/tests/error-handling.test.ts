@@ -1,11 +1,12 @@
 import request from 'supertest';
 import mongoose from 'mongoose';
 import express from 'express';
+import cors from 'cors';
 import { User } from '../models/User';
 import authRoutes from '../routes/auth';
 import projectsRoutes from '../routes/projects';
 import { createTestApp, createAuthenticatedUser } from './utils';
-import { AppError } from '../utils/errorHandler';
+import { AppError, sendErrorResponse } from '../utils/errorHandler';
 import * as logger from '../config/logger';
 
 const app = createTestApp({
@@ -44,6 +45,47 @@ describe('Error Handling', () => {
 
       const res = await request(operationalApp)
         .get('/api/test/app-error');
+
+      expect(res.status).toBe(403);
+      expect(res.body).toEqual({
+        success: false,
+        message: 'Not allowed by CORS',
+        code: 'CORS_REJECTED',
+        statusCode: 403
+      });
+      expect(logErrorSpy).not.toHaveBeenCalledWith(
+        'Unexpected error',
+        expect.anything(),
+        expect.objectContaining({ component: 'error-handler' })
+      );
+    });
+
+    it('should keep real CORS middleware rejections as 403 responses', async () => {
+      const corsApp = express();
+      const logErrorSpy = jest.spyOn(logger, 'logError');
+
+      corsApp.use(cors({
+        origin(origin, callback) {
+          if (!origin || origin === 'https://dev-codex.com') {
+            return callback(null, true);
+          }
+
+          callback(new AppError(403, 'Not allowed by CORS', 'CORS_REJECTED'));
+        },
+        credentials: true
+      }));
+
+      corsApp.get('/health', (_req, res) => {
+        res.json({ status: 'OK' });
+      });
+
+      corsApp.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+        sendErrorResponse(res, err);
+      });
+
+      const res = await request(corsApp)
+        .get('/health')
+        .set('Origin', 'http://159.89.244.8');
 
       expect(res.status).toBe(403);
       expect(res.body).toEqual({

@@ -1,4 +1,8 @@
 ## DevLog
+### 2026-05-04: Fix live CORS rejections surfacing as 500s in production
+Live verification showed allowed origins were working, but rejected origins were still returning 500 through the actual `cors` middleware path, which kept bot/scanner traffic noisy in Sentry. Hardened operational error detection so 4xx middleware errors still serialize correctly, filtered expected `CORS_REJECTED` events from backend Sentry, and added a regression test that exercises the real CORS middleware flow.
+Files: `backend/src/utils/errorHandler.ts`, `backend/src/config/sentry.ts`, `backend/src/tests/error-handling.test.ts`, `WORK.md`
+
 ### 2026-04-19: Reduce production CORS noise for raw-IP requests
 Kept production CORS locked to the configured frontend domains, but changed rejected origins to be treated as expected operational 403s instead of surfacing as high-severity "Unexpected error" noise. Added a regression test to pin the `AppError` path used by CORS failures and documented that `CORS_ORIGINS` should contain canonical frontend origins, not the droplet IP.
 Files: `backend/src/app.ts`, `backend/src/tests/error-handling.test.ts`, `README.md`, `WORK.md`

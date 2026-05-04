@@ -43,14 +43,33 @@ export const initSentry = () => {
       release: process.env.SENTRY_RELEASE || `dev-codex@${process.env.npm_package_version || '1.0.0'}`,
       
       // Error filtering - don't send these errors to Sentry
-      beforeSend(event) {
+      beforeSend(event, hint) {
+        const originalError = hint.originalException as {
+          code?: string;
+          message?: string;
+          status?: number;
+          statusCode?: number;
+        } | undefined;
+        const exceptionMessage = event.exception?.values?.[0]?.value || '';
+
         // Filter out validation errors (user errors, not bugs)
         if (event.exception?.values?.[0]?.type === 'ValidationError') {
           return null;
         }
         
         // Filter out authentication errors (expected behavior)
-        if (event.exception?.values?.[0]?.value?.includes('Invalid token')) {
+        if (exceptionMessage.includes('Invalid token')) {
+          return null;
+        }
+
+        // Filter out rejected CORS origins (expected bot/scanner traffic)
+        if (
+          originalError?.code === 'CORS_REJECTED' ||
+          originalError?.message?.includes('Not allowed by CORS') ||
+          exceptionMessage.includes('Not allowed by CORS') ||
+          ((originalError?.status === 403 || originalError?.statusCode === 403) &&
+            exceptionMessage.includes('CORS'))
+        ) {
           return null;
         }
         

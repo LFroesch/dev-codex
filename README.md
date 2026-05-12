@@ -1,135 +1,128 @@
 # Dev Codex
 
-**A terminal-first project manager with a built-in AI assistant.**
+Terminal-first project management with a built-in AI assistant.
 
-Manage projects with slash commands or plain English. The AI reads your project context, proposes structured actions, and you confirm with one click. Export your entire project to any external LLM and get back executable commands you can paste and run.
+Dev Codex lets you manage a software project through slash commands or plain-English prompts. The terminal is the primary interface, but the app also includes project views, analytics, collaboration features, and an AI workflow that proposes structured actions instead of directly mutating data.
 
-**[Try the live demo](https://dev-codex.com)** | **[Self-host it](#self-hosting)**
+**Live app:** [dev-codex.com](https://dev-codex.com)
 
-[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![React](https://img.shields.io/badge/React-20232A?style=flat&logo=react&logoColor=61DAFB)](https://reactjs.org/)
-[![Node.js](https://img.shields.io/badge/Node.js-43853D?style=flat&logo=node.js&logoColor=white)](https://nodejs.org/)
-[![MongoDB](https://img.shields.io/badge/MongoDB-4EA94B?style=flat&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
-[![Tests](https://img.shields.io/badge/tests-1000%2B%20passing-success)](https://github.com/LFroesch/dev-codex)
-[![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue)](LICENSE)
+## What it does
 
----
+- Manage projects with slash commands, guided flows, and tab completion
+- Track todos, notes, features, ideas, dev logs, and tech stack details
+- Ask the AI questions about project state or have it draft safe, reviewable actions
+- Export project context for external LLMs, then paste generated commands back in
+- Collaborate with team roles, notifications, and shared project state
+- View analytics, public project pages, and admin tooling
 
-## How It Works
+## Core workflow
 
-### 1. Terminal with 70+ Commands
+1. Open a project in the terminal UI.
+2. Use slash commands for direct actions like creating todos, switching projects, or exporting context.
+3. Type plain English when you want the AI to interpret intent.
+4. Review the AI response and confirm only the actions you want to run.
 
-![Terminal Intro](media/gifs/intro-terminal.gif)
+The AI path is intentionally approval-based. Queries stay as messages; mutations come back as explicit proposed commands.
 
-Type `/help` to see every command. Tab-complete builds commands with flags and quoted values — no guessing syntax. Chain commands with `&&`, navigate history with arrow keys, or use `/wizard new` for guided setup.
-
-### 2. Built-in AI Assistant
-
-Type without a `/` prefix and the AI takes over. It reads your todos, notes, features, tech stack, and devlog — then proposes actions you approve with checkboxes.
-
-- Multi-turn conversations with session persistence
-- Gemini 2.5 Flash (prod) or Ollama (dev — free, runs locally)
-- Streaming responses via SSE
-
-### 3. The LLM Bridge
-
-![LLM Workflow](media/gifs/llm-workflow.gif)
-
-**Export** → `/context prompt all` copies your project as an AI-optimized prompt.
-**Prompt** → Paste into Claude, ChatGPT, or any LLM. Ask it to generate Dev Codex commands.
-**Run** → Paste the commands back. Idea to structured project in 30 seconds.
-
-`/bridge` exports a command reference you can drop into CLAUDE.md, .cursorrules, or any AI system prompt.
-
----
-
-## Features
-
-**Project Management** — Todos with subtasks, priorities, due dates, dependencies. Notes with real-time edit locking. Dev logs. Ideas. Tech stack tracking. JSON import/export.
-
-**Feature Graph** — Visualize your architecture as a draggable, zoomable node graph (ReactFlow). Map relationships between features.
-
-**Analytics** — Session tracking with heartbeats and idle detection. Per-project time breakdowns, daily/weekly summaries, work heatmaps.
-
-**Teams** — Owner/Editor/Viewer roles. Email invites. Real-time sync via Socket.io — live notifications, activity feed, presence indicators.
-
-**Social & Discovery** — Public project profiles, follow system, favorites, threaded comments, discover feed. Custom slugs: `/discover/@user/project`.
-
-**Admin Dashboard** — User management, support ticket Kanban, database tools, conversion analytics, announcements.
-
----
-
-## Tech Stack
+## Stack
 
 | Layer | Technologies |
-|-------|-------------|
-| **Frontend** | React 18, TypeScript, Vite, Tailwind + DaisyUI, TanStack Query, Socket.io, ReactFlow, @dnd-kit |
-| **Backend** | Node.js, Express, TypeScript, MongoDB (30+ indexes, TTL), JWT + Google OAuth, Stripe, Socket.io, Resend, Sentry |
-| **AI** | Gemini 2.5 Flash / Ollama (any OpenAI-compatible provider), structured JSON output, multi-turn sessions, context-aware prompts |
-| **Security** | bcrypt, CSRF (csrf-csrf), XSS sanitization (DOMPurify), rate limiting, Helmet, input validation |
+|-------|--------------|
+| Frontend | React 18, TypeScript, Vite, Tailwind, DaisyUI |
+| Backend | Node.js, Express, TypeScript, MongoDB, Mongoose |
+| Realtime | Socket.IO |
+| AI | Gemini 2.5 Flash in production, Ollama in development |
+| Billing/Auth | Stripe, JWT, Google OAuth |
 
-**200+ REST endpoints** — [API docs](md_files/READMEs/API.md) · **1000+ tests** (Jest) · **106k+ lines of TypeScript** · **14-step interactive onboarding**
+## Local development
 
----
+Requirements:
 
-## Quick Start
+- Node.js 20+
+- npm 9+
+- MongoDB
+
+Install dependencies:
 
 ```bash
 git clone https://github.com/LFroesch/dev-codex.git
 cd dev-codex
 npm install
-cp backend/.env.example backend/.env  # Add MongoDB URI, JWT secret, etc.
+npm install --prefix backend
+npm install --prefix frontend
+```
+
+Set up environment files:
+
+```bash
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env
+```
+
+Then update the values in:
+
+- [`backend/.env.example`](backend/.env.example)
+- [`frontend/.env.example`](frontend/.env.example)
+
+Start the app:
+
+```bash
 npm run dev
 ```
 
-Frontend: `http://localhost:5002` · Backend: `http://localhost:5003`
+Default local URLs:
 
-For local AI, install [Ollama](https://ollama.ai), run `ollama pull qwen2.5:3b`, and set `AI_ENABLED=true` in your `.env`.
+- Frontend: `http://localhost:5002`
+- Backend: `http://localhost:5003`
 
----
+## AI setup
 
-## Self-Hosting
+Development defaults to Ollama. A practical local setup is:
 
-Set `SELF_HOSTED=true` and deploy anywhere — DO, AWS, Railway, your own server.
+```bash
+ollama pull qwen2.5:3b
+```
 
-**What self-hosted mode unlocks:**
-- Unlimited projects, team members, AI queries — no caps, no billing
-- Stripe and email become optional
-- You own the data and infrastructure
+Use `OLLAMA_BASE_URL` if your Ollama instance is not on `http://localhost:11434`.
 
-**Required env vars:** `MONGODB_URI`, `JWT_SECRET`, `CSRF_SECRET`, `FRONTEND_URL`, `CORS_ORIGINS`
-
-Set `CORS_ORIGINS` to the canonical frontend origins you actually serve, for example `https://dev-codex.com,https://www.dev-codex.com`. Direct requests from the droplet IP are intentionally rejected in production.
-
-Production at `dev-codex.com` deploys from GitHub Actions on pushes to `main`: CI builds first, then the workflow SSHes to the droplet, rebuilds the `dev-codex` Compose service, and checks `https://dev-codex.com/health`.
-
----
-
-## Hosted Plans
-
-| Plan | Price | Projects | AI | Team |
-|------|-------|----------|-----|------|
-| **Free** | $0 | 3 | 3 queries/day | 3/project |
-| **Pro** | $5/mo | 20 | 500k tokens/mo | 10/project |
-| **Premium** | $15/mo | Unlimited | 2M tokens/mo | Unlimited |
-
----
+If you want hosted-model behavior locally, configure the Gemini variables in `backend/.env`.
 
 ## Scripts
 
-| Command | What it does |
-|---------|-------------|
-| `npm run dev` | Start frontend + backend |
-| `npm run build` | Production build |
-| `npm test` | Backend tests |
-| `npm run test:all` | All tests |
-| `npm run seed-demo` | Seed demo data |
-| `npm run create-admin` | Create admin user |
+Root scripts:
 
----
+| Command | Purpose |
+|---------|---------|
+| `npm run dev` | Run frontend and backend together |
+| `npm run build` | Install subproject deps and build frontend + backend |
+| `npm test` | Run backend tests |
+| `npm run test:frontend` | Run frontend tests once |
+| `npm run test:all` | Run backend and frontend tests |
+| `npm run test:coverage` | Backend coverage run |
+
+Backend-only scripts:
+
+| Command | Purpose |
+|---------|---------|
+| `npm run seed-demo --prefix backend` | Seed demo data |
+| `npm run create-admin --prefix backend` | Create an admin user |
+| `npm run reset-password --prefix backend` | Reset a user password |
+| `npm run setup-stripe --prefix backend` | Create Stripe products/prices |
+
+## Self-hosting
+
+Set `SELF_HOSTED=true` if you want the product without hosted billing limits.
+
+Important backend variables for deployment:
+
+- `MONGODB_URI`
+- `JWT_SECRET`
+- `CSRF_SECRET`
+- `FRONTEND_URL`
+- `CORS_ORIGINS`
+
+Email, OAuth, Stripe, and Sentry are optional depending on how complete a deployment you want.
 
 ## License
 
-AGPL-3.0 — see [LICENSE](LICENSE)
-
-**Issues:** [github.com/LFroesch/dev-codex/issues](https://github.com/LFroesch/dev-codex/issues)
+[AGPL-3.0](LICENSE)

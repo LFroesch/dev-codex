@@ -5,6 +5,7 @@ Terminal-first project management with a built-in AI assistant.
 Dev Codex lets you manage a software project through slash commands or plain-English prompts. The terminal is the primary interface, but the app also includes project views, analytics, collaboration features, and an AI workflow that proposes structured actions instead of directly mutating data.
 
 **Live app:** [dev-codex.com](https://dev-codex.com)
+**Portfolio:** [froesch.dev](https://froesch.dev)
 
 ## What it does
 

@@ -8,7 +8,7 @@ dotenv.config();
 
 const forceReseed = process.argv.includes('--force');
 
-async function seedDemoUser() {
+export async function seedDemoUser() {
   try {
     await connectDatabase();
 
@@ -112,7 +112,10 @@ async function seedDemoUser() {
   }
 }
 
-seedDemoUser();
+const isDirectRun = process.argv[1]?.includes('seedDemoUser');
+if (isDirectRun) {
+  seedDemoUser();
+}
 
 // ── Exported helper: create demo projects for a given user ──────────
 // Used by: this script (CLI seed) AND auth.ts (demo login reset)

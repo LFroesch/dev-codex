@@ -15,6 +15,7 @@ import { doubleCsrf } from 'csrf-csrf';
 import passport from 'passport';
 import path from 'path';
 import helmet from 'helmet';
+import mongoose from 'mongoose';
 import { Server } from 'socket.io';
 import { createServer } from 'http';
 import jwt from 'jsonwebtoken';
@@ -284,6 +285,13 @@ const conditionalCSRF = (req: express.Request, res: express.Response, next: expr
   return csrfProtection.doubleCsrfProtection(req, res, next);
 };
 
+const requireDatabaseConnection = (_req: express.Request, _res: express.Response, next: express.NextFunction) => {
+  if (mongoose.connection.readyState !== 1) {
+    return next(new AppError(503, 'Database temporarily unavailable', 'DATABASE_UNAVAILABLE'));
+  }
+
+  next();
+};
 
 // CSRF token endpoint for frontend
 app.get('/api/csrf-token', (req, res) => {
@@ -292,6 +300,7 @@ app.get('/api/csrf-token', (req, res) => {
 });
 
 app.use('/api', healthRoutes);
+app.use('/api', requireDatabaseConnection);
 app.use('/api/auth', authRoutes);
 app.use('/api/public', publicRateLimit, publicRoutes);
 const rateLimitMiddleware = isDevelopment ? devRateLimit : normalRateLimit;

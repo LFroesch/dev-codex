@@ -1,6 +1,8 @@
 import mongoose from 'mongoose';
 import { logInfo, logError } from './logger';
 
+mongoose.set('bufferCommands', false);
+
 export const connectDatabase = async (): Promise<void> => {
   try {
     const nodeEnv = process.env.NODE_ENV || 'development';
@@ -21,6 +23,22 @@ export const connectDatabase = async (): Promise<void> => {
     logInfo('Database connected successfully', { 
       environment: process.env.NODE_ENV || 'development',
       database: mongoUri.includes('localhost') ? 'local' : 'remote'
+    });
+
+    mongoose.connection.on('disconnected', () => {
+      logError('MongoDB connection lost', undefined, {
+        environment: process.env.NODE_ENV || 'development',
+        component: 'database',
+        action: 'disconnected'
+      });
+    });
+
+    mongoose.connection.on('reconnected', () => {
+      logInfo('MongoDB reconnected successfully', {
+        environment: process.env.NODE_ENV || 'development',
+        component: 'database',
+        action: 'reconnected'
+      });
     });
     
   } catch (error) {
